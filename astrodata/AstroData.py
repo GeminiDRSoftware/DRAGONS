@@ -232,7 +232,7 @@ integrates other functionality.
                 import urllib
                 from urllib import urlretrieve
                 savename = os.path.basename(dataset)
-                print "${BOLD}AstroData${NORMAL} retrieving remote file: "
+                print "AstroData retrieving remote file: "
                 print "     from %s" % dataset
                 print "     to   %s" % os.path.join(store,savename)
                 if store:

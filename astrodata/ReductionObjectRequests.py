@@ -29,6 +29,9 @@ class CalibrationRequest(ReductionObjectRequest):
     priorities = {}
     caltype = None
     datalabel = None
+    source = None
+    descriptors = None
+    types = None
     
     def __init__(self,  filename=None, identifiers={}, criteria={}, 
                     priorities={}, caltype=None , source = 'all'):
@@ -46,6 +49,8 @@ class CalibrationRequest(ReductionObjectRequest):
                      'caltype': self.caltype,
                      'datalabel' : self.datalabel,
                      'source': self.source,
+                     "descriptors": self.descriptors,
+                     "types": self.types
                      })
         # print 'ROR50:', retd
         return retd
@@ -54,15 +59,22 @@ class CalibrationRequest(ReductionObjectRequest):
         self.filename = params['filename'] if 'filename' in params else None
         self.caltype = params['caltype'] if 'caltype' in params else None
         self.datalabel = params['datalabel'] if 'datalabel' in params else None
+        self.descriptors = params["descriptors"] if "descriptors" in params else None
+        self.types = params["types"] if "types" in params else None
+        
         
     def __str__(self):
         tempStr = super(CalibrationRequest, self).__str__()
         tempStr = tempStr + '''filename: %(name)s
 Identifiers: %(id)s
-Criteria: %(crit)s
-Priorities: %(pri)s
+   Criteria: %(crit)s
+ Priorities: %(pri)s
+Descriptors: %(des)s
+      Types: %(types)s
 '''% {'name':str(self.filename), 'id':str(self.identifiers), \
-              'crit':str(self.criteria), 'pri':str(self.priorities)}
+              'crit':str(self.criteria), 'pri':str(self.priorities),
+              "des":repr(self.descriptors),
+              "types":repr(self.types)}
         return tempStr
 
 class DisplayRequest(ReductionObjectRequest):

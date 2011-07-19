@@ -381,7 +381,7 @@ def command_clause(ro, coi):
                     # print "RO316:", repr(rq)
                     calurl = prs.calibration_search( rq )
                 
-                # print "r396:", calurl
+                log.info("found calibration (url): " + calurl)
                 if calurl == None:
                     log.critical('No '+str(typ)+' calibration file found for '+\
                                 str(fn))
@@ -400,7 +400,7 @@ def command_clause(ro, coi):
                     coi.add_cal(fn, typ, calfname)
                 else:
                     coi.add_cal(fn, typ, AstroData(calurl, store=coi[storenames[typ]]).filename)
-                coi.persist_cal_index()
+                # adcc handles this now: coi.persist_cal_index()
                 calname = calurl
             else:
                 msg += '%s already stored.\n' %(str(typ))

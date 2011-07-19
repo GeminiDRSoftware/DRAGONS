@@ -58,14 +58,14 @@ def urlfetch(url, store = None, clobber = False):
     if os.path.exists(outname) and not clobber:
         raise "File Already Exists:" + outname
     f = open(outname,"w")
-    print "${BOLD}netutil${NORMAL}: downloading",url
+    print "netutil: downloading",url
     while True:
         chunk = res.read(CHUNK)
         if chunk == "":
             break
         f.write(chunk)
-    print "${BOLD}netutil${NORMAL}: retrieved", url
-    print "${BOLD}netutil${NORMAL}:     to",outname
+    print "netutil: retrieved", url
+    print "netutil:     to",outname
     
     f.close()
     res.close()

@@ -263,7 +263,11 @@ class DescriptorValue():
             else:
                 return as_type(self._val) 
         else:
-            return self.pytype(self._val)
+            # print repr(self.pytype)
+            try:
+                return self.pytype(self._val)
+            except:
+                return self._val
     # alias
     for_numpy = as_pytype
 

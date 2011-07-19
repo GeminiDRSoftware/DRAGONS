@@ -66,19 +66,21 @@ class CalibrationDefinitionLibrary(object):
             # print "CDL56:", repr(inp), inp.filename, str(inp)
             # @@REVIEW: write_input is a bad name... you write outputs!
             if write_input == True:
-                if os.path.exists(inp.filename):
-                    # then asked to write something already on disk and we
-                    # don't want to blindly clobber... throw informative error
-                    msg = "Overwriting %s with in-memory version " + \
-                                 "to ensure a current version of the dataset " + \
-                                 "is available " + \
-                                 "to Calibration Service." 
-                    msg = msg % inp.filename
-                    self.log.warning(msg)
-                else:
-                    self.log.status("Writing in-memory AstroData instance " +
-                               "to new disk file (%s) to ensure availability " +
-                               "to Calibration Service." % inp.filename)
+                if (False):
+                # don't write files... we will use headers
+                    if os.path.exists(inp.filename):
+                        # then asked to write something already on disk and we
+                        # don't want to blindly clobber... throw informative error
+                        msg = "Overwriting %s with in-memory version " + \
+                                     "to ensure a current version of the dataset " + \
+                                     "is available " + \
+                                     "to Calibration Service." 
+                        msg = msg % inp.filename
+                        self.log.warning(msg)
+                    else:
+                        self.log.status("Writing in-memory AstroData instance " +
+                                   "to new disk file (%s) to ensure availability " +
+                                   "to Calibration Service." % inp.filename)
                 try:
                     inp.write(clobber = True)
                 except AstroDataError("Mode is readonly"):
@@ -93,27 +95,26 @@ class CalibrationDefinitionLibrary(object):
             # @@NOTE: should use IDFactory, not data_label which HAPPENS to be the id
             cr.datalabel = str(inp.data_label())
             
+            ad = inp # saves me time, as I cut/pasted the below from a test script
+            cr.descriptors =  {'instrument':ad.instrument().for_db(),
+                         'data_label':ad.data_label().for_db(),
+                         'detector_x_bin':ad.detector_x_bin().for_db(),
+                         'detector_y_bin':ad.detector_y_bin().for_db(),
+                         'read_speed_setting':ad.read_speed_setting().for_db(),
+                         'gain_setting':ad.gain_setting().for_db(),
+                         'amp_read_area':ad.amp_read_area(asDict=True).for_db(),
+                         'ut_datetime':str(ad.ut_datetime().for_db()),
+                         'exposure_time':ad.exposure_time().for_db(),
+                         'nodandshuffle':ad.is_type('GMOS_NODANDSHUFFLE'),
+                         'observation_type': ad.observation_type().for_db(),
+                         'spectroscopy': ad.is_type("SPECT"),
+                         'object': ad.object().for_db()
+
+                         }
+            cr.types = ad.types
+            
             reqEvents.append(cr)
-            if (False): # old code to delete
-                calIndex = self.generate_cal_index( caltype)
-                print "CDL56:", calIndex, input.ad.get_types(prune=True)
-
-                retDict = gdpgutil.pick_config( input.ad,  calIndex )
-                key = retDict.keys()[0]
-                filename = calIndex[key]            
-
-                try:
-                    calXMLURI = self.xmlIndex[filename]
-                    calXMLFile = open( calXMLURI, 'r' )
-                    xmlDom = parse( calXMLFile )
-                except:
-                    raise "Error opening '%s'" %calXMLURI
-                finally:
-                    calXMLFile.close()
-
-                # childNodes is the <query> tag(s)           
-                calReqEvent = self.parse_query( xmlDom.childNodes[0], caltype, input.ad )            
-                reqEvents.append(calReqEvent)
+            
         # Goes to reduction context object to add to queue
         return reqEvents
     
