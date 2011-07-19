@@ -570,18 +570,23 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
-        rc.rq_cal("bias", rc.get_inputs(style="AD"))
+        rc.rq_cal("bias", rc.get_inputs(style="AD"), source=rc["source"])
+        yield rc
         log.stdinfo("Found:")
         found = False
         for ad in rc.get_inputs(style="AD"):
-            cal = AstroData(rc.get_cal(ad, "bias"))
-            if cal.filename is None:
-                log.stdinfo("   No bias for %s" % ad.filename)
-            else:
-                log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
-                found = True
-        if not found:
+            calurl = rc.get_cal(ad, "bias") #get from cache
+            # print "pG565:", repr(calurl)
+            if calurl:
+                cal = AstroData(rc.get_cal(ad, "bias"))
+                if cal.filename is None:
+                    log.stdinfo("   No bias for %s" % ad.filename)
+                else:
+                    log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
+                    found = True
+        if False: # not found:
             rc.return_from_recipe()            
+        # print "pG575: about to leave getpb"
         yield rc
     
     def getProcessedDark(self, rc):
