@@ -478,42 +478,41 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         yield rc
      
-    def getCal(self, rc):
+    def getCalibration(self, rc):
+        """
+        This primitive will check the files in the lists that are on disk,
+        and then update the inputs list to include all members of the list.
+        """
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         caltype = rc["caltype"]
-        if caltype is None:
-            log.critical("Requested a calibration no particular " +
-                         "calibration type")
-            raise Errors.PrimitiveError("get_cal: %s was None" % caltype)
+        if caltype == None:
+            log.error("getCalibration: caltype not set")
+            raise Errors.PrimitiveError("getCalibration: caltype not set")
         source = rc["source"]
-        if source is None:
+        if source == None:
             source = "all"
-        
-        centralSource = False
-        localSource = False
-        if source == "all":
-            centralSource = True
-            localSource = True
-        if source == "central":
-            centralSource = True
-        if source == "local":
-            localSource = True
-        
-        inps = rc.get_inputs_as_astro_data()
-        
-        if localSource:
-            rc.rq_cal(caltype, inps, source="local")
-            for ad in inps:
-                cal = rc.get_cal(ad, caltype)
-                if cal is None:
-                    print "get central"
-                else:
-                    print "got local", cal
             
-            yield rc
-    
+        rc.rq_cal(caltype, rc.get_inputs(style="AD"), source=source)
+        yield rc
+        log.stdinfo("getCalibration: Results")
+        found = False
+        for ad in rc.get_inputs(style="AD"):
+            calurl = rc.get_cal(ad, caltype) #get from cache
+            # print "pG565:", repr(calurl)
+            if calurl:
+                cal = AstroData(rc.get_cal(ad, caltype))
+                if cal.filename is None:
+                    log.stdinfo("   No bias for %s" % ad.filename)
+                else:
+                    log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
+                    found = True
+        if False: # not found:
+            rc.return_from_recipe()            
+        # print "pG575: about to leave getpb"
+        yield rc
+
     def getList(self, rc):
         """
         This primitive will check the files in the stack lists are on disk,
