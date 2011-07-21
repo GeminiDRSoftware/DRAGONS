@@ -3,7 +3,7 @@ import urllib, urllib2
 
 from xml.dom import minidom
 
-CALMGR = "http://hbffits2.hi.gemini.edu/calmgr"
+CALMGR = "http://hbffits3.hi.gemini.edu/calmgr"
 LOCALCALMGR = "http://localhost:%(httpport)d/calsearch.xml?caltype=%(caltype)s&%(tokenstr)s"
 #"None # needs to have adcc http port in
 CALTYPEDICT = { "bias": "bias",
