@@ -222,8 +222,6 @@ def remove_fringe(adinput=None, fringe=None,
         gt.checkInputsMatch(adInsA=adinput, adInsB=fringe)
 
         # Loop through the inputs to perform scaling of fringes to the science 
-        # NOTE: for clarity and simplicity, fringes objects are type 'A' and 
-        #       science input objects are type 'B'.
         count=0
         for ad in adinput:  
             
