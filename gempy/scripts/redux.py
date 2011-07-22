@@ -35,7 +35,7 @@ if __name__=='__main__':
               "\nall stack and calibration associations will be lost;" + \
               "\nall temporary files will be removed.\n"
 
-        subprocess.call(["superclean", "-rac"])
+        subprocess.call(["superclean", "-rad"])
         subprocess.call(["rm", "-f", "tmp*"])
         print ""
         sys.exit()
