@@ -15,7 +15,7 @@
         "userOverride"  : True,
         "tag"           : ["cl_iraf","ui_advanced"],
         },
-    "interpolation":{
+    "interpolator":{
         "default"       : "linear",
         "recipeOverride": True,
         "type"          : "str",
