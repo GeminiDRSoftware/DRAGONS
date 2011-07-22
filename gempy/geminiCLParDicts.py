@@ -107,7 +107,7 @@ def CLDefaultParamsDict(CLscript):
             'mdffile'    :'',                # MDF file to use if keyword not found
             'mdfdir'     :'',                # MDF database directory
             'bpm'        :'',                # Bad pixel mask
-            #'giandb'     :'default',        # Database with gain data
+            #'gaindb'     :'default',        # Database with gain data
             'sat'        :65000,             # Saturation level in raw images [ADU]
             'key_nodcount':'NODCOUNT',       # Header keyword with number of nod cycles
             'key_nodpix' :'NODPIX',          # Header keyword with shuffle distance
@@ -167,7 +167,7 @@ def CLDefaultParamsDict(CLscript):
             'rawpath'    :'',            # GPREPARE: Path for input raw images
             'key_ron'    :'RDNOISE',     # Header keyword for readout noise
             'key_datasec':'DATASEC',     # Header keyword for data section
-            #'giandb'     :'default',    # Database with gain data
+            #'gaindb'     :'default',    # Database with gain data
             'bpm'        :'',            # Bad pixel mask
             'gi_outpref' :'r',           # Gireduce prefix for output images
             'bias'       :'',            # Bias calibration image
