@@ -151,7 +151,7 @@ def normalize_image(adinput=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def normalize_flat_image_gmos(adinput=None):
+def normalize_flat_image_gmos(adinput=None, saturation="45000"):
     """
     This function will combine the input flats (adinput) and then normalize
     them using the CL script giflat.
@@ -169,26 +169,38 @@ def normalize_flat_image_gmos(adinput=None):
     
     :param adinput: Astrodata input flat(s) to be combined and normalized
     :type adinput: Astrodata
+
+    :param saturation: Defines saturation level for the raw frame, in ADU
+    :type saturation: string, can be 'default', or a number (default
+                      value for this function is '45000')
+
+    
     """
+
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
+
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
+
     # Define the keyword to be used for the time stamp for this user level
     # function
     keyword = "NORMFLAT"
+
     # Initialize the list of output AstroData objects
     adoutput_list = []
     try:
         # Load PyRAF
         pyraf, gemini, yes, no = pyrafLoader()
+
         # Use the CL manager to get the input parameters
         clm = mgr.CLManager(imageIns=adinput, funcName="normalizeFlat",
                             suffix="_out", combinedImages=True, log=log)
         if not clm.status:
             raise Errors.InputError("Please provide prepared inputs")
+
         # Get the input parameters for IRAF as specified by the stackFrames
         # primitive 
         clPrimParams = {
@@ -199,7 +211,10 @@ def normalize_flat_image_gmos(adinput=None):
             # This returns a unique/temp log file for IRAF
             "logfile" : clm.templog.name,
             "reject"  : "none",
+            "fl_over" : no,
+            "fl_trim" : no,
             }
+
         # Get the input parameters for IRAF as specified by the user
         fl_vardq = no
         fl_dqprop = no
@@ -208,10 +223,32 @@ def normalize_flat_image_gmos(adinput=None):
                 fl_dqprop = yes
                 if ad["VAR"]:
                     fl_vardq = yes
+
+        # check units of file -- if electrons, convert the saturation
+        # parameter from ADU to electrons
+        ele_saturation = None
+        if saturation == "default":
+            saturation = 65000.0
+        else:
+            saturation = float(saturation)
+        for sciext in ad['SCI']:
+            bunit = sciext.get_key_value('BUNIT')
+            if bunit=='electron':
+                gain = sciext.gain().as_pytype()
+                conv_sat = saturation * gain
+                if ele_saturation is None:
+                    ele_saturation = conv_sat
+                elif conv_sat < ele_saturation:
+                    ele_saturation = conv_sat
+
+        if ele_saturation is not None:
+            saturation = ele_saturation
+            log.fullinfo("Saturation parameter converted to %.2f electrons" %
+                         saturation)
+
         clSoftcodedParams = {
             "fl_vardq"  : fl_vardq,
-            "fl_over"   : False,
-            "fl_trim"   : False,
+            "sat"       : saturation,
             }
         # Get the default parameters for IRAF and update them using the above
         # dictionaries
