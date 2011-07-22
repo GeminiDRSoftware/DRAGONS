@@ -461,7 +461,7 @@ def align_to_reference_image(adinput, interpolator='linear'):
         log.error(repr(sys.exc_info()[1]))
         raise
 
-def mosaic_detectors(adinput, tile=False, interpolation='linear'):
+def mosaic_detectors(adinput, tile=False, interpolator='linear'):
     """
     This function will mosaic the SCI frames of the input images, 
     along with the VAR and DQ frames if they exist.  
@@ -483,9 +483,9 @@ def mosaic_detectors(adinput, tile=False, interpolation='linear'):
     :param tile: Tile images instead of mosaic?
     :type tile: Python boolean (True/False)
     
-    :param interpolation: type of interpolation algorithm to use for between 
+    :param interpolator: type of interpolation algorithm to use for between 
                             the chip gaps.
-    :type interpolation: string, options: 'linear', 'nearest', 'poly3', 
+    :type interpolator: string, options: 'linear', 'nearest', 'poly3', 
                            'poly5', 'spine3', 'sinc'.
     
     """
@@ -549,7 +549,7 @@ def mosaic_detectors(adinput, tile=False, interpolation='linear'):
                 # pyrafBoolean converts the python booleans to pyraf ones
                 'fl_paste'    :gt.pyrafBoolean(tile),
                 #'outpref'     :suffix,
-                'geointer'    :interpolation,
+                'geointer'    :interpolator,
                 }
             # Grab the default params dict and update it with 
             # the two above dicts
