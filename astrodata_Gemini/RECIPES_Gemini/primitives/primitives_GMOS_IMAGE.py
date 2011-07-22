@@ -1,6 +1,7 @@
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
 from gempy.science import preprocessing as pp
+from gempy.science import stack as sk
 from primitives_GMOS import GMOSPrimitives
 
 class GMOS_IMAGEPrimitives(GMOSPrimitives):
@@ -15,47 +16,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         GMOSPrimitives.init(self, rc)
         return rc
     
-    def normalize(self, rc):
-        """
-        This primitive will combine the input flats and then normalize them
-        using the CL script giflat.
-        
-        Warning: giflat calculates its own DQ frames and thus replaces the
-        previously produced ones in calculateDQ. This may be fixed in the
-        future by replacing giflat with a Python equivilent with more
-        appropriate options for the recipe system. 
-        
-        :param overscan: Subtract the overscan level from the frames?
-        :type overscan: Python boolean (True/False)
-        
-        :param trim: Trim the overscan region from the frames?
-        :type trim: Python boolean (True/False)
-        
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (i.e.,
-                        'critical', 'status', 'fullinfo'...)
-        """
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "normalize", "starting"))
-        adoutput_list = []
-        for ad in rc.get_inputs(style='AD'):
-            if ad.phu_get_key_value('NORMFLAT'):
-                log.warning('%s has already been processed by normalize' %
-                            (ad.filename))
-                adoutput_list.append(ad)
-                continue
-            
-            ad = pp.normalize_flat_image_gmos(adinput=ad)
-            adoutput_list.append(ad[0])
-
-        rc.report_output(adoutput_list)
-        yield rc
-    
-
     def makeFringeFrame(self, rc):
         """
         This primitive makes a fringe frame by masking out sources
@@ -99,4 +59,96 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         rc.report_output(adoutput)
         
         yield rc
+
+    def normalize(self, rc):
+        """
+        This primitive will normalize a stacked flat frame
+        using the CL script giflat.
+        
+        Warning: giflat calculates its own DQ frames and thus replaces the
+        previously produced ones in addDQ. This may be fixed in the
+        future by replacing giflat with a Python equivilent with more
+        appropriate options for the recipe system. 
+        
+        :param saturation: Defines saturation level for the raw frame, in ADU
+        :type saturation: string, can be 'default', or a number (default
+                          value for this primitive is '45000')
+
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (i.e.,
+                        'critical', 'status', 'fullinfo'...)
+        """
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "normalize", "starting"))
+        adoutput_list = []
+        for ad in rc.get_inputs(style='AD'):
+            if ad.phu_get_key_value('NORMFLAT'):
+                log.warning('%s has already been processed by normalize' %
+                            (ad.filename))
+                adoutput_list.append(ad)
+                continue
+            
+            ad = pp.normalize_flat_image_gmos(adinput=ad, 
+                                              saturation=rc['saturation'])
+            adoutput_list.append(ad[0])
+
+        rc.report_output(adoutput_list)
+        yield rc
+    
+    def stackFlats(self, rc):
+        """
+        This primitive will combine the input flats with rejection
+        parameters set appropriately for GMOS imaging twilight flats.
+        
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (i.e.,
+                        'critical', 'status', 'fullinfo'...)
+        """
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "stackFlats", "starting"))
+
+        adinput = rc.get_inputs(style='AD')
+        nframes = len(adinput)
+        if nframes<2:
+            log.warning("At least two frames must be provided to " +
+                        "stackFlats; no stacking performed.")
+            # Report input to RC without change
+            adoutput_list = adinput
+
+        else:            
+            # Define rejection parameters based on number of input frames,
+            # to be used with minmax rejection.  Note: if reject_method
+            # parameter is overridden, these parameters will just be
+            # ignored
+            if (nframes <= 5):
+                nlow = 1
+                nhigh = 1
+            elif (nframes <= 10):
+                nlow = 2
+                nhigh = 2
+            else:
+                nlow = 2
+                nhigh = 3
+
+            adoutput_list = sk.stack_frames(adinput=adinput,
+                                   suffix=rc["suffix"],
+                                   operation=rc["operation"],
+                                   mask_type=rc["mask_type"],
+                                   reject_method=rc["reject_method"],
+                                   grow=rc["grow"],
+                                   nlow=nlow,
+                                   nhigh=nhigh)
+
+        rc.report_output(adoutput_list)
+        yield rc
+    
 

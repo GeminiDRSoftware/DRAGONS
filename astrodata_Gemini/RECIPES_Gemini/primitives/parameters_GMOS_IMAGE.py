@@ -23,6 +23,45 @@
         "type"          : "str",
         "userOverride"  : True,
         },
+    "saturation":{
+        "default"       : "45000",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
+    },
+ "stackFlats":{
+    "suffix":{
+        # String to be post pended to the output of stackFrames
+        "default"       : "_stacked",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
+    "grow":{
+        "default"       : 1.0,
+        "recipeOverride": True,
+        "type"          : "float",
+        "userOverride"  : True,
+        },
+    "mask_type":{
+        "default"       : "none",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        }, 
+    "operation":{
+        "default"       : "median",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
+    "reject_method":{
+        "default"       : "minmax",
+        "recipeOverride": True,
+        "type"          : "str",
+        "userOverride"  : True,
+        },
     },
 # The standardizeStructure primitive is actually located in the
 # primtives_GMOS.py file, but the add_mdf parameter should be set to False as
