@@ -10,7 +10,8 @@ from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
 def stack_frames(adinput=None, suffix=None, operation="average", 
-                 reject_method="none", mask_type="none"):
+                 reject_method="none", mask_type="none",
+                 nlow=1, nhigh=1, grow=0.0):
     """
     This user level function will stack the input AstroData objects. New
     variance extensions are created from the stacked science extensions and the
@@ -83,6 +84,9 @@ def stack_frames(adinput=None, suffix=None, operation="average",
             "fl_dqprop" : fl_dqprop,
             "combine"   : operation,
             "reject"    : reject_method,
+            "nlow"      : nlow,
+            "nhigh"     : nhigh,
+            "grow"      : grow,
             "masktype"  : mask_type,
             }
         
