@@ -45,7 +45,7 @@ def adu_to_electrons(adinput):
             # Convert the pixel data in the AstroData object from ADU to
             # electrons. First, get the gain value using the appropriate
             # descriptor
-            gain = ad.gain().as_pytype()
+            gain = ad.gain()
             # Now multiply the pixel data in the science extension by the gain
             # and the pixel data in the variance extension by the gain squared
             log.info("Converting %s from ADU to electrons by multiplying " \
