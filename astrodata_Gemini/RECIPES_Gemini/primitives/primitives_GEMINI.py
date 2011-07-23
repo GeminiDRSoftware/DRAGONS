@@ -546,11 +546,11 @@ class GEMINIPrimitives(GENERALPrimitives):
             # bail from the calling recipe
             if len(stacklist)<2:
                 if purpose=="stack":
-                    log.warning("Only one file found; not proceeding with " +
-                                "stacking.")
+                    log.warning("Less than 2 files found; not proceeding " +
+                                "with stacking.")
                 elif purpose=="fringe":
-                    log.warning("Only one file found; not proceeding with " +
-                                "making the fringe frame.")
+                    log.warning("Less than 2 files found; not proceeding " +
+                                "with making the fringe frame.")
                 rc.return_from_recipe()
                 yield rc
 
@@ -986,7 +986,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Report input to RC without change
             adoutput_list = adinput
         else:
-            adoutput_list = sk.stack_frames(adinput=rc.get_inputs(style="AD"),
+            adoutput_list = sk.stack_frames(adinput=adinput,
                                    suffix=rc["suffix"],
                                    operation=rc["operation"],
                                    reject_method=rc["reject_method"],
