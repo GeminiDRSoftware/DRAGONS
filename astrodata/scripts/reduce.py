@@ -812,7 +812,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
             except:
                 log.fullinfo("CONTEXT AFTER FATAL ERROR")
                 log.fullinfo("-------------------------")
-                log.fullinfo(co.report(showall=True))
+                log.debug(co.report(showall=True))
                 if reduceServer:
                     #print "r855:", str(id(Proxies.reduceServer)), repr(Proxies.reduceServer.finished)
                     Proxies.reduceServer.finished=True
