@@ -57,7 +57,7 @@ class DescriptorValue():
         # print "DV82:", repr(unit)
         if pytype == None and self.pytype == None:
             self.pytype = pytype = type(initval)
-        originalinitval = initval
+        self.originalinitval = initval
         if isinstance(initval, DescriptorValue):
             initval = initval.dict_val
             
@@ -288,7 +288,7 @@ class DescriptorValue():
         return self.as_pytype(int, convert_values=True)        
     
     def get_value(self, as_type=None, convert_values=False):
-        return self.as_pytype(as_type=as_type, convert_values=convert_values)
+        return self.originalinitval
 
     def info(self):
         dvstr = ""
