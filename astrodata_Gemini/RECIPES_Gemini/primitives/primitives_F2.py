@@ -88,7 +88,7 @@ class F2Primitives(GEMINIPrimitives):
                 continue
             # Call the standardize_structure_f2 user level function
             ad = sdz.standardize_structure_f2(adinput=ad,
-                                              add_mdf=rc["add_mdf"],
+                                              attach_mdf=rc["attach_mdf"],
                                               mdf=rc["mdf"])
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
