@@ -240,7 +240,7 @@ def standardize_headers_gmos(adinput=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def standardize_structure_f2(adinput=None, add_mdf=False, mdf=None):
+def standardize_structure_f2(adinput=None, attach_mdf=False, mdf=None):
     """
     This user level function is used to standardize the structure of
     FLAMINGOS-2 data.
@@ -293,7 +293,7 @@ def standardize_structure_f2(adinput=None, add_mdf=False, mdf=None):
                               % (ad.filename, ext.extname(), ext.extver(), \
                               str(ext.data.shape)))
             
-            if add_mdf:
+            if attach_mdf:
                 # Check whether the input AstroData object has an AstroData 
                 # Type of IMAGE, since MDFs should only be added to
                 # spectroscopic data.
@@ -320,7 +320,7 @@ def standardize_structure_f2(adinput=None, add_mdf=False, mdf=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def standardize_structure_gmos(adinput=None, add_mdf=False, mdf=None):
+def standardize_structure_gmos(adinput=None, attach_mdf=False, mdf=None):
     """
     This function ensures the MEF structure of GMOS data is ready for further 
     processing, through adding an MDF if necessary. Appropriately all SPECT
@@ -339,9 +339,9 @@ def standardize_structure_gmos(adinput=None, add_mdf=False, mdf=None):
     :param adinput: Astrodata inputs to have their headers standardized
     :type adinput: Astrodata objects, either a single or a list of objects
     
-    :param add_mdf: A flag to turn on/off appending the appropriate MDF 
+    :param attach_mdf: A flag to turn on/off appending the appropriate MDF 
                    file to the inputs.
-    :type add_mdf: Python boolean (True/False)
+    :type attach_mdf: Python boolean (True/False)
                   default: True
                   
     :param mdf: A file name (with path) of the MDF file to append onto the
@@ -381,7 +381,7 @@ def standardize_structure_gmos(adinput=None, add_mdf=False, mdf=None):
             
             # Standardize the structure of the input AstroData object.
             # ACTUALLY DO SOMETHING HERE?
-            if add_mdf:
+            if attach_mdf:
                 # Check whether the input AstroData object has an AstroData 
                 # Type of IMAGE, since MDFs should only be added to
                 # spectroscopic data.
