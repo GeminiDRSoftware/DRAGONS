@@ -40,7 +40,7 @@
         "type"          : "str",
         "userOverride"  : True,
         },
-    "add_mdf":{
+    "attach_mdf":{
         "default"       : True,
         "recipeOverride": True,
         "type"          : "bool",
