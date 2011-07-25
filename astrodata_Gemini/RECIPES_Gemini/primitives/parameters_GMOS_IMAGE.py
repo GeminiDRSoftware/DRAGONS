@@ -24,9 +24,9 @@
         "userOverride"  : True,
         },
     "saturation":{
-        "default"       : "45000",
+        "default"       : 45000,
         "recipeOverride": True,
-        "type"          : "str",
+        "type"          : "float",
         "userOverride"  : True,
         },
     },
