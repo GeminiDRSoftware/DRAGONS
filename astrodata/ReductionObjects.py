@@ -398,7 +398,7 @@ def command_clause(ro, coi):
                               }
                               
                 
-                calfname = os.path.join(coi[storenames["retrievedcals"]], typ, os.path.basename(calurl))
+                calfname = os.path.join(coi["retrievedcals"], typ, os.path.basename(calurl))
                 # print "RO400:",calfname
                 if os.path.exists(calfname):
                     coi.add_cal(fn, typ, calfname)
