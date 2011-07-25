@@ -9,6 +9,7 @@ from astrodata.adutils.gemutil import pyrafLoader
 from gempy import geminiTools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
+from gempy import string as gstr
 
 def divide_by_flat(adinput=None, flat=None):
     """
@@ -151,17 +152,13 @@ def normalize_image(adinput=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def normalize_flat_image_gmos(adinput=None, saturation="45000"):
+def normalize_flat_image_gmos(adinput=None, saturation=45000):
     """
-    This function will combine the input flats (adinput) and then normalize
-    them using the CL script giflat.
-    
-    WARNING: The giflat script used here replaces the previously 
-    calculated DQ frames with its own versions. This may be corrected 
-    in the future by replacing the use of the giflat
-    with a Python routine to do the flat normalizing.
-    
-    NOTE: The inputs to this function MUST be prepared.
+    This function will calculate a normalization factor from statistics
+    on CCD2, then divide by this factor and propagate variance accordingly.
+    CCD2 is used because of the dome-like shape of the GMOS detector response:
+    CCDs 1 and 3 have lower average illumination than CCD2, and that needs
+    to be corrected for by the flat.
     
     Either a 'main' type logger object, if it exists, or a null logger 
     (ie, no log file, no messages to screen) will be retrieved/created in the 
@@ -171,8 +168,7 @@ def normalize_flat_image_gmos(adinput=None, saturation="45000"):
     :type adinput: Astrodata
 
     :param saturation: Defines saturation level for the raw frame, in ADU
-    :type saturation: string, can be 'default', or a number (default
-                      value for this function is '45000')
+    :type saturation: float. If None, the saturation_level descriptor is used.
 
     
     """
@@ -192,87 +188,96 @@ def normalize_flat_image_gmos(adinput=None, saturation="45000"):
     # Initialize the list of output AstroData objects
     adoutput_list = []
     try:
-        # Load PyRAF
-        pyraf, gemini, yes, no = pyrafLoader()
-
-        # Use the CL manager to get the input parameters
-        clm = mgr.CLManager(imageIns=adinput, funcName="normalizeFlat",
-                            suffix="_out", combinedImages=True, log=log)
-        if not clm.status:
-            raise Errors.InputError("Please provide prepared inputs")
-
-        # Get the input parameters for IRAF as specified by the stackFrames
-        # primitive 
-        clPrimParams = {
-            # Retrieving the inputs as a list from the CLManager
-            "inflats" : clm.imageInsFiles(type="listFile"),
-            # Maybe allow the user to override this in the future
-            "outflat" : clm.imageOutsFiles(type="string"),
-            # This returns a unique/temp log file for IRAF
-            "logfile" : clm.templog.name,
-            "reject"  : "none",
-            "fl_over" : no,
-            "fl_trim" : no,
-            }
-
-        # Get the input parameters for IRAF as specified by the user
-        fl_vardq = no
-        fl_dqprop = no
         for ad in adinput:
-            if ad["DQ"]:
-                fl_dqprop = yes
-                if ad["VAR"]:
-                    fl_vardq = yes
 
-        # check units of file -- if electrons, convert the saturation
-        # parameter from ADU to electrons
-        ele_saturation = None
-        if saturation == "default":
-            saturation = 65000.0
-        else:
-            saturation = float(saturation)
-        for sciext in ad['SCI']:
+            if saturation is None:
+                saturation = ad.saturation_level()            
+
+            # Find number of amps per CCD (assumes same number for all CCDs)
+            # (can this be a descriptor?)
+            amps_per_ccd = 0
+            ccdx1 = 0
+            detsecs = ad.detector_section().as_list()
+            if isinstance(detsecs[0],list):
+                detx1 = detsecs[0][0]
+            else:
+                detx1 = detsecs[0]
+            for sciext in ad['SCI']:
+                raw_ccdsec = sciext.get_key_value('CCDSEC')
+                ccdsec = gstr.sectionStrToIntList(raw_ccdsec)
+                detsec = sciext.detector_section().as_list()
+                if (detsec[0] > detx1 and ccdsec[0] <= ccdx1):
+                    # new CCD found, stop counting
+                    break
+                else:
+                    amps_per_ccd += 1
+                    ccdx1 = ccdsec[0]
+                    detx1 = detsec[0]
+
+            # Get all CCD2 data
+            if ad.count_exts('SCI')==amps_per_ccd:
+                # Only one CCD present, assume it is CCD2
+                ccd2_ext_num = range(1,amps_per_ccd+1)
+            else:
+                ccd2_ext_num = range(amps_per_ccd+1,2*amps_per_ccd+1)
+            log.fullinfo('Joining science extensions '+repr(ccd2_ext_num) + 
+                         ' for statistics')
+            data_list = [ad['SCI',i].data for i in ccd2_ext_num]
+            central_data = np.hstack(data_list)
+
+            # Check units of CCD2; if electrons, convert saturation
+            # limit from ADU to electrons.  Also subtract overscan
+            # level if present
+            sciext = ad['SCI',ccd2_ext_num[0]]
+            overscan_level = sciext.get_key_value('OVERSCAN')
+            if overscan_level is not None:
+                saturation -= overscan_level
+                log.fullinfo("Subtracting overscan level " +
+                             "%.2f from saturation parameter" % overscan_level)
             bunit = sciext.get_key_value('BUNIT')
             if bunit=='electron':
                 gain = sciext.gain().as_pytype()
-                conv_sat = saturation * gain
-                if ele_saturation is None:
-                    ele_saturation = conv_sat
-                elif conv_sat < ele_saturation:
-                    ele_saturation = conv_sat
+                saturation *= gain 
+                log.fullinfo("Saturation parameter converted to " +
+                             "%.2f electrons" % saturation)
 
-        if ele_saturation is not None:
-            saturation = ele_saturation
-            log.fullinfo("Saturation parameter converted to %.2f electrons" %
-                         saturation)
+            # Take off 5% of the width as a border
+            xborder = int(0.05 * central_data.shape[1])
+            yborder = int(0.05 * central_data.shape[0])
+            if xborder<20:
+                xborder = 20
+            if yborder<20:
+                yborder = 20
+            log.fullinfo('Using data section [%i:%i,%i:%i] for statistics' %
+                         (xborder,central_data.shape[1]-xborder,
+                          yborder,central_data.shape[0]-yborder))
+            stat_region = central_data[yborder:-yborder,xborder:-xborder]
 
-        clSoftcodedParams = {
-            "fl_vardq"  : fl_vardq,
-            "sat"       : saturation,
-            }
-        # Get the default parameters for IRAF and update them using the above
-        # dictionaries
-        clParamsDict = CLDefaultParamsDict("giflat")
-        clParamsDict.update(clPrimParams)
-        clParamsDict.update(clSoftcodedParams)
-        # Log the parameters
-        gt.logDictParams(clParamsDict)
-        # Call giflat
-        gemini.giflat(**clParamsDict)
-        if gemini.giflat.status:
-            raise Errors.OutputError("The IRAF task giflat failed")
-        else:
-            log.fullinfo("The IRAF task giflat completed sucessfully")
-        # Create the output AstroData object by loading the output file from
-        # gemcombine into AstroData, remove intermediate temporary files from
-        # disk 
-        adoutput, junk, junk = clm.finishCL()
-        adoutput[0].filename = ad.filename
-        # Add the appropriate time stamps to the PHU
-        gt.mark_history(adinput=adoutput[0], keyword=keyword)
+            # Remove negative and saturated values
+            stat_region = stat_region[np.logical_and(stat_region>0,
+                                                     stat_region<saturation)]
+
+            # Find the mode and standard deviation
+            hist,edges = np.histogram(stat_region, bins=saturation/0.1)
+            mode = edges[np.argmax(hist)]
+            std = np.std(stat_region)
+
+            # Find the values within 3 sigma of the mode; the normalization
+            # factor is the median of these values
+            central_values = stat_region[np.logical_and(stat_region>mode-3*std,
+                                                        stat_region<mode+3*std)]
+            norm_factor = np.median(central_values)
+            log.fullinfo('Normalization factor: %.2f' % norm_factor)
+
+            # Divide by the normalization factor and propagate the
+            # variance appropriately
+            ad = ad.div(norm_factor)
+            adoutput_list.append(ad)
+            
         # Return the output AstroData object
-        return adoutput
+        return adoutput_list
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
         raise
+
