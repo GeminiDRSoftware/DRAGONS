@@ -404,7 +404,7 @@ def command_clause(ro, coi):
                     coi.add_cal(fn, typ, calfname)
                 else:
                     try:
-                        ad = AstroData(calurl, store=coi[storenames[typ]])
+                        ad = AstroData(calurl, store=os.path.dirname(calfname))
                     except urllib2.HTTPError, error:
                         ad = None
                         errstr = "Could not retrieve %s" % calurl
