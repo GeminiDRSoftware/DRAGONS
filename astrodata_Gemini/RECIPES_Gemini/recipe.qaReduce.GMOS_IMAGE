@@ -8,7 +8,7 @@ addDQ
 addVAR(read_noise=True)
 overscanCorrect
 biasCorrect
-#aduToElectrons
+aduToElectrons
 addVAR(poisson_noise=True)
 flatCorrect
 writeOutputs(suffix="_forFringe",strip=True)
