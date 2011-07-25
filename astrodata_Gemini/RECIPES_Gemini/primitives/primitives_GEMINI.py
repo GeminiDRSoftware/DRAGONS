@@ -561,32 +561,27 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         yield rc
     
+    def storeCalibration(self, rc):
+        
+        yield rc
+        
     def getProcessedBias(self, rc):
         """
         This primitive will check the files in the lists that are on disk,
         and then update the inputs list to include all members of the list.
         """
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        rc.rq_cal("bias", rc.get_inputs(style="AD"), source=rc["source"])
+        source = rc["source"]
+        if source == None:
+            rc.run("getCalibration(caltype=bias)")
+        else:
+            rc.run("getCalibration(caltype=bias, source=%s)" % source)
+            
         yield rc
-        log.stdinfo("Found:")
-        found = False
-        for ad in rc.get_inputs(style="AD"):
-            calurl = rc.get_cal(ad, "bias") #get from cache
-            # print "pG565:", repr(calurl)
-            if calurl:
-                cal = AstroData(rc.get_cal(ad, "bias"))
-                if cal.filename is None:
-                    log.stdinfo("   No bias for %s" % ad.filename)
-                else:
-                    log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
-                    found = True
-        if False: # not found:
-            rc.return_from_recipe()            
-        # print "pG575: about to leave getpb"
-        yield rc
+        
+        #rc.localparms.update({"caltype":"bias"})
+        #for rc in rc.ro.substeps("getCalibration", rc):
+        #    print "pG574:", repr(rc.localparms)
+        #    yield rc
     
     def getProcessedDark(self, rc):
         """
