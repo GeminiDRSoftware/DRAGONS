@@ -4,7 +4,7 @@ from astrodata import AstroData
 import urllib2, urllib
 
 # This is a GMOS_N imaging science dataset
-ad = AstroData("calsearch/N20110531S0114.fits")
+ad = AstroData("/home/callen/SVN-AD/gemini_python/test_data/calsearch/N20110531S0114.fits")
 
 desc_dict = {'instrument':ad.instrument().for_db(),
              'data_label':ad.data_label().for_db(),

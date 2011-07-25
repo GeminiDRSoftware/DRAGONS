@@ -4,7 +4,7 @@ import traceback
 from astrodata import AstroData
 from astrodata.adutils import gemLog
 import inspect
-
+import urllib2 #(to get httperror)
 log = None
 
 class ReductionExcept:
@@ -206,6 +206,7 @@ class ReductionObject(object):
             ## call command clause
             if cfg.is_finished():
                 break
+            print "RO209:", primname, repr(cfg.localparms)
             self.execute_command_clause(cfg)
             if cfg.is_finished():
                 break
@@ -389,17 +390,28 @@ def command_clause(ro, coi):
                     # the system checks both the local and central source
                     # raise RecipeExcept("CALIBRATION for %s NOT FOUND, FATAL" % fn)
                     break
-
+                print "RO393:", calurl
                 msg += 'A suitable %s found:\n' %(str(typ))
                 
                 storenames = {"bias":"retrievedbiases",
                               "flat":"retrievedflats"
                               }
-                calfname = os.path.join(coi[storenames[typ]], os.path.basename(calurl))
+                              
+                
+                calfname = os.path.join(coi[storenames["retrievedcals"]], typ, os.path.basename(calurl))
+                # print "RO400:",calfname
                 if os.path.exists(calfname):
                     coi.add_cal(fn, typ, calfname)
                 else:
-                    coi.add_cal(fn, typ, AstroData(calurl, store=coi[storenames[typ]]).filename)
+                    try:
+                        ad = AstroData(calurl, store=coi[storenames[typ]])
+                    except urllib2.HTTPError, error:
+                        ad = None
+                        errstr = "Could not retrieve %s" % calurl
+                        log.error(errstr)
+                        #@@TODO: should this raise? raise ReductionExcept(errstr)
+                    if ad:
+                        coi.add_cal(fn, typ, ad.filename)
                 # adcc handles this now: coi.persist_cal_index()
                 calname = calurl
             else:

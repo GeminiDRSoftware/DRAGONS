@@ -2,9 +2,12 @@ import urllib, urllib2
 
 
 from xml.dom import minidom
+import exceptions
 
 CALMGR = "http://hbffits3.hi.gemini.edu/calmgr"
-LOCALCALMGR = "http://localhost:%(httpport)d/calsearch.xml?caltype=%(caltype)s&%(tokenstr)s"
+LOCALCALMGR = "http://localhost:%(httpport)d/calsearch.xml?caltype=%(caltype)s"
+
+#LOCALCALMGR = "http://localhost:%(httpport)d/calsearch.xml?caltype=%(caltype)s&%(tokenstr)s"
 #"None # needs to have adcc http port in
 CALTYPEDICT = { "bias": "bias",
                 "flat": "flat",
@@ -89,7 +92,7 @@ def calibration_search(rq, fullResult = False):
     from astrodata.FitsStorageFeatures import FitsStorageSetup
     fss = FitsStorageSetup() # note: uses current working directory!!!
     
-    print "ppu24: in here"
+    print "ppu92: in here"
     #if not fss.is_setup():
     #    return None
     
@@ -109,14 +112,14 @@ def calibration_search(rq, fullResult = False):
         rqurl = urljoin(CALMGR, CALTYPEDICT[rq['caltype']])
         print "ppu109: CENTRAL SEARCH: rqurl is "+ rqurl
         
-    print "ppu52:", source
+    print "ppu112:", source
     if source == 'local' or (rqurl == None and source=="all"):
         rqurl = LOCALCALMGR % { "httpport": 8777,
                                 "caltype":CALTYPEDICT[rq['caltype']],
-                                "tokenstr":tokenstr}
-        print "ppu57: LOCAL SEARCH: rqurl is "+ rqurl
+                                } # "tokenstr":tokenstr}
+        print "ppu118: LOCAL SEARCH: rqurl is "+ rqurl
 
-    # print "prs52:", rqurl
+    print "prs52:", rqurl
     
     ### send request
     sequence = [("descriptors", rq["descriptors"]), ("types", rq["types"])]
@@ -125,7 +128,7 @@ def calibration_search(rq, fullResult = False):
     u = urllib2.urlopen(calRQ, postdata)
     response = u.read()
     #response = urllib.urlopen(rqurl).read()
-    # print "prs66:", response
+    print "prs129:", response
     if fullResult:
         return response
     dom = minidom.parseString(response)
@@ -133,6 +136,7 @@ def calibration_search(rq, fullResult = False):
     try:
         calurlel = dom.getElementsByTagName('url')[0].childNodes[0]
     except exceptions.IndexError:
+        print "No url for calibration in response, calibration not found"
         return None
     #print "prs70:", calurlel.data
     

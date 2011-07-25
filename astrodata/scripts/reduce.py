@@ -79,6 +79,7 @@ cachedirs = [".reducecache",
              ".reducecache/storedcals/retrieveddarks",
              ".reducecache/storedcals/retrievedflats",
              ".reducecache/storedcals/retrievedfringes",
+             ".reducecache/retrievedcals/"
              ]
 CALDIR = ".reducecache/storedcals"
 cachedict = {} # constructed below             

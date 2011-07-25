@@ -6,7 +6,7 @@ import os
 import re
 from datetime import datetime
 from copy import copy, deepcopy
-
+import urllib2
 import pyfits
 import numpy
 
@@ -177,6 +177,7 @@ integrates other functionality.
             ad['SCI',1].phu, and all the previous with .header appended) 
         :type phu: pyfits.core.PrimaryHDU, pyfits.core.Header 
 
+
         :param header: extension header for images (ex. hdulist[1].header,
             ad[0].hdulist[1].header, ad['SCI',1].hdulist[1].header)
         :type phu: pyfits.core.Header
@@ -235,16 +236,19 @@ integrates other functionality.
                 print "AstroData retrieving remote file: "
                 print "     from %s" % dataset
                 print "     to   %s" % os.path.join(store,savename)
-                if store:
-                    # print "AD230: Storing in,", store
-                    fname = urlfetch(dataset, store=store, clobber=storeClobber)
-                    #fname,headers = urlretrieve(dataset, os.path.join(store, savename), None, 
-                    #    urllib.urlencode({"gemini_fits_authorization":"good_to_go"}))
-                else:
-                    # print "AD235: Retrieved to temp file"
-                    fname = urlfetch(dataset)
-                    #fname, headers = urlretrieve(dataset)
-                dataset = savename
+                try:
+                    if store:
+                        # print "AD230: Storing in,", store
+                        fname = urlfetch(dataset, store=store, clobber=storeClobber)
+                        #fname,headers = urlretrieve(dataset, os.path.join(store, savename), None, 
+                        #    urllib.urlencode({"gemini_fits_authorization":"good_to_go"}))
+                    else:
+                        # print "AD235: Retrieved to temp file"
+                        fname = urlfetch(dataset)
+                        #fname, headers = urlretrieve(dataset)
+                    dataset = savename
+                except urllib2.HTTPError, error:
+                    raise Errors.AstroDataError("AstroData could not load via http: %s" % dataset)
             elif store:
                 import shutil
                 shutil.copy(dataset, store)

@@ -8,7 +8,7 @@ import urlparse
 
 def urlfetch(url, store = None, clobber = False):
     purl = urlparse.urlparse(url)
-    host = "hbffits1.hi.gemini.edu"
+    host = "hbffits3.hi.gemini.edu" #@@CONFIG: FITSSTORE RETRIEVAL HOST
     npurl = urlparse.ParseResult(purl.scheme,
                                  host,
                                  purl.path,
@@ -42,8 +42,13 @@ def urlfetch(url, store = None, clobber = False):
     #res = urllib2.urlopen(req)
     #c = urllib.urlencode( {'gemini_fits_authorization':'value'})
     c = urllib.urlencode( {'gemini_fits_authorization':'value'})
-    res = opener.open(url, c)
-
+    
+    try:
+        res = opener.open(url, c)
+    except urllib2.HTTPError, error:
+        #print "ERROR"
+        #print error.read()
+        raise 
     #for index, cookie in enumerate(jar):
     #    print index, ":", cookie
 
