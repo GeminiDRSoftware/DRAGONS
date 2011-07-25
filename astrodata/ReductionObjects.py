@@ -206,7 +206,7 @@ class ReductionObject(object):
             ## call command clause
             if cfg.is_finished():
                 break
-            print "RO209:", primname, repr(cfg.localparms)
+            #print "RO209:", primname, repr(cfg.localparms)
             self.execute_command_clause(cfg)
             if cfg.is_finished():
                 break
@@ -390,7 +390,7 @@ def command_clause(ro, coi):
                     # the system checks both the local and central source
                     # raise RecipeExcept("CALIBRATION for %s NOT FOUND, FATAL" % fn)
                     break
-                print "RO393:", calurl
+                #print "RO393:", calurl
                 msg += 'A suitable %s found:\n' %(str(typ))
                 
                 storenames = {"bias":"retrievedbiases",
