@@ -411,7 +411,7 @@ def trim_overscan(adinput=None):
                 # get matching VAR and DQ planes if present
                 extver = sciExt.extver()
                 varExt = ad['VAR',extver]
-                dqExt = ad['VAR',extver]
+                dqExt = ad['DQ',extver]
                 
                 # Get the data section 
                 # as a direct string from header
