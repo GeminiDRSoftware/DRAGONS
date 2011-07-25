@@ -285,9 +285,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         The Science Function standardize_structure_gmos in standardize.py is
         utilized to do the work for this primitive.
         
-        :param add_mdf: A flag to turn on/off appending the appropriate MDF 
+        :param attach_mdf: A flag to turn on/off appending the appropriate MDF 
                        file to the inputs.
-        :type add_mdf: Python boolean (True/False)
+        :type attach_mdf: Python boolean (True/False)
                       default: True
                       
         :param logLevel: Verbosity setting for log messages to the screen.
@@ -316,7 +316,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 continue
             # Call the standardize_structure_gmos user level function
             ad = sdz.standardize_structure_gmos(adinput=ad,
-                                                add_mdf=rc['add_mdf'],
+                                                attach_mdf=rc['attach_mdf'],
                                                 mdf=rc["mdf"])
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
