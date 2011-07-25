@@ -399,12 +399,15 @@ def command_clause(ro, coi):
                               
                 
                 calfname = os.path.join(coi["retrievedcals"], typ, os.path.basename(calurl))
+                caldname = os.path.dirname(calfname)
+                if not os.path.exists(caldname):
+                    os.mkdir(caldname)
                 # print "RO400:",calfname
                 if os.path.exists(calfname):
                     coi.add_cal(fn, typ, calfname)
                 else:
                     try:
-                        ad = AstroData(calurl, store=os.path.dirname(calfname))
+                        ad = AstroData(calurl, store=caldname)
                     except urllib2.HTTPError, error:
                         ad = None
                         errstr = "Could not retrieve %s" % calurl
