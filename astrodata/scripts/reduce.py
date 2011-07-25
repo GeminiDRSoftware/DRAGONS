@@ -90,9 +90,7 @@ for cachedir in cachedirs:
     if cachename[0] == ".":
         cachename = cachename[1:]
     cachedict.update({cachename:cachedir})
-    
-print "r94:", repr(cachedict)
-raise " "
+
 ############################################################
 # this script was developed to exercise the GeminiDataType class
 # but now serves a general purpose in addition to that and as
