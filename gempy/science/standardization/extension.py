@@ -1,7 +1,7 @@
 # This module contains user level functions related to adding extensions to
 # and removing extensions from the input dataset
 
-import sys
+import os, sys
 import numpy as np
 import pyfits as pf
 from astrodata import AstroData
@@ -97,17 +97,16 @@ def add_dq(adinput=None, bpm=None):
                 dq_array = np.add(bpmext.data, non_linear_array,
                                   saturation_array)
                 
-                # Create a DQ AstroData object
+                # Create a data quality AstroData object
                 log.fullinfo("Using %s[DQ, %d] BPM for %s[%s, %d]" % \
                              (bpm.filename, ext.extver(), ad.filename,
                               ext.extname(), ext.extver()))
-                dq = AstroData(header=bpmext.header, data=dq_array)
-                # Name the extension appropriately
+                dq = AstroData(header=pf.Header(), data=dq_array)
                 dq.rename_ext("DQ", ver=ext.extver())
-                
-                # Check that the DQ extensions has BITPIX=16, NAXIS=2,
-                # PCOUNT=0, GCOUNT=1, BUNIT=bit, BPMFILE=bpm.filename,
-                # EXTVER=ad.extver(), EXTNAME=DQ
+                dq.filename = ad.filename
+                gt.update_key_value(adinput=dq, function="bunit",
+                                    value="bit", extname="DQ")
+                # Should a BPMFILE=bpm.filename keyword be added?
                 
                 # Append the DQ AstroData object to the input AstroData object.
                 # Check whether an extension with the same name as the DQ
@@ -116,7 +115,7 @@ def add_dq(adinput=None, bpm=None):
                     raise Errors.Error("A [DQ, %d] extension already exists " \
                                        "in %s" % (ext.extver(), ad.filename))
                 log.info("Adding the [DQ, %d] extension to the input " \
-                            "AstroData object %s" % (ext.extver(), ad.filename))
+                         "AstroData object %s" % (ext.extver(), ad.filename))
                 ad.append(moredata=dq)
             
             # Add the appropriate time stamps to the PHU
@@ -264,13 +263,7 @@ def add_var(adinput=None, read_noise=False, poisson_noise=False):
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput:
-
-            if read_noise:
-                log.stdinfo("Adding the read noise component of the variance.")
-            if poisson_noise:
-                log.stdinfo("Adding the poisson noise component of " +
-                            "the variance.")
-
+            
             # Call the _calculate_var helper function to calculate and add the
             # variance extension to the input AstroData object
             ad = _calculate_var(adinput=ad, add_read_noise=read_noise,
@@ -431,7 +424,7 @@ def _select_mdf(adinput=None, mdf=None):
     # Create a dictionary that has the AstroData objects specified by adinput
     # as the key and the AstroData objects specified by mdf as the value
     ret_mdf_dict = gt.make_dict(key_list=adinput, value_list=mdf_list)
-        
+    
     return ret_mdf_dict
 
 def _calculate_var(adinput=None, add_read_noise=False,
@@ -457,7 +450,7 @@ def _calculate_var(adinput=None, add_read_noise=False,
         log.warning("It is not recommended to calulate a poisson noise " \
                     "component of the variance using data that still " \
                     "contains a bias level")
-
+    
     # Loop over the science extensions in the dataset
     for ext in adinput["SCI"]:
         
@@ -495,8 +488,8 @@ def _calculate_var(adinput=None, add_read_noise=False,
             # Add the read noise component of the variance to a zeros array
             # that is the same size as the pixel data in the science
             # extension
-            log.info("Calculating the read noise component of the " \
-                     "variance in %s" % units)
+            log.stdinfo("Calculating the read noise component of the " \
+                        "variance in %s" % units)
             var_array_rn = np.add(np.zeros(ext.data.shape,
                                            dtype=np.float32),
                                   (read_noise_var_value)**2)
@@ -510,26 +503,19 @@ def _calculate_var(adinput=None, add_read_noise=False,
             
             # Calculate the poisson noise component of the variance. Set
             # pixels that are less than or equal to zero to zero.
-            log.info("Calculating the poisson noise component of " \
-                     "the variance in %s" % units)
+            log.stdinfo("Calculating the poisson noise component of " \
+                        "the variance in %s" % units)
             var_array_pn = np.where(ext.data > 0,
                                     poisson_noise_var_value, 0)
         
         # Create the final variance array
         if add_read_noise and add_poisson_noise:
-            log.info("Creating a variance extension that contains both " \
-                     "a read noise component and a poisson noise " \
-                     "component")
             var_array_final = np.add(var_array_rn, var_array_pn)
         
         if add_read_noise and not add_poisson_noise:
-            log.info("Creating a variance extension that contains only " \
-                     "the read noise component of the variance")
             var_array_final = var_array_rn
         
         if not add_read_noise and add_poisson_noise:
-            log.info("Creating a variance extension that contains only " \
-                     "the poisson noise component of the variance")
             var_array_final = var_array_pn
         
         # If the read noise component and the poisson noise component are
@@ -561,8 +547,8 @@ def _calculate_var(adinput=None, add_read_noise=False,
             
             # Append the variance AstroData object to the input AstroData
             # object. 
-            adinput.append(moredata=var)
             log.info("Adding the [VAR, %d] extension to the input " \
                      "AstroData object %s" % (ext.extver(),adinput.filename))
-
+            adinput.append(moredata=var)
+    
     return adinput
