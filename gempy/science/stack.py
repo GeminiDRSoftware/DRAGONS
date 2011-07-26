@@ -110,8 +110,8 @@ def stack_frames(adinput=None, suffix=None, operation="average",
         adstack, junk, junk = clm.finishCL()
         
         # Add the appropriate time stamps to the PHU
-        gt.mark_history(adinput=ad, keyword=keyword)
-        
+        gt.mark_history(adinput=adstack, keyword=keyword)
+
         # Return the output AstroData object
         return adstack
     

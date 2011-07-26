@@ -362,11 +362,12 @@ class CLManager(object):
             self.imageOutsNames = []
             if self.combinedImages and (self.suffix!=None):
                 name = gt.fileNameUpdater(adIn=self.imageIns[0], 
-                                            suffix=self.suffix)
+                                            suffix=self.suffix, strip=True)
                 self.imageOutsNames.append(name)
             elif (not self.combinedImages) and (self.suffix!=None):
                 for ad in self.imageIns:
-                    name = gt.fileNameUpdater(adIn=ad, suffix=self.suffix)
+                    name = gt.fileNameUpdater(adIn=ad, suffix=self.suffix, 
+                                              strip=True)
                     self.imageOutsNames.append(name) 
             else:
                 self.log.error('The "automatic" setting of imageOutsNames can '+
@@ -695,7 +696,7 @@ class CLManager(object):
                 # Strip off all postfixes and prefix filename with a unique 
                 # prefix
                 name = gt.fileNameUpdater(adIn=ad, prefix=self.prefix, 
-                                                                    strip=True)
+                                          strip=True)
                 # store the unique name in imageInsCLdiskNames for later 
                 # reference
                 self.imageInsCLdiskNames.append(name)
@@ -714,7 +715,7 @@ class CLManager(object):
                 self._preCLrefnames.append(ad.filename)
                 # Strip off all suffixs and prefix filename with a unique prefix
                 name = gt.fileNameUpdater(adIn=ad, prefix=self.prefix, 
-                                                                    strip=True)
+                                          strip=True)
                 # store the unique name in refInsCLdiskNames for later reference
                 self.refInsCLdiskNames.append(name)
                 # Log the name of this temporary file being written to disk
@@ -815,7 +816,8 @@ class CLManager(object):
             self.refOutsNames = []
             if (self.suffix!=None):
                 for ad in self.refIns:
-                    name = gt.fileNameUpdater(adIn=ad, suffix=self.suffix)
+                    name = gt.fileNameUpdater(adIn=ad, suffix=self.suffix, 
+                                              strip=True)
                     self.refOutsNames.append(name) 
             else:
                 self.log.error('The "automatic" setting of refOutsNames can '+
@@ -1045,7 +1047,7 @@ class ScienceFunctionManager():
                         output_name = gt.fileNameUpdater(
                             infilename=ad.filename,
                             suffix=self.suffix,
-                            strip=False)
+                            strip=True)
                         self.output_names.append(output_name)
                 else:
                     # Both "suffix" and "output_names" are undefined
@@ -1056,7 +1058,7 @@ class ScienceFunctionManager():
                 output_name = gt.fileNameUpdater(
                     infilename=first_adinput.filename,
                     suffix=None,
-                    strip=False)
+                    strip=True)
                 self.output_names.append(output_name)
             else:
                 # If there is more than one output name, make sure the number
@@ -1067,7 +1069,7 @@ class ScienceFunctionManager():
                         output_name = gt.fileNameUpdater(
                             infilename=ad.filename,
                             suffix=None,
-                            strip=False)
+                            strip=True)
                         self.output_names.append(output_name)
                 else:
                     raise Errors.Error("The number of output names does not " +
