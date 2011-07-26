@@ -12,5 +12,5 @@ biasCorrect
 aduToElectrons
 addVAR(poisson_noise=True)
 flatCorrect
-makeFringe
+makeFringeFrame
 storeProcessedFringe
