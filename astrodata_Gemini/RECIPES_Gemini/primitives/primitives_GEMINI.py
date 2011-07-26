@@ -465,8 +465,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 continue
 
             # Call the divide_by_flat user level function
-            ad = pp.divide_by_flat(adinput=rc.get_inputs(style="AD"),
-                                       flat=flat)
+            ad = pp.divide_by_flat(adinput=ad, flat=flat)
 
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
