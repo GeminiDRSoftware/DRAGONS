@@ -209,7 +209,7 @@ def add_var(adinput=None, read_noise=False, poisson_noise=False):
     additional extension. This function will determine the units of the pixel
     data in the input science extension and calculate the variance in the same
     units. The two main components of the variance can be calculated and added
-    seperately, if desired, using the following formula:
+    separately, if desired, using the following formula:
     
     variance(read_noise) [electrons] = (read_noise [electrons])^2 
     variance(read_noise) [ADU] = ((read_noise [electrons]) / gain)^2
@@ -447,7 +447,7 @@ def _calculate_var(adinput=None, add_read_noise=False,
                     "component to the variance of a bias frame")
     if add_poisson_noise and "GMOS" in adinput.types and \
        not adinput.phu_get_key_value("BIASCORR"):
-        log.warning("It is not recommended to calulate a poisson noise " \
+        log.warning("It is not recommended to calculate a poisson noise " \
                     "component of the variance using data that still " \
                     "contains a bias level")
     
