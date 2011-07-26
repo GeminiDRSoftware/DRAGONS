@@ -415,12 +415,12 @@ def propagate_variance(input_a=None, input_b=None, operation=None):
             else:
                 var_b = 0
         
-        if operation == "add" and isinstance(var_b, numpy.ndarray):
+        if operation == "add" and isinstance(var_b, np.ndarray):
             # The variance is propagated using:
             #     var(a + b) = var(a) + var(b)
             var.data = np.add(var_a, var_b)
 
-        elif operation == "sub" and isinstance(var_b, numpy.ndarray):
+        elif operation == "sub" and isinstance(var_b, np.ndarray):
             # The variance is propagated using:
             #     var(a - b) = var(a) + var(b)
             var.data = np.add(var_a, var_b)
