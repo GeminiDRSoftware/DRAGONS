@@ -7,10 +7,9 @@
 prepare
 addDQ
 addVAR(read_noise=True)
-overscanCorrect
-biasCorrect
-#aduToElectrons
+#nonlinearityCorrect
+aduToElectrons
 addVAR(poisson_noise=True)
-stackFrames
+thermalEmissionCorrect
 normalize
 storeProcessedFlat
