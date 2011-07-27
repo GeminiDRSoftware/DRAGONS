@@ -64,14 +64,14 @@
     },
 "subtractOverscan":{
     "suffix":{
-        # String to be post pended to the output of overscanSubtract
-        "default"       : "_overSub",
+        # String to be post pended to the output of subtractOverscan
+        "default"       : "_subOverscan",
         "recipeOverride": True,
         "type"          : "str",
         "userOverride"  : True,
         },
     "overscan_section":{
-        "default"       : "",
+        "default"       : None,
         "recipeOverride": True,
         "type"          : "str",
         "userOverride"  : True,
@@ -79,8 +79,8 @@
     },
 "trimOverscan":{
     "suffix":{
-        # String to be post pended to the output of overscanTrim
-        "default"       : "_overTrim",
+        # String to be post pended to the output of trimOverscan
+        "default"       : "_trimOverscan",
         "recipeOverride": True,
         "type"          : "str",
         "userOverride"  : True,
