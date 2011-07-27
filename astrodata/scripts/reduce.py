@@ -506,7 +506,7 @@ else:
     nl = []
     for inp in allinputs:
         try:
-            ad = AstroData(inp, mode="update")
+            ad = AstroData(inp)
             nl.append(ad)
         except:
             # note: should we raise an exception here?
