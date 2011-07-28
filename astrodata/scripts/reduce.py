@@ -194,10 +194,10 @@ terminal.forceWidth = options.forceWidth
 terminal.forceHeight = options.forceHeight
 
 if options.recipename == "USER":
-    options.logLevel = 6
+    options.logLevel = "fullinfo"
 
 if options.invoked:
-    options.logLevel = 6
+    options.logLevel = "fullinfo"
     
 #---------------------------- INSTANTIATING THE LOGGER FOR ALL TO SEE ----
 log = gemLog.createGeminiLog(logName=options.logName,logLevel=options.logLevel, 
