@@ -651,63 +651,43 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
         
     def getProcessedBias(self, rc):
-        """
-        This primitive will check the files in the lists that are on disk,
-        and then update the inputs list to include all members of the list.
-        """
         source = rc["source"]
         if source == None:
-            rc.run("getCalibration(caltype=bias)")
+            rc.run("getCalibration(caltype=processed_bias)")
         else:
-            rc.run("getCalibration(caltype=bias, source=%s)" % source)
+            rc.run("getCalibration(caltype=processed_bias, source=%s)" % source)
             
         yield rc
         
-        #rc.localparms.update({"caltype":"bias"})
-        #for rc in rc.ro.substeps("getCalibration", rc):
-        #    print "pG574:", repr(rc.localparms)
-        #    yield rc
     
     def getProcessedDark(self, rc):
-        """
-        A primitive to search and return the appropriate calibration dark from
-        a server for the given inputs.
-        """
         source = rc["source"]
         if source == None:
-            rc.run("getCalibration(caltype=dark)")
+            rc.run("getCalibration(caltype=processed_dark)")
         else:
-            rc.run("getCalibration(caltype=dark, source=%s)" % source)
+            rc.run("getCalibration(caltype=processed_dark, source=%s)" % source)
             
         yield rc
     
     def getProcessedFlat(self, rc):
-        """
-        A primitive to search and return the appropriate calibration flat from
-        a server for the given inputs.
-        
-        """
         source = rc["source"]
         if source == None:
-            rc.run("getCalibration(caltype=flat)")
+            rc.run("getCalibration(caltype=processed_flat)")
         else:
-            rc.run("getCalibration(caltype=flat, source=%s)" % source)
+            rc.run("getCalibration(caltype=processed_flat, source=%s)" % source)
             
         yield rc
+
     
     def getProcessedFringe(self, rc):
-        """
-        A primitive to search and return the appropriate calibration fringe from
-        a server for the given inputs.
-        
-        """
         source = rc["source"]
         if source == None:
-            rc.run("getCalibration(caltype=fringe)")
+            rc.run("getCalibration(caltype=processed_fringe)")
         else:
-            rc.run("getCalibration(caltype=fringe, source=%s)" % source)
+            rc.run("getCalibration(caltype=processed_fringe, source=%s)" % source)
             
         yield rc
+
         
     def measureIQ(self, rc):
         """
