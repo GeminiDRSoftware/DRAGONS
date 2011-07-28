@@ -1,0 +1,123 @@
+clean RHEL5 machine standard ISG install. 
+
+- Have ISG set up /astro mount
+- Have ISG set up a user account for you with sudo all.
+- sort out path etc in account so that which python gives you the /astro one
+
+- log in and change your password.
+
+sudo yum install httpd
+sudo yum install httpd-devel
+sudo chmod oug+rx /var/log/httpd
+sudo yum install postgresql 
+sudo yum install postgresql-server
+sudo yum install postgresql-devel
+
+
+sudo /usr/sbin/groupadd -g 5179 fitsdata
+sudo /usr/sbin/useradd -c 'FITS data' -u 5179 -g 5179 fitsdata
+sudo passwd fitsdata
+
+sudo mkdir /opt/FitsStorage
+sudo chown fitsdata:fitsdata /opt/FitsStorage/
+
+sudo mkdir /opt/mod_python /opt/sqlalchemy /opt/pyinotify
+sudo chown phirst /opt/mod_python /opt/sqlalchemy /opt/pyinotify
+
+* LOG in as fitsdata and do:
+cd /opt/FitsStorage
+svn checkout http://scisoft/svn/FitsStorage/trunk .
+
+gcc invoke.c -o invoke
+chmod oug+x invoke
+chmod ug+s invoke
+
+* Log out and back in as yourself (phirst)
+
+cd /opt/mod_python/
+tar xvf /opt/FitsStorage/otherfiles/mod_python-3.3.1.tgz
+cd mod_python-3.3.1
+which python # should be on /astro
+whereis apxs # probably /usr/sbin/apxs
+./configure --with-apxs=/usr/sbin/apxs --prefix=/opt/mod_python
+make
+sudo make install_dso
+cd dist
+python setup.py install --prefix=/opt/mod_python
+
+cd /opt/sqlalchemy
+tar xvzf /opt/FitsStorage/otherfiles/psycopg2-2.3.1.tar.gz
+cd psycopg2-2.3.1
+python setup.py build
+python setup.py install --prefix=/opt/sqlalchemy
+cd ..
+tar xvzf /opt/FitsStorage/otherfiles/SQLAlchemy-0.6.5.tar.gz
+cd SQLAlchemy-0.6.5
+python setup.py build
+python setup.py install --prefix=/opt/sqlalchemy
+
+cd /opt/pyinotify
+tar xvf /opt/FitsStorage/otherfiles/pyinotify-0.8.8.tar.gz
+cd pyinotify
+python setup.py build
+python setup.py install --prefix=/opt/pyinotify
+
+sudo mkdir /opt/fitsverify
+sudo chown phirst /opt/fitsverify
+cd /opt/fitsverify
+tar xvf /opt/FitsStorage/otherfiles/fitsverify.tar
+mv fitsverify/* .
+rmdir fitsverify
+gcc -o fitsverify ftverify.c fvrf_data.c fvrf_file.c fvrf_head.c fvrf_key.c fvrf_misc.c -DSTANDALONE -L/astro/x86_64/cfitsio/ -I/astro/x86_64/cfitsio/ -lcfitsio -lm -lnsl
+
+sudo mkdir /opt/gemini_python
+sudo chown phirst /opt/gemini_python
+cd /opt/gemini_python
+svn checkout http://chara.hi.gemini.edu/svn/DRSoftware/gemini_python/trunk .
+
+cd
+sudo cp /opt/FitsStorage/otherfiles/etc-httpd-conf.d-python.conf /etc/httpd/conf.d/python
+sudo cp /opt/FitsStorage/otherfiles/etc-httpd-conf-httpd.conf /etc/httpd/conf/httpd.conf 
+sudo cp /opt/FitsStorage/otherfiles/etc-sysconfig-httpd /etc/sysconfig/httpd
+
+sudo mkdir /opt/cadc
+sudo chown phirst /opt/cadc
+cd /opt/cadc
+# install cadc stuff
+cp /opt/FitsStorage/otherfiles/cadcCRC .
+tar xvf /opt/FitsStorage/otherfiles/mdIngest.tar
+sudo mkdir /opt/jars
+sudo chown phirst /opt/jars
+cd /opt/jars
+tar xvf /opt/FitsStorage/otherfiles/jars.tar
+
+# Set up postgres
+sudo mkdir /data/pgsql_data
+sudo chown postgres:postgres /data/pgsql_data
+sudo vi /etc/sysconfig/pgsql/postgresql
+PGDATA=/data/pgsql_data
+sudo /etc/init.d/postgresql start  # will init db
+sudo su - postgres
+/usr/bin/createuser --no-superuser --no-createrole --createdb fitsdata
+/usr/bin/createuser --no-superuser --no-createrole --no-createdb apache
+exit
+
+# Need to set postgresql and httpd to start at boot
+sudo /etc/init.d/httpd start
+sudo /sbin/chkconfig httpd on
+sudo /sbin/chkconfig postgresql on
+
+
+# Log and backup directories
+sudo mkdir /data/logs
+sudo chown fitsdata /data/logs
+sudo mkdir /data/backups
+sudo chown fitsdata /data/backups
+
+# Now get a shell as fitsdata
+cd /opt/FitsStorage/
+vi FitsStorageConfig # Set things up as appropriate
+/usr/bin/createdb fitsdata
+python create_tables.py
+
+# OK, should now be good to go.
