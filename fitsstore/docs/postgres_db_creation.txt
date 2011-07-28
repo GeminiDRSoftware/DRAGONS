@@ -1,0 +1,11 @@
+To create the database users and databases:
+
+sudo su - postgres
+/usr/bin/createuser --no-superuser --no-createrole --createdb fitsdata
+/usr/bin/createuser --no-superuser --no-createrole --no-createdb apache
+exit
+
+# now as fitsuser again
+/usr/bin/createdb fitsdata
+
+# the rest is handled by the create_table.py script
