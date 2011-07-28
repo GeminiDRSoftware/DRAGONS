@@ -168,7 +168,7 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False, qa=True)
                     finalStr = '\n    '+fnStr+'\n    '+'-'*dlen+'\n    '+emStr+\
                                '\n    '+esStr+'\n    '+fmStr+'\n    '+fsStr+\
                                '\n    '+csStr+'\n    '+iqStr+'\n    '+\
-                               '-'*dlen
+                               '-'*dlen+'\n'
                     # Log final string
                     if display:
                         log.stdinfo('Sources used to measure IQ are marked ' +
