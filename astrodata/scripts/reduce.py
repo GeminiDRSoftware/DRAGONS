@@ -9,6 +9,7 @@
 from astrodata.adutils import terminal
 from astrodata.adutils.terminal import TerminalController, ProgressBar 
 import sys
+import traceback
 # start color printing filter for xgtermc
 REALSTDOUT = sys.stdout
 REALSTDERR = sys.stderr
@@ -814,9 +815,12 @@ for infiles in allinputs: #for dealing with multiple sets of files.
             except:
                 f =  open("context.log", "w")
                 f.write(co.report(showall=True))
+                f.write(traceback.format_exc())
                 f.close()
-                log.fullinfo("REDUCTION CONTEXT REPORT WRITTEN (context.log)")
-                log.fullinfo("----------------------------------------------")
+                log.fullinfo("------------------------------------------------")
+                log.fullinfo("Debug information written to context.log. Please")
+                log.fullinfo("provide this log when reporting this problem.")
+                log.fullinfo("------------------------------------------------")
 
                 if reduceServer:
                     #print "r855:", str(id(Proxies.reduceServer)), repr(Proxies.reduceServer.finished)
