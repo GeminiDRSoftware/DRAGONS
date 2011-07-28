@@ -1,0 +1,6 @@
+# backup
+/usr/bin/pg_dump --format=c --file=fitsdata.DATE.pg_dump_c fitsdata
+
+
+# restore
+/usr/bin/pg_restore --dbname=fitsdata --format=c /data/autoingest/fitsdata.DATE.pg_dump_c

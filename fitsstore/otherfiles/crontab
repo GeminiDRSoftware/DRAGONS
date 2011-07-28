@@ -1,0 +1,6 @@
+0 * * * * /astro/iraf/x86_64/gempylocal/bin/python /data/fits-installed/service_ingest_queue.py --demon --lockfile=siq_lock.1 &
+*/5 * * * * /astro/iraf/x86_64/gempylocal/bin/python /data/fits-installed/add_to_ingest_queue.py --file-re=twoday --demon
+2,17,32,47 * * * * /astro/iraf/x86_64/gempylocal/bin/python /data/fits-installed/add_to_ingest_queue.py --file-re=fourday --demon
+1,16,31,47 * * * * /astro/iraf/x86_64/gempylocal/bin/python /data/fits-installed/rollcall.py --limit 10000 --demon
+0 7 * * * /usr/bin/vacuumdb --verbose --analyze --dbname fitsdata >& /data/autoingest/fits-vacuum.log
+30 7 * * * /astro/iraf/x86_64/gempylocal/bin/python /data/fits-installed/database_backup.py >& /data/autoingest/fits-backup.log
