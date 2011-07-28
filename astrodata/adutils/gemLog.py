@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 
 import logging
 import textwrap
@@ -180,8 +181,8 @@ class GeminiLogger(object):
         """
         # Create formatters for console and file messages
         ch_formatter = logging.Formatter('%(message)s')
-        fh_formatter = logging.Formatter('%(asctime)s %(levelname)-8s '+
-                                         '- %(message)s')
+        fh_formatter = logging.Formatter('%(asctime)s - %(levelname)-8s - %(message)s',
+                                            '%Y-%m-%d %H:%M:%S')
         
         # Add formatters to the handlers
         self.ch.setFormatter(ch_formatter)
