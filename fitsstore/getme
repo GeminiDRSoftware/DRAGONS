@@ -1,2 +1,0 @@
-#!/bin/bash
-curl -b "gemini_fits_authorization=good_to_go" -O -f http://hbffits1/fits/$1
