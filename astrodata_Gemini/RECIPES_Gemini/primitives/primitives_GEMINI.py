@@ -16,6 +16,7 @@ from gempy.science import qa
 from gempy.science import stack as sk
 from gempy.science import standardization as sdz
 from primitives_GENERAL import GENERALPrimitives
+from astrodata.adutils.reduceutils.prsproxyutil import upload_calibration
 
 class GEMINIPrimitives(GENERALPrimitives):
     """
@@ -644,7 +645,9 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
     
     def storeCalibration(self, rc):
-        
+        for ad in rc.get_inputs_as_astrodata():
+            upload_calibration(ad.filename)
+            yield rc
         yield rc
         
     def getProcessedBias(self, rc):
