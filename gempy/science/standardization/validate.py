@@ -2,11 +2,9 @@
 # dataset
 
 import sys
-from copy import deepcopy
 from astrodata import Errors
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
-from gempy import managers as mgr
 
 def validate_data_f2(adinput=None, repair=False):
     """
@@ -67,10 +65,6 @@ def validate_data_gmos(adinput=None, repair=False):
     
     This user level function is called by validateData.
     
-    Either a 'main' type logger object, if it exists, or a null logger (i.e.,
-    no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
-    
     :param adinput: A list containing one or more AstroData instances to be
                   validated
     :type adinput: Astrodata
@@ -105,10 +99,11 @@ def validate_data_gmos(adinput=None, repair=False):
                 raise Errors.InputError("%s has already been processed by " \
                                         "validate_data_gmos" % (ad.filename))
             
-            # Validate the input AstroData object. Ensure that the input have
-            # 1, (2), 3, (4), 6, (9) or 12 extensions
-            numext = ad.count_exts("SCI")
-            if (numext != 1 and numext != 3 and numext != 6 and numext != 12):
+            # Validate the input AstroData object by ensuring that it has
+            # 1, 2, 3, 4, 6 or 12 extensions
+            valid_num_ext = [1, 2, 3, 4, 6, 12]
+            num_ext = ad.count_exts("SCI")
+            if num_ext not in valid_num_ext:
                 if repair:
                     # This would be where we would attempt to repair the data 
                     log.warning("Currently, the 'repair' parameter does " +
@@ -117,10 +112,10 @@ def validate_data_gmos(adinput=None, repair=False):
                     raise Errors.Error("The number of extensions in %s do " +
                                        "match with the number of extensions " +
                                        "expected in raw GMOS data." \
-                                       % ad.filename)
+                                       % (ad.filename))
             else:
-                log.info("The GMOS input file has been validated: %s " \
-                         "contains %d extensions" % (ad.filename, numext))
+                log.fullinfo("The GMOS input file has been validated: %s " \
+                             "contains %d extensions" % (ad.filename, numext))
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
