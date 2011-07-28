@@ -13,15 +13,14 @@ addVAR(poisson_noise=True)
 flatCorrect
 writeOutputs(suffix="_forFringe",strip=True)
 addToList(purpose="fringe")
+getList(purpose="fringe")
 makeFringe
 fringeCorrect
 mosaicDetectors
 detectSources
 writeOutputs(suffix="_forStack",strip=True)
-addToList(purpose="stack")
 display
 measureIQ
-getList(purpose="stack")
 registerAndStack
 detectSources
 writeOutputs(suffix="_stacked",strip=True)
