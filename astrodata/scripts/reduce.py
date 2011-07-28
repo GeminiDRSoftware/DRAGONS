@@ -164,7 +164,7 @@ parser.add_option("--addprimset", dest = "primsetname", default = None,
                   help="Use to add user supplied primitives to the reduction object.")
 parser.add_option("--debug",dest='debug', default=False, action="store_true",
                   help="debug will set verbosity for console and log file to the extremely high developers debug level.")
-parser.add_option("--logLevel",dest='logLevel', default=2, type='string',
+parser.add_option("--logLevel",dest='logLevel', default='stdinfo', type='string',
                   help="logLevel will set the verbosity level for the console; Either the message type or its logLevel "+\
                   "integer equivalent,  0='none'=none, 6='fullinfo'=highest.")
 parser.add_option("--logName",dest='logName', default='gemini.log', type='string',
