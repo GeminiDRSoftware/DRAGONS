@@ -12,13 +12,6 @@ def subtract_dark(adinput=None, dark=None):
     from the science extension of the input science frames. The variance and
     data quality extension will be updated, if they exist.
     
-    This is all conducted in pure Python through the arith 'toolbox' of 
-    astrodata.
-    
-    Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
-    
     :param adinput: Astrodata input science data
     :type adinput: Astrodata
     
@@ -60,9 +53,10 @@ def subtract_dark(adinput=None, dark=None):
                 raise Errors.InputError("%s has already been processed by " \
                                         "subtract_dark" % (ad.filename))
             
-            # Subtract the dark from the adinput
-            log.info("Subtracting the dark (%s) from the input AstroData " \
-                     "object %s" % (dark.filename, ad.filename))
+            # Subtract the dark from the input AstroData object
+            log.fullinfo("Subtracting the dark (%s) from the input " \
+                         "AstroData object %s" \
+                         % (dark_dict[ad].filename, ad.filename))
             ad = ad.sub(dark_dict[ad])
             
             # Add the appropriate time stamps to the PHU
