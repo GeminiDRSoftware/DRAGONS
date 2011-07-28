@@ -48,9 +48,9 @@ def adu_to_electrons(adinput):
             gain = ad.gain()
             # Now multiply the pixel data in the science extension by the gain
             # and the pixel data in the variance extension by the gain squared
-            log.info("Converting %s from ADU to electrons by multiplying " \
-                     "the science extension by the gain = %s" % \
-                     (ad.filename, gain))
+            log.fullinfo("Converting %s from ADU to electrons by " \
+                         "multiplying the science extension by the gain = %s" \
+                         % (ad.filename, gain))
             ad = ad.mult(gain)
             
             # Update the headers of the AstroData Object. The pixel data now
@@ -130,8 +130,8 @@ def nonlinearity_correct(adinput=None):
             # the raw exposure time
             exposure_time = total_exposure_time / coadds
             if exposure_time > 600.:
-                log.critical("The raw exposure time is outside the " + \
-                    "range used to derive correction.")
+                log.critical("The raw exposure time is outside the " \
+                             "range used to derive correction.")
                 raise Errors.InvalidValueError()
             
             # Check the read mode and well depth setting values
@@ -139,10 +139,10 @@ def nonlinearity_correct(adinput=None):
                 raise Errors.CalcError()
             
             # Print the descriptor values
-            log.info("The number of coadds = %s" % coadds)
-            log.info("The read mode = %s" % read_mode)
-            log.info("The total exposure time = %s" % total_exposure_time)
-            log.info("The well depth = %s" % well_depth_setting)
+            log.fullinfo("The number of coadds = %s" % coadds)
+            log.fullinfo("The read mode = %s" % read_mode)
+            log.fullinfo("The total exposure time = %s" % total_exposure_time)
+            log.fullinfo("The well depth = %s" % well_depth_setting)
             
             # Loop over each science extension in each input AstroData object
             for ext in ad["SCI"]:
@@ -159,8 +159,8 @@ def nonlinearity_correct(adinput=None):
                 
                 # Determine the mean of the raw pixel data
                 raw_mean_value = np.mean(raw_pixel_data)
-                log.info("The mean value of the raw pixel data in " +
-                    "%s is %.8f" % (ext.filename, raw_mean_value))
+                log.fullinfo("The mean value of the raw pixel data in " \
+                             "%s is %.8f" % (ext.filename, raw_mean_value))
                 
                 # Create the key used to access the coefficients that are
                 # used to correct for non-linearity
@@ -172,8 +172,8 @@ def nonlinearity_correct(adinput=None):
                         lincorlookup[key]
                 else:
                     raise Errors.TableKeyError()
-                log.info("Coefficients used = %.12f, %.9e, %.9e" % \
-                    (coeff1, coeff2, coeff3))
+                log.fullinfo("Coefficients used = %.12f, %.9e, %.9e" \
+                             % (coeff1, coeff2, coeff3))
                 
                 # Create a new array that contains the corrected pixel data
                 corrected_pixel_data = raw_pixel_data + \
@@ -182,7 +182,7 @@ def nonlinearity_correct(adinput=None):
                 # nirlin replaces pixels greater than maximum_counts with 0
                 # Set the pixels to 0 if they have a value greater than the
                 # maximum counts
-                #log.info("Setting pixels to zero if above %f" % \
+                #log.fullinfo("Setting pixels to zero if above %f" % \
                 #    maximum_counts)
                 #corrected_pixel_data[corrected_pixel_data > \
                 # maximum_counts] = 0
@@ -197,13 +197,14 @@ def nonlinearity_correct(adinput=None):
                 
                 # Determine the mean of the corrected pixel data
                 corrected_mean_value = np.mean(ext.data)
-                log.info("The mean value of the corrected pixel data in " +
-                    "%s is %.8f" % (ext.filename, corrected_mean_value))
+                log.fullinfo("The mean value of the corrected pixel data in " \
+                             "%s is %.8f" \
+                             % (ext.filename, corrected_mean_value))
             
             # Correct the exposure time by adding coeff1
             total_exposure_time = total_exposure_time + coeff1
-            log.info("The corrected total exposure time = %f" % \
-                total_exposure_time)
+            log.fullinfo("The corrected total exposure time = %f" \
+                         % total_exposure_time)
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
