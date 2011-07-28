@@ -79,8 +79,8 @@ if __name__=='__main__':
     print "\nBeginning reduction for file %s, %s\n" % (imgname,ad.data_label()) 
     reduce_cmd = ["reduce", 
                   "--logLevel","stdinfo",
-                  "-p", "clobber=True,clob=True,add_mdf=False," + \
-                        "mask_type='goodvalue'",
+                  "-p", "clobber=True,clob=True," + \
+                        "mask_type=goodvalue,context=QA",
                   "-r", "qaReduce", 
                   imgpath]
     subprocess.call(reduce_cmd)
