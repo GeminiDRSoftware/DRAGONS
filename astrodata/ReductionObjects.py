@@ -118,18 +118,26 @@ class ReductionObject(object):
             raise ReductionExcept(msg)
         
         # set type of prim for logging
-        log.changeIndent(indentLevel=context.indent)
         btype = primset.btype
         logstring = "%s: %s" % (btype,primname)
         if context.indent==0:
-            # top-level recipe, add some extra demarcation
+            # top-level recipe, set indent=0, add some extra demarcation
+            log.changeIndent(indentLevel=0)
             log.status("="*80)
             spacer = "\n"+"="*80
-        elif btype=="PRIMITIVE":
-            spacer = "\n"+"-"*len(logstring)
-        else:
+        if btype=="RECIPE":
             spacer = "\n"+"="*len(logstring)
-        log.status(logstring + spacer)
+            # if it is a proxy recipe, log only at debug level,
+            # don't change indent
+            if primname.startswith('proxy'):
+                log.debug(logstring)
+            else:
+                log.changeIndent(indentLevel=log.indentLevel+1)
+                log.status(logstring + spacer)
+        else:
+            log.changeIndent(indentLevel=log.indentLevel+1)
+            spacer = "\n"+"-"*len(logstring)
+            log.status(logstring + spacer)
                 
         # primset init should perhaps be called ready
         # because it needs to be called each step because though
@@ -191,9 +199,13 @@ class ReductionObject(object):
         context.localparms = savedLocalparms
         if context.indent==0:
             # top-level recipe, add some extra demarcation
-            log.changeIndent(indentLevel=context.indent)
+            log.changeIndent(indentLevel=0)
             log.status("="*80)
-        if btype=="PRIMITIVE":
+        if btype=="RECIPE":
+            if not primname.startswith('proxy'):
+                log.changeIndent(indentLevel=log.indentLevel-1)
+        else:
+            log.changeIndent(indentLevel=log.indentLevel-1)
             log.status("")
         yield context
         
