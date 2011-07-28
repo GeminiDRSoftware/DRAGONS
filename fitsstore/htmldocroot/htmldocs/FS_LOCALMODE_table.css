@@ -1,0 +1,25 @@
+.tr_head {
+  background-color: #40e040;
+  font-size: small
+}
+
+.tr_odd {
+  background-color: #F0FFF0;
+  font-size: small
+}
+
+.tr_even {
+  background-color: #E0FFE0;
+  font-size: small
+}
+
+.tr_warnodd {
+  background-color: #FFF0F0;
+  font-size: small
+}
+
+.tr_warneven {
+  background-color: #FFE0E0;
+  font-size: small
+}
+
