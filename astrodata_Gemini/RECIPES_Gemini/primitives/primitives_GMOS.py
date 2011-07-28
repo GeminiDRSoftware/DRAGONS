@@ -1,6 +1,3 @@
-# Author: Kyle Mede. 2010
-# Skeleton originally written by Craig Allen, callen@gemini.edu
-
 import os, shutil, sys
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
@@ -25,7 +22,56 @@ class GMOSPrimitives(GEMINIPrimitives):
     def init(self, rc):
         GEMINIPrimitives.init(self, rc)
         return rc
-     
+
+    def biasCorrect(self,rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "biasCorrect", "starting"))
+
+        # Get processed biases for the input
+        rc.run("getProcessedBias")
+
+        # Loop over each input AstroData object in the input list to
+        # test whether it's appropriate to try to subtract the bias
+        sub_bias = True
+        for ad in rc.get_inputs(style="AD"):
+
+            # Check whether the subtractBias primitive has been run previously
+            if ad.phu_get_key_value("SUBBIAS"):
+                if rc["context"]=="QA":
+                    sub_bias = False
+                    log.warning("Files have already been processed by " +
+                                "biasCorrect; no further bias " +
+                                "correction performed")
+                    rc.report_output(rc.get_inputs(style="AD"))
+                    break
+                else:
+                    raise Errors.PrimitiveError("Files have already been " +
+                                                "processed by " +
+                                                "biasCorrect")
+
+            # Test to see if we found a bias
+            bias = AstroData(rc.get_cal(ad, "bias"))
+            if bias.filename is None:
+                if rc['context']=="QA":
+                    sub_bias = False
+                    log.warning("No processed biases found; no bias " +
+                                "correction performed")
+                    rc.report_output(rc.get_inputs(style="AD"))
+                    break
+                    
+                else:
+                    raise Errors.PrimitiveError("No processed biases found")
+
+        # If no errors found, subtract the bias frame
+        if sub_bias:
+            rc.run("subtractBias")
+
+        yield rc
+
     def display(self, rc):
         """ 
         This is a primitive for displaying GMOS data.
@@ -229,6 +275,42 @@ class GMOSPrimitives(GEMINIPrimitives):
         rc.report_output(adoutput_list)                
         yield rc
 
+    def overscanCorrect(self,rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "overscanCorrect", "starting"))
+
+        # Loop over each input AstroData object in the input list to
+        # test whether it's appropriate to try to subtract/trim the overscan
+        sub_over = True
+        for ad in rc.get_inputs(style="AD"):
+
+            # Check whether the subtractOverscan or trimOverscan 
+            # primitives have been run previously
+            if (ad.phu_get_key_value("SUBOVER") or 
+                ad.phu_get_key_value("TRIMOVER")):
+                if rc["context"]=="QA":
+                    sub_over = False
+                    log.warning("Files have already been processed by " +
+                                "overscanCorrect; no further overscan " +
+                                "correction performed")
+                    rc.report_output(rc.get_inputs(style="AD"))
+                    break
+                else:
+                    raise Errors.PrimitiveError("Files have already been " +
+                                                "processed by " +
+                                                "overscanCorrect")
+
+        # If no errors found, subtract the overscan and trim it
+        if sub_over:
+            rc.run("subtractOverscan")
+            rc.run("trimOverscan")
+
+        yield rc
+
     def standardizeHeaders(self,rc):
         """
         This primitive is used to update and add keywords to the headers of the
@@ -358,7 +440,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             bias = AstroData(rc.get_cal(ad,'bias'))
 
             # Take care of the case where there was no, or an invalid bias
-            if bias is None or bias.count_exts("SCI") == 0:
+            if bias.filename is None:
                 log.warning("Could not find an appropriate bias for %s" \
                             % (ad.filename))
                 # Append the input AstroData object to the list of output

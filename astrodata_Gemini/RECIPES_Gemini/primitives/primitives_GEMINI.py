@@ -477,6 +477,103 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         yield rc
      
+    def flatCorrect(self,rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "flatCorrect", "starting"))
+
+        # Get processed flats for the input
+        rc.run("getProcessedFlat")
+
+        # Loop over each input AstroData object in the input list to
+        # test whether it's appropriate to try to remove the fringes
+        div_flat = True
+        for ad in rc.get_inputs(style="AD"):
+
+            # Check whether the divideByFlat primitive has been run previously
+            if ad.phu_get_key_value("DIVFLAT"):
+                if rc['context']=="QA":
+                    div_flat = False
+                    log.warning("Files have already been processed by " +
+                                "flatCorrect; no further flat " +
+                                "correction performed")
+                    rc.report_output(rc.get_inputs(style="AD"))
+                    break
+                else:
+                    raise Errors.PrimitiveError("Files have already been " +
+                                                "processed by " +
+                                                "flatCorrect")
+
+            # Test to see if we found a flat
+            flat = AstroData(rc.get_cal(ad, "flat"))
+            if flat.filename is None:
+                if rc['context']=="QA":
+                    div_flat = False 
+                    log.warning("No processed flats found; no flat " +
+                                "correction performed")
+                    rc.report_output(rc.get_inputs(style="AD"))
+                    break
+                    
+                else:
+                    raise Errors.PrimitiveError("No processed flats found")
+
+        # If no errors found, divide by the flat frame
+        if div_flat:
+            rc.run("divideByFlat")
+
+        yield rc
+
+    def fringeCorrect(self,rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "fringeCorrect", "starting"))
+
+        # Get processed fringes for the input
+        rc.run("getProcessedFringe")
+
+        # Loop over each input AstroData object in the input list to
+        # test whether it's appropriate to try to remove the fringes
+        rm_fringe = True
+        for ad in rc.get_inputs(style="AD"):
+
+            # Check whether the removeFringe primitive has been run previously
+            if ad.phu_get_key_value("RMFRINGE"):
+                if rc['context']=="QA":
+                    rm_fringe = False
+                    log.warning("Files have already been processed by " +
+                                "fringeCorrect; no further fringe " +
+                                "correction performed")
+                    rc.report_output(rc.get_inputs(style="AD"))
+                    break
+                else:
+                    raise Errors.PrimitiveError("Files have already been " +
+                                                "processed by " +
+                                                "fringeCorrect")
+
+            # Test to see if we found a fringe
+            fringe = AstroData(rc.get_cal(ad, "fringe"))
+            if fringe.filename is None:
+                if rc['context']=="QA":
+                    rm_fringe = False
+                    log.warning("No processed fringes found; no fringe " +
+                                "correction performed")
+                    rc.report_output(rc.get_inputs(style="AD"))
+                    break                    
+                else:
+                    raise Errors.PrimitiveError("No processed fringes found")
+
+        # If no errors found, remove the fringes
+        if rm_fringe:
+            rc.run("removeFringe")
+
+        yield rc
+
     def getCalibration(self, rc):
         """
         This primitive will check the files in the lists that are on disk,
@@ -493,22 +590,21 @@ class GEMINIPrimitives(GENERALPrimitives):
         if source == None:
             source = "all"
             
-        rc.rq_cal(caltype, rc.get_inputs(style="AD"), source=source)
+        adinput = rc.get_inputs(style="AD")
+        for ad in adinput:
+            ad.mode = "update"
+        rc.rq_cal(caltype, adinput, source=source)
         yield rc
         log.stdinfo("getCalibration: Results")
-        found = False
         for ad in rc.get_inputs(style="AD"):
             calurl = rc.get_cal(ad, caltype) #get from cache
             # print "pG565:", repr(calurl)
             if calurl:
                 cal = AstroData(rc.get_cal(ad, caltype))
                 if cal.filename is None:
-                    log.stdinfo("   No bias for %s" % ad.filename)
+                    log.stdinfo("   No %s for %s" % (caltype,ad.filename))
                 else:
                     log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
-                    found = True
-        if False: # not found:
-            rc.return_from_recipe()            
         # print "pG575: about to leave getpb"
         yield rc
 
@@ -540,19 +636,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         for sid in sidset:
             stacklist = rc.get_list(sid) #.filelist
             log.stdinfo("List for stack id=%s" % sid, category="list")
-
-            # if only one file found and purpose="stack" or "fringe" then 
-            # bail from the calling recipe
-            if len(stacklist)<2:
-                if purpose=="stack":
-                    log.warning("Less than 2 files found; not proceeding " +
-                                "with stacking.")
-                elif purpose=="fringe":
-                    log.warning("Less than 2 files found; not proceeding " +
-                                "with making the fringe frame.")
-                rc.return_from_recipe()
-                yield rc
-
             for f in stacklist:
                 rc.report_output(f, stream=rc["to_stream"])
                 log.stdinfo("   %s" % os.path.basename(f),
@@ -587,21 +670,12 @@ class GEMINIPrimitives(GENERALPrimitives):
         A primitive to search and return the appropriate calibration dark from
         a server for the given inputs.
         """
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        rc.rq_cal("dark", rc.get_inputs(style="AD"))
-        log.stdinfo("Found:")
-        found = False
-        for ad in rc.get_inputs(style="AD"):
-            cal = AstroData(rc.get_cal(ad, "dark"))
-            if cal.filename is None:
-                log.stdinfo("   No dark for %s" % ad.filename)
-            else:
-                log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
-                found = True
-        if not found:
-            rc.return_from_recipe()            
+        source = rc["source"]
+        if source == None:
+            rc.run("getCalibration(caltype=dark)")
+        else:
+            rc.run("getCalibration(caltype=dark, source=%s)" % source)
+            
         yield rc
     
     def getProcessedFlat(self, rc):
@@ -610,46 +684,28 @@ class GEMINIPrimitives(GENERALPrimitives):
         a server for the given inputs.
         
         """
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        rc.rq_cal("flat", rc.get_inputs(style="AD"))
-        log.stdinfo("Found:")
-        found = False
-        for ad in rc.get_inputs(style="AD"):
-            cal = AstroData(rc.get_cal(ad, "flat"))
-            if cal.filename is None:
-                log.stdinfo("   No flat for %s" % ad.filename)
-            else:
-                log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
-                found = True
-        if not found:
-            rc.return_from_recipe()            
+        source = rc["source"]
+        if source == None:
+            rc.run("getCalibration(caltype=flat)")
+        else:
+            rc.run("getCalibration(caltype=flat, source=%s)" % source)
+            
         yield rc
     
     def getProcessedFringe(self, rc):
         """
-        A primitive to search and return the appropriate calibration flat from
+        A primitive to search and return the appropriate calibration fringe from
         a server for the given inputs.
         
         """
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        rc.rq_cal("fringe", rc.get_inputs(style="AD"))
-        log.stdinfo("Found:")
-        found = False
-        for ad in rc.get_inputs(style="AD"):
-            cal = AstroData(rc.get_cal(ad, "fringe"))
-            if cal.filename is None:
-                log.stdinfo("   No fringe for %s" % ad.filename)
-            else:
-                log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
-                found = True
-        if not found:
-            rc.return_from_recipe()            
+        source = rc["source"]
+        if source == None:
+            rc.run("getCalibration(caltype=fringe)")
+        else:
+            rc.run("getCalibration(caltype=fringe, source=%s)" % source)
+            
         yield rc
-    
+        
     def measureIQ(self, rc):
         """
         This primitive will detect the sources in the input images and fit
@@ -739,6 +795,45 @@ class GEMINIPrimitives(GENERALPrimitives):
         rc.request_pause()
         yield rc
     
+    def registerAndStack(self, rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "registerAndStack", "starting"))
+
+        adinput = rc.get_inputs(style="AD")
+        if len(adinput)<2:
+            if rc["context"]=="QA":
+                log.warning("Only one frame provided as input. " +
+                            "Not proceeding with registration and stacking.")
+                rc.report_output(adinput)
+            else:
+                raise Errors.PrimitiveError("Fewer than 2 frames " +
+                                            "provided as input.")
+        else:
+            # Check to see if detectSources needs to be run
+            run_ds = False
+            for ad in adinput:
+                objcat = ad['OBJCAT']
+                if objcat is None:
+                    run_ds = True
+                    break
+            if run_ds:
+                rc.run("detectSources")
+
+            # Register all images to the first one
+            rc.run("correctWCSToReferenceImage")
+
+            # Align all images to the first one
+            rc.run("alignToReferenceImage")
+
+            # Stack all frames
+            rc.run("stackFrames")
+
+        yield rc        
+
     def removeFringe(self, rc):
         """
         This primitive will scale the fringes to their matching science data
@@ -855,9 +950,9 @@ class GEMINIPrimitives(GENERALPrimitives):
         #else:
         #    stream = "main"
             
-        log.fullinfo("stream: "+rc._current_stream)
+        log.stdinfo("stream: "+rc._current_stream)
         for inf in rc.inputs:
-            log.fullinfo("  %s" % inf.filename, category="inputs")
+            log.stdinfo("  %s" % inf.filename, category="inputs")
         
         yield rc
     showFiles = showInputs

@@ -1,3 +1,0 @@
-getList(purpose="fringe",to_stream="fringe")
-makeFringeFrame(stream="fringe")
-storeProcessedFringe(stream="fringe")

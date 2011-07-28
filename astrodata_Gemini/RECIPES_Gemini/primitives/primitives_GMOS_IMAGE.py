@@ -1,3 +1,4 @@
+from astrodata import Errors
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
 from gempy.science import preprocessing as pp
@@ -15,7 +16,54 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     def init(self, rc):
         GMOSPrimitives.init(self, rc)
         return rc
-    
+
+    def makeFringe(self, rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "makeFringe", "starting"))
+
+        adinput = rc.get_inputs(style="AD")
+        if len(adinput)<2:
+            if rc["context"]=="QA":
+                log.warning("Only one frame provided as input. " +
+                            "Not making fringe frame.")
+            else:
+                raise Errors.PrimitiveError("Fewer than 2 frames " +
+                                            "provided as input.")
+        else:
+
+            # Check that filter is either i or z; this step doesn't
+            # help data taken in other filters
+            red = True
+            for ad in adinput:
+                filter = ad.filter_name(pretty=True)
+                if filter not in ['i','z']:
+                    if rc["context"]=="QA":
+                        # in QA context, don't bother trying
+                        red = False
+                        log.warning("No fringe necessary for filter " +
+                                    filter + "; not creating fringe frame.")
+                        break
+                    else:
+                        # in science context, let the user do it, but warn
+                        # that it's pointless
+                        log.warning("No fringe necessary for filter " + filter)
+
+            if red:
+
+                # Call the makeFringeFrame primitive
+                rc.run("makeFringeFrame")
+
+                # Store the generated fringe
+                rc.run("storeProcessedFringe")
+
+        # Report all the input files back to the reduction context
+        rc.report_output(adinput)
+        yield rc
+
     def makeFringeFrame(self, rc):
         """
         This primitive makes a fringe frame by masking out sources
@@ -33,26 +81,12 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         if len(adinput)<2:
             log.warning('Only one frame provided as input; at least two ' +
                         'frames are required. Not making fringe frame.')
-            adoutput = []
-            rc.return_from_recipe()
+            adoutput = adinput
         else:
-            # Check that filter is either i or z; this step doesn't
-            # help data taken in other filters
-            red = True
-            for ad in adinput:
-                filter = ad.filter_name(pretty=True)
-                if filter not in ['i','z']:
-                    log.warning('No fringe necessary for filter ' +
-                                filter + '; not creating fringe frame.')
-                    adoutput = []
-                    red = False
-                    rc.return_from_recipe()
-                    
-            if red:
-                # Call the make_fringe_image_gmos user level function
-                adoutput = pp.make_fringe_image_gmos(adinput=adinput,
-                                                     suffix=rc["suffix"],
-                                                     operation=rc["operation"])
+            # Call the make_fringe_image_gmos user level function
+            adoutput = pp.make_fringe_image_gmos(adinput=adinput,
+                                                 suffix=rc["suffix"],
+                                                 operation=rc["operation"])
 
         # Report the list of output AstroData objects to the reduction
         # context
