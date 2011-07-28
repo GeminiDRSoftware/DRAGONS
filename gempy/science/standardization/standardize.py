@@ -89,10 +89,6 @@ def standardize_headers_gemini(adinput=None):
     keywords BUNIT, NONLINEA and SATLEVEL to the pixel data extensions of the
     input dataset.
     
-    Either a 'main' type logger object, if it exists, or a null logger (i.e.,
-    no log file, no messages to screen) will be retrieved/created in the
-    ScienceFunctionManager and used within this function.
-    
     :param adinput: Astrodata inputs to have their headers standardized
     :type adinput: Astrodata objects, either a single or a list of objects
     """
@@ -166,10 +162,6 @@ def standardize_headers_gmos(adinput=None):
     level function to update Gemini specific keywords and then updates GMOS
     specific keywords.
     
-    Either a 'main' type logger object, if it exists, or a null logger (i.e.,
-    no log file, no messages to screen) will be retrieved/created in the
-    ScienceFunctionManager and used within this function.
-    
     :param adinput: Astrodata inputs to have their headers standardized
     :type adinput: Astrodata objects, either a single or a list of objects
     """
@@ -207,7 +199,7 @@ def standardize_headers_gmos(adinput=None):
             ad = standardize_headers_gemini(adinput=ad)[0]
             
             # Now, update the keywords in the headers that are specific to GMOS
-            log.info("Updating keywords that are specific to GMOS")
+            log.fullinfo("Updating keywords that are specific to GMOS")
             # Pixel scale
             gt.update_key_value(adinput=ad, function="pixel_scale()",
                                 extname="SCI")
@@ -281,8 +273,8 @@ def standardize_structure_f2(adinput=None, attach_mdf=False, mdf=None):
                     # Remove the single-dimensional axis from the pixel data
                     ext.data = np.squeeze(ext.data)
                     if len(ext.data.shape) == 2:
-                        log.info("Removed third dimension from %s" \
-                                 % ad.filename)
+                        log.fullinfo("Removed third dimension from %s" \
+                                     % ad.filename)
                     if len(ext.data.shape) == 3:
                         # The np.squeeze method only removes a dimension from
                         # the array if it is equal to 1. In this case, the
@@ -331,10 +323,6 @@ def standardize_structure_gmos(adinput=None, attach_mdf=False, mdf=None):
     mdfFiles parameter.
     This function is called by standardizeInstrumentStructure in both the GMOS 
     and GMOS_IMAGE primitives sets to perform their work.
-    
-    Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
     
     :param adinput: Astrodata inputs to have their headers standardized
     :type adinput: Astrodata objects, either a single or a list of objects
