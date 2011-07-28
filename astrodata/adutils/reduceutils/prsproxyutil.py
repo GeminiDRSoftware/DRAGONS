@@ -22,6 +22,93 @@ def urljoin(*args):
     print "prs31:", repr(args), ret
     return ret
 
+def upload_calibration(filename):
+    import httplib, mimetypes
+    import os
+
+    import sys
+    import urllib, urllib2
+
+    fpath = filename
+    fn = os.path.basename(fpath)
+    fd = open(fpath)
+    d = fd.read()
+    fd.close()
+    
+    url = "http://hbffits3.hi.gemini.edu/upload_processed_cal/"+fn
+
+    postdata = d # urllib.urlencode(d)
+
+    try:
+        rq = urllib2.Request(url)
+        u = urllib2.urlopen(rq, postdata)
+    except urllib2.HTTPError, error:
+        contents = error.read()
+        print "ERROR:"
+        print contents
+        raise
+
+    response = u.read()
+    print "RESPONSE"
+    print response
+
+
+def calibration_search(rq, fullResult = False):
+    from astrodata.FitsStorageFeatures import FitsStorageSetup
+    fss = FitsStorageSetup() # note: uses current working directory!!!
+    
+    print "ppu92: in here"
+    #if not fss.is_setup():
+    #    return None
+    
+    if "source" not in rq:
+        source = "central"
+    else:
+        source = rq["source"]
+    
+    # print "ppu32:", repr(rq), source
+    
+    token = "" # used for GETs, we're using the post method
+    rqurl = None
+    if source == "central" or source == "all":
+        # print "ppu107: CENTRAL", token
+        # print "ppu108: ", rq['caltype']
+        
+        rqurl = urljoin(CALMGR, CALTYPEDICT[rq['caltype']])
+        print "ppu109: CENTRAL SEARCH: rqurl is "+ rqurl
+        
+    print "ppu112:", source
+    if source == 'local' or (rqurl == None and source=="all"):
+        rqurl = LOCALCALMGR % { "httpport": 8777,
+                                "caltype":CALTYPEDICT[rq['caltype']],
+                                } # "tokenstr":tokenstr}
+        print "ppu118: LOCAL SEARCH: rqurl is "+ rqurl
+
+    print "prs52:", rqurl
+    
+    ### send request
+    sequence = [("descriptors", rq["descriptors"]), ("types", rq["types"])]
+    postdata = urllib.urlencode(sequence)
+    calRQ = urllib2.Request(rqurl)
+    u = urllib2.urlopen(calRQ, postdata)
+    response = u.read()
+    #response = urllib.urlopen(rqurl).read()
+    print "prs129:", response
+    if fullResult:
+        return response
+    dom = minidom.parseString(response)
+    calel = dom.getElementsByTagName("calibration")
+    try:
+        calurlel = dom.getElementsByTagName('url')[0].childNodes[0]
+    except exceptions.IndexError:
+        print "No url for calibration in response, calibration not found"
+        return None
+    #print "prs70:", calurlel.data
+    
+    #@@TODO: test only 
+    return calurlel.data
+
+
 def old_calibration_search(rq, fullResult = False):
     from astrodata.FitsStorageFeatures import FitsStorageSetup
     fss = FitsStorageSetup() # note: uses current working directory!!!
@@ -82,61 +169,6 @@ def old_calibration_search(rq, fullResult = False):
     try:
         calurlel = dom.getElementsByTagName('url')[0].childNodes[0]
     except exceptions.IndexError:
-        return None
-    #print "prs70:", calurlel.data
-    
-    #@@TODO: test only 
-    return calurlel.data
-
-def calibration_search(rq, fullResult = False):
-    from astrodata.FitsStorageFeatures import FitsStorageSetup
-    fss = FitsStorageSetup() # note: uses current working directory!!!
-    
-    print "ppu92: in here"
-    #if not fss.is_setup():
-    #    return None
-    
-    if "source" not in rq:
-        source = "central"
-    else:
-        source = rq["source"]
-    
-    # print "ppu32:", repr(rq), source
-    
-    token = "" # used for GETs, we're using the post method
-    rqurl = None
-    if source == "central" or source == "all":
-        # print "ppu107: CENTRAL", token
-        # print "ppu108: ", rq['caltype']
-        
-        rqurl = urljoin(CALMGR, CALTYPEDICT[rq['caltype']])
-        print "ppu109: CENTRAL SEARCH: rqurl is "+ rqurl
-        
-    print "ppu112:", source
-    if source == 'local' or (rqurl == None and source=="all"):
-        rqurl = LOCALCALMGR % { "httpport": 8777,
-                                "caltype":CALTYPEDICT[rq['caltype']],
-                                } # "tokenstr":tokenstr}
-        print "ppu118: LOCAL SEARCH: rqurl is "+ rqurl
-
-    print "prs52:", rqurl
-    
-    ### send request
-    sequence = [("descriptors", rq["descriptors"]), ("types", rq["types"])]
-    postdata = urllib.urlencode(sequence)
-    calRQ = urllib2.Request(rqurl)
-    u = urllib2.urlopen(calRQ, postdata)
-    response = u.read()
-    #response = urllib.urlopen(rqurl).read()
-    print "prs129:", response
-    if fullResult:
-        return response
-    dom = minidom.parseString(response)
-    calel = dom.getElementsByTagName("calibration")
-    try:
-        calurlel = dom.getElementsByTagName('url')[0].childNodes[0]
-    except exceptions.IndexError:
-        print "No url for calibration in response, calibration not found"
         return None
     #print "prs70:", calurlel.data
     
