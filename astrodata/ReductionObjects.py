@@ -193,7 +193,8 @@ class ReductionObject(object):
             # top-level recipe, add some extra demarcation
             log.changeIndent(indentLevel=context.indent)
             log.status("="*80)
-        log.status("")
+        if btype=="PRIMITIVE":
+            log.status("")
         yield context
         
     def runstep(self, primname, cfgobj):
