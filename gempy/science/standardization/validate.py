@@ -115,7 +115,7 @@ def validate_data_gmos(adinput=None, repair=False):
                                        % (ad.filename))
             else:
                 log.fullinfo("The GMOS input file has been validated: %s " \
-                             "contains %d extensions" % (ad.filename, numext))
+                             "contains %d extensions" % (ad.filename, num_ext))
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=keyword)
