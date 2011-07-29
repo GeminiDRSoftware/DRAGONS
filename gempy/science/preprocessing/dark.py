@@ -3,8 +3,14 @@
 
 import sys
 from astrodata import Errors
+from astrodata import Lookups
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
+
+# Load the timestamp keyword dictionary that will be used to define the keyword
+# to be used for the time stamp for the user level function
+timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
+                                          "timestamp_keys")
 
 def subtract_dark(adinput=None, dark=None):
     """
@@ -15,11 +21,11 @@ def subtract_dark(adinput=None, dark=None):
     :param adinput: Astrodata input science data
     :type adinput: Astrodata
     
-    :param dark: The dark(s) to be added to the input(s). The darks can be a
-                 list of AstroData objects or a single AstroData object.
+    :param dark: The dark(s) to be subtracted from the input(s). The darks can
+                 be a list of AstroData objects or a single AstroData object.
                  Note: If there are multiple inputs and one dark provided, 
                  then the same dark will be applied to all inputs; else the 
-                 darks list must match the length of the inputs.
+                 dark list must match the length of the inputs.
     :type dark: AstroData
     """
     
@@ -38,7 +44,7 @@ def subtract_dark(adinput=None, dark=None):
     
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "SUBDARK"
+    timestamp_key = timestamp_keys["subtract_dark"]
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -49,7 +55,7 @@ def subtract_dark(adinput=None, dark=None):
             
             # Check whether the subtract_dark user level function has been
             # run previously
-            if ad.phu_get_key_value(keyword):
+            if ad.phu_get_key_value(timestamp_key):
                 raise Errors.InputError("%s has already been processed by " \
                                         "subtract_dark" % (ad.filename))
             
@@ -60,7 +66,7 @@ def subtract_dark(adinput=None, dark=None):
             ad = ad.sub(dark_dict[ad])
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
             
             # Append the output AstroData object to the list of output
             # AstroData objects
