@@ -96,7 +96,7 @@ version = '1_0'
 parser = OptionParser()
 parser.set_description("_"*11 + "Gemini Observatory Recipe System Processor"
                        " (v_1.0 2011)" + "_"*10 + " " + "_"*19 +\
-                       "Author: Craig Allen (callen@gemini.edu)" + "_"*18)
+                       "Written by GDPSG (klabrie@gemini.edu)" + "_"*20)
 parser.set_usage( parser.get_usage()[:-1] + " file.fits\n" )
 
 parser.add_option("-c", "--paramfile", dest="paramfile", default=None,
