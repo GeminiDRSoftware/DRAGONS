@@ -4,6 +4,7 @@
 import sys
 import numpy as np
 from astrodata import Errors
+from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
 from gempy import geminiTools as gt
