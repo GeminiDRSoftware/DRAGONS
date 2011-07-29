@@ -4,8 +4,14 @@
 import sys
 import numpy as np
 from astrodata import Errors
+from astrodata import Lookups
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
+
+# Load the timestamp keyword dictionary that will be used to define the keyword
+# to be used for the time stamp for the user level function
+timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
+                                          "timestamp_keys")
 
 def standardize_headers_f2(adinput=None):
     """
@@ -22,7 +28,7 @@ def standardize_headers_f2(adinput=None):
     
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "SDZHDRSI"
+    timestamp_key = timestamp_keys["standardize_headers_f2"]
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -33,7 +39,7 @@ def standardize_headers_f2(adinput=None):
             
             # Check whether the standardize_headers_f2 user level function has
             # been run previously
-            if ad.phu_get_key_value(keyword):
+            if ad.phu_get_key_value(timestamp_key):
                 raise Errors.InputError("%s has already been processed by " \
                                         "standardize_headers_f2" \
                                         % (ad.filename))
@@ -66,8 +72,8 @@ def standardize_headers_f2(adinput=None):
                 gt.update_key_value(adinput=ad, function="dispersion_axis()",
                                     extname="SCI")
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
-            gt.mark_history(adinput=ad, keyword="PREPARE")
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, keyword=timestamp_keys["prepare"])
             
             # Append the output AstroData object to the list of output
             # AstroData objects
@@ -103,7 +109,7 @@ def standardize_headers_gemini(adinput=None):
     
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "SDZHDRSG"
+    timestamp_key = timestamp_keys["standardize_headers_gemini"]
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -114,7 +120,7 @@ def standardize_headers_gemini(adinput=None):
             
             # Check whether the standardize_headers_gemini user level function
             # has been run previously
-            if ad.phu_get_key_value(keyword):
+            if ad.phu_get_key_value(timestamp_key):
                 raise Errors.InputError("%s has already been processed by " \
                                         "standardize_headers_gemini" \
                                         % (ad.filename))
@@ -140,8 +146,8 @@ def standardize_headers_gemini(adinput=None):
             gt.update_key_value(adinput=ad, function="bunit", value="adu",
                                 extname="SCI")
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
-            gt.mark_history(adinput=ad, keyword="PREPARE")
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, keyword=timestamp_keys["prepare"])
             
             # Append the output AstroData object to the list of output
             # AstroData objects
@@ -176,7 +182,7 @@ def standardize_headers_gmos(adinput=None):
     
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "SDZHDRSI"
+    timestamp_key = timestamp_keys["standardize_headers_gmos"]
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -187,7 +193,7 @@ def standardize_headers_gmos(adinput=None):
             
             # Check whether the standardize_headers_gmos user level function
             # has been run previously
-            if ad.phu_get_key_value(keyword):
+            if ad.phu_get_key_value(timestamp_key):
                 raise Errors.InputError("%s has already been processed by " \
                                         "standardize_headers_gmos" \
                                         % (ad.filename))
@@ -217,8 +223,8 @@ def standardize_headers_gmos(adinput=None):
                 gt.update_key_value(adinput=ad, function="dispersion_axis()",
                                     extname="SCI")
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
-            gt.mark_history(adinput=ad, keyword="PREPARE")
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, keyword=timestamp_keys["prepare"])
             
             # Append the output AstroData object to the list of output
             # AstroData objects
@@ -248,7 +254,7 @@ def standardize_structure_f2(adinput=None, attach_mdf=False, mdf=None):
     
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "SDZSTRUC"
+    timestamp_key = timestamp_keys["standardize_structure_f2"]
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -259,7 +265,7 @@ def standardize_structure_f2(adinput=None, attach_mdf=False, mdf=None):
             
             # Check whether the standardize_structure_f2 user level function
             # has been run previously
-            if ad.phu_get_key_value(keyword):
+            if ad.phu_get_key_value(timestamp_key):
                 raise Errors.InputError("%s has already been processed by " \
                                         "standardize_structure_f2" \
                                         % (ad.filename))
@@ -297,8 +303,8 @@ def standardize_structure_f2(adinput=None, attach_mdf=False, mdf=None):
                 ad = add_mdf(adinput=ad, mdf=mdf)
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
-            gt.mark_history(adinput=ad, keyword="PREPARE")
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, keyword=timestamp_keys["prepare"])
             
             # Append the output AstroData object to the list of output
             # AstroData objects
@@ -351,7 +357,7 @@ def standardize_structure_gmos(adinput=None, attach_mdf=False, mdf=None):
     
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "SDZSTRUC"
+    timestamp_key = timestamp_keys["standardize_structure_gmos"]
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -362,7 +368,7 @@ def standardize_structure_gmos(adinput=None, attach_mdf=False, mdf=None):
             
             # Check whether the standardize_structure_gmos user level function
             # has been run previously
-            if ad.phu_get_key_value(keyword):
+            if ad.phu_get_key_value(timestamp_key):
                 raise Errors.InputError("%s has already been processed by " \
                                         "standardize_structure_gmos" \
                                         % (ad.filename))
@@ -381,8 +387,8 @@ def standardize_structure_gmos(adinput=None, attach_mdf=False, mdf=None):
                 ad = add_mdf(adinput=ad, mdf=mdf)
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
-            gt.mark_history(adinput=ad, keyword="PREPARE")
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, keyword=timestamp_keys["prepare"])
             
             # Append the output AstroData object to the list of output
             # AstroData objects
