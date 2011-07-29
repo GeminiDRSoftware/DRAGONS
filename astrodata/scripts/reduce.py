@@ -6,10 +6,21 @@
 #importprof = hotshot.Profile("hotshot_edi_stats")
 #------------------------------------------------------------------------------ 
 
-from astrodata.adutils import terminal
-from astrodata.adutils.terminal import TerminalController, ProgressBar 
+import os
 import sys
 import traceback
+import commands
+import glob
+import subprocess
+import sys
+import time
+import re
+
+from datetime import datetime
+from optparse import OptionParser
+
+from astrodata.adutils import terminal
+from astrodata.adutils.terminal import TerminalController, ProgressBar 
 # start color printing filter for xgtermc
 REALSTDOUT = sys.stdout
 REALSTDERR = sys.stderr
@@ -18,11 +29,6 @@ REALSTDERR = sys.stderr
 irafstdout = terminal.IrafStdout() #fout = filteredstdout)
 #sys.stdout = filteredstdout
 # sys.stderr = terminal.ColorStdout(REALSTDERR, term)
-import commands
-from datetime import datetime
-import glob
-from optparse import OptionParser
-import os
 #st = time.time()
 if False:
     try:
@@ -32,13 +38,7 @@ if False:
         print "reduce: didn't find pyraf"
 #et = time.time()
 #print 'IRAF TIME', (et-st)
-import subprocess
-import sys
-import time
-import re
-#------------------------------------------------------------------------------ 
 a = datetime.now()
-
 import astrodata
 from astrodata import RecipeManager
 from astrodata import Errors
@@ -56,18 +56,12 @@ from astrodata import gdpgutil
 # from astrodata.adutils.future import gemDisplay
 from astrodata.adutils import paramutil
 from astrodata.adutils.gemutil import gemdate
-
 from astrodata import Proxies
-
-#------------------------------------------------------------------------------ 
 from astrodata.adutils import gemLog
-#-----------------------------------------------------------------------------
-
-
+from astrodata import Lookups
 #oet = time.time()
 #print 'TIME:', (oet -ost)
 b = datetime.now()
-
 
 # GLOBAL/CONSTANTS (could be exported to config file)
 cachedirs = [".reducecache",
@@ -83,7 +77,8 @@ cachedirs = [".reducecache",
              ".reducecache/retrievedcals"
              ]
 CALDIR = ".reducecache/storedcals"
-cachedict = {} # constructed below             
+# constructed below             
+cachedict = {} 
 for cachedir in cachedirs:
     if not os.path.exists(cachedir):                        
         os.mkdir(cachedir)
@@ -92,92 +87,91 @@ for cachedir in cachedirs:
         cachename = cachename[1:]
     cachedict.update({cachename:cachedir})
 
-############################################################
-# this script was developed to exercise the GeminiDataType class
-# but now serves a general purpose in addition to that and as
-# a demo for GeminiData... see options documentation.
+# Testing
+import pyfits as pf
+
+version = '1_0'
 
 # parsing the command line
 parser = OptionParser()
-# parser.add_option("-r", "--reduce", dest="twdir", default =".",
-#        help="Recursively walk given directory and put type information to stdout.")
-version = '1_0'
-parser.set_description( 
-"""The standalone recipe processor from Gemini. Created by Craig Allen (callen@gemini.edu)."""
- )
+parser.set_description("_"*11 + "Gemini Observatory Recipe System Processor"
+                       " (v_1.0 2011)" + "_"*10 + " " + "_"*19 +\
+                       "Author: Craig Allen (callen@gemini.edu)" + "_"*18)
 parser.set_usage( parser.get_usage()[:-1] + " file.fits\n" )
-# Testing
-import pyfits as pf
-parser.add_option("-r", "--recipe", dest="recipename", default=None,
-                  help="Specify which recipe to run by name.")
-parser.add_option("-p", "--param", dest="userparam", default = None,
-                    help="""Set a parameter from the command line.\
-The form '-p paramname=val' sets the param in the reduction
-context such that all primitives will 'see' it.  The 
-form '-p ASTROTYPE:primitivename:paramname=val' sets the
-parameter such that it applies only when
-the current reduction type (type of current reference image)
-is 'ASTROTYPE' and the primitive is 'primitivename'.
-Multiple settings can appear separated by commas, but
-no whitespace in the setting, i.e. 'param=val,param2=val2',
-not 'param=val, param2=val2'.""")
+
 parser.add_option("-c", "--paramfile", dest = "paramfile", default = None,
-                    help="Specify a parameter file.")
-parser.add_option("-t", "--astrotype", dest = "astrotype", default = None,
-                    help="To run a recipe based on astrotype, either to override the default type of the file, or to start a recipe without initial input (i.e. which begin with primitives that acquire dta).")
+                  help="specify parameter file")
+parser.add_option("-i", "--intelligence", dest='intelligence', default=False,
+                  action="store_true", help="Endow recipe system with "
+                  "intelligence to perform operations faster and smoother")
 parser.add_option("-m", "--monitor", dest="bMonitor", action="store_true",
                   default = False,
-                  help= "Open TkInter Window to Monitor Progress of" + \
-                  "execution. " + \
-                  "Note: One window is opened for each recipe which " + \
-                  "will run")
-parser.add_option("--addcal", dest="add_cal", default=None, type="string",
-                  help="'--caltype' Must be specified as well when using this! " + \
-                  "Provide the filename for a calibration. This is will overwrite " + \
-                  "an existing calibration if in the index. An example of what " + \
-                  "this would look like: \n" + \
-                  "reduce --addcal=N2009_bias.fits --caltype=bias N20091002S0219.fits" )
-parser.add_option("--remcal", dest="rem_cal", default=False, action="store_true",
-                  help="'--caltype' Must be specified as well when using this! " + \
-                  "This will remove the calibration for that file from cache. An " + \
-                  "example of what this would look like: \n" + \
-                  "reduce --remcal --caltype=bias N20091002S0219.fits" )
-parser.add_option("--clrcal", dest="clr_cal", default=False, action="store_true",
-                  help="Remove all calibrations.")
-parser.add_option("--caltype", dest="cal_type", default=None, type="string",
-                  help="Works in conjunction with '--addcal'. Ignored otherwise. " + \
-                  "This should be the type of calibration in lowercase and one word. " + \
-                  "For example: 'bias', 'twilight'.")
-parser.add_option("--showcolors", dest="show_colors", default=False, action = "store_true",
-                    help="""For debugging any color output problems, shows what colors
-                    reduce thinks are available based on the terminal setting.""")
+                  help= "Open TkInter window to monitor progress of"
+                  "execution (NOTE: One window will open per recipe run)")
+parser.add_option("-p", "--param", dest="userparam", default = None,
+                  help="Set a parameter from the command line. The form '-p' "
+                  "paramname=val' sets the parameter in the reduction context "
+                  "such that all primitives will 'see' it.  The form: '-p "
+                  "ASTROTYPE:primitivename:paramname=val', sets the parameter "
+                  "such that it applies only when the current reduction type "
+                  "(type of current reference image) is 'ASTROTYPE' and the "
+                  "primitive is 'primitivename'. Multiple settings can appear "
+                  "separated by commas, but no whitespace in the setting (i.e."
+                  "'param=val,param2=val2', not 'param=val, param2=val2')")
+# parser.add_option("-r", "--reduce", dest="twdir", default =".",
+#                 help="Recursively walk given directory and put type "
+#                 "information to stdout.")
+parser.add_option("-r", "--recipe", dest="recipename", default=None,
+                  help="specify which recipe to run by name")
+parser.add_option("-t", "--astrotype", dest = "astrotype", default = None,
+                  help="Run a recipe based on astrotype (either overrides the"
+                  " default type, or begins without initial input (ex. "
+                  "recipes that begin with primitives that acquire data))")
 ##@@FIXME: This next option should not be put into the package
-parser.add_option("-x", "--rtf-mode", dest="rtf", default=False, action="store_true",
-                  help="Only used for rtf.")
-parser.add_option("-i", "--intelligence", dest='intelligence', default=False, action="store_true",
-                  help="Give the system some intelligence to perform operations faster and smoother.")
-parser.add_option("--force-width", dest = "forceWidth", default=None,
-                  help="Use to force width of terminal for output purposes instead of using actual terminal width.")
-parser.add_option("--force-height", dest = "forceHeight", default=None,
-                  help="Use to force height of terminal for output purposes instead of using actual terminal height.")
+parser.add_option("-x", "--rtf-mode", dest="rtf", default=False, 
+                  action="store_true", help="only used for rtf")
+parser.add_option("--addcal", dest="add_cal", default=None, type="string",
+                  help="Add calibration. NOTE: won't work unless "
+                  "'--caltype' is set AND will overwrite any existing "
+                  "calibration in the index. (ex. reduce --addcal=N2"
+                  "009_bias.fits --caltype=bias N20091002S0219.fits)")
 parser.add_option("--addprimset", dest = "primsetname", default = None,
-                  help="Use to add user supplied primitives to the reduction object.")
+                  help="add user supplied primitives to reduction")
+parser.add_option("--caltype", dest="cal_type", default=None, type="string",
+                  help="Calibration type. NOTE: only works with '--addcal' or "
+                  "'--remcal' AND accepts only lowercase one word (ex. 'bias', "
+                  "'twilight')")
+parser.add_option("--clrcal", dest="clr_cal", default=False, 
+                  action="store_true", help="remove all calibrations.")
 parser.add_option("--debug",dest='debug', default=False, action="store_true",
-                  help="debug will set verbosity for console and log file to the extremely high developers debug level.")
-parser.add_option("--logLevel",dest='logLevel', default='stdinfo', type='string',
-                  help="logLevel will set the verbosity level for the console; Either the message type or its logLevel "+\
-                  "integer equivalent,  0='none'=none, 6='fullinfo'=highest.")
-parser.add_option("--logName",dest='logName', default='gemini.log', type='string',
-                  help="name of log; default is 'gemini.log'.") 
-parser.add_option("--noLogFile",dest='noLogFile', default=False, action="store_true",
-                  help="Calling this flag will make it so no log file is created.")
-parser.add_option("--logAllOff",dest='logAllOff', default=False, action="store_true",
-                  help="Calling this flag will turn the logging completely off, no log file and no messages to the screen.")
-parser.add_option("--writeInt",dest='writeInt', default=False, action="store_true",
-                  help="writeInt (short for writeIntermediate) will set it so the outputs of" + \
-                  "each primitive are written to disk rather than only at the end of the recipe. default=False."+ \
-                  "(CURRENTLY THIS DOESN'T WORK)")       
-parser.add_option("--invoked", dest="invoked", default=False, action="store_true")
+                  help="set highest verbose level for console AND logfile")
+parser.add_option("--force-height", dest = "forceHeight", default=None,
+                  help="force height of terminal output")
+parser.add_option("--force-width", dest = "forceWidth", default=None,
+                  help="force width of terminal output")
+parser.add_option("--invoked", dest="invoked", default=False, 
+                  action="store_true", help="set log level to 'fullinfo'")
+parser.add_option("--logAllOff",dest='logAllOff', default=False, 
+                  action="store_true", help="Turn logging completely off,"
+                  " no log file, no console logging")
+parser.add_option("--logName",dest='logName', default='gemini.log', 
+                  type='string', help="name of log (default = 'gemini.log')") 
+parser.add_option("--logLevel",dest='logLevel', default='stdinfo', 
+                  type='string', help="Set the verbose level for console "
+                  "logging; (critical, error, warning, status, stdinfo, "
+                  "fullinfo, debug)")
+parser.add_option("--noLogFile",dest='noLogFile', default=False, 
+                  action="store_true", help="no log file is created")
+parser.add_option("--remcal", dest="rem_cal", default=False, 
+                  action="store_true", help="Remove calibration (of target)"
+                  "from cache. NOTE: will not work unless --caltype is set."
+                  " (ex. reduce --remcal --caltype=bias N20091002S0219.fits)")
+parser.add_option("--showcolors", dest="show_colors", default=False, 
+                  action = "store_true", help="Shows available colors based "
+                  "on terminal setting (used for debugging color issues)")
+parser.add_option("--writeInt",dest='writeInt', default=False, 
+                  action="store_true", help="write intermediate outputs"
+                  " (UNDER CONSTRUCTION)")       
           
 (options,  args) = parser.parse_args()
 
@@ -193,17 +187,12 @@ stkindfile = "./.reducecache/stkindex.pkl"
 terminal.forceWidth = options.forceWidth
 terminal.forceHeight = options.forceHeight
 
+
 if options.recipename == "USER":
     options.logLevel = "fullinfo"
 
 if options.invoked:
     options.logLevel = "fullinfo"
-    
-#---------------------------- INSTANTIATING THE LOGGER FOR ALL TO SEE ----
-log = gemLog.createGeminiLog(logName=options.logName,logLevel=options.logLevel, 
-                             logType='main', debug=options.debug, 
-                          noLogFile=options.noLogFile, allOff=options.logAllOff)
-#-------------------------------------------------------------------------
 
 if options.invoked:
     opener = "reduce started in adcc mode (--invoked)"
@@ -211,6 +200,11 @@ if options.invoked:
     log.status(opener)
     log.status("."*len(opener))
     sys.stdout.flush()
+
+# Create Recipe System Log
+log = gemLog.createGeminiLog(logName=options.logName,logLevel=options.logLevel, 
+                             logType='main', debug=options.debug, 
+                          noLogFile=options.noLogFile, allOff=options.logAllOff)
 
 def abortBadParamfile(lines):
     for i in range(0,len(lines)):
@@ -698,18 +692,23 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                     if hasattr(options, "globalParams"):
                         for pkey in options.globalParams.keys():
                             co.update({pkey:options.globalParams[pkey]})
-
-                if (options.writeInt == True):       #$$$$$ to be removed after writeIntermediate thing works correctly
-                        co.update({"writeInt":True})  #$$$$$ to be removed after writeIntermediate thing works correctly
-                        
+                
+                # Remove after write int works properly
+                if (options.writeInt == True):       
+                        co.update({"writeInt":True})  
                  
                 # Putting the log level and log name set with the --logLevel 
                 # and --logName parser options into the global dict
                 # for use throughout the primitives.
-                co.update({'logLevel':options.logLevel}) #$$$$$$$$$ right place to do this??    
-                co.update({'logName':options.logName}) #$$$$$$$$$ right place to do this??      
-                co.update({'logType':'main'})        #$$$$$$$$$ right place to do this?? SHould we make this param more global?
-                # print "r352:", repr(co.user_params.user_param_dict)
+                co.update({'logLevel':options.logLevel})     
+                co.update({'logName':options.logName})       
+                co.update({'logType':'main'})
+                
+                # Insert calibration url dictionary from Lookups
+                calurldict = Lookups.get_lookup_table("Gemini/calurl_dict", "calurl_dict")
+                co.update({'calurl_dictionary':calurldict})
+                print co.report(internal_dict=True)
+
                 if (useTK):
                     while cw.bReady == False:
                         # this is hopefully not really needed
