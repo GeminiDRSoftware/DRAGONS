@@ -152,7 +152,7 @@ parser.add_option("--force-height", dest="forceHeight", default=None,
 parser.add_option("--force-width", dest="forceWidth", default=None,
                   help="force width of terminal output")
 parser.add_option("--invoked", dest="invoked", default=False, 
-                  action="store_true", help="set log level to 'fullinfo'")
+                  action="store_true", help="tell user reduce invoked by adcc")
 parser.add_option("--logAllOff", dest='logAllOff', default=False, 
                   action="store_true", help="Turn logging completely off,"
                   " no log file, no console logging")
