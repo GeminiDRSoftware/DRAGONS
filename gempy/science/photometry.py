@@ -7,10 +7,14 @@ import pyfits as pf
 import pywcs
 from astrodata import AstroData
 from astrodata import Errors
+from astrodata import Lookups
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
-from gempy import managers as man
 
+# Load the timestamp keyword dictionary that will be used to define the keyword
+# to be used for the time stamp for the user level function
+timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
+                                          "timestamp_keys")
 
 def add_objcat(adinput=None, extver=1, replace=False,
                id=None, x=None, y=None, ra=None, dec=None, 
@@ -21,18 +25,18 @@ def add_objcat(adinput=None, extver=1, replace=False,
     
     :param adinput: AD object(s) to add table to
     :type adinput: AstroData objects, either a single instance or a list
-
+    
     :param extver: Extension number for the table (should match the science
                    extension).
     :type extver: int
-
+    
     :param replace: Flag to determine if an existing OBJCAT should be
-                    replaced or updated in place.  If replace=False, the
+                    replaced or updated in place. If replace=False, the
                     length of all lists provided must match the number
                     of entries currently in OBJCAT.
     :type replace: boolean
-
-    :param id: List of ID numbers.  If not provided, will be automatically
+    
+    :param id: List of ID numbers. If not provided, will be automatically
                assigned to the index (+1) of the list of x-values.
     :type id: Python list of ints
     
@@ -47,7 +51,7 @@ def add_objcat(adinput=None, extver=1, replace=False,
     
     :param dec: List of Dec values. Required if creating new table.
     :type dec: Python list of floats
-
+    
     :param flux: List of flux values. Set to -999 if not provided.
     :type flux: Python list of floats
     
@@ -56,54 +60,54 @@ def add_objcat(adinput=None, extver=1, replace=False,
     
     :param refmag: List of reference magnitude values. Set to -999 if 
                    not provided.
-    :type refmag: Python list of floats    
+    :type refmag: Python list of floats
     """
-
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
-
+    
     # The validate_input function ensures that adinput is not None and returns
     # a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
-
+    
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "ADDOBCAT"
-
+    timestamp_key = timestamp_keys["add_objcat"]
+    
     # Initialize the list of output AstroData objects
     adoutput_list = []
     try:
         
         # Loop over each input AstroData object in the input list
-        for ad in adinput:    
-
+        for ad in adinput:
+            
             # Check if OBJCAT already exists and just update if desired
-            objcat = ad['OBJCAT',extver]
+            objcat = ad["OBJCAT",extver]
             if objcat and not replace:
-                log.info('Table already exists; updating values.')
+                log.fullinfo("Table already exists; updating values.")
                 if id is not None:
-                    objcat.data.field('id')[:] = id
+                    objcat.data.field("id")[:] = id
                 if x is not None:
-                    objcat.data.field('x')[:] = x
+                    objcat.data.field("x")[:] = x
                 if y is not None:
-                    objcat.data.field('y')[:] = y
+                    objcat.data.field("y")[:] = y
                 if ra is not None:
-                    objcat.data.field('ra')[:] = ra
+                    objcat.data.field("ra")[:] = ra
                 if dec is not None:
-                    objcat.data.field('dec')[:] = dec
+                    objcat.data.field("dec")[:] = dec
                 if flux is not None:
-                    objcat.data.field('flux')[:] = flux
+                    objcat.data.field("flux")[:] = flux
                 if refid is not None:
-                    objcat.data.field('refid')[:] = refid
+                    objcat.data.field("refid")[:] = refid
                 if refmag is not None:
-                    objcat.data.field('refmag')[:] = refmag
+                    objcat.data.field("refmag")[:] = refmag
                 continue
-
+            
             # Make new table: x, y, ra, dec required
             if x is None or y is None or ra is None or dec is None:
                 raise Errors.InputError("Arguments x, y, ra, dec must " +
-                                        "not be None.")                
+                                        "not be None.")
             # define sensible placeholders for missing information
             nlines = len(x)
             if id is None:
@@ -111,40 +115,39 @@ def add_objcat(adinput=None, extver=1, replace=False,
             if flux is None:
                 flux = [-999]*nlines
             if refid is None:
-                refid = ['']*nlines
+                refid = [""]*nlines
             if refmag is None:
                 refmag = [-999]*nlines
-
+            
             # define pyfits columns
-            c1 = pf.Column(name='id',format='J',array=id)
-            c2 = pf.Column(name='x',format='E',array=x)
-            c3 = pf.Column(name='y',format='E',array=y)
-            c4 = pf.Column(name='ra',format='E',array=ra)
-            c5 = pf.Column(name='dec',format='E',array=dec)
-            c6 = pf.Column(name='flux',format='E',array=flux)
-            c7 = pf.Column(name='refid',format='22A',array=refid)
-            c8 = pf.Column(name='refmag',format='E',array=refmag)
-
+            c1 = pf.Column(name="id",format="J",array=id)
+            c2 = pf.Column(name="x",format="E",array=x)
+            c3 = pf.Column(name="y",format="E",array=y)
+            c4 = pf.Column(name="ra",format="E",array=ra)
+            c5 = pf.Column(name="dec",format="E",array=dec)
+            c6 = pf.Column(name="flux",format="E",array=flux)
+            c7 = pf.Column(name="refid",format="22A",array=refid)
+            c8 = pf.Column(name="refmag",format="E",array=refmag)
+            
             # make new pyfits table
             col_def = pf.ColDefs([c1,c2,c3,c4,c5,c6,c7,c8])
             tb_hdu = pf.new_table(col_def)
             tb_ad = AstroData(tb_hdu)
-            tb_ad.rename_ext('OBJCAT',extver)
-
-
+            tb_ad.rename_ext("OBJCAT",extver)
+            
             # replace old version or append new table to AD object
             if objcat:
-                ad = _replace_ext(ad,'OBJCAT',extver,tb_hdu)
+                ad = _replace_ext(ad,"OBJCAT",extver,tb_hdu)
             else:
                 ad.append(tb_ad)
-
+            
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
-
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
-
+        
         # Return the list of output AstroData objects
         return adoutput_list
     except:
@@ -152,15 +155,14 @@ def add_objcat(adinput=None, extver=1, replace=False,
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-
 def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
-                   method='daofind'):
+                   method="daofind"):
     """
     Find x,y positions of all the objects in the input image. Append 
     a FITS table extension with position information plus columns for
     standard objects to be updated with position from addReferenceCatalogs
     (if any are found for the field).
-
+    
     The appended FITS table with extension name 'OBJCAT' will contain
     these columns:
     - 'id'    : Unique ID. Simple running number.
@@ -173,68 +175,68 @@ def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
     - 'flux'  : Flux given by the gauss fit of the object
     - 'refid' : Reference ID for the reference star found in the field
     - 'refmag': Reference magnitude. 'refid' and 'refmag' will be fill
-                by the 'correlateWithReferenceCatalogs' function.       
-
+                by the 'correlateWithReferenceCatalogs' function.
+    
     :param adinput: image(s) to detect sources in
     :type adinput: AstroData objects, either a single instance or a list
-
+    
     :param sigma: The mean of the background value. If nothing is passed,
                   it will be automatically determined
     :type sigma: float
-
+    
     :param threshold: Threshold intensity for a point source; should generally
                   be at least 3 or 4 sigma above background RMS. It was found
                   that 20 is a good number for QA purposes; 2.5 is a good number
                   for detecting most sources in the field.
     :type threshold: float
-
+    
     :param fwhm: FWHM to be used in the convolve filter. This ends up playing
                  a factor in determining the size of the kernel put through 
                  the gaussian convolve.
     :type fwhm: Number [5.5]
-
+    
     :param method: source detection algorithm to use
     :type method: string; currently only option is 'daofind'
     """
-
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
-
+    
     # The validate_input function ensures that adinput is not None and returns
     # a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
-
+    
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "DETECSRC"
-
+    timestamp_key = timestamp_keys["detect_sources"]
+    
     # Initialize the list of output AstroData objects
     adoutput_list = []
     try:
-
+        
         # Loop over each input AstroData object in the input list
         for ad in adinput:
-
-            for sciext in ad['SCI']:
+            
+            for sciext in ad["SCI"]:
                 
                 extver = sciext.extver()
-
+                
                 # find objects in pixel coordinates
-                if method=='daofind':
+                if method=="daofind":
                     obj_list = _daofind(sciext=sciext, sigma=sigma,
                                         threshold=threshold, fwhm=fwhm)
                 else:
                     raise Errors.InputError("Source detection method ",
                                             method,"is unsupported.")
-
+                
                 # separate pixel coordinates into x, y lists
                 obj_x, obj_y = [np.asarray(obj_list)[:,k] for k in [0,1]]
-
+                
                 # use WCS to convert pixel coordinates to RA/Dec
                 wcs = pywcs.WCS(sciext.header)
                 obj_ra, obj_dec = wcs.wcs_pix2sky(obj_x,obj_y,1)
-
+                
                 nobj = len(obj_ra)
                 log.stdinfo("Found %d sources in %s['SCI',%d]" %
                             (nobj,ad.filename,extver))
@@ -244,14 +246,14 @@ def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
                                       ra=obj_ra, dec=obj_dec,
                                       replace=True)
                 ad = adoutput[0]
-
+            
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
-
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
-
+        
         # Return the list of output AstroData objects
         return adoutput_list
     except:
@@ -259,11 +261,9 @@ def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
-
 
 def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5, 
              sharplim=[0.2,1.0], roundlim=[-1.0,1.0], window=None,
@@ -275,28 +275,26 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
     References:
         This code is heavily influenced by 
         'http://idlastro.gsfc.nasa.gov/ftp/pro/idlphot/find.pro'.
-        'find.pro' was written by W. Landsman, STX  February, 1987.
+        'find.pro' was written by W. Landsman, STX February, 1987.
         
         This code was converted to Python with areas re-written for 
         optimization by:
         River Allen, Gemini Observatory, December 2009. riverallen@gmail.com
-
+        
         Updated by N. Zarate and M. Clarke for incorporation into gempy
         package, February 2011 and June 2011.
-
     """
-
+    
     # import a few things only required by this helper function
     import time
     from convolve import convolve2d
-
+    
     log = gemLog.getGeminiLog()
-
+    
     if not sciext:
         raise Errors.InputError("_daofind requires a science extension.")
     else:
         sciData = sciext.data
-        
         
     if window is not None:
         if type(window) == tuple:
@@ -328,13 +326,13 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
              
     # Setup
     # -----
-
+    
     ost = time.time()
     #Maximum size of convolution box in pixels 
     maxConvSize = 13
-        
+    
     #Radius is 1.5 sigma
-    radius = np.maximum(0.637 * fwhm, 2.001)             
+    radius = np.maximum(0.637 * fwhm, 2.001)
     radiusSQ = radius ** 2
     kernelHalfDimension = np.minimum(np.array(radius, copy=0).astype(np.int32), 
                                   (maxConvSize - 1) / 2)
@@ -358,7 +356,7 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
     #MASK is complementary to SKIP in Stetson's Fortran
     mask = np.array(gauss <= radiusSQ, copy=0).astype(np.int32)
     #Value of c are now equal to distance to center
-    good = np.where(np.ravel(mask))[0]  
+    good = np.where(np.ravel(mask))[0]
     pixels = good.size
     
     # Compute quantities for centroid computations that can be used
@@ -379,7 +377,7 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
           1   2   3   2   1          2   4   6   8   6   4   2
                                      1   2   3   4   3   2   1
     
-     respectively).  This is done to desensitize the derived parameters to
+     respectively). This is done to desensitize the derived parameters to
      possible neighboring, brighter stars.[1]
     """
     
@@ -409,7 +407,7 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
     sgdgdx = np.sum(wt * sgy * dgdx)
     sgdgdy = np.sum(wt * sgx * dgdy)
     
-    kernel = gauss * mask          #Convolution kernel now in c      
+    kernel = gauss * mask          #Convolution kernel now in c
     sumc = np.sum(kernel)
     sumcsq = np.sum(kernel ** 2) - (sumc ** 2 / pixels)
     sumc = sumc / pixels
@@ -433,15 +431,15 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
     c1 = (c1 - sumc1) / sumc1sq
     
     # From now on we exclude the central pixel
-    mask[kernelHalfDimension,kernelHalfDimension] = 0    
-        
+    mask[kernelHalfDimension,kernelHalfDimension] = 0
+    
     # Reduce the number of valid pixels by 1
-    pixels = pixels - 1      
+    pixels = pixels - 1
     # What this operation looks like:
     # ravel(mask) = [0 0 1 1 1 0 0 0 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 0 1 ...]
     # where(ravel(mask)) = (array([ 2,  3,  4,  8,  9, 10, 11, 12, 14, ...]),)
     # ("good" identifies position of valid pixels)
-    good = np.where(np.ravel(mask))[0]      
+    good = np.where(np.ravel(mask))[0]
     
     # x and y coordinate of valid pixels 
     xx = (good % kernelDimension) - kernelHalfDimension
@@ -450,23 +448,22 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
     yy = np.array(good / kernelDimension, 
                   copy=0).astype(np.int32) - kernelHalfDimension
     
-
-    # Extension and Window / Grid    
+    # Extension and Window / Grid
     # ---------------------------
     xyArray = []
     outputLines = []
-
+    
     # Estimate the background if none provided
     if sigma is None:
         fim = np.copy(sciData)
         stars = np.where(fim > (sciData.std() + sciData.mean()))
         fim[stars] = sciData.mean()
-    
+        
         outside = np.where(fim < (1*sciData.std() - sciData.mean()))
         fim[outside] = sciData.mean()
-
+        
         sigma = fim.std()
-        log.fullinfo('Estimated Background: %.3f' % sigma)
+        log.fullinfo("Estimated Background: %.3f" % sigma)
     
     hmin = sigma * threshold
     
@@ -517,8 +514,8 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
         h = convolve2d( sciSection, kernel )
         
         et = time.time()
-        log.debug('Convolve Time: %.3f' % (et-st))
-    
+        log.debug("Convolve Time: %.3f" % (et-st))
+        
         if not grid:
             h[0:kernelHalfDimension,:] = 0
             h[xDimension - kernelHalfDimension:xDimension,:] = 0
@@ -529,11 +526,11 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
         
         # Filter
         offset = yy * xDimension + xx
-
+        
         # Valid image pixels are greater than hmin
         index = np.where(np.ravel(h >= hmin))[0]
         nfound = index.size
-
+        
         # Any maxima found?
         if nfound > 0:
             h = h.flatten()
@@ -558,8 +555,8 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
         else:
             log.debug("No objects above hmin (%s) were found." %(str(hmin)))
             continue
-                
-        #  Loop over star positions; compute statistics
+        
+        # Loop over star positions; compute statistics
         
         st = time.time()
         for i in np.arange(ngood):
@@ -568,10 +565,10 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
                                        ix[i] - kernelHalfDimension :
                                            (ix[i] + kernelHalfDimension)+1])
             
-            # pixel intensity        
+            # pixel intensity
             pixIntensity = h[iy[i],ix[i]]
             
-            #  Compute Sharpness statistic
+            # Compute Sharpness statistic
             #@@FIXME: This should do proper checking...the issue
             # is an out of range index with kernelhalf and temp
             # IndexError: index (3) out of range (0<=index<=0) in dimension 0
@@ -581,7 +578,7 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
             except:
                 continue
             
-            if (sharp1 < sharplim[0]) or (sharp1 > sharplim[1]):   
+            if (sharp1 < sharplim[0]) or (sharp1 > sharplim[1]):
                 # Reject
                 # not sharp enough?
                 continue
@@ -589,7 +586,7 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
             dx = np.sum(np.sum(temp, 1) * c1)
             dy = np.sum(np.sum(temp, 0) * c1)
             
-            if (dx <= 0) or (dy <= 0):   
+            if (dx <= 0) or (dy <= 0):
                 # Reject
                 continue
             
@@ -597,18 +594,18 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
             around = 2 * (dx - dy) / (dx + dy)
             
             # Reject if not within specified roundness boundaries.
-            if (around < roundlim[0]) or (around > roundlim[1]):   
+            if (around < roundlim[0]) or (around > roundlim[1]):
                 # Reject
                 continue
             
             """
-             Centroid computation:   The centroid computation was modified
+             Centroid computation: The centroid computation was modified
              in Mar 2008 and now differs from DAOPHOT which multiplies the
              correction dx by 1/(1+abs(dx)). The DAOPHOT method is more robust
              (e.g. two different sources will not merge)
              especially in a package where the centroid will be subsequently be
-             redetermined using PSF fitting.   However, it is less accurate,
-             and introduces biases in the centroid histogram.   The change here
+             redetermined using PSF fitting. However, it is less accurate,
+             and introduces biases in the centroid histogram. The change here
              is the same made in the IRAF DAOFIND routine (see
              http://iraf.net/article.php?story=7211&query=daofind ) [1]
             """
@@ -622,7 +619,7 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
             hx = (sumgd - sumgx * sumd / sumOfWt) / (sumgsqy - 
                                                      sumgx ** 2 / sumOfWt)
             
-            # HX is the height of the best-fitting marginal Gaussian.   If
+            # HX is the height of the best-fitting marginal Gaussian. If
             # this is not positive then the centroid does not make sense. [1]
             if (hx <= 0):
                 # Reject
@@ -638,7 +635,7 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
                 continue
             
             #X centroid in original array
-            xcen = ix[i] + dx    
+            xcen = ix[i] + dx
             
             # Find Y centroid
             sd = np.sum(temp * xwt, 1)
@@ -667,7 +664,7 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
             subXYArray.append( [xcen, ycen, pixIntensity] )
             
         et = time.time()
-        log.debug('Looping over Stars time: %.3f' % (et-st))
+        log.debug("Looping over Stars time: %.3f" % (et-st))
         
         subXYArray = _average_each_cluster( subXYArray, 10 )
         xySize = len(subXYArray)
@@ -682,15 +679,13 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
             
             subXYArray[i][0] += yoffset
             subXYArray[i][1] += xoffset
-                
-            
         
         xyArray.extend(subXYArray)
             
     oet = time.time()
     overall_time = (oet-ost)
-    log.debug('No. of objects detected: %i' % len(xyArray))
-    log.debug('Overall time:%.3f seconds.' % overall_time)
+    log.debug("No. of objects detected: %i" % len(xyArray))
+    log.debug("Overall time:%.3f seconds." % overall_time)
     
     return xyArray
 
@@ -758,22 +753,21 @@ def _average_each_cluster( xyArray, pixApart=10.0 ):
         
         
         j = j + 1
-
+    
     return newXYArray
-
 
 def _replace_ext(ad,extname,extver,new_hdu):
     """
     This is a helper function to replace an existing AD extension with a new
-    Pyfits HDU.  It should be replaced by an AstroData member function
+    Pyfits HDU. It should be replaced by an AstroData member function
     when available.
     """
-
+    
     intext = ad.get_int_ext((extname,extver),hduref=True)
-
+    
     if intext==0:
-        raise Errors.AstroDataError('Cannot replace_ext on PHU')
-
+        raise Errors.AstroDataError("Cannot replace_ext on PHU")
+    
     ad.hdulist[intext] = new_hdu
-
+    
     return ad
