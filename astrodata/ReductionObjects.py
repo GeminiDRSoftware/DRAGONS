@@ -125,19 +125,25 @@ class ReductionObject(object):
             log.changeIndent(indentLevel=0)
             log.status("="*80)
             spacer = "\n"+"="*80
-        if btype=="RECIPE":
-            spacer = "\n"+"="*len(logstring)
-            # if it is a proxy recipe, log only at debug level,
-            # don't change indent
             if primname.startswith('proxy'):
                 log.debug(logstring)
             else:
-                log.changeIndent(indentLevel=log.indentLevel+1)
                 log.status(logstring + spacer)
         else:
-            log.changeIndent(indentLevel=log.indentLevel+1)
-            spacer = "\n"+"-"*len(logstring)
-            log.status(logstring + spacer)
+            if btype=="RECIPE":
+                spacer = "\n"+"="*len(logstring)
+
+                # if it is a proxy recipe, log only at debug level,
+                # don't change indent
+                if primname.startswith('proxy'):
+                    log.debug(logstring)
+                else:
+                    log.changeIndent(indentLevel=log.indentLevel+1)
+                    log.status(logstring + spacer)
+            else:
+                log.changeIndent(indentLevel=log.indentLevel+1)
+                spacer = "\n"+"-"*len(logstring)
+                log.status(logstring + spacer)
                 
         # primset init should perhaps be called ready
         # because it needs to be called each step because though
@@ -201,12 +207,13 @@ class ReductionObject(object):
             # top-level recipe, add some extra demarcation
             log.changeIndent(indentLevel=0)
             log.status("="*80)
-        if btype=="RECIPE":
-            if not primname.startswith('proxy'):
-                log.changeIndent(indentLevel=log.indentLevel-1)
         else:
-            log.changeIndent(indentLevel=log.indentLevel-1)
-            log.status("")
+            if btype=="RECIPE":
+                if not primname.startswith('proxy'):
+                    log.changeIndent(indentLevel=log.indentLevel-1)
+            else:
+                log.changeIndent(indentLevel=log.indentLevel-1)
+                log.status("")
         yield context
         
     def runstep(self, primname, cfgobj):
