@@ -173,7 +173,7 @@ def align_to_reference_image(adinput, interpolator="linear"):
         log.fullinfo("Setting AREA keywords in header to denote original " +
                      "data area.")
         area_keys = []
-        log.fullinfo("AREATYPE = "P4"     / Polygon with 4 vertices")
+        log.fullinfo("AREATYPE = 'P4'     / Polygon with 4 vertices")
         area_keys.append(("AREATYPE","P4","Polygon with 4 vertices"))
         for i in range(len(ref_corners)):
             for axis in range(len(ref_corners[i])):
@@ -293,7 +293,7 @@ def align_to_reference_image(adinput, interpolator="linear"):
             log.fullinfo("Setting AREA keywords in header to denote " +
                          "original data area.")
             area_keys = []
-            log.fullinfo("AREATYPE = "P4"     / Polygon with 4 vertices")
+            log.fullinfo("AREATYPE = 'P4'     / Polygon with 4 vertices")
             area_keys.append(("AREATYPE","P4","Polygon with 4 vertices"))
             for i in range(len(data_corners)):
                 for axis in range(len(data_corners[i])):
