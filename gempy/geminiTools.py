@@ -311,20 +311,14 @@ def mark_history(adinput=None, keyword=None):
         # the 'keyword' parameter to the PHU. If 'keyword' is None,
         # history_mark will still add the 'GEM-TLM' keyword
         ad.history_mark(key=keyword, stomp=True)
-        
-        log.fullinfo('*'*50, category='header')
-        log.fullinfo('File = %s' % ad.filename, category='header')
-        log.fullinfo('~'*50, category='header')
-        log.fullinfo("PHU keyword GEM-TLM = %s updated" \
-                     % (ad.phu_get_key_value('GEM-TLM')),
-                     category='header')
-        # Only log the following message if the 'keyword' parameter was defined
         if keyword is not None:
-            log.fullinfo("PHU keyword %s = %s updated" \
-                         % (keyword, ad.phu_get_key_value(keyword)),
-                         category='header')
-        log.fullinfo('-'*50, category='header')
-        
+            log.fullinfo("PHU keyword %s = %s added to %s" \
+                         % (keyword, ad.phu_get_key_value(keyword),
+                            ad.filename), category='header')
+        log.fullinfo("PHU keyword GEM-TLM = %s added to %s" \
+                     % (ad.phu_get_key_value("GEM-TLM"), ad.filename),
+                     category='header')
+
 def pyrafBoolean(pythonBool):
     """
     A very basic function to reduce code repetition that simply 'casts' any 
@@ -365,9 +359,11 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
     log = gemLog.getGeminiLog()
     historyComment = None
     keyAndCommentDict = {
+        'bpmname':['BPMNAME', 'Name of BPM used to identify bad pixels'],
         'bunit':['BUNIT', 'Physical units of the array values'],
         'count_exts("SCI")':['NSCIEXT', 'Number of science extensions'],
         'dispersion_axis()':['DISPAXIS','Dispersion axis'],
+        'exposure_time()':['EXPTIME','Exposure time [seconds]'],
         'filter_name(stripID=True, pretty=True)':
             ['FILTER', 'Combined filter name'],
         'gain()':['GAIN', 'Gain [electrons/ADU]'],
@@ -377,8 +373,6 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
         'pixel_scale()':['PIXSCALE', 'Pixel scale [arcsec/pixel]'],
         'read_noise()':['RDNOISE', 'Estimated read noise [electrons]'],
         'saturation_level()':['SATLEVEL', 'Saturation level [ADU]'],
-        # store_original_name() actually all ready writes to the PHU, but
-        # doubling it doesn't hurt.
         'store_original_name()':
             ['ORIGNAME', 'Original filename prior to processing'],
                         }
