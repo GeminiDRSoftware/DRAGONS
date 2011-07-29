@@ -454,7 +454,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 continue
 
             # Retrieve the appropriate flat
-            flat = AstroData(rc.get_cal(ad,"flat"))
+            flat = AstroData(rc.get_cal(ad,"processed_flat"))
 
             # Take care of the case where there was no flat 
             if flat.filename is None:
@@ -509,7 +509,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                                                 "flatCorrect")
 
             # Test to see if we found a flat
-            flat = AstroData(rc.get_cal(ad, "flat"))
+            flat = AstroData(rc.get_cal(ad, "processed_flat"))
             if flat.filename is None:
                 if rc['context']=="QA":
                     div_flat = False 
@@ -558,7 +558,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                                                 "fringeCorrect")
 
             # Test to see if we found a fringe
-            fringe = AstroData(rc.get_cal(ad, "fringe"))
+            fringe = AstroData(rc.get_cal(ad, "processed_fringe"))
             if fringe.filename is None:
                 if rc['context']=="QA":
                     rm_fringe = False
@@ -796,24 +796,29 @@ class GEMINIPrimitives(GENERALPrimitives):
                 raise Errors.PrimitiveError("Fewer than 2 frames " +
                                             "provided as input.")
         else:
+
+            recipe_list = []
+
             # Check to see if detectSources needs to be run
             run_ds = False
             for ad in adinput:
-                objcat = ad['OBJCAT']
-                if objcat is None:
+                if len(ad['OBJCAT'])==0:
                     run_ds = True
                     break
             if run_ds:
-                rc.run("detectSources")
+                recipe_list.append("detectSources")
+
 
             # Register all images to the first one
-            rc.run("correctWCSToReferenceImage")
+            recipe_list.append("correctWCSToReferenceImage")
 
             # Align all images to the first one
-            rc.run("alignToReferenceImage")
+            recipe_list.append("alignToReferenceImage")
 
             # Stack all frames
-            rc.run("stackFrames")
+            recipe_list.append("stackFrames")
+
+            rc.run("\n".join(recipe_list))
 
         yield rc        
 
@@ -853,7 +858,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 continue
 
             # Get the appropriate fringe frame
-            fringe = AstroData(rc.get_cal(ad, "fringe"))
+            fringe = AstroData(rc.get_cal(ad, "processed_fringe"))
 
             # Take care of the case where there was no fringe 
             if fringe.filename is None:
@@ -1261,7 +1266,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 continue
 
             # Get the appropriate dark for this AstroData object
-            dark = AstroData(rc.get_cal(ad, "dark"))
+            dark = AstroData(rc.get_cal(ad, "processed_dark"))
 
             # Take care of the case where there was no dark
             if dark.filename is None:

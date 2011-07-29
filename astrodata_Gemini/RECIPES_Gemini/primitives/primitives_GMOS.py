@@ -53,7 +53,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                                                 "biasCorrect")
 
             # Test to see if we found a bias
-            bias = AstroData(rc.get_cal(ad, "bias"))
+            bias = AstroData(rc.get_cal(ad, "processed_bias"))
             if bias.filename is None:
                 if rc['context']=="QA":
                     sub_bias = False
@@ -235,8 +235,9 @@ class GMOSPrimitives(GEMINIPrimitives):
 
         # If no errors found, subtract the overscan and trim it
         if sub_over:
-            rc.run("subtractOverscan")
-            rc.run("trimOverscan")
+            recipe_list = ["subtractOverscan",
+                           "trimOverscan",]
+            rc.run("\n".join(recipe_list))
 
         yield rc
 
@@ -370,7 +371,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 continue
             
             # Retrieve the appropriate bias
-            bias = AstroData(rc.get_cal(ad, "bias"))
+            bias = AstroData(rc.get_cal(ad, "processed_bias"))
             
             # If no appropriate bias is found, it is ok not to subtract the
             # bias 

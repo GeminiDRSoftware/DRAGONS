@@ -54,11 +54,14 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
 
             if red:
 
+                recipe_list = []
                 # Call the makeFringeFrame primitive
-                rc.run("makeFringeFrame")
+                recipe_list.append("makeFringeFrame")
 
                 # Store the generated fringe
-                rc.run("storeProcessedFringe")
+                recipe_list.append("storeProcessedFringe")
+                
+                rc.run("\n".join(recipe_list))
 
         # Report all the input files back to the reduction context
         rc.report_output(adinput)
