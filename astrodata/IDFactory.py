@@ -43,11 +43,14 @@ def generate_stackable_id( dataset, version = "1_0" ):
         shaObj.update( phu['OBJECT'] )
     """
     
-    if type(dataset) == str:
-        phu = pf.getheader(dataset)
-        ID = version + "_" + phu['OBSID'] + "_" + phu['OBJECT'] 
-    elif type(dataset) == AstroData:
-        ID = version + "_" + dataset.phuValue('OBSID') + "_" + dataset.phuValue('OBJECT')
+    try:
+        if type(dataset) == str:
+            ad = AstroData(dataset)
+            ID = version + str(ad.group_id())
+        elif type(dataset) == AstroData:
+            ID = version + str(dataset.group_id())
+    except:
+        print "Filename:", dataset.filename
         
     ID = make_id_safe_for_filename(ID)
     return ID
