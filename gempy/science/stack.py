@@ -3,11 +3,17 @@
 
 import sys
 from astrodata import Errors
+from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
 from gempy import geminiTools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
+
+# Load the timestamp keyword dictionary that will be used to define the keyword
+# to be used for the time stamp for the user level function
+timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
+                                          "timestamp_keys")
 
 def stack_frames(adinput=None, suffix=None, operation="average", 
                  reject_method="none", mask_type="none",
@@ -18,10 +24,6 @@ def stack_frames(adinput=None, suffix=None, operation="average",
     data quality extensions are propagated to the output AstroData object.
     
     NOTE: The inputs to this function MUST be prepared.
-    
-    Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
     
     :param adinput: Astrodata inputs to be combined
     :type adinput: Astrodata objects, either a single or a list of objects
@@ -38,15 +40,15 @@ def stack_frames(adinput=None, suffix=None, operation="average",
     # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
     
-    # The stack_frames user level function cannot stack one AstroData object.
-    # If the adinput list contains a single AstroData object, raise an
-    # exception
+    # Check whether two or more input AstroData objects were provided
     if len(adinput) == 1:
-        raise Errors.InputError("Cannot stack a single AstroData object")
+        msg = "No stacking will be performed, since at least two input " \
+              "AstroData objects are required for stack_frames"
+        raise Errors.InputError(msg)
     
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "STACK"
+    timestamp_key = timestamp_keys["stack_frames"]
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -102,7 +104,7 @@ def stack_frames(adinput=None, suffix=None, operation="average",
         if gemini.gemcombine.status:
             raise Errors.OutputError("The IRAF task gemcombine failed")
         else:
-            log.info("The IRAF task gemcombine completed sucessfully")
+            log.fullinfo("The IRAF task gemcombine completed sucessfully")
         
         # Create the output AstroData object by loading the output file from
         # gemcombine into AstroData, remove intermediate temporary files from
@@ -110,8 +112,8 @@ def stack_frames(adinput=None, suffix=None, operation="average",
         adstack, junk, junk = clm.finishCL()
         
         # Add the appropriate time stamps to the PHU
-        gt.mark_history(adinput=adstack, keyword=keyword)
-
+        gt.mark_history(adinput=adstack, keyword=timestamp_key)
+        
         # Return the output AstroData object
         return adstack
     
