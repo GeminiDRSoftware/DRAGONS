@@ -4,7 +4,6 @@ class PROCESSED_BIAS(DataClassification):
     usage = 'Applies to all "gbias"ed data.'
     parent = "UNPREPARED"
     requirement = OR([PHU( {'{re}.*?GBIAS': ".*?" }),
-                      AND([PHU( {'{re}.*?STACK': ".*?" }),
-                           ISCLASS("GMOS_BIAS")])])
+                      PHU( {'{re}.*?PROCBIAS': ".*?" })])
     
 newtypes.append(PROCESSED_BIAS())
