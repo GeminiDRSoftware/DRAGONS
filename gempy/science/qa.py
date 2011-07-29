@@ -9,7 +9,13 @@ from astrodata import Lookups
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
 
-def measure_iq(adinput=None, centroid_function='moffat', display=False, qa=True):
+# Load the timestamp keyword dictionary that will be used to define the keyword
+# to be used for the time stamp for the user level function
+timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
+                                          "timestamp_keys")
+
+def measure_iq(adinput=None, centroid_function='moffat', display=False,
+               qa=True):
     """
     This function will detect the sources in the input images and fit
     either Gaussian or Moffat models to their profiles and calculate the 
@@ -60,7 +66,7 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False, qa=True)
 
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "MEASREIQ"
+    timestamp_key = timestamp_keys["measure_iq"]
 
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -176,7 +182,7 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False, qa=True)
                     log.stdinfo(finalStr, category='IQ')
                 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
 
             # Append the output AstroData object to the list of output
             # AstroData objects
