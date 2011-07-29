@@ -11,18 +11,16 @@ from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from gempy import string as gstr
 
+# Load the timestamp keyword dictionary that will be used to define the keyword
+# to be used for the time stamp for the user level function
+timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
+                                          "timestamp_keys")
+
 def divide_by_flat(adinput=None, flat=None):
     """
     The divide_by_flat user level function will divide the science extension of
     the input science frames by the science extension of the input flat frames.
     The variance and data quality extension will be updated, if they exist.
-    
-    This is all conducted in pure Python through the arith 'toolbox' of 
-    astrodata. 
-    
-    Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
     
     :param adinput: Astrodata inputs to have DQ extensions added to
     :type adinput: Astrodata
@@ -50,7 +48,7 @@ def divide_by_flat(adinput=None, flat=None):
     
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "DIVFLAT"
+    timestamp_key = timestamp_keys["divide_by_flat"]
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -61,18 +59,18 @@ def divide_by_flat(adinput=None, flat=None):
             
             # Check whether the divide_by_flat user level function has been
             # run previously
-            if ad.phu_get_key_value(keyword):
+            if ad.phu_get_key_value(timestamp_key):
                 raise Errors.InputError("%s has already been processed by " \
                                         "divide_by_flat" % (ad.filename))
             
             # Divide the adinput by the flat
-            log.info("Dividing the input AstroData object (%s) "\
-                     "by this flat:\n%s" % (ad.filename, 
-                                               flat_dict[ad].filename))
+            log.fullinfo("Dividing the input AstroData object (%s) " \
+                         "by this flat:\n%s" % (ad.filename,
+                                                flat_dict[ad].filename))
             ad = ad.div(flat_dict[ad])
-
+            
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
             
             # Append the output AstroData object to the list of output
             # AstroData objects
@@ -92,10 +90,6 @@ def normalize_image(adinput=None):
     extension of the input AstroData object(s) and automatically update the
     variance and data quality extensions, if they exist.
     
-    Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
-    
     :param adinput: Astrodata input flat(s) to be combined and normalized
     :type adinput: Astrodata
     """
@@ -110,7 +104,7 @@ def normalize_image(adinput=None):
     
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "NORMLIZE"
+    timestamp_key = timestamp_keys["normalize_image"]
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -121,24 +115,25 @@ def normalize_image(adinput=None):
             
             # Check whether the normalize_image user level function has
             # been run previously
-            if ad.phu_get_key_value(keyword):
+            if ad.phu_get_key_value(timestamp_key):
                 raise Errors.InputError("%s has already been processed by " \
                                         "normalize_image" % (ad.filename))
             
             # Loop over each science extension in each input AstroData object
             for ext in ad["SCI"]:
-
+                
                 # Normalise the input AstroData object. Calculate the mean
                 # value of the science extension
                 mean = np.mean(ext.data)
                 # Divide the science extension by the mean value of the science
                 # extension
-                log.info("Normalizing %s[%s,%d] by dividing by the mean = %f" \
-                         % (ad.filename, ext.extname(), ext.extver(), mean))
+                log.fullinfo("Normalizing %s[%s,%d] by dividing by the mean " \
+                             "= %f" % (ad.filename, ext.extname(),
+                                       ext.extver(), mean))
                 ext = ext.div(mean)
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
             
             # Append the output AstroData object to the list of output
             # AstroData objects
@@ -152,7 +147,7 @@ def normalize_image(adinput=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def normalize_flat_image_gmos(adinput=None, saturation=45000):
+def normalize_image_gmos(adinput=None, saturation=45000):
     """
     This function will calculate a normalization factor from statistics
     on CCD2, then divide by this factor and propagate variance accordingly.
@@ -160,39 +155,33 @@ def normalize_flat_image_gmos(adinput=None, saturation=45000):
     CCDs 1 and 3 have lower average illumination than CCD2, and that needs
     to be corrected for by the flat.
     
-    Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
-    
     :param adinput: Astrodata input flat(s) to be combined and normalized
     :type adinput: Astrodata
-
+    
     :param saturation: Defines saturation level for the raw frame, in ADU
     :type saturation: float. If None, the saturation_level descriptor is used.
-
-    
     """
-
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
-
+    
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
-
+    
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "NORMFLAT"
-
+    timestamp_key = timestamp_keys["normalize_image_gmos"]
+    
     # Initialize the list of output AstroData objects
     adoutput_list = []
     try:
         for ad in adinput:
-
+            
             if saturation is None:
-                saturation = ad.saturation_level()            
-
+                saturation = ad.saturation_level()
+            
             # Find number of amps per CCD (assumes same number for all CCDs)
             # (can this be a descriptor?)
             amps_per_ccd = 0
@@ -202,8 +191,8 @@ def normalize_flat_image_gmos(adinput=None, saturation=45000):
                 detx1 = detsecs[0][0]
             else:
                 detx1 = detsecs[0]
-            for sciext in ad['SCI']:
-                raw_ccdsec = sciext.get_key_value('CCDSEC')
+            for sciext in ad["SCI"]:
+                raw_ccdsec = sciext.get_key_value("CCDSEC")
                 ccdsec = gstr.sectionStrToIntList(raw_ccdsec)
                 detsec = sciext.detector_section().as_list()
                 if (detsec[0] > detx1 and ccdsec[0] <= ccdx1):
@@ -213,34 +202,34 @@ def normalize_flat_image_gmos(adinput=None, saturation=45000):
                     amps_per_ccd += 1
                     ccdx1 = ccdsec[0]
                     detx1 = detsec[0]
-
+            
             # Get all CCD2 data
-            if ad.count_exts('SCI')==amps_per_ccd:
+            if ad.count_exts("SCI")==amps_per_ccd:
                 # Only one CCD present, assume it is CCD2
                 ccd2_ext_num = range(1,amps_per_ccd+1)
             else:
                 ccd2_ext_num = range(amps_per_ccd+1,2*amps_per_ccd+1)
-            log.fullinfo('Joining science extensions '+repr(ccd2_ext_num) + 
-                         ' for statistics')
-            data_list = [ad['SCI',i].data for i in ccd2_ext_num]
+            log.fullinfo("Joining science extensions "+repr(ccd2_ext_num) + 
+                         " for statistics")
+            data_list = [ad["SCI",i].data for i in ccd2_ext_num]
             central_data = np.hstack(data_list)
-
+            
             # Check units of CCD2; if electrons, convert saturation
-            # limit from ADU to electrons.  Also subtract overscan
+            # limit from ADU to electrons. Also subtract overscan
             # level if present
-            sciext = ad['SCI',ccd2_ext_num[0]]
-            overscan_level = sciext.get_key_value('OVERSCAN')
+            sciext = ad["SCI",ccd2_ext_num[0]]
+            overscan_level = sciext.get_key_value("OVERSCAN")
             if overscan_level is not None:
                 saturation -= overscan_level
                 log.fullinfo("Subtracting overscan level " +
                              "%.2f from saturation parameter" % overscan_level)
-            bunit = sciext.get_key_value('BUNIT')
-            if bunit=='electron':
+            bunit = sciext.get_key_value("BUNIT")
+            if bunit=="electron":
                 gain = sciext.gain().as_pytype()
                 saturation *= gain 
                 log.fullinfo("Saturation parameter converted to " +
                              "%.2f electrons" % saturation)
-
+            
             # Take off 5% of the width as a border
             xborder = int(0.05 * central_data.shape[1])
             yborder = int(0.05 * central_data.shape[0])
@@ -248,36 +237,37 @@ def normalize_flat_image_gmos(adinput=None, saturation=45000):
                 xborder = 20
             if yborder<20:
                 yborder = 20
-            log.fullinfo('Using data section [%i:%i,%i:%i] for statistics' %
+            log.fullinfo("Using data section [%i:%i,%i:%i] for statistics" %
                          (xborder,central_data.shape[1]-xborder,
                           yborder,central_data.shape[0]-yborder))
             stat_region = central_data[yborder:-yborder,xborder:-xborder]
-
+            
             # Remove negative and saturated values
             stat_region = stat_region[np.logical_and(stat_region>0,
                                                      stat_region<saturation)]
-
+            
             # Find the mode and standard deviation
             hist,edges = np.histogram(stat_region, bins=saturation/0.1)
             mode = edges[np.argmax(hist)]
             std = np.std(stat_region)
-
+            
             # Find the values within 3 sigma of the mode; the normalization
             # factor is the median of these values
-            central_values = stat_region[np.logical_and(stat_region>mode-3*std,
-                                                        stat_region<mode+3*std)]
+            central_values = stat_region[
+                np.logical_and(stat_region > mode - 3 * std,
+                               stat_region < mode + 3 * std)]
             norm_factor = np.median(central_values)
-            log.fullinfo('Normalization factor: %.2f' % norm_factor)
-
+            log.fullinfo("Normalization factor: %.2f" % norm_factor)
+            
             # Divide by the normalization factor and propagate the
             # variance appropriately
             ad = ad.div(norm_factor)
-
-            # Add the appropriate time stamp to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
-
-            adoutput_list.append(ad)
             
+            # Add the appropriate time stamp to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            
+            adoutput_list.append(ad)
+        
         # Return the output AstroData object
         return adoutput_list
     except:
