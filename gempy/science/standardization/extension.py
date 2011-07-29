@@ -66,6 +66,9 @@ def add_dq(adinput=None, bpm=None):
             # Loop over each science extension in each input AstroData object
             for ext in ad["SCI"]:
                 
+                # Retrieve the extension number for this extension
+                extver = ext.extver()
+                
                 # Get the non-linear level and the saturation level as integers
                 # using the appropriate descriptors
                 non_linear_level = ext.non_linear_level().as_pytype()
@@ -93,30 +96,33 @@ def add_dq(adinput=None, bpm=None):
                 
                 # Create a single DQ extension from the three arrays (BPM,
                 # non-linear and saturated). BPMs have an EXTNAME equal to "DQ"
-                bpmext = bpm["DQ", ext.extver()]
+                bpmext = bpm["DQ", extver]
                 dq_array = np.add(bpmext.data, non_linear_array,
                                   saturation_array)
                 
                 # Create a data quality AstroData object
+                bpmname = os.path.basename(bpm.filename)
                 log.fullinfo("Using %s[DQ, %d] BPM for %s[%s, %d]" % \
-                             (bpm.filename, ext.extver(), ad.filename,
-                              ext.extname(), ext.extver()))
+                             (bpmname, extver, ad.filename,
+                              ext.extname(), extver))
                 dq = AstroData(header=pf.Header(), data=dq_array)
-                dq.rename_ext("DQ", ver=ext.extver())
+                dq.rename_ext("DQ", ver=extver)
                 dq.filename = ad.filename
-                gt.update_key_value(adinput=dq, function="bunit",
-                                    value="bit", extname="DQ")
-                # Should a BPMFILE=bpm.filename keyword be added?
+                
+                # Call the _update_dq_header helper function to update the
+                # header of the data quality extension with some useful
+                # keywords
+                dq = _update_dq_header(sci=ext, dq=dq, bpmname=bpmname)
                 
                 # Append the DQ AstroData object to the input AstroData object.
                 # Check whether an extension with the same name as the DQ
                 # AstroData object already exists in the input AstroData object
-                if ad["DQ", ext.extver()]:
+                if ad["DQ", extver]:
                     raise Errors.Error("A [DQ, %d] extension already exists " \
-                                       "in %s" % (ext.extver(), ad.filename))
+                                       "in %s" % (extver, ad.filename))
                 log.fullinfo("Adding the [DQ, %d] extension to the input " \
                              "AstroData object %s" \
-                             % (ext.extver(), ad.filename))
+                             % (extver, ad.filename))
                 ad.append(moredata=dq)
             
             # Add the appropriate time stamps to the PHU
@@ -136,22 +142,16 @@ def add_dq(adinput=None, bpm=None):
 
 def add_mdf(adinput=None, mdf=None):
     """
-    This function is to attach the MDFs to the inputs as an extension. 
-    It is assumed that the MDFs are single extensions fits files and will
-    thus be appended as ('MDF',1) onto the inputs.
+    This user level function (ulf) is used to add an MDF extension to the input
+    AstroData object. If only one MDF is provided, that MDF will be add to all
+    input AstroData object(s). If more than one MDF is provided, the number of
+    MDF AstroData objects must match the number of input AstroData objects.
     
-    Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created in the 
-    ScienceFunctionManager and used within this function.
+    :param adinput: Astrodata inputs to have an MDF extension added
+    :type adinput: Astrodata
     
-    :param adinput: Astrodata inputs to have their headers standardized
-    :type adinput: Astrodata objects, either a single or a list of objects
-    
-    :param mdf: The MDF(s) to be added to the input(s).
-    :type mdf: AstroData objects in a list, or a single instance.
-               Note: If there are multiple inputs and one MDF provided, 
-               then the same MDF will be applied to all inputs; else the 
-               MDFs list must match the length of the inputs.
+    :param mdf: The MDF(s) to be added to the input(s)
+    :type mdf: AstroData
     """
     
     # Instantiate the log. This needs to be done outside of the try block,
@@ -463,6 +463,9 @@ def _calculate_var(adinput=None, add_read_noise=False,
     # Loop over the science extensions in the dataset
     for ext in adinput["SCI"]:
         
+        # Retrieve the extension number for this extension
+        extver = ext.extver()
+        
         # Determine the units of the pixel data in the input science
         # extension
         bunit = ext.get_key_value("BUNIT")
@@ -471,7 +474,7 @@ def _calculate_var(adinput=None, add_read_noise=False,
             # is only if the units are in ADU
             gain = ext.gain().as_pytype()
             log.fullinfo("Gain for %s[SCI,%d] = %f" \
-                         % (adinput.filename, ext.extver(), gain))
+                         % (adinput.filename, extver, gain))
             units = "ADU"
         elif bunit == "electron" or bunit == "electrons":
             units = "electrons"
@@ -486,7 +489,7 @@ def _calculate_var(adinput=None, add_read_noise=False,
             # add_read_noise is True 
             read_noise = ext.read_noise()
             log.fullinfo("Read noise for %s[SCI,%d] = %f" \
-                         % (adinput.filename, ext.extver(), read_noise))
+                         % (adinput.filename, extver, read_noise))
             
             # Determine the variance value to use when calculating the read
             # noise component of the variance.
@@ -531,7 +534,8 @@ def _calculate_var(adinput=None, add_read_noise=False,
         # calculated and added separately, then a variance extension will
         # already exist in the input AstroData object. In this case, just
         # add this new array to the current variance extension
-        if adinput["VAR", ext.extver()]:
+        if adinput["VAR", extver]:
+            
             # If both the read noise component and the poisson noise
             # component have been calculated, don't add to the variance
             # extension
@@ -542,23 +546,73 @@ def _calculate_var(adinput=None, add_read_noise=False,
             else:
                 log.fullinfo("Combining the newly calculated variance with " \
                              "the current variance extension %s[VAR,%d]" \
-                             % (adinput.filename, ext.extver()))
-                adinput["VAR", ext.extver()].data = np.add(
-                    adinput["VAR", ext.extver()].data, var_array_final)
+                             % (adinput.filename, extver))
+                adinput["VAR", extver].data = np.add(
+                    adinput["VAR", extver].data, var_array_final)
         else:
             # Create the variance AstroData object
             var = AstroData(header=pf.Header(), data=var_array_final)
-            var.rename_ext("VAR", ver=ext.extver())
+            var.rename_ext("VAR", ver=extver)
             var.filename = adinput.filename
-            gt.update_key_value(adinput=var, function="bunit",
-                                value="%s*%s" % (bunit, bunit),
-                                extname="VAR")
+            
+            # Call the _update_var_header helper function to update the header
+            # of the variance extension with some useful keywords
+            var = _update_var_header(sci=ext, var=var, bunit=bunit)
             
             # Append the variance AstroData object to the input AstroData
             # object. 
             log.fullinfo("Adding the [VAR, %d] extension to the input " \
                          "AstroData object %s" \
-                         % (ext.extver(),adinput.filename))
+                         % (extver, adinput.filename))
             adinput.append(moredata=var)
-    
+        
     return adinput
+
+def _update_dq_header(sci=None, dq=None, bpmname=None):
+    # Add the physical units keyword
+    gt.update_key_value(adinput=dq, function="bunit", value="bit",
+                        extname="DQ")
+    
+    # Add the name of the bad pixel mask
+    gt.update_key_value(adinput=dq, function="bpmname", value=bpmname,
+                        extname="DQ")
+    
+    # These should probably be done using descriptors (?)
+    keywords_from_sci = ["CTYPE1", "CRPIX1", "CRVAL1", "CTYPE2", "CRPIX2",
+                         "CRVAL2", "CD1_1", "CD1_2", "CD2_1", "CD2_2",
+                         "CCDSIZE", "CCDSUM", "CCDSEC", "DETSEC", "DATASEC",
+                         "BIASSEC", "SATLEVEL", "NONLINEA"]
+    dq_comment = "Copied from ['SCI',%d]" % (sci.extver())
+    
+    for keyword in keywords_from_sci:
+        # Check if the keyword exists in the header of the input science
+        # extension
+        keyword_value = sci.get_key_value(key=keyword)
+        if keyword_value is not None:
+            dq.set_key_value(key=keyword, value=keyword_value,
+                             comment=dq_comment)
+    
+    return dq
+
+def _update_var_header(sci=None, var=None, bunit=None):
+    # Add the physical units keyword
+    gt.update_key_value(adinput=var, function="bunit", value="%s*%s" \
+                        % (bunit, bunit), extname="VAR")
+    
+    # These should probably be done using descriptors (?)
+    keywords_from_sci = ["CTYPE1", "CRPIX1", "CRVAL1", "CTYPE2", "CRPIX2",
+                         "CRVAL2", "CD1_1", "CD1_2", "CD2_1", "CD2_2",
+                         "EXPTIME", "CCDNAME", "AMPNAME", "CCDSIZE", "CCDSUM",
+                         "CCDSEC", "DETSEC", "DATASEC", "BIASSEC", "GAIN",
+                         "RDNOISE"]
+    var_comment = "Copied from ['SCI',%d]" % (sci.extver())
+    
+    for keyword in keywords_from_sci:
+        # Check if the keyword exists in the header of the input science
+        # extension
+        keyword_value = sci.get_key_value(key=keyword)
+        if keyword_value is not None:
+            var.set_key_value(key=keyword, value=keyword_value,
+                              comment=var_comment)
+    
+    return var
