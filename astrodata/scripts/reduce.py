@@ -99,16 +99,16 @@ parser.set_description("_"*11 + "Gemini Observatory Recipe System Processor"
                        "Author: Craig Allen (callen@gemini.edu)" + "_"*18)
 parser.set_usage( parser.get_usage()[:-1] + " file.fits\n" )
 
-parser.add_option("-c", "--paramfile", dest = "paramfile", default = None,
+parser.add_option("-c", "--paramfile", dest="paramfile", default=None,
                   help="specify parameter file")
 parser.add_option("-i", "--intelligence", dest='intelligence', default=False,
                   action="store_true", help="Endow recipe system with "
                   "intelligence to perform operations faster and smoother")
 parser.add_option("-m", "--monitor", dest="bMonitor", action="store_true",
-                  default = False,
-                  help= "Open TkInter window to monitor progress of"
+                  default=False,
+                  help="Open TkInter window to monitor progress of"
                   "execution (NOTE: One window will open per recipe run)")
-parser.add_option("-p", "--param", dest="userparam", default = None,
+parser.add_option("-p", "--param", dest="userparam", default=None,
                   help="Set a parameter from the command line. The form '-p' "
                   "paramname=val' sets the parameter in the reduction context "
                   "such that all primitives will 'see' it.  The form: '-p "
@@ -123,7 +123,7 @@ parser.add_option("-p", "--param", dest="userparam", default = None,
 #                 "information to stdout.")
 parser.add_option("-r", "--recipe", dest="recipename", default=None,
                   help="specify which recipe to run by name")
-parser.add_option("-t", "--astrotype", dest = "astrotype", default = None,
+parser.add_option("-t", "--astrotype", dest="astrotype", default=None,
                   help="Run a recipe based on astrotype (either overrides the"
                   " default type, or begins without initial input (ex. "
                   "recipes that begin with primitives that acquire data))")
@@ -135,41 +135,43 @@ parser.add_option("--addcal", dest="add_cal", default=None, type="string",
                   "'--caltype' is set AND will overwrite any existing "
                   "calibration in the index. (ex. reduce --addcal=N2"
                   "009_bias.fits --caltype=bias N20091002S0219.fits)")
-parser.add_option("--addprimset", dest = "primsetname", default = None,
+parser.add_option("--addprimset", dest="primsetname", default = None,
                   help="add user supplied primitives to reduction")
 parser.add_option("--caltype", dest="cal_type", default=None, type="string",
                   help="Calibration type. NOTE: only works with '--addcal' or "
                   "'--remcal' AND accepts only lowercase one word (ex. 'bias', "
                   "'twilight')")
+parser.add_option("--calmgr", dest="cal_mgr", default=None, type="string",
+                  help="calibration manager url (overides lookup table)")
 parser.add_option("--clrcal", dest="clr_cal", default=False, 
                   action="store_true", help="remove all calibrations.")
-parser.add_option("--debug",dest='debug', default=False, action="store_true",
+parser.add_option("--debug", dest='debug', default=False, action="store_true",
                   help="set highest verbose level for console AND logfile")
-parser.add_option("--force-height", dest = "forceHeight", default=None,
+parser.add_option("--force-height", dest="forceHeight", default=None,
                   help="force height of terminal output")
-parser.add_option("--force-width", dest = "forceWidth", default=None,
+parser.add_option("--force-width", dest="forceWidth", default=None,
                   help="force width of terminal output")
 parser.add_option("--invoked", dest="invoked", default=False, 
                   action="store_true", help="set log level to 'fullinfo'")
-parser.add_option("--logAllOff",dest='logAllOff', default=False, 
+parser.add_option("--logAllOff", dest='logAllOff', default=False, 
                   action="store_true", help="Turn logging completely off,"
                   " no log file, no console logging")
-parser.add_option("--logName",dest='logName', default='gemini.log', 
+parser.add_option("--logName", dest='logName', default='gemini.log', 
                   type='string', help="name of log (default = 'gemini.log')") 
-parser.add_option("--logLevel",dest='logLevel', default='stdinfo', 
+parser.add_option("--logLevel", dest='logLevel', default='stdinfo', 
                   type='string', help="Set the verbose level for console "
                   "logging; (critical, error, warning, status, stdinfo, "
                   "fullinfo, debug)")
-parser.add_option("--noLogFile",dest='noLogFile', default=False, 
+parser.add_option("--noLogFile", dest='noLogFile', default=False, 
                   action="store_true", help="no log file is created")
 parser.add_option("--remcal", dest="rem_cal", default=False, 
                   action="store_true", help="Remove calibration (of target)"
                   "from cache. NOTE: will not work unless --caltype is set."
                   " (ex. reduce --remcal --caltype=bias N20091002S0219.fits)")
 parser.add_option("--showcolors", dest="show_colors", default=False, 
-                  action = "store_true", help="Shows available colors based "
+                  action="store_true", help="Shows available colors based "
                   "on terminal setting (used for debugging color issues)")
-parser.add_option("--writeInt",dest='writeInt', default=False, 
+parser.add_option("--writeInt", dest='writeInt', default=False, 
                   action="store_true", help="write intermediate outputs"
                   " (UNDER CONSTRUCTION)")       
           
@@ -213,10 +215,10 @@ def abortBadParamfile(lines):
     sys.exit(1)
 
 def command_line():
-    '''
+    """
     This function is just here so that all the command line oriented parsing is one common location.
     Hopefully, this makes things look a little cleaner.
-    '''
+    """
     
     # this is done first because command line options can be set in the 
     # config file
@@ -406,7 +408,7 @@ def command_line():
             except:
                 print arg + ' had no ' + options.cal_type
         print "'" + options.cal_type + "' was removed from '" + str(input_files) + "'."
-        co.persist_cal_index( calindfile )
+        co.persist_cal_index(calindfile)
         sys.exit(0)
         
     # parameters from command line and/or parameter file
@@ -704,10 +706,19 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                 co.update({'logName':options.logName})       
                 co.update({'logType':'main'})
                 
-                # Insert calibration url dictionary from Lookups
-                calurldict = Lookups.get_lookup_table("Gemini/calurl_dict", "calurl_dict")
+                # Insert calibration url dictionary
+                # if given by command line will overide the lookup
+                if options.cal_mgr is None:
+                    calurldict = Lookups.get_lookup_table("Gemini/calurl_dict",
+                                                          "calurl_dict")
+                else:
+                    calmgr_str = options.cal_mgr
+                    if calmgr_str[7:12] == 'local':
+                        calurldict = {'LOCALCALMGR' : calmgr_str}
+                    else:
+                        calurldict = {'CALMGR' : calmgr_str}
                 co.update({'calurl_dictionary':calurldict})
-                print co.report(internal_dict=True)
+                print "REDUCE 721", co.report(internal_dict=True)
 
                 if (useTK):
                     while cw.bReady == False:
