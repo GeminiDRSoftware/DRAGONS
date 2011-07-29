@@ -718,7 +718,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                     else:
                         calurldict = {'CALMGR' : calmgr_str}
                 co.update({'calurl_dictionary':calurldict})
-                print "REDUCE 721", co.report(internal_dict=True)
+                #print "REDUCE 721", co.report(internal_dict=True)
 
                 if (useTK):
                     while cw.bReady == False:
