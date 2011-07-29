@@ -11,6 +11,11 @@ from astrodata.adutils import gemLog
 from astrodata.ConfigSpace import lookup_path
 from gempy import geminiTools as gt
 
+# Load the timestamp keyword dictionary that will be used to define the keyword
+# to be used for the time stamp for the user level function
+timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
+                                          "timestamp_keys")
+
 def add_dq(adinput=None, bpm=None):
     """
     This user level function (ulf) is used to add a DQ extension to the input
@@ -39,7 +44,7 @@ def add_dq(adinput=None, bpm=None):
     
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "ADDDQ"
+    timestamp_key = timestamp_keys["add_dq"]
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -56,7 +61,7 @@ def add_dq(adinput=None, bpm=None):
             
             # Check whether the add_dq user level function has been
             # run previously
-            if ad.phu_get_key_value(keyword):
+            if ad.phu_get_key_value(timestamp_key):
                 raise Errors.InputError("%s has already been processed by " \
                                         "add_dq" % (ad.filename))
             
@@ -126,7 +131,7 @@ def add_dq(adinput=None, bpm=None):
                 ad.append(moredata=dq)
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
             
             # Append the output AstroData object to the list of output
             # AstroData objects
@@ -164,7 +169,7 @@ def add_mdf(adinput=None, mdf=None):
     
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "ADDMDF"
+    timestamp_key = timestamp_keys["add_mdf"]
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -175,7 +180,7 @@ def add_mdf(adinput=None, mdf=None):
             
             # Check whether the add_mdf user level function has been
             # run previously
-            if ad.phu_get_key_value(keyword) or ad["MDF"]:
+            if ad.phu_get_key_value(timestamp_key) or ad["MDF"]:
                 raise Errors.InputError("%s has already been processed by " \
                                         "add_mdf" % (ad.filename))
             
@@ -189,7 +194,7 @@ def add_mdf(adinput=None, mdf=None):
                          % (mdffile.filename, ad.filename))
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
             
             # Append the output AstroData object to the list of output
             # AstroData objects
@@ -256,7 +261,7 @@ def add_var(adinput=None, read_noise=False, poisson_noise=False):
     
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "ADDVAR"
+    timestamp_key = timestamp_keys["add_var"]
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -271,7 +276,7 @@ def add_var(adinput=None, read_noise=False, poisson_noise=False):
                                 add_poisson_noise=poisson_noise)
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
             
             # Append the output AstroData object to the list of output
             # AstroData objects
