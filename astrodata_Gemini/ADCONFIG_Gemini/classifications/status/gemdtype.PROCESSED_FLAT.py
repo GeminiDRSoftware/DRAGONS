@@ -1,8 +1,9 @@
 class PROCESSED_FLAT(DataClassification):
     
     name="PROCESSED_FLAT"
-    usage = 'Applies to all "giflat"ed data.'
+    usage = 'Applies to all "giflat"ed or "normalize_flat_image_gmos"ed data.'
     parent = "UNPREPARED"
-    requirement = PHU( {'{re}.*?GIFLAT': ".*?" })
+    requirement = OR([PHU( {'{re}.*?GIFLAT': ".*?" }),
+                      PHU( {'{re}.*?NORMFLAT': ".*?" })])
     
 newtypes.append(PROCESSED_FLAT())
