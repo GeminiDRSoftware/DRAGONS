@@ -452,7 +452,7 @@ def _calculate_var(adinput=None, add_read_noise=False,
         log.warning("It is not recommended to add a poisson noise " \
                     "component to the variance of a bias frame")
     if add_poisson_noise and "GMOS" in adinput.types and \
-       not adinput.phu_get_key_value("BIASCORR"):
+       not adinput.phu_get_key_value(timestamp_keys["subtract_bias"]):
         log.warning("It is not recommended to calculate a poisson noise " \
                     "component of the variance using data that still " \
                     "contains a bias level")
