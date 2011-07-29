@@ -17,7 +17,6 @@ timestamp_keys = {
     "measure_iq": "MEASREIQ",
     "mosaic_detectors": "MOSAIC",
     "nonlinearity_correct": "LINCORR",
-    "normalize": "NORMLIZE",
     "normalize_image": "NORMLIZE",
     "normalize_image_gmos": "NORMLIZE",
     "prepare": "PREPARE",
