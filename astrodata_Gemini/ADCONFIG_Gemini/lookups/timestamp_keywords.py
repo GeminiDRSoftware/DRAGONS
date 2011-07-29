@@ -21,6 +21,7 @@ timestamp_keys = {
     "normalize_image_gmos": "NORMLIZE",
     "prepare": "PREPARE",
     "remove_fringe": "RMFRINGE",
+    "stack_frames": "STACKFRM",
     "standardize_headers_f2": "SDZHDRSI",
     "standardize_headers_gemini": "SDZHDRSG",
     "standardize_headers_gmos": "SDZHDRSI",
