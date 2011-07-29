@@ -1105,9 +1105,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix="_bias",
                                              strip=True)
             log.status("File name of stored bias is %s" % ad.filename)
-            # Adding a GBIAS time stamp to the PHU
-            ad.history_mark(key="GBIAS", comment="fake key to trick CL that " \
-                            "GBIAS was used to create this bias")
+
+            # Adding a PROCBIAS time stamp to the PHU
+            gt.mark_history(adinput=ad, keyword="PROCBIAS")
+
             # Write the bias frame to disk
             ad.write(os.path.join(rc["storedbiases"], ad.filename), 
                      clobber=rc["clob"])
@@ -1146,6 +1147,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix="_dark",
                                              strip=True)
             log.status("File name of stored dark is %s" % ad.filename)
+
+            # Adding a PROCDARK time stamp to the PHU
+            gt.mark_history(adinput=ad, keyword="PROCDARK")
+
             # Write the dark frame to disk
             ad.write(os.path.join(rc["storeddarks"], ad.filename), 
                      clobber=rc["clob"])
@@ -1184,6 +1189,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix="_flat",
                                              strip=True)
             log.status("File name of stored flat is %s" % ad.filename)
+
+            # Adding a PROCFLAT time stamp to the PHU
+            gt.mark_history(adinput=ad, keyword="PROCFLAT")
+
             # Write the flat frame to disk
             ad.write(os.path.join(rc["storedflats"], ad.filename), 
                      clobber=rc["clob"])
@@ -1222,6 +1231,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix="_fringe",
                                              strip=True)
             log.status("File name of stored fringe is %s" % ad.filename)
+
+            # Adding a PROCFRNG time stamp to the PHU
+            gt.mark_history(adinput=ad, keyword="PROCFRNG")
+
             # Write the fringe frame to disk
             ad.write(os.path.join(rc["storedfringes"], ad.filename), 
                      clobber=rc["clob"])
