@@ -272,6 +272,10 @@ def normalize_flat_image_gmos(adinput=None, saturation=45000):
             # Divide by the normalization factor and propagate the
             # variance appropriately
             ad = ad.div(norm_factor)
+
+            # Add the appropriate time stamp to the PHU
+            gt.mark_history(adinput=ad, keyword=keyword)
+
             adoutput_list.append(ad)
             
         # Return the output AstroData object
