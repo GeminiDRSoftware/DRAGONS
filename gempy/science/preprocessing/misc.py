@@ -4,8 +4,14 @@
 import sys
 import numpy as np
 from astrodata import Errors
+from astrodata import Lookups
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
+
+# Load the timestamp keyword dictionary that will be used to define the keyword
+# to be used for the time stamp for the user level function
+timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
+                                          "timestamp_keys")
 
 def adu_to_electrons(adinput):
     """
@@ -27,7 +33,7 @@ def adu_to_electrons(adinput):
     
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "ADUTOELE"
+    timestamp_key = timestamp_keys["adu_to_electrons"]
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -38,7 +44,7 @@ def adu_to_electrons(adinput):
             
             # Check whether the adu_to_electrons user level function has been
             # run previously
-            if ad.phu_get_key_value(keyword):
+            if ad.phu_get_key_value(timestamp_key):
                 raise Errors.InputError("%s has already been processed by " \
                                         "adu_to_electrons" % (ad.filename))
             
@@ -60,7 +66,7 @@ def adu_to_electrons(adinput):
             gt.update_key_value(adinput=ad, function="bunit",
                                 value="electron*electron", extname="VAR")
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
             
             # Append the output AstroData object to the list of output
             # AstroData objects
@@ -97,7 +103,7 @@ def nonlinearity_correct(adinput=None):
     
     # Define the keyword to be used for the time stamp for this user level
     # function
-    keyword = "LINCORR"
+    timestamp_key = timestamp_keys["nonlinearity_correct"]
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -108,7 +114,7 @@ def nonlinearity_correct(adinput=None):
             
             # Check whether the nonlinearity_correct user level function has
             # been run previously
-            if ad.phu_get_key_value(keyword):
+            if ad.phu_get_key_value(timestamp_key):
                 raise Errors.InputError("%s has already been processed by " \
                                         "nonlinearity_correct" % (ad.filename))
             
@@ -207,7 +213,7 @@ def nonlinearity_correct(adinput=None):
                          % total_exposure_time)
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=keyword)
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
             
             # Append the output AstroData object to the list of output
             # AstroData objects
