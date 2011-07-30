@@ -239,10 +239,10 @@ class CLManager(object):
             if type=='list':
                 return self.arrayInsCLdiskNames
             if type=='listFile':
-                arrayInsListName = gt.listFileMaker(self.arrayInsCLdiskNames,
-                                                    listName='arrayList'+\
-                                                    str(os.getpid())+\
-                                                    self.funcName)
+                arrayInsListName = listFileMaker(self.arrayInsCLdiskNames,
+                                                 listName='arrayList'+\
+                                                 str(os.getpid())+\
+                                                 self.funcName)
                 self.arrayInsListName = arrayInsListName
                 return '@'+arrayInsListName
         else:
@@ -276,9 +276,9 @@ class CLManager(object):
             if type=='list':
                 return self.arrayOutsNames
             if type=='listFile':
-                arrayOutsListName = gt.listFileMaker(list=self.arrayOutsNames,
-                                    listName='arrayOutsList'+str(os.getpid())+\
-                                                                self.funcName)
+                arrayOutsListName = listFileMaker(
+                    list=self.arrayOutsNames,
+                    listName='arrayOutsList'+str(os.getpid())+self.funcName)
                 self.arrayOutsListName = arrayOutsListName
                 return '@'+arrayOutsListName
         else:
@@ -318,9 +318,9 @@ class CLManager(object):
             if type=='list':
                 return self.imageInsCLdiskNames
             if type=='listFile':
-                imageInsListName = gt.listFileMaker(list=self.imageInsCLdiskNames,
-                                    listName='imageList'+str(os.getpid())+\
-                                                                self.funcName)
+                imageInsListName = listFileMaker(
+                    list=self.imageInsCLdiskNames,
+                    listName='imageList'+str(os.getpid())+self.funcName)
                 self.imageInsListName = imageInsListName
                 return '@'+imageInsListName
         else:
@@ -389,9 +389,9 @@ class CLManager(object):
             if type=='list':
                 return tmp_names
             if type=='listFile':
-                imageOutsListName = gt.listFileMaker(list=tmp_names,
-                                    listName='imageOutsList'+str(os.getpid())+\
-                                                                self.funcName)
+                imageOutsListName = listFileMaker(
+                    list=tmp_names,
+                    listName='imageOutsList'+str(os.getpid())+self.funcName)
                 self.imageOutsListName = imageOutsListName
                 return '@'+imageOutsListName
         else:
@@ -777,9 +777,9 @@ class CLManager(object):
             if type=='list':
                 return self.refInsCLdiskNames
             if type=='listFile':
-                refInsListName = gt.listFileMaker(list=self.refInsCLdiskNames,
-                                    listName='refList'+str(os.getpid())+
-                                                                self.funcName)
+                refInsListName = listFileMaker(
+                    list=self.refInsCLdiskNames,
+                    listName='refList'+str(os.getpid())+self.funcName)
                 self.refInsListName = refInsListName
                 return '@'+refInsListName
         else:
@@ -840,9 +840,9 @@ class CLManager(object):
             if type=='list':
                 return tmp_names
             if type=='listFile':
-                refOutsListName = gt.listFileMaker(list=tmp_names,
-                                    listName='refOutsList'+str(os.getpid())+
-                                                                self.funcName)
+                refOutsListName = listFileMaker(
+                    list=tmp_names,
+                    listName='refOutsList'+str(os.getpid())+self.funcName)
                 self.refOutsListName = refOutsListName
                 return '@'+refOutsListName
         else:
@@ -881,3 +881,67 @@ class IrafStdout():
             self.log.error(out, category='clError')
         elif len(out) > 1:
             self.log.fullinfo(out, category='clInfo')
+
+def listFileMaker(list=None, listName=None):
+    """ 
+    This function creates a list file of the input to IRAF.
+    If the list requested all ready exists on disk, then it's filename
+    is returned.
+    This function is utilized by the CLManager. 
+    NOTE: '@' must be post pended onto this listName if not done all ready 
+    for use with IRAF.
+    
+    :param list: list of filenames to be written to a list file.
+    :type list: list of strings
+    
+    :param listName: Name of file list is to be written to.
+    :type listName: string
+    """
+    try:
+        if listName==None:
+            raise Errors.ManagersError("listName can not be None, " \
+                                       "please provide a string")
+        elif os.path.exists(listName):
+            return listName
+        else:
+            fh = open(listName, 'w')
+            for item in list:
+                fh.writelines(item + '\n')                    
+            fh.close()
+            return listName
+    except:
+        raise Errors.ManagersError("Could not write inlist file for " \
+                                   "stacking.") 
+        
+def logDictParams(indict):
+    """ A function to log the parameters in a provided dictionary.  Main use
+    is to log the values in the dictionaries of parameters for function 
+    calls using the ** method.
+    
+    :param indict: Dictionary full of parameters/settings to be recorded as 
+                   fullinfo log messages.
+    :type indict: dictionary. 
+                  ex. {'param1':param1_value, 'param2':param2_value,...}
+    
+    """
+    log = gemLog.getGeminiLog()
+    for key in indict:
+        log.fullinfo(repr(key)+' = '+repr(indict[key]), 
+                     category='parameters')
+
+def pyrafBoolean(pythonBool):
+    """
+    A very basic function to reduce code repetition that simply 'casts' any 
+    given Python boolean into a pyraf/IRAF one for use in the CL scripts.
+    """ 
+    import pyraf
+    
+    # If a boolean was passed in, convert it
+    if pythonBool:
+        return pyraf.iraf.yes
+    elif  not pythonBool:
+        return pyraf.iraf.no
+    else:
+        raise Errors.ToolBoxError('DANGER DANGER Will Robinson, pythonBool ' \
+                                  ' passed in was not True or False, and ' \
+                                  ' thats just crazy talk :P')
