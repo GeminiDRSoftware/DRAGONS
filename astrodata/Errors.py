@@ -159,6 +159,12 @@ class PrimitiveError(Error):
     """
     message = "An error occurred during a primitive"
 
+class PrimInspectError(Error):
+    """
+    Exception raised for general errors inside PrimInspect.py.
+    """
+    message = "An error occurred in PrimInspect.py"
+
 class ReduceError(Error):
     """
     Exception raised for general errors in reduce.py
