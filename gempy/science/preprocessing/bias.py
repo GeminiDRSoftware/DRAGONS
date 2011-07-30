@@ -10,7 +10,7 @@ from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.AstroData import AstroData
 from gempy import geminiTools as gt
-from gempy import managers as man
+from gempy import managers as mgr
 from gempy import string
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
@@ -92,7 +92,7 @@ def subtract_bias(adinput=None, bias=None):
             
             # Prepare input files, lists, parameters... for input to 
             # the CL script
-            clm = man.CLManager(imageIns=ad, suffix="_out",
+            clm = mgr.CLManager(imageIns=ad, suffix="_out",
                                 refIns=this_bias,
                                 funcName="biasCorrect", log=log)
             
@@ -104,7 +104,7 @@ def subtract_bias(adinput=None, bias=None):
                                           "function can only work on " +
                                           "prepared data.")
             
-            # Parameters set by the man.CLManager or the 
+            # Parameters set by the mgr.CLManager or the 
             # definition of the function 
             clPrimParams = {
                 "inimages"    :clm.imageInsFiles(type="string"),
@@ -119,14 +119,12 @@ def subtract_bias(adinput=None, bias=None):
                 "outpref"    :"",
                 "fl_over"    :no,
                 "fl_trim"    :no,
-                "fl_vardq"   :gt.pyrafBoolean(fl_vardq)
+                "fl_vardq"   :mgr.pyrafBoolean(fl_vardq)
                 }
             
             # Parameters from the Parameter file adjustable by the user
             # (none, currently)
-            clSoftcodedParams = {
-                # pyrafBoolean converts the python booleans to pyraf ones
-                }
+            clSoftcodedParams = {}
             
             # Grab the default params dict and update it 
             # with the two above dicts
@@ -139,13 +137,13 @@ def subtract_bias(adinput=None, bias=None):
                          category="parameters")
             # Loop through the parameters in the clPrimParams
             # dictionary and log them
-            gt.logDictParams(clPrimParams)
+            mgr.logDictParams(clPrimParams)
             
             log.fullinfo("\nParameters adjustable by the user:", 
                          category="parameters")
             # Loop through the parameters in the clSoftcodedParams 
             # dictionary and log them
-            gt.logDictParams(clSoftcodedParams)
+            mgr.logDictParams(clSoftcodedParams)
             
             log.debug("calling the gireduce CL script for inputs "+
                       clm.imageInsFiles(type="string"))
@@ -263,7 +261,7 @@ def subtract_overscan_gmos(adinput=None, overscan_section=""):
             
             # Prepare input files, lists, parameters... for input to 
             # the CL script
-            clm=man.CLManager(imageIns=ad, suffix="_out",
+            clm=mgr.CLManager(imageIns=ad, suffix="_out",
                               funcName="subtractOverscan", log=log)
             
             # Check the status of the CLManager object, 
@@ -284,7 +282,7 @@ def subtract_overscan_gmos(adinput=None, overscan_section=""):
                 log.fullinfo("Using default nbiascontam parameter = 4")
                 nbiascontam = 4
             
-            # Parameters set by the man.CLManager or the definition 
+            # Parameters set by the mgr.CLManager or the definition 
             # of the primitive 
             clPrimParams = {
               "inimages"    :clm.imageInsFiles(type="string"),
@@ -300,7 +298,6 @@ def subtract_overscan_gmos(adinput=None, overscan_section=""):
             
             # Parameters from the Parameter file that are adjustable by the user
             clSoftcodedParams = {
-               # pyrafBoolean converts the python booleans to pyraf ones
                "nbiascontam":nbiascontam
                                }
             # Grab the default params dict and update it with 
@@ -314,13 +311,13 @@ def subtract_overscan_gmos(adinput=None, overscan_section=""):
                          category="parameters")
             # Loop through the parameters in the clPrimParams dictionary
             # and log them
-            gt.logDictParams(clPrimParams)
+            mgr.logDictParams(clPrimParams)
             
             log.fullinfo("\nParameters adjustable by the user:", 
                          category="parameters")
             # Loop through the parameters in the clSoftcodedParams 
             # dictionary and log them
-            gt.logDictParams(clSoftcodedParams)
+            mgr.logDictParams(clSoftcodedParams)
             
             log.debug("Calling the gireduce CL script for inputs "+
                       clm.imageInsFiles(type="string"))
