@@ -8,7 +8,7 @@ from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
 from gempy import geminiTools as gt
-from gempy import managers as man
+from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
 # Load the timestamp keyword dictionary that will be used to define the keyword
@@ -76,7 +76,7 @@ def make_fringe_image_gmos(adinput=None, operation="median",
         
         # Prepare input files, lists, parameters... for input to 
         # the CL script
-        clm = man.CLManager(imageIns=adinput, suffix=suffix, 
+        clm = mgr.CLManager(imageIns=adinput, suffix=suffix, 
                             funcName="makeFringeFrame", 
                             combinedImages=True, log=log)
         
@@ -87,7 +87,7 @@ def make_fringe_image_gmos(adinput=None, operation="median",
                                       "prepared,the combine function " + 
                                       "can only work on prepared data.")
         
-        # Parameters set by the man.CLManager or the definition 
+        # Parameters set by the mgr.CLManager or the definition 
         # of the primitive 
         clPrimParams = {
             # Retrieve the inputs as a list from the CLManager
@@ -116,10 +116,10 @@ def make_fringe_image_gmos(adinput=None, operation="median",
         log.fullinfo("\nParameters set by the CLManager or "+
                      "dictated by the definition of the primitive:\n", 
                      category="parameters")
-        gt.logDictParams(clPrimParams)
+        mgr.logDictParams(clPrimParams)
         log.fullinfo("\nUser adjustable parameters in the "+
                      "parameters file:\n", category="parameters")
-        gt.logDictParams(clSoftcodedParams)
+        mgr.logDictParams(clSoftcodedParams)
         
         log.debug("Calling the gifringe CL script for input list "+
                   clm.imageInsFiles(type="listFile"))
