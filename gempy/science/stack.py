@@ -98,7 +98,7 @@ def stack_frames(adinput=None, suffix=None, operation="average",
         clParamsDict.update(clPrimParams)
         clParamsDict.update(clSoftcodedParams)
         # Log the parameters
-        gt.logDictParams(clParamsDict)
+        mgr.logDictParams(clParamsDict)
         # Call gemcombine
         gemini.gemcombine(**clParamsDict)
         if gemini.gemcombine.status:
