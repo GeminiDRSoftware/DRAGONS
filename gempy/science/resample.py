@@ -541,7 +541,7 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
             # Parameters from the Parameter file adjustable by the user
             clSoftcodedParams = {
                 # pyrafBoolean converts the python booleans to pyraf ones
-                "fl_paste"    :gt.pyrafBoolean(tile),
+                "fl_paste"    :mgr.pyrafBoolean(tile),
                 #"outpref"     :suffix,
                 "geointer"    :interpolator,
                 }
@@ -556,13 +556,13 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
                          category="parameters")
             # Loop through the parameters in the clPrimParams dictionary
             # and log them
-            gt.logDictParams(clPrimParams)
+            mgr.logDictParams(clPrimParams)
             
             log.fullinfo("\nParameters adjustable by the user:", 
                          category="parameters")
             # Loop through the parameters in the clSoftcodedParams 
             # dictionary and log them
-            gt.logDictParams(clSoftcodedParams)
+            mgr.logDictParams(clSoftcodedParams)
             
             gemini.gmos.gmosaic(**clParamsDict)
             
