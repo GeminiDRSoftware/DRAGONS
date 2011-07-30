@@ -171,53 +171,6 @@ def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='',
     outFileName = prefix+name+suffix+filetype
     return outFileName
     
-def listFileMaker(list=None, listName=None):
-        """ 
-        This function creates a list file of the input to IRAF.
-        If the list requested all ready exists on disk, then it's filename
-        is returned.
-        This function is utilized by the CLManager. 
-        NOTE: '@' must be post pended onto this listName if not done all ready 
-        for use with IRAF.
-        
-        :param list: list of filenames to be written to a list file.
-        :type list: list of strings
-        
-        :param listName: Name of file list is to be written to.
-        :type listName: string
-        """
-        try:
-            if listName==None:
-                raise Errors.ToolboxError("listName can not be None, please " \
-                                          "provide a string")
-            elif os.path.exists(listName):
-                return listName
-            else:
-                fh = open(listName, 'w')
-                for item in list:
-                    fh.writelines(item + '\n')                    
-                fh.close()
-                return listName
-        except:
-            raise Errors.ToolboxError("Could not write inlist file for " \
-                                      "stacking.") 
-        
-def logDictParams(indict):
-    """ A function to log the parameters in a provided dictionary.  Main use
-    is to log the values in the dictionaries of parameters for function 
-    calls using the ** method.
-    
-    :param indict: Dictionary full of parameters/settings to be recorded as 
-                   fullinfo log messages.
-    :type indict: dictionary. 
-                  ex. {'param1':param1_value, 'param2':param2_value,...}
-    
-    """
-    log = gemLog.getGeminiLog()
-    for key in indict:
-        log.fullinfo(repr(key)+' = '+repr(indict[key]), 
-                     category='parameters')
-
 def log_message(function, name, message_type):
     if function == 'ulf':
         full_function_name = 'user level function'
@@ -279,6 +232,7 @@ def make_dict(key_list=None, value_list=None):
             raise Errors.InputError(msg)
         for i in range (0, len(key_list)):
             ret_dict[key_list[i]] = value_list[i]
+    
     return ret_dict
 
 def mark_history(adinput=None, keyword=None):
@@ -318,23 +272,6 @@ def mark_history(adinput=None, keyword=None):
         log.fullinfo("PHU keyword GEM-TLM = %s added to %s" \
                      % (ad.phu_get_key_value("GEM-TLM"), ad.filename),
                      category='header')
-
-def pyrafBoolean(pythonBool):
-    """
-    A very basic function to reduce code repetition that simply 'casts' any 
-    given Python boolean into a pyraf/IRAF one for use in the CL scripts.
-    """ 
-    import pyraf
-    
-    # If a boolean was passed in, convert it
-    if pythonBool:
-        return pyraf.iraf.yes
-    elif  not pythonBool:
-        return pyraf.iraf.no
-    else:
-        raise Errors.ToolBoxError('DANGER DANGER Will Robinson, pythonBool ' \
-                                  ' passed in was not True or False, and ' \
-                                  ' thats just crazy talk :P')
 
 def update_key_value(adinput=None, function=None, value=None, extname=None):
     """
