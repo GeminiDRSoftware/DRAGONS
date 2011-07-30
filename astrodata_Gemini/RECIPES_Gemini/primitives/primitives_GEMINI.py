@@ -1109,11 +1109,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Adding a PROCBIAS time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCBIAS")
 
-            # Write the bias frame to disk
-            ad.write(os.path.join(rc["storedbiases"], ad.filename), 
-                     clobber=rc["clob"])
-            log.fullinfo("Bias written to %s" % (rc["storedbiases"]))
-        
+            # Upload bias to cal system
+            rc.run("storeCalibration")
+            log.fullinfo("Bias stored in calibration system")
+
         yield rc
     
     def storeProcessedDark(self, rc):
@@ -1151,11 +1150,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Adding a PROCDARK time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCDARK")
 
-            # Write the dark frame to disk
-            ad.write(os.path.join(rc["storeddarks"], ad.filename), 
-                     clobber=rc["clob"])
-            log.fullinfo("Dark written to %s" % (rc["storeddarks"]))
-        
+            # Upload to cal system
+            rc.run("storeCalibration")
+            log.fullinfo("Dark stored in calibration system")
+
         yield rc
     
     def storeProcessedFlat(self, rc):
@@ -1193,11 +1191,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Adding a PROCFLAT time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCFLAT")
 
-            # Write the flat frame to disk
-            ad.write(os.path.join(rc["storedflats"], ad.filename), 
-                     clobber=rc["clob"])
-            log.fullinfo("Flat written to %s" % (rc["storedflats"])),
-        
+            # Upload to cal system
+            rc.run("storeCalibration")
+            log.fullinfo("Flat stored in calibration system")
+
         yield rc
     
     def storeProcessedFringe(self, rc):
@@ -1235,11 +1232,10 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Adding a PROCFRNG time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCFRNG")
 
-            # Write the fringe frame to disk
-            ad.write(os.path.join(rc["storedfringes"], ad.filename), 
-                     clobber=rc["clob"])
-            log.fullinfo("Fringe written to %s" % (rc["storedfringes"])),
-        
+            # Upload to cal system
+            rc.run("storeCalibration")
+            log.fullinfo("Fringe stored in calibration system")
+
         yield rc
     
     def subtractDark(self, rc):

@@ -129,8 +129,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            ad = pp.normalize_flat_image_gmos(adinput=ad, 
-                                              saturation=rc['saturation'])
+            ad = pp.normalize_image_gmos(adinput=ad, 
+                                         saturation=rc['saturation'])
             adoutput_list.append(ad[0])
 
         rc.report_output(adoutput_list)

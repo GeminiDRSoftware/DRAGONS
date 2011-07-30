@@ -236,7 +236,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         # If no errors found, subtract the overscan and trim it
         if sub_over:
             recipe_list = ["subtractOverscan",
-                           "trimOverscan",]
+                           "trimOverscan"]
             rc.run("\n".join(recipe_list))
 
         yield rc
