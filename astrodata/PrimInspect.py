@@ -13,7 +13,7 @@ fstdout = terminal.FilteredStdout()
 colorFilter = terminal.ColorFilter(True)
 fstdout.addFilter(colorFilter)
 sys.stdout = fstdout   
-SW = 80
+SW = 79
 
 #from optparse import OptionParser
 from sets import Set 
@@ -22,7 +22,7 @@ from astrodata.AstroData import AstroData
 from astrodata import RecipeManager 
 from astrodata.RecipeManager import RecipeLibrary
 from inspect import getsourcefile
-
+from astrodata import Errors
 rl = RecipeLibrary()
 colorFilter.on = False
 primtypes = RecipeManager.centralPrimitivesIndex.keys()
@@ -32,7 +32,7 @@ class PrimInspect():
     object for use with listPrimitives.py
     '''
     module_list = None
-    path = "./primitives_List.txt"
+    path = "./primitives_list.txt"
     fhandler = None
     datasets = None
     astrotypes = None
@@ -40,9 +40,9 @@ class PrimInspect():
     name2class = None
     primsdict_kbn = None
     class2instance = None
-    options = None
     
-    def __init__(self, options=None, path = None):
+    def __init__(self, use_color=False, show_param=False, show_usage=False,
+                 show_info=False, make_file=False, verbose=False, path=None):
         self.module_list = []
         if path:
             self.path = path
@@ -53,65 +53,67 @@ class PrimInspect():
         self.name2class = {}
         self.primsdict_kbn = {}
         self.class2instance = {}
-        self.options = options
-        if self.options.verbose:
-            self.options.useColor = True
-            self.options.showParams = True
-            self.options.showUsage = True
-            self.options.showInfo = True
-        if self.options.useColor:
+        self.verbose = verbose
+        self.use_color = use_color
+        self.show_param = show_param 
+        self.show_usage = show_usage
+        self.show_info = show_info
+        self.make_file = make_file
+        
+        if self.verbose:
+            self.use_color = True
+            show_param = True
+            self.show_usage = True
+            self.show_info = True
+        if self.use_color:
             colorFilter.on = True
-        if self.options.makeOutputFile:
+        if self.make_file:
             self.fhandler = open( self.path , 'w' )
-            
-            
-        #----------------------------------------------       
         
     def show(self, arg):
         print arg
-        if self.options.makeOutputFile:
+        if self.make_file:
             arg = re.sub(r'\$\$|\${\w+}','',arg)
-            # replaced by above
-            # arg = arg.replace('${BOLD}','')
-            # arg = arg.replace('${NORMAL}','')
-            # arg = arg.replace('${YELLOW}','')
-            # arg = arg.replace('${RED}','')
-            # arg = arg.replace('${GREEN}','')
-            # arg = arg.replace('${BLUE}','')
+            # replaced by re.sub above
+            # arg = arg.replace('${<ATTR>}','')
             self.fhandler.write(arg+"\n")
         
     def close_fhandler(self):
-        if self.options.makeOutputFile:
+        if self.make_file:
             self.fhandler.close()
         
     def create_module_list(self):
         if len(self.astrotypes) or len(self.datasets):
+            badtype = []
             if self.astrotypes:
                 self.astrotypes.sort()
             for typ in self.astrotypes:
-                ps = rl.retrieve_primitive_set(astrotype = typ)        
+                ps = rl.retrieve_primitive_set(astrotype=typ)        
                 if ps != None:
                     self.module_list.extend(ps)
+                else:
+                    badtype.append(typ)
             for dataset in self.datasets:
                 ad = AstroData(dataset)
-                ps = rl.retrieve_primitive_set(dataset = ad)
+                ps = rl.retrieve_primitive_set(dataset=ad)
                 s = "%(ds)s-->%(typ)s" % {"ds": dataset, "typ": ps[0].astrotype}
                 p = " "*(SW - len(s))
                 self.show("${YELLOW}"+s+p+"${NORMAL}")
                 if ps:
                     self.module_list.extend(ps)
+                else:
+                    badtype.append(dataset)
         else:
             for key in primtypes:
                 try:
-                    self.module_list.extend(rl.retrieve_primitive_set(astrotype = key))
+                    self.module_list.extend(rl.retrieve_primitive_set(astrotype=key))
                 except:
-                    self.show("${RED}ERROR: cannot load primitive set for astrotype %s${NORMAL}"
-                                    % key)
+                    self.show("${RED}ERROR: Cannot load primitive set for "
+                              "astrotype %s${NORMAL}" % key)
         if len(self.module_list) == 0:
-            print "Found no primitive sets associated with:"
-            for arg in self.options.args:
-                print "   ",arg
-    
+            mes = "Cannot find associated primitives with %s" % str(badtype)
+            raise Errors.PrimInspectError(mes)
+             
     # get a sorted list of primitive sets, sorted with parents first
 
             
@@ -289,13 +291,13 @@ class PrimInspect():
         cl = self.name2class[primsetname]
        
         if firstset:           
-            self.show("${BOLD}"+'_'*SW+"${NORMAL}")
-            if self.options.showInfo:
-                self.show("\n${BOLD}%s${NORMAL}\n" % (cl.astrotype))
+            self.show("\n${BOLD}"+'='*SW+"${NORMAL}")
+            if self.show_info:
+                self.show("${BOLD}%s${NORMAL}" % (cl.astrotype))
                 self.show_set_info(primsetname, cl, primlist) 
             else:
-                self.show("\n${BOLD}%s ${NORMAL}(%s)\n" % (cl.astrotype, primsetname))
-            self.show("-"*SW)
+                self.show("${BOLD}%s ${NORMAL}(%s)" % (cl.astrotype, primsetname))
+            self.show("="*SW + "\n")
             astrotype = cl.astrotype
             instance = self.class2instance[primsetname]
         else:
@@ -319,13 +321,13 @@ class PrimInspect():
             if hide:
                 primline += "  %s" % hide
             self.show(primline)
-            if self.options.showUsage:
+            if self.show_usage:
                 func = eval("instance."+prim)
                 if hasattr(func, "pt_usage"):
                     print " "*indent+'    ${YELLOW}DOC:'+eval("func.pt_usage")+'${NORMAL}'
                 if hasattr(instance, "ptusage_"+prim):
                     print " "*indent+'    ${YELLOW}DOC: '+eval("instance.ptusage_"+prim)+'${NORMAL}'
-            if self.options.showParams:
+            if self.show_param:
                 indent0 = indentstr+INDENT*5
                 indent1 = indentstr+INDENT*6
                 
