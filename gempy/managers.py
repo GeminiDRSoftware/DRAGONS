@@ -877,10 +877,8 @@ class IrafStdout():
             else it becomes a fullinfo message.
             
         """
-        if 'PANIC' in out or 'ERROR' in out:
-            self.log.error(out, category='clError')
-        elif len(out) > 1:
-            self.log.fullinfo(out, category='clInfo')
+        if len(out) > 1:
+            self.log.fullinfo(out)
 
 def listFileMaker(list=None, listName=None):
     """ 
