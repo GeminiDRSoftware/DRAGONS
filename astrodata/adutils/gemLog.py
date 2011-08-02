@@ -365,6 +365,32 @@ class GeminiLogger(object):
                 return self._debugDefaultCategory
             else:
                 self._debugDefaultCategory = category
+    
+    # logger levels --------------------------------------------------------
+
+    def debug(self, msg, category=None): 
+        """ The function to call for making 'debug' level log messages"""
+        # Check if a category string was passed in, else set to default value 
+        # Retrieving the important parts of the call stack using callInfo()
+        # In case the message is multiple lines, break them up into a list
+        # Loop through the message lines in the list and log them
+        # split long lines up and add indentation
+        # print blank line if msg was only whitespace
+        if category is None:
+            category = self._debugDefaultCategory  
+        b = callInfo()
+        msgs = str(msg).split('\n')
+        for line in msgs:
+            new_lines = self.wrapper.wrap(category.ljust(10).upper()+'-' + 
+                                          b[0].ljust(20)+' - '+
+                                          b[2].ljust(20)+'-' +
+                                          str(b[1]).ljust(3) +
+                                          ' - '+line)
+            if len(new_lines) == 0:
+                self.logger.debug('')
+            else:
+                for new_line in new_lines:
+                    self.logger.debug(new_line)
             
     def fullinfo(self, msg, category=None):
         """ The function to call for making 'fullinfo' level log messages
@@ -398,7 +424,7 @@ class GeminiLogger(object):
             else:
                 for new_line in new_lines:
                     self.logger.info(new_line)
-     
+    
     def stdinfo(self, msg, category=None ):
         """ The function to call for making 'stdinfo' level log messages
         """
@@ -427,48 +453,6 @@ class GeminiLogger(object):
                 for new_line in new_lines:
                     self.logger.status(new_line)
     
-    def debug(self, msg, category=None): 
-        """ The function to call for making 'debug' level log messages"""
-        # Check if a category string was passed in, else set to default value 
-        # Retrieving the important parts of the call stack using callInfo()
-        # In case the message is multiple lines, break them up into a list
-        # Loop through the message lines in the list and log them
-        # split long lines up and add indentation
-        # print blank line if msg was only whitespace
-        if category is None:
-            category = self._debugDefaultCategory  
-        b = callInfo()
-        msgs = str(msg).split('\n')
-        for line in msgs:
-            new_lines = self.wrapper.wrap(category.ljust(10).upper()+'-' + 
-                                          b[0].ljust(20)+' - '+
-                                          b[2].ljust(20)+'-' +
-                                          str(b[1]).ljust(3) +
-                                          ' - '+line)
-            if len(new_lines) == 0:
-                self.logger.debug('')
-            else:
-                for new_line in new_lines:
-                    self.logger.debug(new_line)
-    
-    def critical(self, msg, category=None):
-        """ The function to call for making 'critical' level log messages"""
-        if category is None:
-            category = self._criticalDefaultCategory
-        b = callInfo()
-        msgs = str(msg).split('\n')
-        for line in msgs:
-            new_lines = self.wrapper.wrap(category.ljust(10).upper()+'-' + 
-                                          b[0].ljust(20)+' - '+
-                                          b[2].ljust(20)+'-' +
-                                          str(b[1]).ljust(3) +
-                                          ' - '+line)
-            if len(new_lines)==0:
-                self.logger.critical('')
-            else:
-                for new_line in new_lines:
-                    self.logger.critical(new_line)
-            
     def warning(self, msg, category=None):
         """ The function to call for making 'warning' level log messages
         """
@@ -491,21 +475,36 @@ class GeminiLogger(object):
             category = self._errorDefaultCategory
         b = callInfo()
         msgs = str(msg).split('\n')
-        #file_handler = open(self._logName, w)
         for line in msgs:
-            #The ERROR is a temp fix until a solution can be found
-            #sys.stderr.write("ERROR    40- " + category.ljust(10) + '-' +
-            #    b[0].ljust(20)+' - '+ b[2].ljust(20) + '-' +
-            #    str(b[1]).ljust(3) + ' - ' + line + "\n")
-            # split long lines up and add indentation
-            new_lines = self.wrapper.wrap('ERROR - '+line)
-            for new_line in new_lines:
-                sys.stderr.write(new_line+'\n')
-            self.logger.error(category.ljust(10) + '-' + 
-                b[0].ljust(20)+' - '+ b[2].ljust(20) + '-' + 
-                str(b[1]).ljust(3) + ' - ' + line)
+            new_lines = self.wrapper.wrap(category.ljust(10).upper()+'-' + 
+                                          b[0].ljust(20)+' - '+
+                                          b[2].ljust(20)+'-' +
+                                          str(b[1]).ljust(3) +
+                                          ' - '+line)
+            if len(new_lines)==0:
+                self.logger.error('')
+            else:
+                for new_line in new_lines:
+                    self.logger.error(new_line)
+                    sys.stderr.write(new_line)
 
-#functions outside GeminiLogger class------------------------------------------
+    def critical(self, msg, category=None):
+        """ The function to call for making 'critical' level log messages"""
+        if category is None:
+            category = self._criticalDefaultCategory
+        b = callInfo()
+        msgs = str(msg).split('\n')
+        for line in msgs:
+            new_lines = self.wrapper.wrap(category.ljust(10).upper()+'-' + 
+                                          b[0].ljust(20)+' - '+
+                                          b[2].ljust(20)+'-' +
+                                          str(b[1]).ljust(3) +
+                                          ' - '+line)
+            if len(new_lines)==0:
+                self.logger.critical('')
+            else:
+                for new_line in new_lines:
+                    self.logger.critical(new_line)
 
 def callInfo():
     """ A function used by log levels debug, critical, warning and error 
