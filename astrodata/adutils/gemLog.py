@@ -486,7 +486,7 @@ class GeminiLogger(object):
             else:
                 for new_line in new_lines:
                     self.logger.error(new_line)
-                    sys.stderr.write(new_line)
+                    sys.stderr.write(new_line + '\n')
 
     def critical(self, msg, category=None):
         """ The function to call for making 'critical' level log messages"""
