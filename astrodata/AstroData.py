@@ -233,9 +233,9 @@ integrates other functionality.
                 import urllib
                 from urllib import urlretrieve
                 savename = os.path.basename(dataset)
-                print "AstroData retrieving remote file: "
-                print "     from %s" % dataset
-                print "     to   %s" % os.path.join(store,savename)
+                #print "AstroData retrieving remote file: "
+                #print "     from %s" % dataset
+                #print "     to   %s" % os.path.join(store,savename)
                 try:
                     if store:
                         # print "AD230: Storing in,", store
