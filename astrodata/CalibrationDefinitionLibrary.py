@@ -97,19 +97,19 @@ class CalibrationDefinitionLibrary(object):
             
             ad = inp # saves me time, as I cut/pasted the below from a test script
             cr.descriptors =  {'instrument':ad.instrument().for_db(),
+                         'observation_type': ad.observation_type().for_db(),
                          'data_label':ad.data_label().for_db(),
                          'detector_x_bin':ad.detector_x_bin().for_db(),
                          'detector_y_bin':ad.detector_y_bin().for_db(),
                          'read_speed_setting':ad.read_speed_setting().for_db(),
                          'gain_setting':ad.gain_setting().for_db(),
-                         'amp_read_area':ad.amp_read_area(asDict=True).for_db(),
+                         'amp_read_area':ad.amp_read_area().for_db(),
                          'ut_datetime':str(ad.ut_datetime().for_db()),
+                         #'ut_datetime':ad.ut_datetime().for_db(),
                          'exposure_time':ad.exposure_time().for_db(),
-                         'nodandshuffle':ad.is_type('GMOS_NODANDSHUFFLE'),
-                         'observation_type': ad.observation_type().for_db(),
-                         'spectroscopy': ad.is_type("SPECT"),
-                         'object': ad.object().for_db()
-
+                         'object': ad.object().for_db(),
+                         'filter_name':ad.filter_name().for_db(),
+                         'focal_plane_mask':ad.focal_plane_mask().for_db(),
                          }
             cr.types = ad.types
             
