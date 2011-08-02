@@ -22,12 +22,7 @@ timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
 def subtract_bias(adinput=None, bias=None):
     """
     This function will subtract the biases from the inputs using the 
-    CL script gireduce.
-    
-    WARNING: The gireduce script used here replaces the previously 
-    calculated DQ frames with its own versions. This may be corrected 
-    in the future by replacing the use of the gireduce
-    with a Python routine to do the bias subtraction.
+    AstroData arith module.
     
     NOTE: The inputs to this function MUST be prepared.
     
@@ -46,154 +41,67 @@ def subtract_bias(adinput=None, bias=None):
         list must match the length of the inputs.
     """
     
-    # instantiate log
+    # Instantiate log
     log = gemLog.getGeminiLog()
     
-    # ensure that adinput and bias are not None and make 
+    # Ensure that adinput and bias are not None and make 
     # them into lists if they are not already
     adinput = gt.validate_input(adinput=adinput)
     bias = gt.validate_input(adinput=bias)
     
-    # time stamp keyword
+    # Make a dictionary with adinputs as keys and bias(es) as values
+    bias_dict = gt.make_dict(key_list=adinput, value_list=bias)
+    
+    # Time stamp keyword
     timestamp_key = timestamp_keys["subtract_bias"]
     
-    # initialize output list
+    # Initialize output list
     adoutput_list = []
      
     try:
         
-        # check the inputs have matching binning and SCI shapes.
-        gt.checkInputsMatch(adInsA=bias, adInsB=adinput, check_filter=False) 
-        
-        # load and bring the pyraf related modules into the name-space
-        pyraf, gemini, yes, no = pyrafLoader()
-            
-        # Perform work in a loop, so that different biases may be
-        # used for each input as gireduce only allows one bias input per run.
+        # Loop through AD inputs, subtracting the appropriate biases
         count=0
         for ad in adinput:
             
-            # Determine whether VAR/DQ needs to be propagated
-            if (ad.count_exts("VAR") == 
-                ad.count_exts("DQ") == 
-                ad.count_exts("SCI")):
-                fl_vardq=yes
-            else:
-                fl_vardq=no
-            
+            # Check whether the subtract_bias user level function has been
+            # run previously
+            if ad.phu_get_key_value(timestamp_key):
+                raise Errors.InputError("%s has already been processed by " \
+                                        "subtract_bias" % (ad.filename))
+
             # Get the right bias frame for this input
-            if len(bias)>1:
-                this_bias = bias[count]
-            else:
-                this_bias = bias[0]
+            this_bias = bias_dict[ad]
+
+            # check the inputs have matching binning and SCI shapes.
+            gt.checkInputsMatch(adInsA=ad, adInsB=this_bias, check_filter=False) 
+        
             log.fullinfo("Subtracting this bias from the input " \
                          "AstroData object (%s):\n%s" % (ad.filename, 
                                                          this_bias.filename))
             
-            # Prepare input files, lists, parameters... for input to 
-            # the CL script
-            clm = mgr.CLManager(imageIns=ad, suffix="_out",
-                                refIns=this_bias,
-                                funcName="biasCorrect", log=log)
+            # Subtract the bias and handle VAR/DQ appropriately
+            ad = ad.sub(this_bias)
             
-            # Check the status of the CLManager object, 
-            # True=continue, False=issue warning
-            if not clm.status:
-                raise Errors.ScienceError("One of the inputs has not " +
-                                          "been prepared, the combine " +
-                                          "function can only work on " +
-                                          "prepared data.")
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
             
-            # Parameters set by the mgr.CLManager or the 
-            # definition of the function 
-            clPrimParams = {
-                "inimages"    :clm.imageInsFiles(type="string"),
-                "gp_outpref"  :clm.prefix,
-                "outimages"   :clm.imageOutsFiles(type="string"),
-                # This returns a unique/temp log file for IRAF 
-                "logfile"     :clm.templog.name,
-                "fl_bias"     :yes,
-                # Possibly add this to the params file so the user can override
-                # this input file
-                "bias"        :clm.refInsFiles(type="string"),
-                "outpref"    :"",
-                "fl_over"    :no,
-                "fl_trim"    :no,
-                "fl_vardq"   :mgr.pyrafBoolean(fl_vardq)
-                }
-            
-            # Parameters from the Parameter file adjustable by the user
-            # (none, currently)
-            clSoftcodedParams = {}
-            
-            # Grab the default params dict and update it 
-            # with the two above dicts
-            clParamsDict = CLDefaultParamsDict("gireduce")
-            clParamsDict.update(clPrimParams)
-            clParamsDict.update(clSoftcodedParams)
-            
-            # Log the parameters that were not defaults
-            log.fullinfo("\nParameters set automatically:", 
-                         category="parameters")
-            # Loop through the parameters in the clPrimParams
-            # dictionary and log them
-            mgr.logDictParams(clPrimParams)
-            
-            log.fullinfo("\nParameters adjustable by the user:", 
-                         category="parameters")
-            # Loop through the parameters in the clSoftcodedParams 
-            # dictionary and log them
-            mgr.logDictParams(clSoftcodedParams)
-            
-            log.debug("calling the gireduce CL script for inputs "+
-                      clm.imageInsFiles(type="string"))
-            
-            gemini.gmos.gireduce(**clParamsDict)
-            
-            if gemini.gmos.gireduce.status:
-                raise Errors.ScienceError("gireduce failed for inputs "+
-                                          clm.imageInsFiles(type="string"))
-            else:
-                log.fullinfo("Exited the gireduce CL script successfully")
-            
-            # Rename CL outputs and load them back into memory 
-            # and clean up the intermediate temp files written to disk
-            # refOuts and arrayOuts are None here
-            imageOuts, refOuts, arrayOuts = clm.finishCL() 
-            
-            # There is only one at this point so no need to perform a loop
-            # CLmanager outputs a list always, so take the 0th
-            ad_out = imageOuts[0]
-            ad_out.filename = ad.filename
-            
-            # Verify gireduce was actually ran on the file
-            # then log file names of successfully reduced files
-            if ad_out.phu_get_key_value("GIREDUCE"): 
-                log.fullinfo("File "+ad_out.filename+
-                             " was successfully bias-subtracted.")
-            
-            # Update GEM-TLM (automatic) and BIASCORR time stamps to the PHU
-            # and update logger with updated/added time stamps
-            gt.mark_history(adinput=ad_out, keyword=timestamp_key)
-            
-            # Reset the value set by gireduce to just the filename
-            # for clarity
-            ad_out.phu_set_key_value("BIASIM", 
-                                    os.path.basename(this_bias.filename)) 
+            # Record the bias file used
+            ad.phu_set_key_value("BIASIM", 
+                                 os.path.basename(this_bias.filename),
+                                 "Bias image subtracted") 
             
             # Update log with new BIASIM header key
-            log.fullinfo("Another PHU keyword added:", "header")
-            log.fullinfo("BIASIM = "+ad_out.phu_get_key_value("BIASIM")+"\n", 
+            log.fullinfo("PHU keyword added:", "header")
+            log.fullinfo("BIASIM = "+ad.phu_get_key_value("BIASIM")+"\n", 
                          category="header")
             
             # Append to output list
-            adoutput_list.append(ad_out)
+            adoutput_list.append(ad)
             
             count = count+1
         
-        log.fullinfo("The CL script gireduce REPLACED any previously "+
-                    "calculated DQ frames")
-        # Return the outputs list, even if there is only one output
+        # Return the outputs list
         return adoutput_list
     except:
         # log the exact message from the actual exception that was raised
@@ -232,7 +140,7 @@ def subtract_overscan_gmos(adinput=None, overscan_section=None):
                     '[x1:x2,y1:y2],[x1:x2,y1:y2],[x1:x2,y1:y2]'
     :type overscan_section: string. 
                    eg: '[2:25,1:2304],[2:25,1:2304],[1032:1055,1:2304]' 
-                   is ideal for 2x2 GMOS data. Default is '', which
+                   is ideal for 2x2 GMOS data. Default is None, which
                    causes default nbiascontam=4 columns to be used.
     """
     
