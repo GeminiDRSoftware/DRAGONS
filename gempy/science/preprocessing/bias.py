@@ -201,7 +201,7 @@ def subtract_bias(adinput=None, bias=None):
         log.critical(repr(sys.exc_info()[1]))
         raise 
 
-def subtract_overscan_gmos(adinput=None, overscan_section=""):
+def subtract_overscan_gmos(adinput=None, overscan_section=None):
     """
     This function uses the CL script gireduce to subtract the overscan 
     from the input images.
@@ -273,7 +273,7 @@ def subtract_overscan_gmos(adinput=None, overscan_section=""):
                                           "can only work on prepared data.")
             
             # Take care of the overscan_section->nbiascontam param
-            if overscan_section != "":
+            if overscan_section is not None:
                 nbiascontam = clm.nbiascontam(adinput, overscan_section)
                 log.fullinfo("nbiascontam parameter was updated to = "+
                              str(nbiascontam))
