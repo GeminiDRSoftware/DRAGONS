@@ -12,7 +12,8 @@ LOCALCALMGR = "http://localhost:%(httpport)d/calsearch.xml?caltype=%(caltype)s"
 CALTYPEDICT = { "bias": "bias",
                 "flat": "flat",
                 "processed_bias": "processed_bias",
-                "processed_flat": "processed_flat"}
+                "processed_flat": "processed_flat",
+                "processed_fringe": "processed_fringe"}
 
 def urljoin(*args):
     for arg in args:
@@ -49,8 +50,8 @@ def upload_calibration(filename):
         raise
 
     response = u.read()
-    print "RESPONSE"
-    print response
+    #print "RESPONSE"
+    #print response
 
 
 def calibration_search(rq, fullResult = False):
