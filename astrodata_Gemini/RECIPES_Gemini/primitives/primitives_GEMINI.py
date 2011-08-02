@@ -591,17 +591,26 @@ class GEMINIPrimitives(GENERALPrimitives):
         if source == None:
             source = "all"
             
+        calibrationless_adlist = []
         adinput = rc.get_inputs(style="AD")
         for ad in adinput:
             ad.mode = "update"
-        rc.rq_cal(caltype, adinput, source=source)
+            calurl = rc.get_cal(ad,caltype)
+            if not calurl:
+                calibrationless_adlist.append(ad)
+            
+        if len(calibrationless_adlist) ==0:
+            # print "pG603: calibrations for all files already present"
+            pass
+        else:
+            rc.rq_cal(caltype, calibrationless_adlist, source=source)
         yield rc
         log.stdinfo("getCalibration: Results")
-        for ad in rc.get_inputs(style="AD"):
+        for ad in calibrationless_adlist:
             calurl = rc.get_cal(ad, caltype) #get from cache
             # print "pG565:", repr(calurl)
             if calurl:
-                cal = AstroData(rc.get_cal(ad, caltype))
+                cal = AstroData(calurl)
                 if cal.filename is None:
                     log.stdinfo("   No %s for %s" % (caltype,ad.filename))
                 else:
