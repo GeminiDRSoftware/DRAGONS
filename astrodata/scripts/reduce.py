@@ -799,7 +799,8 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                 # not this only works because we install a stdout filter right away with this
                 # member function
                 if (True): # try:
-                    ro.run(rec, co)
+                    import cProfile
+                    cProfile.run("ro.run(rec, co)", "runout.prof")
                     #for coi in ro.substeps(rec, co):
                     #    ro.execute_command_clause()
                         # filteredstdout.addFilter(primfilter)

@@ -516,8 +516,8 @@ def command_clause(ro, coi):
                 #print 'RED422:', (et - st)
 
     # note: will this throw away rq's, should throw exception?  review
-    # why do this, better to assert it IS empty than empty it!
-    # coi.clear_rqs()
+    # why do this, better to assert it IS empty than empty it?
+    coi.clear_rqs()
     
     #dump the reduction context object 
     if coi['rtf']:

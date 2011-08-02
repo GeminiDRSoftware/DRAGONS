@@ -59,6 +59,13 @@ class StackKeeper(object):
         @param addtostack: A list of files for stacking or a StackableRecord instance.
         @type addtostack: list or StackableRecord  
         '''
+        if hasattr(self, "_cc"):
+            cc = self._cc
+        else:
+            self._cc = 1
+            cc = 1
+        # print "sk62:",cc
+        
         # print "SK62: entering add"
         cachefile = os.path.abspath(cachefile)
         self.lock.acquire()
@@ -75,6 +82,7 @@ class StackKeeper(object):
             abscf = os.path.abspath(cachefile)
             #print "SK75: remote add to %s of %s" % (abscf, repr(addtostack))
             self.adcc.prs.stackPut(id, addtostack, abscf)
+            self.lock.release()
             return 
             
         # this is the local storage, in general use this is the instance
