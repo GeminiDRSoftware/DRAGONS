@@ -112,7 +112,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             clParamsDict.update(clPrimParams)
             
             # Logging the values in the prim parameter dictionaries
-            gt.logDictParams(clPrimParams)
+            #gt.logDictParams(clPrimParams)
             
             log.debug("Calling the gdisplay CL script for input list %s" \
                       % (inputRecord.filename))

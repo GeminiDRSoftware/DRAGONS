@@ -324,30 +324,6 @@
         "userOverride"  : True,
         },
     },
- "storeProcessedBias":{
-    "clob":{
-        "default"       : False,
-        "recipeOverride": True,
-        "type"          : "bool",
-        "userOverride"  : True,
-        },
-    },
- "storeProcessedFlat":{
-    "clob":{
-        "default"       : False,
-        "recipeOverride": True,
-        "type"          : "bool",
-        "userOverride"  : True,
-        },
-    },
- "storeProcessedFringe":{
-    "clob":{
-        "default"       : False,
-        "recipeOverride": True,
-        "type"          : "bool",
-        "userOverride"  : True,
-        },
-    },
  "subtractDark":{
     "suffix":{
         # String to be post pended to the output of subtractDark

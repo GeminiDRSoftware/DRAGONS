@@ -1075,23 +1075,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
     
     def storeProcessedBias(self, rc):
-        """
-        This should be a primitive that interacts with the calibration system 
-        (MAYBE) but that isn't up and running yet. Thus, this will just strip 
-        the extra postfixes to create the 'final' name for the 
-        makeProcessedBias outputs and write them to disk in a storedcals
-        folder.
-        
-        :param clob: Write over any previous file with the same name that
-                     all ready exists?
-        :type clob: Python boolean (True/False)
-                    default: False
-        
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (i.e.,
-                        'critical', 'status', 'fullinfo'...)
-        """
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -1109,6 +1092,11 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Adding a PROCBIAS time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCBIAS")
 
+            # Write a copy to disk
+            log.fullinfo("Bias written to %s" % (rc["storedbiases"]))
+            ad.write(os.path.join(rc["storedbiases"], ad.filename), 
+                     clobber=rc["clobber"])
+
             # Upload bias to cal system
             rc.run("storeCalibration")
             log.fullinfo("Bias stored in calibration system")
@@ -1116,23 +1104,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
     
     def storeProcessedDark(self, rc):
-        """
-        This should be a primitive that interacts with the calibration system 
-        (MAYBE) but that isn't up and running yet. Thus, this will just strip 
-        the extra postfixes to create the 'final' name for the 
-        makeProcessedDark outputs and write them to disk in a storedcals
-        folder.
-        
-        :param clob: Write over any previous file with the same name that
-                     all ready exists?
-        :type clob: Python boolean (True/False)
-                    default: False
-        
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (i.e.,
-                        'critical', 'status', 'fullinfo'...)
-        """
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -1150,6 +1121,11 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Adding a PROCDARK time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCDARK")
 
+            # Write a copy to disk
+            log.fullinfo("Dark written to %s" % (rc["storeddarks"]))
+            ad.write(os.path.join(rc["storeddarks"], ad.filename), 
+                     clobber=rc["clobber"])
+
             # Upload to cal system
             rc.run("storeCalibration")
             log.fullinfo("Dark stored in calibration system")
@@ -1157,23 +1133,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
     
     def storeProcessedFlat(self, rc):
-        """
-        This should be a primitive that interacts with the calibration 
-        system (MAYBE) but that isn't up and running yet. Thus, this will 
-        just strip the extra postfixes to create the 'final' name for the 
-        makeProcessedFlat outputs and write them to disk in a storedcals
-        folder.
-        
-        :param clob: Write over any previous file with the same name that
-                     all ready exists?
-        :type clob: Python boolean (True/False)
-                    default: False
-        
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (i.e.,
-                        'critical', 'status', 'fullinfo'...)
-        """
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -1191,6 +1150,11 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Adding a PROCFLAT time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCFLAT")
 
+            # Write a copy to disk
+            log.fullinfo("Flat written to %s" % (rc["storedflats"]))
+            ad.write(os.path.join(rc["storedflats"], ad.filename), 
+                     clobber=rc["clobber"])
+
             # Upload to cal system
             rc.run("storeCalibration")
             log.fullinfo("Flat stored in calibration system")
@@ -1198,23 +1162,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
     
     def storeProcessedFringe(self, rc):
-        """
-        This should be a primitive that interacts with the calibration 
-        system (MAYBE) but that isn't up and running yet. Thus, this will 
-        just strip the extra postfixes to create the 'final' name for the 
-        makeProcessedFringe outputs and write them to disk in a storedcals
-        folder.
-        
-        :param clob: Write over any previous file with the same name that
-                     all ready exists?
-        :type clob: Python boolean (True/False)
-                    default: False
-        
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (i.e.,
-                        'critical', 'status', 'fullinfo'...)
-        """
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -1231,6 +1178,11 @@ class GEMINIPrimitives(GENERALPrimitives):
 
             # Adding a PROCFRNG time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCFRNG")
+
+            # Write a copy to disk
+            log.fullinfo("Fringe written to %s" % (rc["storedfringes"]))
+            ad.write(os.path.join(rc["storedfringes"], ad.filename), 
+                     clobber=rc["clobber"])
 
             # Upload to cal system
             rc.run("storeCalibration")
