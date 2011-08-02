@@ -516,6 +516,11 @@ class CLManager(object):
                 else:
                     ad.phu_set_key_value('PREPARE', gprep, 
                                          'UT Time stamp for GPREPARE')
+
+            if 'PROCESSED_BIAS' in types:
+                ad.history_mark(key='GBIAS', 
+                                comment='Temporary key for GIREDUCE')
+
             try:
                 if 'GMOS_IMAGE' in types:
                     typeStr = 'IMAGE'
@@ -545,6 +550,9 @@ class CLManager(object):
         if 'GMOS' in ad.get_types():
             del ad.get_phu().header['OBSMODE']
             del ad.get_phu().header['GPREPARE']
+            del ad.get_phu().header['GBIAS']
+                
+
         return ad
     
     def postCLloads(self):
