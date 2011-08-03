@@ -99,7 +99,7 @@ class CalibrationDefinitionLibrary(object):
             #print "CDL99:", str(ad.ut_datetime())
             cr.descriptors =  {'instrument':ad.instrument().for_db(),
                          'observation_type': ad.observation_type().for_db(),
-                         'data_label':ad.data_label().for_db(),
+                         'data_label': ad.data_label().for_db(),
                          'detector_x_bin':ad.detector_x_bin().for_db(),
                          'detector_y_bin':ad.detector_y_bin().for_db(),
                          'read_speed_setting':ad.read_speed_setting().for_db(),

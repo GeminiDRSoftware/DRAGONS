@@ -400,17 +400,18 @@ def command_clause(ro, coi):
                     
                 if usePRS:
                     #print "RO402:", repr(rq.as_dict())
-                    
-                    calurl = prs.calibration_search( rq )
-                
-                log.info("found calibration (url): " + calurl)
+                    try:
+                        calurl = prs.calibration_search( rq )
+                    except:
+                        calurl = None
                 if calurl == None:
-                    log.critical('No '+str(typ)+' calibration file found for '+\
+                    log.critical('\nNo '+str(typ)+' calibration file found for '+\
                                 str(fn))
                     # this is not fatal because perhaps there isn't a calibration
                     # the system checks both the local and central source
                     # raise RecipeExcept("CALIBRATION for %s NOT FOUND, FATAL" % fn)
                     break
+                log.info("found calibration (url): " + calurl)
                 #print "RO393:", calurl
                 msg += 'A suitable %s found:\n' %(str(typ))
                 
