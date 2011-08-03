@@ -93,9 +93,10 @@ class CalibrationDefinitionLibrary(object):
             cr.filename = inp.filename
             cr.caltype = caltype
             # @@NOTE: should use IDFactory, not data_label which HAPPENS to be the id
-            cr.datalabel = str(inp.data_label())
+            cr.datalabel = repr(inp.data_label())
             
             ad = inp # saves me time, as I cut/pasted the below from a test script
+            #print "CDL99:", str(ad.ut_datetime())
             cr.descriptors =  {'instrument':ad.instrument().for_db(),
                          'observation_type': ad.observation_type().for_db(),
                          'data_label':ad.data_label().for_db(),
@@ -104,8 +105,8 @@ class CalibrationDefinitionLibrary(object):
                          'read_speed_setting':ad.read_speed_setting().for_db(),
                          'gain_setting':ad.gain_setting().for_db(),
                          'amp_read_area':ad.amp_read_area().for_db(),
-                         'ut_datetime':str(ad.ut_datetime().for_db()),
-                         #'ut_datetime':ad.ut_datetime().for_db(),
+                         #'ut_datetime':repr(ad.ut_datetime().for_db()),
+                         'ut_datetime':ad.ut_datetime().for_db(),
                          'exposure_time':ad.exposure_time().for_db(),
                          'object': ad.object().for_db(),
                          'filter_name':ad.filter_name().for_db(),

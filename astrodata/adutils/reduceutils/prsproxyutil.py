@@ -56,9 +56,11 @@ def upload_calibration(filename):
 
 def calibration_search(rq, fullResult = False):
     from astrodata.FitsStorageFeatures import FitsStorageSetup
+    from xmlrpclib import DateTime 
     fss = FitsStorageSetup() # note: uses current working directory!!!
     
-    print "ppu92: in here"
+    #if "ut_datetime" in rq:
+    #    rq["ut_datetime"] = str(rq["ut_datetime"])
     #if not fss.is_setup():
     #    return None
     
@@ -90,9 +92,13 @@ def calibration_search(rq, fullResult = False):
     ### send request
     sequence = [("descriptors", rq["descriptors"]), ("types", rq["types"])]
     postdata = urllib.urlencode(sequence)
-    calRQ = urllib2.Request(rqurl)
-    u = urllib2.urlopen(calRQ, postdata)
-    response = u.read()
+    try:
+        print "ppu96: postdata",repr(postdata)
+        calRQ = urllib2.Request(rqurl)
+        u = urllib2.urlopen(calRQ, postdata)
+        response = u.read()
+    except urllib2.HTTPError, error:
+        print "ppu100:HTTPError", error.read()
     #response = urllib.urlopen(rqurl).read()
     print "prs129:", response
     if fullResult:

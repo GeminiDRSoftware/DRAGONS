@@ -151,7 +151,9 @@ class PRSProxy(object):
             if port != None:
                 self.prsport = port
             #self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, allow_none=True)
-            self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, allow_none=True)
+            self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, 
+                                            allow_none=True,
+                                            use_datetime=True)
             self.reduce_server = reduce_server
             PRSProxy._class_prs = self # .prs
             self.found = True

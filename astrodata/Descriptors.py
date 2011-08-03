@@ -17,6 +17,9 @@ solution of proxying descriptor access in AstroData member functions which then
 call the appropriate member function of the calculator associated with
 their dataset.
 """
+
+import datetime
+
 from astrodata import Errors
 from ConfigSpace import config_walk
 DESCRIPTORSPACE = "descriptors"
@@ -265,7 +268,10 @@ class DescriptorValue():
         else:
             # print repr(self.pytype)
             try:
-                return self.pytype(self._val)
+                if self.format == "db" and self.pytype == datetime.datetime:
+                    return str(self._val)
+                else:
+                    return self.pytype(self._val)
             except:
                 return self._val
     # alias

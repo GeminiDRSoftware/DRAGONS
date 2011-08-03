@@ -381,7 +381,7 @@ def command_clause(ro, coi):
     if coi.finished:
         return
     
-    #process calibration requests
+    #process  requests
     for rq in coi.rorqs:
         rqTyp = type(rq)
         msg = 'REDUCE:\n'
@@ -399,7 +399,8 @@ def command_clause(ro, coi):
                     prs = Proxies.PRSProxy.get_adcc()
                     
                 if usePRS:
-                    # print "RO316:", repr(rq)
+                    #print "RO402:", repr(rq.as_dict())
+                    
                     calurl = prs.calibration_search( rq )
                 
                 log.info("found calibration (url): " + calurl)
