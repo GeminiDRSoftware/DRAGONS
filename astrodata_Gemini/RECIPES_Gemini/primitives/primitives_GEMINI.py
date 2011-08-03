@@ -606,7 +606,8 @@ class GEMINIPrimitives(GENERALPrimitives):
             rc.rq_cal(caltype, calibrationless_adlist, source=source)
         yield rc
         log.stdinfo("getCalibration: Results")
-        for ad in calibrationless_adlist:
+
+        for ad in adinput:
             calurl = rc.get_cal(ad, caltype) #get from cache
             # print "pG565:", repr(calurl)
             if calurl:
