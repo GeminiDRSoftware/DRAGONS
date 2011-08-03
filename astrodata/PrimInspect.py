@@ -1,12 +1,13 @@
 #!/usr/bin/env python
-
-
-import os, sys
+import os
+import sys
 import re
+
 #get color printing started
 from astrodata.adutils import terminal
 term = terminal
 from astrodata.adutils.terminal import TerminalController
+
 REASLSTDOUT = sys.stdout
 REALSTDERR = sys.stderr
 fstdout = terminal.FilteredStdout()
@@ -28,27 +29,26 @@ colorFilter.on = False
 primtypes = RecipeManager.centralPrimitivesIndex.keys()
 
 class PrimInspect():
-    '''
-    object for use with listPrimitives.py
-    '''
+    """Tool for listing primitives, parameters, and recipes 
+    """
     module_list = None
     path = "./primitives_list.txt"
     fhandler = None
-    datasets = None
-    astrotypes = None
     primsdict = None
     name2class = None
     primsdict_kbn = None
     class2instance = None
+    primsets = None
     
     def __init__(self, use_color=False, show_param=False, show_usage=False,
-                 show_info=False, make_file=False, verbose=False, path=None):
+                 show_info=False, make_file=False, verbose=False, path=None,
+                 datasets=None, astrotypes=None):
         self.module_list = []
         if path:
             self.path = path
         self.module_list = []
-        self.datasets = []
-        self.astrotypes = []
+        self.datasets = datasets
+        self.astrotypes = astrotypes
         self.primsdict = {}
         self.name2class = {}
         self.primsdict_kbn = {}
@@ -59,7 +59,6 @@ class PrimInspect():
         self.show_usage = show_usage
         self.show_info = show_info
         self.make_file = make_file
-        
         if self.verbose:
             self.use_color = True
             show_param = True
@@ -68,14 +67,17 @@ class PrimInspect():
         if self.use_color:
             colorFilter.on = True
         if self.make_file:
-            self.fhandler = open( self.path , 'w' )
-        
+            self.fhandler = open( self.path , "w" )
+        self.build_dictionaries()
+        self.primsets = self.primsdict.keys()
+        self.primsets.sort(self.primsetcmp)
+
     def show(self, arg):
         print arg
         if self.make_file:
-            arg = re.sub(r'\$\$|\${\w+}','',arg)
+            arg = re.sub(r"\$\$|\${\w+}","",arg)
             # replaced by re.sub above
-            # arg = arg.replace('${<ATTR>}','')
+            # arg = arg.replace("${<ATTR>}","")
             self.fhandler.write(arg+"\n")
         
     def close_fhandler(self):
@@ -96,7 +98,8 @@ class PrimInspect():
             for dataset in self.datasets:
                 ad = AstroData(dataset)
                 ps = rl.retrieve_primitive_set(dataset=ad)
-                s = "%(ds)s-->%(typ)s" % {"ds": dataset, "typ": ps[0].astrotype}
+                s = "%(ds)s-->%(typ)s" % \
+                    {"ds": dataset, "typ": ps[0].astrotype}
                 p = " "*(SW - len(s))
                 self.show("${YELLOW}"+s+p+"${NORMAL}")
                 if ps:
@@ -106,7 +109,8 @@ class PrimInspect():
         else:
             for key in primtypes:
                 try:
-                    self.module_list.extend(rl.retrieve_primitive_set(astrotype=key))
+                    self.module_list.extend(\
+                        rl.retrieve_primitive_set(astrotype=key))
                 except:
                     self.show("${RED}ERROR: Cannot load primitive set for "
                               "astrotype %s${NORMAL}" % key)
@@ -115,37 +119,36 @@ class PrimInspect():
             raise Errors.PrimInspectError(mes)
              
     # get a sorted list of primitive sets, sorted with parents first
-
-            
-    def get_prim_list( self, cl ):
+    def get_prim_list(self, cl):
         plist = []
         for key in cl.__dict__:
             doappend = True
-            fob = eval( "cl."+key )
-            if not hasattr( fob, "__call__" ):
+            fob = eval("cl." + key)
+            if not hasattr(fob, "__call__"):
                 doappend = False
-            if hasattr( fob, "pt_hide" ):
-                doappend = eval ( "not fob.pt_hide" )
-            elif hasattr( cl, "pthide_"+key ):
-                doappend = eval ( "not cl.pthide_"+key )
-                
+            if hasattr(fob, "pt_hide"):
+                doappend = eval("not fob.pt_hide")
+            elif hasattr(cl, "pthide_" + key):
+                doappend = eval("not cl.pthide_" + key)
             if key.startswith( "_" ):
                 doappend = False   
             if doappend:
-                plist.append( key )
+                plist.append(key)
         plist.sort()
         return plist
     
-    def construct_prims_dict( self, primset ):
-        self.primsdict.update( { primset:self.get_prim_list( primset.__class__ ) } )
+    def construct_prims_dict(self, primset):
+        self.primsdict.update({primset:self.get_prim_list(\
+            primset.__class__)})
     
-    def construct_primsclass_dict( self, startclass ):
+    def construct_primsclass_dict(self, startclass):
         if startclass.__name__== "PrimitiveSet":
             return
-        self.name2class.update( {startclass.__name__:startclass} )
-        self.primsdict_kbn.update( { startclass.__name__:self.get_prim_list( startclass ) } )
+        self.name2class.update({startclass.__name__:startclass})
+        self.primsdict_kbn.update({startclass.__name__:self.get_prim_list(\
+            startclass)})
         for base in startclass.__bases__:
-            self.construct_primsclass_dict( base )
+            self.construct_primsclass_dict(base)
     
     def build_dictionaries(self):
         self.create_module_list()
@@ -194,7 +197,8 @@ class PrimInspect():
                 # if retrieve_primitive_set returns new instances...
                 if ps.__class__.__name__ == ops.__class__.__name__:
                     before = False
-                    if verb : print "lP209: found this by by class name", repr(ops)
+                    if verb : print "lP209: found this by by class name",\
+                        repr(ops)
                     continue
                 if isinstance(ops, cl):
                     before = False
@@ -204,9 +208,11 @@ class PrimInspect():
                 if hasattr(ops, prim):
                     if verb : print "lP216: hide happens"
                     if before:
-                        rets = "${RED}(hidden by "+ops.__class__.__name__+")${NORMAL}"
+                        rets = "${RED}(hidden by " + ops.__class__.__name__ +\
+                            ")${NORMAL}"
                     else:
-                        rets = '${GREEN}(hides "%s" from %s)${NORMAL}' %(prim, ops.__class__.__name__)
+                        rets = '${GREEN}(hides "%s" from %s)${NORMAL}' %\
+                            (prim, ops.__class__.__name__)
                     break
             return rets
         return None
@@ -216,7 +222,6 @@ class PrimInspect():
             return 1
         elif isinstance(b,type(a)):
             return -1
-    
         else:
             return 0
     
@@ -227,92 +232,123 @@ class PrimInspect():
             return fp
         return None
     
-    def show_set_info(self, primsetname, cl, primlist):        
+    def primitive_set_infostr(self, primsetname, cl, primlist):        
         sfull = getsourcefile(cl)
         sdir = os.path.dirname(sfull)
         sfil = os.path.basename(sfull)
-        self.show("  Class            : ${BOLD}"+primsetname+"${NORMAL}")
-        self.show("  Description      : ${BOLD}"+cl.astrotype+" Primitive Set${NORMAL}")
-        inherit = 'None'
+        retstr = ""
+        inherit = "None"
         inherit_list=[]
         for base in cl.__bases__:
             if base.__name__ in self.primsdict_kbn:
-                inherit_list.append( base.__name__ )
-                inherit = 'Yes'
-        self.show("  Inheritance      : ${BOLD}"+inherit+"${NORMAL}")
-        if inherit is 'Yes':
+                inherit_list.append(base.__name__)
+                inherit = "Yes"
+        retstr += "\n  Inheritance      : ${BOLD}"+inherit+"${NORMAL}"
+        if inherit is "Yes":
             #right now only works with one level of inheritence
-            overrides_count=0
+            overrides_count = 0
             for prim in primlist:
                 over = self.overrides(primsetname, prim)
                 if over:
-                    overrides_count+=1
+                    overrides_count += 1
             itot = 0
             for inherited in inherit_list:
-                self.show("                   : (from ${BOLD}"+inherited+"${NORMAL}")
+                retstr + " (from ${BOLD}" + inherited + "${NORMAL}"
                 if len(inherit_list) < 2:
                     iprimlist = self.primsdict_kbn[inherited]
                     itot = itot + (len(iprimlist) - overrides_count)
-                    len_iprimlist = str( len(iprimlist) - overrides_count )
-                    self.show("                   : inherited ${BOLD}"+len_iprimlist+"${NORMAL} primitives")
-                    self.show("                   : with ${BOLD}"+str(overrides_count)+" overridden)${NORMAL} ")
-        len_primlist = str( len(primlist) )
-        self.show("  Local primitives :${BOLD} "+len_primlist+"${NORMAL}")
-        if len( inherit_list ) is 1:
-            self.show("  Total primitives : ${BOLD}"+str(itot + len(primlist))+"${NORMAL}")
-        self.show("  Source File      : ${BOLD}"+sfil+"${NORMAL}")
-        self.show("  Location         : ${BOLD}"+sdir+"${NORMAL}")
+                    len_iprimlist = str(len(iprimlist) - overrides_count)
+                    retstr += " (inherited ${BOLD}" + \
+                        len_iprimlist + "${NORMAL} primitives"
+                    retstr += " with ${BOLD}" + \
+                        str(overrides_count)+" overridden)${NORMAL} "
+        len_primlist = str(len(primlist))
+        retstr += "\n  Local primitives :${BOLD} " + len_primlist + "${NORMAL}"
+        if len(inherit_list) is 1:
+            retstr += "\n  Total primitives : ${BOLD}"+ str(itot+len(primlist))\
+                + "${NORMAL}"
+        retstr += "\n  Source File      : ${BOLD}" + sfil + "${NORMAL}"
+        retstr += "\n  Path             : ${BOLD}" + sdir + "${NORMAL}"
+        return retstr
 
-    def showPrims(  self,primsetname, 
-                    primset=None, 
-                    i = 0, 
-                    indent = 0, 
-                    pdat = None,
-                    instance = None):
+    def show_primitive_sets(self, return_string=False, prims=False):
+        retstr = ""
+        if not prims:
+            retstr =  "\n" + "="*SW
+            retstr += "\n${BOLD}PRIMITIVES BY SET${NORMAL}\n" + "="*SW 
+            count = 1
+        names = []
+        for primset in self.primsets:
+            nam = primset.__class__.__name__
+            if nam in names:
+                continue
+            else:
+                names.append(nam)
+            if not prims:
+                cl = self.name2class[nam]
+                if len(self.primsets) == 1:
+                    retstr += "\n\n  ${BOLD}%s${NORMAL}\n" % cl.astrotype
+                else:
+                    retstr += "\n\n%2d. ${BOLD}%s${NORMAL}\n" % (count,cl.astrotype)
+                primlist = self.primsdict_kbn[nam]
+                retstr += self.primitive_set_infostr(nam, cl, primlist)
+                count += 1
+            else:
+                retstr += self.show_primitives(nam)
+        retstr += "\n" + "${BOLD}=${NORMAL}"*SW
+        if return_string:
+            return retstr
+        else:
+            self.show(retstr)
+
+    
+    def show_primitives(self, primsetname, primset=None, i=0, indent=0, 
+                        pdat=None, instance=None):
         INDENT = " "
+        retstr = ""
         indentstr = INDENT*indent
         if primset == None:
             firstset = True
         else:
             firstset = False
-            
         if firstset == True:
             primlist = self.primsdict_kbn[primsetname]
             primset = copy(primlist)
         else:
             myprimset = Set(self.primsdict_kbn[primsetname])
             givenprimset = Set(primset)
-            
             prims = myprimset - givenprimset
-            
             primlist = list(prims)
             primlist.sort()
             primset.extend(primlist)
         cl = self.name2class[primsetname]
-       
         if firstset:           
-            self.show("\n${BOLD}"+'='*SW+"${NORMAL}")
+            retstr = "\n\n${BOLD}" + "="*SW + "${NORMAL}"
             if self.show_info:
-                self.show("${BOLD}%s${NORMAL}" % (cl.astrotype))
-                self.show_set_info(primsetname, cl, primlist) 
+                retstr += "\n${BOLD}%s${NORMAL}" % (cl.astrotype)
+                retstr += self.primitive_set_infostr(primsetname, cl, primlist) 
+                retstr += "\n"
             else:
-                self.show("${BOLD}%s ${NORMAL}(%s)" % (cl.astrotype, primsetname))
-            self.show("="*SW + "\n")
+                retstr += "\n${BOLD}%s ${NORMAL}(%s)\n" % \
+                    (cl.astrotype, primsetname)
+            retstr += "${BOLD}=${NORMAL}"*SW 
             astrotype = cl.astrotype
             instance = self.class2instance[primsetname]
         else:
-            if len(primlist)>0:
-                self.show("${BLUE}%s(Following Are Inherited from %s)${NORMAL}" % (INDENT*indent, primsetname))
-        
+            if len(primlist) > 0:
+                retstr += "\n"
+                short = "(Following are inherited from "
+                retstr += "${BLUE}%s%s%s)${NORMAL}"\
+                    % (INDENT*indent, short, primsetname)
         if len(primlist) == 0:
             maxlenprim = 0
         else:
             maxlenprim = min(16, len(max(primlist, key=len)))
         for prim in primlist:
-            i+=1
+            i += 1
             hide = self.hides(primsetname, prim, instance = instance)
             over = self.overrides(primsetname, prim)
-            primline = "%s%2d. %s" % (" "*indent, i, prim)
+            primline = "\n%s%2d. %s" % (" "*indent, i, prim)
             pl = len(prim)
             if pl < maxlenprim:
                 primline += " "*(maxlenprim-pl)
@@ -320,24 +356,24 @@ class PrimInspect():
                 primline += "  ${BLUE}(overrides %s)${NORMAL}" % over
             if hide:
                 primline += "  %s" % hide
-            self.show(primline)
+            retstr += primline
             if self.show_usage:
-                func = eval("instance."+prim)
+                func = eval("instance." + prim)
                 if hasattr(func, "pt_usage"):
-                    print " "*indent+'    ${YELLOW}DOC:'+eval("func.pt_usage")+'${NORMAL}'
-                if hasattr(instance, "ptusage_"+prim):
-                    print " "*indent+'    ${YELLOW}DOC: '+eval("instance.ptusage_"+prim)+'${NORMAL}'
+                    retstr += " "*indent + "    ${YELLOW}DOC:" + \
+                        eval("func.pt_usage") + "${NORMAL}"
+                if hasattr(instance, "ptusage_" + prim):
+                    retstr += " "*indent + "    ${YELLOW}DOC: " + \
+                        eval("instance.ptusage_"+prim)+"${NORMAL}"
             if self.show_param:
                 indent0 = indentstr+INDENT*5
                 indent1 = indentstr+INDENT*6
-                
                 indentp = indent1+"parameter: "
                 indentm = indent1+INDENT*2
                 if pdat == None:
                     primsetinst = self.class2instance[primsetname]
                     paramdicttype = primsetinst.astrotype
                     paramdict = primsetinst.param_dict
-                    
                     pdat = (paramdicttype,paramdict)
                 else:
                     paramdicttype = pdat[0]
@@ -345,19 +381,17 @@ class PrimInspect():
                 for primname in paramdict.keys():
                     if primname == prim:
                         if not firstset:
-                            self.show( term.GREEN
-                                + term.BOLD
-                                + indent0
-                                + "(these parameter settings for an inherited primitive still originate in"
-                                + "\n"
-                                + indent0
-                                + " the ${BLUE}%s${GREEN} Primitive Set Parameters)${NORMAL}"% paramdicttype
-                                + term.NORMAL)
-
+                            retstr += "\n" + term.GREEN + term.BOLD + indent0 \
+                                + "(these parameter settings for an inherited" \
+                                "primitive still originate in \n" + indent0 \
+                                + " the ${BLUE}%s${GREEN} Primitive Set " \
+                                "Parameters)${NORMAL}" % paramdicttype \
+                                + term.NORMAL
                         paramnames = paramdict[primname].keys()
                         paramnames.sort()
                         for paramname in paramnames:
-                            self.show(term.GREEN+indentp+term.NORMAL+paramname+term.NORMAL)
+                            retstr += "\n" + term.GREEN + indentp + term.NORMAL + \
+                                paramname + term.NORMAL
                             metadata = paramdict[primname][paramname].keys()
                             maxlen = len(max(metadata, key=len)) + 3
                             metadata.sort()
@@ -367,13 +401,11 @@ class PrimInspect():
                             for metadatum in metadata:
                                 padding = " "*(maxlen - len(metadatum))
                                 val = paramdict[primname][paramname][metadatum]
-                                self.show(term.GREEN+indentm+metadatum+padding+"= "+repr(val)+term.NORMAL)
-        
-                        
+                                retstr += "\n" + term.GREEN + indentm + metadatum + \
+                                padding + "= "+repr(val) + term.NORMAL
+
         for base in cl.__bases__:
             if base.__name__ in self.primsdict_kbn:
-                self.showPrims(  base.__name__,
-                            primset = primset, 
-                            i = i, indent = indent+2, 
-                            pdat = pdat, instance = instance)        
-
+                retstr += self.show_primitives(base.__name__, primset=primset, i=i, 
+                    indent=indent+2, pdat=pdat, instance=instance)
+        return retstr
