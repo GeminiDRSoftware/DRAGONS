@@ -118,9 +118,9 @@ parser.add_option("-p", "--param", dest="userparam", default=None,
                   "primitive is 'primitivename'. Multiple settings can appear "
                   "separated by commas, but no whitespace in the setting (i.e."
                   "'param=val,param2=val2', not 'param=val, param2=val2')")
-# parser.add_option("-r", "--reduce", dest="twdir", default =".",
-#                 help="Recursively walk given directory and put type "
-#                 "information to stdout.")
+parser.add_option("--context", dest="running_contexts", default=None,
+                    help="provides general 'context name' for primitives"
+                    "sensitive to context.")
 parser.add_option("-r", "--recipe", dest="recipename", default=None,
                   help="specify which recipe to run by name")
 parser.add_option("-t", "--astrotype", dest="astrotype", default=None,
@@ -383,9 +383,11 @@ def command_line():
         # @@TODO: Need testing if passed in calibration type is valid.
         
         co = ReductionContext()
+        
+        #@@CHECK WARNING WHY?
         co.restore_cal_index(calindfile)
+        
         for arg in infile:
-
             co.add_cal( AstroData(arg), options.cal_type, os.path.abspath(options.add_cal) )
         co.persist_cal_index( calindfile )
         print "'" + options.add_cal + "' was successfully added for '" + str(input_files) + "'."
@@ -666,6 +668,12 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                     # create fresh context object
                     # @@TODO:possible: see if deepcopy can do this better 
                     co = ReductionContext()
+                    #set context(s)
+                    if options.running_contexts:
+                        cxs = options.running_contexts.split(":")
+                    else:
+                        cxs = []
+                    co.setContext(cxs)
                     if options.rtf:
                         co.update({"rtf":True})
                     #print "r739:stack index file", stkindfile

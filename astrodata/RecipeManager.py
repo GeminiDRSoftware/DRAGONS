@@ -137,6 +137,7 @@ class ReductionContext(dict):
     cache_files = None
     
     # dictionary with local args (given in recipe as args, generally)
+    _running_contexts = None
     _localparms = None 
     _nonstandard_stream = None
     _current_stream = None
@@ -153,6 +154,7 @@ class ReductionContext(dict):
         """The ReductionContext constructor creates empty dictionaries and
         lists, members set to None in the class.
         """
+        self.running_contexts = []
         self.cmd_history = []
         self.cmd_index = {}
         self.inputs = []
@@ -180,6 +182,7 @@ class ReductionContext(dict):
         self._nonstandard_stream = []
         self._current_stream = MAINSTREAM
         self._output_streams = []
+        
     def __getitem__(self, arg):
         """Note, the ReductionContext version of __getitem__ returns None
         instead of throwing a KeyError.
@@ -201,7 +204,31 @@ class ReductionContext(dict):
         if thing in self._localparms:
             return True
         return dict.__contains__(self, thing)
-            
+        
+    def getContext(self):
+        # print "RM209:",repr(self._running_contexts)
+        return ":".join(self._running_contexts)
+    
+    context = property(getContext)
+    
+    def inContext(self, context):
+        return context in self._running_contexts
+        
+    def addContext(self, context):
+        if context not in self._running_contexts:
+            self._running_contexts.append(context)
+    def setContext(self, context):
+        if type(context) == list:
+            self._running_contexts = context
+        else:
+            self._running_contexts = [context]
+    def clearContext(self, context = None):
+        if context == None:
+            self._running_contexts = []
+        else:
+            if context in self._running_contexts:
+                self._running_contexts.remove(context)
+        
     def convert_parm_to_val(self, parmname, value):
         legalvartypes = ["bool", "int", "str", "float", None]
         vartype = self.ro.parameter_prop( parmname, prop="type")
