@@ -94,6 +94,12 @@ class GENERALPrimitives(PrimitiveSet):
         rc.get_stream(stream, empty=True)
         yield rc
         
+    def contextTest(self, rc):
+        print rc.context
+        yield rc
+        print rc.inContext("QA")
+        yield rc
+    
     def forwardInput(self, rc):
         
         if rc["to_stream"] != None:
