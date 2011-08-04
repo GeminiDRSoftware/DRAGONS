@@ -263,7 +263,6 @@ class PrimInspect():
             else:
                 it.append(intkeys[i]-intkeys[i-1])
         
-        
         descent = [primsetname]
         if inherit is "Yes":
             for i in range(len(it)):
@@ -310,7 +309,7 @@ class PrimInspect():
             if self.show_info:
                 priminfo_dict = {}
                 priminfo_dict = self.show_primitives(nam, priminfo=True)
-                print "PI297",count, ":",repr(priminfo_dict)
+                #print "PI297",count, ":",repr(priminfo_dict)
                 retstr += self.primitive_set_infostr(nam, cl, priminfo_dict) 
                 retstr += "\n" + "-"*SW
             if prims:
