@@ -232,51 +232,69 @@ class PrimInspect():
             return fp
         return None
     
-    def primitive_set_infostr(self, primsetname, cl, primlist):        
+    def primitive_set_infostr(self, primsetname="", cl=None, priminfo_dict={}):        
         sfull = getsourcefile(cl)
         sdir = os.path.dirname(sfull)
         sfil = os.path.basename(sfull)
         retstr = ""
         inherit = "None"
+        local_total = 0
+        primtotal = 0
         inherit_list=[]
         for base in cl.__bases__:
             if base.__name__ in self.primsdict_kbn:
                 inherit_list.append(base.__name__)
                 inherit = "Yes"
         retstr += "\n  Inheritance      : ${BOLD}"+inherit+"${NORMAL}"
+        pkeys = priminfo_dict.keys()
+        
+        # created sorted integer keys list
+        intkeys=[]
+        for key in pkeys:
+            if isinstance(key, int):
+                intkeys.append(key)
+        intkeys.sort()
+        
+        # create individual totals list
+        it = []
+        for i in range(len(intkeys)):
+            if i==0:
+                local_total = intkeys[i]
+            else:
+                it.append(intkeys[i]-intkeys[i-1])
+        
+        
+        descent = [primsetname]
         if inherit is "Yes":
-            #right now only works with one level of inheritence
-            overrides_count = 0
-            for prim in primlist:
-                over = self.overrides(primsetname, prim)
-                if over:
-                    overrides_count += 1
-            itot = 0
-            for inherited in inherit_list:
-                retstr + " (from ${BOLD}" + inherited + "${NORMAL}"
-                if len(inherit_list) < 2:
-                    iprimlist = self.primsdict_kbn[inherited]
-                    itot = itot + (len(iprimlist) - overrides_count)
-                    len_iprimlist = str(len(iprimlist) - overrides_count)
-                    retstr += " (inherited ${BOLD}" + \
-                        len_iprimlist + "${NORMAL} primitives"
-                    retstr += " with ${BOLD}" + \
-                        str(overrides_count)+" overridden)${NORMAL} "
-        len_primlist = str(len(primlist))
-        retstr += "\n  Local primitives :${BOLD} " + len_primlist + "${NORMAL}"
-        if len(inherit_list) is 1:
-            retstr += "\n  Total primitives : ${BOLD}"+ str(itot+len(primlist))\
-                + "${NORMAL}"
+            for i in range(len(it)):
+                primtotal += it[i]
+                retstr += "\n" + " "*19 + ":(%d inherited from %s)" % \
+                    (it[i], priminfo_dict[intkeys[i+1]][:-10])
+                descent.append(priminfo_dict[intkeys[i+1]])
+            retstr += "\n  Local primitives :${BOLD} %2s${NORMAL}" % \
+                str(local_total)
+        retstr += "\n  Total primitives : ${BOLD}%2s${NORMAL}" % \
+            str(primtotal + local_total)
+        for key in pkeys:
+            if key == 'overrides':
+                over_list = []
+                over_list = priminfo_dict['overrides']
+                for i in range(len(descent)):
+                    if descent[i] == over_list[1]:
+                        first_class = descent[i-1][:-10]
+                    
+                retstr += "\n  Overrides        : %s %s overrides %s %s" % \
+                        (first_class, over_list[0], over_list[1][:-10], over_list[0])
+        retstr += "\n  Class name       : ${BOLD}%s${NORMAL}" % primsetname 
         retstr += "\n  Source File      : ${BOLD}" + sfil + "${NORMAL}"
-        retstr += "\n  Path             : ${BOLD}" + sdir + "${NORMAL}"
+        retstr += "\n  Path: ${BOLD}" + sdir + "${NORMAL}"
         return retstr
 
     def show_primitive_sets(self, return_string=False, prims=False):
         retstr = ""
-        if not prims:
-            retstr =  "\n" + "="*SW
-            retstr += "\n${BOLD}PRIMITIVES BY SET${NORMAL}\n" + "="*SW 
-            count = 1
+        retstr =  "\n" + "="*SW
+        retstr += "\n${BOLD}PRIMITIVE REPORT${NORMAL}\n" + "="*SW 
+        count = 1
         names = []
         for primset in self.primsets:
             nam = primset.__class__.__name__
@@ -284,17 +302,20 @@ class PrimInspect():
                 continue
             else:
                 names.append(nam)
-            if not prims:
-                cl = self.name2class[nam]
-                if len(self.primsets) == 1:
-                    retstr += "\n\n  ${BOLD}%s${NORMAL}\n" % cl.astrotype
-                else:
-                    retstr += "\n\n%2d. ${BOLD}%s${NORMAL}\n" % (count,cl.astrotype)
-                primlist = self.primsdict_kbn[nam]
-                retstr += self.primitive_set_infostr(nam, cl, primlist)
-                count += 1
+            cl = self.name2class[nam]
+            if len(self.primsets) == 1:
+                retstr += "\n\n  ${BOLD}%s${NORMAL}\n" % cl.astrotype
             else:
-                retstr += self.show_primitives(nam)
+                retstr += "\n\n(%d) ${BOLD}%s${NORMAL}\n" % (count,cl.astrotype)
+            if self.show_info:
+                priminfo_dict = {}
+                priminfo_dict = self.show_primitives(nam, priminfo=True)
+                print "PI297",count, ":",repr(priminfo_dict)
+                retstr += self.primitive_set_infostr(nam, cl, priminfo_dict) 
+                retstr += "\n" + "-"*SW
+            if prims:
+                retstr += self.show_primitives(nam) + "\n" + "-"*SW
+            count += 1
         retstr += "\n" + "${BOLD}=${NORMAL}"*SW
         if return_string:
             return retstr
@@ -303,7 +324,8 @@ class PrimInspect():
 
     
     def show_primitives(self, primsetname, primset=None, i=0, indent=0, 
-                        pdat=None, instance=None):
+                        pdat=None, instance=None, priminfo=False, idict={},
+                        overrides=0, hides=0):
         INDENT = " "
         retstr = ""
         indentstr = INDENT*indent
@@ -312,6 +334,7 @@ class PrimInspect():
         else:
             firstset = False
         if firstset == True:
+            idict = {}
             primlist = self.primsdict_kbn[primsetname]
             primset = copy(primlist)
         else:
@@ -323,23 +346,14 @@ class PrimInspect():
             primset.extend(primlist)
         cl = self.name2class[primsetname]
         if firstset:           
-            retstr = "\n\n${BOLD}" + "="*SW + "${NORMAL}"
-            if self.show_info:
-                retstr += "\n${BOLD}%s${NORMAL}" % (cl.astrotype)
-                retstr += self.primitive_set_infostr(primsetname, cl, primlist) 
-                retstr += "\n"
-            else:
-                retstr += "\n${BOLD}%s ${NORMAL}(%s)\n" % \
-                    (cl.astrotype, primsetname)
-            retstr += "${BOLD}=${NORMAL}"*SW 
             astrotype = cl.astrotype
             instance = self.class2instance[primsetname]
         else:
             if len(primlist) > 0:
                 retstr += "\n"
-                short = "(Following are inherited from "
+                short = "(Inherited from "
                 retstr += "${BLUE}%s%s%s)${NORMAL}"\
-                    % (INDENT*indent, short, primsetname)
+                    % (INDENT*indent, short, primsetname[:-10])
         if len(primlist) == 0:
             maxlenprim = 0
         else:
@@ -353,9 +367,14 @@ class PrimInspect():
             if pl < maxlenprim:
                 primline += " "*(maxlenprim-pl)
             if over:
-                primline += "  ${BLUE}(overrides %s)${NORMAL}" % over
+                primline += "  ${BLUE}(overrides %s %s)${NORMAL}" % \
+                    (over[:-10], prim)
+                idict.update({'overrides':[prim,over]})
+                overrides += 1
             if hide:
                 primline += "  %s" % hide
+                idict.update({'hides':hide})
+                hides += 1
             retstr += primline
             if self.show_usage:
                 func = eval("instance." + prim)
@@ -403,9 +422,22 @@ class PrimInspect():
                                 val = paramdict[primname][paramname][metadatum]
                                 retstr += "\n" + term.GREEN + indentm + metadatum + \
                                 padding + "= "+repr(val) + term.NORMAL
-
+        idict.update({i:primsetname})
+        if overrides > 0:
+            idict.update({'total_over':overrides})
+        if hides > 0:
+            idict.update({'total_hides':hides})
         for base in cl.__bases__:
             if base.__name__ in self.primsdict_kbn:
-                retstr += self.show_primitives(base.__name__, primset=primset, i=i, 
-                    indent=indent+2, pdat=pdat, instance=instance)
-        return retstr
+                if priminfo:
+                    idict = self.show_primitives(base.__name__, primset=primset, i=i, 
+                    indent=indent+4, pdat=pdat, instance=instance,
+                    priminfo=priminfo, idict=idict, overrides=overrides, hides=hides)
+                else:
+                    retstr += self.show_primitives(base.__name__, primset=primset, i=i, 
+                    indent=indent+4, pdat=pdat, instance=instance,
+                    priminfo=priminfo, idict=idict, overrides=overrides, hides=hides)
+        if priminfo:
+            return idict
+        else:
+            return retstr
