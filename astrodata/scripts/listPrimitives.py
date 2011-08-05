@@ -15,7 +15,7 @@ parser.add_option("-e", "--engineering", action="store_true", dest="engineering"
                   default=False, help="include engineering recipes")
 parser.add_option("-f", "--copy-tofile", action="store_true", 
                   dest="copy_tofile", default=False,
-                  help="write to file (primitives_list.txt).")
+                  help="write to file (adtool_output.txt).")
 parser.add_option("-i", "--info", action="store_true", dest="info",
                   default=False,
                   help="show primitive set information")
@@ -31,19 +31,23 @@ parser.add_option("-u", "--usage", action="store_true", dest="usage",
                   default=False, help="show usage")
 parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
                   default=False, help="set verbose mode")
+parser.add_option("-x", "--xml", action="store_true", dest="xml",
+                  default=False, help="create xml output file "
+                  "(adtool_output.xml)")
 parser.add_option("--primitives", action="store_true", dest="primitives",
                   default=False, help="show all primitives for set")
 parser.add_option("--view-recipe", dest="view_recipe", 
-                  default=None, help="show all primitives for set")
+                  default=None, help="display the recipe")
 
 (options,  args) = parser.parse_args()
 optc = options.use_color
+opte = options.engineering
+optf = options.copy_tofile
+opti = options.info
 optp = options.parameters
 optu = options.usage
-opti = options.info
 optv = options.verbose
-optf = options.copy_tofile
-opte = options.engineering
+optx = options.xml
 oview = options.view_recipe
 options.primitives = True
 
@@ -52,7 +56,7 @@ datasets = []
 astrotypes = []
 
 if options.recipes or oview:
-    pin = PrimInspect(use_color=optc)
+    pin = PrimInspect(use_color=optc, make_file=optf, make_xmlfile=optx)
     pin.list_recipes(pkg="Gemini",eng=opte, view=oview)
 else:
     for arg in args:
@@ -62,7 +66,8 @@ else:
             astrotypes.append(arg)
     pin = PrimInspect(use_color=optc, show_param=optp, show_usage=optu,
                       show_info=opti, make_file=optf, verbose=optv,
-                      datasets=datasets, astrotypes=astrotypes)
+                      datasets=datasets, astrotypes=astrotypes,
+                      make_xmlfile=optx)
 
     # execution
     if options.primitive_set:
