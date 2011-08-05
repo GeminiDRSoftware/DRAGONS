@@ -375,7 +375,7 @@ def command_line():
             print "Reduce requires a calibration type. Use --caltype. For more " + \
             "information use '-h' or '--help'."
             sys.exit(1)
-        elif not os.access( options.add_cal, os.R_OK ):
+        elif not os.access(options.add_cal, os.R_OK):
             print "'" + options.add_cal + "' does not exist or cannot be accessed."
             sys.exit(1)
         
@@ -388,11 +388,14 @@ def command_line():
         co.restore_cal_index(calindfile)
         
         for arg in infile:
-            co.add_cal( AstroData(arg), options.cal_type, os.path.abspath(options.add_cal) )
-        co.persist_cal_index( calindfile )
-        print "'" + options.add_cal + "' was successfully added for '" + str(input_files) + "'."
-        #sys.exit(0)
+            co.add_cal(AstroData(arg), options.cal_type, os.path.abspath(options.add_cal))
         
+        co.persist_cal_index(calindfile)
+        print "'" + options.add_cal + "' was successfully added for '" + str(input_files) + "'."
+        if options.recipename == None:
+            options.recipename = "showCals"
+        options.logLevel = "fullinfo"
+
     elif options.rem_cal:
         if options.cal_type == None:
             print "Reduce requires a calibration type. Use --caltype. For more " + \
