@@ -1,4 +1,3 @@
-# Author: Kyle Mede, February 2011
 # This module contains a function to return a dictionary of all the default
 # parameters for each iraf (CL) function used by the recipe system that may 
 # have its important parameters updated and then passed into the iraf function.
@@ -24,14 +23,52 @@ def CLDefaultParamsDict(CLscript):
     
     # Ensuring that if a invalide CLscript was requested, that a critical
     # log message be made and exception raised.
-    if (CLscript != 'gemcombine') and (CLscript != 'gireduce') and \
-        (CLscript != 'giflat') and (CLscript != 'gmosaic') and \
-                        (CLscript != 'gdisplay') and (CLscript != 'gifringe'):
+    if ((CLscript != 'display') and 
+        (CLscript != 'gemcombine') and 
+        (CLscript != 'gireduce') and
+        (CLscript != 'giflat') and
+        (CLscript != 'gmosaic') and
+        (CLscript != 'gdisplay') and 
+        (CLscript != 'gifringe')):
         log.critical('The CLscript '+CLscript+' does not have a default'+
                      ' dictionary')
         raise ToolboxError('The CLscript '+CLscript+
                               ' does not have a default'+' dictionary')
         
+    if CLscript == 'display':
+        defaultParams = {
+            'image'        :'',      # image to be displayed
+            'frame'        :1,       # frame to be written into
+            'bpmask'       :"BPM",   # bad pixel mask
+            'bpdisplay'    :"none",  # bad pixel display (none|overlay|interpolate)
+            'bpcolors'     :"red",   # bad pixel colors
+            'overlay'      :"",      # overlay mask
+            'ocolors'      :"green", # overlay colors
+            'erase'        :yes,     # erase frame
+            'border_erase' :no,      # erase unfilled area of window
+            'select_frame' :yes,     # display frame being loaded
+            'repeat'       :no,      # repeat previous display parameters
+            'fill'         :no,      # scale image to fit display window
+            'zscale'       :yes,     # display range of greylevels near median
+            'contrast'     :0.25,    # contrast adjustment for zscale algorithm
+            'zrange'       :yes,     # display full image intensity range
+            'zmask'        :"",      # sample mask
+            'nsample'      :1000,    # maximum number of sample pixels to use
+            'xcenter'      :0.5,     # display window horizontal center
+            'ycenter'      :0.5,     # display window vertical center
+            'xsize'        :1.0,     # display window horizontal size
+            'ysize'        :1.0,     # display window vertical size
+            'xmag'         :1.0,     # display window horizontal magnification
+            'ymag'         :1.0,     # display window vertical magnification
+            'order'        :0,       # spatial interpolator order (0=replicate, 1=linear)
+            'z1'           :0.0,     # minimum greylevel to be displayed
+            'z2'           :0.0,     # maximum greylevel to be displayed
+            'ztrans'       :"linear",# greylevel transformation (linear|log|none|user)
+            'lutfile'      :"",      # file containing user defined look up table
+            'Stdout'       :man.IrafStdout(),
+            'Stderr'       :man.IrafStdout()
+                       }
+
     if CLscript == 'gemcombine':
         defaultParams = {
             'input'      :'',            # Input MEF images
