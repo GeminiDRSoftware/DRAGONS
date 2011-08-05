@@ -42,7 +42,7 @@ class PrimInspect():
     
     def __init__(self, use_color=False, show_param=False, show_usage=False,
                  show_info=False, make_file=False, verbose=False, path=None,
-                 datasets=None, astrotypes=None):
+                 datasets=[], astrotypes=[]):
         self.module_list = []
         if path:
             self.path = path
@@ -440,3 +440,46 @@ class PrimInspect():
             return idict
         else:
             return retstr
+
+
+    def list_recipes(self, pkg="", eng=False, view=None):
+        retstr = "\n"
+
+        if isinstance(view, str):
+            if view[7:] != "recipe.":
+                view = "recipe." + view
+            retstr += "="*SW + "\n${BOLD}RECIPE: %s${NORMAL}\n" % view[7:] + "="*SW 
+        else:
+            retstr += "="*SW + "\n${BOLD}RECIPE REPORT${NORMAL}\n" + "="*SW 
+        sfull = getsourcefile(AstroData)
+        part1 = sfull[:-13] + "_" + pkg
+        part2 = "RECIPES_" + pkg
+        rpath = os.path.join(part1, part2)
+        d_and_f = {}
+        for dirpath, dirnames, filenames in os.walk(rpath):
+            if "svn"  in dirpath or "primitives" in dirpath or \
+                "doc" in dirpath: 
+                continue
+            d_and_f.update({dirpath:filenames})
+            if not eng:
+                if "Engineering" in dirpath:
+                    continue
+            if view is None:
+                retstr += "\n\n${BOLD}%s${NORMAL}\n" % os.path.basename(dirpath)
+                retstr += "-"*SW
+                count = 1 
+                for name in filenames:
+                    if name[-3:] == ".py":
+                        continue
+                    retstr += "\n    %s. %s" % (count, name[7:])
+                    count += 1
+        if isinstance(view, str):
+            for key in d_and_f.keys():
+                for f in d_and_f[key]:
+                    if f == view:
+                        fullpath = os.path.join(key, f)
+                        fh = open(fullpath, "rb").read()
+                        retstr += "\n\n" + fh
+
+        retstr += "\n" + "="*79
+        self.show(retstr) 
