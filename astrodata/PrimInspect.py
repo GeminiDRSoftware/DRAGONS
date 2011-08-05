@@ -32,7 +32,8 @@ class PrimInspect():
     """Tool for listing primitives, parameters, and recipes 
     """
     module_list = None
-    path = "./primitives_list.txt"
+    path = "./adtool_output.txt"
+    xpath = "./adtool_output.xml"
     fhandler = None
     primsdict = None
     name2class = None
@@ -42,10 +43,12 @@ class PrimInspect():
     
     def __init__(self, use_color=False, show_param=False, show_usage=False,
                  show_info=False, make_file=False, verbose=False, path=None,
-                 datasets=[], astrotypes=[]):
+                 datasets=[], astrotypes=[], make_xmlfile=False, xpath=None):
         self.module_list = []
         if path:
             self.path = path
+        if xpath:
+            self.path = xpath
         self.module_list = []
         self.datasets = datasets
         self.astrotypes = astrotypes
@@ -59,6 +62,7 @@ class PrimInspect():
         self.show_usage = show_usage
         self.show_info = show_info
         self.make_file = make_file
+        self.make_xmlfile = make_xmlfile
         if self.verbose:
             self.use_color = True
             show_param = True
@@ -67,23 +71,21 @@ class PrimInspect():
         if self.use_color:
             colorFilter.on = True
         if self.make_file:
-            self.fhandler = open( self.path , "w" )
+            self.fhandler = open(self.path ,"w")
+        if self.make_xmlfile:
+            self.xfhandler = open(self.xpath ,"w")
         self.build_dictionaries()
         self.primsets = self.primsdict.keys()
         self.primsets.sort(self.primsetcmp)
+    
+    def build_dictionaries(self):
+        self.create_module_list()
+        for primset in self.module_list:
+            pname = primset.__class__.__name__
+            self.construct_prims_dict(primset)
+            self.construct_primsclass_dict(primset.__class__)
+            self.class2instance.update({pname:primset})
 
-    def show(self, arg):
-        print arg
-        if self.make_file:
-            arg = re.sub(r"\$\$|\${\w+}","",arg)
-            # replaced by re.sub above
-            # arg = arg.replace("${<ATTR>}","")
-            self.fhandler.write(arg+"\n")
-        
-    def close_fhandler(self):
-        if self.make_file:
-            self.fhandler.close()
-        
     def create_module_list(self):
         if len(self.astrotypes) or len(self.datasets):
             badtype = []
@@ -117,9 +119,47 @@ class PrimInspect():
         if len(self.module_list) == 0:
             mes = "Cannot find associated primitives with %s" % str(badtype)
             raise Errors.PrimInspectError(mes)
+    
+    def create_xml(self, output=None):
+        output = re.sub(r"\$\$|\${\w+}","",output)
+        xmlstr  = ""
+        xmlstr += '<?xml version="1.0" encoding="UTF-8" ?>\n'
+        xmlstr += "<adtool>\n"
+        xmlstr += """\t<adtool output="%s"/>\n""" % output
+        xmlstr += "</adtool>\n"
+        self.xfhandler.write(xmlstr)
+        self.xfhandler.close()
              
-    # get a sorted list of primitive sets, sorted with parents first
+    def construct_prims_dict(self, primset):
+        self.primsdict.update({primset:self.get_prim_list(\
+            primset.__class__)})
+    
+    def construct_primsclass_dict(self, startclass):
+        if startclass.__name__== "PrimitiveSet":
+            return
+        self.name2class.update({startclass.__name__:startclass})
+        self.primsdict_kbn.update({startclass.__name__:self.get_prim_list(\
+            startclass)})
+        for base in startclass.__bases__:
+            self.construct_primsclass_dict(base)
+    
+    def firstprim(self, primsetname, prim):
+        if primsetname in self.primsdict_kbn:
+            if prim in self.primsdict_kbn[primsetname]:
+                return primsetname
+            else:
+                cl = self.name2class[primsetname]
+                for base in cl.__bases__:
+                    fp = self.firstprim(base.__name__, prim)
+                    if fp:
+                        return fp
+                return None
+        else:
+            return None
+    
     def get_prim_list(self, cl):
+        """get a sorted list of primitive sets, sorted with parents first
+        """
         plist = []
         for key in cl.__dict__:
             doappend = True
@@ -137,41 +177,6 @@ class PrimInspect():
         plist.sort()
         return plist
     
-    def construct_prims_dict(self, primset):
-        self.primsdict.update({primset:self.get_prim_list(\
-            primset.__class__)})
-    
-    def construct_primsclass_dict(self, startclass):
-        if startclass.__name__== "PrimitiveSet":
-            return
-        self.name2class.update({startclass.__name__:startclass})
-        self.primsdict_kbn.update({startclass.__name__:self.get_prim_list(\
-            startclass)})
-        for base in startclass.__bases__:
-            self.construct_primsclass_dict(base)
-    
-    def build_dictionaries(self):
-        self.create_module_list()
-        for primset in self.module_list:
-            pname = primset.__class__.__name__
-            self.construct_prims_dict(primset)
-            self.construct_primsclass_dict(primset.__class__)
-            self.class2instance.update({pname:primset})
-      
-
-    def firstprim(self, primsetname, prim):
-        if primsetname in self.primsdict_kbn:
-            if prim in self.primsdict_kbn[primsetname]:
-                return primsetname
-            else:
-                cl = self.name2class[primsetname]
-                for base in cl.__bases__:
-                    fp = self.firstprim(base.__name__, prim)
-                    if fp:
-                        return fp
-                return None
-        else:
-            return None
         
     def hides(self, primsetname, prim, instance=None):
         """checks to see if prim hides or is hidden-by another"""
@@ -216,14 +221,53 @@ class PrimInspect():
                     break
             return rets
         return None
+    
+    def list_recipes(self, pkg="", eng=False, view=None):
+        retstr = "\n"
 
-    def primsetcmp(self,a,b):
-        if isinstance(a,type(b)):
-            return 1
-        elif isinstance(b,type(a)):
-            return -1
+        if isinstance(view, str):
+            if view[7:] != "recipe.":
+                view = "recipe." + view
+            retstr += "="*SW + "\n${BOLD}RECIPE: %s${NORMAL}\n" % view[7:] + "="*SW 
         else:
-            return 0
+            retstr += "="*SW + "\n${BOLD}RECIPE REPORT${NORMAL}\n" + "="*SW 
+        sfull = getsourcefile(AstroData)
+        part1 = sfull[:-13] + "_" + pkg
+        part2 = "RECIPES_" + pkg
+        rpath = os.path.join(part1, part2)
+        d_and_f = {}
+        for dirpath, dirnames, filenames in os.walk(rpath):
+            if "svn"  in dirpath or "primitives" in dirpath or \
+                "doc" in dirpath: 
+                continue
+            d_and_f.update({dirpath:filenames})
+            if not eng:
+                if "Engineering" in dirpath:
+                    continue
+            if view is None:
+                retstr += "\n\n${BOLD}%s${NORMAL}\n" % os.path.basename(dirpath)
+                retstr += "-"*SW
+                count = 1 
+                for name in filenames:
+                    if name[-3:] == ".py":
+                        continue
+                    retstr += "\n    %s. %s" % (count, name[7:])
+                    count += 1
+        if isinstance(view, str):
+            for key in d_and_f.keys():
+                for f in d_and_f[key]:
+                    if f == view:
+                        fullpath = os.path.join(key, f)
+                        fh = open(fullpath, "rb").read()
+                        retstr += "\n\n" + fh
+        retstr += "\n" + "="*SW
+        self.show(retstr)
+        if self.make_xmlfile:
+            self.create_xml(retstr)
+        if self.make_file:
+            self.fhandler.close()
+
+    
     
     def overrides(self, primsetname, prim):
         cl = self.name2class[primsetname]
@@ -231,6 +275,7 @@ class PrimInspect():
             fp = self.firstprim(base.__name__, prim)
             return fp
         return None
+    
     
     def primitive_set_infostr(self, primsetname="", cl=None, priminfo_dict={}):        
         sfull = getsourcefile(cl)
@@ -288,8 +333,24 @@ class PrimInspect():
         retstr += "\n  Source File      : ${BOLD}" + sfil + "${NORMAL}"
         retstr += "\n  Path: ${BOLD}" + sdir + "${NORMAL}"
         return retstr
+    
+    def primsetcmp(self,a,b):
+        if isinstance(a,type(b)):
+            return 1
+        elif isinstance(b,type(a)):
+            return -1
+        else:
+            return 0
+    
+    def show(self, arg):
+        print arg
+        if self.make_file:
+            arg = re.sub(r"\$\$|\${\w+}","",arg)
+            # replaced by re.sub above
+            # arg = arg.replace("${<ATTR>}","")
+            self.fhandler.write(arg+"\n")
 
-    def show_primitive_sets(self, return_string=False, prims=False):
+    def show_primitive_sets(self, prims=False):
         retstr = ""
         retstr =  "\n" + "="*SW
         retstr += "\n${BOLD}PRIMITIVE REPORT${NORMAL}\n" + "="*SW 
@@ -315,11 +376,12 @@ class PrimInspect():
             if prims:
                 retstr += self.show_primitives(nam) + "\n" + "-"*SW
             count += 1
-        retstr += "\n" + "${BOLD}=${NORMAL}"*SW
-        if return_string:
-            return retstr
-        else:
-            self.show(retstr)
+        retstr += "\n" + "="*SW
+        self.show(retstr)
+        if self.make_xmlfile:
+            self.create_xml(retstr)
+        if self.make_file:
+            self.fhandler.close()
 
     
     def show_primitives(self, primsetname, primset=None, i=0, indent=0, 
@@ -442,44 +504,4 @@ class PrimInspect():
             return retstr
 
 
-    def list_recipes(self, pkg="", eng=False, view=None):
-        retstr = "\n"
 
-        if isinstance(view, str):
-            if view[7:] != "recipe.":
-                view = "recipe." + view
-            retstr += "="*SW + "\n${BOLD}RECIPE: %s${NORMAL}\n" % view[7:] + "="*SW 
-        else:
-            retstr += "="*SW + "\n${BOLD}RECIPE REPORT${NORMAL}\n" + "="*SW 
-        sfull = getsourcefile(AstroData)
-        part1 = sfull[:-13] + "_" + pkg
-        part2 = "RECIPES_" + pkg
-        rpath = os.path.join(part1, part2)
-        d_and_f = {}
-        for dirpath, dirnames, filenames in os.walk(rpath):
-            if "svn"  in dirpath or "primitives" in dirpath or \
-                "doc" in dirpath: 
-                continue
-            d_and_f.update({dirpath:filenames})
-            if not eng:
-                if "Engineering" in dirpath:
-                    continue
-            if view is None:
-                retstr += "\n\n${BOLD}%s${NORMAL}\n" % os.path.basename(dirpath)
-                retstr += "-"*SW
-                count = 1 
-                for name in filenames:
-                    if name[-3:] == ".py":
-                        continue
-                    retstr += "\n    %s. %s" % (count, name[7:])
-                    count += 1
-        if isinstance(view, str):
-            for key in d_and_f.keys():
-                for f in d_and_f[key]:
-                    if f == view:
-                        fullpath = os.path.join(key, f)
-                        fh = open(fullpath, "rb").read()
-                        retstr += "\n\n" + fh
-
-        retstr += "\n" + "="*79
-        self.show(retstr) 
