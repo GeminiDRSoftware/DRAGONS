@@ -2,6 +2,7 @@
 # input dataset
 
 import sys
+import math
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
@@ -54,6 +55,19 @@ def stack_frames(adinput=None, suffix=None, operation="average",
     adoutput_list = []
     
     try:
+
+        # Get average of current GAIN parameters from input files
+        # and add in quadrature the read-out noise
+        gain = adinput[0].gain().as_dict()
+        ron = adinput[0].read_noise().as_dict()
+        for ad in adinput[1:]:
+            for ext in ad["SCI"]:
+                gain[("SCI",ext.extver())] += ext.gain()
+                ron[("SCI",ext.extver())] += ext.read_noise()**2
+        for key in gain.keys():
+            gain[key] /= len(adinput)
+            ron[key] = math.sqrt(ron[key])
+
         # Load PyRAF
         pyraf, gemini, yes, no = pyrafLoader()
         # Use the CL manager to get the input parameters
@@ -111,6 +125,19 @@ def stack_frames(adinput=None, suffix=None, operation="average",
         # disk 
         adstack, junk, junk = clm.finishCL()
         
+        # Gemcombine sets the GAIN keyword to the sum of the gains; reset
+        # it to the average instead.  Set the RDNOISE to the sum in 
+        # quadrature of the input read noise. Set VAR/DQ keywords to 
+        # the same as the science.
+        for ext in adstack[0]:
+            ext.set_key_value("GAIN", gain[("SCI",ext.extver())])
+            ext.set_key_value("RDNOISE", ron[("SCI",ext.extver())])
+            
+        if adstack[0].phu_get_key_value("GAIN") is not None:
+            adstack[0].phu_set_key_value("GAIN",gain[("SCI",1)])
+        if adstack[0].phu_get_key_value("RDNOISE") is not None:
+            adstack[0].phu_set_key_value("RDNOISE",ron[("SCI",1)])
+
         # Add the appropriate time stamps to the PHU
         gt.mark_history(adinput=adstack, keyword=timestamp_key)
         
