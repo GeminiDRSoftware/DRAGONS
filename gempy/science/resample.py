@@ -502,9 +502,19 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
         pyraf, gemini, yes, no = pyrafLoader()
             
         for ad in adinput:
-            
-            # Clean up log and screen if multiple inputs
-            log.fullinfo("+"*50, category="format")
+
+            # Get BUNIT from science extensions 
+            # (gmosaic wipes out this keyword, it needs to 
+            # be restored after runnning it)
+            bunit = None
+            for ext in ad["SCI"]:
+                ext_bunit = ext.get_key_value("BUNIT")
+                if bunit is None:
+                    bunit = ext_bunit
+                else:
+                    if ext_bunit!=bunit:
+                        raise Errors.ScienceError("BUNIT needs to be the" +
+                                                  "same for all extensions")
             
             # Determine whether VAR/DQ needs to be propagated
             if (ad.count_exts("VAR") == 
@@ -524,7 +534,7 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
             if not clm.status: 
                 raise Errors.ScienceError("One of the inputs has not been " +
                                           "prepared, the " + 
-                                          "overscan_subtract_gmos function " +
+                                          "mosaic_detectors function " +
                                           "can only work on prepared data.")
             
             # Parameters set by the mgr.CLManager or the 
@@ -580,12 +590,17 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
             ad_out = imageOuts[0]
             ad_out.filename = ad.filename
             
-            # Verify gireduce was actually run on the file
+            # Verify gmosaic was actually run on the file
             # then log file names of successfully reduced files
             if ad_out.phu_get_key_value("GMOSAIC"): 
                 log.fullinfo("File "+ad_out.filename+\
                             " was successfully mosaicked")
-            
+
+            # Restore BUNIT keyword to science extension header
+            if bunit is not None:
+                gt.update_key_value(adinput=ad_out, function="bunit",
+                                    value=bunit, extname="SCI")
+
             # Update GEM-TLM (automatic) and MOSAIC time stamps to the PHU
             # and update logger with updated/added time stamps
             gt.mark_history(adinput=ad_out, keyword=timestamp_key)
