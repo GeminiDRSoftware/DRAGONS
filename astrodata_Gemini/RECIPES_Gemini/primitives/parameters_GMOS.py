@@ -1,6 +1,20 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_GMOS.py file, in alphabetical order.
-{"mosaicDetectors":{
+{"display":{
+    "frame":{
+        "default"       : 1,
+        "recipeOverride": True,
+        "type"          : "int",
+        "userOverride"  : True,
+        },
+    "saturation":{
+        "default"       : None,
+        "recipeOverride": True,
+        "type"          : "float",
+        "userOverride"  : True,
+        },
+    },
+ "mosaicDetectors":{
     "suffix":{
         # String to be post pended to the output of mosaicDetectors
         "default"       : "_mosaicked",

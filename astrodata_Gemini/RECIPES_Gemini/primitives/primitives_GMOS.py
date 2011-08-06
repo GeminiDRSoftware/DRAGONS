@@ -5,6 +5,7 @@ from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.data import AstroData
 from gempy import geminiTools as gt
 from gempy.geminiCLParDicts import CLDefaultParamsDict
+from gempy.science import display as ds
 from gempy.science import preprocessing as pp
 from gempy.science import resample as rs
 from gempy.science import standardization as sdz
@@ -71,77 +72,37 @@ class GMOSPrimitives(GEMINIPrimitives):
 
         yield rc
 
-    def display(self, rc):
-        """ 
-        This is a primitive for displaying GMOS data. It utilizes the IRAF
-        routine gdisplay and requires DS9 to be running before this primitive
-        is called.
-        """
-        
+    def display(self,rc):
+
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
-        
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "display", "starting"))
+
         
-        # Loading and bringing the pyraf related modules into the name-space
-        pyraf, gemini, yes, no = pyrafLoader()
-        
-        # Ensuring image buffer is large enough to handle GMOS images
-        pyraf.iraf.set(stdimage="imtgmos")
-        
-        for i in range(0, len(rc.inputs)):
-            # Retrieving the input object for this increment from the RC 
-            inputRecord = rc.inputs[i]
-            
-            # Creating a dictionary of the parameters set by 
-            # definition of the primitive 
-            clPrimParams = {
-                "image"         :inputRecord.filename,
-                # Using the increment value (+1) for the frame value
-                "frame"         :i+1,
-                "fl_imexam"     :no,
-                # Retrieving the observatory key from the PHU
-                "observatory"   :inputRecord.ad.phu_get_key_value("OBSERVAT")
-                }
-            
-            # Grabbing the default parameters dictionary and updating 
-            # it with the above dictionary
-            clParamsDict = CLDefaultParamsDict("gdisplay")
-            clParamsDict.update(clPrimParams)
-            
-            # Logging the values in the prim parameter dictionaries
-            #gt.logDictParams(clPrimParams)
-            
-            log.debug("Calling the gdisplay CL script for input list %s" \
-                      % (inputRecord.filename))
-            
+        # If in QA context, override the saturation parameter
+        if rc["context"]=="QA":
+            saturation = 58000
+        else:
+            saturation = rc['saturation']
+
+        # Loop over each input AstroData object in the input list
+        frame = rc["frame"]
+        for ad in rc.get_inputs(style="AD"):
+
             try:
-                # this version had the display id conversion code which we'll
-                # need to redo code below just uses the loop index as frame
-                # number
-                #gemini.gmos.gdisplay(inputRecord.filename,
-                #                     ds.displayID2frame(rq.dis_id),
-                #                     fl_imexam=iraf.no,
-                #                     Stdout = coi.get_iraf_stdout(),
-                #                     Stderr = coi.get_iraf_stderr() )
-                gemini.gmos.gdisplay(**clParamsDict)
-                
-                if gemini.gmos.gdisplay.status:
-                    raise PrimitiveError("gdisplay failed for input %s" \
-                                         % inputRecord.filename)
-                else:
-                    log.fullinfo("Exited the gdisplay CL script successfully")
-            
+                ad = ds.display_gmos(adinput=ad,
+                                     start_frame=frame,
+                                     saturation=saturation)
             except:
-                # This exception should allow for a smooth exiting if there is
-                # an error with gdisplay, most likely due to DS9 not running
-                # yet
-                log.error("Unable to display %s" % (inputRecord.filename))
+                log.warning("Could not display %s" % ad.filename)
+
+            frame+=1
         
         yield rc
-    
+
     def mosaicDetectors(self,rc):
         """
         This primitive will mosaic the SCI frames of the input images, along
