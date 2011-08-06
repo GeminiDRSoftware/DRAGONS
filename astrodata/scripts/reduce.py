@@ -883,12 +883,27 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                 rl.report_history()
 
             co.is_finished(True)
+        
+            # write outputs
+            from gempy.geminiTools import fileNameUpdater
+            outputs = co.get_stream("main")
+            for output in outputs:
+                name = os.path.basename(ad.filename)
+                newname = fileNameUpdater(infilename=name, suffix="_"+rec)
+                try:
+                    ad.write(filename=newname, rename=False)
+                    log.info("Wrote %s in output directory"%newname)
+                except Errors.OutputExists:
+                    log.error( "CANNOT WRITE %s, already exists" % newname)
+                except:
+                    log.error("CANNOT WRITE %s, unknown reason" % newname)
+                
+
         if interactiveMode == True:
             reclist = ["USER"]
         else:
             break
-        
-        
+        ### end of recipe iteration.
     if useTK and currentReductionNum == numReductions:
         try:
             cw.done()
