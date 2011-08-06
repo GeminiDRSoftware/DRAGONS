@@ -887,11 +887,19 @@ for infiles in allinputs: #for dealing with multiple sets of files.
             # write outputs
             from gempy.geminiTools import fileNameUpdater
             outputs = co.get_stream("main")
+            clobber = co["clobber"]
+            if clobber:
+                clobber = clobber.lower()
+                if clobber == "false":
+                    clobber = False
+                else:
+                    clobber = True
             for output in outputs:
+            
                 name = os.path.basename(ad.filename)
                 newname = fileNameUpdater(infilename=name, suffix="_"+rec)
                 try:
-                    ad.write(filename=newname, rename=False)
+                    ad.write(filename=newname, rename=False, clobber = clobber)
                     log.info("Wrote %s in output directory"%newname)
                 except Errors.OutputExists:
                     log.error( "CANNOT WRITE %s, already exists" % newname)
