@@ -200,6 +200,9 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False,
         log.critical(repr(sys.exc_info()[1]))
         raise
 
+##############################################################################
+# Below are the helper functions for the user level functions in this module #
+##############################################################################
 
 
 def _iq_band(adinput=None,fwhm=None):
