@@ -101,11 +101,13 @@ class GENERALPrimitives(PrimitiveSet):
         yield rc
     
     def forwardInput(self, rc):
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
         
         if rc["to_stream"] != None:
             stream = rc["to_stream"]
         else:
-            stream = None
+            stream = "main"
         
         
         if "by_token" in rc:
@@ -116,13 +118,12 @@ class GENERALPrimitives(PrimitiveSet):
             # print "pG110:",repr(rc.outputs)
         else:
             inputs = rc.get_inputs_as_astrodata()
+            log.info("Reporting Output: "+", ".join([ ad.filename for ad in inputs]))
             rc.report_output(inputs, stream = stream)
         yield rc
     forwardStream = forwardInput
     
     def showOutputs(self, rc):
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         streams = rc.outputs.keys()
