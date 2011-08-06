@@ -212,8 +212,8 @@ class ReductionObject(object):
                 if not primname.startswith('proxy'):
                     log.changeIndent(indentLevel=log.indentLevel-1)
             else:
+                log.status(".")
                 log.changeIndent(indentLevel=log.indentLevel-1)
-                log.status("")
         yield context
         
     def runstep(self, primname, cfgobj):
