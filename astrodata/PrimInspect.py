@@ -24,6 +24,8 @@ from astrodata import RecipeManager
 from astrodata.RecipeManager import RecipeLibrary
 from inspect import getsourcefile
 from astrodata import Errors
+
+centralRecipeIndex = {}
 rl = RecipeLibrary()
 colorFilter.on = False
 primtypes = RecipeManager.centralPrimitivesIndex.keys()
@@ -224,50 +226,49 @@ class PrimInspect():
     
     def list_recipes(self, pkg="", eng=False, view=None):
         retstr = "\n"
-
         if isinstance(view, str):
-            if view[7:] != "recipe.":
-                view = "recipe." + view
-            retstr += "="*SW + "\n${BOLD}RECIPE: %s${NORMAL}\n" % view[7:] + "="*SW 
+            retstr += "="*SW + "\n${BOLD}RECIPE: %s${NORMAL}\n" % view + "="*SW 
         else:
             retstr += "="*SW + "\n${BOLD}RECIPE REPORT${NORMAL}\n" + "="*SW 
-        sfull = getsourcefile(AstroData)
-        part1 = sfull[:-13] + "_" + pkg
-        part2 = "RECIPES_" + pkg
-        rpath = os.path.join(part1, part2)
-        d_and_f = {}
-        for dirpath, dirnames, filenames in os.walk(rpath):
-            if "svn"  in dirpath or "primitives" in dirpath or \
-                "doc" in dirpath: 
-                continue
-            d_and_f.update({dirpath:filenames})
-            if not eng:
-                if "Engineering" in dirpath:
-                    continue
-            if view is None:
-                retstr += "\n\n${BOLD}%s${NORMAL}\n" % os.path.basename(dirpath)
-                retstr += "-"*SW
-                count = 1 
-                for name in filenames:
-                    if name[-3:] == ".py":
-                        continue
-                    retstr += "\n    %s. %s" % (count, name[7:])
-                    count += 1
+        cri = RecipeManager.centralRecipeIndex
         if isinstance(view, str):
-            for key in d_and_f.keys():
-                for f in d_and_f[key]:
-                    if f == view:
-                        fullpath = os.path.join(key, f)
-                        fh = open(fullpath, "rb").read()
-                        retstr += "\n\n" + fh
+            for key in cri.keys():
+                if key == view:
+                    retstr += "\n" + open(cri[key], "rb").read()
+        else:
+            topkeys = []
+            engkeys = []
+            subkeys = []
+            for key in cri.keys():
+                if "Engineering" in cri[key]:
+                    engkeys.append(key)
+                elif "subrecipes" in cri[key]:
+                    subkeys.append(key)
+                else:
+                    topkeys.append(key)
+            topkeys.sort()
+            engkeys.sort()
+            subkeys.sort()
+            pkg = "RECIPES_" + pkg
+            retstr += self.list_recipes_str(pkg, topkeys)
+            retstr += self.list_recipes_str("subrecipes", subkeys)
+            if eng:
+                retstr += self.list_recipes_str("Engineering", engkeys) 
         retstr += "\n" + "="*SW
         self.show(retstr)
         if self.make_xmlfile:
             self.create_xml(retstr)
         if self.make_file:
             self.fhandler.close()
-
     
+    def list_recipes_str(self, topdir="", rlist=[]):
+        rstr = ""
+        rstr += "\n\n${BOLD}%s${NORMAL}\n" % topdir + "-"*SW
+        count = 1
+        for r in rlist:
+            rstr += "\n    %s. %s" % (count, r)
+            count +=1
+        return rstr
     
     def overrides(self, primsetname, prim):
         cl = self.name2class[primsetname]
@@ -321,14 +322,19 @@ class PrimInspect():
             str(primtotal + local_total)
         for key in pkeys:
             if key == 'overrides':
-                over_list = []
-                over_list = priminfo_dict['overrides']
-                for i in range(len(descent)):
-                    if descent[i] == over_list[1]:
-                        first_class = descent[i-1][:-10]
-                    
-                retstr += "\n  Overrides        : %s %s overrides %s %s" % \
-                        (first_class, over_list[0], over_list[1][:-10], over_list[0])
+                over_dict = {}
+                over_dict = priminfo_dict['overrides']
+                count = 1
+                retstr += "\n  Override (" + str(count) + ")     :"
+                for key in over_dict.keys():
+                    for i in range(len(descent)):
+                        if descent[i] == over_dict[key]:
+                            first_class = descent[i-1][:-10]
+                    retstr += " %s %s overrides %s %s" % \
+                            (first_class, key, over_dict[key][:-10], key)
+                    count += 1
+            if key == 'hides':
+                retstr += "\n                   : %s" % priminfo_dict[key] 
         retstr += "\n  Class name       : ${BOLD}%s${NORMAL}" % primsetname 
         retstr += "\n  Source File      : ${BOLD}" + sfil + "${NORMAL}"
         retstr += "\n  Path: ${BOLD}" + sdir + "${NORMAL}"
@@ -367,14 +373,12 @@ class PrimInspect():
                 retstr += "\n\n  ${BOLD}%s${NORMAL}\n" % cl.astrotype
             else:
                 retstr += "\n\n(%d) ${BOLD}%s${NORMAL}\n" % (count,cl.astrotype)
+            priminfo_dict = self.show_primitives(nam, priminfo=self.show_info)
             if self.show_info:
-                priminfo_dict = {}
-                priminfo_dict = self.show_primitives(nam, priminfo=True)
-                #print "PI297",count, ":",repr(priminfo_dict)
                 retstr += self.primitive_set_infostr(nam, cl, priminfo_dict) 
                 retstr += "\n" + "-"*SW
             if prims:
-                retstr += self.show_primitives(nam) + "\n" + "-"*SW
+                retstr += priminfo_dict['retstr']
             count += 1
         retstr += "\n" + "="*SW
         self.show(retstr)
@@ -386,9 +390,8 @@ class PrimInspect():
     
     def show_primitives(self, primsetname, primset=None, i=0, indent=0, 
                         pdat=None, instance=None, priminfo=False, idict={},
-                        overrides=0, hides=0):
+                        retstr=""):
         INDENT = " "
-        retstr = ""
         indentstr = INDENT*indent
         if primset == None:
             firstset = True
@@ -430,12 +433,13 @@ class PrimInspect():
             if over:
                 primline += "  ${BLUE}(overrides %s %s)${NORMAL}" % \
                     (over[:-10], prim)
-                idict.update({'overrides':[prim,over]})
-                overrides += 1
+                if idict.has_key('overrides'):
+                    idict['overrides'].update({prim:over})
+                else:
+                    idict.update({'overrides':{prim:over}})
             if hide:
                 primline += "  %s" % hide
-                idict.update({'hides':hide})
-                hides += 1
+                idict.update({'hides':[prim,hide]})
             retstr += primline
             if self.show_usage:
                 func = eval("instance." + prim)
@@ -484,24 +488,13 @@ class PrimInspect():
                                 retstr += "\n" + term.GREEN + indentm + metadatum + \
                                 padding + "= "+repr(val) + term.NORMAL
         idict.update({i:primsetname})
-        if overrides > 0:
-            idict.update({'total_over':overrides})
-        if hides > 0:
-            idict.update({'total_hides':hides})
+        idict.update({'retstr':retstr})
         for base in cl.__bases__:
             if base.__name__ in self.primsdict_kbn:
-                if priminfo:
-                    idict = self.show_primitives(base.__name__, primset=primset, i=i, 
-                    indent=indent+4, pdat=pdat, instance=instance,
-                    priminfo=priminfo, idict=idict, overrides=overrides, hides=hides)
-                else:
-                    retstr += self.show_primitives(base.__name__, primset=primset, i=i, 
-                    indent=indent+4, pdat=pdat, instance=instance,
-                    priminfo=priminfo, idict=idict, overrides=overrides, hides=hides)
-        if priminfo:
-            return idict
-        else:
-            return retstr
+                idict = self.show_primitives(base.__name__, primset=primset, i=i, 
+                indent=indent+4, pdat=pdat, instance=instance,
+                priminfo=priminfo, idict=idict, retstr=retstr)
+        return idict
 
 
 
