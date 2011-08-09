@@ -393,8 +393,7 @@ def command_line():
         co.persist_cal_index(calindfile)
         print "'" + options.add_cal + "' was successfully added for '" + str(input_files) + "'."
         if options.recipename == None:
-            options.recipename = "showCals"
-        options.logLevel = "fullinfo"
+            sys.exit(1)
 
     elif options.rem_cal:
         if options.cal_type == None:
