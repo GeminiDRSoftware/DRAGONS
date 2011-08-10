@@ -120,6 +120,7 @@ class GENERALPrimitives(PrimitiveSet):
             inputs = rc.get_inputs_as_astrodata()
             log.info("Reporting Output: "+", ".join([ ad.filename for ad in inputs]))
             rc.report_output(inputs, stream = stream)
+            rc.report_output(inputs)
         yield rc
     forwardStream = forwardInput
     
