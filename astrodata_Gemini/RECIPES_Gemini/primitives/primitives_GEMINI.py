@@ -642,13 +642,18 @@ class GEMINIPrimitives(GENERALPrimitives):
         if purpose is None:
             purpose = ""
         
+        fnames = {}
         for inp in rc.inputs:
             sidset.add(purpose+IDFactory.generate_stackable_id(inp.ad))
+            fnames.update({inp.ad.filename: inp})
         for sid in sidset:
             stacklist = rc.get_list(sid) #.filelist
             log.stdinfo("List for stack id=%s" % sid, category="list")
             for f in stacklist:
-                rc.report_output(f, stream=rc["to_stream"])
+                if f.filename in fnames:
+                    rc.report_output(fnames[f.filename], stream=rc["to_stream"])
+                else:
+                    rc.report_output(f, stream=rc["to_stream"])
                 log.stdinfo("   %s" % os.path.basename(f),
                              category="list")
         
