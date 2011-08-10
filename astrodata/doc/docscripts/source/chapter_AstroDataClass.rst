@@ -73,13 +73,13 @@ Type Information
 
 .. toctree::
 
-.. automethod:: astrodata.data.AstroData.isType
+.. automethod:: astrodata.data.AstroData.is_type
 
-.. automethod:: astrodata.data.AstroData.getTypes
+.. automethod:: astrodata.data.AstroData.get_types
 
-.. automethod:: astrodata.data.AstroData.getStatus
+.. automethod:: astrodata.data.AstroData.get_status
 
-.. automethod:: astrodata.data.AstroData.getTypology
+.. automethod:: astrodata.data.AstroData.get_typology
 
 Header Manipulations
 @@@@@@@@@@@@@@@@@@@@@@
@@ -121,27 +121,27 @@ Set/Get PHU Headers
 
 .. toctree::
 
-.. automethod:: astrodata.data.AstroData.phuGetKeyValue
+.. automethod:: astrodata.data.AstroData.phu_get_key_value
 
-.. automethod:: astrodata.data.AstroData.phuSetKeyValue
+.. automethod:: astrodata.data.AstroData.phu_set_key_value
 
 Set/Get Single-HDU Headers
 ###########################
 
 .. toctree::
 
-.. automethod:: astrodata.data.AstroData.getKeyValue
+.. automethod:: astrodata.data.AstroData.get_key_value
 
-.. automethod:: astrodata.data.AstroData.setKeyValue
+.. automethod:: astrodata.data.AstroData.set_key_value
 
 Set/Get Multiple-HDU Headers
 #############################
 
 .. toctree::
 
-.. automethod:: astrodata.data.AstroData.extGetKeyValue
+.. automethod:: astrodata.data.AstroData.ext_get_key_value
 
-.. automethod:: astrodata.data.AstroData.extSetKeyValue
+.. automethod:: astrodata.data.AstroData.ext_set_key_value
 
 
 Iteration and Subdata
@@ -161,7 +161,7 @@ countExts(..)
 
 .. toctree::
 
-.. automethod:: astrodata.data.AstroData.countExts
+.. automethod:: astrodata.data.AstroData.count_exts
 
 
 The [] Operator
@@ -186,9 +186,9 @@ data attribute
      
 .. autoattribute:: astrodata.data.AstroData.data
 
-.. automethod:: astrodata.data.AstroData.getData
+.. automethod:: astrodata.data.AstroData.get_data
 
-.. automethod:: astrodata.data.AstroData.setData
+.. automethod:: astrodata.data.AstroData.set_data
 
 header attribute
 ###################
@@ -197,16 +197,16 @@ header attribute
 
 .. autoattribute:: astrodata.data.AstroData.header
 
-.. automethod:: astrodata.data.AstroData.getHeader
+.. automethod:: astrodata.data.AstroData.get_header
 
-.. automethod:: astrodata.data.AstroData.setHeader
+.. automethod:: astrodata.data.AstroData.set_header
 
 Renaming an Extension
 ######################
 
 .. toctree::
 
-.. automethod:: astrodata.data.AstroData.renameExt
+.. automethod:: astrodata.data.AstroData.rename_ext
 
 Accessing Pyfits and Numpy Objects
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -227,16 +227,16 @@ correlate(..)
     
 .. autofunction:: astrodata.data.correlate
 
-prepOutput(..)
+prep_output(..)
 ################
 
 .. toctree::
 
-.. autofunction:: astrodata.data.prepOutput
+.. autofunction:: astrodata.data.prep_output
 
-reHeaderKeys(..)
+re_header_keys(..)
 #################
 
 .. toctree::
 
-.. autofunction:: astrodata.data.reHeaderKeys
+.. autofunction:: astrodata.data.re_header_keys

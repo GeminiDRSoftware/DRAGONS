@@ -8,20 +8,22 @@ import re
 from copy import copy,deepcopy
 import os
 
-WIKIHOST = "ophiuchus.hi.gemini.edu"
+WIKIHOST = "gdpsg.wikis-internal.gemini.edu"
 #WIKIHOST = 'nihal.hi.gemini.edu'
-WIKIROOT = "/gdpsgwiki/index.php/"
+WIKIROOT = "/index.php/"
 
 def grab(name, subdir = "" ):
     print "grabWiki: getting",name,"...",
     h1 = HTTPConnection(WIKIHOST)
     fullname = WIKIROOT + name
+    print "gW19: getting ... ",fullname
     h1.request("GET", fullname)
 
     r1 = h1.getresponse()
     d1 = r1.read()
     # kludgy way to remove edit links
     d1= re.sub(r"\[.*?action=edit.*?\]", "", d1)
+    #print repr(d1)
     try:
         dom1 = parseString(d1)
     except:

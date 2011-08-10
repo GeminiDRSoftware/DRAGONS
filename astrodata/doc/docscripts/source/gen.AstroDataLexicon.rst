@@ -39,15 +39,11 @@ to the ad.mdf member for type SPECT. < li>
 AstroTypes, Primitive Sets and Descriptor Calculators
 -----------------------------------------------------
 
-
-.. figure:: images_types/GMOS-tree.png
-    :scale: 100 
-    :figwidth: 5.4in
-    :figclass: align-center
-    
-    GMOS AstroData Type Tree
-    
-
+<html><img alt="GMOS AstroData Type Tree"
+style="margin:.5em;padding:.5em; border:1px black solid" width = "90%"
+src="`http://ophiuchus.hi.gemini.edu/ADMANUALSOURCE/images_types/GMOS-
+tree.png <http://ophiuchus.hi.gemini.edu/ADMANUALSOURCE/images_types
+/GMOS-tree.png>`__"/></html>
 
 The core term, upon which everything else relies are the AstroData
 types. To the right is a directed graph of the GMOS type tree. The

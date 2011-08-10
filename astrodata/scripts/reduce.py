@@ -65,18 +65,19 @@ b = datetime.now()
 
 # GLOBAL/CONSTANTS (could be exported to config file)
 cachedirs = [".reducecache",
-             ".reducecache/storedcals",
-             ".reducecache/storedcals/storedbiases",
-             ".reducecache/storedcals/storeddarks",
-             ".reducecache/storedcals/storedflats",
-             ".reducecache/storedcals/storedfringes",
-             ".reducecache/storedcals/retrievedbiases",
-             ".reducecache/storedcals/retrieveddarks",
-             ".reducecache/storedcals/retrievedflats",
-             ".reducecache/storedcals/retrievedfringes",
-             ".reducecache/retrievedcals"
+             "calibrations",
+             "calibrations/storedcals",
+             "calibrations/retrievedcals",
+             #".reducecache/storedcals/storedbiases",
+             #".reducecache/storedcals/storeddarks",
+             #".reducecache/storedcals/storedflats",
+             #".reducecache/storedcals/storedfringes",
+             #".reducecache/storedcals/retrievedbiases",
+             #".reducecache/storedcals/retrieveddarks",
+             #".reducecache/storedcals/retrievedflats",
+             #".reducecache/storedcals/retrievedfringes",
              ]
-CALDIR = ".reducecache/storedcals"
+CALDIR = "calibrations/storedcals"
 # constructed below             
 cachedict = {} 
 for cachedir in cachedirs:
@@ -571,6 +572,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
         else:
             reclist = rl.get_applicable_recipes(astrotype = options.astrotype)
             recdict = rl.get_applicable_recipes(astrotype = options.astrotype, collate = True)
+        print "r575:",repr(reclist), repr(recdict)
     else:
         #force recipe
         reclist = [options.recipename]
