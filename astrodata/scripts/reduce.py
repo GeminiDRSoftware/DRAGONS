@@ -488,7 +488,6 @@ rl = RecipeLibrary()
 try:
     allinputs = command_line()
 except:
-    print "command_line() parsing failed."
     reduceServer.finished=True
     sys.stdout.flush()
     sys.stderr.flush()
