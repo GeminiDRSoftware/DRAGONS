@@ -622,7 +622,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         calibrationless_adlist = []
         adinput = rc.get_inputs(style="AD")
         for ad in adinput:
-####here
             ad.mode = "update"
             calurl = rc.get_cal(ad,caltype)
             if not calurl:
@@ -685,7 +684,6 @@ class GEMINIPrimitives(GENERALPrimitives):
     
     def storeCalibration(self, rc):
         for ad in rc.get_inputs_as_astrodata():
-####here
             ad.write(clobber=rc["clobber"])
             upload_calibration(ad.filename)
             yield rc
