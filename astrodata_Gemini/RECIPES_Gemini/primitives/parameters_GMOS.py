@@ -8,7 +8,7 @@
         "userOverride"  : True,
         },
     "saturation":{
-        "default"       : None,
+        "default"       : 58000,
         "recipeOverride": True,
         "type"          : "float",
         "userOverride"  : True,
