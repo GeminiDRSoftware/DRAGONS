@@ -93,19 +93,30 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
         # Perform an update to the stack cache file (or create it) using the
         # current inputs in the reduction context
         purpose = rc["purpose"]
         if purpose is None:
             purpose = ""
+        if purpose=="":
+            suffix = "_list"
+        else:
+            suffix = "_"+purpose
+ 
+        # Update file names and write the files to disk to ensure the right
+        # version is stored before adding it to the list.
+        adoutput = []
+        for ad in rc.get_inputs(style="AD"):
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=suffix, strip=True)
+            log.stdinfo("Writing %s to disk" % ad.filename,
+                         category="list")
+            ad.write(clobber=rc["clobber"])
+            adoutput.append(ad)
+        rc.report_output(adoutput)
+
         # Call the rq_stack_update method
         rc.rq_stack_update(purpose=purpose)
-        # Write the files in the stack to disk if they do not already exist
-        for ad in rc.get_inputs(style="AD"):
-            if not os.path.exists(ad.filename):
-                log.fullinfo("writing %s to disk" % ad.filename,
-                             category="list")
-                ad.write(ad.filename)
         
         yield rc
     
@@ -535,9 +546,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "fringeCorrect", "starting"))
 
-        # Get processed fringes for the input
-        rc.run("getProcessedFringe")
-
         # Loop over each input AstroData object in the input list to
         # test whether it's appropriate to try to remove the fringes
         rm_fringe = True
@@ -557,17 +565,37 @@ class GEMINIPrimitives(GENERALPrimitives):
                                                 "processed by " +
                                                 "fringeCorrect")
 
-            # Test to see if we found a fringe
-            fringe = AstroData(rc.get_cal(ad, "processed_fringe"))
-            if fringe.filename is None:
-                if rc['context']=="QA":
+            # Test the filter to see if we need to fringeCorrect at all
+            filter = ad.filter_name(pretty=True)
+            if filter not in ['i','z']:
+                if rc["context"]=="QA":
+                    # in QA context, don't bother trying
                     rm_fringe = False
-                    log.warning("No processed fringes found; no fringe " +
-                                "correction performed")
-                    rc.report_output(rc.get_inputs(style="AD"))
-                    break                    
+                    log.warning("No fringe correction necessary for filter " +
+                                filter + "; no  fringe correction performed.")
+                    break
                 else:
-                    raise Errors.PrimitiveError("No processed fringes found")
+                    # in science context, let the user do it, but warn
+                    # that it's pointless
+                    log.warning("No fringe necessary for filter " + filter)
+
+
+        if rm_fringe:
+            # Get processed fringes for the input
+            rc.run("getProcessedFringe")
+
+            for ad in rc.get_inputs(style="AD"):
+                # Test to see if we found a fringe
+                fringe = AstroData(rc.get_cal(ad, "processed_fringe"))
+                if fringe.filename is None:
+                    if rc['context']=="QA":
+                        rm_fringe = False
+                        log.warning("No processed fringes found; no fringe " +
+                                    "correction performed")
+                        rc.report_output(rc.get_inputs(style="AD"))
+                        break 
+                    else:
+                        raise Errors.PrimitiveError("No processed fringes found")
 
         # If no errors found, remove the fringes
         if rm_fringe:
@@ -594,6 +622,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         calibrationless_adlist = []
         adinput = rc.get_inputs(style="AD")
         for ad in adinput:
+####here
             ad.mode = "update"
             calurl = rc.get_cal(ad,caltype)
             if not calurl:
@@ -642,18 +671,13 @@ class GEMINIPrimitives(GENERALPrimitives):
         if purpose is None:
             purpose = ""
         
-        fnames = {}
         for inp in rc.inputs:
             sidset.add(purpose+IDFactory.generate_stackable_id(inp.ad))
-            fnames.update({inp.ad.filename: inp})
         for sid in sidset:
             stacklist = rc.get_list(sid) #.filelist
             log.stdinfo("List for stack id=%s" % sid, category="list")
             for f in stacklist:
-                if f.filename in fnames:
-                    rc.report_output(fnames[f.filename], stream=rc["to_stream"])
-                else:
-                    rc.report_output(f, stream=rc["to_stream"])
+                rc.report_output(f, stream=rc["to_stream"])
                 log.stdinfo("   %s" % os.path.basename(f),
                              category="list")
         
@@ -661,6 +685,8 @@ class GEMINIPrimitives(GENERALPrimitives):
     
     def storeCalibration(self, rc):
         for ad in rc.get_inputs_as_astrodata():
+####here
+            ad.write(clobber=rc["clobber"])
             upload_calibration(ad.filename)
             yield rc
         yield rc
@@ -736,23 +762,32 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "measureIQ", "starting"))
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
+
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
-            # Call the measure_iq user level function
-            ad = qa.measure_iq(adinput=ad, 
-                               centroid_function=rc["centroid_function"],
-                               display=rc["display"], qa=rc["qa"])
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
-        
+        if rc["display"]==False:
+            for ad in rc.get_inputs(style="AD"):
+                # Call the measure_iq user level function
+                ad = qa.measure_iq(adinput=ad, 
+                                   centroid_function=rc["centroid_function"],
+                                   qa=rc["qa"])
+
+                # Append the output AstroData object (which is currently in the
+                # form of a list) to the list of output AstroData objects
+                adoutput_list.append(ad[0])
+
+            # Report the list of output AstroData objects to the reduction
+            # context
+            rc.report_output(adoutput_list)
+
+        else:
+            rc.run("iqDisplay")
+
         yield rc
     
     def nonlinearityCorrect(self, rc):
@@ -804,7 +839,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         adinput = rc.get_inputs(style="AD")
         if len(adinput)<2:
             if rc["context"]=="QA":
-                log.warning("Only one frame provided as input. " +
+                log.warning("Less than 2 frames provided as input. " +
                             "Not proceeding with registration and stacking.")
                 rc.report_output(adinput)
             else:
@@ -1107,11 +1142,6 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Adding a PROCBIAS time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCBIAS")
 
-            # Write a copy to disk
-            log.fullinfo("Bias written to %s" % (rc["storedbiases"]))
-            ad.write(os.path.join(rc["storedbiases"], ad.filename), 
-                     clobber=rc["clobber"])
-
             # Upload bias to cal system
             rc.run("storeCalibration")
             log.fullinfo("Bias stored in calibration system")
@@ -1136,11 +1166,6 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Adding a PROCDARK time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCDARK")
 
-            # Write a copy to disk
-            log.fullinfo("Dark written to %s" % (rc["storeddarks"]))
-            ad.write(os.path.join(rc["storeddarks"], ad.filename), 
-                     clobber=rc["clobber"])
-
             # Upload to cal system
             rc.run("storeCalibration")
             log.fullinfo("Dark stored in calibration system")
@@ -1161,14 +1186,9 @@ class GEMINIPrimitives(GENERALPrimitives):
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix="_flat",
                                              strip=True)
             log.status("File name of stored flat is %s" % ad.filename)
-
+ 
             # Adding a PROCFLAT time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCFLAT")
-
-            # Write a copy to disk
-            log.fullinfo("Flat written to %s" % (rc["storedflats"]))
-            ad.write(os.path.join(rc["storedflats"], ad.filename), 
-                     clobber=rc["clobber"])
 
             # Upload to cal system
             rc.run("storeCalibration")
@@ -1193,11 +1213,6 @@ class GEMINIPrimitives(GENERALPrimitives):
 
             # Adding a PROCFRNG time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCFRNG")
-
-            # Write a copy to disk
-            log.fullinfo("Fringe written to %s" % (rc["storedfringes"]))
-            ad.write(os.path.join(rc["storedfringes"], ad.filename), 
-                     clobber=rc["clobber"])
 
             # Upload to cal system
             rc.run("storeCalibration")
