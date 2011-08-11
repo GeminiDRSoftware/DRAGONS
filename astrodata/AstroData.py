@@ -492,7 +492,7 @@ integrates other functionality.
                 " member is monitored so that the mode can be changed from"
                 " readonly when the filename is changed.")
     
-    def append(self, moredata=None, data=None, header=None):
+    def append(self, moredata=None, data=None, header=None, ai=False, extname="SCI"):
         """
         :param moredata: either an AstroData instance, an HDUList instance, 
             or an HDU instance to add to this AstroData object.
@@ -515,12 +515,37 @@ integrates other functionality.
         instance.
         """
         if (moredata == None):
-            if len(self.hdulist) == 0:
-                self.hdulist.append(pyfits.PrimaryHDU(data = data, \
-                    header=header))
+            if ai:
+                #check the previous extension
+                last = len(self.hdulist)-1
+                lasthdu = self.hdulist[last] 
+                if lasthdu.data is None:
+                    if lasthdu.header.has_key("EXTNAME"):
+                        print "under construction (prev data is none and extname exists?)"
+                    else:
+                        self.hdulist.__delitem__(last)
+                        self.hdulist.append(pyfits.ImageHDU(data=data, \
+                            header=header))
+                else:
+                    if lasthdu.header.has_key("EXTNAME"):
+                        if lasthdu.header["EXTNAME"] == extname:
+                            saver = lasthdu.header["EXTVER"]
+                            self.hdulist.append(pyfits.ImageHDU(data=data, \
+                                header=header))
+                            #increment extver
+                            self.hdulist[last+1].header.update("extver", \
+                                saver+1, "Added by AstroData")
+                        else:
+                            "under construction has data, extname not same?"
+                    else:
+                        "under construction has data, no extname?"
             else:
-                self.hdulist.append(pyfits.ImageHDU(data = data, \
-                    header=header))
+                if len(self.hdulist) == 0:
+                    self.hdulist.append(pyfits.PrimaryHDU(data = data, \
+                        header=header))
+                else:
+                    self.hdulist.append(pyfits.ImageHDU(data = data, \
+                        header=header))
         elif isinstance(moredata, AstroData):
             for hdu in moredata.hdulist[1:]:
                 self.hdulist.append(hdu)
@@ -671,8 +696,12 @@ integrates other functionality.
                     name_ += str(ext.extver()) + ")"
                     cards_ = len(self.hdulist[count + 1]._header.ascard)
                     if extType == "ImageHDU":
-                        dimention_ = self.hdulist[count + 1].data.shape
-                        format_ = self.hdulist[count + 1].data.dtype.name
+                        if self.hdulist[count + 1].data == None:
+                            dimention_ = None
+                            format_=None
+                        else:
+                            dimention_ = self.hdulist[count + 1].data.shape
+                            format_ = self.hdulist[count + 1].data.dtype.name
                     else:
                         dimention_ = "{?}"
                         format_ = "?"
