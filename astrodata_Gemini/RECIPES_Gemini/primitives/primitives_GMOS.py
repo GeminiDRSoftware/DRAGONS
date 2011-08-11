@@ -82,20 +82,14 @@ class GMOSPrimitives(GEMINIPrimitives):
         log.debug(gt.log_message("primitive", "display", "starting"))
 
         
-        # If in QA context, override the saturation parameter
-        if rc["context"]=="QA":
-            saturation = 58000
-        else:
-            saturation = rc['saturation']
-
         # Loop over each input AstroData object in the input list
         frame = rc["frame"]
         for ad in rc.get_inputs(style="AD"):
 
             try:
                 ad = ds.display_gmos(adinput=ad,
-                                     start_frame=frame,
-                                     saturation=saturation)
+                                     frame=frame,
+                                     saturation=rc['saturation'])
             except:
                 log.warning("Could not display %s" % ad.filename)
 
@@ -143,9 +137,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             # If the input AstroData object only has one extension, there is no
             # need to mosaic the detectors
             if ad.count_exts("SCI") == 1:
-                log.warning("The input AstroData object only has one " \
-                            "extension so there is no need to mosaic the " \
-                            "detectors" % (ad.filename))
+                log.warning("Only one extension in %s; " \
+                            "no mosaicking done" % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
@@ -165,43 +158,6 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         yield rc
     
-    def overscanCorrect(self,rc):
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "overscanCorrect", "starting"))
-
-        # Loop over each input AstroData object in the input list to
-        # test whether it's appropriate to try to subtract/trim the overscan
-        sub_over = True
-        for ad in rc.get_inputs(style="AD"):
-
-            # Check whether the subtractOverscan or trimOverscan 
-            # primitives have been run previously
-            if (ad.phu_get_key_value("SUBOVER") or 
-                ad.phu_get_key_value("TRIMOVER")):
-                if rc["context"]=="QA":
-                    sub_over = False
-                    log.warning("Files have already been processed by " +
-                                "overscanCorrect; no further overscan " +
-                                "correction performed")
-                    rc.report_output(rc.get_inputs(style="AD"))
-                    break
-                else:
-                    raise Errors.PrimitiveError("Files have already been " +
-                                                "processed by " +
-                                                "overscanCorrect")
-
-        # If no errors found, subtract the overscan and trim it
-        if sub_over:
-            recipe_list = ["subtractOverscan",
-                           "trimOverscan"]
-            rc.run("\n".join(recipe_list))
-
-        yield rc
-
     def standardizeHeaders(self,rc):
         """
         This primitive is used to update and add keywords to the headers of the
