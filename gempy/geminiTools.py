@@ -39,7 +39,7 @@ def checkInputsMatch(adInsA=None, adInsB=None, check_filter=True):
             if len(adInsA)!=len(adInsB):
                 log.error('Both the A and B inputs must be lists of MATCHING'+
                           ' lengths.')
-                raise Errors.ToolboxError('There were miss-matched numbers ' \
+                raise Errors.ToolboxError('There were mismatched numbers ' \
                                           'of A and B inputs.')
     if isinstance(adInsA,AstroData):
         if isinstance(adInsB,AstroData):
@@ -49,7 +49,7 @@ def checkInputsMatch(adInsA=None, adInsB=None, check_filter=True):
         else:
             log.error('Both the A and B inputs must be lists of MATCHING'+
                       ' lengths.')
-            raise Errors.ToolboxError('There were miss-matched numbers of '+
+            raise Errors.ToolboxError('There were mismatched numbers of '+
                                'A and B inputs.')
     
     for count in range(0,len(adInsA)):
@@ -59,7 +59,7 @@ def checkInputsMatch(adInsA=None, adInsB=None, check_filter=True):
         
         if A.count_exts('SCI')!=B.count_exts('SCI'):
             log.error('Inputs have different numbers of SCI extensions.')
-            raise Errors.ToolboxError('Miss-matching number of SCI ' \
+            raise Errors.ToolboxError('Mismatching number of SCI ' \
                                       'extensions in inputs')
         for extCount in range(1,A.count_exts('SCI')+1):
             # grab matching SCI extensions from A's and B's
