@@ -711,7 +711,7 @@ class CLManager(object):
                 self.log.fullinfo('Temporary image file on disk for input to '+
                                   'CL: '+name)
                 # Write this file to disk with its unique filename 
-                ad.write(name, rename=False)
+                ad.write(name, rename=False, clobber=True)
         # preparing the input filenames for temperary input ref image files to 
         # IRAF if needed along with saving the original astrodata filenames
         if self.refIns!=None:
@@ -729,7 +729,7 @@ class CLManager(object):
                 self.log.fullinfo('Temporary ref file on disk for input to CL: '
                                   +name)
                 # Write this file to disk with its unique filename 
-                ad.write(name, rename=False)
+                ad.write(name, rename=False, clobber=True)
         # preparing the input filenames for temperary input array files to 
         # IRAF if needed and writing them to disk.   
         if self.arrayIns!=None:
