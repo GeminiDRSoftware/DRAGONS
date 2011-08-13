@@ -790,22 +790,30 @@ integrates other functionality.
                     rets += "\n\t* There are no extensions *"
                 else:
                     # Check hdulist instances
-                    extType = ""
                     if isinstance(ext.hdulist[1], pyfits.core.ImageHDU):
                         extType = "ImageHDU"
-                    extHeaderType = ""
-                    if isinstance(ext.hdulist[1].header, pyfits.core.Header):
-                        extHeaderType = "Header"
-                    extDataType = ""
-                    if isinstance(ext.hdulist[1].data, numpy.ndarray):
-                        extDataType = "ndarray"
-                    if ext.hdulist[1].data is None:
-                        extDataType = "None"
+                        if isinstance(ext.hdulist[1].header, pyfits.core.Header):
+                            extHeaderType = "Header"
+                        else:
+                            extHeaderType = ""
+                        if isinstance(ext.hdulist[1].data, numpy.ndarray):
+                            extDataType = "ndarray"
+                        elif ext.hdulist[1].data is None:
+                            extDataType = "None"
+                        else:
+                            extDataType = ""
+                    elif isinstance(ext.hdulist[1], pyfits.core.BinTableHDU):
+                        extType = "BinTableHDU"
+                    else:
+                        extType = ""
                     
                     # Create sub-data info lines
                     adno_ = "[" + str(count) + "]"
-                    name_ = "('" + str(ext.extname()) + "', "
-                    name_ += str(ext.extver()) + ")"
+                    if ext.extver() is None:
+                        name_ = str(ext.extname())
+                    else:
+                        name_ = "('" + str(ext.extname()) + "', "
+                        name_ += str(ext.extver()) + ")"
                     cards_ = len(self.hdulist[count + 1]._header.ascard)
                     if extType == "ImageHDU":
                         if self.hdulist[count + 1].data == None:
@@ -815,8 +823,8 @@ integrates other functionality.
                             dimention_ = self.hdulist[count + 1].data.shape
                             format_ = self.hdulist[count + 1].data.dtype.name
                     else:
-                        dimention_ = "{?}"
-                        format_ = "?"
+                        dimention_ = ""
+                        format_ = ""
                     if verbose:
                         rets += "\n%-7s %-13s %-13s %-8d %-5d %-13s %s  %s" % \
                             (adno_, name_, extType, count + 1, cards_, \
