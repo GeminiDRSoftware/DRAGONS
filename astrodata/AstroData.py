@@ -782,10 +782,8 @@ integrates other functionality.
                 rets += "\n%sphu%s%s    0%s%d" % (" "*8, " "*11, \
                     phutype, " "*7, len(self.phu._header.ascard))
                 rets += "\n%sphu.header%s%s" % (" "*8, " "*4, phuHeaderType)
-            count = 0
+            hdu_indx = 1
             for ext in self:
-                if len(self) == 1:
-                    count = ext.extver() - 1
                 if ext.extname() is None:
                     rets += "\n\t* There are no extensions *"
                 else:
@@ -808,43 +806,43 @@ integrates other functionality.
                         extType = ""
                     
                     # Create sub-data info lines
-                    adno_ = "[" + str(count) + "]"
+                    adno_ = "[" + str(hdu_indx - 1) + "]"
                     if ext.extver() is None:
                         name_ = str(ext.extname())
                     else:
                         name_ = "('" + str(ext.extname()) + "', "
                         name_ += str(ext.extver()) + ")"
-                    cards_ = len(self.hdulist[count + 1]._header.ascard)
+                    cards_ = len(self.hdulist[hdu_indx]._header.ascard)
                     if extType == "ImageHDU":
-                        if self.hdulist[count + 1].data == None:
+                        if self.hdulist[hdu_indx].data == None:
                             dimention_ = None
                             format_=None
                         else:
-                            dimention_ = self.hdulist[count + 1].data.shape
-                            format_ = self.hdulist[count + 1].data.dtype.name
+                            dimention_ = self.hdulist[hdu_indx].data.shape
+                            format_ = self.hdulist[hdu_indx].data.dtype.name
                     else:
                         dimention_ = ""
                         format_ = ""
                     if verbose:
                         rets += "\n%-7s %-13s %-13s %-8d %-5d %-13s %s  %s" % \
-                            (adno_, name_, extType, count + 1, cards_, \
+                            (adno_, name_, extType, hdu_indx, cards_, \
                                 dimention_, format_, \
-                                str(id(self.hdulist[count+1])))
+                                str(id(self.hdulist[hdu_indx])))
                         if extType == "ImageHDU":
                             rets +="\n           .header    %s%s%s" % \
                                 (extHeaderType, " "*46, \
-                                str(id(self.hdulist[count + 1].header)))
+                                str(id(self.hdulist[hdu_indx].header)))
                             rets +="\n           .data      %s%s%s" % \
                                 (extDataType, " "*45, \
-                                str(id(self.hdulist[count + 1].data)))
+                                str(id(self.hdulist[hdu_indx].data)))
                     else:
                         rets += "\n%-7s %-13s %-13s %-8d %-5d %-13s %s" % \
-                            (adno_, name_, extType, count + 1, cards_, \
+                            (adno_, name_, extType, hdu_indx, cards_, \
                                 dimention_, format_)
                         if extType == "ImageHDU":
                             rets +="\n           .header    %s" % extHeaderType 
                             rets +="\n           .data      %s" % extDataType
-                count += 1
+                hdu_indx += 1
             if verbose:
                 s = " "*24
                 rets += """
