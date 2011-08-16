@@ -44,8 +44,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 if rc["context"]=="QA":
                     sub_bias = False
                     log.warning("Files have already been processed by " +
-                                "biasCorrect; no further bias " +
-                                "correction performed")
+                                "biasCorrect")
                     rc.report_output(rc.get_inputs(style="AD"))
                     break
                 else:
@@ -58,8 +57,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             if bias.filename is None:
                 if rc['context']=="QA":
                     sub_bias = False
-                    log.warning("No processed biases found; no bias " +
-                                "correction performed")
+                    log.warning("No processed biases found")
                     rc.report_output(rc.get_inputs(style="AD"))
                     break
                     
@@ -137,8 +135,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # If the input AstroData object only has one extension, there is no
             # need to mosaic the detectors
             if ad.count_exts("SCI") == 1:
-                log.warning("Only one extension in %s; " \
-                            "no mosaicking done" % (ad.filename))
+                log.warning("Only one extension in %s" % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
@@ -292,10 +289,9 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # If no appropriate bias is found, it is ok not to subtract the
             # bias 
-            if not bias:
-                log.warning("An appropriate bias for %s could not be found, " \
-                            "so no bias will be subtracted" % (ad.filename))
-                
+            if bias.filename is None:
+                log.warning("No processed bias found for %s" % ad.filename)
+
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
