@@ -306,6 +306,12 @@ def trim_overscan(adinput=None):
         # Loop through the inputs
         for ad in adinput:
             
+            # Check whether this user level function has been
+            # run previously
+            if ad.phu_get_key_value(timestamp_key):
+                raise Errors.InputError("%s has already been processed by " \
+                                        "trim_overscan" % (ad.filename))
+
             for sciExt in ad["SCI"]:
                 
                 # get matching VAR and DQ planes if present
@@ -376,9 +382,8 @@ def trim_overscan(adinput=None):
                                          "DEC at Ref pix in decimal degrees")
                 
                 # Update logger with updated/added keywords to each SCI frame
-                log.fullinfo("*"*50, category="header")
+                log.fullinfo("\n", category="header")
                 log.fullinfo("File = "+ad.filename, category="header")
-                log.fullinfo("~"*50, category="header")
                 log.fullinfo("SCI extension number "+str(sciExt.extver())+
                              " keywords updated/added:\n", "header")
                 log.fullinfo("NAXIS1= "+str(sciExt.get_key_value("NAXIS1")),
