@@ -1,13 +1,18 @@
 # This module contains user level functions related to the quality assessment
 # of the input dataset
 
-import os, sys
+import os
+import sys
+import math
 import time
 from datetime import datetime
+import numpy as np
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
+from gempy.science import display as ds
+from gempy.science import resample as rs
 
 # Load the timestamp keyword dictionary that will be used to define the keyword
 # to be used for the time stamp for the user level function
@@ -15,7 +20,7 @@ timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
 def measure_iq(adinput=None, centroid_function='moffat', display=False,
-               qa=True):
+               qa=True, return_source_info=False):
     """
     This function will detect the sources in the input images and fit
     either Gaussian or Moffat models to their profiles and calculate the 
@@ -86,7 +91,7 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False,
             tmpWriteName = 'tmp_measure_iq'+os.path.basename(ad.filename)
             log.fullinfo('Writing input temporarily to file '+
                          tmpWriteName)
-            ad.write(tmpWriteName, rename=False)
+            ad.write(tmpWriteName, rename=False, clobber=True)
             
             # Automatically determine the 'mosaic' parameter for gemiq
             # if there are 3 SCI extensions -> mosaic=False
@@ -118,7 +123,6 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False,
             total_IQ_time = total_IQ_time + (et - st)
             # Log the amount of time spent measuring the IQ 
             log.debug('MeasureIQ time: '+repr(et - st), category='IQ')
-            log.fullinfo('~'*45, category='format')
             
             # If input was written to temp file on disk, delete it
             if os.path.exists(tmpWriteName):
@@ -126,12 +130,28 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False,
                 log.fullinfo('Temporary file ' +
                              tmpWriteName+ ' removed from disk.')
             
-            # Delete the .dat file from disk
+            # Get star information from the .dat file on disk
             # NOTE: this information should be stored in the OBJCAT
+            stars = []
             datName = os.path.splitext(tmpWriteName)[0]+'.dat'
-            os.remove(datName)
-            log.fullinfo('Temporary file '+
-                         datName+ ' removed from disk.')
+            dat_fh = open(datName)
+            for line in dat_fh:
+                line = line.strip()
+                if line=='' or line.startswith("#") or line.startswith("A"):
+                    continue
+                fields = line.split()
+                cx = float(fields[7])
+                cy = float(fields[8])
+                fwhm = float(fields[10])
+                stars.append({"CooX": cx,
+                              "CooY": cy,
+                              "FWHMpix": fwhm})
+
+            # Delete the .dat file
+            if os.path.exists(datName):
+                os.remove(datName)
+                log.fullinfo('Temporary file '+
+                             datName+ ' removed from disk.')
                 
             # iqdata is list of tuples with image quality metrics
             # (ellMean, ellSig, fwhmMean, fwhmSig)
@@ -170,6 +190,8 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False,
                         filter = ad.filter_name(pretty=True)
                         iqStr = 'IQ band for %s filter:' % filter
                         iqStr = iqStr.ljust(llen) + ('IQ'+iq_band).rjust(5)
+                    else:
+                        iqStr = '(IQ band could not be determined)'
                     # Create final formatted string
                     finalStr = '\n    '+fnStr+'\n    '+'-'*dlen+'\n    '+emStr+\
                                '\n    '+esStr+'\n    '+fmStr+'\n    '+fsStr+\
@@ -194,11 +216,81 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False,
                     category='IQ')
         
         # Return the list of output AstroData objects
-        return adoutput_list
+        if return_source_info:
+            return adoutput_list, stars
+        else:
+            return adoutput_list
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
         raise
+
+def iq_display_gmos(adinput=None, frame=1):
+
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+
+    # The validate_input function ensures that adinput is not None and returns
+    # a list containing one or more AstroData objects
+    adinput = gt.validate_input(adinput=adinput)
+
+    # Initialize the list of output AstroData objects
+    adoutput_list = []
+
+    try:
+        # Loop over each input AstroData object in the input list
+
+        if frame is None:
+            frame = 1
+        display = True
+
+        for ad in adinput:
+
+            # Tile the data into one science extension
+            ad = rs.tile_arrays(adinput=ad,tile_all=True)
+
+            # Measure IQ on the image
+            log.stdinfo("Measuring FWHM of stars")
+            ad,stars = measure_iq(adinput=ad, 
+                                  centroid_function="moffat",
+                                  display=False, qa=True, 
+                                  return_source_info=True)
+            if len(stars)==0:
+                frame+=1
+                continue
+
+            # Display the image with IQ stars marked
+            if display:
+                data_shape = ad[0]["SCI",1].data.shape
+                iqmask = _iq_overlay(stars,data_shape)
+
+                log.stdinfo('Sources used to measure IQ are marked ' +
+                            'with blue circles.')
+                try:
+                    ad = ds.display_gmos(adinput=ad,
+                                         frame=frame,
+                                         saturation=58000,
+                                         overlay=iqmask)
+                except:
+                    log.warning("Could not display %s" % ad[0].filename)
+                    display = False
+
+            frame+=1
+            
+
+            # Append the output AstroData object to the list of output
+            # AstroData objects
+            adoutput_list.append(ad)
+
+        # Return the list of output AstroData objects
+        return adoutput_list
+
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
+
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
@@ -253,8 +345,14 @@ def _iq_band(adinput=None,fwhm=None):
         count=0
         for ad in adinput:
 
-            wfs = str(ad.wavefront_sensor())
-            filter = str(ad.filter_name(pretty=True))
+            try:
+                wfs = str(ad.wavefront_sensor())
+            except:
+                wfs = None
+            try:
+                filter = str(ad.filter_name(pretty=True))
+            except:
+                filter = None
 
             # default value for iq band
             iq = ''
@@ -291,3 +389,58 @@ def _iq_band(adinput=None,fwhm=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
+def _iq_overlay(stars,data_shape):
+    """
+    Generates a tuple of numpy arrays that can be used to mask a display with
+    circles centered on the stars' positions and radii that reflect the
+    measured FWHM.
+    Eg. data[iqmask] = some_value
+
+    The circle definition is based on numdisplay.overlay.circle, but circles
+    are two pixels wide to make them easier to see.
+    """
+
+    xind = []
+    yind = []
+    width = data_shape[1]
+    height = data_shape[0]
+    for star in stars:
+        x0 = star["CooX"]
+        y0 = star["CooY"]
+        radius = star["FWHMpix"]
+        r2 = radius**2
+        quarter = int(math.ceil(radius * math.sqrt (0.5)))
+
+        for dy in range(-quarter,quarter+1):
+            if r2>dy**2:
+                dx = math.sqrt(r2 - dy**2)
+            else:
+                dx = 0
+            j = int(round(dy+y0))
+            i = int(round(x0-dx))           # left arc
+            if i>=0 and j>=0 and i<width and j<height:
+                xind.extend([i-1,i-2])
+                yind.extend([j-1,j-1])
+            i = int(round(x0+dx))           # right arc
+            if i>=0 and j>=0 and i<width and j<height:
+                xind.extend([i-1,i])
+                yind.extend([j-1,j-1])
+
+        for dx in range(-quarter, quarter+1):
+            if r2>dx**2:
+                dy = math.sqrt(r2 - dx**2)
+            else:
+                dy = 0
+            i = int(round(dx + x0))
+            j = int(round(y0 - dy))           # bottom arc
+            if i>=0 and j>=0 and i<width and j<height:
+                xind.extend([i-1,i-1])
+                yind.extend([j-1,j-2])
+            j = int (round (y0 + dy))           # top arc
+            if i>=0 and j>=0 and i<width and j<height:
+                xind.extend([i-1,i-1])
+                yind.extend([j-1,j])
+
+    iqmask = (np.array(yind),np.array(xind))
+    return iqmask
+    
