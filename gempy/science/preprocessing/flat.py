@@ -10,7 +10,7 @@ from astrodata.adutils.gemutil import pyrafLoader
 from gempy import geminiTools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
-from gempy import string as gstr
+from gempy.science import resample as rs
 
 # Load the timestamp keyword dictionary that will be used to define the keyword
 # to be used for the time stamp for the user level function
@@ -156,7 +156,7 @@ def normalize_image_gmos(adinput=None, saturation=45000):
     CCDs 1 and 3 have lower average illumination than CCD2, and that needs
     to be corrected for by the flat.
     
-    :param adinput: Astrodata input flat(s) to be combined and normalized
+    :param adinput: Astrodata input flat(s) to be normalized
     :type adinput: Astrodata
     
     :param saturation: Defines saturation level for the raw frame, in ADU
@@ -182,26 +182,23 @@ def normalize_image_gmos(adinput=None, saturation=45000):
             
             if saturation is None:
                 saturation = ad.saturation_level()
-            
-            # Find number of amps per CCD (assumes same number for all CCDs)
-            # (can this be a descriptor?)
-            amps_per_ccd = _amps_per_ccd(adinput=ad)
+                
+            # Tile the data into one CCD per science extension,
+            # reordering if necessary
+            ad = rs.tile_arrays(adinput=ad)[0]
             
             # Get all CCD2 data
-            if ad.count_exts("SCI")==amps_per_ccd:
+            if ad.count_exts("SCI")==1:
                 # Only one CCD present, assume it is CCD2
-                ccd2_ext_num = range(1,amps_per_ccd+1)
+                sciext = ad["SCI",1]
             else:
-                ccd2_ext_num = range(amps_per_ccd+1,2*amps_per_ccd+1)
-            log.fullinfo("Using science extensions "+repr(ccd2_ext_num) + 
-                         " for statistics")
-            data_list = [ad["SCI",i].data for i in ccd2_ext_num]
-            central_data = np.hstack(data_list)
-            
+                # Otherwise, take the second science extension
+                sciext = ad["SCI",2]
+            central_data = sciext.data
+
             # Check units of CCD2; if electrons, convert saturation
             # limit from ADU to electrons. Also subtract overscan
             # level if needed
-            sciext = ad["SCI",ccd2_ext_num[0]]
             overscan_level = sciext.get_key_value("OVERSCAN")
             if overscan_level is not None:
                 saturation -= overscan_level
@@ -263,26 +260,3 @@ def normalize_image_gmos(adinput=None, saturation=45000):
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
 
-
-def _amps_per_ccd(ad):
-
-    amps_per_ccd = 0
-    ccdx1 = 0
-    detsecs = ad.detector_section().as_list()
-    if isinstance(detsecs[0],list):
-        detx1 = detsecs[0][0]
-    else:
-        detx1 = detsecs[0]
-    for sciext in ad["SCI"]:
-        raw_ccdsec = sciext.get_key_value("CCDSEC")
-        ccdsec = gstr.sectionStrToIntList(raw_ccdsec)
-        detsec = sciext.detector_section().as_list()
-        if (detsec[0] > detx1 and ccdsec[0] <= ccdx1):
-            # new CCD found, stop counting
-            break
-        else:
-            amps_per_ccd += 1
-            ccdx1 = ccdsec[0]
-            detx1 = detsec[0]
-
-    return amps_per_ccd

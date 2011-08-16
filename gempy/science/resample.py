@@ -15,7 +15,7 @@ from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from gempy import astrotools as at
 from gempy import string as gstr
-from gempy.science import preprocessing as pp
+from gempy.science.preprocessing import bias as bs
 
 # Load the timestamp keyword dictionary that will be used to define the keyword
 # to be used for the time stamp for the user level function
@@ -659,7 +659,7 @@ def tile_arrays(adinput=None, tile_all=False):
                 # First trim off any overscan regions still present
                 # so they won't get tiled with science data
                 if not ad.phu_get_key_value(timestamp_keys["trim_overscan"]):
-                    ad = pp.trim_overscan(adinput=ad)[0]
+                    ad = bs.trim_overscan(adinput=ad)[0]
 
                 # Make chip gaps to tile with science extensions if tiling all
                 # Gap width should come from lookup table
