@@ -30,6 +30,7 @@ timestamp_keys = {
     "subtract_bias": "SUBBIAS",
     "subtract_dark": "SUBDARK",
     "subtract_overscan_gmos": "SUBOVER",
+    "tile_arrays": "TILEARRY",
     "trim_overscan": "TRIMOVER",
     "validate_data_f2": "VALDATA",
     "validate_data_gmos": "VALDATA",
