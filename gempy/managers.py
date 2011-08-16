@@ -320,7 +320,7 @@ class CLManager(object):
             if type=='listFile':
                 imageInsListName = listFileMaker(
                     list=self.imageInsCLdiskNames,
-                    listName='imageList'+str(os.getpid())+self.funcName)
+                    listName='tmpImageList'+str(os.getpid())+self.funcName)
                 self.imageInsListName = imageInsListName
                 return '@'+imageInsListName
         else:
