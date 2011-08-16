@@ -1,7 +1,8 @@
 # This module contains user level functions related to the displaying
 # the input dataset
 
-import os, sys
+import os
+import sys
 import numpy as np
 import numdisplay as nd
 from astrodata import AstroData
@@ -12,13 +13,14 @@ from astrodata.adutils.gemutil import pyrafLoader
 from gempy import geminiTools as gt
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from gempy import string as gstr
+from gempy.science import resample as rs
 
 # Load the timestamp keyword dictionary that will be used to define the keyword
 # to be used for the time stamp for the user level function
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
-def display_gmos(adinput=None, start_frame=1, saturation=None):
+def display_gmos(adinput=None, frame=1, saturation=None, overlay=None):
     """
     This function does a quick tiling if necessary, and calls numdisplay
     to display the data to ds9.
@@ -36,7 +38,8 @@ def display_gmos(adinput=None, start_frame=1, saturation=None):
     adoutput_list = adinput
     
     try:
-        frame = start_frame
+        if frame is None:
+            frame = 1
 
         # Initialize the local version of numdisplay
         # (overrides the display function to allow for quick overlays)
@@ -44,56 +47,24 @@ def display_gmos(adinput=None, start_frame=1, saturation=None):
 
         for ad in adinput:
 
-            # Check for more than one science extension
+            # Check for more than one science extension and tile if found
             nsciext = ad.count_exts("SCI")
-            if nsciext>1:
-                # Get the number of extensions per ccd
-                data_list = []
-                amps_per_ccd = _amps_per_ccd(ad)
-                if nsciext==amps_per_ccd:
-                    # Only one CCD present; tile all data with no gaps
-                    for sciext in ad["SCI"]:
-                        # get the data_section (so overscan region is not
-                        # displayed, if still present)
-                        dsl = sciext.data_section().as_pytype()
-                        data_list.append(sciext.data[dsl[2]:dsl[3],
-                                                     dsl[0]:dsl[1]])
-                else:
-                    # Make chip gaps to tile with science extensions
-                    # Gap width should come from lookup table
-                    gap_height = int(ad["SCI",1].data.shape[0])
-                    gap_width = int(37.0/ad.detector_x_bin())     #hcode
-                    chip_gap = np.zeros((gap_height,gap_width))
+            if nsciext!=1:
+                ad = rs.tile_arrays(adinput=ad, tile_all=True)[0]
 
-                    for i in range(1,nsciext+1):
-                        sciext = ad["SCI",i]
+            sciext = ad["SCI",1]
+            data = sciext.data
 
-                        # get the data_section
-                        dsl = sciext.data_section().as_pytype()
-
-                        data_list.append(sciext.data[dsl[2]:dsl[3],
-                                                     dsl[0]:dsl[1]])
-
-                        # Add a chip gap if at the end of the CCD,
-                        # unless we're also at the end of the detector
-                        if i%amps_per_ccd==0 and i!=nsciext:
-                            data_list.append(chip_gap)
-
-                data = np.hstack(data_list)
-            else:
-                data = ad["SCI",1].data
+            masks = []
 
             # Make saturation mask if desired
-            if saturation is None:
-                mask=None
-            else:
+            if saturation is not None:
                 if saturation=="auto":
                     saturation = ad.saturation_level()
             
                 # Check units of 1st science extension; if electrons, 
                 # convert saturation limit from ADU to electrons. Also
                 # subtract approximate overscan level if needed
-                sciext = ad["SCI",1]
                 overscan_level = sciext.get_key_value("OVERSCAN")
                 if overscan_level is not None:
                     saturation -= overscan_level
@@ -108,13 +79,18 @@ def display_gmos(adinput=None, start_frame=1, saturation=None):
                                  "%.2f electrons" % saturation)
 
                 # Make saturation mask
-                mask = np.where(data>saturation)
+                satmask = np.where(data>saturation)
+                masks.append(satmask)
+
+            if overlay is not None:
+                masks.append(overlay)
+
 
             # Display the data
             try:
                 lnd.display(data,name=ad.filename,
                             frame=frame,zscale=True,quiet=True,
-                            mask=mask, mask_color=204)
+                            masks=masks, mask_colors=[204,206])
             except:
                 log.warning("numdisplay failed")
 
@@ -132,33 +108,6 @@ def display_gmos(adinput=None, start_frame=1, saturation=None):
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
 
-
-def _amps_per_ccd(ad):
-    """
-    Assumes the same number of amps is being used for each CCD.
-    """
-    amps_per_ccd = 0
-    ccdx1 = 0
-    detsecs = ad.detector_section().as_list()
-    if isinstance(detsecs[0],list):
-        detx1 = detsecs[0][0]
-    else:
-        detx1 = detsecs[0]
-    for sciext in ad["SCI"]:
-        raw_ccdsec = sciext.get_key_value("CCDSEC")
-        ccdsec = gstr.sectionStrToIntList(raw_ccdsec)
-        detsec = sciext.detector_section().as_list()
-        if (detsec[0] > detx1 and ccdsec[0] <= ccdx1):
-            # new CCD found, stop counting
-            break
-        else:
-            amps_per_ccd += 1
-            ccdx1 = ccdsec[0]
-            detx1 = detsec[0]
-
-    return amps_per_ccd
-
-
 class _localNumDisplay(nd.NumDisplay):
     """
     This class overrides the default numdisplay.display function in
@@ -171,7 +120,7 @@ class _localNumDisplay(nd.NumDisplay):
     """
     def display(self, pix, name=None, bufname=None, z1=None, z2=None,
                 transform=None, zscale=False, contrast=0.25, scale=None,
-                mask=None, mask_color=None,
+                masks=None, mask_colors=None,
                 offset=None, frame=None, quiet=False):
 
         """ Displays byte-scaled (UInt8) n to XIMTOOL device.
@@ -271,11 +220,14 @@ class _localNumDisplay(nd.NumDisplay):
         bpix = self._fbclipImage(bpix,_d.fbwidth,_d.fbheight)
 
         # Change pixel value to specified color if desired
-        if mask is not None:
-            if mask_color is None:
+        if masks is not None:
+            if not isinstance(masks,list):
+                masks = [masks]
+            if mask_colors is None:
                 # Set to red as default
-                mask_color = 204
-            bpix[mask] = mask_color
+                mask_colors = [204]*len(masks)
+            for i in range(len(masks)):
+                bpix[masks[i]] = mask_colors[i]
 
         # Update the WCS to match the frame buffer being used.
         _d.syncWCS(_wcsinfo)
