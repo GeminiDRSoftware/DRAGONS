@@ -243,7 +243,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         adinput = rc.get_inputs(style='AD')
         if len(adinput)<2:
             log.warning("At least two images must be provided to " +
-                        "alignToReferenceImage; no alignment performed.")
+                        "alignToReferenceImage")
             # Report input to RC without change
             adoutput_list = adinput
         else:
@@ -375,7 +375,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         adinput = rc.get_inputs(style='AD')
         if len(adinput)<2:
             log.warning("At least two images must be provided to " +
-                        "correctWCSToReferenceImage; no correction performed.")
+                        "correctWCSToReferenceImage")
             # Report input to RC without change
             adoutput_list = adinput
         else:
@@ -507,11 +507,10 @@ class GEMINIPrimitives(GENERALPrimitives):
 
             # Check whether the divideByFlat primitive has been run previously
             if ad.phu_get_key_value("DIVFLAT"):
-                if rc['context']=="QA":
+                if rc["context"]=="QA":
                     div_flat = False
                     log.warning("Files have already been processed by " +
-                                "flatCorrect; no further flat " +
-                                "correction performed")
+                                "flatCorrect")
                     rc.report_output(rc.get_inputs(style="AD"))
                     break
                 else:
@@ -522,10 +521,9 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Test to see if we found a flat
             flat = AstroData(rc.get_cal(ad, "processed_flat"))
             if flat.filename is None:
-                if rc['context']=="QA":
+                if rc["context"]=="QA":
                     div_flat = False 
-                    log.warning("No processed flats found; no flat " +
-                                "correction performed")
+                    log.warning("No processed flats found")
                     rc.report_output(rc.get_inputs(style="AD"))
                     break
                     
@@ -556,8 +554,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 if rc['context']=="QA":
                     rm_fringe = False
                     log.warning("Files have already been processed by " +
-                                "fringeCorrect; no further fringe " +
-                                "correction performed")
+                                "fringeCorrect")
                     rc.report_output(rc.get_inputs(style="AD"))
                     break
                 else:
@@ -572,7 +569,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                     # in QA context, don't bother trying
                     rm_fringe = False
                     log.warning("No fringe correction necessary for filter " +
-                                filter + "; no  fringe correction performed.")
+                                filter)
                     break
                 else:
                     # in science context, let the user do it, but warn
@@ -590,8 +587,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 if fringe.filename is None:
                     if rc['context']=="QA":
                         rm_fringe = False
-                        log.warning("No processed fringes found; no fringe " +
-                                    "correction performed")
+                        log.warning("No processed fringes found")
                         rc.report_output(rc.get_inputs(style="AD"))
                         break 
                     else:
@@ -1107,7 +1103,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         adinput = rc.get_inputs(style='AD')
         if len(adinput)<2:
             log.warning("At least two frames must be provided to " +
-                        "stackFrames; no stacking performed.")
+                        "stackFrames")
             # Report input to RC without change
             adoutput_list = adinput
         else:
