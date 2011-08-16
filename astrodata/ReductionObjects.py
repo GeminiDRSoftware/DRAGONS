@@ -405,7 +405,7 @@ def command_clause(ro, coi):
                     except:
                         calurl = None
                 if calurl == None:
-                    log.critical('\nNo '+str(typ)+' calibration file found for '+\
+                    log.warning('No '+str(typ)+' calibration file found for '+\
                                 str(fn))
                     # this is not fatal because perhaps there isn't a calibration
                     # the system checks both the local and central source
