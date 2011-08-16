@@ -1,9 +1,11 @@
 # This module contains user level functions related to resampling the input
 # dataset
 
+import os
 import sys
 import numpy as np
 import pywcs
+from astrodata import AstroData
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
@@ -12,6 +14,8 @@ from gempy import geminiTools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from gempy import astrotools as at
+from gempy import string as gstr
+from gempy.science import preprocessing as pp
 
 # Load the timestamp keyword dictionary that will be used to define the keyword
 # to be used for the time stamp for the user level function
@@ -503,6 +507,12 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
             
         for ad in adinput:
 
+            # Check whether this user level function has been
+            # run previously
+            if ad.phu_get_key_value(timestamp_key):
+                raise Errors.InputError("%s has already been processed by " \
+                                        "mosaic_detectors" % (ad.filename))
+
             # Get BUNIT from science extensions 
             # (gmosaic wipes out this keyword, it needs to 
             # be restored after runnning it)
@@ -613,3 +623,354 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
         raise
+
+
+def tile_arrays(adinput=None, tile_all=False):
+
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+
+    # The validate_input function ensures that adinput is not None and returns
+    # a list containing one or more AstroData objects
+    adinput = gt.validate_input(adinput=adinput)
+
+    # Define the keyword to be used for the time stamp for this user level
+    # function
+    timestamp_key = timestamp_keys["tile_arrays"]
+
+    # Initialize the list of output AstroData objects
+    adoutput_list = []
+
+    try:
+        # Loop over each input AstroData object in the input list
+        for ad in adinput:
+
+            # Store PHU to pass to output AD
+            phu = ad.phu
+
+            nsciext = ad.count_exts("SCI")
+            if nsciext==1:
+                log.fullinfo("Only one science extension found; " +
+                             "no tiling done for %s" % ad.filename)
+                adoutput_list.append(ad)
+            else:
+
+                # First trim off any overscan regions still present
+                # so they won't get tiled with science data
+                if not ad.phu_get_key_value(timestamp_keys["trim_overscan"]):
+                    ad = pp.trim_overscan(adinput=ad)[0]
+
+                # Make chip gaps to tile with science extensions if tiling all
+                # Gap width should come from lookup table
+                gap_height = int(ad["SCI",1].data.shape[0])
+                gap_width = int(37.0/ad.detector_x_bin())     #hcode
+                chip_gap = np.zeros((gap_height,gap_width))
+
+
+                # Get the correct order of the extensions by sorting on
+                # first element in detector section
+                # (raw ordering is whichever amps read out first)
+                detsecs = ad.detector_section().as_list()
+                if not isinstance(detsecs[0],list):
+                    detsecs = [detsecs]
+                detx1 = [sec[0] for sec in detsecs]
+                ampsorder = range(1,nsciext+1)
+                orderarray = np.array(zip(ampsorder,
+                                          detx1),dtype=[('ext',np.int),
+                                                        ('detx1',np.int)])
+                orderarray.sort(order='detx1')
+                if np.all(ampsorder==orderarray['ext']):
+                    in_order = True
+                else:
+                    ampsorder = orderarray['ext']
+                    in_order = False
+
+                # Get CCDSEC keywords (descriptor would be nice)
+                ccdsecs = []
+                for ext in ad['SCI']:
+                    # Get the ccd section
+                    raw_ccdsec = ext.get_key_value("CCDSEC")
+                    ccdsec = gstr.sectionStrToIntList(raw_ccdsec)
+                    ccdsecs.append(ccdsec)
+                ccdx1 = [sec[0] for sec in ccdsecs]
+
+
+                # Now, get the number of extensions per ccd
+
+                # Initialize everything 
+                ccd_data = {}
+                amps_per_ccd = {}
+                sci_data_list = []
+                var_data_list = []
+                dq_data_list = []
+                num_ccd = 0
+                ext_count = 1
+                ampname = {}
+                amplist = []
+                refsec = {}
+
+                # Initialize these so that first extension will always
+                # start a new CCD
+                last_detx1 = detx1[ampsorder[0]-1]-1
+                last_ccdx1 = ccdx1[ampsorder[0]-1]
+
+                for i in ampsorder:
+                    sciext = ad["SCI",i]
+                    varext = ad["VAR",i]
+                    dqext = ad["DQ",i]
+
+                    this_detx1 = detx1[i-1]
+                    this_ccdx1 = ccdx1[i-1]
+
+                    amp = sciext.get_key_value("AMPNAME")
+
+                    if (this_detx1>last_detx1 and this_ccdx1<=last_ccdx1):
+                        # New CCD found
+
+                        # If not first extension, store current data lists
+                        # (or, if tiling all CCDs together, add a chip gap)
+                        if num_ccd>0:
+                            if tile_all:
+                                sci_data_list.append(chip_gap)
+                                if varext is not None:
+                                    var_data_list.append(chip_gap)
+                                if dqext is not None:
+                                    dq_data_list.append(chip_gap)
+                            else:
+                                ccd_data[num_ccd] = {"SCI":sci_data_list,
+                                                     "VAR":var_data_list,
+                                                     "DQ":dq_data_list}
+                                ampname[num_ccd] = amplist
+
+
+                        # Increment CCD number and restart amps per ccd
+                        num_ccd += 1
+                        amps_per_ccd[num_ccd] = 1
+
+                        # Start new data lists (or append if tiling all)
+                        if tile_all:                            
+                            sci_data_list.append(sciext.data)
+                            if varext is not None:
+                                var_data_list.append(varext.data)
+                            if dqext is not None:
+                                dq_data_list.append(dqext.data)
+
+                            # Keep the name of the amplifier
+                            # (for later header updates)
+                            amplist.append(amp)
+
+                            # Keep ccdsec and detsec from first extension only
+                            if num_ccd==1:
+                                refsec[1] = {"CCD":ccdsecs[i-1],
+                                             "DET":detsecs[i-1]}
+                        else:
+                            sci_data_list = [sciext.data]
+                            if varext is not None:
+                                var_data_list = [varext.data]
+                            if dqext is not None:
+                                dq_data_list = [dqext.data]
+                            amplist = [amp]
+                            # Keep ccdsec and detsec from first extension
+                            # of each CCD
+                            refsec[num_ccd] = {"CCD":ccdsecs[i-1],
+                                               "DET":detsecs[i-1]}
+
+                    else:
+                        # Increment amps and append data
+                        amps_per_ccd[num_ccd] += 1
+                        amplist.append(amp)
+                        sci_data_list.append(sciext.data)
+                        if varext:
+                            var_data_list.append(varext.data)
+                        if dqext:
+                            dq_data_list.append(dqext.data)
+
+                    # If last iteration, store the current data lists
+                    if ext_count==nsciext:
+                        if tile_all:
+                            key = 1
+                        else:
+                            key = num_ccd
+                        ccd_data[key] = {"SCI":sci_data_list,
+                                         "VAR":var_data_list,
+                                         "DQ":dq_data_list}
+                        ampname[key] = amplist
+
+                    last_ccdx1 = this_ccdx1
+                    last_detx1 = this_detx1
+                    ext_count += 1
+
+                if nsciext==num_ccd and in_order and not tile_all:
+                    # No reordering or tiling necessary, return input AD
+                    adoutput = ad
+                    log.fullinfo("Only one amplifier per array; " +
+                                 "no tiling done for %s" % ad.filename)
+
+                else:
+                    if not in_order:
+                        log.fullinfo("Reordering data by detector section")
+                    if tile_all:
+                        log.fullinfo("Tiling all data into one extension")
+                    elif nsciext!=num_ccd:
+                        log.fullinfo("Tiling data into one extension per array")
+
+                    # Get header from the center extension of each CCD
+                    # (or the center of CCD2 if tiling all)
+                    # This is in order to get the most accurate WCS on CCD2
+                    ref_header = {}
+                    startextn = 1
+                    ref_shift = {}
+                    ref_shift_temp = 0
+                    total_shift = 0
+                    on_ext=0
+                    for ccd in range(1,num_ccd+1):
+                        if tile_all:
+                            key = 1
+                            if ccd!=2:
+                                startextn += amps_per_ccd[ccd]
+                                continue
+                        else:
+                            key = ccd
+
+                        refextn = int(amps_per_ccd[ccd]/2.0) + startextn
+
+                        # Get size of reference shift from 0,0 to
+                        # start of reference extension
+                        for data in ccd_data[key]["SCI"]:
+                            # if it's a chip gap, add width to total, continue
+                            if data.shape[1]==gap_width:
+                                total_shift += gap_width
+                            else:
+                                on_ext+=1
+                                # keep total up to now if it's the reference ext
+                                if on_ext==refextn:
+                                    ref_shift_temp = total_shift
+                                # add in width of this extension
+                                total_shift += data.shape[1]
+
+                        # Get header from reference extension
+                        dict = {}
+                        for extname in ["SCI","VAR","DQ"]:
+                            ext = ad[extname,refextn]
+                            if ext is not None:
+                                header = ext.header
+                            else:
+                                header = None
+                            dict[extname] = header
+                        
+                        if dict["SCI"] is None:
+                            raise Errors.ScienceError("Header not found " +
+                                                      "for reference " + 
+                                                      "extension " +
+                                                      "[SCI,%i]" % refextn)
+
+                        ref_header[key] = dict
+                        ref_shift[key] = ref_shift_temp
+
+                        startextn += amps_per_ccd[ccd]
+
+
+                    # Make a new AD
+                    adoutput = AstroData()
+                    adoutput.filename = ad.filename
+                    adoutput.phu = phu
+
+                    # Delete the blank image extension added automatically
+                    # to a new AD
+                    del adoutput.hdulist[1]
+
+                    # Stack data from each array together and append to output AD
+                    if tile_all:
+                        num_ccd = 1
+                    nextend = 0
+                    for ccd in range(1,num_ccd+1):
+                        for extname in ccd_data[ccd].keys():
+                            if len(ccd_data[ccd][extname])>0:
+                                data = np.hstack(ccd_data[ccd][extname])
+                                header = ref_header[ccd][extname]
+                                new_ext = AstroData(data=data,header=header)
+                                new_ext.rename_ext(name=extname,ver=ccd)
+                                adoutput.append(new_ext)
+                                nextend += 1
+
+                    # Update header keywords with appropriate values
+                    # for the new data set
+                    adoutput.phu_set_key_value("NSCIEXT",num_ccd)
+                    adoutput.phu_set_key_value("NEXTEND",nextend)
+                    for ext in adoutput:
+                        extname = ext.extname()
+                        extver = ext.extver()
+
+                        # Update AMPNAME
+                        if extname!="DQ":
+                            new_ampname = ",".join(ampname[extver])
+
+                            # These ampnames can be long, so truncate
+                            # the comment by hand to avoid the error
+                            # message from pyfits
+                            comment = "Amplifier name(s)"
+                            if len(new_ampname)>=65:
+                                comment = ""
+                            else:
+                                comment = comment[0:65-len(new_ampname)]
+                            ext.set_key_value("AMPNAME",new_ampname,
+                                              comment=comment)
+                        # Update DATASEC
+                        data_shape = ext.data.shape
+                        new_datasec = "[1:%i,1:%i]" % (data_shape[1],
+                                                       data_shape[0])
+                        ext.set_key_value("DATASEC",new_datasec)
+
+                        # Update DETSEC
+                        unbin_width = data_shape[1] * ad.detector_x_bin()
+                        old_detsec = refsec[extver]["DET"]
+                        new_detsec = "[%i:%i,%i:%i]" % (old_detsec[0]+1,
+                                                   old_detsec[0]+unbin_width,
+                                                   old_detsec[2]+1,old_detsec[3])
+                        ext.set_key_value("DETSEC",new_detsec)
+
+                        # Update CCDSEC
+                        old_ccdsec = refsec[extver]["CCD"]
+                        new_ccdsec = "[%i:%i,%i:%i]" % (old_ccdsec[0]+1,
+                                                   old_ccdsec[0]+unbin_width,
+                                                   old_ccdsec[2]+1,old_ccdsec[3])
+                        ext.set_key_value("CCDSEC",new_ccdsec)
+
+                        # Update CRPIX1
+                        crpix1 = ext.get_key_value("CRPIX1")
+                        if crpix1 is not None:
+                            new_crpix1 = crpix1 + ref_shift[extver]
+                            ext.set_key_value("CRPIX1",new_crpix1)
+
+                    # Workaround for AD bug: types are not reassigned after
+                    # the AD has been created.  Write to disk and read
+                    # back in to get proper type classification
+                    original_fn = ad.filename
+                    tmpfilename = 'tmp_tile_arrays'+os.path.basename(original_fn)
+                    adoutput.write(tmpfilename,clobber=True)
+                    adoutput = AstroData(tmpfilename)
+                    adoutput.filename = original_fn
+                    if os.path.exists(tmpfilename):
+                        os.remove(tmpfilename)
+                # Add the appropriate time stamps to the PHU
+                gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+                # Append the output AstroData object to the list of output
+                # AstroData objects
+                adoutput_list.append(adoutput)
+            
+        # Return the list of output AstroData objects
+        return adoutput_list
+
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
+
+
+
+##############################################################################
+# Below are the helper functions for the user level functions in this module #
+##############################################################################
+
