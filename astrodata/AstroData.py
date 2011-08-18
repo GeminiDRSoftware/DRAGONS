@@ -220,7 +220,7 @@ integrates other functionality.
         if type(dataset) == str:
             parts = dataset.split(":")
             # print "AD257:", repr(parts)
-            if len(parts)>1:
+            if len(parts) > 1:
                 if parts[0] == "file":
                     remoteFile = False
                     dataset = parts[1][2:]
@@ -263,7 +263,7 @@ integrates other functionality.
                 # create null phu 
                 dataset = pyfits.HDUList(hdu)
                 # if data and/or header is None, pyfits will allow it 
-                dataset.append(pyfits.ImageHDU(data=data, header=header))
+                #dataset.append(pyfits.ImageHDU(data=data, header=header))
             else: 
                 hdu = pyfits.PrimaryHDU()
                 dataset = pyfits.HDUList(hdu)
@@ -274,7 +274,7 @@ integrates other functionality.
                     dataset[0].header = phu
                 else:
                     raise TypeError("phu is of an unsupported type")
-                dataset.append(pyfits.ImageHDU(data=data, header=header))
+                #dataset.append(pyfits.ImageHDU(data=data, header=header))
         if fname == None:
             self.open(dataset, mode)
         else:
@@ -493,7 +493,40 @@ integrates other functionality.
                 " member is monitored so that the mode can be changed from"
                 " readonly when the filename is changed.")
    
-    def append(self, moredata=None, data=None, header=None, ai=False, extname=None):
+    def ext_analyzer(self, hdulist):
+        nam_ver = []
+        bad_indx = []
+        high_sciver = 0
+        high_dqver = 0
+        high_varver = 0
+        has_mdf = False
+        for i in range(len(hdulist) - 1):
+            i += 1
+            header = hdulist[i].header
+            if header.has_key("EXTNAME"):
+                if header.has_key("EXTVER"):
+                    nam_ver.append((header["EXTNAME"],header["EXTVER"]))
+                    if header["EXTNAME"] == "SCI":
+                        if high_sciver < header["EXTVER"]:
+                            high_sciver = header["EXTVER"]
+                    if header["EXTNAME"] == "VAR":
+                        if high_varver < header["EXTVER"]:
+                            high_varver = header["EXTVER"]
+                    if header["EXTNAME"] == "DQ":
+                        if high_dqver < header["EXTVER"]:
+                            high_dqver = header["EXTVER"]
+                else:
+                    nam_ver.append((header["EXTNAME"], "None"))
+                    if header["EXTNAME"] == "MDF":
+                        has_mdf = True
+            else:
+                #print "WARNING: skipping hdulist[%s] (NO EXTNAME)" %\
+                #   str(i)
+                bad_indx.append(i)
+        return nam_ver, bad_indx, high_sciver, high_dqver, high_varver, has_mdf
+    
+    def append(self, moredata=None, data=None, header=None, auto_number=False,\
+               extname=None, extver=None):
         """
         :param moredata: either an AstroData instance, an HDUList instance, 
             or an HDU instance to add to this AstroData object.
@@ -512,9 +545,8 @@ integrates other functionality.
             valid pyfits.Header object.
         :type header: pyfits.Header
 
-        :param ai: auto-increment appends to match existing (extname, extver) 
-            convention.
-        :type ai: boolean
+        :param auto_number: auto-increment extver to fit file convention
+        :type auto_number: boolean
 
         :param extname: extension name (ex, 'SCI', 'VAR', 'DQ')
         :type extname: string
@@ -522,13 +554,96 @@ integrates other functionality.
         This function appends more data units (aka "HDUs") to the AstroData
         instance.
         """
-        if (moredata == None):
-            if ai:
-                # ** begin auto increment alogorithm for append **
-                # sort out extname given vs. whats in header
-                extname = self.verify_extname(extname=extname, header=header)
+        if auto_number:
+            # ** begin auto number alogorithm for append **
+            # analyze host ad for var, dq, sci, mdf exts
+            namver1, badindx1, hisci1, hidq1, hivar1, \
+                hasmdf1  = self.ext_analyzer(self.hdulist) 
+            
+            hdulist = None
+            if moredata != None:
+                if isinstance(moredata, AstroData):
+                    hdulist = moredata.hdulist
+                elif type(moredata) is pyfits.HDUList:
+                    hdulist = moredata
+                elif isinstance(moredata, pyfits.core._AllHDU):
+                    try:
+                        self.hdulist.append(moredata)
+                        print "WARNING: appended _ALLHDU instance"
+                        return
+                    except:
+                        raise Errors.AstroDataError(\
+                            "cannot append pyfits.core._AllHDU instance")
+                else:
+                    raise Errors.AstroDataError(\
+                        "The 'moredata' argument is of an unsupported type")
                 
-                # find the last hdu when the hdulist length is at least 2
+                # analyze the append ad for var, dq, sci, mdf exts               
+                namver0, badindx0, hisci0, hidq0, hivar0, \
+                    hasmdf0  = self.ext_analyzer(hdulist) 
+                #print "the hdulist waiting to be appended:" 
+                #print nam_ver0
+                #print "hisci=", hisci0, "  hivar=", hivar0, "  hidq=", hidq0 
+                #print "   hasmdf = ", str(hasmdf0), "   bad ext = ", badindx0
+                
+                # remember o remember that 0=append , 1=host 
+                #  compare the append hdulist with the host hdulist and 
+                #  auto_number where applicable
+                #  there are still some areas that need work
+                if hasmdf0 and hasmdf1:
+                    raise Errors.AstroDataError(\
+                        "Cannot have 2 MDF's in one file")
+                if hisci0 > 0 or hasmdf0:  
+                    numsci = hisci1 + 1
+                    numvar = hisci1 + 1
+                    numdq = hisci1 + 1
+                    for i in range(len(hdulist)-1):
+                        i += 1
+                        if hisci0 == hivar0 == hidq0:
+                            # all equal, good to append and update extver
+                            AA = "Added by AstroData"
+                            if hdulist[i].header["EXTNAME"] == "SCI":
+                                hdulist[i].header.update("EXTVER", numsci, AA)
+                                numsci += 1
+                            if hdulist[i].header["EXTNAME"] == "VAR":
+                                hdulist[i].header.update("EXTVER", numvar, AA)
+                                numvar += 1
+                            if hdulist[i].header["EXTNAME"] == "DQ":
+                                hdulist[i].header.update("EXTVER", numdq, AA)
+                                numdq += 1
+                            self.hdulist.append(hdulist[i])
+                        elif hivar0 < hisci0 or hidq0 < hisci0:
+                            #var or dq is less than sci extver
+                            if hdulist[i].header["EXTNAME"] == "SCI":
+                                hdulist[i].header.update("EXTVER", numsci,\
+                                    "Added by AstroData")
+                                numsci += 1
+                                self.hdulist.append(hdulist[i])
+                            elif hivar0 < hisci0:
+                                print "under construction, var < sci extver"
+                            elif hidq0 < hisci0:
+                                print "under construction, dq < sci extver"
+                            else:
+                                print "unknown situation"
+                        else:
+                            rstr = "under construction, "
+                            rstr += "var and dq higher than sci extver"
+                            print rstr
+                else:    
+                    rstr = "under construction"
+                    rstr += ", no sci and no mdf to append, var? dq?"
+                    print rstr
+            
+            # now check for header and data appends because moredata is None
+            else:
+                if header is None and data is None:
+                    raise Errors.AstroDataError("need something to append")
+                
+                # if no header, func will create one (SCI, 1 default), will 
+                #  override header extname, extver if given in args, then
+                #  if host ad has 1 or 0 exts, will just append and exit
+                header = self.verify_header(extname=extname, extver=extver, \
+                    header=header)
                 if len(self.hdulist) == 0:
                     self.hdulist.append(pyfits.PrimaryHDU(data=data, \
                         header=header))
@@ -537,78 +652,69 @@ integrates other functionality.
                     self.hdulist.append(pyfits.ImageHDU(data=data, \
                         header=header))
                     return 
-                last = len(self.hdulist)-1
-                lasthdu = self.hdulist[last] 
-                
-                # check the data in the last hdu. if none, then delete it
-                # then append, otherwise (there is data) check the extname.
-                if lasthdu.data is None:
-                    if lasthdu.header.has_key("EXTNAME"):
+
+                # use info about host ad to check if append possible  
+                newver = 0
+                if extname is None:
+                    extname = header["EXTNAME"]
+                if extname == "SCI":
+                    if header["EXTVER"] <= hisci1:
+                        newver = hisci1 + 1
+                        header.update("EXTVER", newver, "Added by AstroData")
+                elif extname == "VAR":
+                    if header["EXTVER"] > hisci1:
                         raise Errors.AstroDataError(\
-                            "Last extension has no data, but EXTNAME found")
-                    else:
-                        self.hdulist.__delitem__(last)
-                        self.hdulist.append(pyfits.ImageHDU(data=data, \
-                            header=header))
+                            "No sci to match var")
+                    if header["EXTVER"] <= hivar1 and hivar1 != 0:
+                        raise Errors.AstroDataError(\
+                            "Duplicate extver in ad")
+                elif extname == "DQ":
+                    if header["EXTVER"] > hisci1:
+                        raise Errors.AstroDataError(\
+                            "No sci to match dq")
+                    if header["EXTVER"] <= hidq1 and hidq1 != 0:
+                        raise Errors.AstroDataError(\
+                            "Duplicate extver in ad")
+                elif extname == "MDF" and hasmdf1:
+                    raise Errors.AstroDataError(\
+                        "Cannot have 2 MDF in a file")
                 else:
-                    # if the last hdu extname matches given extname save it,
-                    # append, then increment the appended's extname
-                    if lasthdu.header.has_key("EXTNAME"):
-                        if lasthdu.header["EXTNAME"] == extname:
-                            saver = lasthdu.header["EXTVER"]
-                            self.hdulist.append(pyfits.ImageHDU(data=data, \
-                                header=header))
-                            self.hdulist[last+1].header.update("extver", \
-                                saver+1, "Added by AstroData")
-                        else:
-                             # the extnames differ so we need to do some 
-                             # gymnastics to find the last extver and use
-                             # it after the append, if there was no previous
-                             # extname exts, make the first extver 1.
-                             extlist = []
-                             for i in range(len(self.hdulist)-1):
-                                if self.hdulist[i+1].header['EXTNAME'] == \
-                                                                       extname:
-                                    extlist.append(\
-                                        self.hdulist[i+1].header['EXTVER'])
-                             if len(extlist) > 0:
-                                extver = extlist.pop() + 1
-                                self.hdulist.append(pyfits.ImageHDU(data=data,\
-                                    header=header))
-                                self.hdulist[last+1].header.update("extver", \
-                                    extver, "Added by AstroData")
-                             else:
-                                self.hdulist.append(pyfits.ImageHDU(data=data, \
-                                    header=header))
-                                self.hdulist[last+1].header.update("extver", \
-                                    1, "Added by AstroData")
+                    # extname is unknown, thus look through host tuple list
+                    #  to find the next extver (if it exists), default = 1
+                    tupver = 0
+                    for tup in namver1:
+                        if tup[0] == extname:
+                            if tup[1] > tupver:
+                                tupver = tup[1]
+                    if tupver > 0:
+                        newver = tupver + 1
                     else:
-                        # previous extension has no extname so will append.
-                        # may revisit if matches found before previous.
-                        self.hdulist.append(pyfits.ImageHDU(data=data, \
-                            header=header))
-                        self.hdulist[last+1].header.update("extver", \
-                            1, "Added by AstroData")
-                # ** end auto increment algorithm for append **
-            else:
+                        newver = 1
+                    header.update("EXTVER", newver, "Added by AstroData")
+                self.hdulist.append(pyfits.ImageHDU(data=data,\
+                    header=header))
+        
+        # old algorithm (auto_number=False)
+        else:
+            if (moredata == None):
                 if len(self.hdulist) == 0:
                     self.hdulist.append(pyfits.PrimaryHDU(data=data, \
                         header=header))
                 else:
                     self.hdulist.append(pyfits.ImageHDU(data=data, \
                         header=header))
-        elif isinstance(moredata, AstroData):
-            for hdu in moredata.hdulist[1:]:
-                self.hdulist.append(hdu)
-        elif type(moredata) is pyfits.HDUList:
-            for hdu in moredata[1:]:
-                self.hdulist.append(hdu)
-        elif isinstance(moredata, pyfits.core._AllHDU):
-            self.hdulist.append(moredata)
-        else:
-            message = "The 'moredata' argument is of an unsupported type: "
-            message += str(moredata)
-            raise Errors.AstroDataError(message)
+            elif isinstance(moredata, AstroData):
+                for hdu in moredata.hdulist[1:]:
+                    self.hdulist.append(hdu)
+            elif type(moredata) is pyfits.HDUList:
+                for hdu in moredata[1:]:
+                    self.hdulist.append(hdu)
+            elif isinstance(moredata, pyfits.core._AllHDU):
+                self.hdulist.append(moredata)
+            else:
+                message = "The 'moredata' argument is of an unsupported type: "
+                message += str(moredata)
+                raise Errors.AstroDataError(message)
     
     def close(self):
         """The close(..) function will close the HDUList associated with this
@@ -626,7 +732,7 @@ integrates other functionality.
  
             
     def insert(self, index, moredata=None, data=None, header=None, ai=False, \
-               extname=None, replace=False):
+               extname=None, replace=False, extver=False):
         """
         :param index: the extension index, either an int or (EXTNAME, EXTVER)
             pair before which the extension is to be inserted. Note, the 
@@ -670,7 +776,8 @@ integrates other functionality.
                 if data is None or header is None:
                     raise Errors.AstroDataError("data AND header must be set")
                 # compare the argument extname with given header's extname
-                extname = self.verify_extname(extname=extname, header=header)
+                header = self.verify_header(extname=extname, header=header, \
+                    extver=extver)
                 
                 # extract the last extver of the given extname from hdulist
                 extlist = []
@@ -731,7 +838,7 @@ integrates other functionality.
         elif isinstance(moredata. pyfits.core._AllHDU):
             self.hdulist.insert(index, moredata)
                
-    def infostr(self, as_html=False, verbose=False):
+    def infostr(self, as_html=False, verbose=False, table=False):
         """
         :param as_html: boolean that indicates if the string should be HTML
                        formatted or not
@@ -802,6 +909,16 @@ integrates other functionality.
                             extDataType = ""
                     elif isinstance(ext.hdulist[1], pyfits.core.BinTableHDU):
                         extType = "BinTableHDU"
+                        if isinstance(ext.hdulist[1].header, pyfits.core.Header):
+                            extHeaderType = "Header"
+                        else:
+                            extHeaderType = ""
+                        if isinstance(ext.hdulist[1].data, pyfits.core.FITS_rec):
+                            extDataType = "FITS_rec"
+                        elif ext.hdulist[1].data is None:
+                            extDataType = "None"
+                        else:
+                            extDataType = ""
                     else:
                         extType = ""
                     
@@ -828,7 +945,7 @@ integrates other functionality.
                             (adno_, name_, extType, hdu_indx, cards_, \
                                 dimention_, format_, \
                                 str(id(self.hdulist[hdu_indx])))
-                        if extType == "ImageHDU":
+                        if extType == "ImageHDU" or extType == "BinTableHDU":
                             rets +="\n           .header    %s%s%s" % \
                                 (extHeaderType, " "*46, \
                                 str(id(self.hdulist[hdu_indx].header)))
@@ -839,7 +956,7 @@ integrates other functionality.
                         rets += "\n%-7s %-13s %-13s %-8d %-5d %-13s %s" % \
                             (adno_, name_, extType, hdu_indx, cards_, \
                                 dimention_, format_)
-                        if extType == "ImageHDU":
+                        if extType == "ImageHDU" or extType == "BinTableHDU":
                             rets +="\n           .header    %s" % extHeaderType 
                             rets +="\n           .data      %s" % extDataType
                 hdu_indx += 1
@@ -899,6 +1016,23 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
             for ext in self:
                 rets += "<li>(%s, %s)</li>" % (ext.extname(), str(ext.extver()))
             rets += "</ul>"
+        if table:
+            rets = ""
+            count = 0
+            for ext in self:
+                if isinstance(ext.hdulist[1], pyfits.core.BinTableHDU):
+                    count += 1
+                    rets += "\n" + "="*79 + "\n" + str(count) 
+                    rets += ". BinTableHDU: " + ext.extname() + "\n" + "="*79
+                    rets += "\n      Name            Value" + " "*25 + "Format"
+                    rets += "\n" + "-"*79
+                    fitsrec = ext.hdulist[1].data
+                    for i in range(len(fitsrec.names)):
+                        fstr = eval(\
+        "ext.hdulist[1].header.ascard['TFORM%s']._cardimage.split(':')[1]" % (i + 1))
+                        rets += "\n%-15s : %-15s         %3s (%-10s)" % \
+                        (fitsrec.names[i],fitsrec[0][i], fitsrec.formats[i], fstr)
+                    rets += "\n" + "="*79
         return rets
         
     def except_if_single(self):
@@ -1374,38 +1508,44 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
             self.hdulist.insert(0, phu)
 
   
-    def verify_extname(self, extname=None, header=None):
+    def verify_header(self, extname=None, extver=None, header=None):
         """
         :param extname: extension name (ex, 'SCI', 'VAR', 'DQ')
         :type extname: string
         
-        :param header: a valid pyfits.Header object.
-        :type header: pyfits.Header
+        :param extver: extension version
+        :type extname: integer
+        
+        :param header: a valid pyfits.Header object
+        :type header: pyfits.core.Header
         
         This is a helper function for insert, append and replace that compares
         the extname argument with the extname in the header. If the key does
         not exist it adds it, if its different, it changes it to match the 
         argument
-        :returns: A validated extname
-        :rtype: string
+        :returns header: a validated pyfits.Header object
+        :rtype: pyfits.core.Header
         """
-        if extname is None:
-            if header.has_key("EXTNAME"):
-                return header["EXTNAME"]
-            else:
-                raise Errors.AstroDataError(\
-                    "EXTNAME not found in header")
-        else:
-            if header.has_key("EXTNAME"):
-                if extname != header["EXTNAME"]:
-                    header.update("EXTNAME", extname, "Added by AstroData")
-                    str_ =  "WARNING: EXTNAME in header changed to match"
-                    str_ += " argument extname"
-                    print str_
-            else:
+        if header is None:
+            ihdu = pyfits.ImageHDU()
+            header = ihdu.header
+            if extname is None:
+                header.update("EXTNAME", "SCI", "Added by AstroData")
+            else: 
                 header.update("EXTNAME", extname, "Added by AstroData")
-        return extname
-                   
+            if extver is None:
+                header.update("EXTVER", 1, "Added by AstroData")
+            else:
+                header.update("EXTVER", extver, "Added by AstroData")
+        else:
+            if extver and header.has_key("EXTVER"):
+                if extver != header["EXTVER"]:
+                    header.update("EXTVER", extver, "Added by AstroData")
+            if extname and header.has_key("EXTNAME"):
+                if extver != header["EXTNAME"]:
+                    header.update("EXTNAME", extname, "Added by AstroData")
+        return header
+        
     def write(self, filename=None, clobber=False, rename=None):
         """
         :param fname: file name to write to, optional if instance already has
@@ -1937,11 +2077,11 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
         self.relhdul()
         return 
    
-    def info(self, verbose=False):
+    def info(self, verbose=False, table=False):
         """The info(..) function prints self.infostr() and 
         is maintained for convienience and low level debugging.
         """
-        print self.infostr(verbose=verbose)       
+        print self.infostr(verbose=verbose, table=table)       
 
     def display_id(self):
         import IDFactory
