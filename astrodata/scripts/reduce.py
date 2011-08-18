@@ -509,6 +509,7 @@ else:
         try:
             ad = AstroData(inp)
             nl.append(ad)
+            ad = None #danger of accidentally using this!
         except:
             # note: should we raise an exception here?
             err = "Can't Load Dataset: %s" % inp
@@ -895,7 +896,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                 else:
                     clobber = True
             for output in outputs:
-            
+                ad = output.ad
                 name = os.path.basename(ad.filename)
                 newname = fileNameUpdater(infilename=name, suffix="_"+rec)
                 try:
@@ -905,7 +906,6 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                     log.error( "CANNOT WRITE %s, already exists" % newname)
                 except:
                     log.error("CANNOT WRITE %s, unknown reason" % newname)
-                
 
         if interactiveMode == True:
             reclist = ["USER"]

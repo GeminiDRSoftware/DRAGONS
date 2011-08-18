@@ -1450,6 +1450,7 @@ class ReductionContext(dict):
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
         for orig in self.original_inputs:
+            print "RM1453: HERE!"
             Sid = purpose + idFac.generate_stackable_id(orig.ad, ver)
             stackUEv = GetStackableRequest()
             stackUEv.stk_id = Sid
@@ -1475,9 +1476,10 @@ class ReductionContext(dict):
         '''
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
-        for inp in self.inputs:
+        inputs = self.get_inputs_as_astrodata()
+        for inp in inputs:
             stackUEv = UpdateStackableRequest()
-            Sid = purpose + idFac.generate_stackable_id(inp.ad, ver)
+            Sid = purpose + idFac.generate_stackable_id(inp, ver)
             stackUEv.stk_id = Sid
             stackUEv.stk_list = inp.filename
             self.add_rq(stackUEv)
