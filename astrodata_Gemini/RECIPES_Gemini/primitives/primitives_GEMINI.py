@@ -140,6 +140,15 @@ class GEMINIPrimitives(GENERALPrimitives):
         log.debug(gt.log_message("primitive", "addVAR", "starting"))
         # Initialize the list of output AstroData objects
         adoutput_list = []
+
+        if rc["read_noise"] and not rc["poisson_noise"]:
+            log.stdinfo("Adding the read noise component of the variance")
+        if not rc["read_noise"] and rc["poisson_noise"]:
+            log.stdinfo("Adding the poisson noise component of the variance")
+        if rc["read_noise"] and rc["poisson_noise"]:
+            log.stdinfo("Adding the read noise component and the poisson " +
+                        "noise component of the variance")
+
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs(style="AD"):
             # Call the add_var user level function
@@ -489,6 +498,28 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         yield rc
      
+    def failCalibration(self,rc):
+        # Mark a given calibration fail and upload it 
+        # to the system.  This is intended to be used to mark a 
+        # calibration file that has already been uploaded, so that
+        # it will not be returned as a valid match for future data.
+
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        adoutput_list = []
+        for ad in rc.get_inputs_as_astrodata():
+            ad.phu_set_key_value("RAWGEMQA","BAD")
+            ad.phu_set_key_value("RAWPIREQ","NO")
+            adoutput_list.append(ad)
+            log.fullinfo("%s has been marked %s" % (ad.filename,ad.qa_state()))
+
+        rc.report_output(adoutput_list)
+        rc.run("storeCalibration")
+        yield rc
+            
+
     def flatCorrect(self,rc):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
@@ -575,7 +606,6 @@ class GEMINIPrimitives(GENERALPrimitives):
                     # in science context, let the user do it, but warn
                     # that it's pointless
                     log.warning("No fringe necessary for filter " + filter)
-
 
         if rm_fringe:
             # Get processed fringes for the input
