@@ -679,8 +679,13 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
     
     def storeCalibration(self, rc):
+        # print repr(rc)
+        storedcals = rc['cachedict']['storedcals']
+
         for ad in rc.get_inputs_as_astrodata():
-            ad.write(clobber=rc["clobber"])
+            fname = os.path.join(storedcals, os.path.basename(ad.filename))
+            ad.filename = fname
+            ad.write(filename = fname, rename = True, clobber=True) # always clobber, perhaps save clobbered file somewhererc["clobber"])
             upload_calibration(ad.filename)
             yield rc
         yield rc
