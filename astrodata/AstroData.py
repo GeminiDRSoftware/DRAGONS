@@ -263,7 +263,8 @@ integrates other functionality.
                 # create null phu 
                 dataset = pyfits.HDUList(hdu)
                 # if data and/or header is None, pyfits will allow it 
-                #dataset.append(pyfits.ImageHDU(data=data, header=header))
+                if data is not None:
+                    dataset.append(pyfits.ImageHDU(data=data, header=header))
             else: 
                 hdu = pyfits.PrimaryHDU()
                 dataset = pyfits.HDUList(hdu)
@@ -274,7 +275,8 @@ integrates other functionality.
                     dataset[0].header = phu
                 else:
                     raise TypeError("phu is of an unsupported type")
-                #dataset.append(pyfits.ImageHDU(data=data, header=header))
+                if data is not None:
+                    dataset.append(pyfits.ImageHDU(data=data, header=header))
         if fname == None:
             self.open(dataset, mode)
         else:
