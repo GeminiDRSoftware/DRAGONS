@@ -3,6 +3,7 @@
 
 import os
 import sys
+from copy import deepcopy
 import numpy as np
 from astrodata import Errors
 from astrodata import Lookups
@@ -73,9 +74,39 @@ def subtract_bias(adinput=None, bias=None):
             # Get the right bias frame for this input
             this_bias = bias_dict[ad]
 
-            # check the inputs have matching binning and SCI shapes.
-            gt.checkInputsMatch(adInsA=ad, adInsB=this_bias, check_filter=False) 
-        
+            # Check for the case that the science data is a CCD2-only
+            # frame and the bias is a full frame                
+            if ad.count_exts("SCI")==1:
+                sciext = ad["SCI",1]
+                for biasext in this_bias["SCI"]:
+                    # Use this extension if the bias detector section
+                    # matches the science detector section
+                    if (str(biasext.detector_section()) == 
+                        str(sciext.detector_section())):
+                        
+                        extver = biasext.extver()
+                        log.fullinfo("Using bias extension [SCI,%i]" % 
+                                     extver)
+
+                        varext = this_bias["VAR",extver]
+                        dqext = this_bias["DQ",extver]
+
+                        this_bias = deepcopy(biasext)
+                        this_bias.rename_ext(name="SCI",ver=1)
+                        if varext is not None:
+                            newvar = deepcopy(varext)
+                            newvar.rename_ext(name="VAR",ver=1)
+                            this_bias.append(newvar)
+                        if dqext is not None:
+                            newdq = deepcopy(dqext)
+                            newdq.rename_ext(name="DQ",ver=1)
+                            this_bias.append(newdq)
+                        break
+
+            # Check the inputs have matching binning and SCI shapes.
+            gt.checkInputsMatch(adInsA=ad, adInsB=this_bias, 
+                                check_filter=False) 
+
             log.fullinfo("Subtracting this bias from the input " \
                          "AstroData object (%s):\n%s" % (ad.filename, 
                                                          this_bias.filename))
@@ -319,12 +350,16 @@ def trim_overscan(adinput=None):
                 varExt = ad["VAR",extver]
                 dqExt = ad["DQ",extver]
                 
-                # Get the data section 
-                # as a direct string from header
-                datasecStr = str(sciExt.data_section(pretty=True))
-                # int list of form [x1, x2, y1, y2] 0-based and non-inclusive
-                dsl = sciExt.data_section().as_pytype()
-                
+                # Get the data section from the descriptor
+                try:
+                    # as a string for printing
+                    datasecStr = str(sciExt.data_section(pretty=True))
+                    # int list of form [x1, x2, y1, y2] 0-based and non-inclusive
+                    dsl = sciExt.data_section().as_pytype()
+                except:
+                    raise Errors.ScienceError("No data section defined; " +
+                                              "cannot trim overscan")
+
                 # Update logger with the section being kept
                 log.fullinfo("For "+ad.filename+" extension "+
                              str(sciExt.extver())+
@@ -345,11 +380,18 @@ def trim_overscan(adinput=None):
                                    "Data section prior to trimming")
                 
                 # Update WCS reference pixel coordinate
-                crpix1 = sciExt.get_key_value("CRPIX1") - dsl[0]
-                crpix2 = sciExt.get_key_value("CRPIX2") - dsl[2]
-                sciExt.header["CRPIX1"] = crpix1
-                sciExt.header["CRPIX2"] = crpix2
+                try:
+                    crpix1 = sciExt.get_key_value("CRPIX1") - dsl[0]
+                    crpix2 = sciExt.get_key_value("CRPIX2") - dsl[2]
+                except:
+                    log.warning("Could not access WCS keywords; using dummy " +
+                                "CRPIX1 and CRPIX2")
+                    crpix1 = 0
+                    crpix2 = 0
+                sciExt.header.update("CRPIX1",crpix1,"Ref pix of axis 1")
+                sciExt.header.update("CRPIX2",crpix2,"Ref pix of axis 2")
                 
+
                 # If VAR and DQ planes present, update them to match
                 if varExt is not None:
                     varExt.data=varExt.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
