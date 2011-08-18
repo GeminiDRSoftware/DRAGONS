@@ -227,8 +227,8 @@ def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
                     obj_list = _daofind(sciext=sciext, sigma=sigma,
                                         threshold=threshold, fwhm=fwhm)
                 else:
-                    raise Errors.InputError("Source detection method ",
-                                            method,"is unsupported.")
+                    raise Errors.InputError("Source detection method "+
+                                            method+" is unsupported.")
                 
                 # separate pixel coordinates into x, y lists
                 obj_x, obj_y = [np.asarray(obj_list)[:,k] for k in [0,1]]
