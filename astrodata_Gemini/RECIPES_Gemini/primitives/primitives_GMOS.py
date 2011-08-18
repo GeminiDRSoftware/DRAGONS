@@ -5,8 +5,8 @@ from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.data import AstroData
 from gempy import geminiTools as gt
 from gempy.geminiCLParDicts import CLDefaultParamsDict
-from gempy.science import display as ds
 from gempy.science import preprocessing as pp
+from gempy.science import display as ds
 from gempy.science import resample as rs
 from gempy.science import standardization as sdz
 from primitives_GEMINI import GEMINIPrimitives
