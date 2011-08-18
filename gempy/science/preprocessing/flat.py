@@ -2,6 +2,7 @@
 # the input dataset with a flat frame
 
 import sys
+from copy import deepcopy
 import numpy as np
 from astrodata import Errors
 from astrodata import Lookups
@@ -64,6 +65,10 @@ def divide_by_flat(adinput=None, flat=None):
                 raise Errors.InputError("%s has already been processed by " \
                                         "divide_by_flat" % (ad.filename))
             
+            # Check the inputs have matching binning and SCI shapes.
+            gt.checkInputsMatch(adInsA=ad, adInsB=this_bias, 
+                                check_filter=False) 
+
             # Divide the adinput by the flat
             log.fullinfo("Dividing the input AstroData object (%s) " \
                          "by this flat:\n%s" % (ad.filename,
@@ -183,17 +188,20 @@ def normalize_image_gmos(adinput=None, saturation=45000):
             if saturation is None:
                 saturation = ad.saturation_level()
                 
-            # Tile the data into one CCD per science extension,
-            # reordering if necessary
-            ad = rs.tile_arrays(adinput=ad)[0]
-            
             # Get all CCD2 data
             if ad.count_exts("SCI")==1:
                 # Only one CCD present, assume it is CCD2
                 sciext = ad["SCI",1]
             else:
                 # Otherwise, take the second science extension
-                sciext = ad["SCI",2]
+
+                # Tile the data into one CCD per science extension,
+                # reordering if necessary
+                temp_ad = deepcopy(ad)
+                temp_ad = rs.tile_arrays(adinput=temp_ad)[0]
+
+                sciext = temp_ad["SCI",2]
+
             central_data = sciext.data
 
             # Check units of CCD2; if electrons, convert saturation
