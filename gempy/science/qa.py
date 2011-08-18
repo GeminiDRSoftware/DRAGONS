@@ -5,6 +5,7 @@ import os
 import sys
 import math
 import time
+from copy import deepcopy
 from datetime import datetime
 import numpy as np
 from astrodata import Errors
@@ -140,9 +141,12 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False,
                 if line=='' or line.startswith("#") or line.startswith("A"):
                     continue
                 fields = line.split()
-                cx = float(fields[7])
-                cy = float(fields[8])
-                fwhm = float(fields[10])
+                try:
+                    cx = float(fields[7])
+                    cy = float(fields[8])
+                    fwhm = float(fields[10])
+                except:
+                    continue
                 stars.append({"CooX": cx,
                               "CooY": cy,
                               "FWHMpix": fwhm})
@@ -247,12 +251,16 @@ def iq_display_gmos(adinput=None, frame=1):
 
         for ad in adinput:
 
+            # Make a copy of the input, so that we can modify it
+            # without affecting the original
+            disp_ad = deepcopy(ad)
+
             # Tile the data into one science extension
-            ad = rs.tile_arrays(adinput=ad,tile_all=True)
+            disp_ad = rs.tile_arrays(adinput=disp_ad,tile_all=True)
 
             # Measure IQ on the image
             log.stdinfo("Measuring FWHM of stars")
-            ad,stars = measure_iq(adinput=ad, 
+            disp_ad,stars = measure_iq(adinput=disp_ad, 
                                   centroid_function="moffat",
                                   display=False, qa=True, 
                                   return_source_info=True)
@@ -262,18 +270,18 @@ def iq_display_gmos(adinput=None, frame=1):
 
             # Display the image with IQ stars marked
             if display:
-                data_shape = ad[0]["SCI",1].data.shape
+                data_shape = disp_ad[0]["SCI",1].data.shape
                 iqmask = _iq_overlay(stars,data_shape)
 
                 log.stdinfo('Sources used to measure IQ are marked ' +
                             'with blue circles.')
                 try:
-                    ad = ds.display_gmos(adinput=ad,
+                    disp_ad = ds.display_gmos(adinput=disp_ad,
                                          frame=frame,
                                          saturation=58000,
                                          overlay=iqmask)
                 except:
-                    log.warning("Could not display %s" % ad[0].filename)
+                    log.warning("Could not display %s" % disp_ad[0].filename)
                     display = False
 
             frame+=1
@@ -281,7 +289,7 @@ def iq_display_gmos(adinput=None, frame=1):
 
             # Append the output AstroData object to the list of output
             # AstroData objects
-            adoutput_list.append(ad)
+            adoutput_list.append(disp_ad)
 
         # Return the list of output AstroData objects
         return adoutput_list

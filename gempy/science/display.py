@@ -3,6 +3,7 @@
 
 import os
 import sys
+from copy import deepcopy
 import numpy as np
 import numdisplay as nd
 from astrodata import AstroData
@@ -50,9 +51,12 @@ def display_gmos(adinput=None, frame=1, saturation=None, overlay=None):
             # Check for more than one science extension and tile if found
             nsciext = ad.count_exts("SCI")
             if nsciext!=1:
-                ad = rs.tile_arrays(adinput=ad, tile_all=True)[0]
+                disp_ad = deepcopy(ad)
+                disp_ad = rs.tile_arrays(adinput=disp_ad, tile_all=True)[0]
+            else:
+                disp_ad = ad
 
-            sciext = ad["SCI",1]
+            sciext = disp_ad["SCI",1]
             data = sciext.data
 
             masks = []
@@ -60,7 +64,7 @@ def display_gmos(adinput=None, frame=1, saturation=None, overlay=None):
             # Make saturation mask if desired
             if saturation is not None:
                 if saturation=="auto":
-                    saturation = ad.saturation_level()
+                    saturation = disp_ad.saturation_level()
             
                 # Check units of 1st science extension; if electrons, 
                 # convert saturation limit from ADU to electrons. Also
@@ -88,7 +92,7 @@ def display_gmos(adinput=None, frame=1, saturation=None, overlay=None):
 
             # Display the data
             try:
-                lnd.display(data,name=ad.filename,
+                lnd.display(data,name=disp_ad.filename,
                             frame=frame,zscale=True,quiet=True,
                             masks=masks, mask_colors=[204,206])
             except:
