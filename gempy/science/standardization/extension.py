@@ -456,14 +456,6 @@ def _calculate_var(adinput=None, add_read_noise=False,
         log.warning("It is not recommended to calculate a poisson noise " \
                     "component of the variance using data that still " \
                     "contains a bias level")
-    if add_read_noise and not add_poisson_noise:
-        log.stdinfo("The read noise component of the variance will be added")
-    if not add_read_noise and add_poisson_noise:
-        log.stdinfo("The poisson noise component of the variance will be " \
-                    "added")
-    if add_read_noise and add_poisson_noise:
-        log.stdinfo("The read noise component and the poisson noise " \
-                    "component of the variance will be added")
     
     # Loop over the science extensions in the dataset
     for ext in adinput["SCI"]:
