@@ -49,7 +49,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         adinput = rc.get_inputs(style="AD")
         if len(adinput)<2:
             if rc["context"]=="QA":
-                log.warning("Less than 2 frames provided as input. " +
+                log.warning("Fewer than 2 frames provided as input. " +
                             "Not making fringe frame.")
             else:
                 raise Errors.PrimitiveError("Fewer than 2 frames " +
@@ -61,7 +61,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             red = True
             for ad in adinput:
                 filter = ad.filter_name(pretty=True)
-                if filter not in ['i','z']:
+                if filter not in ["i","z"]:
                     if rc["context"]=="QA":
                         # in QA context, don't bother trying
                         red = False
@@ -72,7 +72,21 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                         # in science context, let the user do it, but warn
                         # that it's pointless
                         log.warning("No fringe necessary for filter " + filter)
-
+                elif filter=="i" and len(adinput)<5:
+                    if rc["context"]=="QA":
+                        # If fewer than 5 frames and in QA context, don't
+                        # bother making a fringe -- it'll just make the data
+                        # look worse.
+                        red = False
+                        log.warning("Fewer than 5 frames provided as input " +
+                                    "with filter i. Not making fringe frame.")
+                        break
+                    else:
+                        # Allow it in the science case, but warn that it
+                        # may not be helpful.
+                        log.warning("Fewer than 5 frames " +
+                                    "provided as input with filter i. Fringe " +
+                                    "correction is not recommended.")
             if red:
 
                 recipe_list = []
