@@ -212,11 +212,15 @@ def standardize_headers_gmos(adinput=None):
             # Read noise
             gt.update_key_value(adinput=ad, function="read_noise()",
                                 extname="SCI")
-            # Gain
-            gt.update_key_value(adinput=ad, function="gain()",
-                                extname="SCI")
+
             # Gain setting
             gt.update_key_value(adinput=ad, function="gain_setting()",
+                                extname="SCI")
+
+            # Gain (must be updated after gain_setting or else the
+            # gain descriptor used in the gain_setting will return the 
+            # wrong thing -- the type of this data is still UNPREPARED)
+            gt.update_key_value(adinput=ad, function="gain()",
                                 extname="SCI")
             # Dispersion axis
             if "IMAGE" not in ad.types:
