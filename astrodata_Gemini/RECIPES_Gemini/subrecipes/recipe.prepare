@@ -8,4 +8,3 @@ validateData
 standardizeStructure
 standardizeHeaders
 #validateWCS
-writeOutputs(suffix="_prepared", strip="True")
