@@ -47,46 +47,49 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         log.debug(gt.log_message("primitive", "makeFringe", "starting"))
 
         adinput = rc.get_inputs(style="AD")
-        if len(adinput)<2:
-            if "QA" in rc.context:
-                log.warning("Fewer than 2 frames provided as input. " +
-                            "Not making fringe frame.")
-            else:
-                raise Errors.PrimitiveError("Fewer than 2 frames " +
-                                            "provided as input.")
-        else:
 
-            # Check that filter is either i or z; this step doesn't
-            # help data taken in other filters
-            red = True
-            for ad in adinput:
-                filter = ad.filter_name(pretty=True)
-                if filter not in ["i","z"]:
-                    if "QA" in rc.context:
-                        # in QA context, don't bother trying
-                        red = False
-                        log.warning("No fringe necessary for filter " +
-                                    filter)
-                        break
-                    else:
-                        # in science context, let the user do it, but warn
-                        # that it's pointless
-                        log.warning("No fringe necessary for filter " + filter)
-                elif filter=="i" and len(adinput)<5:
-                    if "QA" in rc.context:
-                        # If fewer than 5 frames and in QA context, don't
-                        # bother making a fringe -- it'll just make the data
-                        # look worse.
-                        red = False
-                        log.warning("Fewer than 5 frames provided as input " +
-                                    "with filter i. Not making fringe frame.")
-                        break
-                    else:
-                        # Allow it in the science case, but warn that it
-                        # may not be helpful.
-                        log.warning("Fewer than 5 frames " +
-                                    "provided as input with filter i. Fringe " +
-                                    "correction is not recommended.")
+        # Check that filter is either i or z; this step doesn't
+        # help data taken in other filters
+        red = True
+        for ad in adinput:
+            filter = ad.filter_name(pretty=True)
+            if filter not in ["i","z"]:
+                if "QA" in rc.context:
+                    # in QA context, don't bother trying
+                    red = False
+                    log.warning("No fringe necessary for filter " +
+                                filter)
+                    break
+                else:
+                    # in science context, let the user do it, but warn
+                    # that it's pointless
+                    log.warning("No fringe necessary for filter " + filter)
+            elif filter=="i" and len(adinput)<5:
+                if "QA" in rc.context:
+                    # If fewer than 5 frames and in QA context, don't
+                    # bother making a fringe -- it'll just make the data
+                    # look worse.
+                    red = False
+                    log.warning("Fewer than 5 frames provided as input " +
+                                "with filter i. Not making fringe frame.")
+                    break
+                else:
+                    # Allow it in the science case, but warn that it
+                    # may not be helpful.
+                    log.warning("Fewer than 5 frames " +
+                                "provided as input with filter i. Fringe " +
+                                "correction is not recommended.")
+            elif len(adinput)<2:
+                # Can't make a fringe frame without at least 2 input frames
+                if "QA" in rc.context:
+                    red = False
+                    log.warning("Fewer than 2 frames provided as input. " +
+                                "Not making fringe frame.")
+                    break
+                else:
+                    raise Errors.PrimitiveError("Fewer than 2 frames " +
+                                                "provided as input.")
+
             if red:
 
                 recipe_list = []
