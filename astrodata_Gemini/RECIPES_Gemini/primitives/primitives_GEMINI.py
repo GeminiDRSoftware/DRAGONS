@@ -49,12 +49,16 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "addDQ", "starting"))
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
+
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs(style="AD"):
+
             # Check whether the addDQ primitive has been run previously
             if ad.phu_get_key_value("ADDDQ"):
                 log.warning("%s has already been processed by addDQ" \
@@ -63,8 +67,20 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
+
             # Call the add_dq user level function
-            ad = sdz.add_dq(adinput=ad)
+            try:
+                ad = sdz.add_dq(adinput=ad)
+            except:
+                if "QA" in rc.context:
+                    # If DQ fails in QA context, continue on
+                    log.warning("Unable to add DQ plane")
+                    adoutput_list.append(ad)
+                    continue
+                else:
+                    # Otherwise re-raise the error
+                    raise
+
             # Append the output AstroData object (which is currently in the
             # form of a list) to the list of output AstroData objects
             adoutput_list.append(ad[0])
