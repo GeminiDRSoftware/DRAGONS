@@ -538,7 +538,7 @@ class GEMINIPrimitives(GENERALPrimitives):
 
             # Check whether the divideByFlat primitive has been run previously
             if ad.phu_get_key_value("DIVFLAT"):
-                if rc["context"]=="QA":
+                if "QA" in rc.context:
                     div_flat = False
                     log.warning("Files have already been processed by " +
                                 "flatCorrect")
@@ -552,7 +552,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Test to see if we found a flat
             flat = AstroData(rc.get_cal(ad, "processed_flat"))
             if flat.filename is None:
-                if rc["context"]=="QA":
+                if "QA" in rc.context:
                     div_flat = False 
                     log.warning("No processed flats found")
                     rc.report_output(rc.get_inputs(style="AD"))
@@ -582,7 +582,7 @@ class GEMINIPrimitives(GENERALPrimitives):
 
             # Check whether the removeFringe primitive has been run previously
             if ad.phu_get_key_value("RMFRINGE"):
-                if rc['context']=="QA":
+                if "QA" in rc.context:
                     rm_fringe = False
                     log.warning("Files have already been processed by " +
                                 "fringeCorrect")
@@ -596,7 +596,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Test the filter to see if we need to fringeCorrect at all
             filter = ad.filter_name(pretty=True)
             if filter not in ['i','z']:
-                if rc["context"]=="QA":
+                if "QA" in rc.context:
                     # in QA context, don't bother trying
                     rm_fringe = False
                     log.warning("No fringe correction necessary for filter " +
@@ -615,7 +615,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # Test to see if we found a fringe
                 fringe = AstroData(rc.get_cal(ad, "processed_fringe"))
                 if fringe.filename is None:
-                    if rc['context']=="QA":
+                    if "QA" in rc.context:
                         rm_fringe = False
                         log.warning("No processed fringes found")
                         rc.report_output(rc.get_inputs(style="AD"))
@@ -867,7 +867,7 @@ class GEMINIPrimitives(GENERALPrimitives):
 
         adinput = rc.get_inputs(style="AD")
         if len(adinput)<2:
-            if rc["context"]=="QA":
+            if "QA" in rc.context:
                 log.warning("Less than 2 frames provided as input. " +
                             "Not proceeding with registration and stacking.")
                 rc.report_output(adinput)

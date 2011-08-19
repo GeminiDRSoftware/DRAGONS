@@ -41,7 +41,7 @@ class GMOSPrimitives(GEMINIPrimitives):
 
             # Check whether the subtractBias primitive has been run previously
             if ad.phu_get_key_value("SUBBIAS"):
-                if rc["context"]=="QA":
+                if "QA" in rc.context:
                     sub_bias = False
                     log.warning("Files have already been processed by " +
                                 "biasCorrect")
@@ -55,7 +55,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Test to see if we found a bias
             bias = AstroData(rc.get_cal(ad, "processed_bias"))
             if bias.filename is None:
-                if rc['context']=="QA":
+                if "QA" in rc.context:
                     sub_bias = False
                     log.warning("No processed biases found")
                     rc.report_output(rc.get_inputs(style="AD"))

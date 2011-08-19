@@ -48,7 +48,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
 
         adinput = rc.get_inputs(style="AD")
         if len(adinput)<2:
-            if rc["context"]=="QA":
+            if "QA" in rc.context:
                 log.warning("Fewer than 2 frames provided as input. " +
                             "Not making fringe frame.")
             else:
@@ -62,7 +62,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             for ad in adinput:
                 filter = ad.filter_name(pretty=True)
                 if filter not in ["i","z"]:
-                    if rc["context"]=="QA":
+                    if "QA" in rc.context:
                         # in QA context, don't bother trying
                         red = False
                         log.warning("No fringe necessary for filter " +
@@ -73,7 +73,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                         # that it's pointless
                         log.warning("No fringe necessary for filter " + filter)
                 elif filter=="i" and len(adinput)<5:
-                    if rc["context"]=="QA":
+                    if "QA" in rc.context:
                         # If fewer than 5 frames and in QA context, don't
                         # bother making a fringe -- it'll just make the data
                         # look worse.
