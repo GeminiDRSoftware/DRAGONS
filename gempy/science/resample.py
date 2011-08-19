@@ -876,10 +876,6 @@ def tile_arrays(adinput=None, tile_all=False):
                     adoutput.filename = ad.filename
                     adoutput.phu = phu
 
-                    # Delete the blank image extension added automatically
-                    # to a new AD
-                    del adoutput.hdulist[1]
-
                     # Stack data from each array together and append to output AD
                     if tile_all:
                         num_ccd = 1
