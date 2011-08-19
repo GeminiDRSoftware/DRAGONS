@@ -76,7 +76,7 @@ def subtract_bias(adinput=None, bias=None):
 
             # Check for the case that the science data is a CCD2-only
             # frame and the bias is a full frame                
-            if ad.count_exts("SCI")==1:
+            if ad.count_exts("SCI")==1 and this_bias.count_exts("SCI")>1:
                 sciext = ad["SCI",1]
                 for biasext in this_bias["SCI"]:
                     # Use this extension if the bias detector section
