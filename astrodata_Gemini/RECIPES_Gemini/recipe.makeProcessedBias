@@ -7,5 +7,7 @@ prepare
 addDQ
 addVAR(read_noise=True)
 overscanCorrect
+addToList(purpose="forStack")
+getList(purpose="forStack")
 stackFrames
 storeProcessedBias

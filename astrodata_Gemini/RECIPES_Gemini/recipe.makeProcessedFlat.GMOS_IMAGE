@@ -11,6 +11,8 @@ overscanCorrect
 biasCorrect
 aduToElectrons
 addVAR(poisson_noise=True)
+addToList(purpose="forStack")
+getList(purpose="forStack")
 stackFlats
 normalize
 storeProcessedFlat

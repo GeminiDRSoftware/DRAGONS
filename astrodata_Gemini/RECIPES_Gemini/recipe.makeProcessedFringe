@@ -12,5 +12,7 @@ biasCorrect
 aduToElectrons
 addVAR(poisson_noise=True)
 flatCorrect
+addToList(purpose="forFringe")
+getList(purpose="forFringe")
 makeFringeFrame
 storeProcessedFringe

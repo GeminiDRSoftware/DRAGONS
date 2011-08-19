@@ -9,5 +9,7 @@ addVAR(read_noise=True)
 #nonlinearityCorrect
 aduToElectrons
 addVAR(poisson_noise=True)
+addToList(purpose="forStack")
+getList(purpose="forStack")
 stackFrames
 storeProcessedDark
