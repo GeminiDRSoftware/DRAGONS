@@ -1,7 +1,9 @@
 # This module contains user level functions related to adding extensions to
 # and removing extensions from the input dataset
 
-import os, sys
+import os
+import sys
+from copy import deepcopy
 import numpy as np
 import pyfits as pf
 from astrodata import AstroData
@@ -337,10 +339,33 @@ def _select_bpm(adinput=None, bpm=None):
                 raise Errors.TableKeyError("Unable to find a BPM for %s" % key)
             bpm_list.append(bpm)
     
+    # Create a dictionary that has the AstroData objects specified by adinput
+    # as the key and the AstroData objects specified by bpm as the value
+    ret_bpm_dict = gt.make_dict(key_list=adinput, value_list=bpm_list)
+    
     # Check that the returned BPM is the same size as the input AstroData
     # object. Loop over each input AstroData object in the input list
     for ad in adinput:
         
+        bpm = ret_bpm_dict[ad]
+
+        # Check for the case that the BPM is full-frame but the science
+        # is subdata (eg. CCD2 only data for GMOS)
+        new_bpm = None
+        if ad.count_exts("SCI")==1 and bpm.count_exts("DQ")>1:
+            sciext = ad["SCI",1]
+            for bpmext in bpm["DQ"]:
+                # Use this extension if the bpm detector section
+                # matches the science detector section
+                if (str(bpmext.detector_section(extname="DQ")) == 
+                    str(sciext.detector_section(extname="SCI"))):
+                    new_bpm = deepcopy(bpmext)
+                    new_bpm.rename_ext(name="DQ",ver=1)
+                    bpm = new_bpm
+                    break
+            if new_bpm is None:
+                raise Errors.InputError("Cannot find BPM for %s" % ad.filename)
+
         # Loop over each science extension in each input AstroData object
         for ext in ad["SCI"]:
             
@@ -354,6 +379,7 @@ def _select_bpm(adinput=None, bpm=None):
                 # Get the data_section value of the science extension using the
                 # appropriate descriptor
                 x1, x2, y1, y2 = ext.data_section().as_pytype()
+
                 # Copy the pixel data of the BPM into the data section of an
                 # array that is the same size as the pixel data of the science
                 # extension
@@ -361,10 +387,9 @@ def _select_bpm(adinput=None, bpm=None):
                 new_bpm_data[y1:y2,x1:x2] = bpmext.data
                 bpmext.data = new_bpm_data
     
-    # Create a dictionary that has the AstroData objects specified by adinput
-    # as the key and the AstroData objects specified by bpm as the value
-    ret_bpm_dict = gt.make_dict(key_list=adinput, value_list=bpm_list)
-    
+        # Update the bpm in the dictionary with any changes
+        ret_bpm_dict[ad] = bpm
+
     return ret_bpm_dict
 
 def _select_mdf(adinput=None, mdf=None):
