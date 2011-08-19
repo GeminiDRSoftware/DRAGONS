@@ -78,9 +78,9 @@ if __name__=='__main__':
     # Call reduce with generic GMOS reduction recipe
     print "\nBeginning reduction for file %s, %s\n" % (imgname,ad.data_label()) 
     reduce_cmd = ["reduce", 
+                  "--context","QA",
                   "--logLevel","stdinfo",
-                  "-p", "clobber=True,clob=True," + \
-                        "mask_type=goodvalue,context=QA",
+                  "-p", "clobber=True",
                   "-r", "qaReduce", 
                   imgpath]
     subprocess.call(reduce_cmd)
