@@ -177,13 +177,13 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         
         return ret_decker
     
-    def detector_section(self, dataset, pretty=False, **args):
+    def detector_section(self, dataset, pretty=False, extname="SCI", **args):
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always return a dictionary where the key
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_detector_section = {}
-        # Loop over the science extensions in the dataset
-        for ext in dataset["SCI"]:
+        # Loop over the specified extensions in the dataset
+        for ext in dataset[extname]:
             # Get the detector section from the header of each pixel data
             # extension
             raw_detector_section = ext.get_key_value(
@@ -209,8 +209,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                     (ext.extname(), ext.extver()):detector_section})
         if ret_detector_section == {}:
             # If the dictionary is still empty, the AstroData object was not
-            # autmatically assigned a "SCI" extension and so the above for loop
-            # was not entered
+            # automatically assigned an "extname" extension and so the above
+            # for loop was not entered
             raise Errors.CorruptDataError()
         
         return ret_detector_section
