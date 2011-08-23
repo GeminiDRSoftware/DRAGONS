@@ -897,15 +897,14 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                     clobber = True
             for output in outputs:
                 ad = output.ad
-                name = os.path.basename(ad.filename)
-                newname = fileNameUpdater(infilename=name, suffix="_"+rec)
+                name = ad.filename
                 try:
-                    ad.write(filename=newname, rename=False, clobber = clobber)
-                    log.info("Wrote %s in output directory"%newname)
+                    ad.write(clobber = clobber)
+                    log.info("Wrote %s in output directory" % name)
                 except Errors.OutputExists:
-                    log.error( "CANNOT WRITE %s, already exists" % newname)
+                    log.error( "CANNOT WRITE %s, already exists" % name)
                 except:
-                    log.error("CANNOT WRITE %s, unknown reason" % newname)
+                    log.error("CANNOT WRITE %s, unknown reason" % name)
 
         if interactiveMode == True:
             reclist = ["USER"]
