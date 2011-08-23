@@ -94,17 +94,17 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     raise Errors.PrimitiveError("Fewer than 2 frames " +
                                                 "provided as input.")
 
-            if red:
-                recipe_list = []
+        if red:
+            recipe_list = []
 
-                # Call the makeFringeFrame primitive
-                recipe_list.append("makeFringeFrame")
+            # Call the makeFringeFrame primitive
+            recipe_list.append("makeFringeFrame")
 
-                # Store the generated fringe
-                recipe_list.append("storeProcessedFringe")
+            # Store the generated fringe
+            recipe_list.append("storeProcessedFringe")
                 
-                # Run the specified primitives
-                rc.run("\n".join(recipe_list))
+            # Run the specified primitives
+            rc.run("\n".join(recipe_list))
 
         # Report all the unchanged input files back to the reduction context
         rc.report_output(adinput)
@@ -128,7 +128,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         if len(adinput)<2:
             log.warning('Less than 2 frames provided as input. ' +
                         'Not making fringe frame.')
-            adoutput = adinput
+            adoutput_list = adinput
         else:
             # Call the make_fringe_image_gmos user level function,
             # which returns a list with filenames already updated
