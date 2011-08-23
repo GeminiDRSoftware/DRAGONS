@@ -502,8 +502,8 @@ def _calculate_var(adinput=None, add_read_noise=False,
             units = "electrons"
         else:
             # Perhaps something more sensible should be done here?
-            raise Errors.InputError("No units found. Not calculating" \
-                                    "calculating variance")
+            raise Errors.InputError("No units found. Not calculating " \
+                                    "variance.")
         
         if add_read_noise:
             # Get the read noise value (in units of electrons) using the
