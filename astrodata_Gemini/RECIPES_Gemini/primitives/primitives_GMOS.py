@@ -1,4 +1,6 @@
-import os, shutil, sys
+import os
+import sys
+import shutil
 from astrodata import Errors
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
@@ -24,6 +26,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         return rc
 
     def biasCorrect(self,rc):
+
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -37,7 +40,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         # Loop over each input AstroData object in the input list to
         # test whether it's appropriate to try to subtract the bias
         sub_bias = True
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
 
             # Check whether the subtractBias primitive has been run previously
             if ad.phu_get_key_value("SUBBIAS"):
@@ -45,7 +48,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                     sub_bias = False
                     log.warning("Files have already been processed by " +
                                 "biasCorrect")
-                    rc.report_output(rc.get_inputs(style="AD"))
+                    rc.report_output(rc.get_inputs_as_astrodata())
                     break
                 else:
                     raise Errors.PrimitiveError("Files have already been " +
@@ -58,7 +61,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 if "QA" in rc.context:
                     sub_bias = False
                     log.warning("No processed biases found")
-                    rc.report_output(rc.get_inputs(style="AD"))
+                    rc.report_output(rc.get_inputs_as_astrodata())
                     break
                     
                 else:
@@ -82,7 +85,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         # Loop over each input AstroData object in the input list
         frame = rc["frame"]
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
 
             try:
                 ad = ds.display_gmos(adinput=ad,
@@ -120,7 +123,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         adoutput_list = []
         
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the mosaicDetectors primitive has been run
             # previously
@@ -141,13 +144,18 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Call the mosaic_detectors user level function
+            # Call the mosaic_detectors user level function,
+            # which returns a list; take the first entry
             ad = rs.mosaic_detectors(adinput=ad, tile=rc["tile"],
-                                     interpolator=rc["interpolator"])
+                                     interpolator=rc["interpolator"])[0]
             
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
         
         # Report the list of output AstroData objects to the reduction
         # context
@@ -175,7 +183,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         adoutput_list = []
         
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the standardizeHeaders primitive has been run
             # previously
@@ -187,12 +195,17 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Call the standardize_headers_gmos user level function
-            ad = sdz.standardize_headers_gmos(adinput=ad)
+            # Call the standardize_headers_gmos user level function,
+            # which returns a list; take the first entry
+            ad = sdz.standardize_headers_gmos(adinput=ad)[0]
             
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
         
         # Report the list of output AstroData objects to the reduction
         # context
@@ -227,7 +240,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         adoutput_list = []
         
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the standardizeStructure primitive has been run
             # previously
@@ -239,15 +252,20 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Call the standardize_structure_gmos user level function
+            # Call the standardize_structure_gmos user level function,
+            # which returns a list; take the first entry
             ad = sdz.standardize_structure_gmos(adinput=ad,
                                                 attach_mdf=rc["attach_mdf"],
-                                                mdf=rc["mdf"])
+                                                mdf=rc["mdf"])[0]
             
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
-        
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
@@ -273,7 +291,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         adoutput_list = []
         
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the subtractBias primitive has been run previously
             if ad.phu_get_key_value("SUBBIAS"):
@@ -290,19 +308,25 @@ class GMOSPrimitives(GEMINIPrimitives):
             # If no appropriate bias is found, it is ok not to subtract the
             # bias 
             if bias.filename is None:
-                log.warning("No processed bias found for %s" % ad.filename)
+                log.warning("Could not find an appropriate bias for %s" % 
+                            ad.filename)
 
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
             
-            # Call the subtract_bias user level function
-            ad = pp.subtract_bias(adinput=ad, bias=bias)
+            # Call the subtract_bias user level function,
+            # which returns a list; take the first entry
+            ad = pp.subtract_bias(adinput=ad, bias=bias)[0]
             
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
         
         # Report the list of output AstroData objects to the reduction
         # context
@@ -322,7 +346,6 @@ class GMOSPrimitives(GEMINIPrimitives):
                                 [1032:1055,1:2304]'
                                 is ideal for 2x2 GMOS data.
         """
-        
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -334,7 +357,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         adoutput_list = []
         
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the subtractOverscan primitive has been run
             # previously
@@ -346,13 +369,18 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Call the subtract_overscan_gmos user level function
-            ad = pp.subtract_overscan_gmos(
-                adinput=ad, overscan_section=rc["overscan_section"])
+            # Call the subtract_overscan_gmos user level function,
+            # which returns a list; take the first entry
+            ad = pp.subtract_overscan_gmos(adinput=ad, 
+                                    overscan_section=rc["overscan_section"])[0]
             
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
         
         # Report the list of output AstroData objects to the reduction
         # context
@@ -377,7 +405,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         adoutput_list = []
         
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the trimOverscan primitive has been run previously
             if ad.phu_get_key_value("TRIMOVER"):
@@ -388,12 +416,17 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Call the trim_overscan user level function
-            ad = pp.trim_overscan(adinput=ad)
+            # Call the trim_overscan user level function,
+            # which returns a list; take the first entry
+            ad = pp.trim_overscan(adinput=ad)[0]
             
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
         
         # Report the list of output AstroData objects to the reduction
         # context
@@ -421,7 +454,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         adoutput_list = []
         
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the validateData primitive has been run previously
             if ad.phu_get_key_value("VALDATA"):
@@ -432,12 +465,17 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Call the validate_data_gmos user level function
-            ad = sdz.validate_data_gmos(adinput=ad, repair=rc["repair"])
+            # Call the validate_data_gmos user level function,
+            # which returns a list; take the first entry
+            ad = sdz.validate_data_gmos(adinput=ad, repair=rc["repair"])[0]
             
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
         
         # Report the list of output AstroData objects to the reduction
         # context

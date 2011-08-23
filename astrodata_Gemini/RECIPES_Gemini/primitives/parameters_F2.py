@@ -2,41 +2,43 @@
 # in the primitives_F2.py file, in alphabetical order.
 {"standardizeHeaders":{
     "suffix":{
-        # String to be post pended to the output of standardizeHeaders
-        "default"       : "_sdzHdrs",
-        "recipeOverride": True,
+        "default"       : "_headerStandardized",
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "standardizeStructure":{
     "suffix":{
-        # String to be post pended to the output of standardizeStructure
-        "default"       : "_sdzStruct",
-        "recipeOverride": True,
+        "default"       : "_structureStandardized",
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "attach_mdf":{
         "default"       : True,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "validateData":{
     "suffix":{
-        # String to be post pended to the output of validateData
         "default"       : "_validated",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "repair":{
         "default"       : True,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
 }

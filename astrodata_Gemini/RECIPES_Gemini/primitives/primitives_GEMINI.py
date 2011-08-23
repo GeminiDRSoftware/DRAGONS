@@ -57,7 +57,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         adoutput_list = []
 
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
 
             # Check whether the addDQ primitive has been run previously
             if ad.phu_get_key_value("ADDDQ"):
@@ -68,9 +68,10 @@ class GEMINIPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
 
-            # Call the add_dq user level function
+            # Call the add_dq user level function,
+            # which returns a list; take the first entry
             try:
-                ad = sdz.add_dq(adinput=ad)
+                ad = sdz.add_dq(adinput=ad)[0]
             except:
                 if "QA" in rc.context:
                     # If DQ fails in QA context, continue on
@@ -81,9 +82,14 @@ class GEMINIPrimitives(GENERALPrimitives):
                     # Otherwise re-raise the error
                     raise
 
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list 
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
@@ -123,7 +129,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Update file names and write the files to disk to ensure the right
         # version is stored before adding it to the list.
         adoutput = []
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=suffix, strip=True)
             log.stdinfo("Writing %s to disk" % ad.filename,
                          category="list")
@@ -152,11 +158,14 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "addVAR", "starting"))
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
 
+        # Log a message about which type of variance is being added
         if rc["read_noise"] and not rc["poisson_noise"]:
             log.stdinfo("Adding the read noise component of the variance")
         if not rc["read_noise"] and rc["poisson_noise"]:
@@ -166,13 +175,21 @@ class GEMINIPrimitives(GENERALPrimitives):
                         "noise component of the variance")
 
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
-            # Call the add_var user level function
+        for ad in rc.get_inputs_as_astrodata():
+
+            # Call the add_var user level function,
+            # which returns a list; take the first entry
             ad = sdz.add_var(adinput=ad, read_noise=rc["read_noise"],
-                             poisson_noise=rc["poisson_noise"])
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+                             poisson_noise=rc["poisson_noise"])[0]
+
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list 
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
@@ -192,12 +209,16 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "aduToElectrons", "starting"))
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
+
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
+
             # Check whether the aduToElectrons primitive has been run
             # previously
             if ad.phu_get_key_value("ADUTOELE"):
@@ -207,11 +228,19 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
-            # Call the adu_to_electrons user level function
-            ad = pp.adu_to_electrons(adinput=ad)
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+
+            # Call the adu_to_electrons user level function,
+            # which returns a list; take the first entry
+            ad = pp.adu_to_electrons(adinput=ad)[0]
+
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list 
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
@@ -262,19 +291,36 @@ class GEMINIPrimitives(GENERALPrimitives):
         :type suffix: string
         
         """
+        # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
+
+        # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "alignToReferenceImage", 
                                  "starting"))
-        adinput = rc.get_inputs(style='AD')
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Check for at least 2 files
+        adinput = rc.get_inputs_as_astrodata()
         if len(adinput)<2:
             log.warning("At least two images must be provided to " +
                         "alignToReferenceImage")
             # Report input to RC without change
             adoutput_list = adinput
         else:
-            adoutput_list = rs.align_to_reference_image(
-                                         adinput=adinput,
-                                         interpolator=rc['interpolator'])
+            
+            # Call the align_to_reference_image user level function,
+            # which returns a list
+            adoutput = rs.align_to_reference_image(adinput=adinput,
+                                               interpolator=rc['interpolator'])
+
+            # Change the filenames and append to output list
+            for ad in adoutput:
+                ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                                 strip=True)
+                adoutput_list.append(ad)
+
         rc.report_output(adoutput_list)
         yield rc
 
@@ -392,25 +438,40 @@ class GEMINIPrimitives(GENERALPrimitives):
         :type scale: bool
 
         """
+        # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc['logType'],logLevel=rc['logLevel'])
+
+        # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "correctWCSToReferenceImage", 
                                  "starting"))
 
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
         # Check that there are at least two images to register
-        adinput = rc.get_inputs(style='AD')
+        adinput = rc.get_inputs_as_astrodata()
         if len(adinput)<2:
             log.warning("At least two images must be provided to " +
                         "correctWCSToReferenceImage")
             # Report input to RC without change
             adoutput_list = adinput
         else:
-            adoutput_list = rg.correct_wcs_to_reference_image(
+            
+            # Call the user-level function, which returns a list
+            adoutput = rg.correct_wcs_to_reference_image(
                                                adinput=adinput,
                                                method=rc['method'], 
                                                fallback=rc['fallback'],
                                                cull_sources=rc['cull_sources'],
                                                rotate=rc['rotate'], 
                                                scale=rc['scale'])
+            
+            # Change the filenames and append to output list
+            for ad in adoutput:
+                ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                                 strip=True)
+                adoutput_list.append(ad)
+
         rc.report_output(adoutput_list)
       
         yield rc
@@ -420,6 +481,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
     
     def detectSources(self, rc):
+
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -431,16 +493,24 @@ class GEMINIPrimitives(GENERALPrimitives):
         adoutput_list = []
 
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
-            # Call the detect_sources user level function
+        for ad in rc.get_inputs_as_astrodata():
+
+            # Call the detect_sources user level function,
+            # which returns a list; take the first entry
             ad = ph.detect_sources(adinput=ad,
                                    sigma=rc["sigma"],
                                    threshold=rc["threshold"],
                                    fwhm=rc["fwhm"],
-                                   method=rc["method"])
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+                                   method=rc["method"])[0]
+
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list 
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
@@ -473,17 +543,20 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "divideByFlat", "starting"))
 
         # Initialize the list of output AstroData objects
         adoutput_list = []
+
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
+
             # Check whether the divideByFlat primitive has been run previously
             if ad.phu_get_key_value("DIVFLAT"):
-                log.warning("%s has already been processed by divideByFlat" \
-                            % (ad.filename))
+                log.warning("%s has already been processed by divideByFlat" %
+                            ad.filename)
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
@@ -494,19 +567,24 @@ class GEMINIPrimitives(GENERALPrimitives):
 
             # Take care of the case where there was no flat 
             if flat.filename is None:
-                log.warning("Could not find an appropriate flat for %s" \
-                            % (ad.filename))
+                log.warning("Could not find an appropriate flat for %s" % 
+                            ad.filename)
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
 
-            # Call the divide_by_flat user level function
-            ad = pp.divide_by_flat(adinput=ad, flat=flat)
+            # Call the divide_by_flat user level function,
+            # which returns a list; take the first entry
+            ad = pp.divide_by_flat(adinput=ad, flat=flat)[0]
 
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])        
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list 
+            # of output AstroData objects
+            adoutput_list.append(ad)        
         
         # Report the list of output AstroData objects to the reduction
         # context
@@ -515,7 +593,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
      
     def failCalibration(self,rc):
-        # Mark a given calibration fail and upload it 
+        # Mark a given calibration "fail" and upload it 
         # to the system.  This is intended to be used to mark a 
         # calibration file that has already been uploaded, so that
         # it will not be returned as a valid match for future data.
@@ -524,19 +602,35 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
 
+        # Initialize the list of output AstroData objects 
         adoutput_list = []
+
+        # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
+
+            # Change the two keywords -- BAD + NO = Fail
             ad.phu_set_key_value("RAWGEMQA","BAD")
             ad.phu_set_key_value("RAWPIREQ","NO")
-            adoutput_list.append(ad)
             log.fullinfo("%s has been marked %s" % (ad.filename,ad.qa_state()))
 
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the 
+        # reduction context
         rc.report_output(adoutput_list)
+
+
+        # Run the storeCalibration primitive, so that the 
+        # failed file gets re-uploaded
         rc.run("storeCalibration")
+
         yield rc
             
 
     def flatCorrect(self,rc):
+
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -550,7 +644,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Loop over each input AstroData object in the input list to
         # test whether it's appropriate to try to remove the fringes
         div_flat = True
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
 
             # Check whether the divideByFlat primitive has been run previously
             if ad.phu_get_key_value("DIVFLAT"):
@@ -558,7 +652,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                     div_flat = False
                     log.warning("Files have already been processed by " +
                                 "flatCorrect")
-                    rc.report_output(rc.get_inputs(style="AD"))
+                    rc.report_output(rc.get_inputs_as_astrodata())
                     break
                 else:
                     raise Errors.PrimitiveError("Files have already been " +
@@ -571,7 +665,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 if "QA" in rc.context:
                     div_flat = False 
                     log.warning("No processed flats found")
-                    rc.report_output(rc.get_inputs(style="AD"))
+                    rc.report_output(rc.get_inputs_as_astrodata())
                     break
                     
                 else:
@@ -584,6 +678,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
 
     def fringeCorrect(self,rc):
+
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -594,7 +689,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Loop over each input AstroData object in the input list to
         # test whether it's appropriate to try to remove the fringes
         rm_fringe = True
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
 
             # Check whether the removeFringe primitive has been run previously
             if ad.phu_get_key_value("RMFRINGE"):
@@ -602,7 +697,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                     rm_fringe = False
                     log.warning("Files have already been processed by " +
                                 "fringeCorrect")
-                    rc.report_output(rc.get_inputs(style="AD"))
+                    rc.report_output(rc.get_inputs_as_astrodata())
                     break
                 else:
                     raise Errors.PrimitiveError("Files have already been " +
@@ -627,17 +722,18 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Get processed fringes for the input
             rc.run("getProcessedFringe")
 
-            for ad in rc.get_inputs(style="AD"):
+            for ad in rc.get_inputs_as_astrodata():
                 # Test to see if we found a fringe
                 fringe = AstroData(rc.get_cal(ad, "processed_fringe"))
                 if fringe.filename is None:
                     if "QA" in rc.context:
                         rm_fringe = False
                         log.warning("No processed fringes found")
-                        rc.report_output(rc.get_inputs(style="AD"))
+                        rc.report_output(rc.get_inputs_as_astrodata())
                         break 
                     else:
-                        raise Errors.PrimitiveError("No processed fringes found")
+                        raise Errors.PrimitiveError("No processed fringes " +
+                                                    "found")
 
         # If no errors found, remove the fringes
         if rm_fringe:
@@ -646,29 +742,32 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
 
     def getCalibration(self, rc):
-        """
-        This primitive will check the files in the lists that are on disk,
-        and then update the inputs list to include all members of the list.
-        """
+
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
+        # Get type of calibration requested
         caltype = rc["caltype"]
         if caltype == None:
             log.error("getCalibration: caltype not set")
             raise Errors.PrimitiveError("getCalibration: caltype not set")
+
+        # Get source of calibration
         source = rc["source"]
         if source == None:
             source = "all"
             
+        # Check whether calibrations are already available
         calibrationless_adlist = []
-        adinput = rc.get_inputs(style="AD")
+        adinput = rc.get_inputs_as_astrodata()
         for ad in adinput:
             ad.mode = "update"
             calurl = rc.get_cal(ad,caltype)
             if not calurl:
                 calibrationless_adlist.append(ad)
             
+        # Request any needed calibrations
         if len(calibrationless_adlist) ==0:
             # print "pG603: calibrations for all files already present"
             pass
@@ -677,6 +776,8 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
         log.stdinfo("getCalibration: Results")
 
+
+        # List calibrations found
         for ad in adinput:
             calurl = rc.get_cal(ad, caltype) #get from cache
             # print "pG565:", repr(calurl)
@@ -685,7 +786,8 @@ class GEMINIPrimitives(GENERALPrimitives):
                 if cal.filename is None:
                     log.stdinfo("   No %s for %s" % (caltype,ad.filename))
                 else:
-                    log.stdinfo("   %s\n      for %s" % (cal.filename,ad.filename))
+                    log.stdinfo("   %s\n      for %s" % (cal.filename,
+                                                         ad.filename))
         # print "pG575: about to leave getpb"
         yield rc
 
@@ -707,13 +809,19 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
+
+        # Get purpose of list
         sidset = set()
         purpose=rc["purpose"]
         if purpose is None:
             purpose = ""
         
+        # Get ID for all inputs
         for inp in rc.inputs:
             sidset.add(purpose+IDFactory.generate_stackable_id(inp.ad))
+
+        # Import inputs from all lists
         for sid in sidset:
             stacklist = rc.get_list(sid) #.filelist
             log.stdinfo("List for stack id=%s" % sid, category="list")
@@ -724,18 +832,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         yield rc
     
-    def storeCalibration(self, rc):
-        # print repr(rc)
-        storedcals = rc['cachedict']['storedcals']
-
-        for ad in rc.get_inputs_as_astrodata():
-            fname = os.path.join(storedcals, os.path.basename(ad.filename))
-            ad.filename = fname
-            ad.write(filename = fname, rename = True, clobber=True) # always clobber, perhaps save clobbered file somewhererc["clobber"])
-            upload_calibration(ad.filename)
-            yield rc
-        yield rc
-        
     def getProcessedBias(self, rc):
         source = rc["source"]
         if source == None:
@@ -770,7 +866,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         if source == None:
             rc.run("getCalibration(caltype=processed_fringe)")
         else:
-            rc.run("getCalibration(caltype=processed_fringe, source=%s)" % source)
+            rc.run("getCalibration(caltype=processed_fringe,source=%s)"% source)
             
         yield rc
 
@@ -783,15 +879,13 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         :param function: Function for centroid fitting
         :type function: string, can be: 'moffat','gauss' or 'both'; 
-                        Default 'both'
+                        Default 'moffat'
                         
         :param display: Flag to turn on displaying the fitting to ds9
         :type display: Python boolean (True/False)
                        Default: True
         
-        :param qa: flag to use a grid of sub-windows for detecting the sources
-                   in the image frames, rather than the entire frame all at
-                   once.
+        :param qa: flag to limit the number of sources used
         :type qa: Python boolean (True/False)
                   default: True
         
@@ -816,21 +910,30 @@ class GEMINIPrimitives(GENERALPrimitives):
 
         # Loop over each input AstroData object in the input list
         if rc["display"]==False:
-            for ad in rc.get_inputs(style="AD"):
-                # Call the measure_iq user level function
+            for ad in rc.get_inputs_as_astrodata():
+
+                # Call the measure_iq user level function,
+                # which returns a list; take the first entry
                 ad = qa.measure_iq(adinput=ad, 
                                    centroid_function=rc["centroid_function"],
-                                   qa=rc["qa"])
+                                   qa=rc["qa"])[0]
 
-                # Append the output AstroData object (which is currently in the
-                # form of a list) to the list of output AstroData objects
-                adoutput_list.append(ad[0])
+                # Change the filename
+                ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                                 strip=True)
+
+                # Append the output AstroData object to the list 
+                # of output AstroData objects
+                adoutput_list.append(ad)
 
             # Report the list of output AstroData objects to the reduction
             # context
             rc.report_output(adoutput_list)
 
         else:
+
+            # If display is needed, there may be instrument dependencies.
+            # Call the iqDisplay primitive.
             rc.run("iqDisplay")
 
         yield rc
@@ -842,13 +945,17 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "nonlinearityCorrect",
                                 "starting"))
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
+
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
+
             # Check whether the nonlinearityCorrect primitive has been run
             # previously
             if ad.phu_get_key_value("LINCOR"):
@@ -858,11 +965,19 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
-            # Call the nonlinearity_correct user level function
-            ad = pp.nonlinearity_correct(adinput=ad)
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+
+            # Call the nonlinearity_correct user level function,
+            # which returns a list; take the first entry
+            ad = pp.nonlinearity_correct(adinput=ad)[0]
+
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list 
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
@@ -874,6 +989,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
     
     def registerAndStack(self, rc):
+
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -881,7 +997,8 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "registerAndStack", "starting"))
 
-        adinput = rc.get_inputs(style="AD")
+        # Check for at least 2 input files
+        adinput = rc.get_inputs_as_astrodata()
         if len(adinput)<2:
             if "QA" in rc.context:
                 log.warning("Less than 2 frames provided as input. " +
@@ -913,6 +1030,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Stack all frames
             recipe_list.append("stackFrames")
 
+            # Run all the needed primitives
             rc.run("\n".join(recipe_list))
 
         yield rc        
@@ -935,13 +1053,17 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "removeFringe",
                                  "starting"))
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
+
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
+
             # Check whether the removeFringe primitive has been run
             # previously
             if ad.phu_get_key_value("RMFRINGE"):
@@ -963,13 +1085,18 @@ class GEMINIPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
 
-            # Call the remove_fringe user level function
+            # Call the remove_fringe user level function,
+            # which returns a list; take the first entry
             ad = pp.remove_fringe(adinput=ad, fringe=fringe,
-                                  stats_scale=rc["stats_scale"])
+                                  stats_scale=rc["stats_scale"])[0]
 
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list 
+            # of output AstroData objects
+            adoutput_list.append(ad)
 
         # Report the list of output AstroData objects and the scaled fringe
         # frames to the reduction context
@@ -1077,7 +1204,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 for f in stacklist:
                     log.status("    %s" % os.path.basename(f), category="list")
             else:
-                log.status("no datasets in list", category="list")
+                log.status("No datasets in list", category="list")
         
         yield rc
     
@@ -1148,39 +1275,61 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "stackFrames", "starting"))
-        # Call the stack_frames user level function
-        adinput = rc.get_inputs(style='AD')
+
+        # Check for at least 2 input files
+        adinput = rc.get_inputs_as_astrodata()
         if len(adinput)<2:
             log.warning("At least two frames must be provided to " +
                         "stackFrames")
             # Report input to RC without change
             adoutput_list = adinput
         else:
+
+            # Call the stack_frames user level function, which
+            # returns a list with filenames already updated
             adoutput_list = sk.stack_frames(adinput=adinput,
-                                   suffix=rc["suffix"],
-                                   operation=rc["operation"],
-                                   reject_method=rc["reject_method"],
-                                   mask_type=rc["mask_type"])
+                                            suffix=rc["suffix"],
+                                            operation=rc["operation"],
+                                            reject_method=rc["reject_method"],
+                                            mask_type=rc["mask_type"])
+
         # Report the list containing a single AstroData object to the reduction
         # context
         rc.report_output(adoutput_list)
         
         yield rc
     
+    def storeCalibration(self, rc):
+        # print repr(rc)
+        storedcals = rc['cachedict']['storedcals']
+
+        for ad in rc.get_inputs_as_astrodata():
+            fname = os.path.join(storedcals, os.path.basename(ad.filename))
+            ad.filename = fname
+            ad.write(filename = fname, rename = True, clobber=True) # always clobber, perhaps save clobbered file somewhererc["clobber"])
+            upload_calibration(ad.filename)
+            yield rc
+        yield rc
+        
     def storeProcessedBias(self, rc):
+
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "storeProcessedBias",
                                  "starting"))
+
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
+
             # Updating the file name with the suffix for this primitive and
             # then report the new file to the reduction context
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix="_bias",
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
                                              strip=True)
             log.status("File name of stored bias is %s" % ad.filename)
 
@@ -1194,17 +1343,21 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
     
     def storeProcessedDark(self, rc):
+
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "storeProcessedDark",
                                  "starting"))
+
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
+
             # Updating the file name with the suffix for this primitive and
             # then report the new file to the reduction context
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix="_dark",
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
                                              strip=True)
             log.status("File name of stored dark is %s" % ad.filename)
 
@@ -1218,17 +1371,21 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
     
     def storeProcessedFlat(self, rc):
+
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "storeProcessedFlat",
                                  "starting"))
+
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
+
             # Updating the file name with the suffix for this primitive and
             # then report the new file to the reduction context
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix="_flat",
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
                                              strip=True)
             log.status("File name of stored flat is %s" % ad.filename)
  
@@ -1242,17 +1399,21 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
     
     def storeProcessedFringe(self, rc):
+
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "storeProcessedFringe",
                                  "starting"))
+
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
+
             # Updating the file name with the suffix for this primitive and
             # then report the new file to the reduction context
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix="_fringe",
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
                                              strip=True)
             log.status("File name of stored fringe is %s" % ad.filename)
 
@@ -1286,12 +1447,16 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "subtractDark", "starting"))
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
+
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
+
             # Check whether the subtractDark primitive has been run previously
             if ad.phu_get_key_value("SUBDARK"):
                 log.warning("%s has already been processed by " \
@@ -1313,12 +1478,18 @@ class GEMINIPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
 
-            # Call the subtract_dark user level function
-            ad = pp.subtract_dark(adinput=ad, dark=dark)
+            # Call the subtract_dark user level function,
+            # which returns a list; take the first entry
+            ad = pp.subtract_dark(adinput=ad, dark=dark)[0]
 
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
@@ -1381,34 +1552,47 @@ class GEMINIPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         # Logging current values of suffix and prefix
-        log.info("suffix = %s" % str(rc["suffix"]))
-        log.info("prefix = %s" % str(rc["prefix"]))
-        log.info("strip = %s" % str(rc["strip"]))
+        log.fullinfo("suffix = %s" % str(rc["suffix"]))
+        log.fullinfo("prefix = %s" % str(rc["prefix"]))
+        log.fullinfo("strip = %s" % str(rc["strip"]))
         
-        if rc["suffix"] and rc["prefix"]:
-            log.critical("The input will have %s pre pended and %s post " +
-                         "pended onto it" % (rc["prefix"], rc["suffix"]))
-        for ad in rc.get_inputs(style="AD"):
-            # If the value of "suffix" was set, then set the file name 
-            # to be written to disk to be postpended by it
-            if rc["suffix"]:
-                log.debug("calling gt.fileNameUpdater on %s" % ad.filename)
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        for ad in rc.get_inputs_as_astrodata():
+            if rc["suffix"] and rc["prefix"]:
+                ad.filename = gt.fileNameUpdater(adIn=ad,
+                                                 prefix=rc["prefix"],
+                                                 suffix=rc["suffix"],
+                                                 strip=rc["strip"])
+                log.fullinfo("File name updated to %s" % ad.filename)
+                outfilename = os.path.basename(ad.filename)
+
+            elif rc["suffix"]:
+                # If the value of "suffix" was set, then set the file name 
+                # to be written to disk to be postpended by it
                 ad.filename = gt.fileNameUpdater(adIn=ad,
                                                  suffix=rc["suffix"],
                                                  strip=rc["strip"])
                 log.info("File name updated to %s" % ad.filename)
                 outfilename = os.path.basename(ad.filename)
-            # If the value of "prefix" was set, then set the file name 
-            # to be written to disk to be pre pended by it
-            if rc["prefix"]:
-                infilename = os.path.basename(ad.filename)
-                outfilename = "%s%s" % (rc["prefix"], infilename)
-            # If the "outfilename" was set, set the file name of the file 
-            # file to be written to this
+
+            elif rc["prefix"]:
+                # If the value of "prefix" was set, then set the file name 
+                # to be written to disk to be pre pended by it
+                ad.filename = gt.fileNameUpdater(adIn=ad,
+                                                 prefix=rc["prefix"],
+                                                 strip=rc["strip"])
+                log.info("File name updated to %s" % ad.filename)
+                outfilename = os.path.basename(ad.filename)
+
             elif rc["outfilename"]:
+                # If the "outfilename" was set, set the file name of the file 
+                # file to be written to this
+
                 # Check that there is not more than one file to be written
                 # to this file name, if so throw exception
-                if len(rc.get_inputs(style="AD")) > 1:
+                if len(rc.get_inputs_as_astrodata()) > 1:
                     message = """
                         More than one file was requested to be written to
                         the same name %s""" % (rc["outfilename"])
@@ -1416,16 +1600,26 @@ class GEMINIPrimitives(GENERALPrimitives):
                     raise Errors.PrimitiveError(message)
                 else:
                     outfilename = rc["outfilename"]
-            # If no changes to file names are requested then write inputs
-            # to their current file names
             else:
+                # If no changes to file names are requested then write inputs
+                # to their current file names
                 outfilename = os.path.basename(ad.filename) 
                 log.info("not changing the file name to be written " +
                 "from its current name") 
+
             # Finally, write the file to the name that was decided 
             # upon above
             log.stdinfo("Writing to file %s" % outfilename)
+
             # AstroData checks if the output exists and raises an exception
             ad.write(filename=outfilename, clobber=rc["clobber"])
-            rc.report_output(ad)
+
+            # Append the output AstroData object to the list of output
+            # AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the
+        # reduction context
+        rc.report_output(adoutput_list)
+
         yield rc

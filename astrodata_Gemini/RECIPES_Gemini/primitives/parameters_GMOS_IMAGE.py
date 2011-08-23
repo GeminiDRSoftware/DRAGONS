@@ -1,66 +1,88 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_GMOS_IMAGE.py file, in alphabetical order.
-{"makeFringeFrame":{
-    "suffix":{
-        # String to be post pended to the output of makeFringe
-        "default"       : "_fringe",
+{"iqDisplay":{
+    "frame":{
+        "default"       : 1,
+        "type"          : "int",
         "recipeOverride": True,
-        "type"          : "str",
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "saturation":{
+        "default"       : 58000,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "makeFringeFrame":{
+    "suffix":{
+        "default"       : "_fringe",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "operation":{
         "default"       : "median",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "normalize":{
     "suffix":{
-        # String to be post pended to the output of normalize
         "default"       : "_normalized",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "saturation":{
         "default"       : 45000,
-        "recipeOverride": True,
         "type"          : "float",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "stackFlats":{
     "suffix":{
-        # String to be post pended to the output of stackFrames
         "default"       : "_stacked",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "grow":{
         "default"       : 1.0,
-        "recipeOverride": True,
         "type"          : "float",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "mask_type":{
         "default"       : "none",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         }, 
     "operation":{
         "default"       : "median",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "reject_method":{
         "default"       : "minmax",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
 # The standardizeStructure primitive is actually located in the
@@ -68,17 +90,18 @@
 # as default for data with an AstroData Type of IMAGE.
  "standardizeStructure":{
     "suffix":{
-        # String to be post pended to the output of standardizeStructure
-        "default"       : "_sdzStruct",
-        "recipeOverride": True,
+        "default"       : "_structureStandardized",
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "attach_mdf":{
         "default"       : False,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
 }

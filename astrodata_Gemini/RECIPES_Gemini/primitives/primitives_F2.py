@@ -33,7 +33,7 @@ class F2Primitives(GEMINIPrimitives):
         adoutput_list = []
         
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the standardizeHeaders primitive has been run
             # previously
@@ -45,12 +45,17 @@ class F2Primitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Call the standardize_headers_f2 user level function
-            ad = sdz.standardize_headers_f2(adinput=ad)
+            # Call the standardize_headers_f2 user level function,
+            # which returns a list; take the first entry
+            ad = sdz.standardize_headers_f2(adinput=ad)[0]
             
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
         
         # Report the list of output AstroData objects to the reduction
         # context
@@ -76,7 +81,7 @@ class F2Primitives(GEMINIPrimitives):
         adoutput_list = []
         
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the standardizeStructure primitive has been run
             # previously
@@ -88,14 +93,19 @@ class F2Primitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Call the standardize_structure_f2 user level function
+            # Call the standardize_structure_f2 user level function,
+            # which returns a list; take the first entry
             ad = sdz.standardize_structure_f2(adinput=ad,
                                               attach_mdf=rc["attach_mdf"],
-                                              mdf=rc["mdf"])
+                                              mdf=rc["mdf"])[0]
             
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
         
         # Report the list of output AstroData objects to the reduction
         # context
@@ -119,7 +129,7 @@ class F2Primitives(GEMINIPrimitives):
         adoutput_list = []
         
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the validateData primitive has been run previously
             if ad.phu_get_key_value("VALDATA"):
@@ -130,12 +140,17 @@ class F2Primitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Call the validate_data_f2 user level function
-            ad = sdz.validate_data_f2(adinput=ad, repair=rc["repair"])
+            # Call the validate_data_f2 user level function,
+            # which returns a list; take the first entry
+            ad = sdz.validate_data_f2(adinput=ad, repair=rc["repair"])[0]
             
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
         
         # Report the list of output AstroData objects to the reduction
         # context

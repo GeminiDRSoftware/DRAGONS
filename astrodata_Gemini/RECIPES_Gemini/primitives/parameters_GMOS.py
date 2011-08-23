@@ -3,116 +3,122 @@
 {"display":{
     "frame":{
         "default"       : 1,
-        "recipeOverride": True,
         "type"          : "int",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "saturation":{
         "default"       : 58000,
-        "recipeOverride": True,
         "type"          : "float",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "mosaicDetectors":{
     "suffix":{
-        # String to be post pended to the output of mosaicDetectors
         "default"       : "_mosaicked",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "tile":{
         "default"       : False,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
-        "tag"           : ["cl_iraf","ui_advanced"],
+        "uiLevel"       : "UIBASIC",
         },
     "interpolator":{
         "default"       : "linear",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
-        "tag"           : ["cl_iraf","ui_advanced"],
-         },
+        "uiLevel"       : "UIBASIC",
+        },
     },
  "standardizeHeaders":{
     "suffix":{
-        # String to be post pended to the output of standardizeHeaders
-        "default"       : "_sdzHdrs",
-        "recipeOverride": True,
+        "default"       : "_headerStandardized",
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
 "standardizeStructure":{
     "suffix":{
-        # String to be post pended to the output of standardizeStructure
-        "default"       : "_sdzStruct",
-        "recipeOverride": True,
+        "default"       : "_structureStandardized",
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "attach_mdf":{
         "default"       : True,
         "recipeOverride": True,
         "type"          : "bool",
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "subtractBias":{
     "suffix":{
-        # String to be post pended to the output of subtractBias
         "default"       : "_biasCorrected",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "bias":{
         "default"       : None,
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
-"subtractOverscan":{
+ "subtractOverscan":{
     "suffix":{
-        # String to be post pended to the output of subtractOverscan
-        "default"       : "_subOverscan",
-        "recipeOverride": True,
+        "default"       : "_overscanSubtracted",
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "overscan_section":{
         "default"       : None,
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
-"trimOverscan":{
+ "trimOverscan":{
     "suffix":{
-        # String to be post pended to the output of trimOverscan
-        "default"       : "_trimOverscan",
-        "recipeOverride": True,
+        "default"       : "_overscanTrimmed",
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "validateData":{
     "suffix":{
-        # String to be post pended to the output of validateData
         "default"       : "_validated",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "repair":{
         "default"       : True,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
 }

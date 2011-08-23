@@ -2,281 +2,291 @@
 # in the primitives_GEMINI.py file, in alphabetical order.
 {"addDQ":{
     "suffix":{
-        # String to be post pended to the output of addDQ
         "default"       : "_dqAdded",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "addToList":{
     "purpose":{
         "default"       : "",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "addVAR":{
     "suffix":{
-        # String to be post pended to the output of addVAR
         "default"       : "_varAdded",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "read_noise":{
         "default"       : False,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "poisson_noise":{
         "default"       : False,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "aduToElectrons":{
     "suffix":{
-        # String to be post pended to the output of aduToElectrons
-        "default"       : "_aduToElect",
-        "recipeOverride": True,
+        "default"       : "_aduToElectrons",
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "alignToReferenceImage":{
     "suffix":{
-        # String to be post pended to the output of alignToReferenceImage
         "default"       : "_align",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "interpolator":{
-        "default":"linear",
-        "recipeOverride":True,
-        "userOverride":True,
-        "type":"str",
-        "uiLevel":"UIBASIC"
+        "default"       : "linear",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
-"contextReport":{
+ "contextReport":{
     "report_history":{
         "default"       : False,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "internal_dict":{
         "default"       : False,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "context_vars":{
         "default"       : False,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "report_inputs":{
         "default"       : False,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "report_parameters":{
         "default"       : False,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "showall":{
         "default"       : False,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
-"correctWCSToReferenceImage":{
+ "correctWCSToReferenceImage":{
     "suffix":{
-        # String to be post pended to the output of correctWCSToReferenceImage
-        "default"       : "_register",
-        "recipeOverride": True,
+        "default"       : "_wcsCorrected",
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "method":{
-        "default":"sources",
-        "recipeOverride":True,
-        "userOverride":True,
-        "type":"str",
-        "uiLevel":"UIBASIC"
+        "default"       : "sources",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "fallback":{
-        "default":None,
-        "recipeOverride":True,
-        "userOverride":True,
-        "type":"str",
-        "uiLevel":"UIBASIC"
+        "default"       : None,
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "cull_sources":{
-        "default":False,
-        "recipeOverride":True,
-        "userOverride":True,
-        "type":"bool",
-        "uiLevel":"UIBASIC"
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "rotate":{
-        "default":False,
-        "recipeOverride":True,
-        "userOverride":True,
-        "type":"bool",
-        "uiLevel":"UIBASIC"
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "scale":{
-        "default":False,
-        "recipeOverride":True,
-        "userOverride":True,
-        "type":"bool",
-        "uiLevel":"UIBASIC"
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
    },
  "detectSources":{
     "suffix":{
-        # String to be post pended to the output of detectSources
         "default"       : "_sourceDetected",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "fwhm":{
         "default"       : 5.5,
-        "recipeOverride": True,
         "type"          : "float",
-        "userOverride"  : True,
-        },
+        "recipeOverride": True,
+        "userOverride"  : True, 
+        "uiLevel"       : "UIBASIC",
+       },
     "method":{
         "default"       : "daofind",
         "recipeOverride": True,
-        "type"          : "str",
         "userOverride"  : True,
+        "type"          : "str",
+        "uiLevel"       : "UIBASIC",
         },
     "sigma":{
         "default"       : None,
-        "recipeOverride": True,
         "type"          : "float",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "threshold":{
         "default"       : 5.0,
-        "recipeOverride": True,
         "type"          : "float",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "divideByFlat":{
     "suffix":{
-        # String to be post pended to the output of divideByFlat
         "default"       : "_flatCorrected",
-        "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : True,
-        },
-    "flat":{
-        "default"       : None,
         "recipeOverride": True,
-        "type"          : "str",
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
- "getCal":{
+ "getCalibration":{
     "source":{
         "default"       : "all",
         "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "caltype":{
         "default"       : None,
         "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "getList":{
     "purpose":{
         "default"       : "",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "measureIQ":{
-    "centroid_function":{
-        # Can be moffat, gauss or both
-        "default"       : "moffat",
-        "recipeOverride": True,
+    "suffix":{
+        "default"       : "_iqMeasured",
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
+    "centroid_function":{
+        "default"       : "moffat",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True, 
+        "uiLevel"       : "UIBASIC",
+       },
     "display":{
         "default"       : True,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "qa":{
         "default"       : True,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "nonlinearityCorrect":{
     "suffix":{
-        # String to be post pended to the output of nonlinearityCorrect
-        "default"       : "_nonlinCorrected",
-        "recipeOverride": True,
+        "default"       : "_nonlinearityCorrected",
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
- "pause":{
-    "message":{
-        "default"       : "Pausing Reduction by Control System Request",
-        "type"          : "string",
-        "a"             : "default comes first, the rest alphabetically",
-        "note1"         : "these are just test parameters...",
-        "note2"         : "pause doesn't need a 'message' parameter",
-        },
-    },
- "scaleFringeToScience":{
+ "removeFringe":{
     "suffix":{
-        # String to be post pended to the output of scaleFringeToScience
-        "default"       : "_scaled",
-        "recipeOverride": True,
+        "default"       : "_fringeCorrected",
         "type"          : "str",
-        "userOverride"  : True,
-        },
-    "fringe":{
-        "default"       : None,
         "recipeOverride": True,
-        "type"          : "str",
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "stats_scale":{
         "default"       : True,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "showList":{
     "purpose":{
         "default"       : "",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "showParameters":{
@@ -297,93 +307,125 @@
         "tags"          :["test", "wcslib"],
         },
     },
+ "sleep":{
+    "duration":{
+        "default"       : 5.0,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "stackFrames":{
     "suffix":{
-        # String to be post pended to the output of stackFrames
         "default"       : "_stacked",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "mask_type":{
         "default"       : "none",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         }, 
     "operation":{
         "default"       : "average",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "reject_method":{
         "default"       : "none",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
+ "storeProcessedBias":{
+    "suffix":{
+        "default"       : "_bias",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    }, 
+ "storeProcessedDark":{
+    "suffix":{
+        "default"       : "_dark",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    }, 
+ "storeProcessedFlat":{
+    "suffix":{
+        "default"       : "_flat",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    }, 
+ "storeProcessedFringe":{
+    "suffix":{
+        "default"       : "_fringe",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    }, 
  "subtractDark":{
     "suffix":{
-        # String to be post pended to the output of subtractDark
         "default"       : "_darkCorrected",
-        "recipeOverride": True,
         "type"          : "str",
-        "userOverride"  : True,
-        },
-    "dark":{
-        "default"       : None,
         "recipeOverride": True,
-        "type"          : "str",
         "userOverride"  : True,
-        },
-    },
- "subtractFringe":{
-    "suffix":{
-        # String to be post pended to the output of subtractFringe
-        "default"       : "_fringeCorrected",
-        "recipeOverride": True,
-        "type"          : "str",
-        "userOverride"  : True,
-        },
-    "fringe":{
-        "default"       : None,
-        "recipeOverride": True,
-        "type"          : "str",
-        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  "writeOutputs":{
     "suffix":{
         "default"       : "",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "strip":{
         "default"       : False,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "clobber":{
         "default"       : False,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "prefix":{
         "default"       : "",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "outfilename":{
         "default"       : "",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
 }

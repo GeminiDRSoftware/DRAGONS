@@ -31,7 +31,7 @@ class F2_IMAGEPrimitives(F2Primitives):
         adoutput_list = []
         
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the normalize primitive has been run previously
             if ad.phu_get_key_value("NORMLIZE"):
@@ -42,12 +42,17 @@ class F2_IMAGEPrimitives(F2Primitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Call the normalize_image user level function
-            ad = pp.normalize_image(adinput=ad)
+            # Call the normalize_image user level function,
+            # which returns a list; take the first entry
+            ad = pp.normalize_image(adinput=ad)[0]
             
-            # Append the output AstroData object (which is currently in the
-            # form of a list) to the list of output AstroData objects
-            adoutput_list.append(ad[0])
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
         
         # Report the list of output AstroData objects to the reduction
         # context

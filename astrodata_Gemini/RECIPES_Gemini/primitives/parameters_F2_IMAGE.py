@@ -3,11 +3,11 @@
 
 {"normalize":{
     "suffix":{
-        # String to be post pended to the output of normalize
         "default"       : "_normalized",
-        "recipeOverride": True,
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
  # The standardizeStructure primitive is actually located in the
@@ -15,17 +15,18 @@
  # default for data with an AstroData Type of IMAGE. 
  "standardizeStructure":{
     "suffix":{
-        # String to be post pended to the output of standardizeStructure
-        "default"       : "_sdzStruct",
-        "recipeOverride": True,
+        "default"       : "_structureStandardized",
         "type"          : "str",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     "attach_mdf":{
         "default"       : False,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
         },
     },
 }

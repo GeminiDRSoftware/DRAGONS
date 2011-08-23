@@ -25,15 +25,19 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                   logLevel=rc["logLevel"])
 
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "qaDisplay", "starting"))
+        log.debug(gt.log_message("primitive", "iqDisplay", "starting"))
 
         # Loop over each input AstroData object in the input list
         frame = rc["frame"]
         if frame is None:
             frame = 1
-        for ad in rc.get_inputs(style="AD"):
+        for ad in rc.get_inputs_as_astrodata():
 
-            ad = qa.iq_display_gmos(adinput=ad,frame=frame)
+            # Call the iq_display_gmos user level function
+            adoutput = qa.iq_display_gmos(adinput=ad, frame=frame,
+                                          saturation=rc["saturation"])
+
+            # Increment frame number
             frame += 1
 
         yield rc
@@ -46,7 +50,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "makeFringe", "starting"))
 
-        adinput = rc.get_inputs(style="AD")
+        adinput = rc.get_inputs_as_astrodata()
 
         # Check that filter is either i or z; this step doesn't
         # help data taken in other filters
@@ -91,17 +95,18 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                                 "provided as input.")
 
             if red:
-
                 recipe_list = []
+
                 # Call the makeFringeFrame primitive
                 recipe_list.append("makeFringeFrame")
 
                 # Store the generated fringe
                 recipe_list.append("storeProcessedFringe")
                 
+                # Run the specified primitives
                 rc.run("\n".join(recipe_list))
 
-        # Report all the input files back to the reduction context
+        # Report all the unchanged input files back to the reduction context
         rc.report_output(adinput)
         yield rc
 
@@ -118,32 +123,28 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "makeFringeFrame", "starting"))
 
-        adinput = rc.get_inputs(style="AD")
+        # Check for at least 2 input frames
+        adinput = rc.get_inputs_as_astrodata()
         if len(adinput)<2:
             log.warning('Less than 2 frames provided as input. ' +
                         'Not making fringe frame.')
             adoutput = adinput
         else:
-            # Call the make_fringe_image_gmos user level function
-            adoutput = pp.make_fringe_image_gmos(adinput=adinput,
-                                                 suffix=rc["suffix"],
-                                                 operation=rc["operation"])
+            # Call the make_fringe_image_gmos user level function,
+            # which returns a list with filenames already updated
+            adoutput_list = pp.make_fringe_image_gmos(adinput=adinput,
+                                                      suffix=rc["suffix"],
+                                                      operation=rc["operation"])
 
         # Report the list of output AstroData objects to the reduction
         # context
-        rc.report_output(adoutput)
+        rc.report_output(adoutput_list)
         
         yield rc
 
     def normalize(self, rc):
         """
         This primitive will normalize a stacked flat frame
-        using the CL script giflat.
-        
-        Warning: giflat calculates its own DQ frames and thus replaces the
-        previously produced ones in addDQ. This may be fixed in the
-        future by replacing giflat with a Python equivilent with more
-        appropriate options for the recipe system. 
         
         :param saturation: Defines saturation level for the raw frame, in ADU
         :type saturation: string, can be 'default', or a number (default
@@ -157,21 +158,40 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "normalize", "starting"))
+
+        # Initialize the list of output AstroData objects
         adoutput_list = []
-        for ad in rc.get_inputs(style='AD'):
-            if ad.phu_get_key_value('NORMFLAT'):
-                log.warning('%s has already been processed by normalize' %
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+
+            # Check whether normalize has been run previously
+            if ad.phu_get_key_value("NORMFLAT"):
+                log.warning("%s has already been processed by normalize" %
                             (ad.filename))
                 adoutput_list.append(ad)
                 continue
             
-            ad = pp.normalize_image_gmos(adinput=ad, 
-                                         saturation=rc['saturation'])
-            adoutput_list.append(ad[0])
+            # Call the normalize_image_gmos user level function,
+            # which returns a list; take the first entry
+            ad = pp.normalize_image_gmos(adinput=ad,
+                                         saturation=rc["saturation"])[0]
 
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to
+        # the reduction context
         rc.report_output(adoutput_list)
+
         yield rc
     
     def stackFlats(self, rc):
@@ -191,7 +211,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "stackFlats", "starting"))
 
-        adinput = rc.get_inputs(style='AD')
+        # Check for at least 2 input frames
+        adinput = rc.get_inputs_as_astrodata()
         nframes = len(adinput)
         if nframes<2:
             log.warning("At least two frames must be provided to " +
@@ -213,7 +234,9 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             else:
                 nlow = 2
                 nhigh = 3
-
+                
+            # Call the stack_frames user level function,
+            # which returns a list with filenames already updated
             adoutput_list = sk.stack_frames(adinput=adinput,
                                    suffix=rc["suffix"],
                                    operation=rc["operation"],
