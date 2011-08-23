@@ -229,7 +229,7 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False,
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def iq_display_gmos(adinput=None, frame=1):
+def iq_display_gmos(adinput=None, frame=1, saturation=58000):
 
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
@@ -278,7 +278,7 @@ def iq_display_gmos(adinput=None, frame=1):
                 try:
                     disp_ad = ds.display_gmos(adinput=disp_ad,
                                          frame=frame,
-                                         saturation=58000,
+                                         saturation=saturation,
                                          overlay=iqmask)
                 except:
                     log.warning("Could not display %s" % disp_ad[0].filename)
