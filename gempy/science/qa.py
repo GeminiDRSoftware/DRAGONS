@@ -207,6 +207,14 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False,
                                     'with blue circles.')
                     log.stdinfo(finalStr, category='IQ')
                 
+                    # Store average FWHM and ellipticity to header
+                    ad.phu_set_key_value("MEANFWHM", iqdata[0][2],
+                                         comment=("Mean point source FWHM "+
+                                                  "(arcsec)"))
+                    ad.phu_set_key_value("MEANELLP", iqdata[0][0],
+                                         comment=("Mean point source "+
+                                                  "ellipticity"))
+
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
@@ -239,6 +247,11 @@ def iq_display_gmos(adinput=None, frame=1, saturation=58000):
     # a list containing one or more AstroData objects
     adinput = gt.validate_input(adinput=adinput)
 
+    # Define the keyword to be used for the time stamp for this user level
+    # function (use the one for measure_iq -- that's the only function
+    # called that modifies the input data)
+    timestamp_key = timestamp_keys["measure_iq"]
+
     # Initialize the list of output AstroData objects
     adoutput_list = []
 
@@ -261,9 +274,9 @@ def iq_display_gmos(adinput=None, frame=1, saturation=58000):
             # Measure IQ on the image
             log.stdinfo("Measuring FWHM of stars")
             disp_ad,stars = measure_iq(adinput=disp_ad, 
-                                  centroid_function="moffat",
-                                  display=False, qa=True, 
-                                  return_source_info=True)
+                                       centroid_function="moffat",
+                                       display=False, qa=True, 
+                                       return_source_info=True)
             if len(stars)==0:
                 frame+=1
                 continue
@@ -286,10 +299,23 @@ def iq_display_gmos(adinput=None, frame=1, saturation=58000):
 
             frame+=1
             
+            # Update headers in original file
+            mean_fwhm = disp_ad[0].phu_get_key_value("MEANFWHM")
+            mean_ellp = disp_ad[0].phu_get_key_value("MEANELLP")
+            if mean_fwhm is not None:
+                ad.phu_set_key_value("MEANFWHM",mean_fwhm,
+                                     comment=("Mean point source FWHM "+
+                                              "(arcsec)"))
+            if mean_ellp is not None:
+                ad.phu_set_key_value("MEANELLP",mean_ellp,
+                                     comment=("Mean point source "+
+                                              "ellipticity"))
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            
 
             # Append the output AstroData object to the list of output
             # AstroData objects
-            adoutput_list.append(disp_ad)
+            adoutput_list.append(ad)
 
         # Return the list of output AstroData objects
         return adoutput_list
