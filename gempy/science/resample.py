@@ -513,10 +513,11 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
                 raise Errors.InputError("%s has already been processed by " \
                                         "mosaic_detectors" % (ad.filename))
 
-            # Get BUNIT from science extensions 
-            # (gmosaic wipes out this keyword, it needs to 
+            # Get BUNIT and OVERSCAN from science extensions 
+            # (gmosaic wipes out these keywords, they need to 
             # be restored after runnning it)
             bunit = None
+            overscan = []
             for ext in ad["SCI"]:
                 ext_bunit = ext.get_key_value("BUNIT")
                 if bunit is None:
@@ -525,7 +526,14 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
                     if ext_bunit!=bunit:
                         raise Errors.ScienceError("BUNIT needs to be the" +
                                                   "same for all extensions")
-            
+                ext_overscan = ext.get_key_value("OVERSCAN")
+                if ext_overscan is not None:
+                    overscan.append(ext_overscan)
+            if len(overscan)>0:
+                avg_overscan = np.mean(overscan)
+            else:
+                avg_overscan = None
+
             # Determine whether VAR/DQ needs to be propagated
             if (ad.count_exts("VAR") == 
                 ad.count_exts("DQ") == 
@@ -606,10 +614,14 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
                 log.fullinfo("File "+ad_out.filename+\
                             " was successfully mosaicked")
 
-            # Restore BUNIT keyword to science extension header
+            # Restore BUNIT and OVERSCAN keywords to science extension header
             if bunit is not None:
                 gt.update_key_value(adinput=ad_out, function="bunit",
                                     value=bunit, extname="SCI")
+            if avg_overscan is not None:
+                for ext in ad_out["SCI"]:
+                    ext.set_key_value("OVERSCAN",avg_overscan,
+                                      comment="Overscan mean value")
 
             # Update GEM-TLM (automatic) and MOSAIC time stamps to the PHU
             # and update logger with updated/added time stamps
