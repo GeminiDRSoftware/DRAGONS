@@ -761,12 +761,12 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Check whether calibrations are already available
         calibrationless_adlist = []
         adinput = rc.get_inputs_as_astrodata()
-        for ad in adinput:
-            ad.mode = "update"
-            calurl = rc.get_cal(ad,caltype)
-            if not calurl:
-                calibrationless_adlist.append(ad)
-            
+        #for ad in adinput:
+        #    ad.mode = "update"
+        #    calurl = rc.get_cal(ad,caltype)
+        #    if not calurl:
+        #        calibrationless_adlist.append(ad)
+        calibrationless_adlist = adinput    
         # Request any needed calibrations
         if len(calibrationless_adlist) ==0:
             # print "pG603: calibrations for all files already present"
