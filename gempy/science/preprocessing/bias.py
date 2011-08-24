@@ -77,6 +77,7 @@ def subtract_bias(adinput=None, bias=None):
             # Check for the case that the science data is a CCD2-only
             # frame and the bias is a full frame                
             if ad.count_exts("SCI")==1 and this_bias.count_exts("SCI")>1:
+                new_bias = None
                 sciext = ad["SCI",1]
                 for biasext in this_bias["SCI"]:
                     # Use this extension if the bias detector section
@@ -91,17 +92,24 @@ def subtract_bias(adinput=None, bias=None):
                         varext = this_bias["VAR",extver]
                         dqext = this_bias["DQ",extver]
 
-                        this_bias = deepcopy(biasext)
-                        this_bias.rename_ext(name="SCI",ver=1)
+                        new_bias = deepcopy(biasext)
+                        new_bias.rename_ext(name="SCI",ver=1)
                         if varext is not None:
                             newvar = deepcopy(varext)
                             newvar.rename_ext(name="VAR",ver=1)
-                            this_bias.append(newvar)
+                            new_bias.append(newvar)
                         if dqext is not None:
                             newdq = deepcopy(dqext)
                             newdq.rename_ext(name="DQ",ver=1)
-                            this_bias.append(newdq)
+                            new_bias.append(newdq)
+
+                        this_bias = new_bias
                         break
+
+                if new_bias is None:
+                    raise Errors.InputError("Bias %s does not match " \
+                                            "science %s" % 
+                                            (this_bias.filename,ad.filename))
 
             # Check the inputs have matching binning and SCI shapes.
             gt.checkInputsMatch(adInsA=ad, adInsB=this_bias, 
