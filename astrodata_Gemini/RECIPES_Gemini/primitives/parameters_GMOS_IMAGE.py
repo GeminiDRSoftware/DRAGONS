@@ -48,6 +48,22 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "removeFringe":{
+    "suffix":{
+        "default"       : "_fringeCorrected",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "stats_scale":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "stackFlats":{
     "suffix":{
         "default"       : "_stacked",

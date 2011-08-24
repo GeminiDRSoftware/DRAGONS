@@ -1,3 +1,4 @@
+from astrodata import AstroData
 from astrodata import Errors
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
@@ -194,6 +195,75 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
 
         yield rc
     
+    def removeFringe(self, rc):
+        """
+        This primitive will scale the fringes to their matching science data
+        in the inputs, then subtract them.
+        The primitive getProcessedFringe must have been run prior to this in 
+        order to find and load the matching fringes into memory.
+        
+        :param stats_scale: Use statistics to calculate the scale values?
+        :type stats_scale: Python boolean (True/False)
+        
+        :param logLevel: Verbosity setting for log messages to the screen.
+        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
+                        screen. OR the message level as a string (i.e.,
+                        'critical', 'status', 'fullinfo'...)
+        """
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "removeFringe",
+                                 "starting"))
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+
+            # Check whether the removeFringe primitive has been run
+            # previously
+            if ad.phu_get_key_value("RMFRINGE"):
+                log.warning("%s has already been processed by " \
+                            "removeFringe" % (ad.filename))
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
+
+            # Get the appropriate fringe frame
+            fringe = AstroData(rc.get_cal(ad, "processed_fringe"))
+
+            # Take care of the case where there was no fringe 
+            if fringe.filename is None:
+                log.warning("Could not find an appropriate fringe for %s" \
+                            % (ad.filename))
+                # Append the input to the output without further processing
+                adoutput_list.append(ad)
+                continue
+
+            # Call the remove_fringe_image_gmos user level function,
+            # which returns a list; take the first entry
+            ad = pp.remove_fringe_image_gmos(adinput=ad, fringe=fringe,
+                                             stats_scale=rc["stats_scale"])[0]
+
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list 
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects and the scaled fringe
+        # frames to the reduction context
+        rc.report_output(adoutput_list)
+        
+        yield rc
+
     def stackFlats(self, rc):
         """
         This primitive will combine the input flats with rejection
