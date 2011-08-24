@@ -387,9 +387,11 @@ def command_clause(ro, coi):
         msg = 'REDUCE:\n'
         msg += '-'*30+'\n'
         if rqTyp == CalibrationRequest:
+            # print "RO390:"
             fn = rq.filename
             typ = rq.caltype
-            calname = coi.get_cal(fn, typ)
+            calname = None
+            ## THIS IS THE CACHE CHECK, DISABLED NOW: calname = coi.get_cal(fn, typ)
             # print "r399:", "handling calibrations"
             if calname == None:
                 # Do the calibration search
@@ -426,18 +428,18 @@ def command_clause(ro, coi):
                     os.mkdir(caldname)
                 # print "RO400:",calfname
                 if os.path.exists(calfname):
-                    coi.add_cal(fn, typ, calfname)
-                else:
-                    try:
-                        ad = AstroData(calurl, store=caldname)
-                    except urllib2.HTTPError, error:
-                        ad = None
-                        errstr = "Could not retrieve %s" % calurl
-                        log.error(errstr)
-                        #@@TODO: should this raise? raise ReductionExcept(errstr)
-                    if ad:
-                        coi.add_cal(fn, typ, ad.filename)
-                # adcc handles this now: coi.persist_cal_index()
+                    #coi.add_cal(fn, typ, calfname)
+                    log.warning("File exists at calibraiton location, will overwrite.")
+                try:
+                    ad = AstroData(calurl, store=caldname)
+                except urllib2.HTTPError, error:
+                    ad = None
+                    errstr = "Could not retrieve %s" % calurl
+                    log.error(errstr)
+                    #@@TODO: should this raise? raise ReductionExcept(errstr)
+                if ad:
+                    coi.add_cal(fn, typ, ad.filename)
+            # adcc handles this now: coi.persist_cal_index()
                 calname = calurl
             else:
                 msg += '%s already stored.\n' %(str(typ))

@@ -239,12 +239,12 @@ integrates other functionality.
                 try:
                     if store:
                         # print "AD230: Storing in,", store
-                        fname = urlfetch(dataset, store=store, clobber=storeClobber)
+                        fname = urlfetch(dataset, store=store, clobber= True) #storeClobber)
                         #fname,headers = urlretrieve(dataset, os.path.join(store, savename), None, 
                         #    urllib.urlencode({"gemini_fits_authorization":"good_to_go"}))
                     else:
                         # print "AD235: Retrieved to temp file"
-                        fname = urlfetch(dataset)
+                        fname = urlfetch(dataset, clobber=True)
                         #fname, headers = urlretrieve(dataset)
                     dataset = savename
                 except urllib2.HTTPError, error:
@@ -1571,7 +1571,7 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
 
         """
         
-        if (self.mode == "readonly"):
+        if (self.mode == "readonly" and not clobber):
             if rename == True  or rename == None:
                 if filename != None or filename != self.filename:
                     msg =  "Cannot use AstroData.write(..) on this instance,"

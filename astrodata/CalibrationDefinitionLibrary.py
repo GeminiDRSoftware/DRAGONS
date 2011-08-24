@@ -45,7 +45,7 @@ class CalibrationDefinitionLibrary(object):
         except:
             raise "Could not load XML Index."
        
-    def get_cal_req(self, inputs, caltype, write_input = True):
+    def get_cal_req(self, inputs, caltype, write_input = False):
         """
         For each input finds astrodata type to find corresponding xml file,
         loads the file.         

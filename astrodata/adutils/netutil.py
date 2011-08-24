@@ -5,7 +5,9 @@ import tempfile
 
 import cookielib 
 import urlparse
-
+from astrodata.adutils import gemLog
+log = gemLog.getGeminiLog()
+        
 def urlfetch(url, store = None, clobber = False):
     purl = urlparse.urlparse(url)
     host = "hbffits3.hi.gemini.edu" #@@CONFIG: FITSSTORE RETRIEVAL HOST
@@ -17,7 +19,7 @@ def urlfetch(url, store = None, clobber = False):
                                  purl.fragment)
     
     url = npurl.geturl()
-    # print "nu20:", url
+    log.info("nu20: adutils.urlfetch asked to get ", url)
 
     jar = cookielib.CookieJar()
 
@@ -60,10 +62,14 @@ def urlfetch(url, store = None, clobber = False):
         outname = outf.name
         outf.close()
 
-    if os.path.exists(outname) and not clobber:
-        raise "File Already Exists:" + outname
+    if os.path.exists(outname):
+        if not clobber:
+            raise "File Already Exists:" + outname
+        else:
+            log.warning("File exists, clobber == True, will overwrite/update")
     f = open(outname,"w")
     #print "netutil: downloading",url
+    log.debug("netutil: downloading +",url)
     while True:
         chunk = res.read(CHUNK)
         if chunk == "":

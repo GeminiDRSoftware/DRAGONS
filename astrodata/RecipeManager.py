@@ -1381,9 +1381,11 @@ class ReductionContext(dict):
         if type(caltype) != str:
             raise RecipeExcept("caltype not string, type = " + str( type(caltype)))
         if inputs is None:
-            addToCmdQueue = self.cdl.get_cal_req(self.original_inputs, caltype, write_input=True)
+            # note: this was using original inputs!
+            addToCmdQueue = self.cdl.get_cal_req(self.get_inputs_as_astrodata(),
+                                                 caltype)
         else:
-            addToCmdQueue = self.cdl.get_cal_req(inputs, caltype, write_input=True)
+            addToCmdQueue = self.cdl.get_cal_req(inputs, caltype)
         for re in addToCmdQueue:
             # print "RM1106:",repr(dir(re))
             re.source = source

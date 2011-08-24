@@ -903,8 +903,11 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                     log.info("Wrote %s in output directory" % name)
                 except Errors.OutputExists:
                     log.error( "CANNOT WRITE %s, already exists" % name)
+                except Errors.AstroDataError, err:
+                    log.error("CANNOT WRITE %s" % name + err.message)
                 except:
                     log.error("CANNOT WRITE %s, unknown reason" % name)
+                    
 
         if interactiveMode == True:
             reclist = ["USER"]
