@@ -351,8 +351,8 @@ def _select_bpm(adinput=None, bpm=None):
 
         # Check for the case that the BPM is full-frame but the science
         # is subdata (eg. CCD2 only data for GMOS)
-        new_bpm = None
         if ad.count_exts("SCI")==1 and bpm.count_exts("DQ")>1:
+            new_bpm = None
             sciext = ad["SCI",1]
             for bpmext in bpm["DQ"]:
                 # Use this extension if the bpm detector section
