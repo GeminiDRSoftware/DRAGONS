@@ -28,18 +28,34 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "iqDisplay", "starting"))
 
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
         # Loop over each input AstroData object in the input list
         frame = rc["frame"]
         if frame is None:
             frame = 1
         for ad in rc.get_inputs_as_astrodata():
 
-            # Call the iq_display_gmos user level function
-            adoutput = qa.iq_display_gmos(adinput=ad, frame=frame,
-                                          saturation=rc["saturation"])
+            # Call the iq_display_gmos user level function,
+            # which returns a list; take the first entry
+            ad = qa.iq_display_gmos(adinput=ad, frame=frame,
+                                    saturation=rc["saturation"])[0]
+
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)            
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
 
             # Increment frame number
             frame += 1
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
 
         yield rc
 

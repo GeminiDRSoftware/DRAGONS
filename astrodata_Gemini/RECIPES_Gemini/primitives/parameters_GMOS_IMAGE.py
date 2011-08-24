@@ -1,6 +1,13 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_GMOS_IMAGE.py file, in alphabetical order.
 {"iqDisplay":{
+    "suffix":{
+        "default"       : "_iqMeasured",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     "frame":{
         "default"       : 1,
         "type"          : "int",
