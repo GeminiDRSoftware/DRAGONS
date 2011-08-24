@@ -3,9 +3,10 @@
 
 localAstroTypeRecipeIndex = {
                                 "GMOS":["parent"],
-                                "GMOS_IMAGE":["child"],
+                                "GMOS_IMAGE":["qaReduce"],
                                 "F2_DARK": ["makeProcessedDark"],
                                 "F2_IMAGE": ["reduce"],
                                 "F2_IMAGE_FLAT": ["makeProcessedFlat"],
                                 "GMOS_IMAGE_FLAT": ["makeProcessedFlat"],
+                                "GMOS_BIAS": ["makeProcessedBias"],
                             }
