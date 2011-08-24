@@ -2,6 +2,7 @@
 # the input dataset with a sky or fringe frame
 
 import sys
+from copy import deepcopy
 import numpy as np
 from astrodata import Errors
 from astrodata import Lookups
@@ -10,6 +11,7 @@ from astrodata.adutils.gemutil import pyrafLoader
 from gempy import geminiTools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
+from gempy.science import resample as rs
 
 # Load the timestamp keyword dictionary that will be used to define the keyword
 # to be used for the time stamp for the user level function
@@ -281,7 +283,7 @@ def remove_fringe(adinput=None, fringe=None,
                     
                     # science median
                     smed = np.median(s.flatten()) 
-                    # fringe standard deviation
+                    # science standard deviation
                     sstd = s.std()
                     
                     # make an array of all the points where the pixel value is 
@@ -327,6 +329,213 @@ def remove_fringe(adinput=None, fringe=None,
             
             count+=1
         
+        # Return the output list
+        # These are the scaled fringe ad's
+        return adoutput_list
+    except:
+        # log the exact message from the actual exception that was raised
+        # in the try block. Then raise a general ScienceError with message.
+        log.critical(repr(sys.exc_info()[1]))
+        raise 
+
+
+def remove_fringe_image_gmos(adinput=None, fringe=None, 
+                             stats_section=None, stats_scale=True):
+    """
+    This function will scale the fringe extensions to the science
+    extensions, then subtract them.
+    
+    There are two ways to find the value to scale fringes by:
+    1. If stats_scale is set to True, the equation:
+    (letting science data = b (or B), and fringe = a (or A))
+    
+    arrayB = where({where[SCIb < (SCIb.median+2.5*SCIb.std)]} 
+                        > [SCIb.median-3*SCIb.std])
+    scale = arrayB.std / SCIa.std
+    
+    The section of the SCI arrays to use for calculating these statistics
+    is the CCD2 SCI data excluding the outer 5% pixels on all 4 sides.
+    Future enhancement: allow user to choose section
+    
+    2. If stats_scale=False, then scale will be calculated using:
+    exposure time of science / exposure time of fringe
+    
+    :param adinput: Astrodata input science data
+    :type adinput: Astrodata objects, either a single or a list of objects
+    
+    :param fringe: The fringe(s) to be scaled and subtracted from the input(s).
+    :type fringe: AstroData objects in a list, or a single instance.
+                Note: If there are multiple inputs and one fringe provided, 
+                then the same fringe will be applied to all inputs; else the 
+                fringe list must match the length of the inputs.
+    
+    :param stats_scale: Use statistics to calculate the scale values?
+    :type stats_scale: Python boolean (True/False). Default, True.
+    """
+    
+    # Instantiate log
+    log = gemLog.getGeminiLog()
+    
+    # Ensure that adinput and fringe are not None and make 
+    # them into lists if they are not already
+    adinput = gt.validate_input(adinput=adinput)
+    fringe = gt.validate_input(adinput=fringe)
+    
+    # Create a dictionary that has the AstroData objects specified by adinput
+    # as the key and the AstroData objects specified by fringe as the value
+    fringe_dict = gt.make_dict(key_list=adinput, value_list=fringe)
+
+    # Time stamp keyword
+    timestamp_key = timestamp_keys["remove_fringe"]
+    
+    # Initialize output list
+    adoutput_list = []
+    
+    try:
+        
+        # Loop through the inputs to perform scaling of fringes to the science 
+        for ad in adinput:
+            
+            # Check whether the user level function has been
+            # run previously
+            if ad.phu_get_key_value(timestamp_key):
+                raise Errors.InputError("%s has already been processed by " \
+                                        "remove_fringe_image_gmos" % 
+                                        (ad.filename))
+
+            # Get matching fringe
+            this_fringe = fringe_dict[ad]
+
+            # Check for the case that the science data is a CCD2-only
+            # frame and the fringe is a full frame                
+            if ad.count_exts("SCI")==1 and this_fringe.count_exts("SCI")>1:
+                new_fringe = None
+                sciext = ad["SCI",1]
+                for fringeext in this_fringe["SCI"]:
+                    # Use this extension if the fringe detector section
+                    # matches the science detector section
+                    if (str(fringeext.detector_section()) == 
+                        str(sciext.detector_section())):
+                        
+                        extver = fringeext.extver()
+                        log.fullinfo("Using fringe extension [SCI,%i]" % 
+                                     extver)
+
+                        varext = this_fringe["VAR",extver]
+                        dqext = this_fringe["DQ",extver]
+
+                        new_fringe = deepcopy(fringeext)
+                        new_fringe.rename_ext(name="SCI",ver=1)
+                        if varext is not None:
+                            newvar = deepcopy(varext)
+                            newvar.rename_ext(name="VAR",ver=1)
+                            new_fringe.append(newvar)
+                        if dqext is not None:
+                            newdq = deepcopy(dqext)
+                            newdq.rename_ext(name="DQ",ver=1)
+                            new_fringe.append(newdq)
+
+                        this_fringe = new_fringe
+                        break
+                if new_fringe is None:
+                    raise Errors.InputError("Fringe %s does not match " \
+                                            "science %s" % 
+                                            (this_fringe.filename,ad.filename))
+            
+            # Check the inputs have matching filters, binning and SCI shapes.
+            gt.checkInputsMatch(adInsA=ad, adInsB=this_fringe)
+        
+            
+            scale = 1.0
+            if not stats_scale:
+                # Use the exposure times to calculate the scale
+                log.fullinfo("Using exposure times to calculate the scaling"+
+                             " factor")
+                try:
+                    scale = ad.exposure_time() / this_fringe.exposure_time()
+                except:
+                    raise Errors.InputError("Could not get exposure times " +
+                                            "for %s, %s. Try stats_scale=True" %
+                                            (ad.filename,this_fringe.filename))
+            else:
+
+                # Use statistics to calculate the scaling factor, following
+                # masked_sci = where({where[sciExt < 
+                #                    (sciExt.median+2.5*sciExt.std)]} 
+                #                 > [sciExt.median-3*sciExt.std])
+                # scale = masked_sci.std / fringeExt.std
+                log.fullinfo("Using statistics to calculate the " +
+                             "scaling factor")
+
+                # Get CCD2 data for statistics
+                if ad.count_exts("SCI")==1:
+                    # Only one CCD present, assume it is CCD2
+                    sciext = ad["SCI",1]
+                    frngext = this_fringe["SCI",1]
+                else:
+                    # Otherwise, take the second science extension
+
+                    # Tile the data into one CCD per science extension,
+                    # reordering if necessary
+                    temp_ad = deepcopy(ad)
+                    temp_ad = rs.tile_arrays(adinput=temp_ad)[0]
+                    sciext = temp_ad["SCI",2]
+
+                    temp_fr = deepcopy(this_fringe)
+                    temp_fr = rs.tile_arrays(adinput=temp_fr)[0]
+                    frngext = temp_fr["SCI",2]
+
+                scidata = sciext.data
+                frngdata = frngext.data
+
+                # Take off 5% of the width as a border
+                xborder = int(0.05 * scidata.shape[1])
+                yborder = int(0.05 * scidata.shape[0])
+                if xborder<20:
+                    xborder = 20
+                if yborder<20:
+                    yborder = 20
+                log.fullinfo("Using CCD2 data section [%i:%i,%i:%i] for " \
+                             "statistics" %
+                             (xborder,scidata.shape[1]-xborder,
+                              yborder,scidata.shape[0]-yborder))
+
+                s = scidata[yborder:-yborder,xborder:-xborder]
+                f = frngdata[yborder:-yborder,xborder:-xborder]
+
+                # Get median and standard deviation
+                # (Must flatten for compatibility with 
+                # older versions of numpy)
+                smed = np.median(s.flatten()) 
+                sstd = s.std()
+                  
+                # Make an array of all the points where the pixel value is 
+                # less than the median value + 2.5 x the standard deviation.
+                # and greater than the median -3 x the standard deviation.
+                smiddle = s[np.logical_and(s<(smed+(2.5*sstd)),
+                                           s>(smed-(3.0*sstd)))]
+                    
+                # Scale factor
+                # This is the same logic as used in the IRAF girmfringe,
+                # but it doesn't seem to work well in either case.
+                scale = smiddle.std() / f.std() 
+                
+            log.fullinfo("Scale factor found = "+str(scale))
+                
+            # Use mult from the arith toolbox to perform the scaling of 
+            # the fringe frame
+            scaled_fringe = this_fringe.mult(scale)
+            
+            # Subtract the scaled fringe from the science
+            ad_out = ad.sub(scaled_fringe)
+            
+            # Update GEM-TLM (automatic) and RMFRINGE time stamps to the PHU
+            # and update logger with updated/added time stamps
+            gt.mark_history(adinput=ad_out, keyword=timestamp_key)
+            
+            # Append to output list
+            adoutput_list.append(ad_out)
+            
         # Return the output list
         # These are the scaled fringe ad's
         return adoutput_list
