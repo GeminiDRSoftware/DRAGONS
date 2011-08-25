@@ -11,7 +11,7 @@ class TRECS_IMAGE(DataClassification):
     name="TRECS_IMAGE"
     usage = "Applies to all IMAGE datasets from the TRECS instrument."
     parent = "TRECS"
-    requirement = ISCLASS("TRECS") & PHU({"{prohibit}GRATING":".*?[mM]irror.*?"})
+    requirement = ISCLASS("TRECS") & PHU(GRATING='[mM]irror')
 
 newtypes.append(TRECS_IMAGE())
 
