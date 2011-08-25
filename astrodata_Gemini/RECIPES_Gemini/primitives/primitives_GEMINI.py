@@ -780,7 +780,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         # List calibrations found
         for ad in adinput:
             calurl = rc.get_cal(ad, caltype) #get from cache
-            # print "pG565:", repr(calurl)
             if calurl:
                 cal = AstroData(calurl)
                 if cal.filename is None:
@@ -1000,13 +999,9 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Check for at least 2 input files
         adinput = rc.get_inputs_as_astrodata()
         if len(adinput)<2:
-            if "QA" in rc.context:
-                log.warning("Less than 2 frames provided as input. " +
-                            "Not proceeding with registration and stacking.")
-                rc.report_output(adinput)
-            else:
-                raise Errors.PrimitiveError("Fewer than 2 frames " +
-                                            "provided as input.")
+            log.warning("Fewer than 2 frames provided as input. " +
+                        "Not proceeding with registration and stacking.")
+            rc.report_output(adinput)
         else:
 
             recipe_list = []

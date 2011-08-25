@@ -107,9 +107,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     log.warning("Fewer than 2 frames provided as input. " +
                                 "Not making fringe frame.")
                     break
-                else:
-                    raise Errors.PrimitiveError("Fewer than 2 frames " +
-                                                "provided as input.")
 
         if red:
             recipe_list = []
@@ -143,7 +140,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # Check for at least 2 input frames
         adinput = rc.get_inputs_as_astrodata()
         if len(adinput)<2:
-            log.warning('Less than 2 frames provided as input. ' +
+            log.warning('Fewer than 2 frames provided as input. ' +
                         'Not making fringe frame.')
             adoutput_list = adinput
         else:
