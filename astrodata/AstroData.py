@@ -545,7 +545,7 @@ integrates other functionality.
             
             # create a master table out of the host and update the EXTVER 
             # for the guest as it is being updated in the table
-            et_host = ExtTable(self.hdulist)
+            et_host = ExtTable(self)
             et_guest = ExtTable(hdulist)
             if auto_number:
                 guest_bigver = et_guest.largest_extver()
