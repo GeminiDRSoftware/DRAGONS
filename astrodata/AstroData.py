@@ -525,6 +525,8 @@ integrates other functionality.
         This function appends more data units (aka "HDUs") to the AstroData
         instance.
         """
+        et_host = None
+        et_guest = None
         hdulist = None
         if moredata != None:
             if isinstance(moredata, AstroData):
@@ -596,7 +598,6 @@ integrates other functionality.
             et_host = ExtTable(self.hdulist)
             if not auto_number:
                 for ext in et_host.xdict.keys():
-                    print "here 1"
                     if header["EXTNAME"] == ext:
                         if header["EXTVER"] in et_host.xdict[ext].keys():
                             raise Errors.AstroDataError(\
