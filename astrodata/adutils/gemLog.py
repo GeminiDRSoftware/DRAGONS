@@ -451,6 +451,7 @@ class GeminiLogger(object):
                 self.logger.status('')
             else:
                 for new_line in new_lines:
+                    # print "gL454", repr(self.logger), new_line
                     self.logger.status(new_line)
     
     def warning(self, msg, category=None):

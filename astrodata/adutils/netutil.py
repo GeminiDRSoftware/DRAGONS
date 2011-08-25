@@ -6,9 +6,9 @@ import tempfile
 import cookielib 
 import urlparse
 from astrodata.adutils import gemLog
-log = gemLog.getGeminiLog()
         
 def urlfetch(url, store = None, clobber = False):
+    log = gemLog.getGeminiLog()
     purl = urlparse.urlparse(url)
     host = "hbffits3.hi.gemini.edu" #@@CONFIG: FITSSTORE RETRIEVAL HOST
     npurl = urlparse.ParseResult(purl.scheme,
@@ -19,7 +19,7 @@ def urlfetch(url, store = None, clobber = False):
                                  purl.fragment)
     
     url = npurl.geturl()
-    log.info("nu20: adutils.urlfetch asked to get ", url)
+    log.debug("nu20: adutils.urlfetch asked to get ", url)
 
     jar = cookielib.CookieJar()
 
