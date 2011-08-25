@@ -5,8 +5,7 @@ class GMOS_IMAGE_FLAT(DataClassification):
         """
     parent = "GMOS_IMAGE"
     requirement = OR(AND([  ISCLASS("GMOS_IMAGE"),
-                            PHU(OBSTYPE="FLAT"),
-                            NOT(ISCLASS("GMOS_IMAGE_TWILIGHT"))  ]),
+                            PHU(OBSTYPE="FLAT")       ]),
                      AND([  ISCLASS("GMOS_IMAGE"),
                             OR([PHU(OBJECT="Twilight"),
                                 PHU(OBJECT="twilight")])  ]))

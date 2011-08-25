@@ -4,7 +4,6 @@ class GMOS_BIAS(DataClassification):
         Applies to all dark datasets from the GMOS instruments
         """
     parent = "GMOS_IMAGE"
-    requirement = AND([  ISCLASS("GMOS_IMAGE"),
-                         PHU(OBSTYPE="BIAS")  ])
+    requirement = PHU(OBSTYPE="BIAS")
 
 newtypes.append(GMOS_BIAS())

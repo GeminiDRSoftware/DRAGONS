@@ -5,6 +5,7 @@ class GMOS_IMAGE(DataClassification):
         """
     parent = "GMOS"
     requirement = AND([  ISCLASS("GMOS"),
-                         PHU(GRATING="MIRROR")  ])
+                         PHU(GRATING="MIRROR"),
+                         NOT(ISCLASS("GMOS_BIAS"))  ])
 
 newtypes.append(GMOS_IMAGE())
