@@ -15,8 +15,8 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
     def central_wavelength(self, dataset, asMicrometers=False,
                            asNanometers=False, asAngstroms=False, **args):
         # For TRECS data, the central wavelength is recorded in
-        # nanometers
-        input_units = "nanometers"
+        # micrometers - it's actually hardwired by disperser below.
+        input_units = "micrometers"
         # Determine the output units to use
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         if unit_arg_list.count(True) == 1:
@@ -49,6 +49,10 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
             central_wavelength = 10.5
         elif disperser == "LowRes-20":
             central_wavelength = 20.0
+        elif disperser == 'Hi-Res-10':
+            # There is a HRCENWL keyword that contains the central wavelength only
+            # if we are using the HiRes-10 grating.
+            central_wavelength = dataset.phu_get_key_value('HRCENWL')
         elif disperser == "Mirror":
             raise Errors.DescriptorTypeError()
         else:
