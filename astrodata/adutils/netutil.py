@@ -66,7 +66,7 @@ def urlfetch(url, store = None, clobber = False):
         if not clobber:
             raise "File Already Exists:" + outname
         else:
-            log.warning("File exists, clobber == True, will overwrite/update")
+            log.debug("File exists, clobber == True, will overwrite/update")
     f = open(outname,"w")
     #print "netutil: downloading",url
     log.debug("netutil: downloading +",url)

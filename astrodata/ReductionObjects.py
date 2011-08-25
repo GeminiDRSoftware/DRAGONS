@@ -429,7 +429,7 @@ def command_clause(ro, coi):
                 # print "RO400:",calfname
                 if os.path.exists(calfname):
                     #coi.add_cal(fn, typ, calfname)
-                    log.warning("File exists at calibraiton location, will overwrite.")
+                    log.warning("File exists at calibration location, will overwrite.")
                 try:
                     ad = AstroData(calurl, store=caldname)
                 except urllib2.HTTPError, error:
