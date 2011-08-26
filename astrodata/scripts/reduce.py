@@ -900,7 +900,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                 name = ad.filename
                 try:
                     ad.write(clobber = clobber)
-                    log.info("Wrote %s in output directory" % name)
+                    log.stdinfo("Wrote %s in output directory" % name)
                 except Errors.OutputExists:
                     log.error( "CANNOT WRITE %s, already exists" % name)
                 except Errors.AstroDataError, err:
