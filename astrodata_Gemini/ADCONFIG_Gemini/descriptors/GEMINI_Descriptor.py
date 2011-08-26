@@ -592,7 +592,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                    "UTDATE"]:
             try:
                 utdate_hdr = dataset.phu_get_key_value(kw).strip()
-            except KeyError:
+            except (KeyError, AttributeError):
                 #print "Didn't get a utdate from keyword %s" % kw
                 utdate_hdr = ""
 
@@ -647,7 +647,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         for kw in [self.get_descriptor_key("key_ut_time"), "UT", "TIME-OBS", "STARTUT"]:
             try:
                 uttime_hdr = dataset.phu_get_key_value(kw).strip()
-            except KeyError:
+            except (KeyError, AttributeError):
                 #print "Didn't get a uttime from keyword %s" % kw
                 uttime_hdr = ""
             # The standard mandates HH:MM:SS[.S...] 
