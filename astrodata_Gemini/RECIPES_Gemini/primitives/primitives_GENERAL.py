@@ -108,7 +108,7 @@ class GENERALPrimitives(PrimitiveSet):
             stream = rc["to_stream"]
         else:
             stream = "main"
-        
+        prefix = rc["prefix"];
         
         if "by_token" in rc:
             bt = rc["by_token"]
@@ -118,9 +118,14 @@ class GENERALPrimitives(PrimitiveSet):
             # print "pG110:",repr(rc.outputs)
         else:
             inputs = rc.get_inputs_as_astrodata()
+                
             log.info("Reporting Output: "+", ".join([ ad.filename for ad in inputs]))
-            rc.report_output(inputs, stream = stream)
-            rc.report_output(inputs)
+            if prefix:
+                for inp in inputs:
+                    inp.filename = os.path.join(
+                                        os.path.dirname(ad.filename),
+                                        prefix+os.path.basename(ad.filename))
+            rc.report_output(inputs, stream = stream, )
         yield rc
     forwardStream = forwardInput
     

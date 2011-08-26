@@ -1,6 +1,3 @@
-#
-#
-#
-#setStackable
-#getStackable
+showInputs
+forwardInput(prefix = "a_")
 showInputs
