@@ -1287,7 +1287,7 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
                 # infer bad extvers to a number.
                 inferEXT = max(hdul, key= lambda arg: arg.header.get("EXTVER"))
                 inferEV = int(inferEXT.header.get("EXTVER"))
-                print "AD1291:", inferEV
+                #print "AD1291:", inferEV
                 if inferEV < 1:
                     inferEV = 0
                     
