@@ -19,6 +19,7 @@ class ExtTable(object):
         if not isinstance(ad, astrodata.AstroData):
             raise Errors.ExtTableError(\
                 "Accepts only pyfits hdulist or AstroData instance")
+        self.ad = ad
         self.create_xdict(ad)
 
     def create_xdict(self, ad=None):
