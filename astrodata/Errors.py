@@ -98,6 +98,12 @@ class ExistError(Error):
     """
     message = "Descriptor does not exist for this instrument"
 
+class ExtTableError(Error):
+    """
+    General exception raised for Errors in ExtTable.py
+    """
+    message = "Exception raised in ExtTable.py"
+
 class IncompatibleOperand(Error):
     """
     Exception raised when the other operand in a DescriptorValue binary 

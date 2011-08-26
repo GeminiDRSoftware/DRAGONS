@@ -14,18 +14,16 @@ class ExtTable(object):
         if ad is None:
             print "WARNING: cannot create table without AstroData instance"
             self.ad = None
-        #if len(ad.hdulist) > 1:
         if isinstance(ad, pyfits.core.HDUList):
             ad = astrodata.AstroData(ad)
         if not isinstance(ad, astrodata.AstroData):
             raise Errors.ExtTableError(\
                 "Accepts only pyfits hdulist or AstroData instance")
-            self.create_xdict(ad)
+        self.create_xdict(ad)
 
     def create_xdict(self, ad=None):
         if ad is None:
             raise Errors.ExtTableError("Accepts only one AstroData instance")
-        neg_xver = -1
         extnames = []
         for hdu in ad.hdulist[1:]:
             xname = None

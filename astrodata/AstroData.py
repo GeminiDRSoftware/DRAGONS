@@ -547,6 +547,7 @@ integrates other functionality.
             
             # create a master table out of the host and update the EXTVER 
             # for the guest as it is being updated in the table
+            
             et_host = ExtTable(self)
             et_guest = ExtTable(hdulist)
             if auto_number:
@@ -595,14 +596,17 @@ integrates other functionality.
             
             # check for conflict if not auto_number then increment
             # off the largest host extver unless the extname is larger
-            et_host = ExtTable(self.hdulist)
+            et_host = ExtTable(self)
             if not auto_number:
                 for ext in et_host.xdict.keys():
                     if header["EXTNAME"] == ext:
                         if header["EXTVER"] in et_host.xdict[ext].keys():
                             raise Errors.AstroDataError(\
-                                "EXTNAME EXTVER conflict, use auto_number")
+                                "EXTNAME EXTVER conflict, use auto_number") 
             host_bigver = et_host.largest_extver()
+            #print "ad607: host_bigver = ", host_bigver
+            #print "ad608: header['EXTVER'] = ", header["EXTVER"]
+
             if header["EXTVER"] > host_bigver:
                 extver = header["EXTVER"]
             else:
@@ -626,9 +630,23 @@ integrates other functionality.
                 self.hdulist.close()
                 self.hdulist = None
  
+    def remove(self, index):
+        """
+        :param index: the extension index, either an int or (EXTNAME, EXTVER)
+            pair before which the extension is to be inserted. Note, the 
+            first data extension is [0], you cannot insert before the PHU.
+            Index always refers to Astrodata Numbering system, 0 = HDU
+        :type index: integer or (EXTNAME,EXTVER) tuple
+        
+        """
+        if type(index) == tuple:
+            index = self.get_int_ext(index, hduref=True)
+            self.hdulist.__delitem__(index)
+        else:    
+            self.hdulist.__delitem__(index - 1)
             
-    def insert(self, index, moredata=None, data=None, header=None, ai=False, \
-               extname=None, replace=False, extver=False):
+    def insert(self, index, moredata=None, data=None, header=None, \
+               auto_number=False, extname=None, extver=False):
         """
         :param index: the extension index, either an int or (EXTNAME, EXTVER)
             pair before which the extension is to be inserted. Note, the 
@@ -650,24 +668,24 @@ integrates other functionality.
             with this AstroData instance.
         :type header: pyfits.Header
         
-        :param ai: auto-increment appends to match existing extname - extver 
+        :param auto_number: auto-increment appends to match existing extname - extver 
             convention.
-        :type ai: boolean
+        :type auto_number: boolean
 
         :param extname: extension name (ex, 'SCI', 'VAR', 'DQ')
         :type extname: string
 
-        :param replace: delete hdulist[index+1] and then insert
-
+        :param extver: extension version (ex, 1, 2, 3) 
+        :type extver: integer
+        
         This function inserts more data units (aka an "HDU") to the AstroData
         instance.
         """
         if type(index) == tuple:
             index = self.get_int_ext(index, hduref=True)
-        elif ai:
-            index += 1
         if (moredata == None):
-            if ai:
+            if auto_number:
+                print "Under construction: auto_number append"
                 # ** begin auto increment algorithm **
                 if data is None or header is None:
                     raise Errors.AstroDataError("data AND header must be set")
@@ -688,33 +706,14 @@ integrates other functionality.
                 
                 old_extname = self.hdulist[index].header['EXTNAME']
                 old_extver = self.hdulist[index].header['EXTVER']
-                if replace:
-                    # compare old ext (one about to be replaced) extname
-                    # with given extname, if dont match decrement post extname's 
-                    # extver(s), if any, or else take the old extnames's extver
-                    self.hdulist.__delitem__(index)
-                    if old_extname != extname:
-                        self.post_extver_manager(index=index, \
-                            extname=old_extname, extver=old_extver, decr=True)
-                        self.hdulist.insert(index,pyfits.ImageHDU(data=data, \
-                            header=header))
-                        self.hdulist[index].header['EXTVER'] = last_extver
-                    else:
-                        self.hdulist.insert(index,pyfits.ImageHDU(data=data, \
-                            header=header))
-                        self.hdulist[index].header['EXTVER'] = old_extver
+                # perform regular insert
+                self.hdulist.insert(index,pyfits.ImageHDU(data=data, \
+                    header=header))
+                if old_extname != extname:
+                    self.hdulist[index].header['EXTVER'] = last_extver + 1
                 else:
-                    # perform regular insert
-                    self.hdulist.insert(index,pyfits.ImageHDU(data=data, \
-                        header=header))
-                    if old_extname != extname:
-                        self.hdulist[index].header['EXTVER'] = last_extver + 1
-                    else:
-                        self.hdulist[index].header['EXTVER'] = old_extver
+                    self.hdulist[index].header['EXTVER'] = old_extver
                 
-                # now increment all post extname's extver(s) (if any)
-                self.post_extver_manager(index=index, \
-                    extname=extname, extver=last_extver, incr=True)
                 # ** end auto increment algorithm **   
             else:
                 if len(self.hdulist) == 0:
@@ -750,7 +749,7 @@ integrates other functionality.
         """
         if not as_html:
             hdulisttype = ""
-            
+            phutype = None
             #Check basic structure of ad
             if isinstance(self, astrodata.AstroData):
                 selftype = "AstroData"
@@ -1302,39 +1301,6 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
                         hdu._extver = inferEV
                         
     
-    def post_extver_manager(self, index=None, extname=None, extver=None,  \
-                            decr=False, incr=False):
-        """
-        :param index: AstroData indexing number
-        :type index: integer
-
-        :param extname: extension name
-        :type extname: string
-
-        :param extver: extension version number
-        :type extver: integer
-
-        :param decr: flag to decrement post extname's extver(s)
-        :type decr: bool
-        
-        :param incr: flag to increment post extname's extver(s)
-        :type incr: bool
-
-        Used specifically for auto increment algorithm in insert and replace.
-        Loops through all post extensions and adjusts the extver accordingly.
-        """
-        
-        if decr:
-            for i in range(index, len(self.hdulist)):
-                if self.hdulist[i].header.has_key('EXTNAME'):
-                    if self.hdulist[i].header['EXTNAME'] == extname:
-                        self.hdulist[i].header['EXTVER'] -= 1
-        if incr:
-            for i in range(index+1, len(self.hdulist)):
-                if self.hdulist[i].header.has_key('EXTNAME'):
-                    if self.hdulist[i].header['EXTNAME'] == extname:
-                        self.hdulist[i].header['EXTVER'] += 1
-    
     def rename_ext(self, name, ver = None, force = True):
         """
         :param name: New "EXTNAME" for the given extension.
@@ -1384,7 +1350,7 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
     #alias
     setExtname = rename_ext
    
-    def replace(self, index, data=None, header=None, phu=None, ai=True):
+    def replace(self, index, data=None, header=None, phu=None):
         """
         :param index: the extension index, either an int or (EXTNAME, EXTVER)
             pair before which the extension is to be inserted. Note, the 
@@ -1408,17 +1374,31 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
         Sets up a call to insert with the replace flag set, but also handles 
         direct replacement of header, data or phu
         """
+        hdul = self.gethdul()
+        if type(index) == tuple:
+            index = self.get_int_ext(index)
         if phu is None:
             if data is None and header is not None:
-                self.hdulist[index+1].header = header
+                hdul[index+1].header = header
             elif data is not None and header is None:
-                self.hdulist[index+1].data = data
+                hdul[index+1].data = data
             else:
-                self.insert(index=index, data=data, header=header, ai=True, \
-                    replace=True)
+                #insert replace algorithm here
+                old_extname = hdul[index].header['EXTNAME']
+                old_extver = hdul[index].header['EXTVER']
+                hdul.__delitem__(index)
+                if old_extname != extname:
+                    hdul.insert(index,pyfits.ImageHDU(data=data, \
+                        header=header))
+                    hdul[index].header['EXTVER'] = last_extver
+                else:
+                    hdul.insert(index,pyfits.ImageHDU(data=data, \
+                        header=header))
+                    hdul[index].header['EXTVER'] = old_extver
+                
         else:
-            self.hdulist.__delitem__(0)
-            self.hdulist.insert(0, phu)
+            hdul.__delitem__(0)
+            hdul.insert(0, phu)
 
   
     def verify_header(self, extname=None, extver=None, header=None):
