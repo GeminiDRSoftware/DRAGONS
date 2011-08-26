@@ -11,8 +11,8 @@ LOCALCALMGR = "http://localhost:%(httpport)d/calsearch.xml?caltype=%(caltype)s"
 #"None # needs to have adcc http port in
 CALTYPEDICT = { "bias": "bias",
                 "flat": "flat",
-                "processed_bias": "processed_bias",
-                "processed_flat": "processed_flat",
+                "processed_bias":   "processed_bias",
+                "processed_flat":   "processed_flat",
                 "processed_fringe": "processed_fringe"}
 
 def urljoin(*args):
@@ -55,6 +55,7 @@ def upload_calibration(filename):
 
 
 def calibration_search(rq, fullResult = False):
+    print "calibration_search" * 6
     from astrodata.FitsStorageFeatures import FitsStorageSetup
     from xmlrpclib import DateTime 
     fss = FitsStorageSetup() # note: uses current working directory!!!

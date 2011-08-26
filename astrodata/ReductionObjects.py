@@ -387,7 +387,7 @@ def command_clause(ro, coi):
         msg = 'REDUCE:\n'
         msg += '-'*30+'\n'
         if rqTyp == CalibrationRequest:
-            # print "RO390:"
+            #print "RO390:", repr(rq)
             fn = rq.filename
             typ = rq.caltype
             calname = None
@@ -401,7 +401,7 @@ def command_clause(ro, coi):
                     prs = Proxies.PRSProxy.get_adcc()
                     
                 if usePRS:
-                    #print "RO402:", repr(rq.as_dict())
+                    #print "RO404:", repr(rq.as_dict())
                     try:
                         calurl = prs.calibration_search( rq )
                     except:

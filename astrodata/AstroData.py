@@ -1284,6 +1284,23 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
                         "added by AstroData", after="EXTNAME")
                     hdu.name = SCI
                     hdu._extver = i
+            else:
+                # infer bad extvers to a number.
+                inferEXT = max(hdul, key= lambda arg: arg.header.get("EXTVER"))
+                inferEV = int(inferEXT.header.get("EXTVER"))
+                print "AD1291:", inferEV
+                if inferEV < 1:
+                    inferEV = 0
+                    
+                numhdu = len(hdul)
+                for i in range(1, numhdu):
+                    hdu = hdul[i]
+                    ev = hdu.header.get("EXTVER")
+                    inferEV += 1
+                    if not ev or int(ev)< 1:
+                        hdu.header.update("EXTVER", inferEV ,after="EXTNAME")
+                        hdu._extver = inferEV
+                        
     
     def post_extver_manager(self, index=None, extname=None, extver=None,  \
                             decr=False, incr=False):

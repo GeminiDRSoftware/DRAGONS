@@ -180,12 +180,15 @@ class DataSpider(object):
                         try:
                             # NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE  NOTE
                             # fl is the astrodata instance of tfile/fname
+                            
                             fl = AstroData(fname)
+                            
                             #
                             # NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE  NOTE
                             
                         except:
                             mes = "Could not open %s as AstroData" % fname
+                            raise
                             raise Errors.AstroDataError(mes)
                             continue
 
@@ -316,9 +319,17 @@ class DataSpider(object):
                             # print ""
 
                             if (showinfo == True):
-                                hlist = pyfits.open(fname)
-                                hlist.info()
-                                hlist.close()
+                                print "-"*40
+                                print "AstroData.info():"
+                                fl.info()
+                                print "-"*40
+                                print "pyfits.info():"
+                                fl.hdulist.info()
+                                print "-"*40
+
+                                #hlist = pyfits.open(fname)
+                                #hlist.info()
+                                #hlist.close()
 
                             # print descriptors
                             # show descriptors                            

@@ -90,10 +90,12 @@ class CalibrationDefinitionLibrary(object):
                                 "as the calibration system inspects the file itself. "
                                 "As the file is protected as readonly, the system will "
                                 "assume it is unchanged since loading.")
+            
             cr.filename = inp.filename
+            cr.ad = inp
             cr.caltype = caltype
             # @@NOTE: should use IDFactory, not data_label which HAPPENS to be the id
-            cr.datalabel = repr(inp.data_label())
+            cr.datalabel = inp.data_label().for_db()
             
             ad = inp # saves me time, as I cut/pasted the below from a test script
             #print "CDL99:", str(ad.ut_datetime())

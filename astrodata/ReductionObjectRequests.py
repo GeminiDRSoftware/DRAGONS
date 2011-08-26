@@ -34,7 +34,8 @@ class CalibrationRequest(ReductionObjectRequest):
     types = None
     
     def __init__(self,  filename=None, identifiers={}, criteria={}, 
-                    priorities={}, caltype=None , source = 'all'):
+                    priorities={}, caltype=None , source = 'all', ad = None):
+                    
         super(CalibrationRequest, self).__init__()
         self.filename = None#filename
         self.identifiers = {}#identifiers
@@ -50,7 +51,8 @@ class CalibrationRequest(ReductionObjectRequest):
                      'datalabel' : self.datalabel,
                      'source': self.source,
                      "descriptors": self.descriptors,
-                     "types": self.types
+                     "types": self.types,
+                     # "ad":self.ad
                      })
         # print 'ROR50:', retd
         return retd
@@ -61,6 +63,7 @@ class CalibrationRequest(ReductionObjectRequest):
         self.datalabel = params['datalabel'] if 'datalabel' in params else None
         self.descriptors = params["descriptors"] if "descriptors" in params else None
         self.types = params["types"] if "types" in params else None
+        self.ad = params["ad"] if "types" in params else None
         
         
     def __str__(self):
