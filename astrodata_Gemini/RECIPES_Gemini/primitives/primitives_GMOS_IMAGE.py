@@ -102,11 +102,10 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                 "correction is not recommended.")
             elif len(adinput)<2:
                 # Can't make a fringe frame without at least 2 input frames
-                if "QA" in rc.context:
-                    red = False
-                    log.warning("Fewer than 2 frames provided as input. " +
-                                "Not making fringe frame.")
-                    break
+                red = False
+                log.warning("Fewer than 2 frames provided as input. " +
+                            "Not making fringe frame.")
+                break
 
         if red:
             recipe_list = []

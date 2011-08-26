@@ -726,14 +726,10 @@ class GEMINIPrimitives(GENERALPrimitives):
                 # Test to see if we found a fringe
                 fringe = AstroData(rc.get_cal(ad, "processed_fringe"))
                 if fringe.filename is None:
-                    if "QA" in rc.context:
-                        rm_fringe = False
-                        log.warning("No processed fringes found")
-                        rc.report_output(rc.get_inputs_as_astrodata())
-                        break 
-                    else:
-                        raise Errors.PrimitiveError("No processed fringes " +
-                                                    "found")
+                    rm_fringe = False
+                    log.warning("No processed fringes found")
+                    rc.report_output(rc.get_inputs_as_astrodata())
+                    break 
 
         # If no errors found, remove the fringes
         if rm_fringe:
