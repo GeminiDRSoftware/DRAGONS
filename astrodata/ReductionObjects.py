@@ -438,7 +438,7 @@ def command_clause(ro, coi):
                     log.error(errstr)
                     #@@TODO: should this raise? raise ReductionExcept(errstr)
                 if ad:
-                    coi.add_cal(fn, typ, ad.filename)
+                    coi.add_cal(ad, typ, ad.filename)
             # adcc handles this now: coi.persist_cal_index()
                 calname = calurl
             else:
