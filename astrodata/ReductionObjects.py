@@ -387,8 +387,12 @@ def command_clause(ro, coi):
         msg = 'REDUCE:\n'
         msg += '-'*30+'\n'
         if rqTyp == CalibrationRequest:
-            #print "RO390:", repr(rq)
-            fn = rq.filename
+            #print "RO390:", repr(rq.as_dict())
+            sci_ad = rq.ad
+            if sci_ad:
+                fn=sci_ad.filename
+            else:
+                fn = rq.filename
             typ = rq.caltype
             calname = None
             ## THIS IS THE CACHE CHECK, DISABLED NOW: calname = coi.get_cal(fn, typ)
@@ -438,7 +442,7 @@ def command_clause(ro, coi):
                     log.error(errstr)
                     #@@TODO: should this raise? raise ReductionExcept(errstr)
                 if ad:
-                    coi.add_cal(ad, typ, ad.filename)
+                    coi.add_cal(sci_ad, typ, ad.filename)
             # adcc handles this now: coi.persist_cal_index()
                 calname = calurl
             else:

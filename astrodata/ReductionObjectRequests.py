@@ -43,6 +43,7 @@ class CalibrationRequest(ReductionObjectRequest):
         self.priorities = {}#priorities
         self.caltype = None#caltype
         self.source = source
+        self.ad = ad
         
     def as_dict(self):
         retd = {}
@@ -52,7 +53,7 @@ class CalibrationRequest(ReductionObjectRequest):
                      'source': self.source,
                      "descriptors": self.descriptors,
                      "types": self.types,
-                     # "ad":self.ad
+                     #"ad":self.ad
                      })
         # print 'ROR50:', retd
         return retd
