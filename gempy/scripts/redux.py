@@ -81,7 +81,6 @@ if __name__=='__main__':
                   "--context","QA",
                   "--logLevel","stdinfo",
                   "-p", "clobber=True",
-                  "-r", "qaReduce", 
                   imgpath]
     subprocess.call(reduce_cmd)
 
