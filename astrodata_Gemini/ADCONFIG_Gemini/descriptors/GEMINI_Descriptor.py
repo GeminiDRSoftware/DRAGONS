@@ -709,7 +709,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 if(timeonly):
                     return ut_datetime.time()
                 return ut_datetime
-        except KeyError:
+        except (KeyError, AttributeError):
             pass
 
         # OK, now we're getting a desperate. If we're in strict mode, we give up now
