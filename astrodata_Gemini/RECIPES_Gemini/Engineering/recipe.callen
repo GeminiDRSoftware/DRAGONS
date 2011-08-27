@@ -1,3 +1,4 @@
 showInputs
 forwardInput(prefix = "a_")
+getProcessedBias
 showInputs
