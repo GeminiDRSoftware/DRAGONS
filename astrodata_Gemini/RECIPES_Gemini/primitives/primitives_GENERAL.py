@@ -123,7 +123,6 @@ class GENERALPrimitives(PrimitiveSet):
             if prefix:
                 for inp in inputs:
                     inp.filename = os.path.join(
-                                        os.path.dirname(ad.filename),
                                         prefix+os.path.basename(ad.filename))
             rc.report_output(inputs, stream = stream, )
         yield rc
