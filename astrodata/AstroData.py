@@ -385,7 +385,11 @@ integrates other functionality.
                     #print " gd84: keyerror:[%s]" % extname
                     pass
             self.relhdul()
-            return AstroData(self, exts=exs)
+            
+            if len(exs):
+                return AstroData(self, exts=exs)
+            else:
+                return None
             
         elif (type (ext) == tuple) or (type(ext) == int):
             # print "gd121: TUPLE or INT!"
