@@ -770,27 +770,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         else:
             rc.rq_cal(caltype, calibrationless_adlist, source=source)
         yield rc
-        log.stdinfo("getCalibration: Results")
-
-
-        # List calibrations found
-        for ad in adinput:
-            calurl = rc.get_cal(ad, caltype) #get from cache
-            if calurl:
-                cal = AstroData(calurl)
-                if cal.filename is None:
-
-                    if rc.context=="QA":
-                        log.stdinfo("   No %s for %s" % (caltype,ad.filename))
-                    else:
-                        raise Errors.PrimitiveError("No %s for %s" % (caltype,ad.filename))
-                else:
-                    log.stdinfo("   %s\n      for %s" % (cal.filename,
-                                                         ad.filename))
-            else:
-                if rc.context!="QA":
-                    raise Errors.PrimitiveError("Calibration not found for %s" % 
-                                                ad.filename)
 
         # print "pG575: about to leave getpb"
         yield rc
@@ -837,41 +816,138 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
     
     def getProcessedBias(self, rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        caltype = "processed_bias"
         source = rc["source"]
         if source == None:
-            rc.run("getCalibration(caltype=processed_bias)")
+            rc.run("getCalibration(caltype=%s)" % caltype)
         else:
-            rc.run("getCalibration(caltype=processed_bias, source=%s)" % source)
-            
+            rc.run("getCalibration(caltype=%s, source=%s)" % (caltype,source))
+
+        # List calibrations found
+        first = True
+        for ad in rc.get_inputs_as_astrodata():
+            calurl = rc.get_cal(ad, caltype) #get from cache
+            if calurl:
+                cal = AstroData(calurl)
+                if cal.filename is None:
+                    if rc.context!="QA":
+                        raise Errors.InputError("Calibration not found for %s" % 
+                                                ad.filename)
+                else:
+                    if first:
+                        log.stdinfo("getCalibration: Results")
+                        first = False
+                    log.stdinfo("   %s\n      for %s" % (cal.filename,
+                                                         ad.filename))
+            else: 
+                if rc.context!="QA":
+                    raise Errors.InputError("Calibration not found for %s" % 
+                                            ad.filename)
+
         yield rc
         
     
     def getProcessedDark(self, rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        caltype = "processed_dark"
         source = rc["source"]
         if source == None:
-            rc.run("getCalibration(caltype=processed_dark)")
+            rc.run("getCalibration(caltype=%s)" % caltype)
         else:
-            rc.run("getCalibration(caltype=processed_dark, source=%s)" % source)
+            rc.run("getCalibration(caltype=%s, source=%s)" % (caltype,source))
+            
+        # List calibrations found
+        first = True
+        for ad in rc.get_inputs_as_astrodata():
+            calurl = rc.get_cal(ad, caltype) #get from cache
+            if calurl:
+                cal = AstroData(calurl)
+                if cal.filename is None:
+                    if rc.context!="QA":
+                        raise Errors.InputError("Calibration not found for %s" % 
+                                                ad.filename)
+                else:
+                    if first:
+                        log.stdinfo("getCalibration: Results")
+                        first = False
+                    log.stdinfo("   %s\n      for %s" % (cal.filename,
+                                                         ad.filename))
+            else: 
+                if rc.context!="QA":
+                    raise Errors.InputError("Calibration not found for %s" % 
+                                            ad.filename)
             
         yield rc
     
     def getProcessedFlat(self, rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        caltype = "processed_flat"
         source = rc["source"]
         if source == None:
-            rc.run("getCalibration(caltype=processed_flat)")
+            rc.run("getCalibration(caltype=%s)" % caltype)
         else:
-            rc.run("getCalibration(caltype=processed_flat, source=%s)" % source)
+            rc.run("getCalibration(caltype=%s, source=%s)" % (caltype,source))
             
+        # List calibrations found
+        first = True
+        for ad in rc.get_inputs_as_astrodata():
+            calurl = rc.get_cal(ad, caltype) #get from cache
+            if calurl:
+                cal = AstroData(calurl)
+                if cal.filename is None:
+                    if rc.context!="QA":
+                        raise Errors.InputError("Calibration not found for %s" % 
+                                                ad.filename)
+                else:
+                    if first:
+                        log.stdinfo("getCalibration: Results")
+                        first = False
+                    log.stdinfo("   %s\n      for %s" % (cal.filename,
+                                                         ad.filename))
+            else: 
+                if rc.context!="QA":
+                    raise Errors.InputError("Calibration not found for %s" % 
+                                            ad.filename)
+
         yield rc
 
     
     def getProcessedFringe(self, rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        caltype = "processed_fringe"
         source = rc["source"]
         if source == None:
-            rc.run("getCalibration(caltype=processed_fringe)")
+            rc.run("getCalibration(caltype=%s)" % caltype)
         else:
-            rc.run("getCalibration(caltype=processed_fringe,source=%s)"% source)
+            rc.run("getCalibration(caltype=%s, source=%s)" % (caltype,source))
             
+        # List calibrations found
+        # Fringe correction is always optional, so don't raise errors if fringe
+        # not found
+        first = True
+        for ad in rc.get_inputs_as_astrodata():
+            calurl = rc.get_cal(ad, caltype) #get from cache
+            if calurl:
+                cal = AstroData(calurl)
+                if cal.filename is not None:
+                    if first:
+                        log.stdinfo("getCalibration: Results")
+                        first = False
+                    log.stdinfo("   %s\n      for %s" % (cal.filename,
+                                                     ad.filename))
         yield rc
 
         
