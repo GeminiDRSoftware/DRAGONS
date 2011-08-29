@@ -1327,9 +1327,9 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Adding a PROCBIAS time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCBIAS")
 
-            # Upload bias to cal system
-            rc.run("storeCalibration")
-            log.fullinfo("Bias stored in calibration system")
+        # Upload bias(es) to cal system
+        rc.run("storeCalibration")
+        log.fullinfo("Bias stored in calibration system")
 
         yield rc
     
@@ -1355,9 +1355,9 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Adding a PROCDARK time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCDARK")
 
-            # Upload to cal system
-            rc.run("storeCalibration")
-            log.fullinfo("Dark stored in calibration system")
+        # Upload to cal system
+        rc.run("storeCalibration")
+        log.fullinfo("Dark stored in calibration system")
 
         yield rc
     
@@ -1383,9 +1383,9 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Adding a PROCFLAT time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCFLAT")
 
-            # Upload to cal system
-            rc.run("storeCalibration")
-            log.fullinfo("Flat stored in calibration system")
+        # Upload to cal system
+        rc.run("storeCalibration")
+        log.fullinfo("Flat stored in calibration system")
 
         yield rc
     
@@ -1411,9 +1411,9 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Adding a PROCFRNG time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCFRNG")
 
-            # Upload to cal system
-            rc.run("storeCalibration")
-            log.fullinfo("Fringe stored in calibration system")
+        # Upload to cal system
+        rc.run("storeCalibration")
+        log.fullinfo("Fringe stored in calibration system")
 
         yield rc
     
