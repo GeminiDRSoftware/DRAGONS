@@ -570,8 +570,11 @@ for infiles in allinputs: #for dealing with multiple sets of files.
             reclist = rl.get_applicable_recipes(infiles[0]) #**
             recdict = rl.get_applicable_recipes(infiles[0], collate=True) #**
         else:
-            reclist = rl.get_applicable_recipes(astrotype = options.astrotype)
-            recdict = rl.get_applicable_recipes(astrotype = options.astrotype, collate = True)
+            reclist = rl.get_applicable_recipes(astrotype = options.astrotype,
+                                                prune=True)
+            recdict = rl.get_applicable_recipes(astrotype = options.astrotype,
+                                                prune=True, 
+                                                collate = True)
         print "r575:",repr(reclist), repr(recdict)
     else:
         #force recipe

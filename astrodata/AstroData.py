@@ -532,6 +532,7 @@ integrates other functionality.
         et_host = None
         et_guest = None
         hdulist = None
+        
         if moredata:
             if isinstance(moredata, AstroData):
                 hdulist = moredata.hdulist

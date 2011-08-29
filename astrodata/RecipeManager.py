@@ -1746,7 +1746,10 @@ class RecipeLibrary(object):
             close_if_name(gd, bnc)
             
 
-    def get_applicable_recipes(self, dataset= None, astrotype = None, collate=False):
+    def get_applicable_recipes(self, dataset= None, 
+                                     astrotype = None, 
+                                     collate=False,
+                                     prune = False):
         """
         Get list of recipes associated with all the types that apply to this dataset.
         """
@@ -1765,7 +1768,7 @@ class RecipeLibrary(object):
             else:
                 raise BadArgument()
             # get the types
-            types = astrod.get_types()
+            types = astrod.get_types(prune=True)
         else:
             types = [astrotype]
         # look up recipes, fill list
