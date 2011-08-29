@@ -2,7 +2,6 @@
 # given AstroData Type
 
 localAstroTypeRecipeIndex = {
-                                "GMOS":["parent"],
                                 "GMOS_IMAGE":["qaReduce"],
                                 "F2_DARK": ["makeProcessedDark"],
                                 "F2_IMAGE": ["reduce"],
