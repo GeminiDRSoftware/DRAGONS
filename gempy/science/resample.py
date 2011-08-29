@@ -882,13 +882,13 @@ def tile_arrays(adinput=None, tile_all=False):
 
                         startextn += amps_per_ccd[ccd]
 
-
                     # Make a new AD
                     adoutput = AstroData()
                     adoutput.filename = ad.filename
                     adoutput.phu = phu
 
-                    # Stack data from each array together and append to output AD
+                    # Stack data from each array together and
+                    # append to output AD
                     if tile_all:
                         num_ccd = 1
                     nextend = 0
@@ -900,6 +900,7 @@ def tile_arrays(adinput=None, tile_all=False):
                                 new_ext = AstroData(data=data,header=header)
                                 new_ext.rename_ext(name=extname,ver=ccd)
                                 adoutput.append(new_ext)
+                            
                                 nextend += 1
 
                     # Update header keywords with appropriate values
@@ -934,15 +935,15 @@ def tile_arrays(adinput=None, tile_all=False):
                         unbin_width = data_shape[1] * ad.detector_x_bin()
                         old_detsec = refsec[extver]["DET"]
                         new_detsec = "[%i:%i,%i:%i]" % (old_detsec[0]+1,
-                                                   old_detsec[0]+unbin_width,
-                                                   old_detsec[2]+1,old_detsec[3])
+                                                  old_detsec[0]+unbin_width,
+                                                  old_detsec[2]+1,old_detsec[3])
                         ext.set_key_value("DETSEC",new_detsec)
 
                         # Update CCDSEC
                         old_ccdsec = refsec[extver]["CCD"]
                         new_ccdsec = "[%i:%i,%i:%i]" % (old_ccdsec[0]+1,
-                                                   old_ccdsec[0]+unbin_width,
-                                                   old_ccdsec[2]+1,old_ccdsec[3])
+                                                  old_ccdsec[0]+unbin_width,
+                                                  old_ccdsec[2]+1,old_ccdsec[3])
                         ext.set_key_value("CCDSEC",new_ccdsec)
 
                         # Update CRPIX1
@@ -951,16 +952,10 @@ def tile_arrays(adinput=None, tile_all=False):
                             new_crpix1 = crpix1 + ref_shift[extver]
                             ext.set_key_value("CRPIX1",new_crpix1)
 
-                    # Workaround for AD bug: types are not reassigned after
-                    # the AD has been created.  Write to disk and read
-                    # back in to get proper type classification
-                    original_fn = ad.filename
-                    tmpfilename = 'tmp_tile_arrays'+os.path.basename(original_fn)
-                    adoutput.write(tmpfilename,clobber=True)
-                    adoutput = AstroData(tmpfilename)
-                    adoutput.filename = original_fn
-                    if os.path.exists(tmpfilename):
-                        os.remove(tmpfilename)
+                    # Refresh AstroData types in output file (original ones
+                    # were lost when new AD was created)
+                    adoutput.refresh_types()
+
                 # Add the appropriate time stamps to the PHU
                 gt.mark_history(adinput=ad, keyword=timestamp_key)
 
@@ -975,7 +970,6 @@ def tile_arrays(adinput=None, tile_all=False):
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
         raise
-
 
 
 ##############################################################################

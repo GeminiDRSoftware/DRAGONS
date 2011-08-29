@@ -75,6 +75,9 @@ def standardize_headers_f2(adinput=None):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             gt.mark_history(adinput=ad, keyword=timestamp_keys["prepare"])
             
+            # Refresh the AstroData types to reflect new PREPARED status
+            ad.refresh_types()
+            
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
@@ -149,6 +152,9 @@ def standardize_headers_gemini(adinput=None):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             gt.mark_history(adinput=ad, keyword=timestamp_keys["prepare"])
             
+            # Refresh the AstroData types to reflect new PREPARED status
+            ad.refresh_types()
+            
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
@@ -217,11 +223,10 @@ def standardize_headers_gmos(adinput=None):
             gt.update_key_value(adinput=ad, function="gain_setting()",
                                 extname="SCI")
 
-            # Gain (must be updated after gain_setting or else the
-            # gain descriptor used in the gain_setting will return the 
-            # wrong thing -- the type of this data is still UNPREPARED)
+            # Gain
             gt.update_key_value(adinput=ad, function="gain()",
                                 extname="SCI")
+
             # Dispersion axis
             if "IMAGE" not in ad.types:
                 gt.update_key_value(adinput=ad, function="dispersion_axis()",
@@ -229,6 +234,9 @@ def standardize_headers_gmos(adinput=None):
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             gt.mark_history(adinput=ad, keyword=timestamp_keys["prepare"])
+
+            # Refresh the AstroData types to reflect new PREPARED status
+            ad.refresh_types()
             
             # Append the output AstroData object to the list of output
             # AstroData objects
@@ -309,6 +317,9 @@ def standardize_structure_f2(adinput=None, attach_mdf=False, mdf=None):
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             gt.mark_history(adinput=ad, keyword=timestamp_keys["prepare"])
+            
+            # Refresh the AstroData types to reflect new PREPARED status
+            ad.refresh_types()
             
             # Append the output AstroData object to the list of output
             # AstroData objects
@@ -393,6 +404,9 @@ def standardize_structure_gmos(adinput=None, attach_mdf=False, mdf=None):
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             gt.mark_history(adinput=ad, keyword=timestamp_keys["prepare"])
+            
+            # Refresh the AstroData types to reflect new PREPARED status
+            ad.refresh_types()
             
             # Append the output AstroData object to the list of output
             # AstroData objects
