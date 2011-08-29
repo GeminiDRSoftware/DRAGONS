@@ -53,28 +53,38 @@ def single_extfuncs_test4():
     print('\n\t* single ext fits testfile: %s' % sef_file)
     hdulist = pyfits.open(sef_file)
     print('\thdulist = pyfits.open(sef_file)')
-    ad = AstroData()
-    print('\tad = AstroData()  # null ad')
-    ad.set_header(hdulist[1].header)
-    print('\tad.set_header(hdulist[1].header)')
+    ad = AstroData(mef_file)
+    print('\tad = AstroData(mef_file)')
+    ad[0].set_header(hdulist[1].header)
+    print('\tad[0].set_header(hdulist[1].header)')
     eq_(ad[0].header, hdulist[1].header, msg='ext. header not set correctly')
 
 def single_extfuncs_test5():
-    '''single_extfuncs_test5 -rename_ext()  
+    '''single_extfuncs_test5 -rename_ext name, ver  
     '''
-    print('\n\t* single ext fits testfile: %s' % sef_file)
-    hdulist = pyfits.open(sef_file)
-    print('\thdulist = pyfits.open(sef_file)')
-    ad = AstroData()
-    print('\tad = AstroData()  # null ad')
-    ad.rename_ext('SPAM')
-    print('\tad.rename_ext("SPAM")')
-    eq_('SPAM', ad.extname(), msg='ext. header not set correctly')
+    print('\n\t* MEF testfile: %s' % mef_file)
+    ad = AstroData(mef_file)
+    print('\tad = AstroData(mef_file)')
+    ad[0].rename_ext('SPAM', 2)
+    print('\tad[0].rename_ext("SPAM", 2)')
+    eq_(2, ad[0].hdulist[1]._extver, msg='extver not 1')
+    eq_('SPAM', ad[0].hdulist[1].name, msg='extname not SPAM')
 
 def single_extfuncs_test6():
-    '''single_extfuncs_test6 -MEF exceptions  
+    '''single_extfuncs_test6 -rename_ext with tuple  
     '''
-    print('\n\t* MEF testfile: %s' % sef_file)
+    print('\n\t* MEF testfile: %s' % mef_file)
+    ad = AstroData(mef_file)
+    print('\tad = AstroData(mef_file)')
+    ad[0].rename_ext(('SCI', 10))
+    print('\tad[0].rename_ext(("SCI", 10))')
+    eq_(10, ad[0].hdulist[1]._extver, msg='extver not 1')
+    eq_('SCI', ad[0].hdulist[1].name, msg='extname not SCI')
+
+def single_extfuncs_test7():
+    '''single_extfuncs_test7 -MEF exceptions  
+    '''
+    print('\n\t* MEF testfile: %s' % mef_file)
     hdulist = pyfits.open(mef_file)
     print('\thdulist = pyfits.open(mef_file)')
     ad = AstroData(hdulist)
