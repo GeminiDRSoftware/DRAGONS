@@ -381,11 +381,11 @@ class GeminiLogger(object):
         b = callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            new_lines = self.wrapper.wrap(category.ljust(10).upper()+'-' + 
-                                          b[0].ljust(20)+' - '+
-                                          b[2].ljust(20)+'-' +
-                                          str(b[1]).ljust(3) +
-                                          ' - '+line)
+            new_lines = self.wrapper.wrap('DEBUG - ' + 
+                                          b[0]+' - '+
+                                          b[2]+' - ' +
+                                          str(b[1])+ ' - ' + 
+                                          line)
             if len(new_lines) == 0:
                 self.logger.debug('')
             else:
@@ -477,11 +477,11 @@ class GeminiLogger(object):
         b = callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            new_lines = self.wrapper.wrap(category.ljust(10).upper()+'-' + 
-                                          b[0].ljust(20)+' - '+
-                                          b[2].ljust(20)+'-' +
-                                          str(b[1]).ljust(3) +
-                                          ' - '+line)
+            new_lines = self.wrapper.wrap('ERROR - ' + 
+                                          b[0]+' - '+
+                                          b[2]+' - ' +
+                                          str(b[1])+ ' - ' + 
+                                          line)
             if len(new_lines)==0:
                 self.logger.error('')
             else:
@@ -496,11 +496,11 @@ class GeminiLogger(object):
         b = callInfo()
         msgs = str(msg).split('\n')
         for line in msgs:
-            new_lines = self.wrapper.wrap(category.ljust(10).upper()+'-' + 
-                                          b[0].ljust(20)+' - '+
-                                          b[2].ljust(20)+'-' +
-                                          str(b[1]).ljust(3) +
-                                          ' - '+line)
+            new_lines = self.wrapper.wrap('CRITICAL - ' + 
+                                          b[0]+' - '+
+                                          b[2]+' - ' +
+                                          str(b[1])+ ' - ' + 
+                                          line)
             if len(new_lines)==0:
                 self.logger.critical('')
             else:
