@@ -1412,6 +1412,9 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Adding a PROCBIAS time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCBIAS")
 
+            # Refresh the AD types to reflect new processed status
+            ad.refresh_types()
+
         # Upload bias(es) to cal system
         rc.run("storeCalibration")
         log.fullinfo("Bias stored in calibration system")
@@ -1439,6 +1442,9 @@ class GEMINIPrimitives(GENERALPrimitives):
 
             # Adding a PROCDARK time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCDARK")
+
+            # Refresh the AD types to reflect new processed status
+            ad.refresh_types()
 
         # Upload to cal system
         rc.run("storeCalibration")
@@ -1468,6 +1474,9 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Adding a PROCFLAT time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCFLAT")
 
+            # Refresh the AD types to reflect new processed status
+            ad.refresh_types()
+
         # Upload to cal system
         rc.run("storeCalibration")
         log.fullinfo("Flat stored in calibration system")
@@ -1495,6 +1504,9 @@ class GEMINIPrimitives(GENERALPrimitives):
 
             # Adding a PROCFRNG time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCFRNG")
+
+            # Refresh the AD types to reflect new processed status
+            ad.refresh_types()
 
         # Upload to cal system
         rc.run("storeCalibration")
