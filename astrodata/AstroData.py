@@ -1606,7 +1606,11 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
             if notSuper:
                 pary.append(typ)
         return pary
-
+        
+    def refresh_types(self):
+        self.types = None
+        self.discover_types()
+        
     def get_types(self, prune=False):
         """
         :param prune: flag which controls 'pruning' the returned type list 
