@@ -779,10 +779,19 @@ class GEMINIPrimitives(GENERALPrimitives):
             if calurl:
                 cal = AstroData(calurl)
                 if cal.filename is None:
-                    log.stdinfo("   No %s for %s" % (caltype,ad.filename))
+
+                    if rc.context=="QA":
+                        log.stdinfo("   No %s for %s" % (caltype,ad.filename))
+                    else:
+                        raise Errors.PrimitiveError("No %s for %s" % (caltype,ad.filename))
                 else:
                     log.stdinfo("   %s\n      for %s" % (cal.filename,
                                                          ad.filename))
+            else:
+                if rc.context!="QA":
+                    raise Errors.PrimitiveError("Calibration not found for %s" % 
+                                                ad.filename)
+
         # print "pG575: about to leave getpb"
         yield rc
 
