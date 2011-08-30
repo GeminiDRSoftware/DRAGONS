@@ -72,12 +72,13 @@ if __name__=='__main__':
     # Check that file is a GMOS IMAGE; other types are not yet supported
     # (allow biases and flats, too)
     ad = AstroData(imgpath)
-    if (("GMOS_IMAGE" in ad.types and ad.focal_plane_mask()!="Imaging") or
+    if (("GMOS_IMAGE" in ad.types and ad.focal_plane_mask()=="Imaging") or
         "GMOS_BIAS" in ad.types or 
         "GMOS_IMAGE_FLAT" in ad.types):
 
         # Call reduce with auto-selected reduction recipe
-        print "\nBeginning reduction for file %s, %s\n" % (imgname,ad.data_label()) 
+        print "\nBeginning reduction for file %s, %s\n" % (imgname,
+                                                           ad.data_label()) 
         reduce_cmd = ["reduce", 
                       "--context","QA",
                       "--logLevel","stdinfo",
