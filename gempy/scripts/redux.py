@@ -42,6 +42,7 @@ if __name__=='__main__':
 
     
     if len(args)!=1:
+        print "ERROR - No input file specified"
         parser.print_help()
         sys.exit()
 
@@ -69,20 +70,25 @@ if __name__=='__main__':
         sys.exit()
 
     # Check that file is a GMOS IMAGE; other types are not yet supported
+    # (allow biases and flats, too)
     ad = AstroData(imgpath)
-    if "GMOS_IMAGE" not in ad.types or ad.focal_plane_mask()!="Imaging":
+    if (("GMOS_IMAGE" in ad.types and ad.focal_plane_mask()!="Imaging") or
+        "GMOS_BIAS" in ad.types or 
+        "GMOS_IMAGE_FLAT" in ad.types):
+
+        # Call reduce with auto-selected reduction recipe
+        print "\nBeginning reduction for file %s, %s\n" % (imgname,ad.data_label()) 
+        reduce_cmd = ["reduce", 
+                      "--context","QA",
+                      "--logLevel","stdinfo",
+                      "-p", "clobber=True",
+                      imgpath]
+        subprocess.call(reduce_cmd)
+
+        print ""
+
+    else:
         print "\nFile %s is not a supported type." % imgname + \
               "\nOnly GMOS images can be reduced at this time.\n"
         sys.exit()
-
-    # Call reduce with generic GMOS reduction recipe
-    print "\nBeginning reduction for file %s, %s\n" % (imgname,ad.data_label()) 
-    reduce_cmd = ["reduce", 
-                  "--context","QA",
-                  "--logLevel","stdinfo",
-                  "-p", "clobber=True",
-                  imgpath]
-    subprocess.call(reduce_cmd)
-
-    print ""
 
