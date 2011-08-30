@@ -141,14 +141,18 @@ def correct_wcs_to_reference_image(adinput=None,
                                         "extension.")
             
             # Get number of objects from OBJCAT
-            num_cat = len(ad["OBJCAT"])
+            objcat = ad["OBJCAT"]
+            if objcat is None:
+                num_cat = 0
+            else:
+                num_cat = len(objcat)
             if num_cat==0:
                 n_obj = 0
             elif num_cat>1:
                 raise Errors.InputError("Input images must have only one " +
                                         "OBJCAT extension.")
             else:
-                n_obj = len(ad["OBJCAT"].data)
+                n_obj = len(objcat.data)
             
             n_test.append(n_obj)
         
@@ -189,7 +193,7 @@ def correct_wcs_to_reference_image(adinput=None,
             for i in range(1,len(adinput)):
             
                 ad = adinput[i]
-                
+
                 if n_test[i] == 0:
                     log.warning("No objects found in "+ ad.filename)
                     if fallback is not None:
@@ -207,6 +211,7 @@ def correct_wcs_to_reference_image(adinput=None,
                         log.warning("WCS can only be corrected indirectly "+
                                     "and fallback=None. Not attempting WCS " +
                                     "correction for " + ad.filename)
+                        adoutput_list.append(ad)
                         continue
                 else:
                     log.fullinfo("Number of objects in image %s: %d" %
@@ -240,6 +245,7 @@ def correct_wcs_to_reference_image(adinput=None,
                             log.warning("WCS can only be corrected indirectly "+
                                         "and fallback=None. Not attempting " +
                                         "WCS correction for " + ad.filename)
+                            adoutput_list.append(ad)
                             continue
                     else:
                         log.fullinfo("Number of correlated sources: %d" % 

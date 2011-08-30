@@ -84,7 +84,8 @@ def align_to_reference_image(adinput, interpolator="linear"):
         
         # make sure all images have one science extension
         for ad in adinput:
-            if len(ad["SCI"])!=1:
+            sci_exts = ad["SCI"]
+            if sci_exts is None or len(sci_exts)!=1:
                 raise Errors.InputError("Input images must have only one " +
                                         "SCI extension.")
         
