@@ -9,24 +9,23 @@ class ExtTable(object):
     ExtTable will create a dictionary structure keyed on 'EXTNAME' with an
     internal dictionary keyed on 'EXTVER' with ad as values.
     """
-    def __init__(self, ad=None):
+    def __init__(self, ad=None, hdul=None):
         self.xdict = {}
-        if ad is None:
-            print "WARNING: cannot create table without AstroData instance"
-            self.ad = None
-        if isinstance(ad, pyfits.core.HDUList):
-            ad = astrodata.AstroData(ad)
-        if not isinstance(ad, astrodata.AstroData):
-            raise Errors.ExtTableError(\
-                "Accepts only pyfits hdulist or AstroData instance")
+        if ad and hdul:
+            raise Errors.ExtTableError("Can only take ad OR hdul not both")
+        if ad is None and hdul is None:
+            raise Errors.ExtTableError("Object requires AstroData OR hdulist")
         self.ad = ad
-        self.create_xdict(ad)
+        self.hdul = hdul
+        self.create_xdict()
 
-    def create_xdict(self, ad=None):
-        if ad is None:
-            raise Errors.ExtTableError("Accepts only one AstroData instance")
+    def create_xdict(self):
+        if isinstance(self.hdul, pyfits.core.HDUList):
+            hdulist = self.hdul
+        elif isinstance(self.ad, astrodata.AstroData):
+            hdulist = self.ad.hdulist
         extnames = []
-        for hdu in ad.hdulist[1:]:
+        for hdu in hdulist[1:]:
             xname = None
             xver = None
             if hdu.header.has_key('EXTNAME'):
@@ -38,9 +37,15 @@ class ExtTable(object):
             if hdu.header.has_key('EXTVER'):
                 xver = hdu.header['EXTVER']
             if newname:
-                self.xdict.update({xname:{xver:ad}})
+                if self.ad is None:
+                    self.xdict.update({xname:{xver:hdulist}})
+                else:
+                    self.xdict.update({xname:{xver:self.ad}})
             else:
-                self.xdict[xname].update({xver:ad}) 
+                if self.ad is None:
+                    self.xdict[xname].update({xver:hdulist}) 
+                else:
+                    self.xdict[xname].update({xver:self.ad}) 
 
     def putAD(self, extname=None, extver=None, ad=None, auto_inc=False):
         if extname is None or ad is None:
