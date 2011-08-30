@@ -508,6 +508,10 @@ else:
     for inp in allinputs:
         try:
             ad = AstroData(inp)
+            # renaming files to output (current) directory
+            # helps to ensure we don't overwrite raw data (i.e. on auto-write at end)
+            # todo: formalize these rules more
+            ad.filename = os.path.basename(ad.filename)
             nl.append(ad)
             ad = None #danger of accidentally using this!
         except:
@@ -901,6 +905,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
             for output in outputs:
                 ad = output.ad
                 name = ad.filename
+                #print "r908:", ad.mode
                 try:
                     ad.write(clobber = clobber)
                     log.stdinfo("Wrote %s in output directory" % name)
@@ -910,7 +915,6 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                     log.error("CANNOT WRITE %s" % name + err.message)
                 except:
                     log.error("CANNOT WRITE %s, unknown reason" % name)
-                    
 
         if interactiveMode == True:
             reclist = ["USER"]
