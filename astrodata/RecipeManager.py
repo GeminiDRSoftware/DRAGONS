@@ -1549,8 +1549,8 @@ class ReductionContext(dict):
         val = { "stepname"  : stepname,
                 "indent"    : self.indent,
                 "mark"      : mark,
-                "inputs"    : copy(self.inputs),
-                "outputs"   : copy(self.outputs),
+                "inputs"    : [inp.filename for inp in self.inputs],  #copy(self.inputs),
+                "outputs"   : [inp.filename for inp in self.outputs], #copy(self.outputs),
                 "processed" : False
                 }
         return val
