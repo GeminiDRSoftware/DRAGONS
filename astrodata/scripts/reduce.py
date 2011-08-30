@@ -512,6 +512,8 @@ else:
             # helps to ensure we don't overwrite raw data (i.e. on auto-write at end)
             # todo: formalize these rules more
             ad.filename = os.path.basename(ad.filename)
+            ad.mode = "readonly"
+                
             nl.append(ad)
             ad = None #danger of accidentally using this!
         except:
@@ -911,8 +913,10 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                     log.stdinfo("Wrote %s in output directory" % name)
                 except Errors.OutputExists:
                     log.error( "CANNOT WRITE %s, already exists" % name)
+                except Errors.AstroDataReadonlyError, err:
+                    log.warning('%s is in "readonly" mode, will not attempt to write.' % name)
                 except Errors.AstroDataError, err:
-                    log.error("CANNOT WRITE %s" % name + err.message)
+                    log.error("CANNOT WRITE %s: " % name + err.message)
                 except:
                     log.error("CANNOT WRITE %s, unknown reason" % name)
 

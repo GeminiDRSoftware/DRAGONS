@@ -1508,7 +1508,7 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
                     msg =  "Cannot use AstroData.write(..) on this instance,"
                     msg += "file opened in readonly mode, either open for "
                     msg += "update/writing or rename the file."
-                    raise Errors.AstroDataError(msg)
+                    raise Errors.AstroDataReadonlyError(msg)
             else:
                 if filename == None or filename == self.filename:
                     msg = "Attemt to write out readonly AstroData instance."
