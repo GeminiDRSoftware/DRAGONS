@@ -1,10 +1,12 @@
 import re 
 import os
 import traceback
+import gc
 from astrodata import AstroData
 from astrodata.adutils import gemLog
 import inspect
 import urllib2 #(to get httperror)
+
 log = None
 
 class ReductionExcept:
@@ -66,6 +68,7 @@ class ReductionObject(object):
                     (prop  in prim.param_dict[self.curPrimName][param])):
                     return prim.param_dict[self.curPrimName][param][prop]
         return None
+
         
     def parm_dict_by_tag(self, prim, tag):
         if self.curPrimType not in self.primDict:
@@ -184,6 +187,7 @@ class ReductionObject(object):
                 if rc.is_finished():
                     break
                 yield rc
+            gc.collect() # @@MEM
         except SettingFixedParam, e:
             print "${RED}"+str(e)+"${NORMAL}"
         except TypeError,e:

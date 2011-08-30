@@ -6,6 +6,8 @@ import AstroDataType
 from ReductionContextRecords import AstroDataRecord
 from copy import copy
 
+from Errors import GDPGUtilError
+
 #removed old logger, calls changed to prints, need to incorporate new logger
 #------------------------------------------------------------------------------ 
 class GDPGUtilExcept:
@@ -50,6 +52,19 @@ def check_data_set( filenames ):
         outlist.append( filename )
     
     return outlist
+
+#------------------------------------------------------------------------------ 
+
+def cluser_by_groupid( datalist):
+    allinputs = []
+    clusterdict = {}
+    
+    for inp in datalist:
+
+        if not isinstance(inp, AstroData):
+            msg = "cluster_by_groupid requires a list of AstroData instances, %s is a '%s'." % (repr(inp), type(inp))
+            raise Errors.GDPGUtilError()
+            
 
 #------------------------------------------------------------------------------ 
 

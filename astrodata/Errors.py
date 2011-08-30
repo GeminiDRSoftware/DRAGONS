@@ -209,3 +209,6 @@ class UndefinedKeyError(Error):
     pyfits.core.Undefined
     """
     message = "Keyword found but the value was undefined"
+    
+class GDPGUtilError(Error):
+    message = "Error in gpdgutil module."
