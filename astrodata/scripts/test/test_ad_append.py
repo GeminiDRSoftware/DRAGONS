@@ -6,16 +6,16 @@ from astrodata import Errors
 
 
 def ad_append_test1():
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
     """ad_append_test1 -moredata=AD, with auto_number
     """
-    print "\n             >>>>>>>     AD HOST    <<<<<<<<"
-    ad1.info()
-    print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
-    ad3.info()
+    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
+    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
+    #print "\n             >>>>>>>     AD HOST    <<<<<<<<"
+    #ad1.info()
+    #print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
+    #ad3.info()
     ad1.append(moredata=ad3, auto_number=True)
-    print "\n             >>>>>>>  AD HOST (NEW) <<<<<<<<"
+    #print "\n             >>>>>>>  AD HOST (NEW) <<<<<<<<"
     ad1.info()
     ok_(ad1[3].extname(), "MDF")
     ok_(ad1[4].extname(), "SCI")
@@ -26,10 +26,10 @@ def ad_append_test1():
     ok_(ad1[6].extver(), 4)
 
 def ad_append_test2():
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
     """ad_append_test2 -moredata=AD, with auto_number
     """
+    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
+    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
     print "\n             >>>>>>>     AD HOST    <<<<<<<<"
     ad3.info()
     print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
@@ -45,10 +45,10 @@ def ad_append_test2():
     ok_(ad3[6].extver(), 4)
 
 def ad_append_test3():
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
     """ad_append_test3 -moredata=AD, with auto_number
     """
+    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
+    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
     print "\n             >>>>>>>     AD HOST    <<<<<<<<"
     ad4.info()
     print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
@@ -64,10 +64,10 @@ def ad_append_test3():
     ok_(ad4[11].extver(), 6)
 
 def ad_append_test4():
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
     """ad_append_test4 -moredata=AD, with auto_number
     """
+    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
+    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
     print "\n             >>>>>>>     AD HOST    <<<<<<<<"
     ad1.info()
     print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
@@ -95,10 +95,10 @@ def ad_append_test4():
     ok_(ad1[11].extver(), 6)
 
 def ad_append_test5():
-    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
     """ad_append_test5 -moredata=AD, with auto_number
     """
+    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
+    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
     print "\n             >>>>>>>     AD HOST    <<<<<<<<"
     ad3.info()
     print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
@@ -126,10 +126,10 @@ def ad_append_test5():
     ok_(ad3[12].extver(), 4)
 
 def ad_append_test6():
-    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
     """ad_append_test6 -moredata=AD, with auto_number
     """
+    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
+    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
     print "\n             >>>>>>>     AD HOST    <<<<<<<<"
     ad4.info()
     print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
@@ -159,7 +159,7 @@ def ad_append_test7():
     print "ad1.append(header=adsci.header, data=adsci.data, auto_number=True)"
     print "\n             >>>>>>>  AD HOST (NEW) <<<<<<<<"
     ad1.info()
-    ok_(ad1[3].extname(), "SCI")
+    ok_(ad1[3].hdulist[1].name, "SCI")
     ok_(ad1[3].extver(), 4)
 
 def ad_append_test8():
