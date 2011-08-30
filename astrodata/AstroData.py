@@ -20,6 +20,7 @@ from astrodata.adutils import arith
 from astrodata import Errors
 from adutils.netutil import urlfetch
 from astrodata.ExtTable import ExtTable
+from adutils.gemutil import rename_hdu
 try:
     from CalculatorInterface import CalculatorInterface
 except ImportError:
@@ -553,8 +554,8 @@ integrates other functionality.
             # create a master table out of the host and update the EXTVER 
             # for the guest as it is being updated in the table
             
-            et_host = ExtTable(self)
-            et_guest = ExtTable(hdulist)
+            et_host = ExtTable(hdul=self.hdulist)
+            et_guest = ExtTable(ad=moredata)
             if auto_number:
                 guest_bigver = et_guest.largest_extver()
                 count = 1
@@ -567,8 +568,10 @@ integrates other functionality.
                         else:
                             et_host.putAD(extname=tup[0], \
                                 extver=host_bigver + 1, ad=tup[1])
-                            et_guest.ad[tup[0],count].header.update("EXTVER", \
-                                host_bigver + 1, "Added by AstroData")
+                            et_guest.ad[tup[0],count].rename_ext(name="EXTVER",
+                                ver=host_bigver + 1)
+                            #et_guest.ad[tup[0],count].header.update("EXTVER", \
+                            #    host_bigver + 1, "Added by AstroData")
                     count += 1
                 for hdu in hdulist[1:]:
                     self.hdulist.append(hdu)
@@ -1353,7 +1356,7 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
                         hdu._extver = inferEV
                         
     
-    def rename_ext(self, name, ver = None, force = True):
+    def rename_ext(self, name, ver=None, force=True):
         """
         :param name: New "EXTNAME" for the given extension.
         :type name: string
@@ -1380,25 +1383,10 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
         # @@TODO: change to use STSCI provided function.
         if force != True and self.borrowed_hdulist:
             raise Errors.AstroDataError("cannot setExtname on subdata")
-        if type(name) == tuple:
-            name = name[0]
-            ver = name[1]
-        if ver == None:
-            ver = 1
         if not self.has_single_hdu():
             raise Errors.SingleHDUMemberExcept()
-        if True:
-            hdu = self.hdulist[1]
-            nheader = hdu.header
-            kafter = "GCOUNT"
-            if nheader.get("TFIELDS"): kafter = "TFIELDS"
-            nheader.update("extname", name, "added by AstroData", \
-                after=kafter)
-            nheader.update("extver", ver, "added by AstroData", \
-                after="EXTNAME")
-            hdu.name = name
-            hdu._extver = ver
-            # print "AD553:", repr(hdu.__class__)
+        rename_hdu(name=name, ver=ver, hdu=self.hdulist[1])    
+        # print "AD553:", repr(hdu.__class__)
     #alias
     setExtname = rename_ext
    
