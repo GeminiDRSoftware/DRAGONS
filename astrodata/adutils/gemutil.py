@@ -1,10 +1,12 @@
-import sys,os
+import os
+import sys
 
 import mefutil
 import strutil
 import time
 
 from astrodata.adutils import gemLog
+from astrodata import Errors
 
 log = None
 
@@ -542,4 +544,50 @@ def chomp(line):
     """
     
     return strutil.chomp(line)
+#---------------------------------------------------------------------------
+   
+   
+def rename_hdu(name=None, ver=None, hdu=None):
+    """
+    :param name: New "EXTNAME" for the given extension.
+    :type name: string
     
+    :param ver: New "EXTVER" for the given extension
+    :type ver: int
+
+    The rename_ext() function is used in order to rename an HDU with a new
+    EXTNAME and EXTVER based identifier.  Merely changing the EXTNAME and 
+    EXTEVER values in the extensions pyfits.Header are not sufficient.
+    Though the values change in the pyfits.Header object, there are special
+    HDU class members which are not updated. 
+    
+    :warning:   This function maniplates private (or somewhat private)  HDU
+                members, specifically "name" and "_extver". STSCI has been
+                informed of the issue and
+                has made a special HDU function for performing the renaming. 
+                When generally available, this new function will be used instead of
+                manipulating the  HDU's properties directly, and this function will 
+                call the new pyfits.HDUList(..) function.
+    """
+    # @@TODO: change to use STSCI provided function.
+    if hdu is None:
+        raise Errors.gemutilError("ERROR: HDU required to rename hdu")
+    if type(name) == tuple:
+        ver = name[1]
+        name = name[0]
+    if ver == None:
+        ver = 1
+    nheader = hdu.header
+    kafter = "GCOUNT"
+    if nheader.get("TFIELDS"): 
+        kafter = "TFIELDS"
+    if name is None:
+        if not nheader.has_key("EXTNAME"):
+            raise Errors.gemutilError("name is None and EXTNAME not in header")
+        nheader.update("extver", ver, "added by AstroData", after="EXTNAME")
+    else:
+        nheader.update("extname", name, "added by AstroData", after=kafter)
+        nheader.update("extver", ver, "added by AstroData", after="EXTNAME")
+    hdu.name = name
+    hdu._extver = ver
+
