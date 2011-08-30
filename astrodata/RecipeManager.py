@@ -1550,7 +1550,7 @@ class ReductionContext(dict):
                 "indent"    : self.indent,
                 "mark"      : mark,
                 "inputs"    : [inp.filename for inp in self.inputs],  #copy(self.inputs),
-                "outputs"   : [inp.filename for inp in self.outputs], #copy(self.outputs),
+                "outputs"   : None,   #copy(self.outputs),
                 "processed" : False
                 }
         return val
