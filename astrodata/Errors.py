@@ -104,6 +104,12 @@ class ExtTableError(Error):
     """
     message = "Exception raised in ExtTable.py"
 
+class gemutilError(Error):
+    """
+    General exception raised for Errors in adutils/gemutil.py
+    """
+    message = "Exception raised in gemutil.py"
+
 class IncompatibleOperand(Error):
     """
     Exception raised when the other operand in a DescriptorValue binary 
