@@ -1278,7 +1278,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             log.status("List for stack id=%s" % sid, category="list")
             if len(stacklist) > 0:
                 for f in stacklist:
-                    log.status("    %s" % os.path.basename(f), category="list")
+                    log.status("   %s" % os.path.basename(f), category="list")
             else:
                 log.status("No datasets in list", category="list")
         
@@ -1379,6 +1379,10 @@ class GEMINIPrimitives(GENERALPrimitives):
         yield rc
     
     def storeCalibration(self, rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
         # print repr(rc)
         storedcals = rc['cachedict']['storedcals']
 
@@ -1386,7 +1390,13 @@ class GEMINIPrimitives(GENERALPrimitives):
             fname = os.path.join(storedcals, os.path.basename(ad.filename))
             ad.filename = fname
             ad.write(filename = fname, rename = True, clobber=True) # always clobber, perhaps save clobbered file somewhererc["clobber"])
-            upload_calibration(ad.filename)
+            log.stdinfo("File saved to %s" % fname)
+            try:
+                upload_calibration(ad.filename)
+            except:
+                log.warning("Unable to upload file to calibration system")
+            else:
+                log.stdinfo("File stored in calibration system")
             yield rc
         yield rc
         
@@ -1407,7 +1417,6 @@ class GEMINIPrimitives(GENERALPrimitives):
             # then report the new file to the reduction context
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
                                              strip=True)
-            log.status("File name of stored bias is %s" % ad.filename)
 
             # Adding a PROCBIAS time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCBIAS")
@@ -1417,7 +1426,6 @@ class GEMINIPrimitives(GENERALPrimitives):
 
         # Upload bias(es) to cal system
         rc.run("storeCalibration")
-        log.fullinfo("Bias stored in calibration system")
 
         yield rc
     
@@ -1438,7 +1446,6 @@ class GEMINIPrimitives(GENERALPrimitives):
             # then report the new file to the reduction context
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
                                              strip=True)
-            log.status("File name of stored dark is %s" % ad.filename)
 
             # Adding a PROCDARK time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCDARK")
@@ -1448,7 +1455,6 @@ class GEMINIPrimitives(GENERALPrimitives):
 
         # Upload to cal system
         rc.run("storeCalibration")
-        log.fullinfo("Dark stored in calibration system")
 
         yield rc
     
@@ -1469,7 +1475,6 @@ class GEMINIPrimitives(GENERALPrimitives):
             # then report the new file to the reduction context
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
                                              strip=True)
-            log.status("File name of stored flat is %s" % ad.filename)
  
             # Adding a PROCFLAT time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCFLAT")
@@ -1479,7 +1484,6 @@ class GEMINIPrimitives(GENERALPrimitives):
 
         # Upload to cal system
         rc.run("storeCalibration")
-        log.fullinfo("Flat stored in calibration system")
 
         yield rc
     
@@ -1500,7 +1504,6 @@ class GEMINIPrimitives(GENERALPrimitives):
             # then report the new file to the reduction context
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
                                              strip=True)
-            log.status("File name of stored fringe is %s" % ad.filename)
 
             # Adding a PROCFRNG time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCFRNG")
@@ -1510,7 +1513,6 @@ class GEMINIPrimitives(GENERALPrimitives):
 
         # Upload to cal system
         rc.run("storeCalibration")
-        log.fullinfo("Fringe stored in calibration system")
 
         yield rc
     
