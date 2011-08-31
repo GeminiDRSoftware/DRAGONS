@@ -45,8 +45,8 @@ def upload_calibration(filename):
         u = urllib2.urlopen(rq, postdata)
     except urllib2.HTTPError, error:
         contents = error.read()
-        print "ERROR:"
-        print contents
+        #print "ERROR:"
+        #print contents
         raise
 
     response = u.read()
