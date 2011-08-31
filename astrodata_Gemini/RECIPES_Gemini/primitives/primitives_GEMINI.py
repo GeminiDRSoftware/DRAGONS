@@ -1090,7 +1090,8 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Check to see if detectSources needs to be run
             run_ds = False
             for ad in adinput:
-                if len(ad['OBJCAT'])==0:
+                objcat = ad["OBJCAT"]
+                if objcat is None:
                     run_ds = True
                     break
             if run_ds:
