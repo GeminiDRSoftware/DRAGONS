@@ -558,23 +558,26 @@ integrates other functionality.
             et_guest = ExtTable(ad=moredata)
             if auto_number:
                 guest_bigver = et_guest.largest_extver()
-                count = 1
+                count = 0
+                ext = 0
                 for row in et_guest.rows():
                     host_bigver = et_host.largest_extver()
                     for tup in row:
                         if None in et_guest.xdict[tup[0]].keys():
                             et_host.putAD(extname=tup[0], extver=None,\
                                 ad=tup[1])
+                            et_guest.ad[tup[1][1]-1].rename_ext(name=tup[0],
+                                ver=None)
+                            ext += 1
                         else:
                             et_host.putAD(extname=tup[0], \
                                 extver=host_bigver + 1, ad=tup[1])
-                            et_guest.ad[tup[0],count].rename_ext(name="EXTVER",
+                            et_guest.ad[tup[1][1]-1].rename_ext(name=tup[0],
                                 ver=host_bigver + 1)
-                            #et_guest.ad[tup[0],count].header.update("EXTVER", \
-                            #    host_bigver + 1, "Added by AstroData")
-                    count += 1
-                for hdu in hdulist[1:]:
-                    self.hdulist.append(hdu)
+                            ext += 1
+                    count +=1
+                for i in range(len(hdulist)-1):
+                    self.hdulist.append(hdulist[i+1])
             else:
                 for ext in et_guest.xdict.keys():
                     if ext in et_host.xdict.keys():
@@ -593,15 +596,6 @@ integrates other functionality.
             #  if host ad has 1 or 0 exts, will just append and exit
             header = self.verify_header(extname=extname, extver=extver, \
                 header=header)
-            if len(self.hdulist) == 0:
-                self.hdulist.append(pyfits.PrimaryHDU(data=data, \
-                    header=header))
-                return
-            if len(self.hdulist) == 1:
-                self.hdulist.append(pyfits.ImageHDU(data=data, \
-                    header=header))
-                return 
-            
             # check for conflict if not auto_number then increment
             # off the largest host extver unless the extname is larger
             et_host = ExtTable(self)
@@ -612,8 +606,6 @@ integrates other functionality.
                             raise Errors.AstroDataError(\
                                 "EXTNAME EXTVER conflict, use auto_number") 
             host_bigver = et_host.largest_extver()
-            #print "ad607: host_bigver = ", host_bigver
-            #print "ad608: header['EXTVER'] = ", header["EXTVER"]
 
             if header["EXTVER"] > host_bigver:
                 extver = header["EXTVER"]
@@ -716,14 +708,15 @@ integrates other functionality.
             
             # create a master table out of the host and update the EXTVER 
             # for the guest as it is being updated in the table
-            et_host = ExtTable(self)
-            et_guest = ExtTable(hdulist)
+            et_host = ExtTable(hdul=self.hdulist)
+            et_guest = ExtTable(ad=moredata)
             #print "AD713 hostdict=", et_host.xdict
             #print "\nAD714 guestdict =",et_guest.xdict
             if auto_number:
                 guest_bigver = et_guest.largest_extver()
                 count = 1
                 for row in et_guest.rows():
+                    print row
                     host_bigver = et_host.largest_extver()
                     for tup in row:
                         if None in et_guest.xdict[tup[0]].keys():
@@ -732,8 +725,10 @@ integrates other functionality.
                         else:
                             et_host.putAD(extname=tup[0], \
                                 extver=host_bigver + 1, ad=tup[1])
-                            et_guest.ad[tup[0],count].header.update("EXTVER", \
-                                host_bigver + 1, "Added by AstroData")
+                            #et_guest.ad[tup[0],count].header.update("EXTVER", \
+                            #    host_bigver + 1, "Added by AstroData")
+                            et_guest.ad[tup[0],count].rename_ext(name=tup[0],
+                                ver=host_bigver + 1)
                     count += 1
                 for hdu in hdulist[1:]:
                     if len(self.hdulist) == 1:
@@ -875,12 +870,15 @@ integrates other functionality.
                 
                 # Create sub-data info lines
                 adno_ = "[" + str(hdu_indx - 1) + "]"
-                if not hdu.header.has_key('EXTVER'):
-                    name_ = hdu.header['EXTNAME']
-                else:
-                    name_ = "('" + hdu.header['EXTNAME'] + "', "
-                    name_ += str(hdu.header['EXTVER']) + ")"
-                cards_ = len(self.hdulist[hdu_indx]._header.ascard)
+                try:
+                    if not hdu.header.has_key("EXTVER"):
+                        name_ = hdu.header["EXTNAME"]
+                    else:
+                        name_ = "('" + hdu.header['EXTNAME'] + "', "
+                        name_ += str(hdu.header['EXTVER']) + ")"
+                    cards_ = len(self.hdulist[hdu_indx]._header.ascard)
+                except:
+                    pass
                 if extType == "ImageHDU":
                     if self.hdulist[hdu_indx].data == None:
                         dimention_ = None

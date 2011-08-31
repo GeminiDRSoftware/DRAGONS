@@ -25,27 +25,29 @@ class ExtTable(object):
         elif isinstance(self.ad, astrodata.AstroData):
             hdulist = self.ad.hdulist
         extnames = []
-        for hdu in hdulist[1:]:
+        for i in range(1,len(hdulist)):
             xname = None
             xver = None
+            hdu = hdulist[i]
             if hdu.header.has_key('EXTNAME'):
                 xname = hdu.header['EXTNAME']
                 newname = True
                 if xname in extnames:
                     newname=False
-                extnames.append(xname)
+                else:
+                    extnames.append(xname)
             if hdu.header.has_key('EXTVER'):
                 xver = hdu.header['EXTVER']
             if newname:
                 if self.ad is None:
-                    self.xdict.update({xname:{xver:hdulist}})
+                    self.xdict.update({xname:{xver:(True,i)}})
                 else:
-                    self.xdict.update({xname:{xver:self.ad}})
+                    self.xdict.update({xname:{xver:(self.ad,i)}})
             else:
                 if self.ad is None:
-                    self.xdict[xname].update({xver:hdulist}) 
+                    self.xdict[xname].update({xver:(True,i)})
                 else:
-                    self.xdict[xname].update({xver:self.ad}) 
+                    self.xdict[xname].update({xver:(self.ad,i)}) 
 
     def putAD(self, extname=None, extver=None, ad=None, auto_inc=False):
         if extname is None or ad is None:
