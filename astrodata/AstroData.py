@@ -533,6 +533,9 @@ integrates other functionality.
         et_host = None
         et_guest = None
         hdulist = None
+        override_extver=False
+        if extver:
+            override_extver=True
         
         if moredata:
             if isinstance(moredata, AstroData):
@@ -607,9 +610,11 @@ integrates other functionality.
                                 "EXTNAME EXTVER conflict, use auto_number") 
             host_bigver = et_host.largest_extver()
 
+            print header["EXTVER"]
+            print host_bigver
             if header["EXTVER"] > host_bigver:
                 extver = header["EXTVER"]
-            else:
+            if not override_extver:
                 extver = host_bigver + 1
             header.update("EXTVER", extver, "Added by AstroData")
             self.hdulist.append(pyfits.ImageHDU(data=data,\

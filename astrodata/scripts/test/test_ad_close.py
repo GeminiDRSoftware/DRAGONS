@@ -1,6 +1,3 @@
-import sys
-import os
-
 from nose.tools import *
 
 import file_urls 
