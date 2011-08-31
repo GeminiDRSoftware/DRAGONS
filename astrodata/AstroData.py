@@ -1,5 +1,5 @@
 #!/bin/env pyth
-__docformat__ = "restructuredtext" #for epydoc
+__docform__ = "restructuredtext" #for epydoc
 
 import sys
 import os
@@ -688,7 +688,7 @@ integrates other functionality.
         if type(index) == tuple:
             hdu_index = self.get_int_ext(index, hduref=True)
         else:    
-            hdu_index = index - 1
+            hdu_index = index + 1
         if moredata:
             if isinstance(moredata, AstroData):
                 hdulist = moredata.hdulist
@@ -705,36 +705,41 @@ integrates other functionality.
             else:
                 raise Errors.AstroDataError(\
                     "The 'moredata' argument is of an unsupported type")
-            
             # create a master table out of the host and update the EXTVER 
             # for the guest as it is being updated in the table
+            
             et_host = ExtTable(hdul=self.hdulist)
             et_guest = ExtTable(ad=moredata)
-            #print "AD713 hostdict=", et_host.xdict
-            #print "\nAD714 guestdict =",et_guest.xdict
             if auto_number:
                 guest_bigver = et_guest.largest_extver()
-                count = 1
+                count = 0
+                ext = 0
                 for row in et_guest.rows():
-                    print row
                     host_bigver = et_host.largest_extver()
                     for tup in row:
                         if None in et_guest.xdict[tup[0]].keys():
                             et_host.putAD(extname=tup[0], extver=None,\
                                 ad=tup[1])
+                            #et_guest.ad[tup[1][1]-1].rename_ext(name=tup[0],
+                            #    ver=None)
+                            rename_hdu(name=tup[0], ver=None, \
+                                hdu=hdulist[tup[1][1]])
+                            ext += 1
                         else:
                             et_host.putAD(extname=tup[0], \
                                 extver=host_bigver + 1, ad=tup[1])
-                            #et_guest.ad[tup[0],count].header.update("EXTVER", \
-                            #    host_bigver + 1, "Added by AstroData")
-                            et_guest.ad[tup[0],count].rename_ext(name=tup[0],
-                                ver=host_bigver + 1)
-                    count += 1
-                for hdu in hdulist[1:]:
+                            #et_guest.ad[tup[1][1]-1].rename_ext(name=tup[0],
+                            #    ver=host_bigver + 1)
+                            rename_hdu(name=tup[0], ver=host_bigver+1, \
+                                hdu=hdulist[tup[1][1]])
+                            ext += 1
+                    count +=1
+                
+                for i in range(1,len(hdulist)):
                     if len(self.hdulist) == 1:
                         self.hdulist.append(hdu)
                     else:
-                        self.hdulist.insert(hdu_index, hdu)
+                        self.hdulist.insert(hdu_index, hdulist[i])
             else:
                 for ext in et_guest.xdict.keys():
                     if ext in et_host.xdict.keys():
@@ -871,6 +876,8 @@ integrates other functionality.
                 # Create sub-data info lines
                 adno_ = "[" + str(hdu_indx - 1) + "]"
                 try:
+                    name_ = None
+                    cards_ = None
                     if not hdu.header.has_key("EXTVER"):
                         name_ = hdu.header["EXTNAME"]
                     else:
@@ -882,17 +889,17 @@ integrates other functionality.
                 if extType == "ImageHDU":
                     if self.hdulist[hdu_indx].data == None:
                         dimention_ = None
-                        format_=None
+                        form_=None
                     else:
                         dimention_ = self.hdulist[hdu_indx].data.shape
-                        format_ = self.hdulist[hdu_indx].data.dtype.name
+                        form_ = self.hdulist[hdu_indx].data.dtype.name
                 else:
                     dimention_ = ""
-                    format_ = ""
+                    form_ = ""
                 if verbose:
-                    rets += "\n%-7s %-13s %-13s %-8d %-5d %-13s %s  %s" % \
-                        (adno_, name_, extType, hdu_indx, cards_, \
-                            dimention_, format_, \
+                    rets += "\n%-7s %-13s %-13s %-8s %-5s %-13s %s  %s" % \
+                        (adno_, name_, extType, str(hdu_indx), str(cards_), \
+                            dimention_, form_, \
                             str(id(self.hdulist[hdu_indx])))
                     if extType == "ImageHDU" or extType == "BinTableHDU":
                         rets +="\n           .header    %s%s%s" % \
@@ -902,9 +909,9 @@ integrates other functionality.
                             (extDataType, " "*45, \
                             str(id(self.hdulist[hdu_indx].data)))
                 else:
-                    rets += "\n%-7s %-13s %-13s %-8d %-5d %-13s %s" % \
-                        (adno_, name_, extType, hdu_indx, cards_, \
-                            dimention_, format_)
+                    rets += "\n%-7s %-13s %-13s %-8s %-5s %-13s %s" % \
+                        (adno_, name_, extType, str(hdu_indx), str(cards_), \
+                            dimention_, form_)
                     if extType == "ImageHDU" or extType == "BinTableHDU":
                         rets +="\n           .header    %s" % extHeaderType 
                         rets +="\n           .data      %s" % extDataType
