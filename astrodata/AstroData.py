@@ -689,6 +689,8 @@ integrates other functionality.
             hdu_index = self.get_int_ext(index, hduref=True)
         else:    
             hdu_index = index + 1
+        if hdu_index > len(self.hdulist):
+            raise Errors.AstroDataError("Index out of range")
         if moredata:
             if isinstance(moredata, AstroData):
                 hdulist = moredata.hdulist
@@ -737,7 +739,7 @@ integrates other functionality.
                 
                 for i in range(1,len(hdulist)):
                     if len(self.hdulist) == 1:
-                        self.hdulist.append(hdu)
+                        self.hdulist.append(hdulist[i])
                     else:
                         self.hdulist.insert(hdu_index, hdulist[i])
             else:
