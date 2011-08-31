@@ -20,6 +20,7 @@ class ExtTable(object):
         self.create_xdict()
 
     def create_xdict(self):
+        hdulist = None
         if isinstance(self.hdul, pyfits.core.HDUList):
             hdulist = self.hdul
         elif isinstance(self.ad, astrodata.AstroData):
