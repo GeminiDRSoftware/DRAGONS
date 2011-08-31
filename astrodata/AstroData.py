@@ -643,6 +643,8 @@ integrates other functionality.
             index = self.get_int_ext(index, hduref=True)
             self.hdulist.__delitem__(index)
         else:    
+            if index > len(self) - 1:
+                raise Errors.AstroDataError("Index out of range")
             self.hdulist.__delitem__(index - 1)
             
     def insert(self, index, moredata=None, data=None, header=None, \
