@@ -969,8 +969,13 @@ class ReductionContext(dict):
 
         if self.stephistory and report_history == True:
             # stephistory
+            
             rets += "\n\nStep History (self.stephistory):\n"
             rets += "    " + "-"*41 + "\n\n"
+            rets += "Feature deprecated until memory issue is resolved \
+(callen@gemini.edu)"
+            
+            """
             shkeys = self.stephistory.keys()
             shkeys.sort()
             count = 0
@@ -1014,8 +1019,7 @@ class ReductionContext(dict):
                             else:
                                 rets += str(rcr)
                 rets += "    " + "-"*41 + "\n\n"
-                count += 1
-
+                count += 1"""
 
         if internal_dict:
             # internal dictionary contents
