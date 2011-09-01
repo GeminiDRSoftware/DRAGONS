@@ -503,32 +503,80 @@ integrates other functionality.
     
     def moredata_check(self, md=None, append=False, insert=False, \
                        replace=False, index=None):
-            if isinstance(md, AstroData):
-                return md.hdulist
-            elif type(md) is pyfits.HDUList:
-                return md
-            elif isinstance(md, pyfits.core._AllHDU):
-                try:
-                    if append:
-                        self.hdulist.append(md)
-                        print "WARNING: Appending unknown HDU type"
+        if isinstance(md, AstroData):
+            return md.hdulist
+        elif type(md) is pyfits.HDUList:
+            return md
+        elif isinstance(md, pyfits.core._AllHDU):
+            try:
+                if append:
+                    self.hdulist.append(md)
+                    print "WARNING: Appending unknown HDU type"
+                    return False
+                elif insert or replace:
+                    if not index:
+                        raise Errors.AstroDataError(\
+                            "index required to insert")
+                    else:
+                        if replace:
+                            self.remove(index)
+                        self.hdulist.insert(i + 1, md)
+                        print "WARNING: Inserting unknown HDU type"
                         return False
-                    elif insert or replace:
-                        if not index:
-                            raise Errors.AstroDataError(\
-                                "index required to insert")
-                        else:
-                            if replace:
-                                self.remove(index)
-                            self.hdulist.insert(i + 1, md)
-                            print "WARNING: Inserting unknown HDU type"
-                            return False
-                except:
-                    raise Errors.AstroDataError(\
-                       "cannot operate on pyfits.core._AllHDU instance")
-            else:
+            except:
                 raise Errors.AstroDataError(\
-                    "The 'moredata' argument is of an unsupported type")
+                   "cannot operate on pyfits.core._AllHDU instance")
+        else:
+            raise Errors.AstroDataError(\
+                "The 'moredata' argument is of an unsupported type")
+
+
+    def moredata_work(self, append=False, insert=False, autonum=False, \
+                      et_host=None, et_guest=None, hduindx=None, hdul=None): 
+        """
+        create a master table out of the host and update the EXTVER 
+        for the guest as it is being updated in the table
+        """
+        if autonum:
+            guest_bigver = et_guest.largest_extver()
+            count = 0
+            ext = 0
+            for row in et_guest.rows():
+                host_bigver = et_host.largest_extver()
+                for tup in row:
+                    if None in et_guest.xdict[tup[0]].keys():
+                        et_host.putAD(extname=tup[0], extver=None,\
+                            ad=tup[1])
+                        rename_hdu(name=tup[0], ver=None, \
+                            hdu=hdul[tup[1][1]])
+                        ext += 1
+                    else:
+                        et_host.putAD(extname=tup[0], \
+                            extver=host_bigver + 1, ad=tup[1])
+                        rename_hdu(name=tup[0], ver=host_bigver + 1, \
+                            hdu=hdul[tup[1][1]])
+                        ext += 1
+                count +=1
+            for i in range(1,len(hdul)):
+                if append:
+                    self.hdulist.append(hdul[i])
+                elif insert:
+                    if len(self.hdulist) == 1:
+                        self.hdulist.append(hdul[i])
+                    else:
+                        self.hdulist.insert(hduindx, hdul[i])
+        else:
+            for ext in et_guest.xdict.keys():
+                if ext in et_host.xdict.keys():
+                    for ver in et_guest.xdict[ext].keys():
+                        if ver in et_host.xdict[ext].keys():
+                            raise Errors.AstroDataError(\
+                        "EXTNAME, EXTVER conflict, use auto_number")
+            for hdu in hdul[1:]:
+                if append:
+                    self.hdulist.append(hdu)
+                elif insert:
+                    self.hdulist.insert(hduindx, hdu)
    
     def append(self, moredata=None, data=None, header=None, auto_number=False,\
                extname=None, extver=None):
@@ -570,43 +618,10 @@ integrates other functionality.
             hdulist = self.moredata_check(md=moredata, append=True)
             if not hdulist:
                 return
-
-            # create a master table out of the host and update the EXTVER 
-            # for the guest as it is being updated in the table
-            
-            et_host = ExtTable(hdul=self.hdulist)
-            et_guest = ExtTable(ad=moredata)
-            if auto_number:
-                guest_bigver = et_guest.largest_extver()
-                count = 0
-                ext = 0
-                for row in et_guest.rows():
-                    host_bigver = et_host.largest_extver()
-                    for tup in row:
-                        if None in et_guest.xdict[tup[0]].keys():
-                            et_host.putAD(extname=tup[0], extver=None,\
-                                ad=tup[1])
-                            et_guest.ad[tup[1][1]-1].rename_ext(name=tup[0],
-                                ver=None)
-                            ext += 1
-                        else:
-                            et_host.putAD(extname=tup[0], \
-                                extver=host_bigver + 1, ad=tup[1])
-                            et_guest.ad[tup[1][1]-1].rename_ext(name=tup[0],
-                                ver=host_bigver + 1)
-                            ext += 1
-                    count +=1
-                for i in range(len(hdulist)-1):
-                    self.hdulist.append(hdulist[i+1])
-            else:
-                for ext in et_guest.xdict.keys():
-                    if ext in et_host.xdict.keys():
-                        for ver in et_guest.xdict[ext].keys():
-                            if ver in et_host.xdict[ext].keys():
-                                raise Errors.AstroDataError(\
-                            "EXTNAME, EXTVER conflict, use auto_number")
-                for hdu in hdulist[1:]:
-                    self.hdulist.append(hdu)
+            ethost = ExtTable(hdul=self.hdulist)
+            etguest = ExtTable(ad=moredata)
+            self.moredata_work(append=True, autonum=auto_number, \
+                et_host=ethost, et_guest=etguest, hdul=hdulist)
         else:
             if header is None or data is None: 
                 raise Errors.AstroDataError(\
@@ -717,50 +732,11 @@ integrates other functionality.
             if not hdulist:
                 return
             
-            # create a master table out of the host and update the EXTVER 
-            # for the guest as it is being updated in the table
-            
-            et_host = ExtTable(hdul=self.hdulist)
-            et_guest = ExtTable(ad=moredata)
-            if auto_number:
-                guest_bigver = et_guest.largest_extver()
-                count = 0
-                ext = 0
-                for row in et_guest.rows():
-                    host_bigver = et_host.largest_extver()
-                    for tup in row:
-                        if None in et_guest.xdict[tup[0]].keys():
-                            et_host.putAD(extname=tup[0], extver=None,\
-                                ad=tup[1])
-                            #et_guest.ad[tup[1][1]-1].rename_ext(name=tup[0],
-                            #    ver=None)
-                            rename_hdu(name=tup[0], ver=None, \
-                                hdu=hdulist[tup[1][1]])
-                            ext += 1
-                        else:
-                            et_host.putAD(extname=tup[0], \
-                                extver=host_bigver + 1, ad=tup[1])
-                            #et_guest.ad[tup[1][1]-1].rename_ext(name=tup[0],
-                            #    ver=host_bigver + 1)
-                            rename_hdu(name=tup[0], ver=host_bigver+1, \
-                                hdu=hdulist[tup[1][1]])
-                            ext += 1
-                    count +=1
-                
-                for i in range(1,len(hdulist)):
-                    if len(self.hdulist) == 1:
-                        self.hdulist.append(hdulist[i])
-                    else:
-                        self.hdulist.insert(hdu_index, hdulist[i])
-            else:
-                for ext in et_guest.xdict.keys():
-                    if ext in et_host.xdict.keys():
-                        for ver in et_guest.xdict[ext].keys():
-                            if ver in et_host.xdict[ext].keys():
-                                raise Errors.AstroDataError(\
-                            "EXTNAME, EXTVER conflict, use auto_number")
-                for hdu in hdulist[1:]:
-                    self.hdulist.insert(hdu_index, hdu)
+            ethost = ExtTable(hdul=self.hdulist)
+            etguest = ExtTable(ad=moredata)
+            self.moredata_work(insert=True, autonum=auto_number, \
+                et_host=ethost, et_guest=etguest, hdul=hdulist, \
+                hduindx=hdu_index)
         else:
             if header is None or data is None: 
                 raise Errors.AstroDataError(\
@@ -779,8 +755,6 @@ integrates other functionality.
                     header=header))
                 return 
             
-            # check for conflict if not auto_number then increment
-            # off the largest host extver unless the extname is larger
             et_host = ExtTable(self)
             if not auto_number:
                 for ext in et_host.xdict.keys():
@@ -789,8 +763,6 @@ integrates other functionality.
                             raise Errors.AstroDataError(\
                                 "EXTNAME EXTVER conflict, use auto_number") 
             host_bigver = et_host.largest_extver()
-            #print "ad607: host_bigver = ", host_bigver
-            #print "ad608: header['EXTVER'] = ", header["EXTVER"]
 
             if header["EXTVER"] > host_bigver:
                 extver = header["EXTVER"]
