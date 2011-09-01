@@ -115,7 +115,7 @@ class ReductionContext(dict):
         s*,t*,u*,v*,w*,x*,y*,z*
     """
     inputs = None
-    original_inputs = None
+    _original_inputs = None
     inputs_history = None
     outputs = None
     calibrations = None
@@ -149,7 +149,7 @@ class ReductionContext(dict):
     cmd_index = None
     # return behavior
     _return_command = None
-     
+    
     def __init__(self):
         """The ReductionContext constructor creates empty dictionaries and
         lists, members set to None in the class.
@@ -362,10 +362,10 @@ class ReductionContext(dict):
         
         ##@@TODO: Approve that this is acceptable. 
         ##(i.e. should it be done here or after the first round is complete?)
-        origFlag = False
-        if self.original_inputs is None or self.original_inputs == []:
-            self.original_inputs = []
-            origFlag = True
+        # origFlag = False
+        # if self.original_inputs is None or self.original_inputs == []:
+        #    self.original_inputs = []
+        #    origFlag = True
         
         for filename in filenames:
             if type(filename) == str:
@@ -380,12 +380,12 @@ class ReductionContext(dict):
                 m += "Should be str, AstroData, AstroDataRecord."
                 raise ReduceError(m) 
             
-            #@@CONFUSING: the word filename by here is an AstroDataRecord!
+            #@@CONFUSING: the word filename here is an AstroDataRecord!
             if filename not in self.inputs:
                 self.inputs.append(filename)
-            if origFlag:
-                if filename not in self.original_inputs:
-                    self.original_inputs.append(filename)        
+            #if origFlag:
+            #    if filename not in self.original_inputs:
+            #        self.original_inputs.append(filename)        
        
     def add_rq(self, rq):
         '''
@@ -422,10 +422,10 @@ class ReductionContext(dict):
     def cal_filename(self, caltype):
         """returns a local filename for a retrieved calibration
         """
-        if self.original_inputs == None:
-            self.original_inputs = deepcopy(self.inputs)
-        if len(self.original_inputs) == 0:
-            return None
+        #if self.original_inputs == None:
+        #    self.original_inputs = deepcopy(self.inputs)
+        #if len(self.original_inputs) == 0:
+        #    return None
         #elif len(self.original_inputs) == 1:
         #    adID = idFac.generate_astro_data_id(self.inputs[0].ad)
         #    key = (adID, caltype)
@@ -434,17 +434,17 @@ class ReductionContext(dict):
         #        return {self.calibrations[key].filename:[infile]}
         #    else:
         #        return None
-        else:
-            retl = {}
-            for inp in self.original_inputs:
-                key = (idFac.generate_astro_data_id(inp.ad), caltype)
-                calfile = self.calibrations[key].filename
-                infile = os.path.basename(inp.filename)
-                if retl.has_key(calfile):
-                    retl.update({calfile:retl[calfile] + [infile]})
-                else:
-                    retl.update({calfile:[infile]})
-            return retl
+        #else:
+        retl = {}
+        for inp in self.get_inputs_as_astrodata(): #self.original_inputs:
+            key = (idFac.generate_astro_data_id(inp.ad), caltype)
+            calfile = self.calibrations[key].filename
+            infile = os.path.basename(inp.filename)
+            if retl.has_key(calfile):
+                retl.update({calfile:retl[calfile] + [infile]})
+            else:
+                retl.update({calfile:[infile]})
+        return retl
                      
     def call_callbacks(self, name, **params):
         callbacks = self.callbacks
@@ -501,10 +501,10 @@ class ReductionContext(dict):
             # don't do this if the set is empty, it's a non-IO primitive
             ##@@TODO: The below if statement could be redundant because this 
             # is done in addInputs
-            if self.original_inputs == None:
+            #if self.original_inputs == None:
                 # SAY WHAT?  why deepcopy?
                 # ack!
-                self.original_inputs = deepcopy(self.inputs)
+            #    self.original_inputs = deepcopy(self.inputs)
             
             #print "OUTPUTS:", self.outputs[MAINSTREAM]
             newinputlist = []
@@ -921,8 +921,8 @@ class ReductionContext(dict):
             varlist.append("user_params")
         if not self.inputs:
             varlist.append("inputs")
-        if not self.original_inputs:
-            varlist.append("original_inputs")
+        #if not self.original_inputs:
+        #    varlist.append("original_inputs")
 
         if report_inputs:
             # inputs
@@ -937,12 +937,12 @@ class ReductionContext(dict):
         
         if context_vars:
             # original_inputs
-            if self.original_inputs:
-                rets += "\n\nOriginal Input (self.original_inputs,"
-                rets += " ReductionContextRecords):"
-                rets += "\n    %-20s : " % "RCR.filename"
-                for rcr in self.original_inputs:
-                    rets += rcr.filename + "\n" + " "*23
+            #if self.original_inputs:
+            #    rets += "\n\nOriginal Input (self.original_inputs,"
+            #    rets += " ReductionContextRecords):"
+            #    rets += "\n    %-20s : " % "RCR.filename"
+            #    for rcr in self.original_inputs:
+            #        rets += rcr.filename + "\n" + " "*23
            
             
             # context vars
@@ -1328,6 +1328,7 @@ class ReductionContext(dict):
                 self.outputs[stream].append(orecord)
     
     def restore_cal_index(self, filename):
+        raise "don't call restore_cal_index"
         if os.path.exists(filename):
             self.calibrations = pickle.load(open(filename, 'r'))
             self.calindfile = filename
@@ -1456,8 +1457,8 @@ class ReductionContext(dict):
         """
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
-        for orig in self.original_inputs:
-            print "RM1453: HERE!"
+        for orig in self.get_inputs_as_astrodata():
+            # print "RM1453: HERE!"
             Sid = purpose + idFac.generate_stackable_id(orig.ad, ver)
             stackUEv = GetStackableRequest()
             stackUEv.stk_id = Sid
@@ -1625,6 +1626,9 @@ class ReductionContext(dict):
         else:
             raise ReduceError("Can't revert stream because there is no stream on stream list. The switch_stream(..) function not called.")
                     
+    def bad_call(self, arg=None):
+        raise "DO NOT USE ORIGINAL INPUTS"
+    original_inputs = property(bad_call, bad_call)
     
 def open_if_name(dataset):
     """Utility function to handle accepting datasets as AstroData

@@ -570,7 +570,11 @@ for infiles in allinputs: #for dealing with multiple sets of files.
         raise
 
     # add command clause
-    ro.register_command_clause(command_clause)
+    if ro:
+        ro.register_command_clause(command_clause)
+    else:
+        log.error("Unable to get ReductionObject for type %s" % options.astrotype)
+        break
     if options.recipename == None:
         if options.astrotype == None:
             reclist = rl.get_applicable_recipes(infiles[0]) #**
@@ -699,7 +703,7 @@ for infiles in allinputs: #for dealing with multiple sets of files.
                     co.update({"cachedict":cachedict})
                     # rc.["storedcals"] will be the proper directory
 
-                    co.restore_cal_index(calindfile)
+                    # co.restore_cal_index(calindfile)
                     # old local stack stuff co.restore_stk_index( stkindfile )
 
                     # add input files
