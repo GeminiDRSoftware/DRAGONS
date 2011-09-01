@@ -307,10 +307,15 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             # to be used with minmax rejection.  Note: if reject_method
             # parameter is overridden, these parameters will just be
             # ignored
-            if (nframes <= 5):
+            reject_method = rc["reject_method"]
+            nlow = 0
+            nhigh = 0
+            if nframes <= 2:
+                reject_method = "none"
+            elif nframes <= 5:
                 nlow = 1
                 nhigh = 1
-            elif (nframes <= 10):
+            elif nframes <= 10:
                 nlow = 2
                 nhigh = 2
             else:
@@ -323,7 +328,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                    suffix=rc["suffix"],
                                    operation=rc["operation"],
                                    mask_type=rc["mask_type"],
-                                   reject_method=rc["reject_method"],
+                                   reject_method=reject_method,
                                    grow=rc["grow"],
                                    nlow=nlow,
                                    nhigh=nhigh)
