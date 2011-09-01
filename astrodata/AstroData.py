@@ -500,6 +500,35 @@ integrates other functionality.
     filename = property(get_filename, set_filename, None, "The filename"
                 " member is monitored so that the mode can be changed from"
                 " readonly when the filename is changed.")
+    
+    def moredata_check(self, md=None, append=False, insert=False, \
+                       replace=False, index=None):
+            if isinstance(md, AstroData):
+                return md.hdulist
+            elif type(md) is pyfits.HDUList:
+                return md
+            elif isinstance(md, pyfits.core._AllHDU):
+                try:
+                    if append:
+                        self.hdulist.append(md)
+                        print "WARNING: Appending unknown HDU type"
+                        return False
+                    elif insert or replace:
+                        if not index:
+                            raise Errors.AstroDataError(\
+                                "index required to insert")
+                        else:
+                            if replace:
+                                self.remove(index)
+                            self.hdulist.insert(i + 1, md)
+                            print "WARNING: Inserting unknown HDU type"
+                            return False
+                except:
+                    raise Errors.AstroDataError(\
+                       "cannot operate on pyfits.core._AllHDU instance")
+            else:
+                raise Errors.AstroDataError(\
+                    "The 'moredata' argument is of an unsupported type")
    
     def append(self, moredata=None, data=None, header=None, auto_number=False,\
                extname=None, extver=None):
@@ -538,22 +567,10 @@ integrates other functionality.
             override_extver=True
         
         if moredata:
-            if isinstance(moredata, AstroData):
-                hdulist = moredata.hdulist
-            elif type(moredata) is pyfits.HDUList:
-                hdulist = moredata
-            elif isinstance(moredata, pyfits.core._AllHDU):
-                try:
-                    self.hdulist.append(moredata)
-                    print "WARNING: appended _ALLHDU instance"
-                    return
-                except:
-                    raise Errors.AstroDataError(\
-                        "cannot append pyfits.core._AllHDU instance")
-            else:
-                raise Errors.AstroDataError(\
-                    "The 'moredata' argument is of an unsupported type")
-            
+            hdulist = self.moredata_check(md=moredata, append=True)
+            if not hdulist:
+                return
+
             # create a master table out of the host and update the EXTVER 
             # for the guest as it is being updated in the table
             
@@ -696,21 +713,10 @@ integrates other functionality.
         if hdu_index > len(self.hdulist):
             raise Errors.AstroDataError("Index out of range")
         if moredata:
-            if isinstance(moredata, AstroData):
-                hdulist = moredata.hdulist
-            elif type(moredata) is pyfits.HDUList:
-                hdulist = moredata
-            elif isinstance(moredata, pyfits.core._AllHDU):
-                try:
-                    self.hdulist.append(moredata)
-                    print "WARNING: appended _ALLHDU instance"
-                    return
-                except:
-                    raise Errors.AstroDataError(\
-                        "cannot append pyfits.core._AllHDU instance")
-            else:
-                raise Errors.AstroDataError(\
-                    "The 'moredata' argument is of an unsupported type")
+            hdulist = self.moredata_check(md=moredata, insert=True, index=index)
+            if not hdulist:
+                return
+            
             # create a master table out of the host and update the EXTVER 
             # for the guest as it is being updated in the table
             
