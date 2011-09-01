@@ -609,9 +609,6 @@ integrates other functionality.
                             raise Errors.AstroDataError(\
                                 "EXTNAME EXTVER conflict, use auto_number") 
             host_bigver = et_host.largest_extver()
-
-            print header["EXTVER"]
-            print host_bigver
             if header["EXTVER"] > host_bigver:
                 extver = header["EXTVER"]
             if not override_extver:
