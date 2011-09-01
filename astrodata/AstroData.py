@@ -532,11 +532,13 @@ integrates other functionality.
 
 
     def moredata_work(self, append=False, insert=False, autonum=False, \
-                      et_host=None, et_guest=None, hduindx=None, hdul=None): 
+                      md=None, hduindx=None, hdul=None): 
         """
         create a master table out of the host and update the EXTVER 
         for the guest as it is being updated in the table
         """
+        et_host = ExtTable(hdul=self.hdulist)
+        et_guest = ExtTable(ad=md)
         if autonum:
             guest_bigver = et_guest.largest_extver()
             count = 0
@@ -577,6 +579,40 @@ integrates other functionality.
                     self.hdulist.append(hdu)
                 elif insert:
                     self.hdulist.insert(hduindx, hdu)
+    
+    def onehdu_work(self, append=False, insert=False, replace=False, \
+                    extver=None, extname=None, header=None,\
+                    data=None, autonum=False, hduindx=None):
+        """does extension work for one HDU
+        """
+        if header is None or data is None: 
+            raise Errors.AstroDataError(\
+                "both header and data is required")
+        header = self.verify_header(extname=extname, extver=extver, \
+            header=header)
+        et_host = ExtTable(self)
+        if not autonum:
+            for ext in et_host.xdict.keys():
+                if header["EXTNAME"] == ext:
+                    if header["EXTVER"] in et_host.xdict[ext].keys():
+                        raise Errors.AstroDataError(\
+                            "EXTNAME EXTVER conflict, use auto_number") 
+        host_bigver = et_host.largest_extver()
+        xver=None 
+        if header["EXTVER"] > host_bigver:
+            xver = header["EXTVER"]
+        elif extver:
+            xver = extver
+        else:
+            xver = host_bigver + 1
+        header.update("EXTVER", xver, "Added by AstroData")
+        if append:
+            #if isinstance(data, pyfits.??)
+            self.hdulist.append(pyfits.ImageHDU(data=data,header=header))
+        elif replace or insert:
+            if replace:
+                self.remove(hduindx, hdui=True)
+            self.hdulist.insert(hduindx, pyfits.ImageHDU(data=data,header=header))
    
     def append(self, moredata=None, data=None, header=None, auto_number=False,\
                extname=None, extver=None):
@@ -607,49 +643,17 @@ integrates other functionality.
         This function appends more data units (aka "HDUs") to the AstroData
         instance.
         """
-        et_host = None
-        et_guest = None
         hdulist = None
-        override_extver=False
-        if extver:
-            override_extver=True
-        
         if moredata:
             hdulist = self.moredata_check(md=moredata, append=True)
             if not hdulist:
                 return
-            ethost = ExtTable(hdul=self.hdulist)
-            etguest = ExtTable(ad=moredata)
             self.moredata_work(append=True, autonum=auto_number, \
-                et_host=ethost, et_guest=etguest, hdul=hdulist)
+                md=moredata, hdul=hdulist)
         else:
-            if header is None or data is None: 
-                raise Errors.AstroDataError(\
-                    "both header and data is required")
-             
-            #  override header extname, extver if given in args, then
-            #  if host ad has 1 or 0 exts, will just append and exit
-            header = self.verify_header(extname=extname, extver=extver, \
-                header=header)
-            # check for conflict if not auto_number then increment
-            # off the largest host extver unless the extname is larger
-            et_host = ExtTable(self)
-            if not auto_number:
-                for ext in et_host.xdict.keys():
-                    if header["EXTNAME"] == ext:
-                        if header["EXTVER"] in et_host.xdict[ext].keys():
-                            raise Errors.AstroDataError(\
-                                "EXTNAME EXTVER conflict, use auto_number") 
-            host_bigver = et_host.largest_extver()
-            if header["EXTVER"] > host_bigver:
-                extver = header["EXTVER"]
-            if not override_extver:
-                extver = host_bigver + 1
-            header.update("EXTVER", extver, "Added by AstroData")
-            self.hdulist.append(pyfits.ImageHDU(data=data,\
-                header=header))
-    
-   
+            self.onehdu_work(append=True, header=header, data=data, \
+                extname=extname, extver=extver, autonum=auto_number)
+
     def close(self):
         """The close(..) function will close the HDUList associated with this
         AstroData instance. If this is subdata, e.g. (sd = gd[SCI] where gd is
@@ -664,7 +668,7 @@ integrates other functionality.
                 self.hdulist.close()
                 self.hdulist = None
  
-    def remove(self, index):
+    def remove(self, index, hdui=False):
         """
         :param index: the extension index, either an int or (EXTNAME, EXTVER)
             pair before which the extension is to be inserted. Note, the 
@@ -675,11 +679,17 @@ integrates other functionality.
         """
         if type(index) == tuple:
             index = self.get_int_ext(index, hduref=True)
+            if hdui:
+                raise Errors.AstroDataError("Must provide HDUList index")
             self.hdulist.__delitem__(index)
         else:    
             if index > len(self) - 1:
                 raise Errors.AstroDataError("Index out of range")
-            self.hdulist.__delitem__(index - 1)
+            if hdui:
+                self.hdulist.__delitem__(index)
+            else:
+                self.hdulist.__delitem__(index - 1)
+
             
     def insert(self, index, moredata=None, data=None, header=None, \
                auto_number=False, extname=None, extver=False):
@@ -731,48 +741,13 @@ integrates other functionality.
             hdulist = self.moredata_check(md=moredata, insert=True, index=index)
             if not hdulist:
                 return
-            
-            ethost = ExtTable(hdul=self.hdulist)
-            etguest = ExtTable(ad=moredata)
             self.moredata_work(insert=True, autonum=auto_number, \
-                et_host=ethost, et_guest=etguest, hdul=hdulist, \
-                hduindx=hdu_index)
+                md=moredata, hdul=hdulist, hduindx=hdu_index)
         else:
-            if header is None or data is None: 
-                raise Errors.AstroDataError(\
-                    "both header and data is required")
-             
-            #  override header extname, extver if given in args, then
-            #  if host ad has 1 or 0 exts, will just insert and exit
-            header = self.verify_header(extname=extname, extver=extver, \
-                header=header)
-            if len(self.hdulist) == 0:
-                self.hdulist.insert(hdu_index, pyfits.PrimaryHDU(data=data, \
-                    header=header))
-                return
-            if len(self.hdulist) == 1:
-                self.hdulist.insert(hdu_index, pyfits.ImageHDU(data=data, \
-                    header=header))
-                return 
+            self.onehdu_work(insert=True, header=header, data=data, \
+                extname=extname, extver=extver, autonum=auto_number,\
+                hduindx=hdu_index)
             
-            et_host = ExtTable(self)
-            if not auto_number:
-                for ext in et_host.xdict.keys():
-                    if header["EXTNAME"] == ext:
-                        if header["EXTVER"] in et_host.xdict[ext].keys():
-                            raise Errors.AstroDataError(\
-                                "EXTNAME EXTVER conflict, use auto_number") 
-            host_bigver = et_host.largest_extver()
-
-            if header["EXTVER"] > host_bigver:
-                extver = header["EXTVER"]
-            else:
-                extver = host_bigver + 1
-            header.update("EXTVER", extver, "Added by AstroData")
-            self.hdulist.insert(hdu_index, pyfits.ImageHDU(data=data,\
-                header=header))
-    
-               
     def infostr(self, as_html=False, verbose=False, table=False):
         """
         :param as_html: boolean that indicates if the string should be HTML
@@ -1461,11 +1436,9 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
                 header.update("EXTVER", extver, "Added by AstroData")
         else:
             if extver and header.has_key("EXTVER"):
-                if extver != header["EXTVER"]:
-                    header.update("EXTVER", extver, "Added by AstroData")
+                header.update("EXTVER", extver, "Added by AstroData")
             if extname and header.has_key("EXTNAME"):
-                if extver != header["EXTNAME"]:
-                    header.update("EXTNAME", extname, "Added by AstroData")
+                header.update("EXTNAME", extname, "Added by AstroData")
         return header
         
     def write(self, filename=None, clobber=False, rename=None):
