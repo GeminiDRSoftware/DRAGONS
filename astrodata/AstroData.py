@@ -590,29 +590,37 @@ integrates other functionality.
                 "both header and data is required")
         header = self.verify_header(extname=extname, extver=extver, \
             header=header)
+        xver = None
+        if header.has_key("EXTVER"):
+            xver = header["EXTVER"]
         et_host = ExtTable(self)
         if not autonum:
             for ext in et_host.xdict.keys():
                 if header["EXTNAME"] == ext:
-                    if header["EXTVER"] in et_host.xdict[ext].keys():
+                    if xver in et_host.xdict[ext].keys():
                         raise Errors.AstroDataError(\
                             "EXTNAME EXTVER conflict, use auto_number") 
         host_bigver = et_host.largest_extver()
-        xver=None 
-        if header["EXTVER"] > host_bigver:
-            xver = header["EXTVER"]
-        elif extver:
+        if extver:
             xver = extver
-        else:
+            header.update("EXTVER", xver, "Added by AstroData")
+        elif xver <=  host_bigver and xver is not None:
             xver = host_bigver + 1
-        header.update("EXTVER", xver, "Added by AstroData")
+            header.update("EXTVER", xver, "Added by AstroData")
         if append:
-            #if isinstance(data, pyfits.??)
-            self.hdulist.append(pyfits.ImageHDU(data=data,header=header))
+            if isinstance(data, pyfits.core.FITS_rec):
+                self.hdulist.append(pyfits.BinTableHDU(data=data,header=header))
+            else:
+                self.hdulist.append(pyfits.ImageHDU(data=data,header=header))
         elif replace or insert:
             if replace:
                 self.remove(hduindx, hdui=True)
-            self.hdulist.insert(hduindx, pyfits.ImageHDU(data=data,header=header))
+            if isinstance(data, pyfits.core.FITS_rec):
+                self.hdulist.insert(hduindx, pyfits.BinTableHDU(data=data,\
+                    header=header))
+            else:
+                self.hdulist.insert(hduindx, pyfits.ImageHDU(data=data,\
+                    header=header))
    
     def append(self, moredata=None, data=None, header=None, auto_number=False,\
                extname=None, extver=None):
@@ -727,8 +735,6 @@ integrates other functionality.
         This function inserts more data units (aka an "HDU") to the AstroData
         instance.
         """
-        et_host = None
-        et_guest = None
         hdulist = None
         hdu_index = None
         if type(index) == tuple:
@@ -1371,40 +1377,24 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
         
         :param phu: primary header unit  
         :type phu: pyfits.core.PrimaryHDU, pyfits.core.Header 
-        
-        :param ai: auto-increment appends to match existing extname - extver 
-            convention.
-        :type ai: boolean
-        Sets up a call to insert with the replace flag set, but also handles 
-        direct replacement of header, data or phu
         """
         hdul = self.gethdul()
+        hdulist = None
+        hdu_index = None
         if type(index) == tuple:
-            index = self.get_int_ext(index)
+            hdu_index = self.get_int_ext(index, hduref=True)
+        else:    
+            hdu_index = index + 1
+        if hdu_index > len(hdul):
+            raise Errors.AstroDataError("Index out of range")
         if phu is None:
-            if data is None and header is not None:
-                hdul[index+1].header = header
-            elif data is not None and header is None:
-                hdul[index+1].data = data
-            else:
-                #insert replace algorithm here
-                old_extname = hdul[index].header['EXTNAME']
-                old_extver = hdul[index].header['EXTVER']
-                hdul.__delitem__(index)
-                if old_extname != extname:
-                    hdul.insert(index,pyfits.ImageHDU(data=data, \
-                        header=header))
-                    hdul[index].header['EXTVER'] = last_extver
-                else:
-                    hdul.insert(index,pyfits.ImageHDU(data=data, \
-                        header=header))
-                    hdul[index].header['EXTVER'] = old_extver
-                
+            self.onehdu_work(replace=True, header=header, data=data, \
+                extname=extname, extver=extver, autonum=auto_number,\
+                hduindx=hdu_index)
         else:
             hdul.__delitem__(0)
             hdul.insert(0, phu)
-
-  
+            
     def verify_header(self, extname=None, extver=None, header=None):
         """
         :param extname: extension name (ex, 'SCI', 'VAR', 'DQ')
