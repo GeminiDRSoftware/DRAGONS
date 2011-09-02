@@ -7,7 +7,7 @@ import textwrap
 import traceback as tb
 
 from astrodata.Errors import Error
-
+TERMWIDTH=320
 
 _listOfLoggers = None
 
@@ -146,7 +146,7 @@ class GeminiLogger(object):
         self.indentLevel = indentLevel
 
         # Define a text wrapper for formatting output lines
-        self.wrapper = textwrap.TextWrapper(width=80,break_long_words=False,
+        self.wrapper = textwrap.TextWrapper(width=TERMWIDTH,break_long_words=False,
                                        initial_indent=self.indentLevel*'   ',
                                        subsequent_indent=self.indentLevel*'   ')
 
@@ -229,7 +229,7 @@ class GeminiLogger(object):
     
     def changeIndent(self, indentLevel=None):
         self.indentLevel = indentLevel
-        self.wrapper = textwrap.TextWrapper(width=80,break_long_words=False,
+        self.wrapper = textwrap.TextWrapper(width=TERMWIDTH,break_long_words=False,
                                        initial_indent=self.indentLevel*'   ',
                                        subsequent_indent=self.indentLevel*'   ')
  
