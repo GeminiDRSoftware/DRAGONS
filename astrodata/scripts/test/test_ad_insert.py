@@ -279,3 +279,47 @@ def ad_insert_test15():
     eq_(ad_new[2].extver(), 1)
     eq_(ad_new[1].extver(), 1)
     eq_(ad_new[0].extver(), 1)
+
+def ad_insert_test16():
+    """ad_insert_test16 -auto_number, mdf
+    """
+    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
+    print "\n             >>>>>>>     AD NEW    <<<<<<<<"
+    ad_new = AstroData(phu=ad3.phu)
+    ad_new.info()
+    print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
+    ad_new.insert(index=0, header=ad3[0].header, data=ad3[0].data,\
+        auto_number=True) 
+    mystr = "ad_new.insert(index=0, header=ad4[1].header, data=ad4[1].data,"
+    mystr += " auto_number=True)" 
+    print mystr
+    print "\n             >>>>>>>  AD NEW <<<<<<<<"
+    ad_new.info()
+    eq_(ad_new[0].extname(), "MDF")
+    eq_(ad_new[0].extver(), None)
+
+def ad_insert_test17():
+    """ad_insert_test17 -auto_number, mdf into mef
+    """
+    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
+    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
+    print "\n             >>>>>>>     AD NEW    <<<<<<<<"
+    ad1.info()
+    print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
+    ad1.insert(index=0, header=ad3[0].header, data=ad3[0].data) 
+    mystr = "ad1.insert(index=0, header=ad4[1].header, data=ad4[1].data,"
+    mystr += " auto_number=True)" 
+    print mystr
+    print "\n             >>>>>>>  AD NEW <<<<<<<<"
+    ad1.info()
+    eq_(ad1[0].extname(), "MDF")
+    eq_(ad1[0].extver(), None)
+
+
+
+
+
+
+
+
+
