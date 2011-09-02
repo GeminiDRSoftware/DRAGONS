@@ -62,8 +62,9 @@ def checkImageParam(image, logBadlist=False):
                         continue
                     if os.path.dirname(readList[i]) == '':
                         readList[i] = os.path.join(root, readList[i])
+                    nospace_str = readList[i].replace(' ','')
                     # Adds .fits if there is none
-                    inList.append(strutil.appendFits(readList[i]))
+                    inList.append(strutil.appendFits(nospace_str))
             except:
                 log.critical('An error occurred when opening and reading '+
                 'from the image '+os.path.basename(image))
