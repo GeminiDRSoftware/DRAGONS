@@ -294,3 +294,51 @@ def ad_append_test14():
     eq_(ad_new[2].extname(), "SCI")
     eq_(ad_new[2].extver(), 3)
 
+def ad_append_test15():
+    """ad_append_test15 -auto_number, extver override
+    """
+    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
+    print "\n             >>>>>>>     AD NEW    <<<<<<<<"
+    ad_new = AstroData(phu=ad4.phu)
+    ad_new.info()
+    print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
+    ad_new.append(header=ad4[1].header, data=ad4[1].data,  extver=1, \
+        auto_number=True) 
+    ad_new.append(header=ad4[4].header, data=ad4[4].data,  extver=1, \
+        auto_number=True) 
+    mystr = "ad_new.append(header=ad4[1].header, data=ad4[1].data,  extver=1,"
+    mystr += " auto_number=True)" 
+    mystr += "\nad_new.append(header=ad4[4].header, data=ad4[4].data,  extver=1,"
+    mystr += " auto_number=True)"
+    print mystr
+    print "\n             >>>>>>>  AD NEW <<<<<<<<"
+    ad_new.info()
+    
+    eq_(ad_new[0].extname(), "SCI")
+    eq_(ad_new[0].extver(), 1)
+    eq_(ad_new[1].extname(), "DQ")
+    eq_(ad_new[1].extver(), 1)
+
+
+def ad_append_test16():
+    """ad_append_test16 -auto_number, mdf
+    """
+    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
+    print "\n             >>>>>>>     AD NEW    <<<<<<<<"
+    ad_new = AstroData(phu=ad3.phu)
+    ad_new.info()
+    print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
+    print ad3[0].data.__class__
+    ad_new.append(header=ad3[0].header, data=ad3[0].data,\
+        auto_number=True) 
+    mystr = "ad_new.append(header=ad4[1].header, data=ad4[1].data,"
+    mystr += " auto_number=True)" 
+    print mystr
+    print "\n             >>>>>>>  AD NEW <<<<<<<<"
+    ad_new.info()
+    eq_(ad_new[0].extname(), "MDF")
+    eq_(ad_new[0].extver(), None)
+
+
+
+
