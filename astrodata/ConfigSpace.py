@@ -70,6 +70,7 @@ class ConfigSpace(object):
                 path = elem[0]
                 goodpath = (".svn" not in path) and ("CVS" not in path)
                 if goodpath:
+                    if "edge" in elem: print "CS72:", elem
                     yield elem
             
     def get_config_dirs(self, spacename):
@@ -169,7 +170,7 @@ class ConfigSpace(object):
                                 for subsubpath in subsubpaths:
                                     if RECIPEMARKER in subsubpath:
                                         fullpath = os.path.join(path, subpath, subsubpath)
-                                        # print "full", fullpath
+                                        print "RECIPEMARKER full", fullpath
                                         if os.path.isdir(fullpath):
                                             # then this is one of the config space directories
                                             adconfdirs.append(fullpath)
@@ -180,6 +181,7 @@ class ConfigSpace(object):
                         else:
                             pass # print ""
         self.recipedirs = adconfdirs
+        #print "CS183:",repr(adconfdirs)
         return adconfdirs
 
     def general_walk( self, dir, exts=[] ):

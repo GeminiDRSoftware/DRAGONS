@@ -276,10 +276,11 @@ class ReductionObject(object):
         primsetary.append (primset)
     
     def get_prim_set(self, primname, astrotype = None):
-        # print "RO110:", astrotype, self.curPrimType
+        #print "RO279:", astrotype, self.curPrimType
         primsetary = self.primDict[self.curPrimType]
-        # print "RO112:" , primsetary
+        #print "RO281:" , primsetary
         for primset in primsetary:
+            #print "RO283:", repr(dir(primset))
             if hasattr(primset, primname):
                 return primset
         return None

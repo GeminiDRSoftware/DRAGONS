@@ -2036,7 +2036,6 @@ def %(name)s(self,cfgObj):
             return True
         
     def check_and_bind(self, redobj, name, context=None):
-        dir (redobj)
         # print "RM1389:", name
         if self.check_method(redobj, name):
             return False
