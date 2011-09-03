@@ -212,3 +212,11 @@ class UndefinedKeyError(Error):
     
 class GDPGUtilError(Error):
     message = "Error in gpdgutil module."
+
+### CONFIGURATION SYSTEM ERRORS
+
+class ConfigurationError(Error):
+    message = "Configuration Error"
+
+class RecipeImportError(ConfigurationError):
+    message = "Recipe Import Error"

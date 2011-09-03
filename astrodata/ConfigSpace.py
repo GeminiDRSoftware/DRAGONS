@@ -170,7 +170,7 @@ class ConfigSpace(object):
                                 for subsubpath in subsubpaths:
                                     if RECIPEMARKER in subsubpath:
                                         fullpath = os.path.join(path, subpath, subsubpath)
-                                        print "RECIPEMARKER full", fullpath
+                                        #print "RECIPEMARKER full", fullpath
                                         if os.path.isdir(fullpath):
                                             # then this is one of the config space directories
                                             adconfdirs.append(fullpath)

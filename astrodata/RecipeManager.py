@@ -1900,6 +1900,7 @@ class RecipeLibrary(object):
         return ro
         
     def retrieve_primitive_set(self, dataset=None, astrotype=None):
+        
         if (astrotype == None) and (dataset != None):
             val = pick_config(dataset, centralPrimitivesIndex)
             k = val.keys()
@@ -1924,7 +1925,15 @@ class RecipeLibrary(object):
                     exec ("import " + importname)
                     # print ("RM1285: after import")
                 except:
-                    print traceback.format_exc()
+                    log = gemLog.getGeminiLog()
+                    msg =  "##### PRIMITIVE SET IMPORT ERROR: SKIPPING %(impname)s\n" * 3
+                    msg += traceback.format_exc() 
+                    msg += "##### PRIMITIVE SET IMPORT ERROR: SKIPPED %(impname)s\n" * 3
+                    msg = msg % {"impname": importname}
+                    if log:
+                        log.error(msg)
+                    else:                    
+                        print "PRINTED, not logged:\n"+msg
                 b = datetime.now()
                 primset = eval (importname + "." + primdef[1] + "()")
                 # set filename and directory name

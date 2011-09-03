@@ -7,7 +7,8 @@
 #------------------------------------------------------------------------------ 
 try:
     print "reduce from TRUNK"
-
+    from astrodata.adutils import gemLog
+    
     import os
     import sys
     import traceback
@@ -20,6 +21,7 @@ try:
 
     from datetime import datetime
     from optparse import OptionParser
+    import traceback as tb
 
     from astrodata.adutils import terminal
     from astrodata.adutils.terminal import TerminalController, ProgressBar 
@@ -42,7 +44,7 @@ try:
     #print 'IRAF TIME', (et-st)
     a = datetime.now()
     import astrodata
-    from astrodata import RecipeManager
+    
     from astrodata import Errors
     from astrodata.AstroData import AstroData
     from astrodata.AstroDataType import get_classification_library
@@ -59,7 +61,6 @@ try:
     from astrodata.adutils import paramutil
     from astrodata.adutils.gemutil import gemdate
     from astrodata import Proxies
-    from astrodata.adutils import gemLog
     from astrodata import Lookups
     #oet = time.time()
     #print 'TIME:', (oet -ost)
@@ -210,7 +211,13 @@ try:
     log = gemLog.createGeminiLog(logName=options.logName,logLevel=options.logLevel, 
                                  logType='main', debug=options.debug, 
                               noLogFile=options.noLogFile, allOff=options.logAllOff)
-
+    #imports that need rely on user space configurations
+    try:
+        from astrodata import RecipeManager
+    except:
+        msg = "%%%%% Recipe System Failure, possibly bad configuration.\n"*5 + tb.format_exc()
+        raise RecipeSystemImportError(msg = msg)
+    
     def abortBadParamfile(lines):
         for i in range(0,len(lines)):
             log.error("  %03d:%s" % (i, lines[i]))
@@ -959,15 +966,22 @@ except SystemExit:
     log.error("SYSTEM EXIT: see log for more information")
 except:
     import traceback as tb
-    log.error("UNHANDLED ERROR, closing down reduce, traceback:\n"
-                + tb.format_exc())
+    if "gemLog" in globals():
+        log = gemLog.getGeminiLog()
     
-    pass
+        log.error("UNHANDLED ERROR, closing down reduce, traceback:\n"
+                + tb.format_exc())
+    else:
+        print "Log Not Functional After Exception, using stdout:\n "+ tb.format_exc()
 finally:
-    reduceServer.finished=True
+    if "reduceServer" in globals():
+        reduceServer.finished=True
     try:
-        prs.unregister()
+        if "prs" in globals():
+            prs.unregister()
     except:
-        log.warning("Trouble unregistering from adcc shared services.")
+        if "gemLog" in globals():
+            log = gemLog.getGeminiLog()
+            log.warning("Trouble unregistering from adcc shared services.")
         raise
     
