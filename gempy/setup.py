@@ -9,11 +9,12 @@ In this module:
   instruments:  Instrument specific tools or functions
 
 Usage:
-  python setup.py install --prefix=/astro/iraf/i686/gempylocal
+  python setup.py install --prefix=/astro/iraf/rhux-x86_64-glibc2.5/gempylocal
   python setup.py sdist
 """
 
 import os.path
+import re
 
 from distutils.core import setup
 
@@ -27,7 +28,7 @@ PACKAGES = [MODULENAME]
 for m in SUBMODULES:
     PACKAGES.append('.'.join([MODULENAME,m]))
 PACKAGE_DIRS = {}
-PACKAGE_DIRS['gempy'] = '.'
+PACKAGE_DIRS[MODULENAME] = '.'
 
 # PACKAGE_DATA
 PACKAGE_DATA = {}
@@ -46,12 +47,20 @@ for root, dirs, files in os.walk('doc'):
         dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
         DOC_FILES = map((lambda f: os.path.join(root,f)), files)      
         DATA_FILES.append( (os.path.join(DOC_DIR,dest), DOC_FILES) )
+for root, dirs, files in os.walk('doc-local'):
+    if not svndir.search(root) and len(files) > 0:
+        dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
+        DOC_FILES = map((lambda f: os.path.join(root,f)), files)      
+        DATA_FILES.append( (os.path.join(DOC_DIR,dest), DOC_FILES) )
+
 
 # SCRIPTS
-#GEMPY_SCRIPTS = [ os.path.join('iqtool','iqtool'),
-#                 ]
-#SCRIPTS = [os.path.join('scripts','cleanir.py')]
-#SCRIPTS.extend(GEMPY_SCRIPTS)
+GEMPY_SCRIPTS = [ os.path.join('scripts','redux')
+#                 os.path.join('iqtool','iqtool'),
+                 ]
+##SCRIPTS = [os.path.join('scripts','cleanir.py')]
+SCRIPTS = []
+SCRIPTS.extend(GEMPY_SCRIPTS)
 
 EXTENSIONS = None
 
