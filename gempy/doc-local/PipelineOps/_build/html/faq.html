@@ -1,0 +1,142 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Frequently Asked Questions &mdash; QA Pipeline Operation September 2011 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     'September 2011',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="QA Pipeline Operation September 2011 documentation" href="index.html" />
+    <link rel="next" title="Instructions to run the demo" href="demo.html" />
+    <link rel="prev" title="How to operate the Gemini Quality Assurance Pipeline" href="operate.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="demo.html" title="Instructions to run the demo"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="operate.html" title="How to operate the Gemini Quality Assurance Pipeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">QA Pipeline Operation September 2011 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="frequently-asked-questions">
+<h1>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h1>
+<p><strong>1. What can the QAP do?</strong></p>
+<blockquote>
+<div>In a nutshell, it can process GMOS Imaging data.  For complete list of
+what it can do, see Features and Capabilities Currently Available.</div></blockquote>
+<p><strong>2. Where does the QAP run?</strong></p>
+<blockquote>
+<div>The software can be run from any Linux or Mac desktop properly configured.
+However, for night operations use mkopipe1 or hbfpipe1.</div></blockquote>
+<p><strong>3. How do I start the QAP?</strong></p>
+<blockquote>
+<div>From a <tt class="docutils literal"><span class="pre">telops</span></tt> session, set up the QAP environment with <tt class="docutils literal"><span class="pre">startqap</span></tt>.
+Then for each new dataset, type <tt class="docutils literal"><span class="pre">redux</span> <span class="pre">&lt;image_number&gt;</span></tt>.  For more
+information, see How to operate the Gemini Quality Assurance Pipeline.</div></blockquote>
+<p><strong>4. Do I have to start the QAP?</strong></p>
+<blockquote>
+<div>No central process needs to be started.  At this time, there is no automatic
+detection of the new data, so the user needs to manually launch the reduction
+of each dataset with the <tt class="docutils literal"><span class="pre">redux</span></tt> command.   However, a <tt class="docutils literal"><span class="pre">ds9</span></tt> must be launched
+and the QAP must run in a specific directory.  To set that up simply
+type <tt class="docutils literal"><span class="pre">startqa</span></tt> from a <tt class="docutils literal"><span class="pre">telops</span></tt> account.  For more
+information, see How to operate the Gemini Quality Assurance Pipeline.</div></blockquote>
+<p><strong>5. How do I operate the QAP?</strong></p>
+<blockquote>
+<div>Once set up, simply do <tt class="docutils literal"><span class="pre">redux</span> <span class="pre">&lt;image_number&gt;</span></tt>.</div></blockquote>
+<p><strong>6. How to process the next dataset?</strong></p>
+<blockquote>
+<div>Once set up, simply do <tt class="docutils literal"><span class="pre">redux</span> <span class="pre">&lt;image_number_of_new_dataset&gt;</span></tt>.</div></blockquote>
+<p><strong>7. How to process the previous dataset?</strong></p>
+<blockquote>
+<div>Once set up, simply do <tt class="docutils literal"><span class="pre">redux</span> <span class="pre">&lt;image_number_of_previous_dataset&gt;</span></tt>.</div></blockquote>
+<p><strong>8. Is the QAP interactive?</strong></p>
+<blockquote>
+<div>Nope.  PyRAF should be used for interactivity.</div></blockquote>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="operate.html"
+                        title="previous chapter">How to operate the Gemini Quality Assurance Pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="demo.html"
+                        title="next chapter">Instructions to run the demo</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/faq.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="demo.html" title="Instructions to run the demo"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="operate.html" title="How to operate the Gemini Quality Assurance Pipeline"
+             >previous</a> |</li>
+        <li><a href="index.html">QA Pipeline Operation September 2011 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Kathleen Labrie.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

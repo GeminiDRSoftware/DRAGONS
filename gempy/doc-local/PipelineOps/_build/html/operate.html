@@ -1,0 +1,171 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>How to operate the Gemini Quality Assurance Pipeline &mdash; QA Pipeline Operation September 2011 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     'September 2011',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="QA Pipeline Operation September 2011 documentation" href="index.html" />
+    <link rel="next" title="Frequently Asked Questions" href="faq.html" />
+    <link rel="prev" title="Features and Capabilities Currently Available" href="features.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="faq.html" title="Frequently Asked Questions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="features.html" title="Features and Capabilities Currently Available"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">QA Pipeline Operation September 2011 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="how-to-operate-the-gemini-quality-assurance-pipeline">
+<h1>How to operate the Gemini Quality Assurance Pipeline<a class="headerlink" href="#how-to-operate-the-gemini-quality-assurance-pipeline" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="nighttime-operations">
+<h2>Nighttime Operations<a class="headerlink" href="#nighttime-operations" title="Permalink to this headline">¶</a></h2>
+<p>For the impatient:</p>
+<div class="highlight-python"><pre>any-terminal-on-mkocon: telops&gt;  startqap
+
+new-xterm-from-mkopipe1: pipeops&gt;  redux 35
+new-xterm-from-mkopipe1: pipeops&gt;  redux 36
+...</pre>
+</div>
+<p>That&#8217;s it.</p>
+<p>Now let&#8217;s talk about it.</p>
+<p>At night, the QA pipeline runs on the dedicated pipeline computer.  This
+helps avoid resource conflicts between the pipeline and the rest of the observing software.
+The summit machine is named <tt class="docutils literal"><span class="pre">mkopipe1</span></tt>.  As a backup, the base facility machine is
+named <tt class="docutils literal"><span class="pre">hbfpipe1</span></tt>.   The pipeline runs on the pipeline computer but displays on the <tt class="docutils literal"><span class="pre">telops</span></tt>
+monitors</p>
+<p>There is also a dedicated pipeline operator&#8217;s account, <tt class="docutils literal"><span class="pre">pipeops</span></tt>.</p>
+<p>At this time, the pipeline does not detect arrival of new datasets.  Therefore the
+operator must manually launch the reduction of the new dataset.  The command is
+<tt class="docutils literal"><span class="pre">redux</span></tt>, followed by the image number.</p>
+<p>To run the pipeline, log in and get ready:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Log into the <tt class="docutils literal"><span class="pre">mkocon</span></tt> computer with the telops account as usual.</li>
+<li>Type <tt class="docutils literal"><span class="pre">startqap</span></tt>.</li>
+</ol>
+<p>This needs to be done only once.  This will launch <tt class="docutils literal"><span class="pre">ds9</span></tt> and an <tt class="docutils literal"><span class="pre">xterm</span></tt> on the <tt class="docutils literal"><span class="pre">mkopipe1</span></tt>
+machine, and display both on the <tt class="docutils literal"><span class="pre">telops</span></tt> monitors.  The session in the <tt class="docutils literal"><span class="pre">xterm</span></tt> starts
+in <tt class="docutils literal"><span class="pre">/pipestore</span></tt> directory automatically; this is your work <tt class="docutils literal"><span class="pre">xterm</span></tt> and <tt class="docutils literal"><span class="pre">directory</span></tt>.</p>
+</div></blockquote>
+<p>From now on, when a dataset comes in:</p>
+<blockquote>
+<div><ol class="arabic simple" start="3">
+<li>In the <tt class="docutils literal"><span class="pre">xterm</span></tt>, type <tt class="docutils literal"><span class="pre">redux</span> <span class="pre">&lt;img</span> <span class="pre">number&gt;</span></tt> , gacq-style</li>
+</ol>
+<p>The reduction will be launched by the <tt class="docutils literal"><span class="pre">redux</span></tt> command.  The reduced, new dataset will be
+measured and displayed. Compatible datasets previously reduced with the pipeline, and
+available in <tt class="docutils literal"><span class="pre">/pipestore</span></tt>, will be combined with the current dataset and the deep frame
+will be measured and displayed.</p>
+<p>No interactivity is available at this time.</p>
+</div></blockquote>
+<p>Repeat for next image.</p>
+</div>
+<div class="section" id="daytime-operations">
+<h2>Daytime Operations<a class="headerlink" href="#daytime-operations" title="Permalink to this headline">¶</a></h2>
+<p>The pipeline can be used for reducing data in general.  For example, it can be used
+to create processed biased and processed pre-imaging data.  At the moment though,
+there are memory issues that prevents the stacking of very large numbers of datasets
+at once like it is needed to make the GN processed biases.</p>
+<p>If SOS-DA&#8217;s and staff in general wish to use the pipeline for something other than
+nighttime operations, please check with the Data Processing Software Group first to
+confirm what can be done and what cannot.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">How to operate the Gemini Quality Assurance Pipeline</a><ul>
+<li><a class="reference internal" href="#nighttime-operations">Nighttime Operations</a></li>
+<li><a class="reference internal" href="#daytime-operations">Daytime Operations</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="features.html"
+                        title="previous chapter">Features and Capabilities Currently Available</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="faq.html"
+                        title="next chapter">Frequently Asked Questions</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/operate.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="faq.html" title="Frequently Asked Questions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="features.html" title="Features and Capabilities Currently Available"
+             >previous</a> |</li>
+        <li><a href="index.html">QA Pipeline Operation September 2011 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Kathleen Labrie.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
