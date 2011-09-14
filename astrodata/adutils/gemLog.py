@@ -516,8 +516,22 @@ def callInfo():
     st = tb.extract_stack()
     return [os.path.basename(st[-3][0]), st[-3][1], st[-3][2]] 
     
+cgl_run = False
 def createGeminiLog(logName=None, logLevel=None, logType='main', debug=False, 
                     noLogFile=False, allOff=False):
+    global cgl_run
+    if cgl_run:
+        import Errors
+        raise Errors.NoLoggerError()
+        #print "SECOND CALL TO CREATE LOG"*20
+        #import traceback
+        #traceback.print_stack()
+        #sys.exit()
+    else:
+        #print "FIRST CALL TO CREATE LOG"*20
+        cgl_run = True
+        #import traceback
+        #traceback.print_stack()
     """This function is to create a new logger object.
     
     :param logName: Name of the file the log messages will be written to
@@ -574,7 +588,7 @@ def getGeminiLog(logLevel=None, logType='main'):
     global _listOfLoggers
     _geminiLogger = None
     if not _listOfLoggers:
-        _geminiLogger = createGeminiLog(allOff=True)
+        pass #_geminiLogger = createGeminiLog(allOff=True)
     else:     
         # variable to hold the 'main' log to pass back if non-main one requested
         # doesn't exist in list.
@@ -605,8 +619,8 @@ def getGeminiLog(logLevel=None, logType='main'):
         # if it was found, else create an alloff=True log to be passed back 
         # (ie, no log file, no msgs to screen).
         if not _geminiLogger:
-            if mainLog:
-                _geminiLogger = mainLog
-            else:
-                _geminiLogger = createGeminiLog(allOff=True)
+            #if mainLog:
+            _geminiLogger = mainLog
+            #else:
+            #    _geminiLogger = createGeminiLog(allOff=True)
     return _geminiLogger

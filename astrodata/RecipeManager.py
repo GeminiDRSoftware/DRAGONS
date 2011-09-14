@@ -14,6 +14,7 @@ import AstroDataType
 import ConfigSpace
 import Descriptors
 import gdpgutil
+from gdpgutil import inherit_index
 import ReductionObjects
 import IDFactory as idFac # id hashing functions
 from Errors import ReduceError
@@ -1782,12 +1783,19 @@ class RecipeLibrary(object):
         # look up recipes, fill list
         reclist = []
         recdict = {}
+        # print "RM1785:@@",types
         for typ in types:
-            if typ in centralAstroTypeRecipeIndex.keys():
-                recnames = centralAstroTypeRecipeIndex[typ]
-                reclist.extend(recnames)
-                recdict.update({typ: recnames})
+            if False:
+                if typ in centralAstroTypeRecipeIndex.keys():
+                        recnames = centralAstroTypeRecipeIndex[typ]
+                        
             
+            recnames = inherit_index(typ, centralAstroTypeRecipeIndex)
+            if recnames:
+                reclist.extend(recnames[1])
+                recdict.update({recnames[0]: recnames[1]})
+        reclist = list(set(reclist))
+        #print "RM:1798",repr(recdict)
 
         # if we opened the file we close it
         if byfname:

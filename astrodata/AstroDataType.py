@@ -900,6 +900,16 @@ class ClassificationLibrary (object):
     statusDict = None
     typologyDict = None
     
+    @classmethod
+    def get_classification_library(cls):
+        if ClassificationLibrary.__single:
+            return ClassificationLibrary.__single
+        try:
+            classification_library = ClassificationLibrary()
+        except CLAlreadyExists, s:
+            classification_library = s.clInstance
+        return classification_library
+                
     # This is the directory to look for parameter requirements (which serve as type definitions)
     def __init__(self, context="default"):
         """

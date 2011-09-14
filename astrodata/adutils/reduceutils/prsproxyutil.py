@@ -43,6 +43,9 @@ def upload_calibration(filename):
     try:
         rq = urllib2.Request(url)
         u = urllib2.urlopen(rq, postdata)
+        #fp = open("/tmp/tmpfile.txt")
+        #raise urllib2.HTTPError("","","","",fp)
+        
     except urllib2.HTTPError, error:
         contents = error.read()
         #print "ERROR:"

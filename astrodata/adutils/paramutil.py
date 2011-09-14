@@ -46,7 +46,8 @@ def checkImageParam(image, logBadlist=False):
 
     root = os.path.dirname(image)
     imageName = os.path.basename(image)
-    inList = []    
+    inList = []   
+    
     if type(imageName) == str and len(imageName) > 0:
         if imageName[0] == '@':       
             imageName = imageName[1:]            

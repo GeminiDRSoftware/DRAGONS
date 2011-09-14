@@ -299,13 +299,11 @@ integrates other functionality.
         counting and behaves differently when this instance is subdata, since
         in that case some other instance "owns" the pyfits HDUs instance.
         """
-        if self.borrowed_hdulist:
-            self.container.relhdul()
+        if (self.hdulist != None):
+            #self.hdulist.close()
+            del(self.hdulist)
             self.hdulist = None
-        else:
-            if (self.hdulist != None):
-                self.hdulist.close()
-    
+
     def __contains__(self, ext):
         try:
             val = self[ext]
@@ -754,14 +752,16 @@ integrates other functionality.
                 extname=extname, extver=extver, autonum=auto_number,\
                 hduindx=hdu_index)
             
-    def infostr(self, as_html=False, verbose=False, table=False):
+    def infostr(self, as_html=False, oid=False, table=False, subref=False):
         """
-        :param as_html: boolean that indicates if the string should be HTML
-                       formatted or not
+        :param as_html: return as HTML formatted string
         :type as_html: bool
         
-        :param verbose: boolean that will add alias and object id info
-        :type verbose: bool
+        :param oid: include object id 
+        :type oid: bool
+        
+        :param subref: include sub-data reference information
+        :type subref: bool
 
         The infostr(..) function is used to get a string ready for display
         either as plain text or HTML.  It provides AstroData-relative
@@ -784,11 +784,11 @@ integrates other functionality.
             
             # Create Primary AD info
             rets += "\nFilename: %s" % str(self.filename)
-            if verbose:
+            if oid:
                 rets += "\n Obj. ID: %s" % str(id(self))
             rets += "\n    Type: %s" % selftype
             rets += "\n    Mode: %s" % str(self.mode)
-            if verbose:
+            if oid:
                 rets += "\n\nAD No.    Name          Type      MEF No."
                 rets += "  Cards    Dimensions   Format   ObjectID   "
                 rets += "\n%shdulist%s%s%s%s" % (" "*8, " "*7, \
@@ -861,7 +861,7 @@ integrates other functionality.
                 else:
                     dimention_ = ""
                     form_ = ""
-                if verbose:
+                if oid:
                     rets += "\n%-7s %-13s %-13s %-8s %-5s %-13s %s  %s" % \
                         (adno_, name_, extType, str(hdu_indx), str(cards_), \
                             dimention_, form_, \
@@ -881,7 +881,7 @@ integrates other functionality.
                         rets +="\n           .header    %s" % extHeaderType 
                         rets +="\n           .data      %s" % extDataType
                 hdu_indx += 1
-            if verbose:
+            if subref:
                 s = " "*24
                 rets += """
 
@@ -1966,11 +1966,11 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
         self.relhdul()
         return 
    
-    def info(self, verbose=False, table=False):
+    def info(self, oid=False, table=False, subref=False):
         """The info(..) function prints self.infostr() and 
         is maintained for convienience and low level debugging.
         """
-        print self.infostr(verbose=verbose, table=table)       
+        print self.infostr(oid=oid, table=table, subref=subref)       
 
     def display_id(self):
         import IDFactory

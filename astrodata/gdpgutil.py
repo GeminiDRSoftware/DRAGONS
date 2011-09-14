@@ -56,8 +56,15 @@ def check_data_set( filenames ):
 #------------------------------------------------------------------------------ 
 
 def cluster_by_groupid( datalist):
+    from astrodata.adutils import gemLog
+
+    log = gemLog.getGeminiLog()
+    
     allinputs = []
     clusterdict = {}
+    
+    log.info("gdpg65: cluster_by_groupid")
+    log.debug("gdpg66: "+repr(datalist))
     
     for inp in datalist:
 
@@ -72,6 +79,7 @@ def cluster_by_groupid( datalist):
             clusterdict.update({gID: []})
         c_list = clusterdict[gID]
         c_list.append(inpad)
+        log.debug("gdpg80: adding %s to %s" %(repr(inpad), gID))
     
     return clusterdict
             
@@ -175,6 +183,28 @@ def deadfunctioninherit_config(typ, index, cl = None):
             return None
         else:
             return cfgs
+            
+def inherit_index(typ = None, index = None, for_child = None):
+    
+    if not typ and not index:
+        return None
+        
+    # print "gd168:", typ
+    if typ in index.keys():
+        return (typ, index[typ])
+    else:
+        from astrodata.AstroDataType import ClassificationLibrary
+        cl = ClassificationLibrary.get_classification_library()
+        if type(typ) == str:
+            typo = cl.get_type_obj(typ)
+        
+        if typo.parent:
+            if for_child == None:
+                for_child = typ
+            
+            return inherit_index(typo.parent, index, for_child = for_child)
+        else:
+            return None  
 
 def pick_config(dataset, index, style = "unique"):
     """Pick config will pick the appropriate config for the style.

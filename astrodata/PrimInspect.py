@@ -17,7 +17,6 @@ sys.stdout = fstdout
 SW = 79
 
 #from optparse import OptionParser
-from sets import Set 
 from copy import copy
 from astrodata.AstroData import AstroData
 from astrodata import RecipeManager 
@@ -402,8 +401,8 @@ class PrimInspect():
             primlist = self.primsdict_kbn[primsetname]
             primset = copy(primlist)
         else:
-            myprimset = Set(self.primsdict_kbn[primsetname])
-            givenprimset = Set(primset)
+            myprimset = set(self.primsdict_kbn[primsetname])
+            givenprimset = set(primset)
             prims = myprimset - givenprimset
             primlist = list(prims)
             primlist.sort()

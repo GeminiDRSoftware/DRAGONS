@@ -188,8 +188,8 @@ class DataSpider(object):
                             
                         except:
                             mes = "Could not open %s as AstroData" % fname
-                            raise
-                            raise Errors.AstroDataError(mes)
+                            print mes
+                            # raise Errors.AstroDataError(mes)
                             continue
 
                         gain = 0

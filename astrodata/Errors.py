@@ -32,7 +32,9 @@ class AstroDataReadonlyError(AstroDataError):
     """
     message = 'Readonly Exception Raised in AstroData.py'
 
-
+class NoLoggerError(AstroDataError):
+    message = "Request for Logger preceded creation of logger."
+    
 class OutputExists(AstroDataError):
     def __init__(self, msg=None):
         if msg == None:
@@ -220,3 +222,7 @@ class ConfigurationError(Error):
 
 class RecipeImportError(ConfigurationError):
     message = "Recipe Import Error"
+    
+# high level errors (e.g. for reduce to throw)
+class RecipeNotFoundError(Error):
+    message = "Recipe not found."

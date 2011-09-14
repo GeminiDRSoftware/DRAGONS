@@ -9,6 +9,53 @@ import urllib2 #(to get httperror)
 
 log = None
 
+heaptrack = False
+heaptrackfile = None
+def dumpheap(ro, fout):
+    msg = ro.curPrimName
+    import time
+    fout.write("ro.curPrimName=%s\n" % ro.curPrimName)
+    statusfile = open(os.path.join("/proc", str(os.getpid()), "status"))
+    stats = statusfile.read()
+    stats = stats.split(os.linesep)
+    statdict = {}
+    for statline in stats:
+        #print "statline",statline
+        stat = statline.split(":")
+        #print "stat", repr(stat)
+        if len(stat)>1:
+            statdict.update({stat[0]:stat[1]})
+    
+    statnames = ["VmSize","VmRSS"]
+    statrow = "\n".join(["%10s: %s" %( statname,statdict[statname])
+                             for statname in statnames])+"\n"
+    
+    fout.write(statrow)
+    fout.flush()
+
+#import resource
+#usage = resource.getrusage(resource.RUSAGE_SELF)
+    
+#    for name, desc in [
+#        ('ru_utime', 'User time'),
+#        ('ru_stime', 'System time'),
+#        ('ru_maxrss', 'Max. Resident Set Size'),
+#        ('ru_ixrss', 'Shared Memory Size'),
+#        ('ru_idrss', 'Unshared Memory Size'),
+#        ('ru_isrss', 'Stack Size'),
+#        ('ru_inblock', 'Block inputs'),
+#        ('ru_oublock', 'Block outputs'),
+#        ]:
+#        fout.write(repr(resource.getpagesize())+"\n")
+#
+#        #fout.write('%-25s (%-10s) = %s\n' % (desc, name, getattr(usage, name)))
+
+
+if heaptrack:
+    #import heapy
+    print "HEAPTRACKFILE CREATIONS: heap.log\n"*5
+    heaptrackfile = open("heap.log", "w+")
+
 class ReductionExcept:
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
@@ -47,6 +94,8 @@ class ReductionObject(object):
         return rc
     
     def execute_command_clause(self, rc):
+        if heaptrackfile:
+            dumpheap(self, heaptrackfile)
         cmdclause = self.funccommand_clause
         if cmdclause:
             cmdclause(self, rc)
@@ -196,6 +245,7 @@ class ReductionObject(object):
             raise # IterationError(msg)
         except:
             print "%(name)s failed due to an exception." %{'name':primname}
+            log.changeIndent(indentLevel=0)
             raise
         context.curPrimName = None
         self.curPrimName = prevprimname
@@ -421,7 +471,8 @@ def command_clause(ro, coi):
                     # this is not fatal because perhaps there isn't a calibration
                     # the system checks both the local and central source
                     # raise RecipeExcept("CALIBRATION for %s NOT FOUND, FATAL" % fn)
-                    break
+                    #break
+                    continue
                 log.info("found calibration (url): " + calurl)
                 #print "RO393:", calurl
                 msg += 'A suitable %s found:\n' %(str(typ))

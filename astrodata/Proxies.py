@@ -327,8 +327,7 @@ class PRSProxy(object):
             self.prs.unregister(os.getpid())
             self.registered=False
         else:
-            log.warning("WARNING: call to unregister from adcc while not registered"
-                      "\nGenerally harmless, but in case of bug adcc may be left running.")
+            log.warning("WARNING: call to unregister from adcc while not registered")
             
     def register(self, details = None):
         self.prs.register(os.getpid(), details)

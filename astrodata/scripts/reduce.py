@@ -5,95 +5,13 @@
 #import hotshot
 #importprof = hotshot.Profile("hotshot_edi_stats")
 #------------------------------------------------------------------------------ 
+
 try:
-    print "reduce from TRUNK"
+    #print "reduce IN BRANCH"
     from astrodata.adutils import gemLog
-    
-    import os
-    import sys
-    import traceback
-    import commands
-    import glob
-    import subprocess
-    import sys
-    import time
-    import re
-
-    from datetime import datetime
     from optparse import OptionParser
-    import traceback as tb
-
-    from astrodata.adutils import terminal
-    from astrodata.adutils.terminal import TerminalController, ProgressBar 
-    # start color printing filter for xgtermc
-    REALSTDOUT = sys.stdout
-    REALSTDERR = sys.stderr
-    #filteredstdout = terminal.FilteredStdout()
-    #filteredstdout.addFilter( terminal.ColorFilter())
-    irafstdout = terminal.IrafStdout() #fout = filteredstdout)
-    #sys.stdout = filteredstdout
-    # sys.stderr = terminal.ColorStdout(REALSTDERR, term)
-    #st = time.time()
-    if False:
-        try:
-            import pyraf
-            from pyraf import iraf
-        except:
-            print "reduce: didn't find pyraf"
-    #et = time.time()
-    #print 'IRAF TIME', (et-st)
-    a = datetime.now()
-    import astrodata
+    # Create Recipe System Log
     
-    from astrodata import Errors
-    from astrodata.AstroData import AstroData
-    from astrodata.AstroDataType import get_classification_library
-    from astrodata.RecipeManager import ReductionContext
-    from astrodata.RecipeManager import RecipeLibrary
-    from astrodata.RecipeManager import RecipeExcept
-    from astrodata.StackKeeper import StackKeeper
-    from astrodata.ReductionObjectRequests import CalibrationRequest,\
-            UpdateStackableRequest, GetStackableRequest, DisplayRequest,\
-            ImageQualityRequest
-    from astrodata import gdpgutil
-    # from astrodata.LocalCalibrationService import CalibrationService
-    # from astrodata.adutils.future import gemDisplay
-    from astrodata.adutils import paramutil
-    from astrodata.adutils.gemutil import gemdate
-    from astrodata import Proxies
-    from astrodata import Lookups
-    #oet = time.time()
-    #print 'TIME:', (oet -ost)
-    b = datetime.now()
-
-    # GLOBAL/CONSTANTS (could be exported to config file)
-    cachedirs = [".reducecache",
-                 "calibrations",
-                 "calibrations/storedcals",
-                 "calibrations/retrievedcals",
-                 #".reducecache/storedcals/storedbiases",
-                 #".reducecache/storedcals/storeddarks",
-                 #".reducecache/storedcals/storedflats",
-                 #".reducecache/storedcals/storedfringes",
-                 #".reducecache/storedcals/retrievedbiases",
-                 #".reducecache/storedcals/retrieveddarks",
-                 #".reducecache/storedcals/retrievedflats",
-                 #".reducecache/storedcals/retrievedfringes",
-                 ]
-    CALDIR = "calibrations/storedcals"
-    # constructed below             
-    cachedict = {} 
-    for cachedir in cachedirs:
-        if not os.path.exists(cachedir):                        
-            os.mkdir(cachedir)
-        cachename = os.path.basename(cachedir)
-        if cachename[0] == ".":
-            cachename = cachename[1:]
-        cachedict.update({cachename:cachedir})
-
-    # Testing
-    import pyfits as pf
-
     version = '1_0'
 
     # parsing the command line
@@ -181,6 +99,94 @@ try:
 
     (options,  args) = parser.parse_args()
 
+    log = gemLog.createGeminiLog(logName=options.logName,logLevel=options.logLevel, 
+                                 logType='main', debug=options.debug, 
+                              noLogFile=options.noLogFile, allOff=options.logAllOff)
+
+    import os
+    import sys
+    import traceback
+    import commands
+    import glob
+    import subprocess
+    import sys
+    import time
+    import re
+
+    from datetime import datetime
+    
+    from astrodata.adutils import terminal
+    from astrodata.adutils.terminal import TerminalController, ProgressBar 
+    # start color printing filter for xgtermc
+    REALSTDOUT = sys.stdout
+    REALSTDERR = sys.stderr
+    #filteredstdout = terminal.FilteredStdout()
+    #filteredstdout.addFilter( terminal.ColorFilter())
+    irafstdout = terminal.IrafStdout() #fout = filteredstdout)
+    #sys.stdout = filteredstdout
+    # sys.stderr = terminal.ColorStdout(REALSTDERR, term)
+    #st = time.time()
+    if False:
+        try:
+            import pyraf
+            from pyraf import iraf
+        except:
+            print "reduce: didn't find pyraf"
+    #et = time.time()
+    #print 'IRAF TIME', (et-st)
+    a = datetime.now()
+    import astrodata
+    from astrodata import RecipeManager
+    from astrodata import Errors
+    from astrodata.AstroData import AstroData
+    from astrodata.AstroDataType import get_classification_library
+    from astrodata.RecipeManager import ReductionContext
+    from astrodata.RecipeManager import RecipeLibrary
+    from astrodata.RecipeManager import RecipeExcept
+    from astrodata.StackKeeper import StackKeeper
+    from astrodata.ReductionObjectRequests import CalibrationRequest,\
+            UpdateStackableRequest, GetStackableRequest, DisplayRequest,\
+            ImageQualityRequest
+    from astrodata import gdpgutil
+    # from astrodata.LocalCalibrationService import CalibrationService
+    # from astrodata.adutils.future import gemDisplay
+    from astrodata.adutils import paramutil
+    from astrodata.adutils.gemutil import gemdate
+    from astrodata import Proxies
+   
+    from astrodata import Lookups
+    #oet = time.time()
+    #print 'TIME:', (oet -ost)
+    b = datetime.now()
+
+    # GLOBAL/CONSTANTS (could be exported to config file)
+    cachedirs = [".reducecache",
+                 "calibrations",
+                 "calibrations/storedcals",
+                 "calibrations/retrievedcals",
+                 #".reducecache/storedcals/storedbiases",
+                 #".reducecache/storedcals/storeddarks",
+                 #".reducecache/storedcals/storedflats",
+                 #".reducecache/storedcals/storedfringes",
+                 #".reducecache/storedcals/retrievedbiases",
+                 #".reducecache/storedcals/retrieveddarks",
+                 #".reducecache/storedcals/retrievedflats",
+                 #".reducecache/storedcals/retrievedfringes",
+                 ]
+    CALDIR = "calibrations/storedcals"
+    # constructed below             
+    cachedict = {} 
+    for cachedir in cachedirs:
+        if not os.path.exists(cachedir):                        
+            os.mkdir(cachedir)
+        cachename = os.path.basename(cachedir)
+        if cachename[0] == ".":
+            cachename = cachename[1:]
+        cachedict.update({cachename:cachedir})
+
+    # Testing
+    import pyfits as pf
+
     useTK =  options.bMonitor
     # ------
     #$Id: recipeman.py,v 1.8 2008/08/05 03:28:06 callen Exp $
@@ -208,16 +214,10 @@ try:
         sys.stdout.flush()
 
     # Create Recipe System Log
-    log = gemLog.createGeminiLog(logName=options.logName,logLevel=options.logLevel, 
-                                 logType='main', debug=options.debug, 
-                              noLogFile=options.noLogFile, allOff=options.logAllOff)
-    #imports that need rely on user space configurations
-    try:
-        from astrodata import RecipeManager
-    except:
-        msg = "%%%%% Recipe System Failure, possibly bad configuration.\n"*5 + tb.format_exc()
-        raise RecipeSystemImportError(msg = msg)
-    
+    #log = gemLog.createGeminiLog(logName=options.logName,logLevel=options.logLevel, 
+    #                             logType='main', debug=options.debug, 
+    #                          noLogFile=options.noLogFile, allOff=options.logAllOff)
+
     def abortBadParamfile(lines):
         for i in range(0,len(lines)):
             log.error("  %03d:%s" % (i, lines[i]))
@@ -362,14 +362,14 @@ try:
             #"""
             # checkImageParam allows the argument to be an @list, turns it
             # into a list of filenames as otherwise expected from the command line
-            tmpInp = paramutil.checkImageParam( inf )
+            tmpInp = paramutil.checkImageParam(inf)
             if tmpInp == None:
                 badList.append(inf)
             else:
                 # extend the list of input files with contents of @ list
-                input_files.extend( tmpInp )
+                input_files.extend(tmpInp)
 
-        if len(badList)>0:
+        if len(badList) > 0:
             err = "\n\t".join(badList)
             log.error("Some files not found or can't be loaded:\n\t"+err)
             log.error("Exiting due to missing datasets.")
@@ -550,438 +550,459 @@ try:
 
     numReductions = len(allinputs)
     i = 1
+    log.info("About to process %d lists of datasets."% len(allinputs))
+    #print "r554", repr(allinputs)
     for infiles in allinputs: #for dealing with multiple sets of files.
         #print "r232: profiling end"
         #prof.close()
         #raise "over"
-
-        log.info("Starting Reduction #%d of %d" % (i, numReductions))
-        if infiles:
-            for infile in infiles:
-                log.info("    %s" % (infile.filename))
-        currentReductionNum = i
-        i += 1
-
-        # get ReductionObject for this dataset
-        #ro = rl.retrieve_reduction_object(astrotype="GMOS_IMAGE") 
-        # can be done by filename
-        #@@REFERENCEIMAGE: used to retrieve/build correct reduction object
         try:
-            if (options.astrotype == None):
-                ro = rl.retrieve_reduction_object(infiles[0]) 
-            else:
-                ro = rl.retrieve_reduction_object(astrotype = options.astrotype)
-        except:
-            reduceServer.finished=True
+            log.info("Starting Reduction on set #%d of %d" % (i, numReductions))
+            if infiles:
+                for infile in infiles:
+                    log.info("    %s" % (infile.filename))
+            currentReductionNum = i
+            i += 1
+
+            # get ReductionObject for this dataset
+            #ro = rl.retrieve_reduction_object(astrotype="GMOS_IMAGE") 
+            # can be done by filename
+            #@@REFERENCEIMAGE: used to retrieve/build correct reduction object
             try:
-                prs.unregister()
+                if (options.astrotype == None):
+                    ro = rl.retrieve_reduction_object(infiles[0]) 
+                else:
+                    ro = rl.retrieve_reduction_object(astrotype = options.astrotype)
             except:
-                log.warning("Trouble unregistering from adcc shared services.")
-            raise
-
-        # add command clause
-        if ro:
-            ro.register_command_clause(command_clause)
-        else:
-            log.error("Unable to get ReductionObject for type %s" % options.astrotype)
-            break
-        if options.recipename == None:
-            if options.astrotype == None:
-                reclist = rl.get_applicable_recipes(infiles[0]) #**
-                recdict = rl.get_applicable_recipes(infiles[0], collate=True) #**
-            else:
-                reclist = rl.get_applicable_recipes(astrotype = options.astrotype,
-                                                    prune=True)
-                recdict = rl.get_applicable_recipes(astrotype = options.astrotype,
-                                                    prune=True, 
-                                                    collate = True)
-            #print "r575:",repr(reclist), repr(recdict)
-        else:
-            #force recipe
-            reclist = [options.recipename]
-            recdict = {"all": [options.recipename]}
-
-        # @@REFERENCEIMAGE
-        # first file in group is used as reference
-        # for the types that are used to load the recipe and primitives
-
-        if (options.astrotype == None):
-            types = infiles[0].get_types()
-        else:
-            types = [options.astrotype]
-
-        infilenames = []
-        if infiles:
-            for infs in infiles:
-                if type(infs) == AstroData:
-                    infilenames.append( infs.filename )
-                else:
-                    # I don't think this can happen now
-                    # where the input files are still strings at this point
-                    infilenames.append( infs )
-                    raise "not expected to happen"
-
-        numi = len(infilenames) 
-
-        if numi < 1:
-            title = "  No Datasets  "
-        elif numi == 1:        
-            title = "  Processing dataset: %s  " % (str(infilenames[0])) #**
-        else:
-            title = "  Processing datasets:"
-            for infiln in infilenames:
-                title += "\n    %s" % infiln
-        tl = len(title)
-        tb = " " * tl
-        log.info(tb)
-        log.info(title)
-        log.info(tb)
-        if options.recipename == None:
-            if len(recdict) == 0:
-                log.error("No recipes found")
-                sys.exit(1)
-            else:
-                log.info("Recipe(s) found by dataset type:")
-        else:
-            log.info("A recipe was specified:")
-
-        for typ in recdict.keys():
-            recs = recdict[typ]
-            log.info("  for type: %s" % typ)
-            for rec in recs:
-                log.info("    %s" % rec)
-
-        bReportHistory = False
-        cwlist = []
-        if (useTK and currentReductionNum == 1):
-            cw = TkRecipeControl(recipes = reclist)
-            cw.start()
-
-        if "USER" in reclist:
-            interactiveMode = True
-            import readline
-            readline.set_history_length(100)
-        else:
-            interactiveMode = False
-
-        # counts user given command for interactive mode
-        cmdnum = 0 # @@INTERACTIVE
-        co = None
-        while True: # THIS IS A LOOP FOR INTERACTIVE USE! @@INTERACTIVE
-            for rec in reclist:
-                if rec == "USER":
-                    try:
-                        rec = raw_input("reduce: ")
-                        rec = rec.strip()
-                        if rec == "exit":
-                            interactiveMode = False
-                            break
-                        if rec.strip() == "":
-                            continue
-                        cmdnum += 1
-                        rawrec = True
-                        if rec == "reset":
-                            co = None
-                            continue
-                    except:
-                        interactiveMode = False
-                        break
-                else:
-                    rawrec = False
-
+                reduceServer.finished=True
                 try:
-                    if co == None or not interactiveMode:
-                        #then we want to keep the 
-                        # create fresh context object
-                        # @@TODO:possible: see if deepcopy can do this better 
-                        co = ReductionContext()
-                        #set context(s)
-                        if options.running_contexts:
-                            cxs = options.running_contexts.split(":")
-                        else:
-                            cxs = []
-                        co.setContext(cxs)
-                        if options.rtf:
-                            co.update({"rtf":True})
-                        #print "r739:stack index file", stkindfile
-                        # @@NAME: stackIndexFile, location for persistent stack list cache
-                        co.set_cache_file("stackIndexFile", stkindfile)
-                        co.ro = ro
-                        # @@DOC: put cachedirs in context
-                        for cachename in cachedict:
-                            co.update({cachename:cachedict[cachename]})
-                        co.update({"cachedict":cachedict})
-                        # rc.["storedcals"] will be the proper directory
-
-                        # co.restore_cal_index(calindfile)
-                        # old local stack stuff co.restore_stk_index( stkindfile )
-
-                        # add input files
-                        if infiles:
-                            #co.add_input(infiles)
-                            co.populate_stream(infiles)
-                        co.set_iraf_stdout(irafstdout)
-                        co.set_iraf_stderr(irafstdout)
-
-                       # odl way rl.retrieve_parameters(infile[0], co, rec)
-                        if hasattr(options, "user_params"):
-                            co.user_params = options.user_params
-                        if hasattr(options, "globalParams"):
-                            for pkey in options.globalParams.keys():
-                                co.update({pkey:options.globalParams[pkey]})
-
-                    # Remove after write int works properly
-                    if (options.writeInt == True):       
-                            co.update({"writeInt":True})  
-
-                    # Putting the log level and log name set with the --logLevel 
-                    # and --logName parser options into the global dict
-                    # for use throughout the primitives.
-                    co.update({'logLevel':options.logLevel})     
-                    co.update({'logName':options.logName})       
-                    co.update({'logType':'main'})
-
-                    # Insert calibration url dictionary
-                    # if given by command line will overide the lookup
-                    if options.cal_mgr is None:
-                        calurldict = Lookups.get_lookup_table("Gemini/calurl_dict",
-                                                              "calurl_dict")
-                    else:
-                        calmgr_str = options.cal_mgr
-                        if calmgr_str[7:12] == 'local':
-                            calurldict = {'LOCALCALMGR' : calmgr_str}
-                        else:
-                            calurldict = {'CALMGR' : calmgr_str}
-                    co.update({'calurl_dictionary':calurldict})
-                    #print "REDUCE 721", co.report(internal_dict=True)
-
-                    if (useTK):
-                        while cw.bReady == False:
-                            # this is hopefully not really needed
-                            # did it to give the tk thread a chance to get running
-                            time.sleep(.1)
-                        cw.new_control_window(rec,co)
-                        cw.mainWindow.protocol("WM_DELETE_WINDOW", co.finish) 
-
-
-                    # @@TODO:evaluate use of init for each recipe vs. for all recipes
-                    ro.init(co)
-                    if options.primsetname != None:
-                        dr = os.path.abspath(os.path.dirname(options.primsetname))
-                        # print "r349:", dr
-                        sys.path.append(dr)
-                        # print "r351:", sys.path
-
-                        exec ("import "+ os.path.basename(options.primsetname)[:-3] + " as newmodule")
-                        userPrimSet = newmodule.userPrimSet
-
-                        userPrimSet.astrotype = ro.curPrimType
-                        ro.add_prim_set(userPrimSet)
-
-
-                    if rawrec == False:
-                        log.info( "running recipe: '%s'\n" % rec)
-
-                    # logic to handle:
-                    #  * recipes in config path somewhere
-                    #  * filenames
-                    #  * which need compiling due to arguments
-                    if (os.path.exists(rec)):
-                        if "recipe." not in rec:
-                            raise "Recipe files must be named 'recipe.RECIPENAME'"
-                        else:
-                            rname = re.sub("recipe.", "", os.path.basename(rec))
-                        rf = open(rec)
-                        rsrc = rf.read()
-                        prec = rl.compose_recipe(rname, rsrc)
-                        rfunc = rl.compile_recipe(rname, prec)
-                        ro = rl.bind_recipe(ro, rname, rfunc)
-                        rec = rname
-                    elif "(" in rec:
-                        # print "r819:", rec
-                        rsrc = rec
-                        rname = "userCommand%d" % cmdnum
-                        prec = rl.compose_recipe(rname, rsrc)
-                        # log.debug(prec)
-                        rfunc = rl.compile_recipe(rname, prec)
-                        ro = rl.bind_recipe(ro, rname, rfunc)
-                        rec = rname
-                    else:
-                        if options.astrotype:
-                            rl.load_and_bind_recipe(ro, rec, astrotype=options.astrotype)
-                        else:
-                            rl.load_and_bind_recipe(ro,rec, dataset=infile[0])
-                    if (useTK):
-                        cw.running(rec)
-
-                    controlLoopCounter = 1
-                    ################
-                    # CONTROL LOOP #
-                    ################
-                    #print str(dir(TerminalController))
-                    #@@COLOR primfilter = terminal.PrimitiveFilter()
-                    primfilter = None
-                    #@@COLOR filteredstdout.addFilter(primfilter)
-                    frameForDisplay = 1
-                    #######
-                    #######
-                    #######
-                    #######
-                    ####### COMMAND LOOP
-                    #######
-                    #######
-                    #######
-                    # not this only works because we install a stdout filter right away with this
-                    # member function
-                    if (True): # try:
-                        ro.run(rec, co)
-                        #import cProfile
-                        #cProfile.run("ro.run(rec, co)", "runout.prof")
-                        #for coi in ro.substeps(rec, co):
-                        #    ro.execute_command_clause()
-                            # filteredstdout.addFilter(primfilter)
-                        # filteredstdout.removeFilter(primfilter)
-                    #######
-                    #######
-                    #######
-                    #######
-                    #######
-                    #######
-                except KeyboardInterrupt:
-                    co.is_finished(True)
-                    if (useTK):
-                        cw.quit()
-                    co.persist_cal_index(calindfile)
-                    print "Ctrl-C Exit"
                     prs.unregister()
-                    sys.exit(0)
-                except astrodata.ReductionObjects.ReductionExcept, e:
-                    log.error("FATAL:" + str(e))
-                    prs.unregister()
-                    sys.exit()
                 except:
-                    f =  open("context.log", "w")
-                    f.write(co.report(showall=True))
-                    f.write(traceback.format_exc())
-                    f.close()
-                    log.fullinfo("------------------------------------------------")
-                    log.fullinfo("Debug information written to context.log. Please")
-                    log.fullinfo("provide this log when reporting this problem.")
-                    log.fullinfo("------------------------------------------------")
-
-                    if reduceServer:
-                        #print "r855:", str(id(Proxies.reduceServer)), repr(Proxies.reduceServer.finished)
-                        Proxies.reduceServer.finished=True
-                    co.persist_cal_index(calindfile)
-                    if (bReportHistory):
-                        co.report_history()
-                        rl.report_history()
-                    co.is_finished(True)
-                    if (useTK):
-                        cw.killed = True
-                        cw.quit()
-                    co.persist_cal_index(calindfile)
-
-                    # RAISE THE EXCEPTION AGAIN
-                    if interactiveMode != True:
-                        # note, I expect this raise to produce
-                        # an exit and print of stack to user!
-                        # which is why I unregister... interactive mode
-                        # does not want to unregister while still
-                        # looping
-                        prs.unregister()
-                        raise
-                    else:
-                        import traceback
-                        traceback.print_exc()
-                        print "\n Type 'exit' to exit."
-
-                co.persist_cal_index(calindfile)
-
-                if (bReportHistory):
-
-                    log.error( "CONTEXT HISTORY")
-                    log.error( "---------------")
-
-                    co.report_history()
-                    rl.report_history()
-
-                co.is_finished(True)
-
-                # write outputs
-                from gempy.geminiTools import fileNameUpdater
-                outputs = co.get_stream("main")
-                clobber = co["clobber"]
-                if clobber:
-                    clobber = clobber.lower()
-                    if clobber == "false":
-                        clobber = False
-                    else:
-                        clobber = True
-                for output in outputs:
-                    ad = output.ad
-                    name = ad.filename
-                    #print "r908:", ad.mode
-                    try:
-                        ad.write(clobber = clobber)
-                        log.stdinfo("Wrote %s in output directory" % name)
-                    except Errors.OutputExists:
-                        log.error( "CANNOT WRITE %s, already exists" % name)
-                    except Errors.AstroDataReadonlyError, err:
-                        log.warning('%s is in "readonly" mode, will not attempt to write.' % name)
-                    except Errors.AstroDataError, err:
-                        log.error("CANNOT WRITE %s: " % name + err.message)
-                    except:
-                        log.error("CANNOT WRITE %s, unknown reason" % name)
-
-            if interactiveMode == True:
-                reclist = ["USER"]
-            else:
-                break
-            ### end of recipe iteration.
-        if useTK and currentReductionNum == numReductions:
-            try:
-                cw.done()
-                cw.mainWindow.after_cancel(cw.pcqid)
-                if True: #cw.killed == True:
-                    raw_input("Press Enter to Close Monitor Windows:")
-                # After ID print cw.pcqid
-                cw.mainWindow.quit()
-            except:
-                cw.mainWindow.quit()    
+                    log.warning("Trouble unregistering from adcc shared services.")
                 raise
 
-        if (generate_pycallgraphs):
-            pycallgraph.make_dot_graph("recipman-callgraph.png")
+            # add command clause
+            if ro:
+                ro.register_command_clause(command_clause)
+            else:
+                log.error("Unable to get ReductionObject for type %s" % options.astrotype)
+                break
+            if options.recipename == None:
+                if options.astrotype == None:
+                    reclist = rl.get_applicable_recipes(infiles[0]) #**
+                    recdict = rl.get_applicable_recipes(infiles[0], collate=True) #**
+                else:
+                    reclist = rl.get_applicable_recipes(astrotype = options.astrotype,
+                                                        prune=True)
+                    recdict = rl.get_applicable_recipes(astrotype = options.astrotype,
+                                                        prune=True, 
+                                                        collate = True)
+                #print "r599:",repr(reclist), repr(recdict)
+            else:
+                #force recipe
+                reclist = [options.recipename]
+                recdict = {"all": [options.recipename]}
 
-        from time import sleep
-        while (False):
-            for th in threading.enumerate():
-                print str(th)
-            sleep(5.)
-        # print co.report_history()
-        # main()
-        # don't leave the terminal in another color/mode, that's rude
+            # @@REFERENCEIMAGE
+            # first file in group is used as reference
+            # for the types that are used to load the recipe and primitives
+
+            if (options.astrotype == None):
+                types = infiles[0].get_types()
+            else:
+                types = [options.astrotype]
+
+            infilenames = []
+            if infiles:
+                for infs in infiles:
+                    if type(infs) == AstroData:
+                        infilenames.append( infs.filename )
+                    else:
+                        # I don't think this can happen now
+                        # where the input files are still strings at this point
+                        infilenames.append( infs )
+                        raise "not expected to happen"
+
+            numi = len(infilenames) 
+
+            if numi < 1:
+                title = "  No Datasets  "
+            elif numi == 1:        
+                title = "  Processing dataset: %s  " % (str(infilenames[0])) #**
+            else:
+                title = "  Processing datasets:"
+                for infiln in infilenames:
+                    title += "\n    %s" % infiln
+            tl = len(title)
+            tb = " " * tl
+            log.stdinfo(tb)
+            log.stdinfo(title)
+            log.stdinfo(tb)
+            
+            
+            if options.recipename == None:
+                if len(recdict) == 0:
+                    msg = "No recipes found for types: "+repr(types)
+                    #log.error(msg)
+                    raise Errors.RecipeNotFoundError(msg)
+                else:
+                    log.info("Recipe(s) found by dataset type:")
+            else:
+                log.info("A recipe was specified:")
+
+            for typ in recdict.keys():
+                recs = recdict[typ]
+                log.info("  for type: %s" % typ)
+                for rec in recs:
+                    log.info("    %s" % rec)
+
+            bReportHistory = False
+            cwlist = []
+            if (useTK and currentReductionNum == 1):
+                cw = TkRecipeControl(recipes = reclist)
+                cw.start()
+
+            if "USER" in reclist:
+                interactiveMode = True
+                import readline
+                readline.set_history_length(100)
+            else:
+                interactiveMode = False
+
+            # counts user given command for interactive mode
+            cmdnum = 0 # @@INTERACTIVE
+            co = None
+            while True: # THIS IS A LOOP FOR INTERACTIVE USE! @@INTERACTIVE
+                for rec in reclist:
+                    if rec == "USER":
+                        try:
+                            rec = raw_input("reduce: ")
+                            rec = rec.strip()
+                            if rec == "exit":
+                                interactiveMode = False
+                                break
+                            if rec.strip() == "":
+                                continue
+                            cmdnum += 1
+                            rawrec = True
+                            if rec == "reset":
+                                co = None
+                                continue
+                        except:
+                            interactiveMode = False
+                            break
+                    else:
+                        rawrec = False
+
+                    try:
+                        if co == None or not interactiveMode:
+                            #then we want to keep the 
+                            # create fresh context object
+                            # @@TODO:possible: see if deepcopy can do this better 
+                            co = ReductionContext()
+                            #set context(s)
+                            if options.running_contexts:
+                                cxs = options.running_contexts.split(":")
+                            else:
+                                cxs = []
+                            co.setContext(cxs)
+                            if options.rtf:
+                                co.update({"rtf":True})
+                            #print "r739:stack index file", stkindfile
+                            # @@NAME: stackIndexFile, location for persistent stack list cache
+                            co.set_cache_file("stackIndexFile", stkindfile)
+                            co.ro = ro
+                            # @@DOC: put cachedirs in context
+                            for cachename in cachedict:
+                                co.update({cachename:cachedict[cachename]})
+                            co.update({"cachedict":cachedict})
+                            # rc.["storedcals"] will be the proper directory
+
+                            # co.restore_cal_index(calindfile)
+                            # old local stack stuff co.restore_stk_index( stkindfile )
+
+                            # add input files
+                            if infiles:
+                                #co.add_input(infiles)
+                                co.populate_stream(infiles)
+                            co.set_iraf_stdout(irafstdout)
+                            co.set_iraf_stderr(irafstdout)
+
+                           # odl way rl.retrieve_parameters(infile[0], co, rec)
+                            if hasattr(options, "user_params"):
+                                co.user_params = options.user_params
+                            if hasattr(options, "globalParams"):
+                                for pkey in options.globalParams.keys():
+                                    co.update({pkey:options.globalParams[pkey]})
+
+                        # Remove after write int works properly
+                        if (options.writeInt == True):       
+                                co.update({"writeInt":True})  
+
+                        # Putting the log level and log name set with the --logLevel 
+                        # and --logName parser options into the global dict
+                        # for use throughout the primitives.
+                        co.update({'logLevel':options.logLevel})     
+                        co.update({'logName':options.logName})       
+                        co.update({'logType':'main'})
+
+                        # Insert calibration url dictionary
+                        # if given by command line will overide the lookup
+                        if options.cal_mgr is None:
+                            calurldict = Lookups.get_lookup_table("Gemini/calurl_dict",
+                                                                  "calurl_dict")
+                        else:
+                            calmgr_str = options.cal_mgr
+                            if calmgr_str[7:12] == 'local':
+                                calurldict = {'LOCALCALMGR' : calmgr_str}
+                            else:
+                                calurldict = {'CALMGR' : calmgr_str}
+                        co.update({'calurl_dictionary':calurldict})
+                        #print "REDUCE 721", co.report(internal_dict=True)
+
+                        if (useTK):
+                            while cw.bReady == False:
+                                # this is hopefully not really needed
+                                # did it to give the tk thread a chance to get running
+                                time.sleep(.1)
+                            cw.new_control_window(rec,co)
+                            cw.mainWindow.protocol("WM_DELETE_WINDOW", co.finish) 
+
+
+                        # @@TODO:evaluate use of init for each recipe vs. for all recipes
+                        ro.init(co)
+                        if options.primsetname != None:
+                            dr = os.path.abspath(os.path.dirname(options.primsetname))
+                            # print "r349:", dr
+                            sys.path.append(dr)
+                            # print "r351:", sys.path
+
+                            exec ("import "+ os.path.basename(options.primsetname)[:-3] + " as newmodule")
+                            userPrimSet = newmodule.userPrimSet
+
+                            userPrimSet.astrotype = ro.curPrimType
+                            ro.add_prim_set(userPrimSet)
+
+
+                        if rawrec == False:
+                            log.info( "running recipe: '%s'\n" % rec)
+
+                        # logic to handle:
+                        #  * recipes in config path somewhere
+                        #  * filenames
+                        #  * which need compiling due to arguments
+                        if (os.path.exists(rec)):
+                            if "recipe." not in rec:
+                                raise "Recipe files must be named 'recipe.RECIPENAME'"
+                            else:
+                                rname = re.sub("recipe.", "", os.path.basename(rec))
+                            rf = open(rec)
+                            rsrc = rf.read()
+                            prec = rl.compose_recipe(rname, rsrc)
+                            rfunc = rl.compile_recipe(rname, prec)
+                            ro = rl.bind_recipe(ro, rname, rfunc)
+                            rec = rname
+                        elif "(" in rec:
+                            # print "r819:", rec
+                            rsrc = rec
+                            rname = "userCommand%d" % cmdnum
+                            prec = rl.compose_recipe(rname, rsrc)
+                            # log.debug(prec)
+                            rfunc = rl.compile_recipe(rname, prec)
+                            ro = rl.bind_recipe(ro, rname, rfunc)
+                            rec = rname
+                        else:
+                            if options.astrotype:
+                                rl.load_and_bind_recipe(ro, rec, astrotype=options.astrotype)
+                            else:
+                                rl.load_and_bind_recipe(ro,rec, dataset=infile[0])
+                        if (useTK):
+                            cw.running(rec)
+
+                        controlLoopCounter = 1
+                        ################
+                        # CONTROL LOOP #
+                        ################
+                        #print str(dir(TerminalController))
+                        #@@COLOR primfilter = terminal.PrimitiveFilter()
+                        primfilter = None
+                        #@@COLOR filteredstdout.addFilter(primfilter)
+                        frameForDisplay = 1
+                        #######
+                        #######
+                        #######
+                        #######
+                        ####### COMMAND LOOP
+                        #######
+                        #######
+                        #######
+                        # not this only works because we install a stdout filter right away with this
+                        # member function
+                        if (True): # try:
+                            ro.run(rec, co)
+                            #import cProfile
+                            #cProfile.run("ro.run(rec, co)", "runout.prof")
+                            #for coi in ro.substeps(rec, co):
+                            #    ro.execute_command_clause()
+                                # filteredstdout.addFilter(primfilter)
+                            # filteredstdout.removeFilter(primfilter)
+                        #######
+                        #######
+                        #######
+                        #######
+                        #######
+                        #######
+                    except KeyboardInterrupt:
+                        co.is_finished(True)
+                        if (useTK):
+                            cw.quit()
+                        co.persist_cal_index(calindfile)
+                        print "Ctrl-C Exit"
+                        prs.unregister()
+                        raise
+                    except astrodata.ReductionObjects.ReductionExcept, e:
+                        log.error("FATAL:" + str(e))
+                        break;
+                        #prs.unregister()
+                        #sys.exit()
+                    except:
+                        f =  open("context.log", "w")
+                        if co:
+                            f.write(co.report(showall=True))
+                        else:
+                            f.write("rc null after exception, no report")
+                        f.write(traceback.format_exc())
+                        f.close()
+                        log.fullinfo("------------------------------------------------")
+                        log.fullinfo("Debug information written to context.log. Please")
+                        log.fullinfo("provide this log when reporting this problem.")
+                        log.fullinfo("------------------------------------------------")
+
+                        if reduceServer:
+                            #print "r855:", str(id(Proxies.reduceServer)), repr(Proxies.reduceServer.finished)
+                            Proxies.reduceServer.finished=True
+                        if co: co.persist_cal_index(calindfile)
+                        if (bReportHistory):
+                            if co: co.report_history()
+                            rl.report_history()
+                        if co: co.is_finished(True)
+                        if (useTK):
+                            cw.killed = True
+                            cw.quit()
+                        # co.persist_cal_index(calindfile)
+
+                        # RAISE THE EXCEPTION AGAIN
+                        if interactiveMode != True:
+                            # note, I expect this raise to produce
+                            # an exit and print of stack to user!
+                            # which is why I unregister... interactive mode
+                            # does not want to unregister while still
+                            # looping
+                            prs.unregister()
+                            raise
+                        else:
+                            import traceback
+                            traceback.print_exc()
+                            print "\n Type 'exit' to exit."
+
+                    
+                    #co.persist_cal_index(calindfile)
+
+                    if (bReportHistory):
+
+                        log.error( "CONTEXT HISTORY")
+                        log.error( "---------------")
+
+                        co.report_history()
+                        rl.report_history()
+
+                    co.is_finished(True)
+
+                    # write outputs
+                    from gempy.geminiTools import fileNameUpdater
+                    outputs = co.get_stream("main")
+                    clobber = co["clobber"]
+                    if clobber:
+                        clobber = clobber.lower()
+                        if clobber == "false":
+                            clobber = False
+                        else:
+                            clobber = True
+                    for output in outputs:
+                        ad = output.ad
+                        name = ad.filename
+                        #print "r908:", ad.mode
+                        try:
+                            ad.write(clobber = clobber)
+                            log.stdinfo("Wrote %s in output directory" % name)
+                        except Errors.OutputExists:
+                            log.error( "CANNOT WRITE %s, already exists" % name)
+                        except Errors.AstroDataReadonlyError, err:
+                            log.warning('%s is in "readonly" mode, will not attempt to write.' % name)
+                        except Errors.AstroDataError, err:
+                            log.error("CANNOT WRITE %s: " % name + err.message)
+                        except:
+                            log.error("CANNOT WRITE %s, unknown reason" % name)
+
+                if interactiveMode == True:
+                    reclist = ["USER"]
+                else:
+                    # print "r953: breaking from interactive loop"
+                    break
+                ### end of recipe iteration.
+        except KeyboardInterrupt:
+            log.error("Interrupted by Keyboard Interrupt")
+            break
+        except Errors.RecipeNotFoundError, rnf:
+            log.error("Recipe not found for " + ",".join([ inp.filename 
+                                                            for inp in infiles]))
+            log.error(str(rnf))
+            
+        except:
+            import traceback
+            log.error("PROBLEM WITH ONE SET OF FILES:\n\t%s \n%s"
+                    %(",".join([inp.filename for inp in infiles]),
+                         traceback.format_exc()))
+        
+        if False:
+            if useTK and currentReductionNum == numReductions:
+                try:
+                    cw.done()
+                    cw.mainWindow.after_cancel(cw.pcqid)
+                    if True: #cw.killed == True:
+                        raw_input("Press Enter to Close Monitor Windows:")
+                    # After ID print cw.pcqid
+                    cw.mainWindow.quit()
+                except:
+                    cw.mainWindow.quit()    
+                    raise
+
+            if (generate_pycallgraphs):
+                pycallgraph.make_dot_graph("recipman-callgraph.png")
+
+            while (False):
+                from time import sleep
+                for th in threading.enumerate():
+                    print str(th)
+                #sleep(5.)
+            # print co.report_history()
+            # main()
+            # don't leave the terminal in another color/mode, that's rude
 except SystemExit:
     log.error("SYSTEM EXIT: see log for more information")
+    raise
 except:
     import traceback as tb
-    if "gemLog" in globals():
-        log = gemLog.getGeminiLog()
-    
-        log.error("UNHANDLED ERROR, closing down reduce, traceback:\n"
+    log.error("UNHANDLED ERROR, closing down reduce, traceback:\n"
                 + tb.format_exc())
-    else:
-        print "Log Not Functional After Exception, using stdout:\n "+ tb.format_exc()
+    
 finally:
-    if "reduceServer" in globals():
-        reduceServer.finished=True
+    if "reduceServer" not in globals():
+        raise
+    reduceServer.finished=True
     try:
-        if "prs" in globals():
-            prs.unregister()
+        prs.unregister()
     except:
-        if "gemLog" in globals():
-            log = gemLog.getGeminiLog()
-            log.warning("Trouble unregistering from adcc shared services.")
+        log.warning("Trouble unregistering from adcc shared services.")
         raise
     
