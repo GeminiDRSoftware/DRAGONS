@@ -49,11 +49,13 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
             central_wavelength = 10.5
         elif disperser == "LowRes-20":
             central_wavelength = 20.0
-        # Sometimes the header value takes the form "HighRes-10 + 230" or similar
-        elif disperser.startswith('HighRes-10'):
-            # There is a HRCENWL keyword that contains the central wavelength only
-            # if we are using the HiRes-10 grating.
-            central_wavelength = dataset.phu_get_key_value('HRCENWL')
+        # Sometimes the header value takes the form "HighRes-10 + 230" or
+        # similar
+        elif disperser.startswith("HighRes-10"):
+            # There is a HRCENWL keyword that contains the central wavelength
+            # only if we are using the HighRes-10 grating
+            central_wavelength = dataset.phu_get_key_value(
+                self.get_descriptor_key("key_central_wavelength"))
         elif disperser == "Mirror":
             raise Errors.DescriptorTypeError()
         else:
