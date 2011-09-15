@@ -1,14 +1,9 @@
-import os
-import sys
-import shutil
 from astrodata import Errors
 from astrodata.adutils import gemLog
-from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.data import AstroData
 from gempy import geminiTools as gt
-from gempy.geminiCLParDicts import CLDefaultParamsDict
-from gempy.science import preprocessing as pp
 from gempy.science import display as ds
+from gempy.science import preprocessing as pp
 from gempy.science import resample as rs
 from gempy.science import standardization as sdz
 from primitives_GEMINI import GEMINIPrimitives
@@ -24,26 +19,27 @@ class GMOSPrimitives(GEMINIPrimitives):
     def init(self, rc):
         GEMINIPrimitives.init(self, rc)
         return rc
-
+    
     def biasCorrect(self,rc):
-
+        
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
-
+        
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "biasCorrect", "starting"))
-
+        
         # Get processed biases for the input
         rc.run("getProcessedBias")
-
+        
         # Loop over each input AstroData object in the input list to
         # test whether it's appropriate to try to subtract the bias
         sub_bias = True
         for ad in rc.get_inputs_as_astrodata():
-
+            
             # Check whether the subtractBias primitive has been run previously
-            if ad.phu_get_key_value("SUBBIAS"):
+            timestamp_key = self.timestamp_keys["subtract_bias"]
+            if ad.phu_get_key_value(timestamp_key):
                 if "QA" in rc.context:
                     sub_bias = False
                     log.warning("Files have already been processed by " +
@@ -54,7 +50,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                     raise Errors.PrimitiveError("Files have already been " +
                                                 "processed by " +
                                                 "biasCorrect")
-
+            
             # Test to see if we found a bias
             bias = AstroData(rc.get_cal(ad, "processed_bias"))
             if bias.filename is None:
@@ -66,38 +62,37 @@ class GMOSPrimitives(GEMINIPrimitives):
                     
                 else:
                     raise Errors.PrimitiveError("No processed biases found")
-
+        
         # If no errors found, subtract the bias frame
         if sub_bias:
             rc.run("subtractBias")
-
+        
         yield rc
-
+    
     def display(self,rc):
-
+        
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
-
+        
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "display", "starting"))
-
         
         # Loop over each input AstroData object in the input list
         frame = rc["frame"]
         for ad in rc.get_inputs_as_astrodata():
-
+            
             try:
                 ad = ds.display_gmos(adinput=ad,
                                      frame=frame,
-                                     saturation=rc['saturation'])
+                                     saturation=rc["saturation"])
             except:
                 log.warning("Could not display %s" % ad.filename)
-
+            
             frame+=1
         
         yield rc
-
+    
     def mosaicDetectors(self,rc):
         """
         This primitive will mosaic the SCI frames of the input images, along
@@ -127,9 +122,11 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Check whether the mosaicDetectors primitive has been run
             # previously
-            if ad.phu_get_key_value("MOSAIC"):
-                log.warning("%s has already been processed by " \
-                            "mosaicDetectors" % (ad.filename))
+            timestamp_key = self.timestamp_keys["mosaic_detectors"]
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by mosaicDetectors" \
+                            % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
@@ -138,7 +135,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             # If the input AstroData object only has one extension, there is no
             # need to mosaic the detectors
             if ad.count_exts("SCI") == 1:
-                log.warning("Only one extension in %s" % (ad.filename))
+                log.warning("No changes will be made to %s, since it " \
+                            "contains only one extension" % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
@@ -152,7 +150,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                              strip=True)
-
+            
             # Append the output AstroData object to the list
             # of output AstroData objects
             adoutput_list.append(ad)
@@ -187,9 +185,11 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Check whether the standardizeHeaders primitive has been run
             # previously
-            if ad.phu_get_key_value("SDZHDRSI"):
-                log.warning("%s has already been processed by " \
-                            "standardizeHeaders" % (ad.filename))
+            timestamp_key = self.timestamp_keys["standardize_headers_gmos"]
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by standardizeHeaders" \
+                            % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
@@ -202,7 +202,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                              strip=True)
-
+            
             # Append the output AstroData object to the list
             # of output AstroData objects
             adoutput_list.append(ad)
@@ -244,9 +244,11 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Check whether the standardizeStructure primitive has been run
             # previously
-            if ad.phu_get_key_value("SDZSTRUC"):
-                log.warning("%s has already been processed by " \
-                            "standardizeStructure" % (ad.filename))
+            timestamp_key = self.timestamp_keys["standardize_structure_gmos"]
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by standardizeStructure" \
+                            % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
@@ -261,11 +263,11 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                              strip=True)
-
+            
             # Append the output AstroData object to the list
             # of output AstroData objects
             adoutput_list.append(ad)
-
+        
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
@@ -294,8 +296,10 @@ class GMOSPrimitives(GEMINIPrimitives):
         for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the subtractBias primitive has been run previously
-            if ad.phu_get_key_value("SUBBIAS"):
-                log.warning("%s has already been processed by subtractBias" \
+            timestamp_key = self.timestamp_keys["subtract_bias"]
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by subtractBias" \
                             % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
@@ -310,7 +314,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             if bias.filename is None:
                 log.warning("Could not find an appropriate bias for %s" % 
                             ad.filename)
-
+                
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
@@ -323,7 +327,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                              strip=True)
-
+            
             # Append the output AstroData object to the list
             # of output AstroData objects
             adoutput_list.append(ad)
@@ -346,6 +350,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                                 [1032:1055,1:2304]'
                                 is ideal for 2x2 GMOS data.
         """
+        
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -361,9 +366,11 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Check whether the subtractOverscan primitive has been run
             # previously
-            if ad.phu_get_key_value("SUBOVER"):
-                log.warning("%s has already been processed by " \
-                            "subtractOverscan" % (ad.filename))
+            timestamp_key = self.timestamp_keys["subtract_overscan_gmos"]
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by subtractOverscan" \
+                            % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
@@ -371,13 +378,13 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Call the subtract_overscan_gmos user level function,
             # which returns a list; take the first entry
-            ad = pp.subtract_overscan_gmos(adinput=ad, 
-                                    overscan_section=rc["overscan_section"])[0]
+            ad = pp.subtract_overscan_gmos(
+                adinput=ad, overscan_section=rc["overscan_section"])[0]
             
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                              strip=True)
-
+            
             # Append the output AstroData object to the list
             # of output AstroData objects
             adoutput_list.append(ad)
@@ -408,8 +415,10 @@ class GMOSPrimitives(GEMINIPrimitives):
         for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the trimOverscan primitive has been run previously
-            if ad.phu_get_key_value("TRIMOVER"):
-                log.warning("%s has already been processed by trimOverscan" \
+            timestamp_key = self.timestamp_keys["trim_overscan"]
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by trimOverscan" \
                             % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
@@ -423,7 +432,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                              strip=True)
-
+            
             # Append the output AstroData object to the list
             # of output AstroData objects
             adoutput_list.append(ad)
@@ -457,8 +466,10 @@ class GMOSPrimitives(GEMINIPrimitives):
         for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the validateData primitive has been run previously
-            if ad.phu_get_key_value("VALDATA"):
-                log.warning("%s has already been processed by validateData" \
+            timestamp_key = self.timestamp_keys["validate_data_gmos"]
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by validateData" \
                             % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
@@ -472,7 +483,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                              strip=True)
-
+            
             # Append the output AstroData object to the list
             # of output AstroData objects
             adoutput_list.append(ad)
