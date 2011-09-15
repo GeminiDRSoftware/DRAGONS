@@ -17,7 +17,7 @@ class F2_IMAGEPrimitives(F2Primitives):
     
     def normalize(self, rc):
         """
-        This primitive normalises the input flat AstroData object
+        This primitive normalises the input AstroData object
         """
         
         # Instantiate the log
@@ -34,8 +34,10 @@ class F2_IMAGEPrimitives(F2Primitives):
         for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the normalize primitive has been run previously
-            if ad.phu_get_key_value("NORMLIZE"):
-                log.warning("%s has already been processed by normalize" \
+            timestamp_key = self.timestamp_keys["normalize_image"]
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by normalize" \
                             % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
