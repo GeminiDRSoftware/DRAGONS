@@ -37,9 +37,11 @@ class F2Primitives(GEMINIPrimitives):
             
             # Check whether the standardizeHeaders primitive has been run
             # previously
-            if ad.phu_get_key_value("SDZHDRSI"):
-                log.warning("%s has already been processed by " \
-                            "standardizeHeaders" % (ad.filename))
+            timestamp_key = self.timestamp_keys["standardize_headers_f2"]
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by standardizeHeaders" \
+                            % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
@@ -85,9 +87,11 @@ class F2Primitives(GEMINIPrimitives):
             
             # Check whether the standardizeStructure primitive has been run
             # previously
-            if ad.phu_get_key_value("SDZSTRUC"):
-                log.warning("%s has already been processed by " \
-                            "standardizeStructure" % (ad.filename))
+            timestamp_key = self.timestamp_keys["standardize_structure_f2"]
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by standardizeStructure" \
+                            % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
@@ -132,8 +136,10 @@ class F2Primitives(GEMINIPrimitives):
         for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the validateData primitive has been run previously
-            if ad.phu_get_key_value("VALDATA"):
-                log.warning("%s has already been processed by validateData" \
+            timestamp_key = self.timestamp_keys["validate_data_f2"]
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by validateData" \
                             % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
