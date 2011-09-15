@@ -41,7 +41,7 @@
     },
  "standardizeHeaders":{
     "suffix":{
-        "default"       : "_headerStandardized",
+        "default"       : "_headersStandardized",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
@@ -58,8 +58,8 @@
         },
     "attach_mdf":{
         "default"       : True,
-        "recipeOverride": True,
         "type"          : "bool",
+        "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
@@ -107,7 +107,7 @@
     },
  "validateData":{
     "suffix":{
-        "default"       : "_validated",
+        "default"       : "_dataValidated",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,

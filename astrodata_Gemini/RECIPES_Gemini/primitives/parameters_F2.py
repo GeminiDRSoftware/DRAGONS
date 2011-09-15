@@ -2,7 +2,7 @@
 # in the primitives_F2.py file, in alphabetical order.
 {"standardizeHeaders":{
     "suffix":{
-        "default"       : "_headerStandardized",
+        "default"       : "_headersStandardized",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
@@ -27,7 +27,7 @@
     },
  "validateData":{
     "suffix":{
-        "default"       : "_validated",
+        "default"       : "_dataValidated",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,

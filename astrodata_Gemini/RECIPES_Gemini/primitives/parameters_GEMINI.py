@@ -11,7 +11,7 @@
     },
  "addToList":{
     "purpose":{
-        "default"       : "",
+        "default"       : None,
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
@@ -156,7 +156,7 @@
    },
  "detectSources":{
     "suffix":{
-        "default"       : "_sourceDetected",
+        "default"       : "_sourcesDetected",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
@@ -171,9 +171,9 @@
        },
     "method":{
         "default"       : "daofind",
+        "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
-        "type"          : "str",
         "uiLevel"       : "UIBASIC",
         },
     "sigma":{
@@ -218,7 +218,7 @@
     },
  "getList":{
     "purpose":{
-        "default"       : "",
+        "default"       : None,
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
@@ -282,7 +282,7 @@
     },
  "showList":{
     "purpose":{
-        "default"       : "",
+        "default"       : None,
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
@@ -292,10 +292,10 @@
  "showParameters":{
     "test":{
         "default"       : True,
-        "recipeOverride": False,
-        "uiLevel"       : "debug",
-        "userOverride"  : True,
         "type"          : "bool",
+        "recipeOverride": False,
+        "userOverride"  : True,
+        "uiLevel"       : "debug",
         "tags"          : ["test", "iraf"],
         },
     "otherTest":{
@@ -393,7 +393,7 @@
     },
  "writeOutputs":{
     "suffix":{
-        "default"       : "",
+        "default"       : None,
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
@@ -414,14 +414,14 @@
         "uiLevel"       : "UIBASIC",
         },
     "prefix":{
-        "default"       : "",
+        "default"       : None,
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
     "outfilename":{
-        "default"       : "",
+        "default"       : None,
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
