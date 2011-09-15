@@ -1,7 +1,7 @@
 import os
+from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.ReductionObjects import PrimitiveSet
-
 from gempy import geminiTools as gt
 
 class GENERALPrimitives(PrimitiveSet):
@@ -13,6 +13,12 @@ class GENERALPrimitives(PrimitiveSet):
     astrotype = "GENERAL"
     
     def init(self, rc):
+        # Load the timestamp keyword dictionary that will be used to define the
+        # keyword to be used for the time stamp for all the primitives and user
+        # level function. This only needs to be done once in the highest level
+        # primitive due to primitive inheritance.
+        self.timestamp_keys = Lookups.get_lookup_table(
+            "Gemini/timestamp_keywords", "timestamp_keys")
         return 
     init.pt_hide = True
     
@@ -20,6 +26,7 @@ class GENERALPrimitives(PrimitiveSet):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+        
         import glob as gl
         if rc["files"] == None:
             glob = "./*.fits"
@@ -57,6 +64,7 @@ class GENERALPrimitives(PrimitiveSet):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+        
         if rc["dir"] == None:
             thedir = "."
         else:
@@ -83,17 +91,18 @@ class GENERALPrimitives(PrimitiveSet):
                 rc.add_input(a)
         
         yield rc
-
+    
     def clearStream(self, rc):
         # print repr(rc)
         if "stream" in rc:
-            stream = rc['stream']
+            stream = rc["stream"]
         else:
             stream = "main"
         
         rc.get_stream(stream, empty=True)
-        yield rc
         
+        yield rc
+    
     def contextTest(self, rc):
         print rc.context
         yield rc
@@ -119,12 +128,14 @@ class GENERALPrimitives(PrimitiveSet):
         else:
             inputs = rc.get_inputs_as_astrodata()
                 
-            log.info("Reporting Output: "+", ".join([ ad.filename for ad in inputs]))
+            log.fullinfo("Reporting Output: "+ \
+                         ", ".join([ ad.filename for ad in inputs]))
             if prefix:
                 for inp in inputs:
                     inp.filename = os.path.join(
                                         prefix+os.path.basename(ad.filename))
             rc.report_output(inputs, stream = stream, )
+        
         yield rc
     forwardStream = forwardInput
     
@@ -139,15 +150,15 @@ class GENERALPrimitives(PrimitiveSet):
         
         for stream in streams:
             if tstream == None or stream in tstream:
-                log.info("stream: "+stream)
+                log.fullinfo("stream: "+stream)
                 if len(rc.outputs[stream])>0:
                     for adr in rc.outputs[stream]:
-                        log.info(str(adr))
+                        log.fullinfo(str(adr))
                 else:
-                    log.info("    empty")                
-    
+                    log.fullinfo("    empty")
+        
         yield rc
-
+    
     def change(self, rc):
         inputs = rc.get_inputs_as_astrodata()
         # print "pG140:", repr(rc.current_stream), repr(rc._nonstandard_stream)
@@ -166,16 +177,19 @@ class GENERALPrimitives(PrimitiveSet):
         rc.report_output(inputs)
         
         yield rc
-
+    
     def log(self, rc):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
+        
         msg = rc["msg"]
         if msg == None:
             msg = "..."
-        log.info(msg)
+        log.fullinfo(msg)
+        
         yield rc
         
     def returnFromRecipe(self, rc):
         rc.return_from_recipe()
+        
         yield rc
