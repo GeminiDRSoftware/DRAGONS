@@ -3,6 +3,5 @@
 # Reduction Object.
 
 localPrimitiveIndex = {
-    "GENERAL": ("primitives_GENERAL.py", "GENERALPrimitives"),
     "GEMINI":  ("primitives_GEMINI.py", "GEMINIPrimitives"),
     }
