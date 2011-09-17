@@ -1,0 +1,178 @@
+gW18: <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" dir="ltr">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="KEYWORDS" content="AstroDataPackageOverview" />
+<meta name="robots" content="index,follow" />
+<link rel="shortcut icon" href="/favicon.ico" />
+    <title>AstroDataPackageOverview - GDFPWiki</title>
+    <style type="text/css" media="screen,projection">/*<!]>*/</style>
+    <link rel="stylesheet" type="text/css" media="print" href="/GDFPwiki/skins/common/commonPrint.css" />
+    <!--><style type="text/css">@import "/GDFPwiki/skins/monobook/IE50Fixes.css";</style><!-->
+    <!--><style type="text/css">@import "/GDFPwiki/skins/monobook/IE55Fixes.css";</style><!-->
+    <!--><style type="text/css">@import "/GDFPwiki/skins/monobook/IE60Fixes.css";</style><!-->
+    <!--><script type="text/javascript" src="/GDFPwiki/skins/common/IEFixes.js"></script>
+    <meta http-equiv="imagetoolbar" content="no" /><!-->
+    <script type="text/javascript" src="/GDFPwiki/index.php?title=-&amp;action=raw&amp;gen=js"></script>    <script type="text/javascript" src="/GDFPwiki/skins/common/wikibits.js"></script>
+    <style type="text/css">/*<![CDATA[*/
+@import "/GDFPwiki/index.php?title=MediaWiki:Monobook.css&action=raw&ctype=text/css&smaxage=18000";
+@import "/GDFPwiki/index.php?title=-&action=raw&gen=css";
+/*]]>*/</style>          </head>
+  <body         class="ns-0">
+    <div id="globalWrapper">
+      <div id="column-content">
+	<div id="content">
+	  <a name="top" id="contentTop"></a>
+	  	  <h1 class="firstHeading">AstroDataPackageOverview</h1>
+	  <div id="bodyContent">
+	    <h3 id="siteSub">From GDFPWiki</h3>
+	    <div id="contentSub"></div>
+	    	    	    <!-- start content -->
+	    <div style="font-size:70%;">
+<div style="margin-bottom:1px;float:left;height:80px;margin:2px;padding:4px;border:solid black 1px;background-color:#ffff50"><a href="/GDFPwiki/index.php/GDPSG-Ideas" title="GDPSG-Ideas">Submit Feedback</a>
+<ul >
+<li ><a href="/GDFPwiki/index.php/GDPSG-Request" title="GDPSG-Request">Make Request</a></li >
+<li ><a href="/GDFPwiki/index.php/GDPSG-Suggestion" title="GDPSG-Suggestion">Make Suggestion</a></li >
+<li ><a href="/GDFPwiki/index.php/GDPSG-Idea" title="GDPSG-Idea">Record Idea</a></li >
+</ul >
+</div >
+<div style="margin-bottom:1px;float:left;height:80px;margin:2px;padding:4px;border:solid black 1px;background-color:#90f090">Gemini DPSG Links
+<ul >
+<li ><a href="/GDFPwiki/index.php/Main_Page" title="Main Page">Main Page</a></li >
+<li ><a href="/GDFPwiki/index.php/GDPSG-SoftwareDevelopment" title="GDPSG-SoftwareDevelopment"> Software Dev</a></li >
+<li ><a href="/GDFPwiki/index.php/GDPSG-TechProjects" title="GDPSG-TechProjects">TechProject</a></li ></ul >
+</div >
+<div style="height:80px;float:left;margin:2px;padding:4px;border:solid black 1px;background-color:#b0d0f0">AstroData Links
+<ul><li> <a href="/GDFPwiki/index.php/Astrodata_package" title="Astrodata package"> package</a>
+</li></ul>
+</div >
+<div style="height:80px;float:left;margin:2px;padding:4px;border:solid black 1px;background-color:#b0d080">AstroData Development:
+<ul><li> <a href="/GDFPwiki/index.php/POSTPDRDevelopmentPlans" title="POSTPDRDevelopmentPlans">Current</a>
+</li><li> <a href="/GDFPwiki/index.php/Project-TypesAndDescriptorsVersionOne" title="Project-TypesAndDescriptorsVersionOne">Types v.1</a>
+</li></ul>
+</div >
+<div style="margin-bottom:1px;float:left;height:80px;margin:2px;padding:4px;border:solid black 1px;background-color:#e0e0e0;text-color:black">Wiki
+<ul><li> <a href="/GDFPwiki/index.php/GDPSG-WikiInfo" title="GDPSG-WikiInfo">Wiki Info</a>
+</li><li> <a href="/GDFPwiki/index.php/Help:Contents" title="Help:Contents">Wiki Help</a>
+</li></ul>
+</div >
+</div >
+<p><br clear="all"/>
+</p>
+<table border="0" id="toc"><tr id="toctitle"><td align="center">
+<b>Table of contents</b> <script type="text/javascript">showTocToggle("show","hide")</script></td></tr><tr id="tocinside"><td>
+<div class="tocline"><a href="#The_astrodata_Package:_Overview">1 The astrodata Package: Overview</a><br /></div>
+<div class="tocindent">
+<p><a href="#astrodata">1.1 astrodata</a><br />
+<a href="#adutils">1.2 adutils</a><br />
+<a href="#ADCONFIG_Gemini">1.3 ADCONFIG_Gemini</a><br />
+<a href="#RECIPES_Gemini">1.4 RECIPES_Gemini</a><br />
+</p>
+</div>
+</td></tr></table>
+<div class="WIKIDOC">
+<div class="editsection" style="float:right;margin-left:5px;"></div><a name="The_astrodata_Package:_Overview"></a><h2>The astrodata Package: Overview</h2>
+<p>Strictly speaking what we call the astrodata package is just a single package in the Gemini Python Package, which is itself a bundle of packages.  The astrodata package depends on three other packages, so loosely we may also call "the astrodata package". In addition to this subset the Gemini Package in toto includes other auxillary packages, such as the IQTool, the original python NICI software, etc.
+</p><p>The "packages" of interest to the astrodata package proper functions includes various packages.
+</p>
+<ul><li> astrodata
+</li><li> adutils
+</li><li> RECIPES_Gemini
+</li><li> ADCONFIG_Gemini
+</li></ul>
+<div class="editsection" style="float:right;margin-left:5px;"></div><a name="astrodata"></a><h3>astrodata</h3>
+<p>This package contains the source code for the astrodata and recipe systems, but no Gemini specific code. It provides the ability to define a lexicon for your data, allowing the infrastructure enough information to help executing dataset-type correct behavior, and provide automation features.
+</p>
+<div class="editsection" style="float:right;margin-left:5px;"></div><a name="adutils"></a><h3>adutils</h3>
+<p>This package contains modules and subpackages which are used by various parts of the system, generally higher level scripts, such as the color-test command line output filters in terminal.py.  The package, theoretically should not contain Gemini specific code, but currently does.  Such modules are subject to removal from adutils and insertion into other packages (e.g. gdutils or into the astrodata package proper).
+</p>
+<div class="editsection" style="float:right;margin-left:5px;"></div><a name="ADCONFIG_Gemini"></a><h3>ADCONFIG_Gemini</h3>
+<p>This package is not meant to be imported directly, but is in the PYTHONPATH to allow astrodata to discover it.  It defines the main configurations for Gemini datasets, including:
+</p>
+<ul><li> AstroDataTypes: The dataset type definitions in the "classifications" subdirectories (split into typological types vs processing status types).
+</li><li> AstroData Descriptors: The descriptor implementations and assignments to dataset type.
+</li><li> AstroData Structures: The structure definitions.
+</li></ul>
+<div class="editsection" style="float:right;margin-left:5px;"></div><a name="RECIPES_Gemini"></a><h3>RECIPES_Gemini</h3>
+<p>This package is not meant to be imported directly, but is in the PYTHONPATH to allow the RecipeManager module to discover it.  It defines the recipes, their datset-type assignments, and contains implementations of the primitive sets and assignments to particular dataset-types. 
+</p>
+</div >
+
+<!-- Saved in parser cache with key GDFPwikidb:pcache:idhash:1233-1!1!0!1!0!1!0!!en and timestamp 20100426013814 -->
+<div class="printfooter">
+Retrieved from "<a href="http://nihal.hi.gemini.edu/GDFPwiki/index.php/AstroDataPackageOverview">http://nihal.hi.gemini.edu/GDFPwiki/index.php/AstroDataPackageOverview</a>"</div>
+	    	    <!-- end content -->
+	    <div class="visualClear"></div>
+	  </div>
+	</div>
+      </div>
+      <div id="column-one">
+	<div id="p-cactions" class="portlet">
+	  <h5>Views</h5>
+	  <ul>
+	    <li id="ca-nstab-main"
+	       class="selected"	       ><a href="/GDFPwiki/index.php/AstroDataPackageOverview">Article</a></li><li id="ca-talk"
+	       class="new"	       ><a href="/GDFPwiki/index.php?title=Talk:AstroDataPackageOverview&amp;action=edit">Discussion</a></li><li id="ca-edit"
+	       	       ><a href="/GDFPwiki/index.php?title=AstroDataPackageOverview&amp;action=edit">Edit</a></li><li id="ca-history"
+	       	       ><a href="/GDFPwiki/index.php?title=AstroDataPackageOverview&amp;action=history">History</a></li>	  </ul>
+	</div>
+	<div class="portlet" id="p-personal">
+	  <h5>Personal tools</h5>
+	  <div class="pBody">
+	    <ul>
+	    <li id="pt-login"><a href="/GDFPwiki/index.php?title=Special:Userlogin&amp;returnto=AstroDataPackageOverview">Create an account or log in</a></li>	    </ul>
+	  </div>
+	</div>
+	<div class="portlet" id="p-logo">
+	  <a style="background-image: url(/GDFPwiki/skins/common/images/gemini_logo.gif);"
+	    href="/GDFPwiki/index.php/Main_Page"
+	    title="Main Page"></a>
+	</div>
+	<script type="text/javascript"> if (window.isMSIE55) fixalpha(); </script>
+	<div class="portlet" id="p-nav">
+	  <h5>Navigation</h5>
+	  <div class="pBody">
+	    <ul>
+	      	      <li id="n-mainpage"><a href="/GDFPwiki/index.php/Main_Page">Main Page</a></li>	      <li id="n-portal"><a href="/GDFPwiki/index.php/GDFPWiki:Community_Portal">Community portal</a></li>	      <li id="n-currentevents"><a href="/GDFPwiki/index.php/Current_events">Current events</a></li>	      <li id="n-recentchanges"><a href="/GDFPwiki/index.php/Special:Recentchanges">Recent changes</a></li>	      <li id="n-randompage"><a href="/GDFPwiki/index.php/Special:Randompage">Random page</a></li>	      <li id="n-help"><a href="/GDFPwiki/index.php/Help:Contents">Help</a></li>	    </ul>
+	  </div>
+	</div>
+	<div id="p-search" class="portlet">
+	  <h5><label for="searchInput">Search</label></h5>
+	  <div class="pBody">
+	    <form name="searchform" action="/GDFPwiki/index.php/Special:Search" id="searchform">
+	      <input id="searchInput" name="search" type="text"
+	        accesskey="f" value="" />
+	      <input type='submit' name="go" class="searchButton" id="searchGoButton"
+	        value="Go"
+	        />&nbsp;<input type='submit' name="fulltext"
+	        class="searchButton"
+	        value="Search" />
+	    </form>
+	  </div>
+	</div>
+	<div class="portlet" id="p-tb">
+	  <h5>Toolbox</h5>
+	  <div class="pBody">
+	    <ul>
+		  		  <li id="t-whatlinkshere"><a href="/GDFPwiki/index.php?title=Special:Whatlinkshere&amp;target=AstroDataPackageOverview">What links here</a></li>
+		  		  <li id="t-recentchangeslinked"><a href="/GDFPwiki/index.php?title=Special:Recentchangeslinked&amp;target=AstroDataPackageOverview">Related changes</a></li>
+		  	      	      	      	      	      	      	      	      	      <li id="t-specialpages"><a href="/GDFPwiki/index.php/Special:Specialpages">Special pages</a></li>	      	    </ul>
+	  </div>
+	</div>
+	      </div><!-- end of the left (by default at least) column -->
+      <div class="visualClear"></div>
+      <div id="footer">
+    <div id="f-poweredbyico"><a href="http://www.mediawiki.org/"><img src="/GDFPwiki/skins/common/images/poweredby_mediawiki_88x31.png" alt="MediaWiki" /></a></div>		<ul id="f-list">
+	  <li id="f-lastmod"> This page was last modified 01:37, 26 Apr 2010.</li>	  <li id="f-viewcount">This page has been accessed 59 times.</li>	  	  	  <li id="f-about"><a href="/GDFPwiki/index.php/GDFPWiki:About" title="GDFPWiki:About">About GDFPWiki</a></li>	  <li id="f-disclaimer"><a href="/GDFPwiki/index.php/GDFPWiki:General_disclaimer" title="GDFPWiki:General disclaimer">Disclaimers</a></li>	</ul>
+      </div>
+    </div>
+    <!-- Served by nihal.hi.gemini.edu in 0.15 secs. -->
+  </body>
+</html>
+
+Running Sphinx v0.6.2
+loading pickled environment... done
+building [html]: targets for 0 source files that are out of date
+updating environment: 0 added, 0 changed, 0 removed
+looking for now-outdated files... none found
+no targets are out of date.
