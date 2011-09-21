@@ -57,7 +57,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # It will be dealt with by the CalculatorInterface.
                 if hasattr(ext, "exception_info"):
                     raise ext.exception_info
-                # Create the composite amp_read_area string
+            # Create the composite amp_read_area string
             amp_read_area = "'%s':%s" % (ampname, detsec)
             # Return a dictionary with the composite amp_read_area string as
             # the value
