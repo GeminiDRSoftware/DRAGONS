@@ -285,7 +285,7 @@ class ReductionObject(object):
             if cfg.is_finished():
                 break
             pass
-        
+        #self.execute_command_clause(cfg)
         return cfg
     # run is alias for runstep
     run = runstep

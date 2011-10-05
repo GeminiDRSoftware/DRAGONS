@@ -7,7 +7,7 @@ import socket # to get host name for local statistics
 from copy import deepcopy, copy
 from datetime import datetime
 from astrodata.AstroData import AstroData
-
+from astrodata import IDFactory
 import traceback
 import astrodata
 import AstroDataType
@@ -497,6 +497,7 @@ class ReductionContext(dict):
         outputs become the new inputs. Calibrations and non-standard output
         is not affected.
         """
+        # print "finalize_outputs"
         # only push if outputs is filled
         if len(self.outputs[self._current_stream]) != 0:
             # don't do this if the set is empty, it's a non-IO primitive
@@ -513,6 +514,7 @@ class ReductionContext(dict):
             
     def initialize_inputs(self):
         newinputlist = []
+        # print "initialize_inputs"
         for out in self.outputs[self._current_stream]:
             if type(out) == AstroDataRecord:
                 newinputlist.append(out)
@@ -645,6 +647,7 @@ class ReductionContext(dict):
             return None
         return self.inputs[0].ad
     
+    
     def get_stack_ids(self):
         cachefile = self.get_cache_file("stackIndexFile")
         retval = self.stackeep.get_stack_ids(cachefile )
@@ -657,6 +660,21 @@ class ReductionContext(dict):
             stream = self._current_stream
         self._output_streams.remove(stream)
         return
+    
+    def get_stack(self, purpose=""):
+        sidset = set()
+        purpose=self["purpose"]
+        if purpose is None:
+            purpose = ""
+        
+        # Get ID for all inputs
+        for inp in self.inputs:
+            sidset.add(purpose+IDFactory.generate_stackable_id(inp.ad))
+        wholelist = []
+        for sid in sidset:
+            stacklist = self.get_list(sid) #.filelist
+            wholelist.extend(stacklist)
+        return wholelist
         
     def get_list(self, id):
         """
@@ -849,7 +867,9 @@ class ReductionContext(dict):
         self.proxy_id += 1
         # print "RM630:", stepname
         self.ro.recipeLib.load_and_bind_recipe(self.ro, name, src=stepname)
-        return self.ro.runstep(name, self)
+        ret = self.ro.runstep(name, self)
+        self.initialize_inputs()
+        return ret
             
     #------------------ PAUSE ---------------------------------------------------- 
     def is_paused(self, bpaused=None):
@@ -1465,7 +1485,7 @@ class ReductionContext(dict):
             stackUEv.stk_id = Sid
             self.add_rq(stackUEv)
                 
-    def rq_stack_update(self, purpose = ""):
+    def rq_stack_update(self, purpose = None):
         '''
         :param purpose: The purpose argument is a string prefixed to the
             generated stackingID.  This allows two images which would
@@ -1483,11 +1503,14 @@ class ReductionContext(dict):
             which will not be sent until the next "yield", allowing the
             ReductionObject command clause to execute.
         '''
+        if purpose == None:
+            purpose = ""
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
         inputs = self.get_inputs_as_astrodata()
         for inp in inputs:
             stackUEv = UpdateStackableRequest()
+#            print "RM1507:", repr(purpose), repr(idFac.generate_stackable_id(inp, ver))
             Sid = purpose + idFac.generate_stackable_id(inp, ver)
             stackUEv.stk_id = Sid
             stackUEv.stk_list = inp.filename
