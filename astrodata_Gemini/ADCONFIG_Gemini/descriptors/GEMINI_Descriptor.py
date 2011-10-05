@@ -456,7 +456,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # These are somewhat basic checks, it's not completely rigorous. Note
         # that seconds can be > 59 when leap seconds occurs
         if re.match("^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$", local_time):
-            ret_local_time = str(local_time)
+            ret_local_time = dateutil.parser.parse(local_time)
         else:
             raise Errors.InvalidValueError()
         
