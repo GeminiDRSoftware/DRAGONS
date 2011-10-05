@@ -109,8 +109,9 @@ class GEMINIPrimitives(GENERALPrimitives):
         purpose = rc["purpose"]
         if purpose is None:
             suffix = "_list"
+            purpose = ""
         else:
-            suffix = "_%s" % (purpose)
+            suffix = "_%s_list" % (purpose)
         
         # Update file names and write the files to disk to ensure the right
         # version is stored before adding it to the list.

@@ -193,3 +193,14 @@ class GENERALPrimitives(PrimitiveSet):
         rc.return_from_recipe()
         
         yield rc
+
+    def callerTest(self, rc):
+        rc.run("addToList(purpose=forFringe)")
+        from astrodata import IDFactory 
+        rc.run("getList(purpose=forFringe)")
+        fs = rc.get_inputs_as_astrodata()
+        print "p203:", repr(fs)
+        print "p204:", repr(rc.inputs)
+        print "p205:", repr(rc.outputs)
+        
+        yield rc
