@@ -108,14 +108,13 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             # Get other frames from the list
             rc.run("getList(purpose=forFringe)")
 
-            rc.run("passOutputToInput")
-            
             # Check that there are enough input files
             adinput = rc.get_inputs_as_astrodata()
             
             enough = True
             if len(adinput)<3:
-                # Can't make a useful fringe frame without at least 3 input frames
+                # Can't make a useful fringe frame without at least
+                # three input frames
                 enough = False
                 log.stdinfo("Fewer than 3 frames provided as input. " +
                             "Not making fringe frame.")
