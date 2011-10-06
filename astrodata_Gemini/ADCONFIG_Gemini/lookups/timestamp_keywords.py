@@ -11,6 +11,7 @@ timestamp_keys = {
     "adu_to_electrons": "ADUTOELE",
     "align_to_reference_image": "ALIGN",
     "correct_wcs_to_reference_image": "CORRWCS",
+    "cut_slits": "SLITCUTS",
     "detect_sources": "DETECSRC",
     "divide_by_flat": "DIVFLAT",
     "make_fringe_image_gmos": "FRINGE",
@@ -33,6 +34,7 @@ timestamp_keys = {
     "subtract_overscan_gmos": "SUBOVER",
     "tile_arrays": "TILEARRY",
     "trim_overscan": "TRIMOVER",
+    "trace_slits": "TRACESLI",
     "validate_data_f2": "VALDATA",
     "validate_data_gmos": "VALDATA",
     }
