@@ -386,7 +386,7 @@ def remove_fringe_image_gmos(adinput=None, fringe=None,
     fringe_dict = gt.make_dict(key_list=adinput, value_list=fringe)
 
     # Time stamp keyword
-    timestamp_key = timestamp_keys["remove_fringe"]
+    timestamp_key = timestamp_keys["remove_fringe_image_gmos"]
     
     # Initialize output list
     adoutput_list = []
