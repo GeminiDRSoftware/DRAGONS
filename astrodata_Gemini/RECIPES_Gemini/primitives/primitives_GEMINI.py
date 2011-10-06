@@ -444,7 +444,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             adoutput_list = adinput
         else:
             # Call the correct_wcs_to_reference_image user level function
-            adoutput_list = rg.correct_wcs_to_reference_image(
+            adoutput = rg.correct_wcs_to_reference_image(
                 adinput=adinput, method=rc["method"], fallback=rc["fallback"],
                 cull_sources=rc["cull_sources"], rotate=rc["rotate"],
                 scale=rc["scale"])
