@@ -464,25 +464,30 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_gain_setting
     
     def group_id(self, dataset, **args):
-        # For GMOS data, the group id contains the detector_x_bin and
-        # detector_y_bin in addition to the observation id. Get the observation
-        # id and the binning of the x-axis and y-axis values using the
-        # appropriate descriptors
+        # For GMOS data, the group id contains the detector_x_bin,
+        # detector_y_bin and amp_read_area in addition to the observation id.
+        # Get the observation id, the binning of the x-axis and y-axis and the
+        # amp_read_area values using the appropriate descriptors
         observation_id = dataset.observation_id()
         detector_x_bin = dataset.detector_x_bin()
         detector_y_bin = dataset.detector_y_bin()
+        # Return the amp_read_area as an ordered list
+        amp_read_area = dataset.amp_read_area().as_list()
         if observation_id is None or detector_x_bin is None or \
-           detector_x_bin is None:
+           detector_x_bin is None or amp_read_area is None:
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
+
         # For all data other than data with an AstroData type of GMOS_BIAS, the
-        # group id additionally contains the filter_name
+        # group id contains the filter_name
+        # For GMOS_BIAS and GMOS_IMAGE_FLAT, the group id does not contain the
+        # observation_id, for all others, it does
         if "GMOS_BIAS" in dataset.types:
-            ret_group_id = "%s_%s_%s" % (observation_id, detector_x_bin,
-                                         detector_y_bin)
+            ret_group_id = "%s_%s_%s" % (detector_x_bin, detector_y_bin, 
+                                         amp_read_area)
         else:
             # Get the filter name using the appropriate descriptor
             filter_name = dataset.filter_name(pretty=True)
@@ -492,8 +497,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # It will be dealt with by the CalculatorInterface.
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
-            ret_group_id = "%s_%s_%s_%s" % (observation_id, detector_x_bin,
-                                            detector_y_bin, filter_name)
+
+            if "GMOS_IMAGE_FLAT" in dataset.types:
+                ret_group_id = "%s_%s_%s_%s" % (detector_x_bin, detector_y_bin, 
+                                                filter_name, amp_read_area)
+            else:
+                ret_group_id = "%s_%s_%s_%s_%s" % (observation_id, detector_x_bin,
+                                                   detector_y_bin, filter_name,
+                                                   amp_read_area)
         
         return ret_group_id
     
@@ -735,6 +746,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def saturation_level(self, dataset, **args):
         # Return the saturation level integer
-        ret_saturation_level = int(65536)
+        ret_saturation_level = int(65530)
         
         return ret_saturation_level
