@@ -66,12 +66,11 @@ def checkImageParam(image, logBadlist=False):
                     nospace_str = readList[i].replace(' ','')
                     # Adds .fits if there is none
                     inList.append(strutil.appendFits(nospace_str))
+                imageFile.close()
             except:
                 log.critical('An error occurred when opening and reading '+
                 'from the image '+os.path.basename(image))
                 return None
-            finally:
-                imageFile.close()
         else:
             inList.append(image)            
             inList[0] = strutil.appendFits(inList[0])

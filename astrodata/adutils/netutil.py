@@ -10,7 +10,7 @@ from astrodata.adutils import gemLog
 def urlfetch(url, store = None, clobber = False):
     log = gemLog.getGeminiLog()
     purl = urlparse.urlparse(url)
-    host = "hbffits3.hi.gemini.edu" #@@CONFIG: FITSSTORE RETRIEVAL HOST
+    host = "fits" #"hbffits3.hi.gemini.edu" #@@CONFIG: FITSSTORE RETRIEVAL HOST
     npurl = urlparse.ParseResult(purl.scheme,
                                  host,
                                  purl.path,

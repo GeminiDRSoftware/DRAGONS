@@ -4,7 +4,8 @@ import urllib, urllib2
 from xml.dom import minidom
 import exceptions
 
-CALMGR = "http://hbffits3.hi.gemini.edu/calmgr"
+CALMGR = "http://fits/calmgr"
+#CALMGR = "http://hbffits3.hi.gemini.edu/calmgr"
 LOCALCALMGR = "http://localhost:%(httpport)d/calsearch.xml?caltype=%(caltype)s"
 
 #LOCALCALMGR = "http://localhost:%(httpport)d/calsearch.xml?caltype=%(caltype)s&%(tokenstr)s"
@@ -36,7 +37,8 @@ def upload_calibration(filename):
     d = fd.read()
     fd.close()
     
-    url = "http://hbffits3.hi.gemini.edu/upload_processed_cal/"+fn
+    #url = "http://hbffits3.hi.gemini.edu/upload_processed_cal/"+fn
+    url = "http://fits/upload_processed_cal/"+fn
 
     postdata = d # urllib.urlencode(d)
 

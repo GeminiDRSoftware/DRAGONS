@@ -415,15 +415,17 @@ def propagate_variance(input_a=None, input_b=None, operation=None):
             else:
                 var_b = 0
         
-        if operation == "add" and isinstance(var_b, np.ndarray):
-            # The variance is propagated using:
-            #     var(a + b) = var(a) + var(b)
-            var.data = np.add(var_a, var_b)
+        if operation == "add":
+            if isinstance(var_b, np.ndarray):
+                # The variance is propagated using:
+                #     var(a + b) = var(a) + var(b)
+                var.data = np.add(var_a, var_b)
 
-        elif operation == "sub" and isinstance(var_b, np.ndarray):
-            # The variance is propagated using:
-            #     var(a - b) = var(a) + var(b)
-            var.data = np.add(var_a, var_b)
+        elif operation == "sub":
+            if isinstance(var_b, np.ndarray):
+                # The variance is propagated using:
+                #     var(a - b) = var(a) + var(b)
+                var.data = np.add(var_a, var_b)
 
         elif operation == "mult":
             # The variance is propagated using:
