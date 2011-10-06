@@ -92,6 +92,8 @@ def add_dq(adinput=None, bpm=None):
                         (ext.data < saturation_level)), 2, 0)
                     # Set the data type of the array to be int16
                     non_linear_array = non_linear_array.astype(np.int16)
+                else:
+                    non_linear_array = None
                 
                 # Create an array that contains pixels that have a value of 4
                 # when that pixel is saturated in the input science extension
@@ -100,18 +102,27 @@ def add_dq(adinput=None, bpm=None):
                         ext.data >= saturation_level, 4, 0)
                     # Set the data type of the array to be int16
                     saturation_array = saturation_array.astype(np.int16)
+                else:
+                    saturation_array = None
                 
                 # Create a single DQ extension from the three arrays (BPM,
                 # non-linear and saturated). BPMs have an EXTNAME equal to "DQ"
-                bpmext = bpm["DQ", extver]
-                dq_array = np.add(bpmext.data, non_linear_array,
-                                  saturation_array)
-                
+                dq_array = np.zeros(ext.data.shape).astype(np.int16)
+                if bpm is not None:
+                    bpmext = bpm["DQ", extver]
+                    bpmname = os.path.basename(bpm.filename)
+                    log.fullinfo("Using %s[DQ, %d] BPM for %s[%s, %d]" % \
+                                     (bpmname, extver, ad.filename,
+                                      ext.extname(), extver))
+                    dq_array = np.add(dq_array,bpmext.data)
+                else:
+                    bpmname = "None"
+                if non_linear_array is not None:
+                    dq_array = np.add(dq_array, non_linear_array)
+                if saturation_array is not None:
+                    dq_array = np.add(dq_array,saturation_array)
+
                 # Create a data quality AstroData object
-                bpmname = os.path.basename(bpm.filename)
-                log.fullinfo("Using %s[DQ, %d] BPM for %s[%s, %d]" % \
-                             (bpmname, extver, ad.filename,
-                              ext.extname(), extver))
                 dq = AstroData(header=pf.Header(), data=dq_array)
                 dq.rename_ext("DQ", ver=extver)
                 dq.filename = ad.filename
@@ -336,7 +347,8 @@ def _select_bpm(adinput=None, bpm=None):
             if key in all_bpm_dict:
                 bpm = AstroData(lookup_path(all_bpm_dict[key]))
             else:
-                raise Errors.TableKeyError("Unable to find a BPM for %s" % key)
+                pass
+                #raise Errors.TableKeyError("Unable to find a BPM for %s" % key)
             bpm_list.append(bpm)
     
     # Create a dictionary that has the AstroData objects specified by adinput
@@ -348,6 +360,8 @@ def _select_bpm(adinput=None, bpm=None):
     for ad in adinput:
         
         bpm = ret_bpm_dict[ad]
+        if bpm is None:
+            continue
 
         # Check for the case that the BPM is full-frame but the science
         # is subdata (eg. CCD2 only data for GMOS)

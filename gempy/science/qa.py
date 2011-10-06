@@ -20,8 +20,98 @@ from gempy.science import resample as rs
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
-def measure_iq(adinput=None, centroid_function='moffat', display=False,
-               qa=True, return_source_info=False):
+def iq_display_gmos_iqtool(adinput=None, frame=1, saturation=58000):
+
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+
+    # The validate_input function ensures that adinput is not None and returns
+    # a list containing one or more AstroData objects
+    adinput = gt.validate_input(adinput=adinput)
+
+    # Define the keyword to be used for the time stamp for this user level
+    # function (use the one for measure_iq -- that's the only function
+    # called that modifies the input data)
+    timestamp_key = timestamp_keys["measure_iq"]
+
+    # Initialize the list of output AstroData objects
+    adoutput_list = []
+
+    try:
+        # Loop over each input AstroData object in the input list
+
+        if frame is None:
+            frame = 1
+        display = True
+
+        for ad in adinput:
+
+            # Make a copy of the input, so that we can modify it
+            # without affecting the original
+            disp_ad = deepcopy(ad)
+
+            # Tile the data into one science extension
+            disp_ad = rs.tile_arrays(adinput=disp_ad,tile_all=True)
+
+            # Measure IQ on the image
+            log.stdinfo("Measuring FWHM of stars")
+            disp_ad,stars = measure_iq_iqtool(adinput=disp_ad, 
+                                       centroid_function="moffat",
+                                       display=False, qa=True, 
+                                       return_source_info=True)
+            if len(stars)==0:
+                adoutput_list.append(ad)
+                frame+=1
+                continue
+
+            # Display the image with IQ stars marked
+            if display:
+                data_shape = disp_ad[0]["SCI",1].data.shape
+                iqmask = _iq_overlay(stars,data_shape)
+
+                log.stdinfo('Sources used to measure IQ are marked ' +
+                            'with blue circles.')
+                try:
+                    disp_ad = ds.display_gmos(adinput=disp_ad,
+                                         frame=frame,
+                                         saturation=saturation,
+                                         overlay=iqmask)
+                except:
+                    log.warning("Could not display %s" % disp_ad[0].filename)
+                    display = False
+
+            frame+=1
+            
+            # Update headers in original file
+            mean_fwhm = disp_ad[0].phu_get_key_value("MEANFWHM")
+            mean_ellp = disp_ad[0].phu_get_key_value("MEANELLP")
+            if mean_fwhm is not None:
+                ad.phu_set_key_value("MEANFWHM",mean_fwhm,
+                                     comment=("Mean point source FWHM "+
+                                              "(arcsec)"))
+            if mean_ellp is not None:
+                ad.phu_set_key_value("MEANELLP",mean_ellp,
+                                     comment=("Mean point source "+
+                                              "ellipticity"))
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            
+
+            # Append the output AstroData object to the list of output
+            # AstroData objects
+            adoutput_list.append(ad)
+
+        # Return the list of output AstroData objects
+        return adoutput_list
+
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
+
+
+def measure_iq_iqtool(adinput=None, centroid_function='moffat', display=False,
+                      qa=True, return_source_info=False):
     """
     This function will detect the sources in the input images and fit
     either Gaussian or Moffat models to their profiles and calculate the 
@@ -147,9 +237,9 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False,
                     fwhm = float(fields[10])
                 except:
                     continue
-                stars.append({"CooX": cx,
-                              "CooY": cy,
-                              "FWHMpix": fwhm})
+                stars.append({"x": cx,
+                              "y": cy,
+                              "fwhm": fwhm})
 
             # Delete the .dat file
             if os.path.exists(datName):
@@ -165,6 +255,8 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False,
                             'none reported')
             # If it all worked, then format the output and log it
             else:
+
+                log.stdinfo("%d sources used to measure IQ." % len(stars))
 
                 # correct the seeing measurement to zenith
                 fwhm = iqdata[0][2]
@@ -182,25 +274,39 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False,
                     iq_band = _iq_band(adinput=ad,fwhm=corr)[0]
 
                     # Format output for printing or logging                
-                    llen = 27
-                    dlen = 32
+                    llen = 32
+                    rlen = 24
+                    dlen = llen+rlen
+                    pm = '+/-'
                     fnStr = 'Filename: '+ad.filename
-                    emStr = 'Ellipticity Mean:'.ljust(llen)+'%.3f'%iqdata[0][0]
-                    esStr = 'Ellipticity Sigma:'.ljust(llen)+'%.3f'%iqdata[0][1]
-                    fmStr = 'FWHM Mean:'.ljust(llen)+'%.3f'%iqdata[0][2]
-                    fsStr = 'FWHM Sigma:'.ljust(llen)+'%.3f'%iqdata[0][3]
-                    csStr = 'Zenith-corrected FWHM:'.ljust(llen)+'%.3f'%corr
+                    fmStr = ('FWHM Mean %s Sigma:' % pm).ljust(llen) + \
+                            ('%.3f %s %.3f arcsec' % (iqdata[0][2], pm,
+                                                      iqdata[0][3])).rjust(rlen)
+                    emStr = ('Ellipticity Mean %s Sigma:' % pm).ljust(llen) + \
+                            ('%.3f %s %.3f' % (iqdata[0][0], pm, 
+                                               iqdata[0][1])).rjust(rlen)
+                    csStr = ('Zenith-corrected FWHM (AM %.2f):'% \
+                             airmass).ljust(llen) + \
+                            ('%.3f arcsec' % corr).rjust(rlen)
                     if iq_band!='':
                         filter = ad.filter_name(pretty=True)
-                        iqStr = 'IQ band for %s filter:' % filter
-                        iqStr = iqStr.ljust(llen) + ('IQ'+iq_band).rjust(5)
+                        iqStr = ('IQ band for %s filter:'%filter).ljust(llen)+\
+                                iq_band.rjust(rlen)
                     else:
                         iqStr = '(IQ band could not be determined)'
+
+                    # Warn if high ellipticity
+                    if iqdata[0][0]>0.1:
+                        ell_warn = "\n    "+\
+                                   "WARNING: high ellipticity".rjust(dlen)
+                    else:
+                        ell_warn = ""                    
+
                     # Create final formatted string
-                    finalStr = '\n    '+fnStr+'\n    '+'-'*dlen+'\n    '+emStr+\
-                               '\n    '+esStr+'\n    '+fmStr+'\n    '+fsStr+\
-                               '\n    '+csStr+'\n    '+iqStr+'\n    '+\
-                               '-'*dlen+'\n'
+                    finalStr = '\n    '+fnStr+'\n    '+'-'*dlen+\
+                               '\n    '+fmStr+'\n    '+emStr+\
+                               '\n    '+csStr+'\n    '+iqStr+ell_warn+\
+                               '\n    '+'-'*dlen+'\n'
                     # Log final string
                     if display:
                         log.stdinfo('Sources used to measure IQ are marked ' +
@@ -237,7 +343,8 @@ def measure_iq(adinput=None, centroid_function='moffat', display=False,
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def iq_display_gmos(adinput=None, frame=1, saturation=58000):
+
+def iq_display_gmos(adinput=None, display=True, frame=1, saturation=58000):
 
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
@@ -272,27 +379,26 @@ def iq_display_gmos(adinput=None, frame=1, saturation=58000):
             disp_ad = rs.tile_arrays(adinput=disp_ad,tile_all=True)
 
             # Measure IQ on the image
-            log.stdinfo("Measuring FWHM of stars")
-            disp_ad,stars = measure_iq(adinput=disp_ad, 
-                                       centroid_function="moffat",
-                                       display=False, qa=True, 
+            disp_ad,stars = measure_iq(adinput=disp_ad,
                                        return_source_info=True)
-            if len(stars)==0:
-                frame+=1
-                continue
 
             # Display the image with IQ stars marked
             if display:
                 data_shape = disp_ad[0]["SCI",1].data.shape
-                iqmask = _iq_overlay(stars,data_shape)
 
-                log.stdinfo('Sources used to measure IQ are marked ' +
-                            'with blue circles.')
+                if len(stars)==0:
+                    iqmask = None
+                else:
+                    iqmask = _iq_overlay(stars,data_shape)
+
+                    log.stdinfo('Sources used to measure IQ are marked ' +
+                                'with blue circles.')
+
                 try:
-                    disp_ad = ds.display_gmos(adinput=disp_ad,
-                                         frame=frame,
-                                         saturation=saturation,
-                                         overlay=iqmask)
+                    disp_ad = ds.display_gmos(adinput=disp_ad[0],
+                                              frame=frame,
+                                              saturation=saturation,
+                                              overlay=iqmask)
                 except:
                     log.warning("Could not display %s" % disp_ad[0].filename)
                     display = False
@@ -324,6 +430,152 @@ def iq_display_gmos(adinput=None, frame=1, saturation=58000):
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
         raise
+
+
+def measure_iq(adinput=None, return_source_info=False, separate_ext=False):
+    """
+    This function is for use with sextractor-style source-detection.
+    FWHM are already in OBJCAT; this function does the clipping and
+    reporting only.
+    """
+
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+
+    # The validate_input function ensures that adinput is not None and returns
+    # a list containing one or more AstroData objects
+    adinput = gt.validate_input(adinput=adinput)
+
+    # Define the keyword to be used for the time stamp for this user level
+    # function
+    timestamp_key = timestamp_keys["measure_iq"]
+
+    # Initialize the list of output AstroData objects
+    adoutput_list = []
+    
+    try:
+        
+        # Loop over each input AstroData object
+        for ad in adinput:
+
+            # Clip sources from the OBJCAT
+            good_source = _clip_sources(ad,separate_ext=separate_ext)
+
+            if len(good_source.keys())==0:
+                log.warning('No good sources found in %s' % ad.filename)
+                gt.mark_history(adinput=ad, keyword=timestamp_key)
+                adoutput_list.append(ad)
+                good_source['all'] = []
+                continue
+
+            for key in good_source:
+                src = good_source[key]
+
+                if len(src)==0:
+                    log.warning('No good sources found in %s, %s extensions' %
+                                (ad.filename,key))
+                    gt.mark_history(adinput=ad, keyword=timestamp_key)
+                    continue
+
+                # Clipped mean of FWHM and ellipticity
+                if len(src)>1:
+                    mean_fwhm,std_fwhm,mean_ellip,std_ellip = _clipped_mean(src)
+                elif len(src)==1:
+                    log.warning('Only one source found. IQ numbers may ' +
+                                'not be accurate.')
+                    mean_fwhm = src[0]['fwhm']
+                    std_fwhm = np.nan
+                    mean_ellip = src[0]['ellipticity']
+                    std_ellip = np.nan
+                    
+                log.stdinfo("%d sources used to measure IQ." % len(src))
+
+                airmass = float(ad.airmass())
+                if airmass is None:
+                    log.warning("Airmass not found, not correcting to zenith")
+                    corr = mean_fwhm
+                else:
+                    corr = mean_fwhm * airmass**(-0.6)
+
+                # Get IQ constraint band corresponding to
+                # the corrected FWHM number
+                iq_band = _iq_band(adinput=ad,fwhm=corr)[0]
+
+                # Format output for printing or logging                
+                llen = 32
+                rlen = 24
+                dlen = llen+rlen
+                pm = '+/-'
+                fnStr = 'Filename: %s' % ad.filename
+                if separate_ext:
+                    fnStr += "[%s,%s]" % key
+                fmStr = ('FWHM Mean %s Sigma:' % pm).ljust(llen) + \
+                        ('%.3f %s %.3f arcsec' % (mean_fwhm, pm,
+                                                  std_fwhm)).rjust(rlen)
+                emStr = ('Ellipticity Mean %s Sigma:' % pm).ljust(llen) + \
+                        ('%.3f %s %.3f' % (mean_ellip, pm, 
+                                           std_ellip)).rjust(rlen)
+                csStr = ('Zenith-corrected FWHM (AM %.2f):'%airmass).ljust(llen) + \
+                        ('%.3f arcsec' % corr).rjust(rlen)
+                if iq_band!='':
+                    filter = ad.filter_name(pretty=True)
+                    iqStr = ('IQ band for %s filter:'%filter).ljust(llen)+\
+                            iq_band.rjust(rlen)
+                else:
+                    iqStr = '(IQ band could not be determined)'
+
+                # Warn if high ellipticity
+                if mean_ellip>0.1:
+                    ell_warn = "\n    "+\
+                               "WARNING: high ellipticity".rjust(dlen)
+                else:
+                    ell_warn = ""                    
+
+                # Create final formatted string
+                finalStr = '\n    '+fnStr+'\n    '+'-'*dlen+\
+                           '\n    '+fmStr+'\n    '+emStr+\
+                           '\n    '+csStr+'\n    '+iqStr+ell_warn+\
+                           '\n    '+'-'*dlen+'\n'
+                # Log final string
+                log.stdinfo(finalStr, category='IQ')
+                
+                # Store average FWHM and ellipticity to header
+                if separate_ext:
+                    sciext = ad[key]
+                    sciext.set_key_value("MEANFWHM", mean_fwhm,
+                                         comment=("Mean point source FWHM "+
+                                                  "(arcsec)"))
+                    sciext.set_key_value("MEANELLP", mean_ellip,
+                                         comment=("Mean point source "+
+                                                  "ellipticity"))
+                else:
+                    ad.phu_set_key_value("MEANFWHM", mean_fwhm,
+                                         comment=("Mean point source FWHM "+
+                                                  "(arcsec)"))
+                    ad.phu_set_key_value("MEANELLP", mean_ellip,
+                                         comment=("Mean point source "+
+                                                  "ellipticity"))
+
+                # Add the appropriate time stamps to the PHU
+                gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+            # Append the output AstroData object to the list of output
+            # AstroData objects
+            adoutput_list.append(ad)
+
+        if return_source_info:
+            if separate_ext:
+                return adoutput_list, good_source
+            else:
+                return adoutput_list, good_source['all']
+        else:
+            return adoutput_list
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
+
 
 
 ##############################################################################
@@ -403,13 +655,13 @@ def _iq_band(adinput=None,fwhm=None):
 
                         # get iq band
                         if fwhm[count]<iq20:
-                            iq='20'
+                            iq='IQ20 (<%.2f arcsec)' % iq20
                         elif fwhm[count]<iq70:
-                            iq='70'
+                            iq='IQ70 (%.2f-%.2f arcsec)' % (iq20,iq70)
                         elif fwhm[count]<iq85:
-                            iq='85'
+                            iq='IQ85 (%.2f-%.2f arcsec)' % (iq70,iq85)
                         else:
-                            iq='Any'
+                            iq='IQAny (>%.2f arcsec)' % iq85
             
             # Append the iq band string to the output
             str_output.append(iq)
@@ -439,10 +691,11 @@ def _iq_overlay(stars,data_shape):
     width = data_shape[1]
     height = data_shape[0]
     for star in stars:
-        x0 = star["CooX"]
-        y0 = star["CooY"]
-        radius = star["FWHMpix"]
-        r2 = radius**2
+        x0 = star['x']
+        y0 = star['y']
+        #radius = star['fwhm']
+        radius = 16
+        r2 = radius*radius
         quarter = int(math.ceil(radius * math.sqrt (0.5)))
 
         for dy in range(-quarter,quarter+1):
@@ -478,3 +731,124 @@ def _iq_overlay(stars,data_shape):
     iqmask = (np.array(yind),np.array(xind))
     return iqmask
     
+
+def _clip_sources(ad, separate_ext=False):
+    """
+    This function takes the source data from the OBJCAT and returns the best
+    sources for IQ measurement.
+    
+    :param ad: input image
+    :type ad: AstroData instance with OBJCAT attached
+
+    :param separate_ext: Flag to treat each extension separately
+    :type separate_ext: boolean
+    """
+
+    good_source = {}
+    first = True
+    for sciext in ad["SCI"]:
+        extver = sciext.extver()
+
+        objcat = ad["OBJCAT",extver]
+        if objcat is None:
+            continue
+        if objcat.data is None:
+            continue
+
+        try:
+            x = objcat.data.field("x")
+            y = objcat.data.field("y")
+            fwhm_pix = objcat.data.field("fwhm_pix")
+            fwhm_arcsec = objcat.data.field("fwhm_arcsec")
+            ellip = objcat.data.field("ellipticity")
+            flags = objcat.data.field("flags")
+            class_star = objcat.data.field("class_star")
+        except:
+            continue
+        
+        good = (flags==0) & (class_star>0.6) & (ellip<0.5)
+
+        rec = np.rec.fromarrays([x[good],y[good],fwhm_pix[good],
+                                 fwhm_arcsec[good],ellip[good]],
+                                names=["x","y","fwhm","fwhm_arcsec","ellipticity"])
+
+        if separate_ext:
+            good_source[("SCI",extver)] = rec
+        else:
+            if first:
+                good_source["all"] = rec
+                first = False
+            else:
+                good_source["all"] = np.hstack([good_source["all"],rec])
+
+    return good_source
+
+def _clipped_mean(src):
+    """
+    Clipping is done on FWHM
+    """
+
+    fwhm = src['fwhm_arcsec']
+    ellip = src['ellipticity']
+
+    mean=0.7
+    sigma=1
+    num_total = len(fwhm)
+    if num_total < 3:
+        return np.mean(fwhm),np.std(fwhm),np.mean(ellip),np.std(ellip)
+
+    num = num_total
+    clip=0
+    while (num > 0.5*num_total):
+
+        num=0
+
+        # for fwhm
+        sum = 0
+        sumsq = 0
+
+        # for ellipticity
+        esum = 0
+        esumsq = 0
+
+        upper = mean+sigma
+        lower = mean-(3*sigma)
+
+        i = 0
+        for f in fwhm:
+            e = ellip[i]
+            if(f<upper and f>lower):
+                sum += f
+                sumsq += f*f
+                esum += e
+                esumsq += e*e
+                num+=1
+            i+=1
+
+        if num>0:
+            # for fwhm
+            mean = sum / num
+            var = (sumsq / num) - mean*mean
+            if var>=0:
+                sigma = math.sqrt(var)
+            else:
+                var = np.nan
+
+            # for ellipticity
+            emean = esum / num
+            evar = (esumsq / num) - emean*emean
+            if evar>=0:
+                esigma = math.sqrt(evar)
+            else:
+                esigma = np.nan
+
+        elif clip==0:
+            return np.mean(fwhm),np.std(fwhm),np.mean(ellip),np.std(ellip)
+        else:
+            break
+
+        clip+=1
+        if clip>10:
+            break
+
+    return mean,sigma,emean,esigma

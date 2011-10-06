@@ -514,11 +514,12 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
                 raise Errors.InputError("%s has already been processed by " \
                                         "mosaic_detectors" % (ad.filename))
 
-            # Get BUNIT and OVERSCAN from science extensions 
+            # Get BUNIT, OVERSCAN,and AMPNAME from science extensions 
             # (gmosaic wipes out these keywords, they need to 
             # be restored after runnning it)
             bunit = None
             overscan = []
+            ampname = []
             for ext in ad["SCI"]:
                 ext_bunit = ext.get_key_value("BUNIT")
                 if bunit is None:
@@ -530,10 +531,23 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
                 ext_overscan = ext.get_key_value("OVERSCAN")
                 if ext_overscan is not None:
                     overscan.append(ext_overscan)
+
+                ext_ampname = ext.get_key_value("AMPNAME")
+                if ext_ampname is not None:
+                    ampname.append(ext_ampname)
+
             if len(overscan)>0:
                 avg_overscan = np.mean(overscan)
             else:
                 avg_overscan = None
+
+            if len(ampname)>0:
+                all_ampname = ",".join(ampname)
+            else:
+                all_ampname = None
+
+            # Save detector section from 1st extension
+            old_detsec = ad["SCI",1].detector_section().as_list()
 
             # Determine whether VAR/DQ needs to be propagated
             if (ad.count_exts("VAR") == 
@@ -592,7 +606,7 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
             # Loop through the parameters in the clSoftcodedParams 
             # dictionary and log them
             mgr.logDictParams(clSoftcodedParams)
-            
+
             gemini.gmos.gmosaic(**clParamsDict)
             
             if gemini.gmos.gmosaic.status:
@@ -615,7 +629,8 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
                 log.fullinfo("File "+ad_out.filename+\
                             " was successfully mosaicked")
 
-            # Restore BUNIT and OVERSCAN keywords to science extension header
+            # Restore BUNIT, OVERSCAN, AMPNAME keywords
+            # to science extension header
             if bunit is not None:
                 gt.update_key_value(adinput=ad_out, function="bunit",
                                     value=bunit, extname="SCI")
@@ -623,6 +638,40 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
                 for ext in ad_out["SCI"]:
                     ext.set_key_value("OVERSCAN",avg_overscan,
                                       comment="Overscan mean value")
+            if all_ampname is not None:
+                # These ampnames can be long, so truncate
+                # the comment by hand to avoid the error
+                # message from pyfits
+                comment = "Amplifier name(s)"
+                if len(all_ampname)>=65:
+                    comment = ""
+                else:
+                    comment = comment[0:65-len(all_ampname)]
+                for ext in ad_out["SCI"]:
+                    ext.set_key_value("AMPNAME",all_ampname,
+                                      comment=comment)
+
+            # Set DETSEC keyword
+            data_shape = ad_out["SCI",1].data.shape
+            xbin = ad_out.detector_x_bin()
+            if xbin is not None:
+                unbin_width = data_shape[1] * xbin
+            else:
+                unbin_width = data_shape[1]
+            if old_detsec is not None:
+                new_detsec = "[%i:%i,%i:%i]" % (old_detsec[0]+1,
+                                                old_detsec[0]+unbin_width,
+                                                old_detsec[2]+1,old_detsec[3])
+                ext.set_key_value("DETSEC",new_detsec)
+            else:
+                ext.set_key_value("DETSEC","")
+
+
+            # Change type of DQ plane back to int16
+            # (gmosaic sets it to float32)
+            if ad_out["DQ"] is not None:
+                for dqext in ad_out["DQ"]:
+                    dqext.data = dqext.data.astype(np.int16)
 
             # Update GEM-TLM (automatic) and MOSAIC time stamps to the PHU
             # and update logger with updated/added time stamps
@@ -722,7 +771,8 @@ def tile_arrays(adinput=None, tile_all=False):
                 ampname = {}
                 amplist = []
                 refsec = {}
-
+                mapping_dict = {}
+                
                 # Initialize these so that first extension will always
                 # start a new CCD
                 last_detx1 = detx1[ampsorder[0]-1]-1
@@ -750,12 +800,13 @@ def tile_arrays(adinput=None, tile_all=False):
                                     var_data_list.append(chip_gap)
                                 if dqext is not None:
                                     dq_data_list.append(chip_gap)
+                                mapping_dict[i] = 1
                             else:
                                 ccd_data[num_ccd] = {"SCI":sci_data_list,
                                                      "VAR":var_data_list,
                                                      "DQ":dq_data_list}
                                 ampname[num_ccd] = amplist
-
+                                mapping_dict[i] = num_ccd
 
                         # Increment CCD number and restart amps per ccd
                         num_ccd += 1
@@ -776,7 +827,8 @@ def tile_arrays(adinput=None, tile_all=False):
                             # Keep ccdsec and detsec from first extension only
                             if num_ccd==1:
                                 refsec[1] = {"CCD":ccdsecs[i-1],
-                                             "DET":detsecs[i-1]}
+                                             "DET":detsecs[i-1]} 
+                            mapping_dict[i] = 1
                         else:
                             sci_data_list = [sciext.data]
                             if varext is not None:
@@ -788,7 +840,7 @@ def tile_arrays(adinput=None, tile_all=False):
                             # of each CCD
                             refsec[num_ccd] = {"CCD":ccdsecs[i-1],
                                                "DET":detsecs[i-1]}
-
+                            mapping_dict[i] = num_ccd
                     else:
                         # Increment amps and append data
                         amps_per_ccd[num_ccd] += 1
@@ -798,6 +850,7 @@ def tile_arrays(adinput=None, tile_all=False):
                             var_data_list.append(varext.data)
                         if dqext:
                             dq_data_list.append(dqext.data)
+                        
 
                     # If last iteration, store the current data lists
                     if ext_count==nsciext:
@@ -809,6 +862,7 @@ def tile_arrays(adinput=None, tile_all=False):
                                          "VAR":var_data_list,
                                          "DQ":dq_data_list}
                         ampname[key] = amplist
+                        mapping_dict[i] = key
 
                     last_ccdx1 = this_ccdx1
                     last_detx1 = this_detx1
@@ -953,12 +1007,17 @@ def tile_arrays(adinput=None, tile_all=False):
                             new_crpix1 = crpix1 + ref_shift[extver]
                             ext.set_key_value("CRPIX1",new_crpix1)
 
+                    
+                    # Update and attach OBJCAT if needed
+                    if ad["OBJCAT"] is not None:
+                        adoutput = _tile_objcat(ad,adoutput,mapping_dict)[0]
+
                     # Refresh AstroData types in output file (original ones
                     # were lost when new AD was created)
                     adoutput.refresh_types()
 
                 # Add the appropriate time stamps to the PHU
-                gt.mark_history(adinput=ad, keyword=timestamp_key)
+                gt.mark_history(adinput=adoutput, keyword=timestamp_key)
 
                 # Append the output AstroData object to the list of output
                 # AstroData objects
@@ -977,3 +1036,115 @@ def tile_arrays(adinput=None, tile_all=False):
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
 
+    
+def _tile_objcat(adinput=None,adoutput=None,mapping_dict=None):
+    """
+    This function tiles together separate OBJCAT extensions, converting
+    the pixel coordinates to the new WCS.
+
+    Code cleanup desperately needed here.
+    """
+
+    from gempy.science import photometry as ph
+
+    adinput = gt.validate_input(adinput=adinput)
+    adoutput = gt.validate_input(adinput=adoutput)
+
+    if mapping_dict is None:
+        raise Errors.InputError("mapping_dict must not be None")
+
+    if len(adinput)!=len(adoutput):
+        raise Errors.InputError("adinput must have same length as adoutput")
+    output_dict = gt.make_dict(key_list=adinput, value_list=adoutput)
+
+    adoutput_list = []
+    for ad in adinput:
+        
+        adout = output_dict[ad]
+
+        objcat = ad["OBJCAT"]
+        if objcat is None:
+            raise Errors.InputError("No OBJCAT found in %s" % ad.filename)
+
+        if ad.count_exts("SCI")!=ad.count_exts("OBJCAT"):
+            raise Errors.InputError("Number of OBJCAT extensions "+
+                                    "does not match number of science "+
+                                    "extensions.")
+
+        # Make dictionary to hold new objcat data
+        objcat_data = {}
+        for outext in adout["SCI"]:
+            objcat_data[outext.extver()] = {"x":[],
+                                            "y":[],
+                                            "ra":[],
+                                            "dec":[],
+                                            "fwhm_pix":[],
+                                            "fwhm_arcsec":[],
+                                            "ellipticity":[],
+                                            "flux":[],
+                                            "class_star":[],
+                                            "flags":[],
+                                            "refid":[],
+                                            "refmag":[],
+                                            }
+
+        for sciext in ad["SCI"]:
+            
+            inp_extver = sciext.extver()
+            out_extver = mapping_dict[inp_extver]
+
+            output_wcs = pywcs.WCS(adout["SCI",out_extver].header)
+
+            inp_objcat = ad["OBJCAT",inp_extver]
+            if inp_objcat.data is None:
+                continue
+            if len(inp_objcat.data)==0:
+                continue
+
+            # Get new pixel coordinates for the objects from RA/Dec
+            ra = inp_objcat.data.field("ra")
+            dec = inp_objcat.data.field("dec")
+
+            newx,newy = output_wcs.wcs_sky2pix(ra,dec,1)
+                
+            objcat_data[out_extver]["x"].append(newx)
+            objcat_data[out_extver]["y"].append(newy)
+            objcat_data[out_extver]["ra"].append(ra)
+            objcat_data[out_extver]["dec"].append(dec)
+            
+            objcat_data[out_extver]["fwhm_pix"].append(
+                                                 inp_objcat.data.field("fwhm_pix"))
+            objcat_data[out_extver]["fwhm_arcsec"].append(
+                                                 inp_objcat.data.field("fwhm_arcsec"))
+            objcat_data[out_extver]["ellipticity"].append(
+                                                 inp_objcat.data.field("ellipticity"))
+            objcat_data[out_extver]["class_star"].append(
+                                                 inp_objcat.data.field("class_star"))
+            objcat_data[out_extver]["flux"].append(inp_objcat.data.field("flux"))
+            objcat_data[out_extver]["flags"].append(inp_objcat.data.field("flags"))
+            objcat_data[out_extver]["refid"].append(inp_objcat.data.field("refid"))
+            objcat_data[out_extver]["refmag"].append(inp_objcat.data.field("refmag"))
+            
+        
+        for outext in adout["SCI"]:
+            extver = outext.extver()
+            if len(objcat_data[extver]["x"])==0:
+                continue
+            else:
+                adout = ph.add_objcat(adinput=adout, extver=extver,
+                             x=np.hstack(objcat_data[extver]["x"]),
+                             y=np.hstack(objcat_data[extver]["y"]),
+                             ra=np.hstack(objcat_data[extver]["ra"]),
+                             dec=np.hstack(objcat_data[extver]["dec"]),
+                             fwhm_pix=np.hstack(objcat_data[extver]["fwhm_pix"]),
+                             fwhm_arcsec=np.hstack(objcat_data[extver]["fwhm_arcsec"]),
+                             ellipticity=np.hstack(objcat_data[extver]["ellipticity"]),
+                             class_star=np.hstack(objcat_data[extver]["class_star"]),
+                             flux=np.hstack(objcat_data[extver]["flux"]),
+                             flags=np.hstack(objcat_data[extver]["flags"]),
+                             refid=np.hstack(objcat_data[extver]["refid"]),
+                             refmag=np.hstack(objcat_data[extver]["refmag"]),)[0]
+
+        adoutput_list.append(adout)
+
+    return adoutput_list

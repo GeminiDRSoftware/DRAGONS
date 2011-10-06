@@ -1,15 +1,20 @@
 # This module contains user level functions related to source detection
 # and photometry of the input dataset
 
+import os
 import sys
+import subprocess
+from copy import deepcopy
 import numpy as np
 import pyfits as pf
 import pywcs
 from astrodata import AstroData
 from astrodata import Errors
 from astrodata import Lookups
+from astrodata.ConfigSpace import lookup_path
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
+from gempy import astrotools as at
 
 # Load the timestamp keyword dictionary that will be used to define the keyword
 # to be used for the time stamp for the user level function
@@ -18,7 +23,9 @@ timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
 
 def add_objcat(adinput=None, extver=1, replace=False,
                id=None, x=None, y=None, ra=None, dec=None, 
-               flux=None, refid=None, refmag=None):
+               fwhm_pix=None, fwhm_arcsec=None, ellipticity=None,
+               flux=None, class_star=None, flags=None,
+               refid=None, refmag=None):
     """
     Add OBJCAT table if it does not exist, update or replace it if it does.
     Lengths of all provided lists should be the same.
@@ -55,6 +62,21 @@ def add_objcat(adinput=None, extver=1, replace=False,
     :param flux: List of flux values. Set to -999 if not provided.
     :type flux: Python list of floats
     
+    :param fwhm_pix: List of fwhm values in pixels. Set to -999 if not provided.
+    :type fwhm_pix: Python list of floats
+    
+    :param fwhm_arcsec: List of fwhm values in arcsec. Set to -999 if not provided.
+    :type fwhm_arcsec: Python list of floats
+    
+    :param ellipticity: List of ellipticity values. Set to -999 if not provided.
+    :type ellipticity: Python list of floats
+    
+    :param class_star: List of class_star values. Set to -999 if not provided.
+    :type class_star: Python list of floats (value between 0 and 1)
+    
+    :param flags: List of flags values. Set to -999 if not provided.
+    :type flags: Python list of ints    
+
     :param refid: List of reference ids. Set to '' if not provided.
     :type refid: Python list of strings
     
@@ -98,6 +120,16 @@ def add_objcat(adinput=None, extver=1, replace=False,
                     objcat.data.field("dec")[:] = dec
                 if flux is not None:
                     objcat.data.field("flux")[:] = flux
+                if fwhm_pix is not None:
+                    objcat.data.field("fwhm_pix")[:] = fwhm_pix
+                if fwhm_arcsec is not None:
+                    objcat.data.field("fwhm_arcsec")[:] = fwhm_arcsec
+                if ellipticity is not None:
+                    objcat.data.field("ellipticity")[:] = ellipticity
+                if class_star is not None:
+                    objcat.data.field("class_star")[:] = class_star
+                if flags is not None:
+                    objcat.data.field("flags")[:] = flags
                 if refid is not None:
                     objcat.data.field("refid")[:] = refid
                 if refmag is not None:
@@ -114,6 +146,16 @@ def add_objcat(adinput=None, extver=1, replace=False,
                 id = range(1,nlines+1)
             if flux is None:
                 flux = [-999]*nlines
+            if fwhm_pix is None:
+                fwhm_pix= [-999]*nlines
+            if fwhm_arcsec is None:
+                fwhm_arcsec = [-999]*nlines
+            if ellipticity is None:
+                ellipticity = [-999]*nlines
+            if class_star is None:
+                class_star = [-999]*nlines
+            if flags is None:
+                flags = [-999]*nlines
             if refid is None:
                 refid = [""]*nlines
             if refmag is None:
@@ -126,11 +168,16 @@ def add_objcat(adinput=None, extver=1, replace=False,
             c4 = pf.Column(name="ra",format="E",array=ra)
             c5 = pf.Column(name="dec",format="E",array=dec)
             c6 = pf.Column(name="flux",format="E",array=flux)
-            c7 = pf.Column(name="refid",format="22A",array=refid)
-            c8 = pf.Column(name="refmag",format="E",array=refmag)
+            c7 = pf.Column(name="fwhm_pix",format="E",array=fwhm_pix)
+            c8 = pf.Column(name="fwhm_arcsec",format="E",array=fwhm_arcsec)
+            c9 = pf.Column(name="ellipticity",format="E",array=ellipticity)
+            c10 = pf.Column(name="class_star",format="E",array=class_star)
+            c11 = pf.Column(name="flags",format="J",array=flags)
+            c12 = pf.Column(name="refid",format="22A",array=refid)
+            c13 = pf.Column(name="refmag",format="E",array=refmag)
             
             # make new pyfits table
-            col_def = pf.ColDefs([c1,c2,c3,c4,c5,c6,c7,c8])
+            col_def = pf.ColDefs([c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13])
             tb_hdu = pf.new_table(col_def)
             tb_ad = AstroData(tb_hdu)
             tb_ad.rename_ext("OBJCAT",extver)
@@ -156,7 +203,7 @@ def add_objcat(adinput=None, extver=1, replace=False,
         raise
 
 def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
-                   method="daofind"):
+                   method="sextractor"):
     """
     Find x,y positions of all the objects in the input image. Append 
     a FITS table extension with position information plus columns for
@@ -180,23 +227,23 @@ def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
     :param adinput: image(s) to detect sources in
     :type adinput: AstroData objects, either a single instance or a list
     
-    :param sigma: The mean of the background value. If nothing is passed,
+    :param sigma: The mean of the background value for daofind. If nothing is passed,
                   it will be automatically determined
     :type sigma: float
     
-    :param threshold: Threshold intensity for a point source; should generally
-                  be at least 3 or 4 sigma above background RMS. It was found
-                  that 20 is a good number for QA purposes; 2.5 is a good number
-                  for detecting most sources in the field.
+    :param threshold: Threshold intensity for a point source for daofind; should
+                   generally be at least 3 or 4 sigma above background RMS. It was
+                   found that 20 is a good number for QA purposes; 2.5 is a good 
+                   number for detecting most sources in the field.
     :type threshold: float
     
-    :param fwhm: FWHM to be used in the convolve filter. This ends up playing
-                 a factor in determining the size of the kernel put through 
+    :param fwhm: FWHM to be used in the convolve filter for daofind. This ends up
+                 playing a factor in determining the size of the kernel put through 
                  the gaussian convolve.
     :type fwhm: Number [5.5]
     
     :param method: source detection algorithm to use
-    :type method: string; currently only option is 'daofind'
+    :type method: string; options are 'daofind','sextractor'
     """
     
     # Instantiate the log. This needs to be done outside of the try block,
@@ -218,32 +265,80 @@ def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
         # Loop over each input AstroData object in the input list
         for ad in adinput:
             
+            seeing_est = ad.phu_get_key_value("MEANFWHM")
             for sciext in ad["SCI"]:
                 
                 extver = sciext.extver()
                 
                 # find objects in pixel coordinates
-                if method=="daofind":
-                    obj_list = _daofind(sciext=sciext, sigma=sigma,
-                                        threshold=threshold, fwhm=fwhm)
-                else:
+                if method not in ["sextractor","daofind"]:
                     raise Errors.InputError("Source detection method "+
                                             method+" is unsupported.")
                 
-                # separate pixel coordinates into x, y lists
-                obj_x, obj_y = [np.asarray(obj_list)[:,k] for k in [0,1]]
+                if method=="sextractor":
+                    dqext = ad["DQ",extver]
+                    try:
+                        obj_list,seeing_est = _sextractor(sciext=sciext,
+                                                          dqext=dqext,
+                                                     seeing_estimate=seeing_est)
+                    except:
+                        log.warning("Sextractor failed. Setting method=daofind")
+                        method="daofind"
+                    else:
+                        if len(obj_list)==0:
+                            log.stdinfo("No sources found in %s['SCI',%d]" %
+                                        (ad.filename,extver))
+                            obj_x,obj_y,obj_ra,obj_dec = ([],[],[],[])
+                            flux,fwhm_pix,fwhm_arcsec,ellip = (None,None,None,None)
+                            class_star,flags = (None,None)
+                        else:
+                            obj_x = obj_list['x']
+                            obj_y = obj_list['y']
+                            obj_ra = obj_list['ra']
+                            obj_dec = obj_list['dec']
+                            flux = obj_list['flux']
+                            fwhm_pix = obj_list['fwhm_pix']
+                            fwhm_arcsec = obj_list['fwhm_arcsec']
+                            ellip = obj_list['ellipticity']
+                            class_star = obj_list['class_star']
+                            flags = obj_list['flags']
+
+                            nobj = len(obj_ra)
+                            log.stdinfo("Found %d sources in %s['SCI',%d]" %
+                                        (nobj,ad.filename,extver))
+                if method=="daofind":
+                    obj_list = _daofind(sciext=sciext, sigma=sigma,
+                                        threshold=threshold, fwhm=fwhm)
+
+                    # daofind does not return flux, fwhm, ellipticity, etc.
+                    flux,fwhm_pix,fwhm_arcsec,ellip = (None,None,None,None)
+                    class_star,flags = (None,None)
+
+                    if len(obj_list)==0:
+                        log.stdinfo("No sources found in %s['SCI',%d]" %
+                                    (ad.filename,extver))
+                        obj_x,obj_y,obj_ra,obj_dec = ([],[],[],[])
+                    else:
+
+                        # separate pixel coordinates into x, y lists
+                        obj_x, obj_y = [np.asarray(obj_list)[:,k] for k in [0,1]]
                 
-                # use WCS to convert pixel coordinates to RA/Dec
-                wcs = pywcs.WCS(sciext.header)
-                obj_ra, obj_dec = wcs.wcs_pix2sky(obj_x,obj_y,1)
+                        # use WCS to convert pixel coordinates to RA/Dec
+                        wcs = pywcs.WCS(sciext.header)
+                        obj_ra, obj_dec = wcs.wcs_pix2sky(obj_x,obj_y,1)
                 
-                nobj = len(obj_ra)
-                log.stdinfo("Found %d sources in %s['SCI',%d]" %
-                            (nobj,ad.filename,extver))
+                        nobj = len(obj_ra)
+                        log.stdinfo("Found %d sources in %s['SCI',%d]" %
+                                    (nobj,ad.filename,extver))
                 
                 adoutput = add_objcat(adinput=ad, extver=extver, 
                                       x=obj_x, y=obj_y, 
                                       ra=obj_ra, dec=obj_dec,
+                                      flux=flux,fwhm_pix=fwhm_pix,
+                                      fwhm_arcsec=fwhm_arcsec,
+                                      ellipticity=ellip,
+                                      class_star=class_star,
+                                      flags=flags,
                                       replace=True)
                 ad = adoutput[0]
             
@@ -464,7 +559,7 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
         
         sigma = fim.std()
         log.fullinfo("Estimated Background: %.3f" % sigma)
-    
+
     hmin = sigma * threshold
     
     if window is None:
@@ -771,3 +866,153 @@ def _replace_ext(ad,extname,extver,new_hdu):
     ad.hdulist[intext] = new_hdu
     
     return ad
+
+
+def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
+
+    # Get the log
+    log = gemLog.getGeminiLog()
+
+    # Get path to default sextractor parameter files
+    default_dict = Lookups.get_lookup_table(
+                             "Gemini/source_detection/sextractor_default_dict",
+                             "sextractor_default_dict")
+    for key in default_dict:
+        default_file = lookup_path(default_dict[key]).rstrip(".py")
+        default_dict[key] = default_file
+    
+    # Write the science extension to a temporary file on disk
+    scitmpfn = "tmp%ssx%s%s%s" % (str(os.getpid()),sciext.extname(),
+                                  sciext.extver(),
+                                  os.path.basename(sciext.filename))
+    log.fullinfo("Writing temporary file %s to disk" % scitmpfn)
+    sciext.write(scitmpfn,rename=False,clobber=True)
+
+    # If DQ extension is given, do the same for it
+    if dqext is not None:
+        # Make sure DQ data is 16-bit; flagging doesn't work
+        # properly if it is 32-bit
+        dqext.data = dqext.data.astype(np.int16)
+        
+        dqtmpfn = "tmp%ssx%s%s%s" % (str(os.getpid()),dqext.extname(),
+                                   dqext.extver(),
+                                   os.path.basename(dqext.filename))
+        log.fullinfo("Writing temporary file %s to disk" % dqtmpfn)
+        dqext.write(dqtmpfn,rename=False,clobber=True)
+
+    else:
+        os.remove(scitmpfn)
+        raise Errors.ScienceError("Sextractor method not supported without " +
+                                  "DQ plane.")
+
+    outtmpfn = "tmp%ssxOUT%s%s%s" % (str(os.getpid()),sciext.extname(),
+                                     sciext.extver(),
+                                     os.path.basename(sciext.filename))
+
+    # if no seeing estimate provided, run sextractor once with
+    # default, then re-run to get proper stellar classification
+    if seeing_estimate is None:
+        iter = [0,1]
+    else:
+        iter = [0]
+    
+    log.fullinfo("Calling sextractor")
+    for i in iter:
+
+        if seeing_estimate is None:
+            # use default seeing estimate for a first pass
+            sx_cmd = ["sex",
+                      "%s[0]" % scitmpfn,
+                      "-c","%s" % default_dict["sex"],
+                      "-FLAG_IMAGE","%s[0]" % dqtmpfn,
+                      "-CATALOG_NAME","%s" % outtmpfn,
+                      "-PARAMETERS_NAME","%s" % default_dict["param"],
+                      "-FILTER_NAME","%s" % default_dict["conv"],
+                      "-STARNNW_NAME","%s" % default_dict["nnw"],]
+        else:
+            # run with provided seeing estimate
+            sx_cmd = ["sex",
+                      "%s[0]" % scitmpfn,
+                      "-c","%s" % default_dict["sex"],
+                      "-FLAG_IMAGE","%s[0]" % dqtmpfn,
+                      "-CATALOG_NAME","%s" % outtmpfn,
+                      "-PARAMETERS_NAME","%s" % default_dict["param"],
+                      "-FILTER_NAME","%s" % default_dict["conv"],
+                      "-STARNNW_NAME","%s" % default_dict["nnw"],
+                      "-SEEING_FWHM","%f" % seeing_estimate,
+                      ]
+
+        try:
+            pipe_out = subprocess.Popen(sx_cmd,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT)
+            #subprocess.call(sx_cmd)
+        except:
+            os.remove(scitmpfn)
+            os.remove(dqtmpfn)
+            raise Errors.ScienceError("sextractor failed")
+
+        # Sextractor output is full of non-ascii characters, send it
+        # only to debug for now
+        stdoutdata = pipe_out.communicate()[0]
+        log.debug(stdoutdata)
+
+        hdulist = pf.open(outtmpfn)
+        tdata = hdulist[1].data
+
+        x = tdata['X_IMAGE']
+        y = tdata['Y_IMAGE']
+        ra = tdata['ALPHA_SKY']
+        dec = tdata['DELTA_SKY']
+        flux = tdata['FLUX_BEST']
+        fwhm_pix = tdata['FWHM_IMAGE']
+        fwhm_arcsec = tdata['FWHM_WORLD']*3600.0
+        ellip = tdata['ELLIPTICITY']
+        class_star = tdata['CLASS_STAR']
+        sxflags = tdata['FLAGS']
+        dqflags = tdata['IMAFLAGS_ISO']
+        area = tdata['ISOAREA_IMAGE']
+
+        # flag sources with connected area < 100 pix^2
+        # This will need revisiting later -- this number is probably
+        # instrument dependent.
+        aflag = np.where(area<100,1,0)
+
+        # bit masking.  Mask out the bottom 3 bits of the sextractor flags
+        # Paul's crazy masking trick.
+        sxflags = sxflags & 65528
+
+        # bitwise-or all the flags
+        flags = sxflags | dqflags | aflag
+        flags = np.where(flags==0,0,1)
+
+        # Get some extra flags to get point sources only
+        # for seeing estimate
+        eflag = np.where(tdata['ELLIPTICITY']>0.5,1,0)
+        sflag = np.where(tdata['CLASS_STAR']<0.6,1,0)
+        tflags = flags | eflag | sflag
+        good_fwhm = fwhm_arcsec[tflags==0]
+        if len(good_fwhm)>2:
+            seeing_estimate,sigma = at.clipped_mean(good_fwhm)
+            if np.isnan(seeing_estimate) or seeing_estimate==0:
+                seeing_estimate = None
+                break
+        else:
+            seeing_estimate = None
+            break
+        
+    log.fullinfo("Removing temporary files from disk:\n%s\n%s" %
+                 (scitmpfn,dqtmpfn))
+    os.remove(scitmpfn)
+    os.remove(dqtmpfn)
+    os.remove(outtmpfn)
+
+    obj_list = np.rec.fromarrays([x,y,ra,dec,
+                                  flux,fwhm_pix,fwhm_arcsec,ellip,
+                                  class_star,flags],
+                                 names=["x","y","ra","dec",
+                                        "flux","fwhm_pix","fwhm_arcsec",
+                                        "ellipticity","class_star","flags"])
+    return obj_list,seeing_estimate
+
+

@@ -3,6 +3,7 @@
 
 import sys
 import math
+import numpy as np
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
@@ -17,7 +18,7 @@ timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
 def stack_frames(adinput=None, suffix=None, operation="average", 
-                 reject_method="none", mask_type="none",
+                 reject_method="avsigclip", mask_type="goodvalue",
                  nlow=1, nhigh=1, grow=0.0):
     """
     This user level function will stack the input AstroData objects. New
@@ -125,6 +126,12 @@ def stack_frames(adinput=None, suffix=None, operation="average",
         # disk 
         adstack, junk, junk = clm.finishCL()
         
+        # Change type of DQ plane back to int16
+        # (gemcombine sets it to int32)
+        if adstack[0]["DQ"] is not None:
+            for dqext in adstack[0]["DQ"]:
+                dqext.data = dqext.data.astype(np.int16)
+
         # Gemcombine sets the GAIN keyword to the sum of the gains; reset
         # it to the average instead.  Set the RDNOISE to the sum in 
         # quadrature of the input read noise. Set VAR/DQ keywords to 
@@ -137,6 +144,13 @@ def stack_frames(adinput=None, suffix=None, operation="average",
             adstack[0].phu_set_key_value("GAIN",gain[("SCI",1)])
         if adstack[0].phu_get_key_value("RDNOISE") is not None:
             adstack[0].phu_set_key_value("RDNOISE",ron[("SCI",1)])
+
+        # Add suffix to the ORIGNAME header so future filenames
+        # can't strip it out
+        adstack[0].phu_set_key_value("ORIGNAME",
+                                     gt.fileNameUpdater(ad,suffix=suffix,
+                                                        strip=True),
+                                     comment="Original filename")
 
         # Add the appropriate time stamps to the PHU
         gt.mark_history(adinput=adstack, keyword=timestamp_key)

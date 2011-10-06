@@ -264,7 +264,8 @@ def normalize_image_gmos(adinput=None, saturation=45000):
                 xborder = 20
             if yborder<20:
                 yborder = 20
-            log.fullinfo("Using data section [%i:%i,%i:%i] for statistics" %
+            log.fullinfo("Using data section [%i:%i,%i:%i] from CCD2 "\
+                             "for statistics" %
                          (xborder,central_data.shape[1]-xborder,
                           yborder,central_data.shape[0]-yborder))
             stat_region = central_data[yborder:-yborder,xborder:-xborder]
@@ -290,6 +291,15 @@ def normalize_image_gmos(adinput=None, saturation=45000):
             # variance appropriately
             ad = ad.div(norm_factor)
             
+            # Set any values flagged in the DQ plane to 1
+            # (to avoid dividing by zero)
+            for sciext in ad["SCI"]:
+                extver = sciext.extver()
+                dqext = ad["DQ",extver]
+                if dqext is not None:
+                    mask = np.where(dqext.data>0)
+                    sciext.data[mask] = 1.0
+
             # Add the appropriate time stamp to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             
@@ -301,6 +311,99 @@ def normalize_image_gmos(adinput=None, saturation=45000):
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
         raise
+
+def scale_by_intensity_gmos(adinput=None):
+
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+
+    # The validate_input function ensures that adinput is not None and returns
+    # a list containing one or more AstroData objects
+    adinput = gt.validate_input(adinput=adinput)
+
+    # Define the keyword to be used for the time stamp for this user level
+    # function
+    timestamp_key = timestamp_keys["scale_by_intensity"]
+
+    # Initialize the list of output AstroData objects
+    adoutput_list = []
+
+    try:
+        # Loop over each input AstroData object in the input list
+        first = True
+        reference_mean = 1.0
+        for ad in adinput:
+
+            # Check whether the user level function has been
+            # run previously
+            if ad.phu_get_key_value(timestamp_key):
+                raise Errors.InputError("%s has already been processed by " \
+                                        "scale_by_intensity_gmos" % 
+                                        (ad.filename))
+
+            # Get all CCD2 data
+            if ad.count_exts("SCI")==1:
+                # Only one CCD present, assume it is CCD2
+                sciext = ad["SCI",1]
+            else:
+                # Otherwise, take the second science extension
+
+                # Tile the data into one CCD per science extension,
+                # reordering if necessary
+                temp_ad = deepcopy(ad)
+                temp_ad = rs.tile_arrays(adinput=temp_ad)[0]
+
+                sciext = temp_ad["SCI",2]
+
+            central_data = sciext.data
+
+            # Take off 5% of the width as a border
+            xborder = int(0.05 * central_data.shape[1])
+            yborder = int(0.05 * central_data.shape[0])
+            if xborder<20:
+                xborder = 20
+            if yborder<20:
+                yborder = 20
+            log.fullinfo("Using data section [%i:%i,%i:%i] from CCD2 "\
+                             "for statistics" %
+                         (xborder,central_data.shape[1]-xborder,
+                          yborder,central_data.shape[0]-yborder))
+            stat_region = central_data[yborder:-yborder,xborder:-xborder]
+            
+            # Get mean value
+            this_mean = np.mean(stat_region)
+
+            # Get relative intensity
+            if first:
+                reference_mean = this_mean
+                scale = 1.0
+                first = False
+            else:
+                scale = reference_mean / this_mean
+            log.fullinfo("Relative intensity for %s: %.3f" % (ad.filename,
+                                                              scale))
+            ad.phu_set_key_value("RELINT", scale,
+                                 comment="Relative intensity factor")
+
+            # Multiply by the scaling factor
+            ad.mult(scale)
+            
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+            # Append the output AstroData object to the list of output
+            # AstroData objects
+            adoutput_list.append(ad)
+
+        # Return the list of output AstroData objects
+        return adoutput_list
+
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
+
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #

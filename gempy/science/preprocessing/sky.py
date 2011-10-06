@@ -130,7 +130,7 @@ def make_fringe_image_gmos(adinput=None, operation="median",
         
         if gemini.gifringe.status:
             raise Errors.ScienceError("gifringe failed for inputs "+
-                                      rc.inputs_as_str())
+                                      clm.imageInsFiles(type="string"))
         else:
             log.fullinfo("Exited the gifringe CL script successfully")
         

@@ -95,10 +95,43 @@ def display_gmos(adinput=None, frame=1, saturation=None, overlay=None):
                 lnd.display(data,name=disp_ad.filename,
                             frame=frame,zscale=True,quiet=True,
                             masks=masks, mask_colors=[204,206])
+
+                # ds9 color codes: should make this into a dictionary
+                # and allow user to specify
+                #
+                # red = 204
+                # green = 205
+                # blue = 206
+                # yellow = 207
+                # light blue = 208
+                # magenta = 209
+                # orange = 210
+                # dark pink = 211
+                # bright orange = 212
+                # light yellow = 213
+                # pink = 214
+                # blue-green = 215
+                # pink = 216
+                # peach = 217
+
             except:
                 log.warning("numdisplay failed")
 
             frame+=1
+
+            # Print some statistics for flats
+            if "GMOS_IMAGE_FLAT" in disp_ad.types:
+                scidata = disp_ad["SCI",1].data
+                dqext = disp_ad["DQ",1]
+                if dqext is not None:
+                    dqdata = dqext.data
+                    good_data = scidata[dqdata==0]
+                else:
+                    good_data = scidata
+
+                log.stdinfo("Twilight flat counts:")
+                log.stdinfo("    Mean value:   %.0f" % np.mean(good_data))
+                log.stdinfo("    Median value: %.0f" % np.median(good_data))
 
         # Return the list of output AstroData objects (unchanged)
         return adoutput_list

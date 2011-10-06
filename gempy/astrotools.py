@@ -1,6 +1,7 @@
 # The astroTools module contains astronomy specific utility functions
 
 import re
+import math
 import numpy as np
 
 def rasextodec(string):
@@ -79,13 +80,13 @@ class GaussFit:
         """
         bg, peak, cx, cy, wx, wy, theta = pars
         
-        model_fn = lambda y,x: bg + peak*np.exp(-( (((x-cx)*np.cos(theta)
-                                                 + (y-cy)*np.sin(theta))
-                                                /wx)**2
-                                               +(((x-cx)*np.sin(theta)
-                                                  -(y-cy)*np.cos(theta))
-                                                 /wy)**2)
-                                              /2)
+        model_fn = lambda y,x: bg + peak*np.exp(-(   ((  (x-cx)*np.cos(theta)
+                                                       - (y-cy)*np.sin(theta))
+                                                       /wx)**2
+                                                   + ((  (x-cx)*np.sin(theta)
+                                                       + (y-cy)*np.cos(theta))
+                                                       /wy)**2)
+                                                 /2)
         gauss_array = np.fromfunction(model_fn, self.stamp.shape)
         return gauss_array
 
@@ -101,6 +102,68 @@ class GaussFit:
         :type pars: 7-element tuple
         """
         model = self.model_gauss_2d(pars).flatten()
+        diff = self.stamp.flatten() - model
+        return diff
+
+class MoffatFit:
+    """
+    This class provides access to a Moffat model, intended
+    to be fit to a small stamp of data, via a minimization of the 
+    differences between the model and the data.
+
+    Example usage:
+    pars = (bg, peak, x_ctr, y_ctr, x_width, y_width, theta, beta)
+    mf = MoffatFit(stamp_data)
+    new_pars, success = scipy.optimize.leastsq(mf.calcDiff, pars, maxfev=1000)
+    """
+
+
+    def __init__(self, stamp_data):
+        """
+        This instantiates the fitting object.
+        
+        :param stamp_data: array containing image data, preferably the
+                           source to fit plus a little padding
+        :type stamp_data: NumPy array
+        """
+        self.stamp = stamp_data
+
+    def model_moffat_2d(self, pars):
+        """
+        This function returns a Moffat source in an image array the
+        same shape as the stamp_data.  The Moffat model is determined by
+        the parameters in pars.
+        
+        :param pars: Moffat parameters in this order: background, peak,
+                     x-center, y-center, x-width, y-width, position angle
+                     (in degrees), beta
+        :type pars: 8-element tuple
+        """
+        bg, peak, cx, cy, wx, wy, theta, beta = pars
+        
+        model_fn = lambda y,x: bg + peak*(1 + (((   (x-cx)*np.cos(theta)
+                                                  - (y-cy)*np.sin(theta))
+                                                 /wx)**2
+                                             + ((   (x-cx)*np.sin(theta)
+                                                  + (y-cy)*np.cos(theta))
+                                                 /wy)**2)
+                                          )**(-beta)
+
+        moffat_array = np.fromfunction(model_fn, self.stamp.shape)
+        return moffat_array
+
+    def calc_diff(self, pars):
+        """
+        This function returns an array of the differences between
+        the model stamp and the data stamp.  It is intended to be fed
+        to an optimization algorithm, such as scipy.optimize.leastsq.
+
+        :param pars: Moffat parameters in this order: background, peak,
+                     x-center, y-center, x-width, y-width, position angle
+                     (in degrees), beta
+        :type pars: 8-element tuple
+        """
+        model = self.model_moffat_2d(pars).flatten()
         diff = self.stamp.flatten() - model
         return diff
 
@@ -339,3 +402,46 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
         indr = r
         
     return indxy, indr
+
+def clipped_mean(data):
+    mean=0.7
+    sigma=1
+    num_total = len(data)
+
+    if num_total < 3:
+        return np.mean(data),np.std(data)
+
+    num = num_total
+    clip=0
+    while (num > 0.5*num_total):
+
+        num=0
+        sum = 0
+        sumsq = 0
+
+        upper = mean+sigma
+        lower = mean-(3*sigma)
+
+        for f in data:
+            if(f<upper and f>lower):
+                sum += f
+                sumsq += f*f
+                num+=1
+
+        if num>0:
+            mean = sum / num
+            var = (sumsq / num) - mean*mean
+            if var>=0:
+                sigma = math.sqrt(var)
+            else:
+                var = np.nan
+        elif clip==0:
+            return np.mean(data),np.std(data)
+        else:
+            break
+
+        clip+=1
+        if clip > 10:
+            break
+
+    return mean,sigma
