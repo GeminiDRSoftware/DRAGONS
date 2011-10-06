@@ -2,8 +2,8 @@ from astrodata import Errors
 from astrodata.adutils import gemLog
 from astrodata.data import AstroData
 from gempy import geminiTools as gt
-from gempy.science import display as ds
 from gempy.science import preprocessing as pp
+from gempy.science import display as ds
 from gempy.science import resample as rs
 from gempy.science import standardization as sdz
 from primitives_GEMINI import GEMINIPrimitives
@@ -20,55 +20,6 @@ class GMOSPrimitives(GEMINIPrimitives):
         GEMINIPrimitives.init(self, rc)
         return rc
     
-    def biasCorrect(self,rc):
-        
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "biasCorrect", "starting"))
-        
-        # Get processed biases for the input
-        rc.run("getProcessedBias")
-        
-        # Loop over each input AstroData object in the input list to
-        # test whether it's appropriate to try to subtract the bias
-        sub_bias = True
-        for ad in rc.get_inputs_as_astrodata():
-            
-            # Check whether the subtractBias primitive has been run previously
-            timestamp_key = self.timestamp_keys["subtract_bias"]
-            if ad.phu_get_key_value(timestamp_key):
-                if "QA" in rc.context:
-                    sub_bias = False
-                    log.warning("Files have already been processed by " +
-                                "biasCorrect")
-                    rc.report_output(rc.get_inputs_as_astrodata())
-                    break
-                else:
-                    raise Errors.PrimitiveError("Files have already been " +
-                                                "processed by " +
-                                                "biasCorrect")
-            
-            # Test to see if we found a bias
-            bias = AstroData(rc.get_cal(ad, "processed_bias"))
-            if bias.filename is None:
-                if "QA" in rc.context:
-                    sub_bias = False
-                    log.warning("No processed biases found")
-                    rc.report_output(rc.get_inputs_as_astrodata())
-                    break
-                    
-                else:
-                    raise Errors.PrimitiveError("No processed biases found")
-        
-        # If no errors found, subtract the bias frame
-        if sub_bias:
-            rc.run("subtractBias")
-        
-        yield rc
-    
     def display(self,rc):
         
         # Instantiate the log
@@ -82,6 +33,10 @@ class GMOSPrimitives(GEMINIPrimitives):
         frame = rc["frame"]
         for ad in rc.get_inputs_as_astrodata():
             
+            if frame>16:
+                log.warning("Too many images; only the first 16 are displayed.")
+                break
+
             try:
                 ad = ds.display_gmos(adinput=ad,
                                      frame=frame,
@@ -135,7 +90,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # If the input AstroData object only has one extension, there is no
             # need to mosaic the detectors
             if ad.count_exts("SCI") == 1:
-                log.warning("No changes will be made to %s, since it " \
+                log.stdinfo("No changes will be made to %s, since it " \
                             "contains only one extension" % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
@@ -310,15 +265,20 @@ class GMOSPrimitives(GEMINIPrimitives):
             bias = AstroData(rc.get_cal(ad, "processed_bias"))
             
             # If no appropriate bias is found, it is ok not to subtract the
-            # bias 
+            # bias in QA context; otherwise, raise error
             if bias.filename is None:
-                log.warning("Could not find an appropriate bias for %s" % 
-                            ad.filename)
+                if "QA" in rc.context:
+                    log.warning("No changes will be made to %s, since no " \
+                                "appropriate bias could be retrieved" \
+                                % (ad.filename))
                 
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
-                continue
+                    # Append the input AstroData object to the list of output
+                    # AstroData objects without further processing
+                    adoutput_list.append(ad)
+                    continue
+                else:
+                    raise Errors.PrimitiveError("No processed bias found for %s" %
+                                                ad.filename)
             
             # Call the subtract_bias user level function,
             # which returns a list; take the first entry

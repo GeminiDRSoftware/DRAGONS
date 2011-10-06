@@ -60,7 +60,116 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         
         yield rc
     
+    def fringeCorrectFromScience(self, rc):
+
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "fringeCorrectFromScience", "starting"))
+
+        # Get input, initialize output
+        orig_input = rc.get_inputs_as_astrodata()
+        adoutput_list = []
+
+        # Check that filter is either i or z; this step doesn't
+        # help data taken in other filters
+        red = True
+        all_filter = None
+        for ad in orig_input:
+            filter = ad.filter_name(pretty=True)
+            if all_filter is None:
+                # Keep the first filter found
+                all_filter = filter
+
+            # Check for matching filters in input files
+            elif filter!=all_filter:
+                rm_fringe = False
+                log.warning("Mismatched filters in input; not making " +
+                            "fringe frame")
+                adoutput_list = orig_input
+                break
+
+            # Check for red filters
+            if filter not in ["i","z"]:
+                red = False
+                log.stdinfo("No fringe necessary for filter " +
+                            filter)
+                adoutput_list = orig_input
+                break
+
+        enough = False
+        if red:
+
+            # Add the current frame to a list
+            rc.run("addToList(purpose=forFringe)")
+
+            # Get other frames from the list
+            rc.run("getList(purpose=forFringe)")
+
+            rc.run("passOutputToInput")
+            
+            # Check that there are enough input files
+            adinput = rc.get_inputs_as_astrodata()
+            
+            enough = True
+            if len(adinput)<3:
+                # Can't make a useful fringe frame without at least 3 input frames
+                enough = False
+                log.stdinfo("Fewer than 3 frames provided as input. " +
+                            "Not making fringe frame.")
+                adoutput_list = orig_input
+
+            elif filter=="i" and len(adinput)<5:
+                if "QA" in rc.context:
+                    # If fewer than 5 frames and in QA context, don't
+                    # bother making a fringe -- it'll just make the data
+                    # look worse.
+                    red = False
+                    log.stdinfo("Fewer than 5 frames provided as input " +
+                                "with filter i. Not making fringe frame.")
+                    adoutput_list = orig_input
+                else:
+                    # Allow it in the science case, but warn that it
+                    # may not be helpful.
+                    log.warning("Fewer than 5 frames " +
+                                "provided as input with filter i. Fringe " +
+                                "frame generation is not recommended.")
+
+        if enough:
+
+            # Call the makeFringeFrame primitive
+            rc.run("makeFringeFrame")
+
+            # Store the generated fringe
+            rc.run("storeProcessedFringe")
+
+            # Report the fringe to the "fringe" stream
+            # This is because the calibration system has a potential latency
+            # between storage and retrieval; sending the file to a stream
+            # ensures that will be available to the fringeCorrect
+            # primitive if it is called immediately after makeFringe
+            fringe_frame = rc.get_inputs_as_astrodata()
+            rc.report_output(fringe_frame,stream="fringe")
+
+            # Get the list of science frames back into the main stream
+            rc.report_output(adinput)
+
+            # Call the fringeCorrect primitive
+            rc.run("fringeCorrect")
+
+            adoutput_list = rc.get_inputs_as_astrodata()
+
+        # Report files back to the reduction context: if all went well,
+        # these are the fringe-corrected frames.  If fringe generation/
+        # correction did not happen, these are the original inputs
+        rc.report_output(adoutput_list)
+        yield rc
+
+
     def makeFringe(self, rc):
+
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -72,29 +181,43 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # Check that filter is either i or z; this step doesn't
         # help data taken in other filters
         red = True
+        all_filter = None
         
         # Loop over each input AstroData object in the input list
         adinput = rc.get_inputs_as_astrodata()
         for ad in adinput:
+
             filter = ad.filter_name(pretty=True)
+            if all_filter is None:
+                # Keep the first filter found
+                all_filter = filter
+
+            # Check for matching filters in input files
+            elif filter!=all_filter:
+                rm_fringe = False
+                log.warning("Mismatched filters in input; not making " +
+                            "fringe frame")
+                break
+
+            # Check for red filters
             if filter not in ["i","z"]:
-                if "QA" in rc.context:
-                    # in QA context, don't bother trying
-                    red = False
-                    log.warning("No fringe necessary for filter " +
-                                filter)
-                    break
-                else:
-                    # in science context, let the user do it, but warn
-                    # that it's pointless
-                    log.warning("No fringe necessary for filter " + filter)
+                red = False
+                log.stdinfo("No fringe necessary for filter " +
+                            filter)
+                break
+            elif len(adinput)<3:
+                # Can't make a useful fringe frame without at least 3 input frames
+                red = False
+                log.stdinfo("Fewer than 3 frames provided as input. " +
+                            "Not making fringe frame.")
+                break
             elif filter=="i" and len(adinput)<5:
                 if "QA" in rc.context:
                     # If fewer than 5 frames and in QA context, don't
                     # bother making a fringe -- it'll just make the data
                     # look worse.
                     red = False
-                    log.warning("Fewer than 5 frames provided as input " +
+                    log.stdinfo("Fewer than 5 frames provided as input " +
                                 "with filter i. Not making fringe frame.")
                     break
                 else:
@@ -102,13 +225,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     # may not be helpful.
                     log.warning("Fewer than 5 frames " +
                                 "provided as input with filter i. Fringe " +
-                                "correction is not recommended.")
-            elif len(adinput)<2:
-                # Can't make a fringe frame without at least 2 input frames
-                red = False
-                log.warning("Fewer than 2 frames provided as input. " +
-                            "Not making fringe frame.")
-                break
+                                "frame generation is not recommended.")
         
         if red:
             recipe_list = []
@@ -118,10 +235,18 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 
             # Store the generated fringe
             recipe_list.append("storeProcessedFringe")
-                
+
             # Run the specified primitives
             rc.run("\n".join(recipe_list))
         
+            # Report the fringe to the "fringe" stream
+            # This is because the calibration system has a potential latency
+            # between storage and retrieval; sending the file to a stream
+            # ensures that will be available to the fringeCorrect
+            # primitive if it is called immediately after makeFringe
+            fringe_frame = rc.get_inputs_as_astrodata()
+            rc.report_output(fringe_frame,stream="fringe")
+
         # Report all the unchanged input files back to the reduction context
         rc.report_output(adinput)
         
@@ -141,11 +266,14 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "makeFringeFrame", "starting"))
         
-        # Check for at least 2 input frames
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Check for at least 3 input frames
         adinput = rc.get_inputs_as_astrodata()
-        if len(adinput) == 1:
-            log.warning("Only one frame provided as input; at least two " +
-                        "frames are required. Not making fringe frame.")
+        if len(adinput)<3:
+            log.stdinfo('Fewer than 3 frames provided as input. ' +
+                        'Not making fringe frame.')
             adoutput_list = adinput
         else:
             # Call the make_fringe_image_gmos user level function,
@@ -254,6 +382,22 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 adoutput_list.append(ad)
                 continue
             
+            # Test the filter to see if we need to fringe-correct at all
+            filter = ad.filter_name(pretty=True)
+
+            # Check for red filters
+            if filter not in ['i','z']:
+                if "QA" in rc.context:
+                    # in QA context, don't bother trying
+                    log.stdinfo("No fringe correction necessary for filter " +
+                                filter)
+                    adoutput_list.append(ad)
+                    continue
+                else:
+                    # in science context, let the user do it, but warn
+                    # that it's pointless
+                    log.warning("No fringe necessary for filter " + filter)
+
             # Get the appropriate fringe frame
             fringe = AstroData(rc.get_cal(ad, "processed_fringe"))
             
@@ -301,7 +445,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         adinput = rc.get_inputs_as_astrodata()
         nframes = len(adinput)
         if nframes<2:
-            log.warning("At least two frames must be provided to stackFlats")
+            log.stdinfo("At least two frames must be provided to " +
+                        "stackFlats")
             # Report input to RC without change
             adoutput_list = adinput
         
@@ -324,7 +469,10 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             else:
                 nlow = 2
                 nhigh = 3
-                
+
+            # Scale images by relative intensity before stacking
+            adinput = pp.scale_by_intensity_gmos(adinput=adinput)
+
             # Call the stack_frames user level function,
             # which returns a list with filenames already updated
             adoutput_list = sk.stack_frames(

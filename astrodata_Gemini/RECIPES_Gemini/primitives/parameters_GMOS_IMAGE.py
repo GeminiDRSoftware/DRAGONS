@@ -73,21 +73,21 @@
     },
  "stackFlats":{
     "suffix":{
-        "default"       : "_stacked",
+        "default"       : "_stack",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
     "grow":{
-        "default"       : 1.0,
+        "default"       : 0.0,
         "type"          : "float",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
     "mask_type":{
-        "default"       : "none",
+        "default"       : "goodvalue",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,

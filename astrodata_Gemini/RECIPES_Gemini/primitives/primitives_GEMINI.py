@@ -108,11 +108,12 @@ class GEMINIPrimitives(GENERALPrimitives):
         # current inputs in the reduction context
         purpose = rc["purpose"]
         if purpose is None:
-            suffix = "_list"
             purpose = ""
+        if purpose=="":
+            suffix = "_list"
         else:
-            suffix = "_%s_list" % (purpose)
-        
+            suffix = "_"+purpose
+ 
         # Update file names and write the files to disk to ensure the right
         # version is stored before adding it to the list.
         adoutput = []
@@ -146,7 +147,16 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         # Initialize the list of output AstroData objects
         adoutput_list = []
-        
+
+        # Log a message about which type of variance is being added
+        if rc["read_noise"] and not rc["poisson_noise"]:
+            log.stdinfo("Adding the read noise component of the variance")
+        if not rc["read_noise"] and rc["poisson_noise"]:
+            log.stdinfo("Adding the poisson noise component of the variance")
+        if rc["read_noise"] and rc["poisson_noise"]:
+            log.stdinfo("Adding the read noise component and the poisson " +
+                        "noise component of the variance")
+
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
@@ -529,15 +539,19 @@ class GEMINIPrimitives(GENERALPrimitives):
             flat = AstroData(rc.get_cal(ad, "processed_flat"))
             
             # If there is no appropriate flat, there is no need to divide by
-            # the flat
-            if flat is None:
-                log.warning("No changes will be made to %s, since no " \
-                            "appropriate flat could be retrieved" \
-                            % (ad.filename))
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
-                continue
+            # the flat in QA context; in SQ context, raise an error
+            if flat.filename is None:
+                if "QA" in rc.context:
+                    log.warning("No changes will be made to %s, since no " \
+                                "appropriate flat could be retrieved" \
+                                % (ad.filename))
+                    # Append the input AstroData object to the list of output
+                    # AstroData objects without further processing
+                    adoutput_list.append(ad)
+                    continue
+                else:
+                    raise Errors.PrimitiveError("No processed flat found for %s" % 
+                                                ad.filename)
             
             # Call the divide_by_flat user level function,
             # which returns a list; take the first entry
@@ -591,52 +605,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         rc.run("storeCalibration")
         
         yield rc
-    
-    def flatCorrect(self,rc):
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "flatCorrect", "starting"))
-        
-        # Retrieve processed flats for the input
-        rc.run("getProcessedFlat")
-        
-        # Loop over each input AstroData object in the input list to
-        # test whether it's appropriate to try to remove the fringes
-        div_flat = True
-        for ad in rc.get_inputs_as_astrodata():
             
-            # Check whether the divideByFlat primitive has been run previously
-            if ad.phu_get_key_value("DIVFLAT"):
-                msg = "Files have already been processed by flatCorrect"
-                if "QA" in rc.context:
-                    div_flat = False
-                    log.warning(msg)
-                    rc.report_output(rc.get_inputs_as_astrodata())
-                    break
-                else:
-                    raise Errors.PrimitiveError(msg)
-            
-            # Test to see if we found a flat
-            flat = AstroData(rc.get_cal(ad, "processed_flat"))
-            if flat.filename is None:
-                if "QA" in rc.context:
-                    div_flat = False 
-                    log.warning("No processed flats found")
-                    rc.report_output(rc.get_inputs_as_astrodata())
-                    break
-                    
-                else:
-                    raise Errors.PrimitiveError("No processed flats found")
-        
-        # If no errors found, divide by the flat frame
-        if div_flat:
-            rc.run("divideByFlat")
-        
-        yield rc
-    
     def fringeCorrect(self,rc):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
@@ -647,49 +616,34 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         # Loop over each input AstroData object in the input list to
         # test whether it's appropriate to try to remove the fringes
-        rm_fringe = True
+        rm_fringe = False
         for ad in rc.get_inputs_as_astrodata():
-            
-            # Check whether the removeFringe primitive has been run previously
-            if ad.phu_get_key_value("RMFRINGE"):
-                msg = "Files have already been processed by fringeCorrect"
-                if "QA" in rc.context:
-                    rm_fringe = False
-                    log.warning(msg)
-                    rc.report_output(rc.get_inputs_as_astrodata())
-                    break
-                else:
-                    raise Errors.PrimitiveError(msg)
             
             # Test the filter to see if we need to fringeCorrect at all
             filter = ad.filter_name(pretty=True)
-            if filter not in ["i","z"]:
-                if "QA" in rc.context:
-                    # in QA context, don't bother trying
-                    rm_fringe = False
-                    log.warning("No fringe correction necessary for filter " \
-                                "%s" % (filter))
-                    break
-                else:
-                    # in science context, let the user do it, but warn
-                    # that it's pointless
-                    log.warning("No fringe necessary for filter %s" % (filter))
-        
+            if filter not in ['i','z']:
+                log.stdinfo("No fringe correction necessary for filter " +
+                            filter)
+                break
+            else:
+                rm_fringe = True
+
         if rm_fringe:
             # Retrieve processed fringes for the input
-            rc.run("getProcessedFringe")
             
-            for ad in rc.get_inputs_as_astrodata():
-                # Test to see if we found a fringe
-                fringe = AstroData(rc.get_cal(ad, "processed_fringe"))
-                if fringe.filename is None:
-                    rm_fringe = False
-                    log.warning("No processed fringes found")
-                    rc.report_output(rc.get_inputs_as_astrodata())
-                    break
-        
-        # If no errors found, remove the fringes
-        if rm_fringe:
+            # Check for a fringe in the "fringe" stream first; the makeFringe
+            # primitive, if it was called, would have added it there;
+            # this avoids the latency involved in storing and retrieving
+            # a calibration in the central system
+            fringes = rc.get_stream("fringe",empty=True)
+            if fringes is None or len(fringes)!=1:
+                rc.run("getProcessedFringe")
+            else:
+                log.stdinfo("Using fringe: %s" % fringes[0].filename)
+                for ad in rc.get_inputs_as_astrodata():
+                    rc.add_cal(ad,"processed_fringe",
+                               os.path.abspath(fringes[0].filename))
+            
             rc.run("removeFringe")
         
         yield rc
@@ -757,7 +711,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Import inputs from all lists
         for sid in sidset:
             stacklist = rc.get_list(sid) #.filelist
-            log.stdinfo("List for stack id=%s" % sid, category="list")
+            log.stdinfo("List for stack id %s(...):" % sid[0:35])
             for f in stacklist:
                 rc.report_output(f, stream=rc["to_stream"])
                 log.stdinfo("   %s" % os.path.basename(f),
@@ -784,7 +738,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             if calurl:
                 cal = AstroData(calurl)
                 if cal.filename is None:
-                    if rc.context!="QA":
+                    if "QA" not in rc.context:
                         raise Errors.InputError("Calibration not found for " \
                                                 "%s" % ad.filename)
                 else:
@@ -794,7 +748,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                     log.stdinfo("   %s\n      for %s" % (cal.filename,
                                                          ad.filename))
             else: 
-                if rc.context!="QA":
+                if "QA" not in rc.context:
                     raise Errors.InputError("Calibration not found for %s" % 
                                             ad.filename)
         
@@ -819,7 +773,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             if calurl:
                 cal = AstroData(calurl)
                 if cal.filename is None:
-                    if rc.context!="QA":
+                    if "QA" not in rc.context:
                         raise Errors.InputError("Calibration not found for " \
                                                 "%s" % ad.filename)
                 else:
@@ -829,7 +783,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                     log.stdinfo("   %s\n      for %s" % (cal.filename,
                                                          ad.filename))
             else: 
-                if rc.context!="QA":
+                if "QA" not in rc.context:
                     raise Errors.InputError("Calibration not found for %s" % 
                                             ad.filename)
         
@@ -854,7 +808,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             if calurl:
                 cal = AstroData(calurl)
                 if cal.filename is None:
-                    if rc.context!="QA":
+                    if "QA" not in rc.context:
                         raise Errors.InputError("Calibration not found for " \
                                                 "%s" % ad.filename)
                 else:
@@ -864,7 +818,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                     log.stdinfo("   %s\n      for %s" % (cal.filename,
                                                          ad.filename))
             else: 
-                if rc.context!="QA":
+                if "QA" not in rc.context:
                     raise Errors.InputError("Calibration not found for %s" % 
                                             ad.filename)
         
@@ -918,10 +872,6 @@ class GEMINIPrimitives(GENERALPrimitives):
                   default: True
         """
         
-        #@@FIXME: Detecting sources is done here as well. This should
-        # eventually be split up into separate primitives, i.e. detectSources
-        # and measureIQ.
-        
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -938,9 +888,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                 
                 # Call the measure_iq user level function,
                 # which returns a list; take the first entry
-                ad = qa.measure_iq(adinput=ad, 
-                                   centroid_function=rc["centroid_function"],
-                                   qa=rc["qa"])[0]
+                ad = qa.measure_iq(adinput=ad)[0]
                 
                 # Change the filename
                 ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
@@ -1022,19 +970,14 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "registerAndStack", "starting"))
-        
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-        
+         
         # Check whether two or more input AstroData objects were provided
         adinput = rc.get_inputs_as_astrodata()
         if len(adinput) <= 1:
-            log.warning("No alignment or correction will be performed, " \
+            log.stdinfo("No alignment or correction will be performed, " \
                         "since at least two input AstroData objects are " \
                         "required for registerAndStack")
-            # Set the input AstroData object list equal to the output AstroData
-            # objects list without further processing
-            adoutput_list = adinput
+            rc.report_output(adinput)
         else:
             recipe_list = []
             
@@ -1104,7 +1047,7 @@ class GEMINIPrimitives(GENERALPrimitives):
             
             # If there is no appropriate fringe, there is no need to subtract
             # the fringe
-            if fringe is None:
+            if fringe.filename is None:
                 log.warning("No changes will be made to %s, since no " \
                             "appropriate fringe could be retrieved" \
                             % (ad.filename))
@@ -1146,9 +1089,9 @@ class GEMINIPrimitives(GENERALPrimitives):
             # print "pG256: showcals=all", repr (rc.calibrations)
             for calkey in rc.calibrations:
                 num += 1
-                log.fullinfo(rc.calibrations[calkey], category="calibrations")
+                log.stdinfo(rc.calibrations[calkey], category="calibrations")
             if (num == 0):
-                log.warning("There are no calibrations in the cache.")
+                log.stdinfo("There are no calibrations in the cache.")
         else:
             for adr in rc.inputs:
                 sid = IDFactory.generate_astro_data_id(adr.ad)
@@ -1156,10 +1099,10 @@ class GEMINIPrimitives(GENERALPrimitives):
                 for calkey in rc.calibrations:
                     if sid in calkey :
                         num += 1
-                        log.fullinfo(rc.calibrations[calkey], 
+                        log.stdinfo(rc.calibrations[calkey], 
                                      category="calibrations")
             if (num == 0):
-                log.warning("There are no calibrations in the cache.")
+                log.stdinfo("There are no calibrations in the cache.")
         
         yield rc
     ptusage_showCals="Used to show calibrations currently in cache for inputs."
@@ -1173,8 +1116,8 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
-        
-        log.fullinfo("Inputs:", category="inputs")
+        log.stdinfo("Inputs:", category="inputs")
+
         #if "stream" in rc:
         #    stream = rc["stream"]
         #else:
@@ -1240,14 +1183,14 @@ class GEMINIPrimitives(GENERALPrimitives):
             toshows = rc["show"].split(":")
             for toshow in toshows:
                 if toshow in rcparams:
-                    log.fullinfo("%s = %s" % (toshow, repr(rc[toshow])),
+                    log.stdinfo("%s = %s" % (toshow, repr(rc[toshow])),
                                  category="parameters")
                 else:
-                    log.fullinfo("%s is not set" % (toshow),
+                    log.stdinfo("%s is not set" % (toshow),
                                  category="parameters")
         else:
             for param in rcparams:
-                log.fullinfo("%s = %s" % (param, repr(rc[param])),
+                log.stdinfo("%s = %s" % (param, repr(rc[param])),
                              category="parameters")
         # print "all",repr(rc.parm_dict_by_tag("showParams", "all"))
         # print "iraf",repr(rc.parm_dict_by_tag("showParams", "iraf"))
@@ -1295,7 +1238,7 @@ class GEMINIPrimitives(GENERALPrimitives):
         # Check whether two or more input AstroData objects were provided
         adinput = rc.get_inputs_as_astrodata()
         if len(adinput) <= 1:
-            log.warning("No stacking will be performed, since at least " \
+            log.stdinfo("No stacking will be performed, since at least " \
                         "two input AstroData objects are required for " \
                         "stackFrames")
             # Set the input AstroData object list equal to the output AstroData
@@ -1328,12 +1271,13 @@ class GEMINIPrimitives(GENERALPrimitives):
             # always clobber, perhaps save clobbered file somewhere
             ad.write(filename = fname, rename = True, clobber=True)
             log.stdinfo("File saved to %s" % fname)
-            try:
-                upload_calibration(ad.filename)
-            except:
-                log.warning("Unable to upload file to calibration system")
-            else:
-                log.stdinfo("File stored in calibration system")
+            if "upload" in rc.context:
+                try:
+                    upload_calibration(ad.filename)
+                except:
+                    log.warning("Unable to upload file to calibration system")
+                else:
+                    log.stdinfo("File stored in calibration system")
             yield rc
         
         yield rc
@@ -1487,7 +1431,7 @@ class GEMINIPrimitives(GENERALPrimitives):
 
             # If there is no appropriate dark, there is no need to subtract the
             # dark
-            if dark is None:
+            if dark.filename is None:
                 log.warning("No changes will be made to %s, since no " \
                             "appropriate dark could be retrieved" \
                             % (ad.filename))

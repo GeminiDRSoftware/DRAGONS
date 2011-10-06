@@ -150,12 +150,12 @@ class GENERALPrimitives(PrimitiveSet):
         
         for stream in streams:
             if tstream == None or stream in tstream:
-                log.fullinfo("stream: "+stream)
+                log.stdinfo("stream: "+stream)
                 if len(rc.outputs[stream])>0:
                     for adr in rc.outputs[stream]:
-                        log.fullinfo(str(adr))
+                        log.stdinfo(str(adr))
                 else:
-                    log.fullinfo("    empty")
+                    log.stdinfo("    empty")
         
         yield rc
     
@@ -178,6 +178,9 @@ class GENERALPrimitives(PrimitiveSet):
         
         yield rc
     
+    def passOutputToInput(self,rc):
+        yield rc
+
     def log(self, rc):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])

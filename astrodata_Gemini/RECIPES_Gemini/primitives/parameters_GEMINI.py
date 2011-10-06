@@ -170,7 +170,7 @@
         "uiLevel"       : "UIBASIC",
        },
     "method":{
-        "default"       : "daofind",
+        "default"       : "sextractor",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
@@ -318,14 +318,14 @@
     },
  "stackFrames":{
     "suffix":{
-        "default"       : "_stacked",
+        "default"       : "_stack",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
     "mask_type":{
-        "default"       : "none",
+        "default"       : "goodvalue",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
@@ -339,7 +339,7 @@
         "uiLevel"       : "UIBASIC",
         },
     "reject_method":{
-        "default"       : "none",
+        "default"       : "avsigclip",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
