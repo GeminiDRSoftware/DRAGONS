@@ -13,7 +13,6 @@ from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
 from gempy import geminiTools as gt
 from gempy.geminiCLParDicts import CLDefaultParamsDict
-from gempy import string as gstr
 from gempy.science import resample as rs
 
 # Load the timestamp keyword dictionary that will be used to define the keyword
