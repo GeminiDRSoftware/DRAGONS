@@ -2,7 +2,7 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
-from gempy import string
+from gempy.gemini_metadata_utils import removeComponentID
 
 from StandardNICIKeyDict import stdkeyDictNICI
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
@@ -81,8 +81,8 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
             stripID = True
         if stripID:
             # Strip the component ID from the two filter name values
-            filter_r = string.removeComponentID(filter_r)
-            filter_b = string.removeComponentID(filter_b)
+            filter_r = removeComponentID(filter_r)
+            filter_b = removeComponentID(filter_b)
         # Return a dictionary with the dispersion axis integer as the value
         ret_filter_name.update(
             {("SCI", 1):str(filter_r), ("SCI", 2):str(filter_b)})

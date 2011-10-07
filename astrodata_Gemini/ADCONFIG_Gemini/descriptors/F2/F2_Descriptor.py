@@ -2,7 +2,7 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
-from gempy import string
+from gempy.gemini_metadata_utils import sectionStrToIntList
 
 from StandardF2KeyDict import stdkeyDictF2
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
@@ -32,7 +32,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             # Return the data section list that used 0-based, non-inclusive
             # indexing as the value in the form [x1, x2, y1, y2]
-            ret_data_section = string.sectionStrToIntList(data_section)
+            ret_data_section = sectionStrToIntList(data_section)
         
         return ret_data_section
         

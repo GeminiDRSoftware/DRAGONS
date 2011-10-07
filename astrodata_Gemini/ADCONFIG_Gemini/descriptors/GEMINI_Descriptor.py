@@ -2,7 +2,7 @@ import datetime, os, re
 import dateutil.parser
 
 from astrodata import Errors
-from gempy import string
+from gempy.gemini_metadata_utils import removeComponentID, sectionStrToIntList
 import GemCalcUtil
 from StandardGEMINIKeyDict import stdkeyDictGEMINI
 from Generic_Descriptor import Generic_DescriptorCalc
@@ -141,7 +141,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 # Return a dictionary with the data section list that uses
                 # 0-based, non-inclusive indexing as the value in the form
                 # [x1, x2, y1, y2]
-                data_section = string.sectionStrToIntList(raw_data_section)
+                data_section = sectionStrToIntList(raw_data_section)
                 ret_data_section.update({
                     (ext.extname(), ext.extver()):data_section})
         if ret_data_section == {}:
@@ -170,7 +170,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             stripID = True
         if stripID:
             # Return the decker string with the component ID stripped
-            ret_decker = string.removeComponentID(decker)
+            ret_decker = removeComponentID(decker)
         else:
             # Return the decker string
             ret_decker = str(decker)
@@ -203,8 +203,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 # Return a dictionary with the detector section list that 
                 # uses 0-based, non-inclusive indexing as the value in the form
                 # [x1, x2, y1, y2]
-                detector_section = string.sectionStrToIntList(
-                    raw_detector_section)
+                detector_section = sectionStrToIntList(raw_detector_section)
                 ret_detector_section.update({
                     (ext.extname(), ext.extver()):detector_section})
         if ret_detector_section == {}:
@@ -270,7 +269,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             stripID = True
         if stripID:
             # Return the disperser string with the component ID stripped
-            ret_disperser = string.removeComponentID(disperser)
+            ret_disperser = removeComponentID(disperser)
         else:
             # Return the disperser string
             ret_disperser = str(disperser)
@@ -358,8 +357,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 raise dataset.exception_info
         if stripID or pretty:
             # Strip the component ID from the two filter name values
-            filter1 = string.removeComponentID(filter1)
-            filter2 = string.removeComponentID(filter2)
+            filter1 = removeComponentID(filter1)
+            filter2 = removeComponentID(filter2)
         filter = []
         if pretty:
             # Remove any filters that have the value "open" or "Open"
@@ -411,7 +410,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 raise dataset.exception_info
         if stripID:
             # Return the focal plane mask string with the component ID stripped
-            ret_focal_plane_mask = string.removeComponentID(focal_plane_mask)
+            ret_focal_plane_mask = removeComponentID(focal_plane_mask)
         else:
             # Return the focal plane mask string
             ret_focal_plane_mask = str(focal_plane_mask)

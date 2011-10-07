@@ -3,7 +3,7 @@ from time import strptime
 
 from astrodata import Errors
 from astrodata import Lookups
-from gempy import string
+from gempy.gemini_metadata_utils import removeComponentID, sectionStrToIntList
 import GemCalcUtil
 from StandardGMOSKeyDict import stdkeyDictGMOS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
@@ -194,10 +194,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if stripID:
             if pretty:
                 # Return the stripped and pretty disperser string
-                ret_disperser = string.removeComponentID(disperser).strip("+")
+                ret_disperser = removeComponentID(disperser).strip("+")
             else:
                 # Return the stripped disperser string
-                ret_disperser = string.removeComponentID(disperser)
+                ret_disperser = removeComponentID(disperser)
         else:
             # Return the disperser string
             ret_disperser = str(disperser)
@@ -480,13 +480,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
-
+        
         # For all data other than data with an AstroData type of GMOS_BIAS, the
-        # group id contains the filter_name
-        # For GMOS_BIAS and GMOS_IMAGE_FLAT, the group id does not contain the
-        # observation_id, for all others, it does
+        # group id contains the filter_name. Also, for data with an AstroData
+        # type of GMOS_BIAS and GMOS_IMAGE_FLAT, the group id does not contain
+        # the observation id. 
         if "GMOS_BIAS" in dataset.types:
-            ret_group_id = "%s_%s_%s" % (detector_x_bin, detector_y_bin, 
+            ret_group_id = "%s_%s_%s" % (detector_x_bin, detector_y_bin,
                                          amp_read_area)
         else:
             # Get the filter name using the appropriate descriptor
@@ -497,12 +497,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # It will be dealt with by the CalculatorInterface.
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
-
+            
             if "GMOS_IMAGE_FLAT" in dataset.types:
-                ret_group_id = "%s_%s_%s_%s" % (detector_x_bin, detector_y_bin, 
+                ret_group_id = "%s_%s_%s_%s" % (detector_x_bin, detector_y_bin,
                                                 filter_name, amp_read_area)
             else:
-                ret_group_id = "%s_%s_%s_%s_%s" % (observation_id, detector_x_bin,
+                ret_group_id = "%s_%s_%s_%s_%s" % (observation_id,
+                                                   detector_x_bin,
                                                    detector_y_bin, filter_name,
                                                    amp_read_area)
         
@@ -588,8 +589,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # Return a dictionary with the overscan section list that 
                 # uses 0-based, non-inclusive indexing as the value in the form
                 # [x1, x2, y1, y2]
-                overscan_section = string.sectionStrToIntList(
-                    raw_overscan_section)
+                overscan_section = sectionStrToIntList(raw_overscan_section)
                 ret_overscan_section.update({
                     (ext.extname(), ext.extver()):overscan_section})
         if ret_overscan_section == {}:
