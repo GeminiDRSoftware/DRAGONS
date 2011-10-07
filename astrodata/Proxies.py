@@ -106,7 +106,7 @@ def start_adcc(callerlockfile = None):
     # print "creating %s -> %s" % (logname, loglink)
     os.symlink(logname, loglink)
     
-    prsargs = ["adcc.py",
+    prsargs = ["adcc",
                 "--invoked",
                 #"--reduce-port", "%d" % reduceServer.listenport,
                 "--reduce-pid", "%d" % os.getpid(),
@@ -274,13 +274,13 @@ class PRSProxy(object):
                 import time
                 if (PDEB):
                     print "P132: newProxy id", id(newProxy)
-                    print "P125: starting adcc.py"
+                    print "P125: starting adcc"
                 prsout = open("adcc-reducelog-%d-%s" % (
                                                         os.getpid(),
                                                         str(time.time())
                                                        )
                                                         , "w")
-                prsargs = ["adcc.py",
+                prsargs = ["adcc",
                                         "--invoked",
                                         #"--reduce-port", "%d" % reduce_server.listenport,
                                         "--reduce-pid", "%d" % os.getpid(),
