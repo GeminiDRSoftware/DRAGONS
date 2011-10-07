@@ -162,13 +162,27 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    "centroid_function":{
+        "default"       : "moffat",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     "fwhm":{
-        "default"       : 5.5,
+        "default"       : None,
         "type"          : "float",
         "recipeOverride": True,
         "userOverride"  : True, 
         "uiLevel"       : "UIBASIC",
        },
+    "max_sources":{
+        "default"       : 50,
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     "method":{
         "default"       : "sextractor",
         "type"          : "str",
@@ -184,7 +198,7 @@
         "uiLevel"       : "UIBASIC",
         },
     "threshold":{
-        "default"       : 5.0,
+        "default"       : 3.0,
         "type"          : "float",
         "recipeOverride": True,
         "userOverride"  : True,
@@ -259,22 +273,6 @@
     "suffix":{
         "default"       : "_nonlinearityCorrected",
         "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    },
- "removeFringe":{
-    "suffix":{
-        "default"       : "_fringeCorrected",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "stats_scale":{
-        "default"       : True,
-        "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
@@ -367,15 +365,6 @@
  "storeProcessedFlat":{
     "suffix":{
         "default"       : "_flat",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    }, 
- "storeProcessedFringe":{
-    "suffix":{
-        "default"       : "_fringe",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,

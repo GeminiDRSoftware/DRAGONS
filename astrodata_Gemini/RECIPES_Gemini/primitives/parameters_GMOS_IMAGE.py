@@ -127,4 +127,13 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "storeProcessedFringe":{
+    "suffix":{
+        "default"       : "_fringe",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    }, 
 }

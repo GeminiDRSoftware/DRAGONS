@@ -1,3 +1,4 @@
+import os
 from astrodata import AstroData
 from astrodata import Errors
 from astrodata.adutils import gemLog
@@ -60,6 +61,48 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         
         yield rc
     
+    def fringeCorrect(self,rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "fringeCorrect", "starting"))
+        
+        # Loop over each input AstroData object in the input list to
+        # test whether it's appropriate to try to remove the fringes
+        rm_fringe = False
+        for ad in rc.get_inputs_as_astrodata():
+            
+            # Test the filter to see if we need to fringeCorrect at all
+            filter = ad.filter_name(pretty=True)
+            if filter not in ['i','z']:
+                log.stdinfo("No fringe correction necessary for filter " +
+                            filter)
+                break
+            else:
+                rm_fringe = True
+
+        if rm_fringe:
+            # Retrieve processed fringes for the input
+            
+            # Check for a fringe in the "fringe" stream first; the makeFringe
+            # primitive, if it was called, would have added it there;
+            # this avoids the latency involved in storing and retrieving
+            # a calibration in the central system
+            fringes = rc.get_stream("fringe",empty=True)
+            if fringes is None or len(fringes)!=1:
+                rc.run("getProcessedFringe")
+            else:
+                log.stdinfo("Using fringe: %s" % fringes[0].filename)
+                for ad in rc.get_inputs_as_astrodata():
+                    rc.add_cal(ad,"processed_fringe",
+                               os.path.abspath(fringes[0].filename))
+            
+            rc.run("removeFringe")
+        
+        yield rc
+    
     def fringeCorrectFromScience(self, rc):
 
         # Instantiate the log
@@ -67,7 +110,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                   logLevel=rc["logLevel"])
 
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "fringeCorrectFromScience", "starting"))
+        log.debug(gt.log_message("primitive", "fringeCorrectFromScience", 
+                                 "starting"))
 
         # Get input, initialize output
         orig_input = rc.get_inputs_as_astrodata()
@@ -158,6 +202,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             # Call the fringeCorrect primitive
             rc.run("fringeCorrect")
 
+            rc.run("showInputs")
+
             adoutput_list = rc.get_inputs_as_astrodata()
 
         # Report files back to the reduction context: if all went well,
@@ -167,6 +213,35 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         yield rc
 
 
+    def getProcessedFringe(self, rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        
+        caltype = "processed_fringe"
+        source = rc["source"]
+        if source == None:
+            rc.run("getCalibration(caltype=%s)" % caltype)
+        else:
+            rc.run("getCalibration(caltype=%s, source=%s)" % (caltype,source))
+            
+        # List calibrations found
+        # Fringe correction is always optional, so don't raise errors if fringe
+        # not found
+        first = True
+        for ad in rc.get_inputs_as_astrodata():
+            calurl = rc.get_cal(ad, caltype) #get from cache
+            if calurl:
+                cal = AstroData(calurl)
+                if cal.filename is not None:
+                    if first:
+                        log.stdinfo("getCalibration: Results")
+                        first = False
+                    log.stdinfo("   %s\n      for %s" % (cal.filename,
+                                                     ad.filename))
+        
+        yield rc
+    
     def makeFringe(self, rc):
 
         # Instantiate the log
@@ -421,10 +496,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             # of output AstroData objects
             adoutput_list.append(ad)
         
-        # Report the list of output AstroData objects and the scaled fringe
-        # frames to the reduction context
+        # Report the list of output AstroData objects to the reduction context
         rc.report_output(adoutput_list)
-        
         yield rc
     
     def stackFlats(self, rc):
@@ -485,3 +558,32 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         rc.report_output(adoutput_list)
         
         yield rc
+
+    def storeProcessedFringe(self, rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "storeProcessedFringe",
+                                 "starting"))
+        
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+            
+            # Updating the file name with the suffix for this primitive and
+            # then report the new file to the reduction context
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
+                                             strip=True)
+            
+            # Adding a PROCFRNG time stamp to the PHU
+            gt.mark_history(adinput=ad, keyword="PROCFRNG")
+            
+            # Refresh the AD types to reflect new processed status
+            ad.refresh_types()
+        
+        # Upload to cal system
+        rc.run("storeCalibration")
+        
+        yield rc
+    
