@@ -10,11 +10,11 @@ from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
+from gempy import astrotools as at
 from gempy import geminiTools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
-from gempy import astrotools as at
-from gempy import string as gstr
+from gempy.gemini_metadata_utils import sectionStrToIntList
 from gempy.science.preprocessing import bias as bs
 
 # Load the timestamp keyword dictionary that will be used to define the keyword
@@ -753,7 +753,7 @@ def tile_arrays(adinput=None, tile_all=False):
                 for ext in ad['SCI']:
                     # Get the ccd section
                     raw_ccdsec = ext.get_key_value("CCDSEC")
-                    ccdsec = gstr.sectionStrToIntList(raw_ccdsec)
+                    ccdsec = sectionStrToIntList(raw_ccdsec)
                     ccdsecs.append(ccdsec)
                 ccdx1 = [sec[0] for sec in ccdsecs]
 
