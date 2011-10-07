@@ -12,7 +12,6 @@ from astrodata.adutils.gemutil import pyrafLoader
 from astrodata.AstroData import AstroData
 from gempy import geminiTools as gt
 from gempy import managers as mgr
-from gempy import string
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 
 # Load the timestamp keyword dictionary that will be used to define the keyword
