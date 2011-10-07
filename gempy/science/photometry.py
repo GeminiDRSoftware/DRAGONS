@@ -74,7 +74,7 @@ def add_objcat(adinput=None, extver=1, replace=False,
     :param class_star: List of class_star values. Set to -999 if not provided.
     :type class_star: Python list of floats (value between 0 and 1)
     
-    :param flags: List of flags values. Set to -999 if not provided.
+    :param flags: List of flags values. Set to 0 (good) if not provided.
     :type flags: Python list of ints    
 
     :param refid: List of reference ids. Set to '' if not provided.
@@ -155,7 +155,7 @@ def add_objcat(adinput=None, extver=1, replace=False,
             if class_star is None:
                 class_star = [-999]*nlines
             if flags is None:
-                flags = [-999]*nlines
+                flags = [0]*nlines
             if refid is None:
                 refid = [""]*nlines
             if refmag is None:
@@ -202,8 +202,10 @@ def add_objcat(adinput=None, extver=1, replace=False,
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
-                   method="sextractor"):
+
+def detect_sources(adinput=None, method="sextractor", 
+                   sigma=None, threshold=5.0, fwhm=None,
+                   max_sources=50, centroid_function="moffat"):
     """
     Find x,y positions of all the objects in the input image. Append 
     a FITS table extension with position information plus columns for
@@ -227,6 +229,13 @@ def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
     :param adinput: image(s) to detect sources in
     :type adinput: AstroData objects, either a single instance or a list
     
+    :param method: source detection algorithm to use
+    :type method: string; options are 'daofind','sextractor'
+
+    :param centroid_function: Function for centroid fitting with daofind
+    :type centroid_function: string, can be: 'moffat','gauss'
+                    Default: 'moffat'
+
     :param sigma: The mean of the background value for daofind. If nothing is passed,
                   it will be automatically determined
     :type sigma: float
@@ -240,10 +249,8 @@ def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
     :param fwhm: FWHM to be used in the convolve filter for daofind. This ends up
                  playing a factor in determining the size of the kernel put through 
                  the gaussian convolve.
-    :type fwhm: Number [5.5]
+    :type fwhm: float
     
-    :param method: source detection algorithm to use
-    :type method: string; options are 'daofind','sextractor'
     """
     
     # Instantiate the log. This needs to be done outside of the try block,
@@ -307,6 +314,18 @@ def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
                             log.stdinfo("Found %d sources in %s['SCI',%d]" %
                                         (nobj,ad.filename,extver))
                 if method=="daofind":
+                    pixscale = sciext.pixel_scale()
+                    if pixscale is None:
+                        log.warning("%s does not have a pixel scale, "% ad.filename +
+                                    "using 1.0 arcsec/pix")
+                        pixscale = 1.0
+
+                    if fwhm is None:
+                        if seeing_est is not None:
+                            fwhm = seeing_est / pixscale
+                        else:
+                            fwhm = 0.8 / pixscale
+
                     obj_list = _daofind(sciext=sciext, sigma=sigma,
                                         threshold=threshold, fwhm=fwhm)
 
@@ -331,6 +350,7 @@ def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
                         log.stdinfo("Found %d sources in %s['SCI',%d]" %
                                     (nobj,ad.filename,extver))
                 
+            
                 adoutput = add_objcat(adinput=ad, extver=extver, 
                                       x=obj_x, y=obj_y, 
                                       ra=obj_ra, dec=obj_dec,
@@ -340,8 +360,24 @@ def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
                                       class_star=class_star,
                                       flags=flags,
                                       replace=True)
+                
                 ad = adoutput[0]
+
             
+            # Do some simple photometry to get fwhm, ellipticity
+            if method=="daofind":
+                log.stdinfo("Fitting sources for simple photometry")
+                if seeing_est is None:
+                    # Run the fit once to get a rough seeing estimate 
+                    junk,seeing_est = _fit_sources(ad,ext=1,max_sources=20,
+                                                   threshold=threshold,
+                                                   centroid_function=centroid_function,
+                                                   seeing_estimate=None)
+                ad,seeing_est = _fit_sources(ad,max_sources=max_sources,
+                                             threshold=threshold,
+                                             centroid_function=centroid_function,
+                                             seeing_estimate=seeing_est)
+        
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             
@@ -355,6 +391,7 @@ def detect_sources(adinput=None, sigma=None, threshold=5.0, fwhm=5.5,
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
         raise
+
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
@@ -550,14 +587,7 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
     
     # Estimate the background if none provided
     if sigma is None:
-        fim = np.copy(sciData)
-        stars = np.where(fim > (sciData.std() + sciData.mean()))
-        fim[stars] = sciData.mean()
-        
-        outside = np.where(fim < (1*sciData.std() - sciData.mean()))
-        fim[outside] = sciData.mean()
-        
-        sigma = fim.std()
+        sigma = _estimate_sigma(sciData)
         log.fullinfo("Estimated Background: %.3f" % sigma)
 
     hmin = sigma * threshold
@@ -783,6 +813,19 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
     log.debug("Overall time:%.3f seconds." % overall_time)
     
     return xyArray
+
+
+def _estimate_sigma(scidata):
+    fim = np.copy(scidata)
+    stars = np.where(fim > (scidata.mean() + scidata.std()))
+    fim[stars] = scidata.mean()
+        
+    outside = np.where(fim < (scidata.mean() - scidata.std()))
+    fim[outside] = scidata.mean()
+
+    sigma = fim.std()
+
+    return sigma
 
 def _average_each_cluster( xyArray, pixApart=10.0 ):
     """
@@ -1015,4 +1058,283 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
                                         "ellipticity","class_star","flags"])
     return obj_list,seeing_estimate
 
+
+def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
+                 seeing_estimate=None,
+                 centroid_function="moffat"):
+    """
+    This function takes a list of identified sources in an image, fits
+    a Gaussian to each one, and stores the fit FWHM and ellipticity to
+    the OBJCAT.  Bad fits are marked with a 1 in the 'flags' column.
+    If a DQ plane is provided, and a source has a non-zero DQ value,
+    it will also receive a 1 in the 'flags' column.
+    
+    :param ad: input image
+    :type ad: AstroData instance with OBJCAT attached
+
+    :param max_sources: Maximum number of sources to fit on each science
+                        extension. Will start at the center of the 
+                        extension and move outward. If None,
+                        will fit all sources.
+    :type max_sources: integer
+
+    :param threshold: Number of sigmas above background level to fit source
+    :type threshold: float
+
+    :param centroid_function: Function for centroid fitting with daofind
+    :type centroid_function: string, can be: 'moffat','gauss'
+                    Default: 'moffat'
+    """
+    
+    import scipy.optimize
+    from gempy import astrotools as at
+
+    if ext is None:
+        sciexts = ad["SCI"]
+    else:
+        sciexts = ad["SCI",ext]
+
+    good_source = []
+    for sciext in sciexts:
+        extver = sciext.extver()
+        #print 'sci',extver
+
+        objcat = ad["OBJCAT",extver]
+        if objcat is None:
+            continue
+        if objcat.data is None:
+            continue
+
+        img_data = sciext.data
+
+        dqext = ad["DQ",extver]
+
+        if dqext is not None:
+            # estimate background from non-flagged data
+            good_data = img_data[dqext.data==0]
+            default_bg = np.median(good_data)
+            sigma = _estimate_sigma(good_data)
+        else:
+            # estimate background from whole image
+            default_bg = np.median(img_data)
+            sigma = _estimate_sigma(img_data)
+
+        # first guess at fwhm is .8 arcsec
+        pixscale = float(sciext.pixel_scale())
+        if seeing_estimate is None:
+            seeing_estimate = .8
+        default_fwhm = seeing_estimate / pixscale
+
+        # stamp is 10*2 times this size on a side (16")
+        aperture = 10*default_fwhm
+    
+        img_objx = objcat.data.field("x")
+        img_objy = objcat.data.field("y")
+        img_obji = range(len(img_objx))
+
+        # Calculate source's distance from the center of the image
+        ctr_x = (img_data.shape[1]-1)/2.0
+        ctr_y = (img_data.shape[0]-1)/2.0
+        r2 = (img_objx-ctr_x)**2 + (img_objy-ctr_y)**2
+        
+        obj = np.array(np.rec.fromarrays([img_objx,img_objy,r2,img_obji],
+                                         names=["x","y","r2","i"]))
+        obj.sort(order="r2")
+
+        count = 0
+        for objx,objy,objr2,obji in obj:
+        
+            # array coords start with 0
+            objx-=1
+            objy-=1
+        
+            xlow, xhigh = int(round(objx-aperture)), int(round(objx+aperture))
+            ylow, yhigh = int(round(objy-aperture)), int(round(objy+aperture))
+        
+            if (xlow>0 and xhigh<img_data.shape[1] and 
+                ylow>0 and yhigh<img_data.shape[0]):
+                stamp_data = img_data[ylow:yhigh,xlow:xhigh]
+                if dqext is not None:
+
+                    # Don't fit source if there is a bad pixel within
+                    # 2*default_fwhm
+                    dxlow, dxhigh = (int(round(objx-default_fwhm*2)),
+                                     int(round(objx+default_fwhm*2)))
+                    dylow, dyhigh = (int(round(objy-default_fwhm*2)), 
+                                     int(round(objy+default_fwhm*2)))
+                    stamp_dq = dqext.data[dylow:dyhigh,dxlow:dxhigh]
+                    if np.any(stamp_dq):
+                        objcat.data.field("flags")[obji] = 1
+                        #print 'dq',obji
+                        continue
+            else:
+                # source is too near the edge, skip it
+                objcat.data.field("flags")[obji] = 1
+                #print 'edge',obji
+                continue
+
+            # after flagging for DQ/edge reasons, don't continue
+            # with fit if max_sources was reached
+            if max_sources is not None and count >= max_sources:
+                continue
+
+            # Check for too-near neighbors, don't fit source if found
+            too_near = np.any((abs(obj['x']-objx)<default_fwhm) &
+                              (abs(obj['y']-objy)<default_fwhm) &
+                              (obj['i']!=obji))
+            if too_near:
+                objcat.data.field("flags")[obji] = 1
+                #print 'neighbor',obji
+                continue
+
+
+            # starting values for model fit
+            bg = default_bg
+            peak = stamp_data.max()-bg
+            x_ctr = (stamp_data.shape[1]-1)/2.0
+            y_ctr = (stamp_data.shape[0]-1)/2.0
+            x_width = default_fwhm
+            y_width = default_fwhm
+            theta = 0.
+            beta = 1.
+        
+            if peak<threshold*sigma:
+                # source is too faint, skip it
+                objcat.data.field("flags")[obji] = 1
+                #print 'faint',obji
+                continue
+            
+            
+            # instantiate model fit object and initial parameters
+            if centroid_function=="gauss":
+                pars = (bg, peak, x_ctr, y_ctr, x_width, y_width, theta)
+                mf = at.GaussFit(stamp_data)
+            elif centroid_function=="moffat":
+                pars = (bg, peak, x_ctr, y_ctr, x_width, y_width, theta, beta)
+                mf = at.MoffatFit(stamp_data)
+            else:
+                raise Errors.InputError("Centroid function %s not supported" %
+                                        centroid_function)
+                
+
+            # least squares fit of model to data
+            try:
+                # for scipy versions < 0.9
+                new_pars, success = scipy.optimize.leastsq(mf.calc_diff, pars,
+                                                           maxfev=100, 
+                                                           warning=False)
+            except:
+                # for scipy versions >= 0.9
+                import warnings
+                warnings.simplefilter("ignore")
+                new_pars, success = scipy.optimize.leastsq(mf.calc_diff, pars,
+                                                           maxfev=100)
+
+            # track number of fits performed
+            count += 1
+            #print count
+
+            if success>3:
+                # fit failed, move on
+                objcat.data.field("flags")[obji] = 1
+                #print 'fit failed',obji
+                continue
+        
+            if centroid_function=="gauss":
+                (bg,peak,x_ctr,y_ctr,x_width,y_width,theta) = new_pars
+            else: # Moffat
+                (bg,peak,x_ctr,y_ctr,x_width,y_width,theta,beta) = new_pars
+                
+                # convert width to Gaussian-type sigma
+                x_width = x_width*np.sqrt(((2**(1/beta)-1)/(2*np.log(2))))
+                y_width = y_width*np.sqrt(((2**(1/beta)-1)/(2*np.log(2))))
+
+
+            # convert fit parameters to FWHM, ellipticity
+            fwhmx = abs(2*np.sqrt(2*np.log(2))*x_width)
+            fwhmy = abs(2*np.sqrt(2*np.log(2))*y_width)
+            pa = (theta*(180/np.pi))
+            pa = pa%360
+                
+            if fwhmy < fwhmx:
+                ellip = 1 - fwhmy/fwhmx
+            elif fwhmx < fwhmy:
+                ellip = 1 - fwhmx/fwhmy
+                pa = pa-90 
+            else:
+                ellip = 0
+                
+            # FWHM is geometric mean of x and y FWHM
+            fwhm = np.sqrt(fwhmx*fwhmy)
+
+
+            # Shift PA to 0-180
+            if pa > 180:
+                pa -= 180
+            if pa < 0:
+                pa += 180
+
+            # Check fit
+            if peak<0.0:
+                # source inverted, skip it
+                objcat.data.field("flags")[obji] = 1
+                #print 'inverted',obji
+                continue
+            if bg<0.0:
+                # bad fit, skip it
+                objcat.data.field("flags")[obji] = 1
+                #print 'bg<0',obji
+                continue
+            if peak<threshold*sigma:
+                # S/N too low, skip it
+                objcat.data.field("flags")[obji] = 1
+                #print 's/n low',obji
+                continue
+                
+
+            # update the position from the fit center
+            newx = xlow + x_ctr + 1
+            newy = ylow + y_ctr + 1
+        
+
+            # update the OBJCAT
+            objcat.data.field("x")[obji] = newx
+            objcat.data.field("y")[obji] = newy
+            objcat.data.field("fwhm_pix")[obji] = fwhm
+            objcat.data.field("fwhm_arcsec")[obji] = fwhm * pixscale
+            objcat.data.field("ellipticity")[obji] = ellip
+
+            # flag low ellipticity, reasonable fwhm sources as likely stars
+            if ellip<0.1:
+                objcat.data.field("class_star")[obji] = 0.9
+            elif ellip<0.3:
+                objcat.data.field("class_star")[obji] = 0.7
+            elif ellip<0.5:
+                objcat.data.field("class_star")[obji] = 0.5
+            else:
+                objcat.data.field("class_star")[obji] = 0.2
+
+            if fwhm<1.0:
+                # likely cosmic ray
+                objcat.data.field("class_star")[obji] *= 0.2
+            elif fwhm<2*default_fwhm:
+                # potential star
+                objcat.data.field("class_star")[obji] *= 0.9
+            else:
+                # likely extended source or bad fit
+                objcat.data.field("class_star")[obji] *= 0.2
+                
+            #print newx,newy,fwhm,ellip,peak,bg
+
+        flags = (objcat.data.field("flags")==0) & \
+                (objcat.data.field("class_star")>0.6)
+        good_fwhm = objcat.data.field("fwhm_arcsec")[flags]
+
+        #print good_fwhm
+        if len(good_fwhm)>2:
+            new_fwhm,sigma = at.clipped_mean(good_fwhm)
+            if not(np.isnan(new_fwhm) or new_fwhm==0):
+                seeing_estimate = new_fwhm
+
+    return ad, seeing_estimate
 
