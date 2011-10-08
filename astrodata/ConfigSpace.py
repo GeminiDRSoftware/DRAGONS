@@ -1,6 +1,6 @@
 import sys
 import os
-
+from copy import copy
 # OPTIMISATION IDEAS #
 #
 # () use configdirs cache for subsequent config space calls
@@ -48,10 +48,36 @@ class ConfigSpace(object):
     configdirs = None
     recipedirs = None
     configpacks = None
-    
+    recipepath = None
+    adconfigpath = None
+    wholepath = None
     def __init__(self):
         self.configdirs = {}
         self.configpacks = []
+        # support for ADCONFIGPATH and RECIPEPATH
+        # NOTE: due to the way the list is extended, ADCONFIGPATH appearing second
+        #       means it has precedence over RECIPEPATH, that is, ADCONFIGPATH
+        #       is searched prior to RECIPEPATH
+        self.recipepath = []
+        if "RECIPEPATH" in os.environ:
+            rpath = os.environ["RECIPEPATH"].split(":")
+            # we want this path in front...
+            self.recipepath = rpath
+
+        self.adconfigpath = []
+        if "ADCONFIGPATH" in os.environ:
+            rpath = os.environ["ADCONFIGPATH"].split(":")
+            # we want this path in front...
+            self.adconfigpath = rpath
+            
+        self.wholepath = copy(self.recipepath)
+        self.wholepath.extend(self.adconfigpath)
+        self.wholepath.extend(sys.path)
+        # print "CS76recipepath:", repr(self.recipepath)
+        # print "CS76adconfigpath:", repr(self.adconfigpath)
+        # print "CS76sys.path:", repr(sys.path)
+        # print "CS76:", repr(self.wholepath)
+        
     
     def config_walk(self, spacename):
         """This function can be iterated over in the style of os.walk()
@@ -80,6 +106,7 @@ class ConfigSpace(object):
         @type spacename: string
         @returns: list of directories
         @rtype: list"""
+        #print "CS109:", spacename
         if (self.configdirs != None):
             if spacename in self.configdirs:
                 return self.configdirs[spacename]
@@ -97,17 +124,27 @@ class ConfigSpace(object):
         # get the ADCONFIG package dirs
         adconfdirs = []
         i = 1
-        for path in sys.path:
-            # print "CS100:", path, str(os.path.abspath(path) !=  os.path.abspath(os.getcwd()))
+        for path in self.wholepath:
+            #print "CS128:", path, str(os.path.abspath(path) !=  os.path.abspath(os.getcwd()))
             if  os.path.abspath(path) !=  os.path.abspath(os.getcwd()):
                 if os.path.isdir(path):
                             # print "ISADIR"
                             subdirs = os.listdir(path)
                             for subpath in subdirs:
+                                if not os.path.isdir(os.path.join(path,subpath)):
+                                    continue
+                                #print "CS134:", subpath
                                 if PACKAGEMARKER in subpath:
+                                    #print "CS136: package marker found"
                                     subsubpaths = os.listdir(os.path.join(path,subpath))
                                     for subsubpath in subsubpaths:
+                                        if not os.path.isdir(
+                                                        os.path.join(
+                                                            path, subpath,subsubpath)):
+                                            continue
+                                        # print "CS139:",subsubpath
                                         if CONFIGMARKER in subsubpath:
+                                            #print "CS141: CONFIGARKER found"
                                             packdir = os.path.join(path,subpath, subsubpath)
                                             if packdir not in self.configpacks:
                                                 self.configpacks.append(packdir)
@@ -120,7 +157,7 @@ class ConfigSpace(object):
                                 pass # print ""
                             
         self.configdirs.update({spacename: adconfdirs})
-        
+        # print "CS145:", repr(self.configdirs)
         return adconfdirs
 
     def get_recipe_dirs(self):
@@ -152,11 +189,13 @@ class ConfigSpace(object):
             pathlist = rpath
 
         if "ADCONFIGPATH" in os.environ:
-            rpath = os.environ["RECIPEPATH"].split(":")
+            rpath = os.environ["ADCONFIGPATH"].split(":")
             # we want this path in front...
             rpath.extend(pathlist)
             pathlist = rpath
 
+        print "CS160:", repr(pathlist)
+        
         for path in pathlist:
             # print "@@@@@@@@:",".svn" in path,":::",  path
             if os.path.isdir(path):

@@ -208,7 +208,9 @@ class PHUReq(Requirement):
                             print """
 BAD PHU Requirement in Classification '%s'
     phuKey: '%s'
-    regex : '%s' """ % (self.name, reqkey, str(self.phuReqs[reqkey]))
+    regex : '%s' """ % (repr(self.__class__)
+    , reqkey, str(self.phuReqs[reqkey]))
+                            raise
                             
                         if (match):
                             if (verbose) : 
@@ -932,7 +934,7 @@ class ClassificationLibrary (object):
             # NOTE: Use this file's name to get path to types
             rootpath = os.path.dirname(os.path.abspath(__file__))
             self.definitionsPath = rootpath+"/types" # see above  os.path.join(self.phuReqDir, "gdtypedef."+tname)
-            self.definitionsStorageREMask = r"gemdtype\.(?P<modname>.*?)\.py$"
+            self.definitionsStorageREMask = r"(gemdtype|adtype)\.(?P<modname>.*?)\.py$"
             # self.definitionsStatusPath = self.definitionsPath+"/status"
             # self.definitionsTypologyPath = self.definitionsPath+"/types"
             self.typesDict = {}  #dict of DataClassifications

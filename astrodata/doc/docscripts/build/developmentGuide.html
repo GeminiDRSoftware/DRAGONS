@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>1.3. Development Guide &mdash; astrodata documentation v1.00 documentation</title>
+    <title>1.3. AstroData Configuration Package Development Guide &mdash; astrodata documentation v1.00 documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="astrodata documentation v1.00 documentation" href="index.html" />
     <link rel="up" title="1. Introduction" href="chapter_intro.html" />
-    <link rel="next" title="2. AstroData Class Reference" href="chapter_AstroDataClass.html" />
+    <link rel="next" title="1.3.1. Elements" href="configElements.html" />
     <link rel="prev" title="1.2. Concepts" href="gen.ADMANUAL_ADConcepts.html" /> 
   </head>
   <body>
@@ -35,7 +35,7 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="chapter_AstroDataClass.html" title="2. AstroData Class Reference"
+          <a href="configElements.html" title="1.3.1. Elements"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="gen.ADMANUAL_ADConcepts.html" title="1.2. Concepts"
@@ -46,25 +46,12 @@
     </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">1.3. Development Guide</a><ul>
-<li><a class="reference internal" href="#configuration">1.3.1. Configuration</a><ul>
-<li><a class="reference internal" href="#the-general-configuration-creation-process">1.3.1.1. The General Configuration Creation Process</a></li>
-<li><a class="reference internal" href="#configuration-elements-which-have-to-be-developed">1.3.1.2. Configuration Elements Which Have To Be  Developed</a></li>
-<li><a class="reference internal" href="#fallbacks-and-options">1.3.1.3. Fallbacks and Options</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
   <h4>Previous topic</h4>
   <p class="topless"><a href="gen.ADMANUAL_ADConcepts.html"
                         title="previous chapter">1.2. Concepts</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="chapter_AstroDataClass.html"
-                        title="next chapter">2. AstroData Class Reference</a></p>
+  <p class="topless"><a href="configElements.html"
+                        title="next chapter">1.3.1. Elements</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/developmentGuide.txt"
@@ -91,85 +78,17 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="development-guide">
-<h1>1.3. Development Guide<a class="headerlink" href="#development-guide" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="astrodata-configuration-package-development-guide">
+<h1>1.3. AstroData Configuration Package Development Guide<a class="headerlink" href="#astrodata-configuration-package-development-guide" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
-<ul class="simple">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configElements.html">1.3.1. Elements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configElements.html#the-general-configuration-creation-process">1.3.1.1. The General Configuration Creation Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configElements.html#configuration-elements-which-have-to-be-developed">1.3.1.2. Configuration Elements Which Have To Be  Developed</a></li>
 </ul>
-</div>
-<div class="section" id="configuration">
-<h2>1.3.1. Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
-<p>Instrument-mode-specific behaviors available through the AstroData class
-are not implemented in the astrodata package itself, but are instead loaded from
-configuration packages. In the case of Gemini data the
-configuration package is a directory named &#8220;astrodata_Gemini&#8221;.  This
-configuration path is found by astrodata by the containing directory
-appearing either on the PYTHONPATH, or
-on the RECIPEPATH, an astrodata environment variable.</p>
-<p>The astrodata package searches for all directories named &#8220;astrodata_&lt;anything&gt;&#8221;
-in the RECIPEPATH environment variable.  Though the configurations contain
-exectable python, it is not meant to be imported. However, for convienience
-astrodata also searched the PYTHONPATH for astrodata configuration packages.</p>
-<div class="section" id="the-general-configuration-creation-process">
-<h3>1.3.1.1. The General Configuration Creation Process<a class="headerlink" href="#the-general-configuration-creation-process" title="Permalink to this headline">¶</a></h3>
-<ol class="arabic simple">
-<li>You will define a tree of AstroDataTypes identifying your data.</li>
-<li>You will create &#8220;descriptor&#8221; functions which calculate a particular metadata
-value for nodes of the AstroDataType tree defined,
-such as &#8220;gain&#8221; or &#8220;filter_name&#8221;.</li>
-<li>You will write python member functions bundled into PrimitivesSet classes,
-which specifically understand your dataset.</li>
-<li>You will assemble primitives into sequential lists, which we call a &#8220;recipe&#8221;.</li>
-</ol>
-<p>Initially you will develop classifications
-for your data, and functions which will provide standard information, allowing
-you to use AstroData, e.g. in processing scripts.  Then you will put your
-processing scripts in the form of &#8220;primitives&#8221; and collect these in &#8220;recipes&#8221;
-so they can be used for automated data reduction.</p>
-</div>
-<div class="section" id="configuration-elements-which-have-to-be-developed">
-<h3>1.3.1.2. Configuration Elements Which Have To Be  Developed<a class="headerlink" href="#configuration-elements-which-have-to-be-developed" title="Permalink to this headline">¶</a></h3>
-<ol class="arabic simple">
-<li><strong>AstroData Types</strong> - these types are defined as python classes where special
-members have to be defined, but no methods written.  The objects are defined
-in classes to allow overwriting methods in the case of complicated classes,
-but if your types are detectable entirely by information in the MEF PHU, as
-currently required, this should not be necessary. Types are defined in
-astrodata_Gemini/ADCONFIG_Gemini/classifications.</li>
-<li><strong>AstroData Descriptors</strong> - these functions calculate standard metadata values.
-Since sometimes different datatypes need special algorithms to provide
-information consistently (like the image gain), descriptor functions are
-organized into bundles, &#8220;descriptor calculators&#8221;, and these bundles are
-associated with given AstroData types, so the correct functions are used
-with the correct types.  Sharing descriptor functions is done using
-python class inheritance (a GMOS calculator descends from a GEMINI calculator
-so that methods of evalutation general to GEMINI are shared between
-instruments.  Similarly if a particular mode, e.g. GMOS_IMAGE, required a
-special function for a given descriptor, it could inherit all but the
-specialized descriptor function.</li>
-<li><strong>Primitives</strong> - In order to integrate with the Gemini automated reduction
-environment we need code that would be packaged as scripts, to be packaged
-as python generator functions in an class objects (a &#8220;primitive set&#8221;) which
-is designed to work on a particular AstroData Type. While any python code
-is allowed in a primitive, some approaches will play better with the system,
-and with existing primitives, than others. We will attempt to describe these.
-In short writing something as a primitive means taking all inputs from
-a system infrastructure object (the &#8220;reduction context&#8221;), and reporting back
-any changes, also to the reduction context.  Python generators use &#8220;yield&#8221;
-statements in place of &#8220;return&#8221; and so can be re-entered.  Yields in a
-primitive give the infrastructure a chance to run, and are required in some
-cases, such as allowing the infrastructure to satistfy a calibration request.
-Strictly speaking, most primitives require just one, final yield, but more
-frequent yields give more control to the infrastructure, allowing reduction
-to be paused and resumed, and other forms of process control. Use of
-generators also ensures that while your primitive is running, it is the only
-thing affecting the reduction, as the infrastructure only modified the
-reduction context during yeilds.</li>
-</ol>
-</div>
-<div class="section" id="fallbacks-and-options">
-<h3>1.3.1.3. Fallbacks and Options<a class="headerlink" href="#fallbacks-and-options" title="Permalink to this headline">¶</a></h3>
-</div>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="startingTheConfig.html">1.3.2. Creating A Config Package</a></li>
+</ul>
 </div>
 </div>
 
@@ -186,7 +105,7 @@ reduction context during yeilds.</li>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="chapter_AstroDataClass.html" title="2. AstroData Class Reference"
+          <a href="configElements.html" title="1.3.1. Elements"
              >next</a> |</li>
         <li class="right" >
           <a href="gen.ADMANUAL_ADConcepts.html" title="1.2. Concepts"

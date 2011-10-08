@@ -1,8 +1,11 @@
 Running Sphinx v1.0b2
 loading pickled environment... done
 building [latex]: all documents
-updating environment: 0 added, 0 changed, 0 removed
-looking for now-outdated files... 99 found
+updating environment: 0 added, 1 changed, 0 removed
+reading sources... [100%] startingTheConfig
+
+/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/startingTheConfig.rst:22: (ERROR/3) Unknown target name: "astrodata".
+looking for now-outdated files... 100 found
 pickling environment... done
 checking consistency... /home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/chapter_Gemini_Types.rst:: WARNING: document isn't included in any toctree
 /home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.ADMANUAL-AccessingPyfitsObjects.rst:: WARNING: document isn't included in any toctree
@@ -10,9 +13,8 @@ checking consistency... /home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/do
 /home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.ADMANUAL_SingleHDUAD.rst:: WARNING: document isn't included in any toctree
 /home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.AstroDataLexicon.rst:: WARNING: document isn't included in any toctree
 /home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.AstroDataPackageOverview.rst:: WARNING: document isn't included in any toctree
-/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/~developmentGuide.rst:: WARNING: document isn't included in any toctree
 done
-processing astrodatadocumentation.tex... index chapter_intro documentBrief gen.ADMANUAL_RevisionHistory gen.ADMANUAL_Purpose gen.ADMANUAL_ADConcepts developmentGuide chapter_AstroDataClass gen.ADMANUAL-ADSubdata 
+processing astrodatadocumentation.tex... index chapter_intro documentBrief gen.ADMANUAL_RevisionHistory gen.ADMANUAL_Purpose gen.ADMANUAL_ADConcepts developmentGuide configElements startingTheConfig chapter_AstroDataClass gen.ADMANUAL-ADSubdata 
 resolving references...
 writing... /home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.ADMANUAL_ADConcepts.rst:: WARNING: unusable reference target found: /index.php/MEF
 /home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.ADMANUAL_ADConcepts.rst:: WARNING: unusable reference target found: /index.php?title=Template:URL_GEMINI_DESCRIPTORS&action=edit&redlink=1

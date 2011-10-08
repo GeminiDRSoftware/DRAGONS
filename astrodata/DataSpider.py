@@ -267,8 +267,8 @@ class DataSpider(object):
                             pwid = 40
                             fwid = pwid - indent 
                             # print start of string
-                            
-                            while len(tfile)>= fwid:
+                            #print "DS270:", len(tfile)
+                            while len(tfile)>= fwid-1:
                                 if False:
                                     part = tfile[:fwid]
                                     print "     ${BG_WHITE}%s${NORMAL}" % part
@@ -276,9 +276,14 @@ class DataSpider(object):
                                 else:
                                     print "     ${BG_WHITE}%s${NORMAL}" % tfile
                                     tfile = ""
-                            
-                            prlin = "     %s " % tfile
-                            prlincolor = "     ${BG_WHITE}%s " % tfile
+                                    
+                                    
+                            if len(tfile)>0:
+                                prlin = "     %s " % tfile
+                                prlincolor = "     ${BG_WHITE}%s${NORMAL} " % tfile
+                            else:
+                                prlin = "     "
+                                prlincolor = "     "
                             empty = " "*indent + "."*fwid
                             fwid = pwid+indent
                             lp = len(prlin)
