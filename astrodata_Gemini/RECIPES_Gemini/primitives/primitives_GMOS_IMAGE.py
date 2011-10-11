@@ -119,17 +119,21 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
 
         # Check that filter is either i or z; this step doesn't
         # help data taken in other filters
+        # Also check that exposure time is not too short;
+        # there isn't much fringing for the shortest exposure times
         red = True
+        long_exposure = True
         all_filter = None
         for ad in orig_input:
             filter = ad.filter_name(pretty=True)
+            exposure = ad.exposure_time()
             if all_filter is None:
                 # Keep the first filter found
                 all_filter = filter
 
             # Check for matching filters in input files
             elif filter!=all_filter:
-                rm_fringe = False
+                red = False
                 log.warning("Mismatched filters in input; not making " +
                             "fringe frame")
                 adoutput_list = orig_input
@@ -143,8 +147,22 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 adoutput_list = orig_input
                 break
 
+            # Check for long exposure times
+            if exposure<60.0 and filter=="i":
+                long_exposure=False
+                log.stdinfo("No fringe necessary for filter " +
+                            filter + " with exposure time %.1fs" % exposure)
+                adoutput_list = orig_input
+                break
+            elif exposure<6.0 and filter=="z":
+                long_exposure=False
+                log.stdinfo("No fringe necessary for filter " +
+                            filter + " with exposure time %.1fs" % exposure)
+                adoutput_list = orig_input
+                break
+
         enough = False
-        if red:
+        if red and long_exposure:
 
             # Add the current frame to a list
             rc.run("addToList(purpose=forFringe)")
@@ -268,7 +286,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
 
             # Check for matching filters in input files
             elif filter!=all_filter:
-                rm_fringe = False
+                red = False
                 log.warning("Mismatched filters in input; not making " +
                             "fringe frame")
                 break
