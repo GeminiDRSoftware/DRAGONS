@@ -205,5 +205,32 @@ class GENERALPrimitives(PrimitiveSet):
         print "p203:", repr(fs)
         print "p204:", repr(rc.inputs)
         print "p205:", repr(rc.outputs)
+
+        adinput = fs
         
+        rc.run("stackFrames")
+        fs = rc.get_inputs_as_astrodata()
+        print "p211:", repr(fs)
+        print "p212:", [ad.filename for ad in fs]
+
+        rc.run("storeProcessedFringe")
+        fringe_frame = rc.get_inputs_as_astrodata()
+
+        rc.report_output(adinput)
+        yield rc
+
+        fs = rc.get_inputs_as_astrodata()
+        print "p222:", repr(fs)
+        print "p223:", [ad.filename for ad in fs]
+
+        for ad in fs:
+            rc.add_cal(ad,"processed_fringe",
+                       os.path.abspath(fringe_frame[0].filename))
+
+        rc.run("removeFringe")
+
+        fs = rc.get_inputs_as_astrodata()
+        print "p226:", repr(fs)
+        print "p227:", [ad.filename for ad in fs]
+
         yield rc
