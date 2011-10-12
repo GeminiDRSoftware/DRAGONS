@@ -1,8 +1,5 @@
-# Author: Kyle Mede, May 2010
-# This module provides many functions used by all primitives 
-
 import os, sys
-
+import re
 import pyfits as pf
 import numpy as np
 import tempfile
@@ -192,6 +189,127 @@ def log_message(function, name, message_type):
         return message
     else:
         return None
+
+def convert_to_cal_header(adinput=None, caltype=None):
+
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+    
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
+    adinput = validate_input(adinput=adinput)
+    
+    # Initialize the list of output AstroData objects
+    adoutput_list = []
+    
+    try:
+
+        if caltype is None:
+            raise Errors.InputError("Caltype should not be None")
+
+        fitsfilenamecre = re.compile("^([NS])(20\d\d)([01]\d[0123]\d)(S)"\
+                                     "(?P<fileno>\d\d\d\d)(.*)$")
+
+        for ad in adinput:
+
+            log.fullinfo("Setting OBSCLASS, OBSTYPE, GEMPRGID, OBSID, " +
+                         "DATALAB, RELEASE, OBJECT, RA, DEC, CRVAL1, " +
+                         "and CRVAL2 to generic defaults")
+
+            # Do some date manipulation to get release date and 
+            # fake program number
+
+            # Get date from day data was taken if possible
+            date_taken = ad.ut_date()
+            if date_taken.collapse_value() is None:
+                # Otherwise use current time
+                import datetime
+                date_taken = datetime.date.today()
+            else:
+                date_taken = date_taken.as_pytype()
+            site = str(ad.telescope()).lower()
+            release = date_taken.strftime("%Y-%m-%d")
+
+            # Fake ID is G(N/S)-CALYYYYMMDD-900-fileno
+            if "north" in site:
+                prefix = "GN-CAL"
+            elif "south" in site:
+                prefix = "GS-CAL"
+            prgid = "%s%s" % (prefix,date_taken.strftime("%Y%m%d"))
+            obsid = "%s-%d" % (prgid, 900)
+
+            m = fitsfilenamecre.match(ad.filename)
+            if m:
+                fileno = m.group("fileno")
+                try:
+                    fileno = int(fileno)
+                except:
+                    fileno = None
+            else:
+                fileno = None
+
+            # Use a random number if the file doesn't have a
+            # Gemini filename
+            if fileno is None:
+                import random
+                fileno = random.randint(1,9999)
+            datalabel = "%s-%s" % (obsid,fileno)
+
+            # Set class, type, object to generic defaults
+            ad.phu_set_key_value("OBSCLASS","partnerCal")
+
+            if "fringe" in caltype:
+                ad.phu_set_key_value("OBSTYPE","FRINGE")
+                ad.phu_set_key_value("OBJECT","Fringe Frame")
+            elif "sky" in caltype:
+                ad.phu_set_key_value("OBSTYPE","SKY")
+                ad.phu_set_key_value("OBJECT","Sky Frame")
+            else:
+                raise Errors.InputError("Caltype %s not supported" % caltype)
+            
+            # Blank out program information
+            ad.phu_set_key_value("GEMPRGID",prgid)
+            ad.phu_set_key_value("OBSID",obsid)
+            ad.phu_set_key_value("DATALAB",datalabel)
+
+            # Set release date
+            ad.phu_set_key_value("RELEASE",release)
+
+            # Blank out positional information
+            ad.phu_set_key_value("RA",0.0)
+            ad.phu_set_key_value("DEC",0.0)
+            
+            # Blank out RA/Dec in WCS information in PHU if present
+            if ad.phu_get_key_value("CRVAL1") is not None:
+                ad.phu_set_key_value("CRVAL1",0.0)
+            if ad.phu_get_key_value("CRVAL2") is not None:
+                ad.phu_set_key_value("CRVAL2",0.0)
+
+            # Do the same for each SCI,VAR,DQ extension
+            # as well as the object name
+            for ext in ad:
+                if ext.extname() not in ["SCI","VAR","DQ"]:
+                    continue
+                if ext.get_key_value("CRVAL1") is not None:
+                    ext.set_key_value("CRVAL1",0.0)
+                if ext.get_key_value("CRVAL2") is not None:
+                    ext.set_key_value("CRVAL2",0.0)
+                if ext.get_key_value("OBJECT") is not None:
+                    if "fringe" in caltype:
+                        ext.set_key_value("OBJECT","Fringe Frame")
+                    elif "sky" in caltype:
+                        ext.set_key_value("OBJECT","Sky Frame")
+
+            adoutput_list.append(ad)
+
+        return adoutput_list    
+
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
+
 
 def make_dict(key_list=None, value_list=None):
     """
