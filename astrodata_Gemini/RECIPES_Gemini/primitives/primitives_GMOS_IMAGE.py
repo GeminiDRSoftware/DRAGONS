@@ -594,6 +594,10 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
                                              strip=True)
             
+            # Sanitize the headers of the file so that it looks like
+            # a public calibration file rather than a science file
+            ad = gt.convert_to_cal_header(adinput=ad, caltype="fringe")[0]
+
             # Adding a PROCFRNG time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCFRNG")
             
