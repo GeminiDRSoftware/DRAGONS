@@ -191,6 +191,19 @@ def log_message(function, name, message_type):
         return None
 
 def convert_to_cal_header(adinput=None, caltype=None):
+    """
+    This function replaces position, object, and program information 
+    in the headers of processed calibration files that are generated
+    from science frames, eg. fringe frames, maybe sky frames too.
+    It is called, for example, from the storeProcessedFringe primitive.
+
+    :param adinput: astrodata instance to perform header key updates on
+    :type adinput: an AstroData instance
+
+    :param caltype: type of calibration.  Accepted values are 'fringe' or
+                    'sky'
+    :type caltype: string
+    """
 
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 

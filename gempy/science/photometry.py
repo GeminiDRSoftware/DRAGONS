@@ -204,12 +204,12 @@ def add_objcat(adinput=None, extver=1, replace=False,
 
 
 def detect_sources(adinput=None, method="sextractor", 
-                   sigma=None, threshold=5.0, fwhm=None,
+                   sigma=None, threshold=3.0, fwhm=None,
                    max_sources=50, centroid_function="moffat"):
     """
     Find x,y positions of all the objects in the input image. Append 
     a FITS table extension with position information plus columns for
-    standard objects to be updated with position from addReferenceCatalogs
+    standard objects to be updated with positions from addReferenceCatalogs
     (if any are found for the field).
     
     The appended FITS table with extension name 'OBJCAT' will contain
@@ -236,19 +236,17 @@ def detect_sources(adinput=None, method="sextractor",
     :type centroid_function: string, can be: 'moffat','gauss'
                     Default: 'moffat'
 
-    :param sigma: The mean of the background value for daofind. If nothing is passed,
-                  it will be automatically determined
+    :param sigma: The mean of the background value for daofind. If nothing
+                  is passed, it will be automatically determined
     :type sigma: float
     
     :param threshold: Threshold intensity for a point source for daofind; should
-                   generally be at least 3 or 4 sigma above background RMS. It was
-                   found that 20 is a good number for QA purposes; 2.5 is a good 
-                   number for detecting most sources in the field.
+                   generally be at least 3 or 4 sigma above background RMS.
     :type threshold: float
     
-    :param fwhm: FWHM to be used in the convolve filter for daofind. This ends up
-                 playing a factor in determining the size of the kernel put through 
-                 the gaussian convolve.
+    :param fwhm: FWHM to be used in the convolve filter for daofind. This
+                 ends up playing a factor in determining the size of the kernel
+                 put through the gaussian convolve.
     :type fwhm: float
     
     """
