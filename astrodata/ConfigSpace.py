@@ -194,7 +194,7 @@ class ConfigSpace(object):
             rpath.extend(pathlist)
             pathlist = rpath
 
-        print "CS160:", repr(pathlist)
+        #print "CS160:", repr(pathlist)
         
         for path in pathlist:
             # print "@@@@@@@@:",".svn" in path,":::",  path
