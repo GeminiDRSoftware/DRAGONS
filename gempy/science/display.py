@@ -20,7 +20,8 @@ from gempy.science import resample as rs
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
-def display_gmos(adinput=None, frame=1, saturation=None, overlay=None):
+def display_gmos(adinput=None, frame=1, saturation=None, overlay=None,
+                 extname="SCI", zscale=True):
     """
     This function does a quick tiling if necessary, and calls numdisplay
     to display the data to ds9.
@@ -41,6 +42,11 @@ def display_gmos(adinput=None, frame=1, saturation=None, overlay=None):
         if frame is None:
             frame = 1
 
+        # Saturation parameter only makes sense for SCI extension;
+        # turn it off for others
+        if extname!="SCI":
+            saturation=None
+
         # Initialize the local version of numdisplay
         # (overrides the display function to allow for quick overlays)
         lnd = _localNumDisplay()
@@ -48,14 +54,17 @@ def display_gmos(adinput=None, frame=1, saturation=None, overlay=None):
         for ad in adinput:
 
             # Check for more than one science extension and tile if found
-            nsciext = ad.count_exts("SCI")
-            if nsciext!=1:
+            nsciext = ad.count_exts(extname)
+            if nsciext>1:
                 disp_ad = deepcopy(ad)
                 disp_ad = rs.tile_arrays(adinput=disp_ad, tile_all=True)[0]
+            elif nsciext<1:
+                raise Errors.InputError("No extensions in %s with extname %s" %
+                                        (ad.filename,extname))
             else:
                 disp_ad = ad
 
-            sciext = disp_ad["SCI",1]
+            sciext = disp_ad[extname]
             data = sciext.data
 
             masks = []
@@ -92,7 +101,7 @@ def display_gmos(adinput=None, frame=1, saturation=None, overlay=None):
             # Display the data
             try:
                 lnd.display(data,name=disp_ad.filename,
-                            frame=frame,zscale=True,quiet=True,
+                            frame=frame,zscale=zscale,quiet=True,
                             masks=masks, mask_colors=[204,206])
 
                 # ds9 color codes: should make this into a dictionary
@@ -119,9 +128,9 @@ def display_gmos(adinput=None, frame=1, saturation=None, overlay=None):
             frame+=1
 
             # Print some statistics for flats
-            if "GMOS_IMAGE_FLAT" in disp_ad.types:
-                scidata = disp_ad["SCI",1].data
-                dqext = disp_ad["DQ",1]
+            if "GMOS_IMAGE_FLAT" in disp_ad.types and extname=="SCI":
+                scidata = disp_ad["SCI"].data
+                dqext = disp_ad["DQ"]
                 if dqext is not None:
                     dqdata = dqext.data
                     good_data = scidata[dqdata==0]
