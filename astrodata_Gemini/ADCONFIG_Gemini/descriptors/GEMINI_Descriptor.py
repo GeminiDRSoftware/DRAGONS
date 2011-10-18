@@ -116,13 +116,13 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         
         return ret_coadds
     
-    def data_section(self, dataset, pretty=False, **args):
+    def data_section(self, dataset, pretty=False, extname="SCI", **args):
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always return a dictionary where the key
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_data_section = {}
         # Loop over the science extensions in the dataset
-        for ext in dataset["SCI"]:
+        for ext in dataset[extname]:
             # Get the data section from the header of each pixel data extension
             raw_data_section = ext.get_key_value(
                 self.get_descriptor_key("key_data_section"))
@@ -146,8 +146,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                     (ext.extname(), ext.extver()):data_section})
         if ret_data_section == {}:
             # If the dictionary is still empty, the AstroData object was not
-            # autmatically assigned a "SCI" extension and so the above for loop
-            # was not entered
+            # automatically assigned an "extname" extension and so the above
+            # for loop was not entered
             raise Errors.CorruptDataError()
         
         return ret_data_section
@@ -213,6 +213,8 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             raise Errors.CorruptDataError()
         
         return ret_detector_section
+
+    array_section=detector_section
     
     def detector_x_bin(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
@@ -227,7 +229,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 (ext.extname(), ext.extver()):int(1)})
         if ret_detector_x_bin == {}:
             # If the dictionary is still empty, the AstroData object was not
-            # autmatically assigned a "SCI" extension and so the above for loop
+            # automatically assigned a "SCI" extension and so the above for loop
             # was not entered
             raise Errors.CorruptDataError()
         
@@ -246,7 +248,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 (ext.extname(), ext.extver()):int(1)})
         if ret_detector_y_bin == {}:
             # If the dictionary is still empty, the AstroData object was not
-            # autmatically assigned a "SCI" extension and so the above for loop
+            # automatically assigned a "SCI" extension and so the above for loop
             # was not entered
             raise Errors.CorruptDataError()
         
@@ -306,7 +308,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             raise Errors.DescriptorTypeError()
         if ret_dispersion_axis == {}:
             # If the dictionary is still empty, the AstroData object was not
-            # autmatically assigned a "SCI" extension and so the above for loop
+            # automatically assigned a "SCI" extension and so the above for loop
             # was not entered
             raise Errors.CorruptDataError()
         
@@ -390,7 +392,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 {(ext.extname(), ext.extver()):filter_name})
         if ret_filter_name == {}:
             # If the dictionary is still empty, the AstroData object was not
-            # autmatically assigned a "SCI" extension and so the above for loop
+            # automatically assigned a "SCI" extension and so the above for loop
             # was not entered
             raise Errors.CorruptDataError()
         
@@ -492,7 +494,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
             raise Errors.DescriptorTypeError()
         if ret_mdf_row_id == {}:
             # If the dictionary is still empty, the AstroData object was not
-            # autmatically assigned a "SCI" extension and so the above for loop
+            # automatically assigned a "SCI" extension and so the above for loop
             # was not entered
             raise Errors.CorruptDataError()
         
@@ -842,7 +844,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
                 float(wavelength_reference_pixel)})
         if ret_wavelength_reference_pixel == {}:
             # If the dictionary is still empty, the AstroData object was not
-            # autmatically assigned a "SCI" extension and so the above for loop
+            # automatically assigned a "SCI" extension and so the above for loop
             # was not entered
             raise Errors.CorruptDataError()
         

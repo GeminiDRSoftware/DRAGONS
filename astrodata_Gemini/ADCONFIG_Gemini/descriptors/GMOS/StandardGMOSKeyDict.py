@@ -1,6 +1,7 @@
 stdkeyDictGMOS = {
     "key_ampinteg":"AMPINTEG",
     "key_ampname":"AMPNAME",
+    "key_array_section":"CCDSEC",
     "key_camera":"INSTRUME",
     "key_ccdsum":"CCDSUM",
     "key_central_wavelength":"GRWLEN",

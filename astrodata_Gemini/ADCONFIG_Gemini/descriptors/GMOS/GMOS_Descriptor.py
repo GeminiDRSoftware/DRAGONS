@@ -71,6 +71,42 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_amp_read_area
     
+    def array_section(self, dataset, pretty=False, extname="SCI", **args):
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always return a dictionary where the key
+        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        ret_array_section = {}
+        # Loop over the science extensions in the dataset
+        for ext in dataset[extname]:
+            # Get the data section from the header of each pixel data extension
+            raw_array_section = ext.get_key_value(
+                self.get_descriptor_key("key_array_section"))
+            if raw_array_section is None:
+                # The get_key_value() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
+                if hasattr(ext, "exception_info"):
+                    raise ext.exception_info
+            if pretty:
+                # Return a dictionary with the array section string that uses
+                # 1-based indexing as the value in the form [x1:x2,y1:y2]
+                ret_array_section.update({
+                    (ext.extname(), ext.extver()):str(raw_array_section)})
+            else:
+                # Return a dictionary with the array section list that uses
+                # 0-based, non-inclusive indexing as the value in the form
+                # [x1, x2, y1, y2]
+                array_section = sectionStrToIntList(raw_array_section)
+                ret_array_section.update({
+                    (ext.extname(), ext.extver()):array_section})
+        if ret_array_section == {}:
+            # If the dictionary is still empty, the AstroData object was not
+            # automatically assigned an "extname" extension and so the above
+            # for loop was not entered
+            raise Errors.CorruptDataError()
+        
+        return ret_array_section
+    
     def central_wavelength(self, dataset, asMicrometers=False,
                            asNanometers=False, asAngstroms=False, **args):
         # Currently for GMOS data, the central wavelength is recorded in
