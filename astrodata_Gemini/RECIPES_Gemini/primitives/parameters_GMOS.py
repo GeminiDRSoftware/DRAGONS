@@ -1,6 +1,13 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_GMOS.py file, in alphabetical order.
-{"display":{
+{"display":{ 
+    "extname":{
+        "default"       : "SCI",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     "frame":{
         "default"       : 1,
         "type"          : "int",
@@ -11,6 +18,13 @@
     "saturation":{
         "default"       : 58000,
         "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "zscale":{
+        "default"       : True,
+        "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",

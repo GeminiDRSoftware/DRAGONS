@@ -40,6 +40,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             try:
                 ad = ds.display_gmos(adinput=ad,
                                      frame=frame,
+                                     extname=rc["extname"],
+                                     zscale=rc["zscale"],
                                      saturation=rc["saturation"])
             except:
                 log.warning("Could not display %s" % ad.filename)
