@@ -297,7 +297,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             # which returns a list with filenames already updated
             adoutput_list = pp.make_fringe_image_gmos(
                 adinput=adinput, suffix=rc["suffix"],
-                operation=rc["operation"])
+                operation=rc["operation"], reject_method=rc["reject_method"])
         
         # Report the list of output AstroData objects to the reduction
         # context

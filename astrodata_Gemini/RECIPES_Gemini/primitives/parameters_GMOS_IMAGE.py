@@ -38,6 +38,13 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    "reject_method":{
+        "default"       : "avsigclip",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     },
  "normalize":{
     "suffix":{
