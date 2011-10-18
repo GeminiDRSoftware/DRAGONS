@@ -128,9 +128,12 @@ def stack_frames(adinput=None, suffix=None, operation="average",
         
         # Change type of DQ plane back to int16
         # (gemcombine sets it to int32)
+        # Also set BUNIT back to 'bit'
+        # (gemcombine sets it to 'electron')
         if adstack[0]["DQ"] is not None:
             for dqext in adstack[0]["DQ"]:
                 dqext.data = dqext.data.astype(np.int16)
+                dqext.set_key_value("BUNIT","bit")
 
         # Gemcombine sets the GAIN keyword to the sum of the gains; reset
         # it to the average instead.  Set the RDNOISE to the sum in 
