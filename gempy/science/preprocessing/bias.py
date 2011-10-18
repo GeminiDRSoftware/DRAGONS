@@ -346,9 +346,13 @@ def trim_overscan(adinput=None):
             
             # Check whether this user level function has been
             # run previously
-            if ad.phu_get_key_value(timestamp_key):
-                raise Errors.InputError("%s has already been processed by " \
-                                        "trim_overscan" % (ad.filename))
+            # NOTE: I'm removing this check so that individual extensions
+            # can be trimmed separately.  Re-running this function has no
+            # effect anyway.
+
+            #if ad.phu_get_key_value(timestamp_key):
+            #    raise Errors.InputError("%s has already been processed by " \
+            #                            "trim_overscan" % (ad.filename))
 
             for sciExt in ad["SCI"]:
                 
@@ -361,7 +365,7 @@ def trim_overscan(adinput=None):
                 try:
                     # as a string for printing
                     datasecStr = str(sciExt.data_section(pretty=True))
-                    # int list of form [x1, x2, y1, y2] 0-based and non-inclusive
+                    # int list of form [x1,x2,y1,y2] 0-based and non-inclusive
                     dsl = sciExt.data_section().as_pytype()
                 except:
                     raise Errors.ScienceError("No data section defined; " +
