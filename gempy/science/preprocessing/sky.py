@@ -19,7 +19,7 @@ timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
 def make_fringe_image_gmos(adinput=None, operation="median", 
-                                 suffix="_fringe"):
+                           reject_method="avsigclip", suffix="_fringe"):
     """
     This function will create and return a single fringe image from all the 
     inputs. It uses the CL script gifringe to create the fringe image.
@@ -35,6 +35,9 @@ def make_fringe_image_gmos(adinput=None, operation="median",
     
     :param operation: type of combining operation to use.
     :type operation: string, options: 'average', 'median'.
+    
+    :param reject_method: type of combining operation to use.
+    :type reject_method: string, options: 'avsigclip', 'minmax', etc.
     
     :param suffix: string to add on the end of the first input filename 
                    to make the output filename.
@@ -105,7 +108,7 @@ def make_fringe_image_gmos(adinput=None, operation="median",
         # file adjustable by the user
         clSoftcodedParams = {
             "combine"       :operation,
-            "reject"        :"none",
+            "reject"        :reject_method,
             }
         
         # Grab the default parameters dictionary and update 
