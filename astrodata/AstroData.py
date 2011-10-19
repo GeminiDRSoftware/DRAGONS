@@ -1994,11 +1994,8 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
         count = 0
         for i in range(1,maxl):
             try:
-                # note, only count extension in our subdata extension list
-                if (self.extensions == None) or \
-                    ((extname, i) in self.extensions):
-                    if (hdul[i].header["EXTNAME"] == extname):
-                        count += 1
+                if (hdul[i].header["EXTNAME"] == extname):
+                    count += 1
             except KeyError:
                 #no biggie if some extention has no EXTNAME
                 if extname == None:
