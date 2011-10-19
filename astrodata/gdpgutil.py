@@ -207,7 +207,12 @@ def inherit_index(typ = None, index = None, for_child = None):
             return None  
 
 def pick_config(dataset, index, style = "unique"):
-    """Pick config will pick the appropriate config for the style.
+    """
+    possible styles: "unique" only one leaf node can be returned, anything else
+    is seen as a conflict... "leaves" which gets all leaf not assignmends ... "all"
+    means all assignments from all types that apply to the dataset.  Default style
+    is unique.
+    Pick config will pick the appropriate config for the style.
     NOTE: currently style must be unique, a unique config is chosen using
     inheritance.
     """
@@ -215,7 +220,7 @@ def pick_config(dataset, index, style = "unique"):
     cl = ad.get_classification_library()
     
     candidates = {}
-    if style == "unique":
+    if style == "unique" or style == "leaves":
         types = ad.get_types(prune=True)
     else:
         types = ad.get_types()

@@ -90,10 +90,11 @@ class ConfigSpace(object):
             dirs = self.get_recipe_dirs()
         else:
             dirs = self.get_config_dirs(spacename)
-        # print "C67: dirs: ", dirs
+        # print "C93: dirs: ", dirs
         for directory in dirs:
             for elem in os.walk(directory):
                 path = elem[0]
+                # print "CS97:", path
                 goodpath = (".svn" not in path) and ("CVS" not in path)
                 if goodpath:
                     if "edge" in elem: print "CS72:", elem
@@ -193,8 +194,7 @@ class ConfigSpace(object):
             # we want this path in front...
             rpath.extend(pathlist)
             pathlist = rpath
-
-        #print "CS160:", repr(pathlist)
+        # print "CS197:", repr(pathlist)
         
         for path in pathlist:
             # print "@@@@@@@@:",".svn" in path,":::",  path
@@ -220,7 +220,7 @@ class ConfigSpace(object):
                         else:
                             pass # print ""
         self.recipedirs = adconfdirs
-        #print "CS183:",repr(adconfdirs)
+        # print "CS183:",repr(adconfdirs)
         return adconfdirs
 
     def general_walk( self, dir, exts=[] ):

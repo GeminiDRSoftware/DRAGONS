@@ -972,7 +972,7 @@ class ClassificationLibrary (object):
         in the definition file, or else the load function will not see it.
         """
         for root, dirn, files in config_walk(spacename):
-            #print "_+_+",root, dirn,files
+            # print "ADT975:_+_+",root, dirn,files
             for dfile in files:
                 if (re.match(self.definitionsStorageREMask, dfile)):
                     # this is a definition file then, according to the filenaming convention, that is.
@@ -989,6 +989,7 @@ class ClassificationLibrary (object):
                     # newtype is declared here and used in the definition file to 
                     # pack in new types and return them to this scope.
                     for newtype in newtypes:
+                        # print "ADT992: new type", newtype 
                         newtype.fullpath = fullpath
                         newtype.library = self
                         globaldict[newtype.name] = newtype
@@ -997,11 +998,13 @@ class ClassificationLibrary (object):
                     if (verbose) : print "ignoring %s" % dfile
             
         # establish children
-        for typ in tdict.keys():
-            typo = tdict[typ]
-            # print "ADT910:" , typ
+        for typ in globaldict.keys():
+            typo = globaldict[typ]
+            #print "ADT1003:" , repr(typ)
             if typo.parent:
-                tdict[typo.parent].add_child(typo)
+                #print "ATD1005:",typo.parent
+                if typo.parent in globaldict:
+                    globaldict[typo.parent].add_child(typo)
 
 
     def check_type(self, typename, dataset):

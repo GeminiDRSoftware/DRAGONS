@@ -1913,6 +1913,7 @@ class RecipeLibrary(object):
         ro.recipeLib = self
         if primsetlist:
             ro.curPrimType = primsetlist[0].astrotype
+            print "RM1916:", repr([ps.astrotype for ps in primsetlist])
         else:
             return None
         for primset in primsetlist:
@@ -1931,48 +1932,51 @@ class RecipeLibrary(object):
         return ro
         
     def retrieve_primitive_set(self, dataset=None, astrotype=None):
-        
         if (astrotype == None) and (dataset != None):
-            val = pick_config(dataset, centralPrimitivesIndex)
+            val = pick_config(dataset, centralPrimitivesIndex, style="leaves")
             k = val.keys()
             if len(k) != 1:
-                raise RecipeExcept("CAN'T RESOLVE PRIMITIVE SET CONFLICT")
+                print "RM1939:", repr(val)
+                #raise RecipeExcept("CAN'T RESOLVE PRIMITIVE SET CONFLICT")
             astrotype = k[0]
         # print "RM1272:", astrotype
         primset = None
         # print "RM1475:", repr(centralPrimitivesIndex)
-        if (astrotype != None) and (astrotype in centralPrimitivesIndex):
-            primdeflist = centralPrimitivesIndex[astrotype]
-            # print "RM1478:", repr(primdeflist)
-            primlist = []
-            for primdef in primdeflist:
-                rfilename = primdef[0] # the first in the tuple is the primset file
-                rpathname = centralReductionMap[rfilename]
-                rootpath = os.path.dirname(rpathname)
-                importname = os.path.splitext(rfilename)[0]
-                a = datetime.now()
-                try:
-                    # print "RM1282: about to import", importname, primdef[1]
-                    exec ("import " + importname)
-                    # print ("RM1285: after import")
-                except:
-                    log = gemLog.getGeminiLog()
-                    msg =  "##### PRIMITIVE SET IMPORT ERROR: SKIPPING %(impname)s\n" * 3
-                    msg += traceback.format_exc() 
-                    msg += "##### PRIMITIVE SET IMPORT ERROR: SKIPPED %(impname)s\n" * 3
-                    msg = msg % {"impname": importname}
-                    if log:
-                        log.error(msg)
-                    else:                    
-                        print "PRINTED, not logged:\n"+msg
-                b = datetime.now()
-                primset = eval (importname + "." + primdef[1] + "()")
-                # set filename and directory name
-                # used by other parts of the system for naming convention based retrieval
-                # i.e. of parameters
-                primset.astrotype = astrotype
-                primset.acquire_param_dict()
-                primlist.append(primset)
+        primlist = []
+        for astrotype in k:
+            if (astrotype != None) and (astrotype in centralPrimitivesIndex):
+                primdeflist = centralPrimitivesIndex[astrotype]
+                print "RM1948:", repr(primdeflist)
+                for primdef in primdeflist:
+                    rfilename = primdef[0] # the first in the tuple is the primset file
+                    rpathname = centralReductionMap[rfilename]
+                    rootpath = os.path.dirname(rpathname)
+                    importname = os.path.splitext(rfilename)[0]
+                    a = datetime.now()
+                    try:
+                        print "RM1282: about to import", importname, primdef[1]
+                        exec ("import " + importname)
+                        # print ("RM1285: after import")
+                    except:
+                        log = gemLog.getGeminiLog()
+                        msg =  "##### PRIMITIVE SET IMPORT ERROR: SKIPPING %(impname)s\n" * 3
+                        msg += traceback.format_exc() 
+                        msg += "##### PRIMITIVE SET IMPORT ERROR: SKIPPED %(impname)s\n" * 3
+                        msg = msg % {"impname": importname}
+                        if log:
+                            log.error(msg)
+                        else:                    
+                            print "PRINTED, not logged:\n"+msg
+                    b = datetime.now()
+                    primset = eval (importname + "." + primdef[1] + "()")
+                    # set filename and directory name
+                    # used by other parts of the system for naming convention based retrieval
+                    # i.e. of parameters
+                    primset.astrotype = astrotype
+                    primset.acquire_param_dict()
+                    primlist.append(primset)
+        
+        if len(primlist):
             return primlist
         else:
             return None
@@ -2190,13 +2194,16 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
             
     for root, dirn, files in ConfigSpace.config_walk("recipes"):
         root = os.path.abspath(root)
-        #print "RM840:", root
+        # print "RM2193:", root, files
         sys.path.append(root)
         for sfilename in files:
+            
             m = re.match(recipeREMask, sfilename)
             mpI = re.match(primitivesIndexREMask, sfilename)
             mri = re.match(recipeIndexREMask, sfilename)
             mro = re.match(reductionObjREMask, sfilename) 
+            #if mro:
+            #    print "RM2202:", mro
             mpa = re.match(parameterREMask, sfilename)
             mpaI = re.match(parameterIndexREMask, sfilename)
             fullpath = os.path.join(root, sfilename)
@@ -2268,6 +2275,7 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                         plist.extend(val)
                            
             elif mro: # reduction object file... contains  primitives as members
+                # print "RM2271:", sfilename, fullpath
                 centralReductionMap.update({sfilename: fullpath})
             elif mri: # this is a recipe index
                 efile = open(fullpath, "r")

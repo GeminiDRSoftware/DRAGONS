@@ -530,6 +530,7 @@ try:
                 # note: should we raise an exception here?
                 err = "Can't Load Dataset: %s" % inp
                 log.warning(err)
+                raise
 
         # note: this clause might be best placed elsewhere (earlier)
         if len(nl) == 0:

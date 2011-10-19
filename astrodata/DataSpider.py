@@ -186,8 +186,10 @@ class DataSpider(object):
                             #
                             # NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE  NOTE
                             
+                        except KeyboardInterrupt:
+                            raise
                         except:
-                            mes = "Could not open %s as AstroData" % fname
+                            mes = "Could not open file: %s as AstroData" % fname
                             print mes
                             # raise Errors.AstroDataError(mes)
                             continue
@@ -544,6 +546,8 @@ class DataSpider(object):
                        
                         try:
                             fl = AstroData(fname)
+                        except KeyboardInterrupt:
+                            raise
                         except:
                             mes = "Could not open %s as AstroData" % fname
                             continue
