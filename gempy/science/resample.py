@@ -748,13 +748,13 @@ def tile_arrays(adinput=None, tile_all=False):
                     ampsorder = orderarray['ext']
                     in_order = False
 
-                # Get CCDSEC keywords (descriptor would be nice)
-                ccdsecs = []
-                for ext in ad['SCI']:
-                    # Get the ccd section
-                    raw_ccdsec = ext.get_key_value("CCDSEC")
-                    ccdsec = sectionStrToIntList(raw_ccdsec)
-                    ccdsecs.append(ccdsec)
+                # Get array sections for determining when
+                # a new array is found
+                ccdsecs = ad.array_section().as_list()
+                if not isinstance(ccdsecs[0],list):
+                    ccdsecs = [ccdsecs]
+                if len(ccdsecs)!=nsciext:
+                    ccdsecs*=nsciext
                 ccdx1 = [sec[0] for sec in ccdsecs]
 
 
