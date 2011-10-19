@@ -482,6 +482,8 @@ class GEMINIPrimitives(GENERALPrimitives):
             # which returns a list; take the first entry
             ad = ph.detect_sources(adinput=ad, sigma=rc["sigma"],
                                    threshold=rc["threshold"], fwhm=rc["fwhm"],
+                                   max_sources=rc["max_sources"],
+                                   centroid_function=rc["centroid_function"],
                                    method=rc["method"])[0]
             
             # Change the filename
