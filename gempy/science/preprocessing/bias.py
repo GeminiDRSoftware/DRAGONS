@@ -73,42 +73,12 @@ def subtract_bias(adinput=None, bias=None):
             # Get the right bias frame for this input
             this_bias = bias_dict[ad]
 
-            # Check for the case that the science data is a CCD2-only
-            # frame and the bias is a full frame                
-            if ad.count_exts("SCI")==1 and this_bias.count_exts("SCI")>1:
-                new_bias = None
-                sciext = ad["SCI",1]
-                for biasext in this_bias["SCI"]:
-                    # Use this extension if the bias detector section
-                    # matches the science detector section
-                    if (str(biasext.detector_section()) == 
-                        str(sciext.detector_section())):
-                        
-                        extver = biasext.extver()
-                        log.fullinfo("Using bias extension [SCI,%i]" % 
-                                     extver)
-
-                        varext = this_bias["VAR",extver]
-                        dqext = this_bias["DQ",extver]
-
-                        new_bias = deepcopy(biasext)
-                        new_bias.rename_ext(name="SCI",ver=1)
-                        if varext is not None:
-                            newvar = deepcopy(varext)
-                            newvar.rename_ext(name="VAR",ver=1)
-                            new_bias.append(newvar)
-                        if dqext is not None:
-                            newdq = deepcopy(dqext)
-                            newdq.rename_ext(name="DQ",ver=1)
-                            new_bias.append(newdq)
-
-                        this_bias = new_bias
-                        break
-
-                if new_bias is None:
-                    raise Errors.InputError("Bias %s does not match " \
-                                            "science %s" % 
-                                            (this_bias.filename,ad.filename))
+            # Clip the bias frame to the size of the science data
+            # For a GMOS example, this allows a full frame bias to
+            # be used for a CCD2-only science frame. 
+            this_bias = gt.clip_auxiliary_data(adinput=ad, 
+                                               aux=this_bias, 
+                                               aux_type="cal")[0]
 
             # Check the inputs have matching binning and SCI shapes.
             gt.checkInputsMatch(adInsA=ad, adInsB=this_bias, 

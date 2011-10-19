@@ -68,41 +68,12 @@ def divide_by_flat(adinput=None, flat=None):
             # Get the right flat frame for this input
             this_flat = flat_dict[ad]
             
-            # Check for the case that the science data is a CCD2-only
-            # frame and the flat is a full frame                
-            if ad.count_exts("SCI")==1 and this_flat.count_exts("SCI")>1:
-                new_flat = None
-                sciext = ad["SCI",1]
-                for flatext in this_flat["SCI"]:
-                    # Use this extension if the flat detector section
-                    # matches the science detector section
-                    if (str(flatext.detector_section()) == 
-                        str(sciext.detector_section())):
-                        
-                        extver = flatext.extver()
-                        log.fullinfo("Using flat extension [SCI,%i]" % 
-                                     extver)
-
-                        varext = this_flat["VAR",extver]
-                        dqext = this_flat["DQ",extver]
-
-                        new_flat = deepcopy(flatext)
-                        new_flat.rename_ext(name="SCI",ver=1)
-                        if varext is not None:
-                            newvar = deepcopy(varext)
-                            newvar.rename_ext(name="VAR",ver=1)
-                            new_flat.append(newvar)
-                        if dqext is not None:
-                            newdq = deepcopy(dqext)
-                            newdq.rename_ext(name="DQ",ver=1)
-                            new_flat.append(newdq)
-
-                        this_flat = new_flat
-                        break
-                if new_flat is None:
-                    raise Errors.InputError("Flat %s does not match " \
-                                            "science %s" % 
-                                            (this_flat.filename,ad.filename))
+            # Clip the flat frame to the size of the science data
+            # For a GMOS example, this allows a full frame flat to
+            # be used for a CCD2-only science frame. 
+            this_flat = gt.clip_auxiliary_data(adinput=ad, 
+                                               aux=this_flat, 
+                                               aux_type="cal")[0]
 
             # Check the inputs have matching filters, binning, and SCI shapes.
             gt.checkInputsMatch(adInsA=ad, adInsB=this_flat) 

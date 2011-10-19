@@ -223,41 +223,13 @@ def remove_fringe_image_gmos(adinput=None, fringe=None,
             # Get matching fringe
             this_fringe = fringe_dict[ad]
 
-            # Check for the case that the science data is a CCD2-only
-            # frame and the fringe is a full frame                
-            if ad.count_exts("SCI")==1 and this_fringe.count_exts("SCI")>1:
-                new_fringe = None
-                sciext = ad["SCI",1]
-                for fringeext in this_fringe["SCI"]:
-                    # Use this extension if the fringe detector section
-                    # matches the science detector section
-                    if (str(fringeext.detector_section()) == 
-                        str(sciext.detector_section())):
-                        
-                        extver = fringeext.extver()
-                        log.fullinfo("Using fringe extension [SCI,%i]" % 
-                                     extver)
+            # Clip the fringe frame to the size of the science data
+            # For a GMOS example, this allows a full frame fringe to
+            # be used for a CCD2-only science frame. 
+            this_fringe = gt.clip_auxiliary_data(adinput=ad, 
+                                                 aux=this_fringe, 
+                                                 aux_type="cal")[0]
 
-                        varext = this_fringe["VAR",extver]
-                        dqext = this_fringe["DQ",extver]
-
-                        new_fringe = deepcopy(fringeext)
-                        new_fringe.rename_ext(name="SCI",ver=1)
-                        if varext is not None:
-                            newvar = deepcopy(varext)
-                            newvar.rename_ext(name="VAR",ver=1)
-                            new_fringe.append(newvar)
-                        if dqext is not None:
-                            newdq = deepcopy(dqext)
-                            newdq.rename_ext(name="DQ",ver=1)
-                            new_fringe.append(newdq)
-
-                        this_fringe = new_fringe
-                        break
-                if new_fringe is None:
-                    raise Errors.InputError("Fringe %s does not match " \
-                                            "science %s" % 
-                                            (this_fringe.filename,ad.filename))
             
             # Check the inputs have matching filters, binning and SCI shapes.
             gt.checkInputsMatch(adInsA=ad, adInsB=this_fringe)
