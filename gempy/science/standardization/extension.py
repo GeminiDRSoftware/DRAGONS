@@ -69,6 +69,10 @@ def add_dq(adinput=None, bpm=None):
             
             # Get the appropriate BPM for this AstroData object
             bpm = bpm_dict[ad]
+            if bpm is None:
+               log.warning("No BPM found for %s (%s %dx%d)" %
+                           (ad.filename,ad.instrument(),
+                            ad.detector_x_bin(),ad.detector_y_bin()))
             
             # Loop over each science extension in each input AstroData object
             for ext in ad["SCI"]:
