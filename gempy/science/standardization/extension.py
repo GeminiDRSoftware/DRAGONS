@@ -363,44 +363,10 @@ def _select_bpm(adinput=None, bpm=None):
         if bpm is None:
             continue
 
-        # Check for the case that the BPM is full-frame but the science
-        # is subdata (eg. CCD2 only data for GMOS)
-        if ad.count_exts("SCI")==1 and bpm.count_exts("DQ")>1:
-            new_bpm = None
-            sciext = ad["SCI",1]
-            for bpmext in bpm["DQ"]:
-                # Use this extension if the bpm detector section
-                # matches the science detector section
-                if (str(bpmext.detector_section(extname="DQ")) == 
-                    str(sciext.detector_section(extname="SCI"))):
-                    new_bpm = deepcopy(bpmext)
-                    new_bpm.rename_ext(name="DQ",ver=1)
-                    bpm = new_bpm
-                    break
-            if new_bpm is None:
-                raise Errors.InputError("Cannot find BPM for %s" % ad.filename)
+        # Clip the BPM data to the size of the input science, and
+        # pad with overscan region if necessary
+        bpm = gt.clip_auxiliary_data(adinput=ad, aux=bpm, aux_type="bpm")[0]
 
-        # Loop over each science extension in each input AstroData object
-        for ext in ad["SCI"]:
-            
-            # BPMs have an EXTNAME equal to "DQ"
-            bpmext = bpm["DQ", ext.extver()]
-            
-            # Ensure that the bpm has a data type of int16
-            bpmext.data = bpmext.data.astype(np.int16)
-            
-            if bpmext.data.shape != ext.data.shape:
-                # Get the data_section value of the science extension using the
-                # appropriate descriptor
-                x1, x2, y1, y2 = ext.data_section().as_pytype()
-
-                # Copy the pixel data of the BPM into the data section of an
-                # array that is the same size as the pixel data of the science
-                # extension
-                new_bpm_data = np.zeros(ext.data.shape, dtype=np.int16)
-                new_bpm_data[y1:y2,x1:x2] = bpmext.data
-                bpmext.data = new_bpm_data
-    
         # Update the bpm in the dictionary with any changes
         ret_bpm_dict[ad] = bpm
 
