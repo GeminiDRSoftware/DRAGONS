@@ -143,7 +143,27 @@ def make_fringe_image_gmos(adinput=None, operation="median",
         imageOuts, refOuts, arrayOuts = clm.finishCL() 
         
         ad_out = imageOuts[0]
-        
+
+        # Change type of DQ plane back to int16 (gemcombine sets it to int32)
+        if ad_out["DQ"] is not None:
+            for dqext in ad_out["DQ"]:
+                dqext.data = dqext.data.astype(np.int16)
+
+                # Also delete the BUNIT keyword (gemcombine
+                # sets it to same value as SCI)
+                if dqext.get_key_value("BUNIT") is not None:
+                    del dqext.header['BUNIT']
+
+        # Fix BUNIT in VAR plane as well
+        # (gemcombine sets it to same value as SCI)
+        bunit = ad_out["SCI",1].get_key_value("BUNIT")
+        if ad_out["VAR"] is not None:
+            gt.update_key_value(adinput=ad_out, function="bunit",
+                                value="%s*%s" % (bunit,bunit),
+                                extname="VAR")
+       
+
+
         # Update GEM-TLM (automatic) and COMBINE time stamps to the PHU
         # and update logger with updated/added time stamps
         gt.mark_history(adinput=ad_out, keyword=timestamp_key)
