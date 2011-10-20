@@ -577,6 +577,86 @@ def measure_iq(adinput=None, return_source_info=False, separate_ext=False):
         raise
 
 
+def measure_zp(adinput=None):
+    """
+    This function is for use with sextractor-style source-detection.
+    It relies on having already added a reference catalog and done the
+    cross match to populate the refmag column of the objcat
+    """
+
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+
+    # The validate_input function ensures that adinput is not None and returns
+    # a list containing one or more AstroData objects
+    adinput = gt.validate_input(adinput=adinput)
+
+    # Define the keyword to be used for the time stamp for this user level
+    # function
+    timestamp_key = timestamp_keys["measure_zp"]
+
+    # Initialize the list of output AstroData objects
+    adoutput_list = []
+
+    try:
+
+        # Loop over each input AstroData object
+        for ad in adinput:
+
+            # Loop over OBJCATs extensions
+            for objcat in ad['OBJCAT']:
+                extver = objcat.extver()
+
+                mags = objcat.data['mag']
+
+                # Need to correct the mags for the exposure time
+                et = float(ad.exposure_time())
+                magcor = 2.5*math.log10(et)
+                mags += magcor
+
+                # FIXME: Need to determine if we're in electrons or ADUs and correct
+                # the mags for the gain if we're in ADU here. ZPs are in electrons.
+
+                # FIXME: Need to apply the appropreate nominal extinction correction here
+
+                refmags = objcat.data['refmag']
+
+                zps = refmags - mags
+ 
+                zps = np.where((zps > -500), zps, None)
+
+                zps = zps[np.flatnonzero(zps)]
+
+                mean = np.mean(zps)
+                sigma = np.std(zps)
+
+                log.fullinfo("Unclipped zeropoint measurement: %f +/- %f" % (mean, sigma))
+
+                zps = np.where(((zps < mean+sigma) & (zps > mean-sigma)), zps, None)
+                zps = zps[np.flatnonzero(zps)]
+                mean = np.mean(zps)
+                sigma = np.std(zps)
+                log.stdinfo("Filename: %s" % ad.filename)
+                log.stdinfo("--------------------------------------------------------")
+                log.stdinfo("%d sources used to measure Zeropoint" % len(zps))
+                log.stdinfo("Zeropoint measurement (%s band): %.3f +/- %.3f" % (ad.filter_name(pretty=True), mean, sigma))
+                log.stdinfo("--------------------------------------------------------")
+
+            # Append the output AstroData object to the list of output
+            # AstroData objects
+            adoutput_list.append(ad)
+
+        return adoutput_list
+
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
+
+            
+            
+
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
