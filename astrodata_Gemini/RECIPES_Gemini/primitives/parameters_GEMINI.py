@@ -9,6 +9,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "addReferenceCatalog":{
+    "suffix":{
+        "default"       : "_refcatAdded",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "addToList":{
     "purpose":{
         "default"       : None,
