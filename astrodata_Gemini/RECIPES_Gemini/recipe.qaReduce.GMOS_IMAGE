@@ -7,6 +7,10 @@ addDQ
 addVAR(read_noise=True)
 detectSources
 measureIQ
+addReferenceCatalog
+measureZP
+#correctWCSToReferenceCatalog
+#measureAstrometricOffset
 overscanCorrect
 biasCorrect
 aduToElectrons
@@ -16,8 +20,14 @@ fringeCorrectFromScience
 mosaicDetectors
 detectSources
 measureIQ
+addReferenceCatalog
+measureZP
+correctWCSToReferenceCatalog
 addToList(purpose=forStack)
 getList(purpose=forStack)
 registerAndStack
 detectSources
 measureIQ
+addReferenceCatalog
+measureZP
+correctWCSToReferenceCatalog
