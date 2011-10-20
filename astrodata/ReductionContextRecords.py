@@ -137,7 +137,8 @@ class AstroDataRecord( ReductionContextRecord ):
         self.display_id = display_id
     def load(self):
         self.ad = AstroData(self.filename)
-        
+    def is_loaded(self):
+        return not (self.ad == None)    
     def __str__(self):
         rets = """
     ad.filename  = %s

@@ -151,7 +151,7 @@ class ReductionContext(dict):
     # return behavior
     _return_command = None
     
-    def __init__(self):
+    def __init__(self, adcc_mode = "start_early"):
         """The ReductionContext constructor creates empty dictionaries and
         lists, members set to None in the class.
         """
@@ -177,12 +177,13 @@ class ReductionContext(dict):
         # Stack Keep is a resource for all RecipeManager functions... 
         # one shared StackKeeper to simulate the shared ObservationService
         # used in PRS mode.
-        self.stackeep = StackKeeper(local=False)
+        self.stackeep = StackKeeper(local= True if adcc_mode == "start_lazy" else False)
         self.stackKeeper = self.stackeep # "stackeep" is not a good name
         self.fringes = FringeKeeper()
         self._nonstandard_stream = []
         self._current_stream = MAINSTREAM
         self._output_streams = []
+        self._adcc_mode = adcc_mode
         
     def __getitem__(self, arg):
         """Note, the ReductionContext version of __getitem__ returns None
@@ -347,7 +348,7 @@ class ReductionContext(dict):
         print "called addInputs: deprecated, to be removed !!!!please change to add_inputss!!!!!"
         import traceback
         traceback.print_exc()
-        
+        raise
         self.add_inputs(filelist)
         
     def add_input(self, filenames):
@@ -369,7 +370,9 @@ class ReductionContext(dict):
         #    origFlag = True
         
         for filename in filenames:
-            if type(filename) == str:
+            if filename == None:
+                continue
+            elif type(filename) == str:
                 filename = AstroDataRecord(filename)  
             elif type(filename) == AstroData:
                 filename = AstroDataRecord(filename)
@@ -386,7 +389,8 @@ class ReductionContext(dict):
                 self.inputs.append(filename)
             #if origFlag:
             #    if filename not in self.original_inputs:
-            #        self.original_inputs.append(filename)        
+            #        self.original_inputs.append(filename)    
+            print "RM393:", repr(self.inputs)
        
     def add_rq(self, rq):
         '''
@@ -591,7 +595,7 @@ class ReductionContext(dict):
     def get_outputs(self, style = None):
         return self.get_stream(style = style, stream = MAINSTREAM, empty = False)
         
-    def get_stream(self, stream=MAINSTREAM, empty=False):
+    def get_stream(self, stream=MAINSTREAM, empty=False, style = None):
         """
         :param stream: A string name for the stream in question.  
             To use the standard stream do no set.
@@ -608,7 +612,21 @@ class ReductionContext(dict):
             return None
         if empty:
             self.outputs.update({stream:[]})
-        return outputs
+        
+        if style == None:
+            return outputs
+        elif style == "AD":
+            retl = []
+            for adrec in outputs:
+                if not adrec.is_loaded():
+                    adrec.load()
+                retl.append(adrec.ad)
+            return retl
+        elif style == "FN":
+            retl = [ad.filename for ad in outputs]
+            return retl
+        else:
+            raise Errors.ReduceError("get_outputs: BAD STYLE ARGUMENT")
             
     def get_inputs_as_astrodata(self):
         return self.get_inputs(style="AD")
@@ -1939,6 +1957,8 @@ class RecipeLibrary(object):
                 print "RM1939:", repr(val)
                 #raise RecipeExcept("CAN'T RESOLVE PRIMITIVE SET CONFLICT")
             astrotype = k[0]
+        if (astrotype != None):
+            k = [astrotype]
         # print "RM1272:", astrotype
         primset = None
         # print "RM1475:", repr(centralPrimitivesIndex)

@@ -565,8 +565,9 @@ def createGeminiLog(logName=None, logLevel=None, logType='main', debug=False,
                                      noLogFile=noLogFile, allOff=allOff)
         _listOfLoggers.append(_geminiLogger)
     except:
-        raise Error('An error occured while trying to create logger object \
-                    named, '+str(logName)+', of type, '+str(logType)+'.')
+        print 'An error occured while trying to create logger object \
+                    named, '+str(logName)+', of type, '+str(logType)+'.'
+        raise
     return _geminiLogger
         
 def getGeminiLog(logLevel=None, logType='main'):
