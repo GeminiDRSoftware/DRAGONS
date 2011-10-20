@@ -339,6 +339,43 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         yield rc
     
+    def correctWCSToReferenceCatalog(self, rc):
+        """
+        This primitive calculates the average astrometric offset between
+        the positions of sources in the reference catalog, and their
+        corresponding object in the object catalog.
+        It reports the astrometric correction vector, then applies that
+        correction to the WCS of the image. It also applies the same
+        correction to the RA, DEC columns of the object catalog.
+        """
+
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "correctWCSToReferenceCatalog",
+                                 "starting"))
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+
+            # Call the correct_wcs_to_reference_catalog user level function
+            ad = rg.correct_wcs_to_reference_catalog(adinput=ad)
+
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        #rc.report_output(adoutput_list)
+
+        yield rc
+
+
+
     def correctWCSToReferenceImage(self, rc):
         """ 
         This primitive registers images to a reference image by correcting
@@ -500,6 +537,42 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         yield rc
     
+    def addReferenceCatalog(self, rc):
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "addReferenceCatalog", "starting"))
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+
+            # Call the add_reference_catalog user level function
+            # which returns a list, we take the first entry 
+            ad = ph.add_reference_catalog(adinput=ad, source='sdss7')[0]
+
+            # Match the object catalog against the reference catalog
+            # Update the refid and refmag columns in the object catalog
+            ad = ph.match_objcat_refcat(adinput=ad)[0]
+
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
+                                             strip=True)
+
+            # Append the output AstroData object to the list 
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+
+        yield rc
+
+
     def display(self, rc):
         rc.rq_display(display_id=rc["display_id"])
         
@@ -782,6 +855,39 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         yield rc
     
+    def measureZP(self, rc):
+        """
+        This primitive will determine the zeropoint by looking at
+        sources in the OBJCAT for whic a reference catalog magnitude
+        has been determined.
+        """
+
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "measureZP", "starting"))
+        
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+
+            # Call the measure_zp user level function
+            ad = qa.measure_zp(adinput=ad)[0]
+
+            # Append the output AstroData object to the list 
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+
+        yield rc
+
     def measureIQ(self, rc):
         """
         This primitive will detect the sources in the input images and fit
