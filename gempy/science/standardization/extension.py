@@ -575,10 +575,7 @@ def _calculate_var(adinput=None, add_read_noise=False,
     return adinput
 
 def _update_dq_header(sci=None, dq=None, bpmname=None):
-    # Add the physical units keyword
-    gt.update_key_value(adinput=dq, function="bunit", value="bit",
-                        extname="DQ")
-    
+
     # Add the name of the bad pixel mask
     gt.update_key_value(adinput=dq, function="bpmname", value=bpmname,
                         extname="DQ")

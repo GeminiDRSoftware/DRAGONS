@@ -634,6 +634,10 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
             if bunit is not None:
                 gt.update_key_value(adinput=ad_out, function="bunit",
                                     value=bunit, extname="SCI")
+                if ad_out["VAR"] is not None:
+                    gt.update_key_value(adinput=ad_out, function="bunit",
+                                        value="%s*%s" % (bunit,bunit),
+                                        extname="VAR")
             if avg_overscan is not None:
                 for ext in ad_out["SCI"]:
                     ext.set_key_value("OVERSCAN",avg_overscan,

@@ -126,14 +126,23 @@ def stack_frames(adinput=None, suffix=None, operation="average",
         # disk 
         adstack, junk, junk = clm.finishCL()
         
-        # Change type of DQ plane back to int16
-        # (gemcombine sets it to int32)
-        # Also set BUNIT back to 'bit'
-        # (gemcombine sets it to 'electron')
+        # Change type of DQ plane back to int16 (gemcombine sets it to int32)
         if adstack[0]["DQ"] is not None:
             for dqext in adstack[0]["DQ"]:
                 dqext.data = dqext.data.astype(np.int16)
-                dqext.set_key_value("BUNIT","bit")
+
+                # Also delete the BUNIT keyword (gemcombine
+                # sets it to same value as SCI)
+                if dqext.get_key_value("BUNIT") is not None:
+                    del dqext.header['BUNIT']
+
+        # Fix BUNIT in VAR plane as well
+        # (gemcombine sets it to same value as SCI)
+        bunit = adstack[0]["SCI",1].get_key_value("BUNIT")
+        if adstack[0]["VAR"] is not None:
+            gt.update_key_value(adinput=adstack[0], function="bunit",
+                                value="%s*%s" % (bunit,bunit),
+                                extname="VAR")
 
         # Gemcombine sets the GAIN keyword to the sum of the gains; reset
         # it to the average instead.  Set the RDNOISE to the sum in 
