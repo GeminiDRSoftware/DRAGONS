@@ -286,6 +286,89 @@ def correct_wcs_to_reference_image(adinput=None,
         log.error(repr(sys.exc_info()[1]))
         raise
 
+def correct_wcs_to_reference_catalog(adinput=None):
+    """
+    Using co-ordinates of matched objects in the object and reference catalogs,
+    calculate the WCS offset needed to bring the two into agreement.
+    For now, this is limited to a translational offset only
+    Update the WCS of the image components of the astrodata object with the 
+    corrected WCS
+    Update the ra,dec columns of the objcat componenets of the astrodata object
+    with the corrected positions, according to the new WCS.
+    """
+
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+
+    # The validate_input function ensures that adinput is not None and returns
+    # a list containing one or more AstroData objects
+    adinput = gt.validate_input(adinput=adinput)
+
+    # Define the keyword to be used for the time stamp for this user level
+    # function
+    timestamp_key = timestamp_keys["match_objcat_refcat"]
+
+    try:
+
+        # Loop over each input AstroData object in the input list
+        for ad in adinput:
+
+            # Loop over the OBJCAT extensions
+            for objcat in ad['OBJCAT']:
+                extver = objcat.extver()
+
+                # Check that a refcat exists for this objcat extver
+                refcat = ad['REFCAT',extver]
+                if(not(refcat)):
+                    log.critical("Missing ['REFCAT',extver] in %s" % (extver, filename))
+                    log.critical("Cannot calculate astrometry against missing refcat")
+                else:
+                    # Initialise lists to keep the offsets in
+                    delta_ra = []
+                    delta_dec = []
+
+                    # Loop through the objcat, 
+                    for obj in objcat.data:
+                        if(obj['refid'] != -999):
+                            refid = obj['refid']
+                            obj_ra = obj['ra']
+                            obj_dec = obj['dec']
+                            ref_ra = None
+                            ref_dec = None
+                            # Find the reference catalog line.
+                            # There must be a more efficient way to do this...
+                            for ref in refcat.data:
+                                if(ref['Id'] == refid):
+                                    ref_ra = ref['RAJ2000']
+                                    ref_dec = ref['DEJ2000']
+                                    break
+                            if(ref_ra and ref_dec):
+                                delta_ra.append(ref_ra - obj_ra)
+                                delta_dec.append(ref_dec - obj_dec)
+
+                    # Report the mean and standard deviation of the offsets:
+                    ra_mean = np.mean(delta_ra) * 3600.0
+                    ra_sigma = np.std(delta_ra) * 3600.0
+                    dec_mean = np.mean(delta_dec) * 3600.0
+                    dec_sigma = np.std(delta_dec) * 3600.0
+                    ra_median = np.median(delta_ra) * 3600.0
+                    dec_median = np.median(delta_dec) * 3600.0
+
+                    log.stdinfo("Astrometric Offset between [OBJCAT, %d] and [REFCAT, %d] in arcsec is:" % (extver, extver))
+                    log.stdinfo("RA_mean +- RA_sigma, Dec_mean +- Dec_sigma: %.2f +- %.2f, %.2f +- %.2f" % (ra_mean, ra_sigma, dec_mean, dec_sigma))
+                    log.stdinfo("Median Offset is: %.2f, %.2f" % (ra_median, dec_median))
+
+
+
+
+        return adinput
+
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
+
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
