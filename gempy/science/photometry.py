@@ -24,7 +24,7 @@ timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
 def add_objcat(adinput=None, extver=1, replace=False,
                id=None, x=None, y=None, ra=None, dec=None, 
                fwhm_pix=None, fwhm_arcsec=None, ellipticity=None,
-               flux=None, class_star=None, flags=None,
+               flux=None, mag=None, background=None, class_star=None, flags=None,
                refid=None, refmag=None):
     """
     Add OBJCAT table if it does not exist, update or replace it if it does.
@@ -74,7 +74,7 @@ def add_objcat(adinput=None, extver=1, replace=False,
     :param class_star: List of class_star values. Set to -999 if not provided.
     :type class_star: Python list of floats (value between 0 and 1)
     
-    :param flags: List of flags values. Set to 0 (good) if not provided.
+    :param flags: List of flags values. Set to -999 if not provided.
     :type flags: Python list of ints    
 
     :param refid: List of reference ids. Set to '' if not provided.
@@ -120,6 +120,10 @@ def add_objcat(adinput=None, extver=1, replace=False,
                     objcat.data.field("dec")[:] = dec
                 if flux is not None:
                     objcat.data.field("flux")[:] = flux
+                if mag is not None:
+                    objcat.data.field("mag")[:] = mag
+                if background is not None:
+                    objcat.data.field("background")[:] = background
                 if fwhm_pix is not None:
                     objcat.data.field("fwhm_pix")[:] = fwhm_pix
                 if fwhm_arcsec is not None:
@@ -146,6 +150,10 @@ def add_objcat(adinput=None, extver=1, replace=False,
                 id = range(1,nlines+1)
             if flux is None:
                 flux = [-999]*nlines
+            if mag is None:
+                mag = [-999]*nlines
+            if background is None:
+                background = [-999]*nlines
             if fwhm_pix is None:
                 fwhm_pix= [-999]*nlines
             if fwhm_arcsec is None:
@@ -155,9 +163,9 @@ def add_objcat(adinput=None, extver=1, replace=False,
             if class_star is None:
                 class_star = [-999]*nlines
             if flags is None:
-                flags = [0]*nlines
+                flags = [-999]*nlines
             if refid is None:
-                refid = [""]*nlines
+                refid = [-999]*nlines
             if refmag is None:
                 refmag = [-999]*nlines
             
@@ -168,16 +176,18 @@ def add_objcat(adinput=None, extver=1, replace=False,
             c4 = pf.Column(name="ra",format="E",array=ra)
             c5 = pf.Column(name="dec",format="E",array=dec)
             c6 = pf.Column(name="flux",format="E",array=flux)
-            c7 = pf.Column(name="fwhm_pix",format="E",array=fwhm_pix)
-            c8 = pf.Column(name="fwhm_arcsec",format="E",array=fwhm_arcsec)
-            c9 = pf.Column(name="ellipticity",format="E",array=ellipticity)
-            c10 = pf.Column(name="class_star",format="E",array=class_star)
-            c11 = pf.Column(name="flags",format="J",array=flags)
-            c12 = pf.Column(name="refid",format="22A",array=refid)
-            c13 = pf.Column(name="refmag",format="E",array=refmag)
+            c7 = pf.Column(name="mag",format="E",array=mag)
+            c8 = pf.Column(name="background",format="E",array=background)
+            c9 = pf.Column(name="fwhm_pix",format="E",array=fwhm_pix)
+            c10 = pf.Column(name="fwhm_arcsec",format="E",array=fwhm_arcsec)
+            c11 = pf.Column(name="ellipticity",format="E",array=ellipticity)
+            c12 = pf.Column(name="class_star",format="E",array=class_star)
+            c13 = pf.Column(name="flags",format="J",array=flags)
+            c14 = pf.Column(name="refid",format="J",array=refid)
+            c15 = pf.Column(name="refmag",format="E",array=refmag)
             
             # make new pyfits table
-            col_def = pf.ColDefs([c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13])
+            col_def = pf.ColDefs([c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15])
             tb_hdu = pf.new_table(col_def)
             tb_ad = AstroData(tb_hdu)
             tb_ad.rename_ext("OBJCAT",extver)
@@ -209,7 +219,7 @@ def detect_sources(adinput=None, method="sextractor",
     """
     Find x,y positions of all the objects in the input image. Append 
     a FITS table extension with position information plus columns for
-    standard objects to be updated with positions from addReferenceCatalogs
+    standard objects to be updated with position from addReferenceCatalogs
     (if any are found for the field).
     
     The appended FITS table with extension name 'OBJCAT' will contain
@@ -294,7 +304,7 @@ def detect_sources(adinput=None, method="sextractor",
                             log.stdinfo("No sources found in %s['SCI',%d]" %
                                         (ad.filename,extver))
                             obj_x,obj_y,obj_ra,obj_dec = ([],[],[],[])
-                            flux,fwhm_pix,fwhm_arcsec,ellip = (None,None,None,None)
+                            flux,mag,background,fwhm_pix,fwhm_arcsec,ellip = (None,None,None,None,None,None)
                             class_star,flags = (None,None)
                         else:
                             obj_x = obj_list['x']
@@ -302,6 +312,8 @@ def detect_sources(adinput=None, method="sextractor",
                             obj_ra = obj_list['ra']
                             obj_dec = obj_list['dec']
                             flux = obj_list['flux']
+                            mag = obj_list['mag']
+                            background = obj_list['background']
                             fwhm_pix = obj_list['fwhm_pix']
                             fwhm_arcsec = obj_list['fwhm_arcsec']
                             ellip = obj_list['ellipticity']
@@ -352,7 +364,7 @@ def detect_sources(adinput=None, method="sextractor",
                 adoutput = add_objcat(adinput=ad, extver=extver, 
                                       x=obj_x, y=obj_y, 
                                       ra=obj_ra, dec=obj_dec,
-                                      flux=flux,fwhm_pix=fwhm_pix,
+                                      flux=flux,mag=mag,background=background,fwhm_pix=fwhm_pix,
                                       fwhm_arcsec=fwhm_arcsec,
                                       ellipticity=ellip,
                                       class_star=class_star,
@@ -390,6 +402,236 @@ def detect_sources(adinput=None, method="sextractor",
         log.critical(repr(sys.exc_info()[1]))
         raise
 
+def add_reference_catalog(adinput=None, source='sdss7', radius=0.067):
+    """
+    Currently, the only supported source catalog is sdss7.
+
+    Query a vizier server hosting an sdss7 catalog to get a catalog of all the
+    SDSS DR7 sources within a given radius of the pointing center.
+
+    Append the catalog as a FITS table with extenstion name 'REFCAT', containing
+    the following columns:
+
+    - 'Id'       : Unique ID. Simple running number
+    - 'Name'     : SDSS catalog source name
+    - 'RAJ2000'  : RA as J2000 decimal degrees
+    - 'DEJ2000'  : Dec as J2000 decimal degrees
+    - 'umag'     : SDSS u band magnitude
+    - 'e_umag'   : SDSS u band magnitude error estimage
+    - 'gmag'     : SDSS g band magnitude
+    - 'e_gmag'   : SDSS g band magnitude error estimage
+    - 'rmag'     : SDSS r band magnitude
+    - 'e_rmag'   : SDSS r band magnitude error estimage
+    - 'imag'     : SDSS i band magnitude
+    - 'e_imag'   : SDSS i band magnitude error estimage
+    - 'zmag'     : SDSS z band magnitude
+    - 'e_zmag'   : SDSS z band magnitude error estimage
+
+    :param adinput: image(s) to add reference catalogs for
+    :type adinput: AstroData objects, either a single instance or a list
+
+    :param source: Source catalog to query. This used as the catalog
+                   name on the vizier server
+    :type source: string
+
+    :param radius: The radius of the cone to query in the catalog, in degrees. 
+                   Default is 4 arcmin
+    :type radius: float
+    """
+
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+
+    # The validate_input function ensures that adinput is not None and returns
+    # a list containing one or more AstroData objects
+    adinput = gt.validate_input(adinput=adinput)
+
+    # Define the keyword to be used for the time stamp for this user level
+    # function
+    timestamp_key = timestamp_keys["add_reference_catalog"]
+
+    # Get the Vizier server URL
+    url = Lookups.get_lookup_table("Gemini/refcat_dict", "refcat_dict")['VIZIER']
+
+    # Add the source catalog specifier to the URL
+    url += "-source=%s&" % source
+
+    # Initialise an adoutput list
+    adoutput_list = []
+    try:
+        # Loop over each AstroData object on the input list
+        for ad in adinput:
+
+            # Loop through the science extensions
+            for sciext in ad['SCI']:
+                extver = sciext.extver()
+
+                ra = sciext.ra().as_pytype()
+                dec = sciext.dec().as_pytype()
+
+                # Query the vizier server, get the votable
+                # Catch and ignore the warning about DEFINITIONS element being deprecated in VOTable 1.1
+                log.fullinfo("Calling Vizier at %s" % url)
+                import warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    try:
+                        import vo.conesearch
+                        import vo.table
+                        table = vo.conesearch.conesearch(catalog_db=url, ra=ra, dec=dec, sr=radius, pedantic=False, verb=2, verbose=False)
+                    except:
+                        log.critical("Problem importing the vo module. This isn't going to work")
+
+                log.stdinfo("Found %d reference catalog sources for %s['SCI',%d]" % (len(table.array), ad.filename, extver))
+
+                # Parse the votable that we got back, into arrays for each column.
+                sdssname = table.array['SDSS']
+                umag = table.array['umag']
+                e_umag = table.array['e_umag']
+                gmag = table.array['gmag']
+                e_gmag = table.array['e_gmag']
+                rmag = table.array['rmag']
+                e_rmag = table.array['e_rmag']
+                imag = table.array['imag']
+                e_imag = table.array['e_imag']
+                zmag = table.array['zmag']
+                e_zmag = table.array['e_zmag']
+                ra = table.array['RAJ2000']
+                dec = table.array['DEJ2000']
+
+                # Create a running id number
+                refid=range(1, len(sdssname)+1)
+
+                # Make the pyfits columns and table
+                c1 = pf.Column(name="Id",format="J",array=refid)
+                c2 = pf.Column(name="Name", format="24A", array=sdssname)
+                c3 = pf.Column(name="RAJ2000",format="D",unit="deg",array=ra)
+                c4 = pf.Column(name="DEJ2000",format="D",unit="deg",array=dec)
+                c5 = pf.Column(name="umag",format="E",array=umag)
+                c6 = pf.Column(name="e_umag",format="E",array=e_umag)
+                c7 = pf.Column(name="gmag",format="E",array=gmag)
+                c8 = pf.Column(name="e_gmag",format="E",array=e_gmag)
+                c9 = pf.Column(name="rmag",format="E",array=rmag)
+                c10 = pf.Column(name="e_rmag",format="E",array=e_rmag)
+                c11 = pf.Column(name="imag",format="E",array=imag)
+                c12 = pf.Column(name="e_imag",format="E",array=e_imag)
+                c13 = pf.Column(name="zmag",format="E",array=zmag)
+                c14 = pf.Column(name="e_zmag",format="E",array=e_zmag)
+                col_def = pf.ColDefs([c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14])
+                tb_hdu = pf.new_table(col_def)
+
+                # Add comments to the REFCAT header to describe it.
+                tb_hdu.header.add_comment('Source catalog derived from the %s catalog on vizier' % table.name)
+                tb_hdu.header.add_comment('Vizier Server queried: %s' % url)
+                for fieldname in ('RAJ2000', 'DEJ2000', 'umag', 'e_umag', 'gmag', 'e_gmag', 'rmag', 'e_rmag', 'imag', 'e_imag', 'zmag', 'e_zmag'):
+                    tb_hdu.header.add_comment('UCD for field %s is: %s' % (fieldname, table.get_field_by_id(fieldname).ucd))
+
+                tb_ad = AstroData(tb_hdu)
+                tb_ad.rename_ext('REFCAT', extver)
+
+                if(ad['REFCAT',extver]):
+                    log.fullinfo("Replacing existing REFCAT in %s" % ad.filename)
+                    ad = _replace_ext(ad, 'REFCAT', extver, tb_hdu)
+                else:
+                    log.fullinfo("Adding REFCAT to %s" % ad.filename)
+                    ad.append(tb_hdu)
+
+
+            adoutput_list.append(ad)
+
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+
+        return adoutput_list
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
+
+def match_objcat_refcat(adinput=None):
+    """
+    Match the sources in the objcats against those in the corresponding
+    refcat. Update the refid column in the objcat with the Id of the 
+    catalog entry in the refcat. Update the refmag column in the objcat
+    with the magnitude of the corresponding source in the refcat in the
+    band that the image is taken in.
+
+    :param adinput: AD object(s) to match catalogs in
+    :type adinput: AstroData objects, either a single instance or a list
+    """
+
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+
+    # The validate_input function ensures that adinput is not None and returns
+    # a list containing one or more AstroData objects
+    adinput = gt.validate_input(adinput=adinput)
+
+    # Define the keyword to be used for the time stamp for this user level
+    # function
+    timestamp_key = timestamp_keys["match_objcat_refcat"]
+
+    # Initialize the list of output AstroData objects
+    adoutput_list = []
+    try:
+
+        # Loop over each input AstroData object in the input list
+        for ad in adinput:
+            filter_name = ad.filter_name(pretty=True).as_pytype()
+            if filter_name in ['u', 'g', 'r', 'i', 'z']:
+                magcolname = filter_name+'mag'
+            else:
+                log.warning("Filter %s is not in SDSS - will not be able to flux calibrate" % filter_name)
+                magcolname = None
+
+            # Loop through the objcat extensions
+            for objcat in ad['OBJCAT']:
+                extver = objcat.extver()
+
+                # Check that a refcat exists for this objcat extver
+                refcat = ad['REFCAT',extver]
+                if(not(refcat)):
+                    log.critical("Missing ['REFCAT',extver] in %s" % (extver, filename))
+                    log.critical("Cannot match objcat against missing refcat")
+                else:
+                    # Get the x and y position lists from both catalogs
+                    xx = objcat.data['ra']
+                    yy = objcat.data['dec']
+                    sx = refcat.data['RAJ2000']
+                    sy = refcat.data['DEJ2000']
+
+                    # FIXME - need to address the wraparound problem here
+                    # if we straddle ra = 360.00 = 0.00
+
+                    initial = 10.0/3600.0 # 10 arcseconds in degrees
+                    final = 0.5/3600.0 # 0.5 arcseconds in degrees
+
+                    (oi, ri) = at.match_cxy(xx,sx,yy,sy, firstPass=initial, delta=final, log=log)
+
+                    log.stdinfo("Matched %d objects in ['OBJCAT',%d] against ['REFCAT',%d]" % (len(oi), extver, extver))
+
+                    # Loop through the reference list updating the refid in the objcat
+                    # and the refmag, if we can
+                    for i in range(len(oi)):
+                        objcat.data['refid'][oi[i]] = refcat.data['Id'][ri[i]]
+                        if(magcolname):
+                            objcat.data['refmag'][oi[i]] = refcat.data[magcolname][ri[i]]
+
+
+            adoutput_list.append(ad)
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+        return adoutput_list
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
 
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
@@ -1003,9 +1245,11 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
 
         x = tdata['X_IMAGE']
         y = tdata['Y_IMAGE']
-        ra = tdata['ALPHA_SKY']
-        dec = tdata['DELTA_SKY']
-        flux = tdata['FLUX_BEST']
+        ra = tdata['X_WORLD']
+        dec = tdata['Y_WORLD']
+        flux = tdata['FLUX_AUTO']
+        mag = tdata['MAG_AUTO']
+        background = tdata['BACKGROUND']
         fwhm_pix = tdata['FWHM_IMAGE']
         fwhm_arcsec = tdata['FWHM_WORLD']*3600.0
         ellip = tdata['ELLIPTICITY']
@@ -1049,10 +1293,10 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
     os.remove(outtmpfn)
 
     obj_list = np.rec.fromarrays([x,y,ra,dec,
-                                  flux,fwhm_pix,fwhm_arcsec,ellip,
+                                  flux,mag,background,fwhm_pix,fwhm_arcsec,ellip,
                                   class_star,flags],
                                  names=["x","y","ra","dec",
-                                        "flux","fwhm_pix","fwhm_arcsec",
+                                        "flux","mag","background","fwhm_pix","fwhm_arcsec",
                                         "ellipticity","class_star","flags"])
     return obj_list,seeing_estimate
 
