@@ -1,17 +1,59 @@
-# GAIA SExtractor catalogue parameters file.
-NUMBER
-#X_WORLD
-#Y_WORLD
+# Sextractor catalog parameters
+NUMBER # Running ID number
+#
+# Position Parameters
+X_IMAGE # Detection barycenter in pixel coordinates
+Y_IMAGE # Detection barycenter in pixel coordinates
+ERRX2_IMAGE # Variance estimate on X_IMAGE
+ERRY2_IMAGE # Variance estimate on Y_IMAGE
+ERRXY_IMAGE # Co-Variance estimate X_IMAGE,Y_IMAGE
+X_WORLD # Detection barycenter in world coordinates
+Y_WORLD # Detection barycenter in world coordinates
+ERRX2_WORLD # Variance estimate on X_WORLD
+ERRY2_WORLD # Variance estimate on Y_WORLD
+ERRXY_WORLD # Co-Variance estimate on X_WORLD,Y_WORLD
 #XWIN_WORLD
 #YWIN_WORLD
-X_IMAGE
-Y_IMAGE
 #XWIN_IMAGE
 #YWIN_IMAGE
 #X_PIXEL
 #Y_PIXEL
-FLUX_ISO
-FLUXERR_ISO
+#
+# Shape Parameters
+A_IMAGE # Semi-major axis length in pixels
+B_IMAGE # Semi-minor axis length in pixels
+THETA_IMAGE # Position anlge between semi-major axis and NAXIS1 image axis, measures counter-clockwise
+ERRA_IMAGE # Variance on A_IMAGE
+ERRB_IMAGE # Variance on B_IMAGE
+ERRTHETA_IMAGE # Variance on THETA_IMAGE
+A_WORLD # Semi-major axis length in degrees
+B_WORLD # Semi-minor axis length in degrees
+THETA_WORLD # Position anlge between semi-major axis and 1st axis of WCS
+ERRA_WORLD # Variance on A_WORLD
+ERRB_WORLD # Variance on B_WORLD
+ERRTHETA_WORLD # Variance on THETA_WORLD
+FWHM_IMAGE # FWHM in pixels
+FWHM_WORLD # FWHM in degrees
+ELLIPTICITY # Ellipticity
+#
+#
+# Photometry
+FLUX_AUTO # Flux measurement, automatically sized apperture
+FLUXERR_AUTO # Standard Deviation on FLUX_AUTO
+MAG_AUTO # As FLUX_AUTO but in magnitudes
+MAGERR_AUTO # Standard Deviation on MAG_AUTO
+#
+# Classification
+CLASS_STAR
+#
+# Flags etc
+ISOAREA_IMAGE # Number of pixels covered by object.
+FLAGS # Sextractor detection flags
+IMAFLAGS_ISO # DQ values from data over area of object
+#
+# Background flux level
+BACKGROUND
+#
 #MAG_ISO
 #MAGERR_ISO
 #FLUX_ISOCOR
@@ -22,35 +64,29 @@ FLUXERR_ISO
 #FLUXERR_APER
 #MAG_APER
 #MAGERR_APER
-FLUX_AUTO
-FLUXERR_AUTO
-#MAG_AUTO
-#MAGERR_AUTO
 #FLUX_PETRO
 #FLUXERR_PETRO
 #MAG_PETRO
 #MAGERR_PETRO
-FLUX_BEST
-FLUXERR_BEST
-MAG_BEST
-MAGERR_BEST
+#FLUX_BEST
+#FLUXERR_BEST
+#MAG_BEST
+#MAGERR_BEST
 #FLUX_WIN
 #FLUXERR_WIN
 #MAG_WIN
 #MAGERR_WIN
 #KRON_RADIUS
 #PETRO_RADIUS
-#BACKGROUND
-THRESHOLD
+#THRESHOLD
 #FLUX_MAX
-ISOAREA_IMAGE
 #ISOAREAF_IMAGE
 #XMIN_IMAGE
 #YMIN_IMAGE
 #XMAX_IMAGE
 #YMAX_IMAGE
-ALPHA_SKY
-DELTA_SKY
+#ALPHA_SKY
+#DELTA_SKY
 #ALPHA_J2000
 #DELTA_J2000
 #ALPHA_B1950
@@ -69,7 +105,7 @@ DELTA_SKY
 #CXY_WORLD
 #A_IMAGE
 #B_IMAGE
-THETA_IMAGE
+#THETA_IMAGE
 #A_WORLD
 #B_WORLD
 #THETA_WORLD
@@ -136,11 +172,5 @@ THETA_IMAGE
 #RAD13
 #RAD14
 #RAD15
-FLAGS
-IMAFLAGS_ISO
-FWHM_IMAGE
-FWHM_WORLD
-ELONGATION
-ELLIPTICITY
-CLASS_STAR
 #VIGNET
+
