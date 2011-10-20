@@ -359,8 +359,7 @@ def correct_wcs_to_reference_catalog(adinput=None):
                     log.stdinfo("RA_mean +- RA_sigma, Dec_mean +- Dec_sigma: %.2f +- %.2f, %.2f +- %.2f" % (ra_mean, ra_sigma, dec_mean, dec_sigma))
                     log.stdinfo("Median Offset is: %.2f, %.2f" % (ra_median, dec_median))
 
-
-
+                    # Need to actually correct the WCS here.
 
         return adinput
 
