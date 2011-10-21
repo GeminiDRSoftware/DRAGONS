@@ -321,8 +321,8 @@ def correct_wcs_to_reference_catalog(adinput=None):
                 # Check that a refcat exists for this objcat extver
                 refcat = ad['REFCAT',extver]
                 if(not(refcat)):
-                    log.critical("Missing ['REFCAT',extver] in %s" % (extver, filename))
-                    log.critical("Cannot calculate astrometry against missing refcat")
+                    log.warning("Missing [REFCAT,%d] in %s" % (extver, ad.filename))
+                    log.warning("Cannot calculate astrometry against missing refcat")
                 else:
                     # Initialise lists to keep the offsets in
                     delta_ra = []

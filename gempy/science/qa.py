@@ -613,7 +613,7 @@ def measure_zp(adinput=None):
                 # Need to correct the mags for the exposure time
                 et = float(ad.exposure_time())
                 magcor = 2.5*math.log10(et)
-                mags += magcor
+                mags = np.where(mags==-999,mags,mags+magcor)
 
                 # FIXME: Need to determine if we're in electrons or ADUs and correct
                 # the mags for the gain if we're in ADU here. ZPs are in electrons.
@@ -627,6 +627,12 @@ def measure_zp(adinput=None):
                 zps = np.where((zps > -500), zps, None)
 
                 zps = zps[np.flatnonzero(zps)]
+
+                if len(zps)==0:
+                    log.warning('No reference sources found in %s[OBJCAT,%d]'%
+                                (ad.filename,extver))
+                    adoutput_list.append(ad)
+                    continue
 
                 mean = np.mean(zps)
                 sigma = np.std(zps)

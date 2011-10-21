@@ -24,8 +24,8 @@ timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
 def add_objcat(adinput=None, extver=1, replace=False,
                id=None, x=None, y=None, ra=None, dec=None, 
                fwhm_pix=None, fwhm_arcsec=None, ellipticity=None,
-               flux=None, mag=None, background=None, class_star=None, flags=None,
-               refid=None, refmag=None):
+               flux=None, mag=None, background=None, class_star=None,
+               flags=None, refid=None, refmag=None):
     """
     Add OBJCAT table if it does not exist, update or replace it if it does.
     Lengths of all provided lists should be the same.
@@ -304,7 +304,8 @@ def detect_sources(adinput=None, method="sextractor",
                             log.stdinfo("No sources found in %s['SCI',%d]" %
                                         (ad.filename,extver))
                             obj_x,obj_y,obj_ra,obj_dec = ([],[],[],[])
-                            flux,mag,background,fwhm_pix,fwhm_arcsec,ellip = (None,None,None,None,None,None)
+                            flux,mag,background,fwhm_pix,fwhm_arcsec,ellip = \
+                                (None,None,None,None,None,None)
                             class_star,flags = (None,None)
                         else:
                             obj_x = obj_list['x']
@@ -326,8 +327,8 @@ def detect_sources(adinput=None, method="sextractor",
                 if method=="daofind":
                     pixscale = sciext.pixel_scale()
                     if pixscale is None:
-                        log.warning("%s does not have a pixel scale, "% ad.filename +
-                                    "using 1.0 arcsec/pix")
+                        log.warning("%s does not have a pixel scale, " \
+                                    "using 1.0 arcsec/pix" % ad.filename)
                         pixscale = 1.0
 
                     if fwhm is None:
@@ -340,8 +341,12 @@ def detect_sources(adinput=None, method="sextractor",
                                         threshold=threshold, fwhm=fwhm)
 
                     # daofind does not return flux, fwhm, ellipticity, etc.
-                    flux,fwhm_pix,fwhm_arcsec,ellip = (None,None,None,None)
-                    class_star,flags = (None,None)
+                    flux,mag,background,fwhm_pix,fwhm_arcsec,ellip = \
+                        (None,None,None,None,None,None)
+                    class_star = None
+
+                    # Make default flag 0 (good) for daofind sources
+                    flags = [0]*len(obj_list)
 
                     if len(obj_list)==0:
                         log.stdinfo("No sources found in %s['SCI',%d]" %
@@ -350,7 +355,7 @@ def detect_sources(adinput=None, method="sextractor",
                     else:
 
                         # separate pixel coordinates into x, y lists
-                        obj_x, obj_y = [np.asarray(obj_list)[:,k] for k in [0,1]]
+                        obj_x,obj_y = [np.asarray(obj_list)[:,k] for k in [0,1]]
                 
                         # use WCS to convert pixel coordinates to RA/Dec
                         wcs = pywcs.WCS(sciext.header)
@@ -364,7 +369,9 @@ def detect_sources(adinput=None, method="sextractor",
                 adoutput = add_objcat(adinput=ad, extver=extver, 
                                       x=obj_x, y=obj_y, 
                                       ra=obj_ra, dec=obj_dec,
-                                      flux=flux,mag=mag,background=background,fwhm_pix=fwhm_pix,
+                                      flux=flux,mag=mag,
+                                      background=background,
+                                      fwhm_pix=fwhm_pix,
                                       fwhm_arcsec=fwhm_arcsec,
                                       ellipticity=ellip,
                                       class_star=class_star,
@@ -379,14 +386,14 @@ def detect_sources(adinput=None, method="sextractor",
                 log.stdinfo("Fitting sources for simple photometry")
                 if seeing_est is None:
                     # Run the fit once to get a rough seeing estimate 
-                    junk,seeing_est = _fit_sources(ad,ext=1,max_sources=20,
-                                                   threshold=threshold,
-                                                   centroid_function=centroid_function,
-                                                   seeing_estimate=None)
-                ad,seeing_est = _fit_sources(ad,max_sources=max_sources,
-                                             threshold=threshold,
-                                             centroid_function=centroid_function,
-                                             seeing_estimate=seeing_est)
+                    junk,seeing_est = _fit_sources(
+                        ad,ext=1,max_sources=20,threshold=threshold,
+                        centroid_function=centroid_function,
+                        seeing_estimate=None)
+                ad,seeing_est = _fit_sources(
+                    ad,max_sources=max_sources,threshold=threshold,
+                    centroid_function=centroid_function,
+                    seeing_estimate=seeing_est)
         
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
