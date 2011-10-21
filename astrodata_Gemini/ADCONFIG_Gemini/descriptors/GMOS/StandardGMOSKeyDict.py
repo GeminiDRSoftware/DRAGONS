@@ -5,7 +5,7 @@ stdkeyDictGMOS = {
     "key_camera":"INSTRUME",
     "key_ccdsum":"CCDSUM",
     "key_central_wavelength":"GRWLEN",
-    "key_ccdname":"CCDNAME",
+    "key_detector_name":"CCDNAME",
     "key_disperser":"GRATING",
     "key_dispersion":"CD1_1",
     "key_filter1":"FILTER1",

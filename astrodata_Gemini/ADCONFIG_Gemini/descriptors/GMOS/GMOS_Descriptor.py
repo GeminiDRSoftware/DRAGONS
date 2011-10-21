@@ -28,8 +28,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
                                      "gmosampsRdnoise",
                                      "gmosampsRdnoiseBefore20060831")
+        #self.gmoszeropoints = Lookups.get_lookup_table("Gemini/GMOS/GMOSZeropointTable", "gmoszeropoints")
         GEMINI_DescriptorCalc.__init__(self)
     
+
     def amp_read_area(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always return a dictionary where the key
@@ -147,6 +149,36 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             output_units=output_units)
         
         return ret_central_wavelength
+
+    def detector_name(self, dataset, **args):
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always return a dictionary where the key
+        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        ret_detector_name = {}
+        # Loop over the science extensions in the dataset
+        for ext in dataset["SCI"]:
+            # Get the name of the detector (ccdname) from the header
+            # of each pixel data extension. The ccdname keyword is defined in
+            # the local key dictionary (stdkeyDictGMOS) but is read from the
+            # updated global key dictionary (self.get_descriptor_key())
+            detname = ext.get_key_value(self.get_descriptor_key("key_detector_name"))
+            if detname is None:
+                # The get_key_value() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
+                if hasattr(ext, "exception_info"):
+                    raise ext.exception_info
+            # Return a dictionary with the detectorstring as
+            # the value
+            ret_detector_name.update({
+                (ext.extname(), ext.extver()):str(detname)})
+        if ret_detector_name == {}:
+            # If the dictionary is still empty, the AstroData object was not
+            # autmatically assigned a "SCI" extension and so the above for loop
+            # was not entered
+            raise Errors.CorruptDataError()
+
+        return ret_detector_name
     
     def detector_x_bin(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
@@ -782,6 +814,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def saturation_level(self, dataset, **args):
         # Return the saturation level integer
+        # This is the ADC saturation level (2^16) minus a couple
+        # of ADUs to account for noise
         ret_saturation_level = int(65530)
         
         return ret_saturation_level

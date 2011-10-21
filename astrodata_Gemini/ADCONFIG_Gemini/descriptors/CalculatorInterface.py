@@ -687,6 +687,54 @@ class CalculatorInterface:
                 self.exception_info = sys.exc_info()[1]
                 return None
     
+    def detector_name(self, format=None, **args):
+        """
+        Return the detector_name value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :return: the detector_name
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "detector_name")
+            if not hasattr(self.descriptor_calculator, "detector_name"):
+                key = "key_"+"detector_name"
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for detector_name"
+                    raise KeyError(msg)
+            else:
+                retval = self.descriptor_calculator.detector_name(self, **args)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "detector_name",
+                                   ad = self,
+                                   pytype = str )
+            return ret
+        except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
+                raise
+            else:
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()[1]
+                return None
+    
     def detector_x_bin(self, format=None, **args):
         """
         Return the detector_x_bin value
