@@ -28,7 +28,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
                                      "gmosampsRdnoise",
                                      "gmosampsRdnoiseBefore20060831")
-        #self.gmoszeropoints = Lookups.get_lookup_table("Gemini/GMOS/GMOSZeropointTable", "gmoszeropoints")
+        self.gmoszeropoints = Lookups.get_lookup_table("Gemini/GMOS/Nominal_Zeropoints", "nominal_zeropoints")
         GEMINI_DescriptorCalc.__init__(self)
     
 
@@ -619,6 +619,24 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_nod_pixels
     
+    def nominal_zeropoint(self, dataset, **args):
+        # Look up the nominal zeropoints for a dataset
+        # A value per detector is returned
+        table = self.gmoszeropoints
+        ret_nominal_zeropoint = {}
+        for ext in dataset["SCI"]:
+            filt = str(ext.filter_name(pretty=True))
+            det = str(ext.detector_name())
+
+            try:
+                zp = table[(det, filt)]
+            except KeyError:
+                zp = None
+
+            ret_nominal_zeropoint.update({(ext.extname(), ext.extver()) : zp})
+
+        return ret_nominal_zeropoint
+
     def non_linear_level(self, dataset, **args):
         # Set the non linear level equal to the saturation level for GMOS
         ret_non_linear_level = dataset.saturation_level()
@@ -819,3 +837,4 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_saturation_level = int(65530)
         
         return ret_saturation_level
+
