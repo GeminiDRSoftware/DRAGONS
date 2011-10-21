@@ -12,6 +12,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
     _update_stdkey_dict = stdkeyDictGEMINI
+    nominal_extinction_table = None
 
     def __init__(self):
         # Load the lookup tables
@@ -528,13 +529,20 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # This takes the nominal extinction co-efficients from the lookup table
         # for the appropriate telescope (ie site) and filter and multiplies
         # by airmass-1.0 to get the k(airmass-1.0) value
+        #
+        # If the filter is not listed in the table, this descriptor
+        # returns 0.0
         telescope = str(dataset.telescope())
         filt = str(dataset.filter_name(pretty=True))
         airmass = float(dataset.airmass())
 
         table = self.nominal_extinction_table
 
-        coeff = table[(telescope, filt)]
+        try:
+            coeff = table[(telescope, filt)]
+        except KeyError:
+            coeff = 0.0
+
         value = coeff*(airmass - 1.0)
 
         return value
