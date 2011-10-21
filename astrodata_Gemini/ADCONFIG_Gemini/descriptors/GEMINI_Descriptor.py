@@ -2,6 +2,7 @@ import datetime, os, re
 import dateutil.parser
 
 from astrodata import Errors
+from astrodata import Lookups
 from gempy.gemini_metadata_utils import removeComponentID, sectionStrToIntList
 import GemCalcUtil
 from StandardGEMINIKeyDict import stdkeyDictGEMINI
@@ -11,7 +12,13 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
     _update_stdkey_dict = stdkeyDictGEMINI
-    
+
+    def __init__(self):
+        # Load the lookup tables
+        self.nominal_extinction_table = Lookups.get_lookup_table("Gemini/NominalExtinction", "nominal_extinction")
+        # Init the superclass
+        Generic_DescriptorCalc.__init__(self)
+
     def airmass(self, dataset, **args):
         # Get the airmass value from the header of the PHU
         airmass = dataset.phu_get_key_value(
@@ -515,6 +522,22 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # an AstroData Type of "GMOS". For all other Gemini data, raise an
         # exception if this descriptor is called.
         raise Errors.ExistError()
+
+    def nominal_extinction(self, dataset, **args):
+        # Compute the nominal extinction value for this dataset
+        # This takes the nominal extinction co-efficients from the lookup table
+        # for the appropriate telescope (ie site) and filter and multiplies
+        # by airmass-1.0 to get the k(airmass-1.0) value
+        telescope = str(dataset.telescope())
+        filt = str(dataset.filter_name(pretty=True))
+        airmass = float(dataset.airmass())
+
+        table = self.nominal_extinction_table
+
+        coeff = table[(telescope, filt)]
+        value = coeff*(airmass - 1.0)
+
+        return value
     
     def overscan_section(self, dataset, **args):
         # The overscan_section descriptor is only specific to GMOS data. The

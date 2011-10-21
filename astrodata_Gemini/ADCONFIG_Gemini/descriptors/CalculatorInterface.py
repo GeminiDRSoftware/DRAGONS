@@ -1659,6 +1659,54 @@ class CalculatorInterface:
                 self.exception_info = sys.exc_info()[1]
                 return None
     
+    def nominal_extinction(self, format=None, **args):
+        """
+        Return the nominal_extinction value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
+        :return: the nominal_extinction
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            #print hasattr(self.descriptor_calculator, "nominal_extinction")
+            if not hasattr(self.descriptor_calculator, "nominal_extinction"):
+                key = "key_"+"nominal_extinction"
+                #print "mkCI10:",key, repr(keydict)
+                #print "mkCI12:", key in keydict
+                if key in keydict.keys():
+                    retval = self.phu_get_key_value(keydict[key])
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for nominal_extinction"
+                    raise KeyError(msg)
+            else:
+                retval = self.descriptor_calculator.nominal_extinction(self, **args)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "nominal_extinction",
+                                   ad = self,
+                                   pytype = float )
+            return ret
+        except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
+                raise
+            else:
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()[1]
+                return None
+    
     def non_linear_level(self, format=None, **args):
         """
         Return the non_linear_level value
