@@ -137,7 +137,7 @@ def display_gmos(adinput=None, frame=1, saturation=None, overlay=None,
                 else:
                     good_data = scidata
 
-                log.stdinfo("Twilight flat counts:")
+                log.stdinfo("Twilight flat counts for %s:" % disp_ad.filename)
                 log.stdinfo("    Mean value:   %.0f" % np.mean(good_data))
                 log.stdinfo("    Median value: %.0f" % np.median(good_data))
 
