@@ -1078,19 +1078,10 @@ def _tile_objcat(adinput=None,adoutput=None,mapping_dict=None):
         # Make dictionary to hold new objcat data
         objcat_data = {}
         for outext in adout["SCI"]:
-            objcat_data[outext.extver()] = {"x":[],
-                                            "y":[],
-                                            "ra":[],
-                                            "dec":[],
-                                            "fwhm_pix":[],
-                                            "fwhm_arcsec":[],
-                                            "ellipticity":[],
-                                            "flux":[],
-                                            "class_star":[],
-                                            "flags":[],
-                                            "refid":[],
-                                            "refmag":[],
-                                            }
+            objcat_data[outext.extver()] = {
+                "x":[],"y":[],"ra":[],"dec":[],"fwhm_pix":[],"fwhm_arcsec":[],
+                "ellipticity":[],"flux":[],"mag":[],"background":[],
+                "class_star":[],"flags":[],"refid":[],"refmag":[]}
 
         for sciext in ad["SCI"]:
             
@@ -1117,17 +1108,25 @@ def _tile_objcat(adinput=None,adoutput=None,mapping_dict=None):
             objcat_data[out_extver]["dec"].append(dec)
             
             objcat_data[out_extver]["fwhm_pix"].append(
-                                                 inp_objcat.data.field("fwhm_pix"))
+                inp_objcat.data.field("fwhm_pix"))
             objcat_data[out_extver]["fwhm_arcsec"].append(
-                                                 inp_objcat.data.field("fwhm_arcsec"))
+                inp_objcat.data.field("fwhm_arcsec"))
             objcat_data[out_extver]["ellipticity"].append(
-                                                 inp_objcat.data.field("ellipticity"))
+                inp_objcat.data.field("ellipticity"))
+            objcat_data[out_extver]["flux"].append(
+                inp_objcat.data.field("flux"))
+            objcat_data[out_extver]["mag"].append(
+                inp_objcat.data.field("mag"))
+            objcat_data[out_extver]["background"].append(
+                inp_objcat.data.field("background"))
+            objcat_data[out_extver]["flags"].append(
+                inp_objcat.data.field("flags"))
             objcat_data[out_extver]["class_star"].append(
-                                                 inp_objcat.data.field("class_star"))
-            objcat_data[out_extver]["flux"].append(inp_objcat.data.field("flux"))
-            objcat_data[out_extver]["flags"].append(inp_objcat.data.field("flags"))
-            objcat_data[out_extver]["refid"].append(inp_objcat.data.field("refid"))
-            objcat_data[out_extver]["refmag"].append(inp_objcat.data.field("refmag"))
+                inp_objcat.data.field("class_star"))
+            objcat_data[out_extver]["refid"].append(
+                inp_objcat.data.field("refid"))
+            objcat_data[out_extver]["refmag"].append(
+                inp_objcat.data.field("refmag"))
             
         
         for outext in adout["SCI"]:
@@ -1135,19 +1134,22 @@ def _tile_objcat(adinput=None,adoutput=None,mapping_dict=None):
             if len(objcat_data[extver]["x"])==0:
                 continue
             else:
-                adout = ph.add_objcat(adinput=adout, extver=extver,
-                             x=np.hstack(objcat_data[extver]["x"]),
-                             y=np.hstack(objcat_data[extver]["y"]),
-                             ra=np.hstack(objcat_data[extver]["ra"]),
-                             dec=np.hstack(objcat_data[extver]["dec"]),
-                             fwhm_pix=np.hstack(objcat_data[extver]["fwhm_pix"]),
-                             fwhm_arcsec=np.hstack(objcat_data[extver]["fwhm_arcsec"]),
-                             ellipticity=np.hstack(objcat_data[extver]["ellipticity"]),
-                             class_star=np.hstack(objcat_data[extver]["class_star"]),
-                             flux=np.hstack(objcat_data[extver]["flux"]),
-                             flags=np.hstack(objcat_data[extver]["flags"]),
-                             refid=np.hstack(objcat_data[extver]["refid"]),
-                             refmag=np.hstack(objcat_data[extver]["refmag"]),)[0]
+                adout = ph.add_objcat(
+                    adinput=adout, extver=extver,
+                    x=np.hstack(objcat_data[extver]["x"]),
+                    y=np.hstack(objcat_data[extver]["y"]),
+                    ra=np.hstack(objcat_data[extver]["ra"]),
+                    dec=np.hstack(objcat_data[extver]["dec"]),
+                    fwhm_pix=np.hstack(objcat_data[extver]["fwhm_pix"]),
+                    fwhm_arcsec=np.hstack(objcat_data[extver]["fwhm_arcsec"]),
+                    ellipticity=np.hstack(objcat_data[extver]["ellipticity"]),
+                    flux=np.hstack(objcat_data[extver]["flux"]),
+                    mag=np.hstack(objcat_data[extver]["mag"]),
+                    background=np.hstack(objcat_data[extver]["background"]),
+                    flags=np.hstack(objcat_data[extver]["flags"]),
+                    class_star=np.hstack(objcat_data[extver]["class_star"]),
+                    refid=np.hstack(objcat_data[extver]["refid"]),
+                    refmag=np.hstack(objcat_data[extver]["refmag"]),)[0]
 
         adoutput_list.append(adout)
 

@@ -489,6 +489,9 @@ def add_reference_catalog(adinput=None, source='sdss7', radius=0.067):
                         table = vo.conesearch.conesearch(catalog_db=url, ra=ra, dec=dec, sr=radius, pedantic=False, verb=2, verbose=False)
                     except:
                         log.critical("Problem importing the vo module. This isn't going to work")
+                        adoutput_list = adinput
+                        return adoutput_list
+                        
 
                 log.stdinfo("Found %d reference catalog sources for %s['SCI',%d]" % (len(table.array), ad.filename, extver))
 
@@ -602,8 +605,8 @@ def match_objcat_refcat(adinput=None):
                 # Check that a refcat exists for this objcat extver
                 refcat = ad['REFCAT',extver]
                 if(not(refcat)):
-                    log.critical("Missing ['REFCAT',extver] in %s" % (extver, filename))
-                    log.critical("Cannot match objcat against missing refcat")
+                    log.warning("Missing [REFCAT,%d] in %s" % (extver,ad.filename))
+                    log.warning("Cannot match objcat against missing refcat")
                 else:
                     # Get the x and y position lists from both catalogs
                     xx = objcat.data['ra']
