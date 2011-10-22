@@ -196,7 +196,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     # If fewer than 5 frames and in QA context, don't
                     # bother making a fringe -- it'll just make the data
                     # look worse.
-                    red = False
+                    enough = False
                     log.stdinfo("Fewer than 5 frames provided as input " +
                                 "with filter i. Not making fringe frame.")
                     adoutput_list = orig_input
