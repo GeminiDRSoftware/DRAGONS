@@ -272,13 +272,13 @@ class ReductionObject(object):
         
     def runstep(self, primname, cfgobj):
         """runsetp(primitiveName, reductionContext)"""
-        print "RO275:", repr(cfgobj.inputs)
+        #print "RO275:", repr(cfgobj.inputs)
          
         # this is just a blocking thunk to substeps which executes the command clause
         # @@NOTE: substeps does not execute the command clause because it yields to
         # @@..... a caller which either runs/calls it at the top of the loop.
         for cfg in self.substeps(primname, cfgobj):
-            print "RO280:", id(cfg), repr(cfg.inputs)
+            #print "RO280:", id(cfg), repr(cfg.inputs)
             ## call command clause
             if cfg.is_finished():
                 break
