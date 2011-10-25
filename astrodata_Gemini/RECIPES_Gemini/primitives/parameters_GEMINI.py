@@ -128,7 +128,7 @@
         "uiLevel"       : "UIBASIC",
         },
     "correct_WCS": {
-        "default"       : False,
+        "default"       : True,
         "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,
