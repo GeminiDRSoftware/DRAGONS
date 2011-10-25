@@ -607,8 +607,7 @@ def measure_zp(adinput=None):
             # Loop over OBJCATs extensions
             for objcat in ad['OBJCAT']:
                 extver = objcat.extver()
-
-                mags = objcat.data['mag']
+                mags = objcat.data['MAG_AUTO']
 
                 # Need to correct the mags for the exposure time
                 et = float(ad.exposure_time())
@@ -620,7 +619,7 @@ def measure_zp(adinput=None):
 
                 # FIXME: Need to apply the appropreate nominal extinction correction here
 
-                refmags = objcat.data['refmag']
+                refmags = objcat.data['REF_MAG']
 
                 zps = refmags - mags
  
@@ -841,23 +840,42 @@ def _clip_sources(ad, separate_ext=False):
         if objcat.data is None:
             continue
 
-        try:
-            x = objcat.data.field("x")
-            y = objcat.data.field("y")
-            fwhm_pix = objcat.data.field("fwhm_pix")
-            fwhm_arcsec = objcat.data.field("fwhm_arcsec")
-            ellip = objcat.data.field("ellipticity")
-            flags = objcat.data.field("flags")
-            class_star = objcat.data.field("class_star")
-        except:
-            continue
-        
-        good = (flags==0) & (class_star>0.6) & (ellip<0.5)
+        x = objcat.data.field("X_IMAGE")
+        y = objcat.data.field("Y_IMAGE")
+        fwhm_pix = objcat.data.field("FWHM_IMAGE")
+        fwhm_arcsec = objcat.data.field("FWHM_WORLD")
+        ellip = objcat.data.field("ELLIPTICITY")
+        sxflag = objcat.data.field("FLAGS")
+        dqflag = objcat.data.field("IMAFLAGS_ISO")
+        class_star = objcat.data.field("CLASS_STAR")
+        area = objcat.data.field("ISOAREA_IMAGE")
 
-        rec = np.rec.fromarrays([x[good],y[good],fwhm_pix[good],
-                                 fwhm_arcsec[good],ellip[good]],
-                                names=["x","y","fwhm","fwhm_arcsec","ellipticity"])
+        # Source is good if ellipticity defined and <0.5
+        eflag = np.where((ellip>0.5)|(ellip==-999),1,0)
 
+        # Source is good if probability of being a star >0.6
+        sflag = np.where(class_star<0.6,1,0)
+
+        flags = sxflag | eflag | sflag
+
+        # Source is good if greater than 10 connected pixels
+        # Ignore criterion if all undefined (-999)
+        if not np.all(area==-999):
+            aflag = np.where(area<100,1,0)
+            flags |= aflag
+
+        # Source is good if not flagged in DQ plane
+        # Ignore criterion if all undefined (-999)
+        if not np.all(dqflag==-999):
+            flags |= dqflag
+
+        # Use flag=0 to find good data
+        good = (flags==0)
+        rec = np.rec.fromarrays(
+            [x[good],y[good],fwhm_pix[good],fwhm_arcsec[good],ellip[good]],
+            names=["x","y","fwhm","fwhm_arcsec","ellipticity"])
+
+        # Store data for extensions separately if desired
         if separate_ext:
             good_source[("SCI",extver)] = rec
         else:

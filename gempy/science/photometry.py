@@ -21,11 +21,7 @@ from gempy import astrotools as at
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
-def add_objcat(adinput=None, extver=1, replace=False,
-               id=None, x=None, y=None, ra=None, dec=None, 
-               fwhm_pix=None, fwhm_arcsec=None, ellipticity=None,
-               flux=None, mag=None, background=None, class_star=None,
-               flags=None, refid=None, refmag=None):
+def add_objcat(adinput=None, extver=1, replace=False, columns=None):
     """
     Add OBJCAT table if it does not exist, update or replace it if it does.
     Lengths of all provided lists should be the same.
@@ -43,46 +39,11 @@ def add_objcat(adinput=None, extver=1, replace=False,
                     of entries currently in OBJCAT.
     :type replace: boolean
     
-    :param id: List of ID numbers. If not provided, will be automatically
-               assigned to the index (+1) of the list of x-values.
-    :type id: Python list of ints
-    
-    :param x: List of x (pixel) coordinates. Required if creating new table.
-    :type x: Python list of floats
-    
-    :param y: List of y (pixel) coordinates. Required if creating new table.
-    :type y: Python list of floats
-    
-    :param ra: List of RA values. Required if creating new table.
-    :type ra: Python list of floats
-    
-    :param dec: List of Dec values. Required if creating new table.
-    :type dec: Python list of floats
-    
-    :param flux: List of flux values. Set to -999 if not provided.
-    :type flux: Python list of floats
-    
-    :param fwhm_pix: List of fwhm values in pixels. Set to -999 if not provided.
-    :type fwhm_pix: Python list of floats
-    
-    :param fwhm_arcsec: List of fwhm values in arcsec. Set to -999 if not provided.
-    :type fwhm_arcsec: Python list of floats
-    
-    :param ellipticity: List of ellipticity values. Set to -999 if not provided.
-    :type ellipticity: Python list of floats
-    
-    :param class_star: List of class_star values. Set to -999 if not provided.
-    :type class_star: Python list of floats (value between 0 and 1)
-    
-    :param flags: List of flags values. Set to -999 if not provided.
-    :type flags: Python list of ints    
-
-    :param refid: List of reference ids. Set to '' if not provided.
-    :type refid: Python list of strings
-    
-    :param refmag: List of reference magnitude values. Set to -999 if 
-                   not provided.
-    :type refmag: Python list of floats
+    :param columns: Columns to add to table.  Columns named 'X_IMAGE',
+                    'Y_IMAGE','X_WORLD','Y_WORLD' are required if making
+                    new table.
+    :type columns: dictionary of Pyfits Column objects with column names
+                   as keys
     """
     
     # Instantiate the log. This needs to be done outside of the try block,
@@ -101,6 +62,12 @@ def add_objcat(adinput=None, extver=1, replace=False,
     adoutput_list = []
     try:
         
+        # Parse sextractor parameters for the list of expected columns
+        expected_columns = _parse_sextractor_param()
+
+        # Append a few more that don't come from directly from detectSources
+        expected_columns.extend(["REF_NUMBER","REF_MAG"])
+        
         # Loop over each input AstroData object in the input list
         for ad in adinput:
             
@@ -108,94 +75,52 @@ def add_objcat(adinput=None, extver=1, replace=False,
             objcat = ad["OBJCAT",extver]
             if objcat and not replace:
                 log.fullinfo("Table already exists; updating values.")
-                if id is not None:
-                    objcat.data.field("id")[:] = id
-                if x is not None:
-                    objcat.data.field("x")[:] = x
-                if y is not None:
-                    objcat.data.field("y")[:] = y
-                if ra is not None:
-                    objcat.data.field("ra")[:] = ra
-                if dec is not None:
-                    objcat.data.field("dec")[:] = dec
-                if flux is not None:
-                    objcat.data.field("flux")[:] = flux
-                if mag is not None:
-                    objcat.data.field("mag")[:] = mag
-                if background is not None:
-                    objcat.data.field("background")[:] = background
-                if fwhm_pix is not None:
-                    objcat.data.field("fwhm_pix")[:] = fwhm_pix
-                if fwhm_arcsec is not None:
-                    objcat.data.field("fwhm_arcsec")[:] = fwhm_arcsec
-                if ellipticity is not None:
-                    objcat.data.field("ellipticity")[:] = ellipticity
-                if class_star is not None:
-                    objcat.data.field("class_star")[:] = class_star
-                if flags is not None:
-                    objcat.data.field("flags")[:] = flags
-                if refid is not None:
-                    objcat.data.field("refid")[:] = refid
-                if refmag is not None:
-                    objcat.data.field("refmag")[:] = refmag
-                continue
-            
-            # Make new table: x, y, ra, dec required
-            if x is None or y is None or ra is None or dec is None:
-                raise Errors.InputError("Arguments x, y, ra, dec must " +
-                                        "not be None.")
-            # define sensible placeholders for missing information
-            nlines = len(x)
-            if id is None:
-                id = range(1,nlines+1)
-            if flux is None:
-                flux = [-999]*nlines
-            if mag is None:
-                mag = [-999]*nlines
-            if background is None:
-                background = [-999]*nlines
-            if fwhm_pix is None:
-                fwhm_pix= [-999]*nlines
-            if fwhm_arcsec is None:
-                fwhm_arcsec = [-999]*nlines
-            if ellipticity is None:
-                ellipticity = [-999]*nlines
-            if class_star is None:
-                class_star = [-999]*nlines
-            if flags is None:
-                flags = [-999]*nlines
-            if refid is None:
-                refid = [-999]*nlines
-            if refmag is None:
-                refmag = [-999]*nlines
-            
-            # define pyfits columns
-            c1 = pf.Column(name="id",format="J",array=id)
-            c2 = pf.Column(name="x",format="E",array=x)
-            c3 = pf.Column(name="y",format="E",array=y)
-            c4 = pf.Column(name="ra",format="E",array=ra)
-            c5 = pf.Column(name="dec",format="E",array=dec)
-            c6 = pf.Column(name="flux",format="E",array=flux)
-            c7 = pf.Column(name="mag",format="E",array=mag)
-            c8 = pf.Column(name="background",format="E",array=background)
-            c9 = pf.Column(name="fwhm_pix",format="E",array=fwhm_pix)
-            c10 = pf.Column(name="fwhm_arcsec",format="E",array=fwhm_arcsec)
-            c11 = pf.Column(name="ellipticity",format="E",array=ellipticity)
-            c12 = pf.Column(name="class_star",format="E",array=class_star)
-            c13 = pf.Column(name="flags",format="J",array=flags)
-            c14 = pf.Column(name="refid",format="J",array=refid)
-            c15 = pf.Column(name="refmag",format="E",array=refmag)
-            
-            # make new pyfits table
-            col_def = pf.ColDefs([c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15])
-            tb_hdu = pf.new_table(col_def)
-            tb_ad = AstroData(tb_hdu)
-            tb_ad.rename_ext("OBJCAT",extver)
-            
-            # replace old version or append new table to AD object
-            if objcat:
-                ad = _replace_ext(ad,"OBJCAT",extver,tb_hdu)
+                for name in columns.keys():
+                    objcat.data.field(name)[:] = columns[name].array
             else:
+            
+                # Make new table: x, y, ra, dec required
+                x = columns.get("X_IMAGE",None)
+                y = columns.get("Y_IMAGE",None)
+                ra = columns.get("X_WORLD",None)
+                dec = columns.get("Y_WORLD",None)
+                if x is None or y is None or ra is None or dec is None:
+                    raise Errors.InputError("Columns X_IMAGE, Y_IMAGE, "\
+                                            "X_WORLD, Y_WORLD must be present.")
+
+                # Append columns in order of definition in sextractor params
+                table_columns = []
+                nlines = len(x.array)
+                for name in expected_columns:
+                    if name in ["NUMBER"]:
+                        default = range(1,nlines+1)
+                        format = "J"
+                    elif name in ["FLAGS","IMAFLAGS_ISO","REF_NUMBER"]:
+                        default = [-999]*nlines
+                        format = "J"
+                    else:
+                        default = [-999]*nlines
+                        format = "E"
+
+                    # Get column from input if present, otherwise
+                    # define a new Pyfits column with sensible placeholders
+                    data = columns.get(name,
+                                       pf.Column(name=name,format=format,
+                                                 array=default))
+                    table_columns.append(data)
+
+            
+                # Make new pyfits table
+                col_def = pf.ColDefs(table_columns)
+                tb_hdu = pf.new_table(col_def)
+                tb_ad = AstroData(tb_hdu)
+                tb_ad.rename_ext("OBJCAT",extver)
+            
+                # Replace old version or append new table to AD object
+                if objcat:
+                    log.fullinfo("Replacing existing OBJCAT in %s" % 
+                                 ad.filename)
+                    ad.remove(("OBJCAT",extver))
                 ad.append(tb_ad)
             
             # Add the appropriate time stamps to the PHU
@@ -219,22 +144,8 @@ def detect_sources(adinput=None, method="sextractor",
     """
     Find x,y positions of all the objects in the input image. Append 
     a FITS table extension with position information plus columns for
-    standard objects to be updated with position from addReferenceCatalogs
+    standard objects to be updated with position from addReferenceCatalog
     (if any are found for the field).
-    
-    The appended FITS table with extension name 'OBJCAT' will contain
-    these columns:
-    - 'id'    : Unique ID. Simple running number.
-    - 'x'     : x coordinate of the detected object.
-    - 'y'     : y coordinate of the detected object.
-                Both x and y are with respect to the lower left corner. 
-                They are 1-based values, i.e. as in ds9.
-    - 'ra'    : ra values, in degrees. Calculated from the fits header WCS
-    - 'dec'   : dec values in degrees. ditto
-    - 'flux'  : Flux given by the gauss fit of the object
-    - 'refid' : Reference ID for the reference star found in the field
-    - 'refmag': Reference magnitude. 'refid' and 'refmag' will be fill
-                by the 'correlateWithReferenceCatalogs' function.
     
     :param adinput: image(s) to detect sources in
     :type adinput: AstroData objects, either a single instance or a list
@@ -285,45 +196,32 @@ def detect_sources(adinput=None, method="sextractor",
                 
                 extver = sciext.extver()
                 
-                # find objects in pixel coordinates
+                # Check source detection method
                 if method not in ["sextractor","daofind"]:
                     raise Errors.InputError("Source detection method "+
                                             method+" is unsupported.")
                 
                 if method=="sextractor":
                     dqext = ad["DQ",extver]
+
+                    # Call sextractor, go to daofind if it fails
                     try:
-                        obj_list,seeing_est = _sextractor(sciext=sciext,
-                                                          dqext=dqext,
-                                                     seeing_estimate=seeing_est)
-                    except:
+                        columns,seeing_est = _sextractor(
+                            sciext=sciext, dqext=dqext,
+                            seeing_estimate=seeing_est)
+                    except Errors.ScienceError:
                         log.warning("Sextractor failed. Setting method=daofind")
                         method="daofind"
                     else:
-                        if len(obj_list)==0:
+                        nobj = len(columns["NUMBER"].array)
+                        if nobj==0:
                             log.stdinfo("No sources found in %s['SCI',%d]" %
                                         (ad.filename,extver))
-                            obj_x,obj_y,obj_ra,obj_dec = ([],[],[],[])
-                            flux,mag,background,fwhm_pix,fwhm_arcsec,ellip = \
-                                (None,None,None,None,None,None)
-                            class_star,flags = (None,None)
+                            continue
                         else:
-                            obj_x = obj_list['x']
-                            obj_y = obj_list['y']
-                            obj_ra = obj_list['ra']
-                            obj_dec = obj_list['dec']
-                            flux = obj_list['flux']
-                            mag = obj_list['mag']
-                            background = obj_list['background']
-                            fwhm_pix = obj_list['fwhm_pix']
-                            fwhm_arcsec = obj_list['fwhm_arcsec']
-                            ellip = obj_list['ellipticity']
-                            class_star = obj_list['class_star']
-                            flags = obj_list['flags']
-
-                            nobj = len(obj_ra)
                             log.stdinfo("Found %d sources in %s['SCI',%d]" %
                                         (nobj,ad.filename,extver))
+
                 if method=="daofind":
                     pixscale = sciext.pixel_scale()
                     if pixscale is None:
@@ -340,54 +238,51 @@ def detect_sources(adinput=None, method="sextractor",
                     obj_list = _daofind(sciext=sciext, sigma=sigma,
                                         threshold=threshold, fwhm=fwhm)
 
-                    # daofind does not return flux, fwhm, ellipticity, etc.
-                    flux,mag,background,fwhm_pix,fwhm_arcsec,ellip = \
-                        (None,None,None,None,None,None)
-                    class_star = None
-
-                    # Make default flag 0 (good) for daofind sources
-                    flags = [0]*len(obj_list)
-
-                    if len(obj_list)==0:
+                    nobj = len(obj_list)
+                    if nobj==0:
                         log.stdinfo("No sources found in %s['SCI',%d]" %
                                     (ad.filename,extver))
-                        obj_x,obj_y,obj_ra,obj_dec = ([],[],[],[])
+                        continue
                     else:
-
-                        # separate pixel coordinates into x, y lists
-                        obj_x,obj_y = [np.asarray(obj_list)[:,k] for k in [0,1]]
-                
-                        # use WCS to convert pixel coordinates to RA/Dec
-                        wcs = pywcs.WCS(sciext.header)
-                        obj_ra, obj_dec = wcs.wcs_pix2sky(obj_x,obj_y,1)
-                
-                        nobj = len(obj_ra)
                         log.stdinfo("Found %d sources in %s['SCI',%d]" %
                                     (nobj,ad.filename,extver))
-                
-            
-                adoutput = add_objcat(adinput=ad, extver=extver, 
-                                      x=obj_x, y=obj_y, 
-                                      ra=obj_ra, dec=obj_dec,
-                                      flux=flux,mag=mag,
-                                      background=background,
-                                      fwhm_pix=fwhm_pix,
-                                      fwhm_arcsec=fwhm_arcsec,
-                                      ellipticity=ellip,
-                                      class_star=class_star,
-                                      flags=flags,
-                                      replace=True)
-                
-                ad = adoutput[0]
 
-            
-            # Do some simple photometry to get fwhm, ellipticity
+                    # Separate pixel coordinates into x, y lists
+                    obj_x,obj_y = [np.asarray(obj_list)[:,k] for k in [0,1]]
+                
+                    # Use WCS to convert pixel coordinates to RA/Dec
+                    wcs = pywcs.WCS(sciext.header)
+                    obj_ra, obj_dec = wcs.wcs_pix2sky(obj_x,obj_y,1)
+                
+                    # Define pyfits columns to pass to add_objcat
+                    columns = {
+                        "X_IMAGE":pf.Column(name="X_IMAGE",format="E",
+                                            array=obj_x),
+                        "Y_IMAGE":pf.Column(name="Y_IMAGE",format="E",
+                                            array=obj_y),
+                        "X_WORLD":pf.Column(name="X_WORLD",format="E",
+                                            array=obj_ra),
+                        "Y_WORLD":pf.Column(name="Y_WORLD",format="E",
+                                            array=obj_dec),
+                        }
+
+                
+                # For either method, add OBJCAT
+                ad = add_objcat(adinput=ad, extver=extver, 
+                                replace=True, columns=columns)[0]
+
+            # In daofind case, do some simple photometry on all
+            # extensions to get fwhm, ellipticity
             if method=="daofind":
                 log.stdinfo("Fitting sources for simple photometry")
                 if seeing_est is None:
                     # Run the fit once to get a rough seeing estimate 
+                    if max_sources>20:
+                        tmp_max=20
+                    else:
+                        tmp_max=max_sources
                     junk,seeing_est = _fit_sources(
-                        ad,ext=1,max_sources=20,threshold=threshold,
+                        ad,ext=1,max_sources=tmp_max,threshold=threshold,
                         centroid_function=centroid_function,
                         seeing_estimate=None)
                 ad,seeing_est = _fit_sources(
@@ -542,10 +437,10 @@ def add_reference_catalog(adinput=None, source='sdss7', radius=0.067):
 
                 if(ad['REFCAT',extver]):
                     log.fullinfo("Replacing existing REFCAT in %s" % ad.filename)
-                    ad = _replace_ext(ad, 'REFCAT', extver, tb_hdu)
+                    ad.remove(('REFCAT', extver))
                 else:
                     log.fullinfo("Adding REFCAT to %s" % ad.filename)
-                    ad.append(tb_hdu)
+                ad.append(tb_ad)
 
 
             adoutput_list.append(ad)
@@ -609,8 +504,8 @@ def match_objcat_refcat(adinput=None):
                     log.warning("Cannot match objcat against missing refcat")
                 else:
                     # Get the x and y position lists from both catalogs
-                    xx = objcat.data['ra']
-                    yy = objcat.data['dec']
+                    xx = objcat.data['X_WORLD']
+                    yy = objcat.data['Y_WORLD']
                     sx = refcat.data['RAJ2000']
                     sy = refcat.data['DEJ2000']
 
@@ -627,9 +522,9 @@ def match_objcat_refcat(adinput=None):
                     # Loop through the reference list updating the refid in the objcat
                     # and the refmag, if we can
                     for i in range(len(oi)):
-                        objcat.data['refid'][oi[i]] = refcat.data['Id'][ri[i]]
+                        objcat.data['REF_NUMBER'][oi[i]] = refcat.data['Id'][ri[i]]
                         if(magcolname):
-                            objcat.data['refmag'][oi[i]] = refcat.data[magcolname][ri[i]]
+                            objcat.data['REF_MAG'][oi[i]] = refcat.data[magcolname][ri[i]]
 
 
             adoutput_list.append(ad)
@@ -1144,22 +1039,6 @@ def _average_each_cluster( xyArray, pixApart=10.0 ):
     
     return newXYArray
 
-def _replace_ext(ad,extname,extver,new_hdu):
-    """
-    This is a helper function to replace an existing AD extension with a new
-    Pyfits HDU. It should be replaced by an AstroData member function
-    when available.
-    """
-    
-    intext = ad.get_int_ext((extname,extver),hduref=True)
-    
-    if intext==0:
-        raise Errors.AstroDataError("Cannot replace_ext on PHU")
-    
-    ad.hdulist[intext] = new_hdu
-    
-    return ad
-
 
 def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
 
@@ -1239,11 +1118,10 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
             pipe_out = subprocess.Popen(sx_cmd,
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT)
-            #subprocess.call(sx_cmd)
-        except:
+        except OSError:
             os.remove(scitmpfn)
             os.remove(dqtmpfn)
-            raise Errors.ScienceError("sextractor failed")
+            raise Errors.ScienceError("SExtractor not found")
 
         # Sextractor output is full of non-ascii characters, send it
         # only to debug for now
@@ -1252,41 +1130,27 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
 
         hdulist = pf.open(outtmpfn)
         tdata = hdulist[1].data
+        tcols = hdulist[1].columns
 
-        x = tdata['X_IMAGE']
-        y = tdata['Y_IMAGE']
-        ra = tdata['X_WORLD']
-        dec = tdata['Y_WORLD']
-        flux = tdata['FLUX_AUTO']
-        mag = tdata['MAG_AUTO']
-        background = tdata['BACKGROUND']
-        fwhm_pix = tdata['FWHM_IMAGE']
-        fwhm_arcsec = tdata['FWHM_WORLD']*3600.0
-        ellip = tdata['ELLIPTICITY']
-        class_star = tdata['CLASS_STAR']
-        sxflags = tdata['FLAGS']
-        dqflags = tdata['IMAFLAGS_ISO']
-        area = tdata['ISOAREA_IMAGE']
-
-        # flag sources with connected area < 100 pix^2
-        # This will need revisiting later -- this number is probably
-        # instrument dependent.
-        aflag = np.where(area<100,1,0)
-
-        # bit masking.  Mask out the bottom 3 bits of the sextractor flags
-        # Paul's crazy masking trick.
-        sxflags = sxflags & 65528
-
-        # bitwise-or all the flags
-        flags = sxflags | dqflags | aflag
-        flags = np.where(flags==0,0,1)
+        # Convert FWHM_WORLD to arcsec
+        fwhm = tdata["FWHM_WORLD"]
+        fwhm *= 3600.0
+        
+        # Mask out the bottom 3 bits of the sextractor flags
+        # These are used for purposes we don't need here
+        sxflag = tdata["FLAGS"]
+        sxflag &= 65528
 
         # Get some extra flags to get point sources only
         # for seeing estimate
-        eflag = np.where(tdata['ELLIPTICITY']>0.5,1,0)
-        sflag = np.where(tdata['CLASS_STAR']<0.6,1,0)
-        tflags = flags | eflag | sflag
-        good_fwhm = fwhm_arcsec[tflags==0]
+        dqflag = tdata["IMAFLAGS_ISO"]
+        aflag = np.where(tdata["ISOAREA_IMAGE"]<100,1,0)
+        eflag = np.where(tdata["ELLIPTICITY"]>0.5,1,0)
+        sflag = np.where(tdata["CLASS_STAR"]<0.6,1,0)
+
+        # Bitwise-or all the flags
+        flags = sxflag | dqflag | aflag | eflag | sflag
+        good_fwhm = fwhm[flags==0]
         if len(good_fwhm)>2:
             seeing_estimate,sigma = at.clipped_mean(good_fwhm)
             if np.isnan(seeing_estimate) or seeing_estimate==0:
@@ -1302,13 +1166,34 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
     os.remove(dqtmpfn)
     os.remove(outtmpfn)
 
-    obj_list = np.rec.fromarrays([x,y,ra,dec,
-                                  flux,mag,background,fwhm_pix,fwhm_arcsec,ellip,
-                                  class_star,flags],
-                                 names=["x","y","ra","dec",
-                                        "flux","mag","background","fwhm_pix","fwhm_arcsec",
-                                        "ellipticity","class_star","flags"])
-    return obj_list,seeing_estimate
+    columns = {}
+    for col in tcols:
+        columns[col.name] = col
+    
+    return columns,seeing_estimate
+
+
+def _parse_sextractor_param():
+
+    # Get path to default sextractor parameter files
+    default_dict = Lookups.get_lookup_table(
+                             "Gemini/source_detection/sextractor_default_dict",
+                             "sextractor_default_dict")
+    param_file = lookup_path(default_dict["param"]).rstrip(".py")
+    
+    columns = []
+    fp = open(param_file)
+    for line in fp:
+        fields = line.split()
+        if len(fields)==0:
+            continue
+        if fields[0].startswith("#"):
+            continue
+        
+        name = fields[0]
+        columns.append(name)
+
+    return columns
 
 
 def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
@@ -1317,9 +1202,9 @@ def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
     """
     This function takes a list of identified sources in an image, fits
     a Gaussian to each one, and stores the fit FWHM and ellipticity to
-    the OBJCAT.  Bad fits are marked with a 1 in the 'flags' column.
+    the OBJCAT.  Bad fits are marked with a 1 in the 'FLAGS' column.
     If a DQ plane is provided, and a source has a non-zero DQ value,
-    it will also receive a 1 in the 'flags' column.
+    it will also receive a 1 in the 'FLAGS' column.
     
     :param ad: input image
     :type ad: AstroData instance with OBJCAT attached
@@ -1380,8 +1265,8 @@ def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
         # stamp is 10*2 times this size on a side (16")
         aperture = 10*default_fwhm
     
-        img_objx = objcat.data.field("x")
-        img_objy = objcat.data.field("y")
+        img_objx = objcat.data.field("X_IMAGE")
+        img_objy = objcat.data.field("Y_IMAGE")
         img_obji = range(len(img_objx))
 
         # Calculate source's distance from the center of the image
@@ -1416,12 +1301,12 @@ def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
                                      int(round(objy+default_fwhm*2)))
                     stamp_dq = dqext.data[dylow:dyhigh,dxlow:dxhigh]
                     if np.any(stamp_dq):
-                        objcat.data.field("flags")[obji] = 1
+                        objcat.data.field("FLAGS")[obji] = 1
                         #print 'dq',obji
                         continue
             else:
                 # source is too near the edge, skip it
-                objcat.data.field("flags")[obji] = 1
+                objcat.data.field("FLAGS")[obji] = 1
                 #print 'edge',obji
                 continue
 
@@ -1435,7 +1320,7 @@ def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
                               (abs(obj['y']-objy)<default_fwhm) &
                               (obj['i']!=obji))
             if too_near:
-                objcat.data.field("flags")[obji] = 1
+                objcat.data.field("FLAGS")[obji] = 1
                 #print 'neighbor',obji
                 continue
 
@@ -1452,7 +1337,7 @@ def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
         
             if peak<threshold*sigma:
                 # source is too faint, skip it
-                objcat.data.field("flags")[obji] = 1
+                objcat.data.field("FLAGS")[obji] = 1
                 #print 'faint',obji
                 continue
             
@@ -1486,9 +1371,12 @@ def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
             count += 1
             #print count
 
+            # Set default flag for any fit source to 0
+            objcat.data.field("FLAGS")[obji] = 0
+
             if success>3:
                 # fit failed, move on
-                objcat.data.field("flags")[obji] = 1
+                objcat.data.field("FLAGS")[obji] = 1
                 #print 'fit failed',obji
                 continue
         
@@ -1529,17 +1417,17 @@ def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
             # Check fit
             if peak<0.0:
                 # source inverted, skip it
-                objcat.data.field("flags")[obji] = 1
+                objcat.data.field("FLAGS")[obji] = 1
                 #print 'inverted',obji
                 continue
             if bg<0.0:
                 # bad fit, skip it
-                objcat.data.field("flags")[obji] = 1
+                objcat.data.field("FLAGS")[obji] = 1
                 #print 'bg<0',obji
                 continue
             if peak<threshold*sigma:
                 # S/N too low, skip it
-                objcat.data.field("flags")[obji] = 1
+                objcat.data.field("FLAGS")[obji] = 1
                 #print 's/n low',obji
                 continue
                 
@@ -1550,37 +1438,39 @@ def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
         
 
             # update the OBJCAT
-            objcat.data.field("x")[obji] = newx
-            objcat.data.field("y")[obji] = newy
-            objcat.data.field("fwhm_pix")[obji] = fwhm
-            objcat.data.field("fwhm_arcsec")[obji] = fwhm * pixscale
-            objcat.data.field("ellipticity")[obji] = ellip
+            objcat.data.field("X_IMAGE")[obji] = newx
+            objcat.data.field("Y_IMAGE")[obji] = newy
+            objcat.data.field("FWHM_IMAGE")[obji] = fwhm
+            objcat.data.field("FWHM_WORLD")[obji] = fwhm * pixscale
+            objcat.data.field("ELLIPTICITY")[obji] = ellip
 
             # flag low ellipticity, reasonable fwhm sources as likely stars
             if ellip<0.1:
-                objcat.data.field("class_star")[obji] = 0.9
+                objcat.data.field("CLASS_STAR")[obji] = 0.9
             elif ellip<0.3:
-                objcat.data.field("class_star")[obji] = 0.7
+                objcat.data.field("CLASS_STAR")[obji] = 0.7
             elif ellip<0.5:
-                objcat.data.field("class_star")[obji] = 0.5
+                objcat.data.field("CLASS_STAR")[obji] = 0.5
             else:
-                objcat.data.field("class_star")[obji] = 0.2
+                objcat.data.field("CLASS_STAR")[obji] = 0.2
 
             if fwhm<1.0:
                 # likely cosmic ray
-                objcat.data.field("class_star")[obji] *= 0.2
+                objcat.data.field("CLASS_STAR")[obji] *= 0.2
             elif fwhm<2*default_fwhm:
                 # potential star
-                objcat.data.field("class_star")[obji] *= 0.9
+                objcat.data.field("CLASS_STAR")[obji] *= 0.9
             else:
                 # likely extended source or bad fit
-                objcat.data.field("class_star")[obji] *= 0.2
+                objcat.data.field("CLASS_STAR")[obji] *= 0.2
                 
             #print newx,newy,fwhm,ellip,peak,bg
+            #print 'flag',objcat.data.field("FLAGS")[obji]
+            #print 'class',objcat.data.field("CLASS_STAR")[obji]
 
-        flags = (objcat.data.field("flags")==0) & \
-                (objcat.data.field("class_star")>0.6)
-        good_fwhm = objcat.data.field("fwhm_arcsec")[flags]
+        flags = (objcat.data.field("FLAGS")==0) & \
+                (objcat.data.field("CLASS_STAR")>0.6)
+        good_fwhm = objcat.data.field("FWHM_WORLD")[flags]
 
         #print good_fwhm
         if len(good_fwhm)>2:
@@ -1589,4 +1479,5 @@ def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
                 seeing_estimate = new_fwhm
 
     return ad, seeing_estimate
+
 

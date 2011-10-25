@@ -330,10 +330,10 @@ def correct_wcs_to_reference_catalog(adinput=None, correctWCS=True):
 
                     # Loop through the objcat, 
                     for obj in objcat.data:
-                        if(obj['refid'] != -999):
-                            refid = obj['refid']
-                            obj_ra = obj['ra']
-                            obj_dec = obj['dec']
+                        if(obj['REF_NUMBER'] != -999):
+                            refid = obj['REF_NUMBER']
+                            obj_ra = obj['X_WORLD']
+                            obj_dec = obj['Y_WORLD']
                             ref_ra = None
                             ref_dec = None
                             # Find the reference catalog line.
@@ -555,13 +555,13 @@ def _correlate_sources(ad1, ad2, delta=None, firstPass=10, cull_sources=False):
     log = gemLog.getGeminiLog()
     
     # get data and WCS from image 1
-    x1 = ad1["OBJCAT"].data.field("x")
-    y1 = ad1["OBJCAT"].data.field("y")
+    x1 = ad1["OBJCAT"].data.field("X_IMAGE")
+    y1 = ad1["OBJCAT"].data.field("Y_IMAGE")
     wcs1 = pywcs.WCS(ad1["SCI"].header)
     
     # get data and WCS from image 2
-    x2 = ad2["OBJCAT"].data.field("x")
-    y2 = ad2["OBJCAT"].data.field("y")
+    x2 = ad2["OBJCAT"].data.field("X_IMAGE")
+    y2 = ad2["OBJCAT"].data.field("Y_IMAGE")
     wcs2 = pywcs.WCS(ad2["SCI"].header)
     
     # convert image 2 data to sky coordinates

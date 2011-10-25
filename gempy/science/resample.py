@@ -4,6 +4,7 @@
 import os
 import sys
 import numpy as np
+import pyfits as pf
 import pywcs
 from astrodata import AstroData
 from astrodata import Errors
@@ -804,13 +805,11 @@ def tile_arrays(adinput=None, tile_all=False):
                                     var_data_list.append(chip_gap)
                                 if dqext is not None:
                                     dq_data_list.append(chip_gap)
-                                mapping_dict[i] = 1
                             else:
                                 ccd_data[num_ccd] = {"SCI":sci_data_list,
                                                      "VAR":var_data_list,
                                                      "DQ":dq_data_list}
                                 ampname[num_ccd] = amplist
-                                mapping_dict[i] = num_ccd
 
                         # Increment CCD number and restart amps per ccd
                         num_ccd += 1
@@ -832,7 +831,6 @@ def tile_arrays(adinput=None, tile_all=False):
                             if num_ccd==1:
                                 refsec[1] = {"CCD":ccdsecs[i-1],
                                              "DET":detsecs[i-1]} 
-                            mapping_dict[i] = 1
                         else:
                             sci_data_list = [sciext.data]
                             if varext is not None:
@@ -844,7 +842,6 @@ def tile_arrays(adinput=None, tile_all=False):
                             # of each CCD
                             refsec[num_ccd] = {"CCD":ccdsecs[i-1],
                                                "DET":detsecs[i-1]}
-                            mapping_dict[i] = num_ccd
                     else:
                         # Increment amps and append data
                         amps_per_ccd[num_ccd] += 1
@@ -857,16 +854,22 @@ def tile_arrays(adinput=None, tile_all=False):
                         
 
                     # If last iteration, store the current data lists
+                    if tile_all:
+                        key = 1
+                    else:
+                        key = num_ccd
                     if ext_count==nsciext:
-                        if tile_all:
-                            key = 1
-                        else:
-                            key = num_ccd
                         ccd_data[key] = {"SCI":sci_data_list,
                                          "VAR":var_data_list,
                                          "DQ":dq_data_list}
                         ampname[key] = amplist
-                        mapping_dict[i] = key
+
+                    # Keep track of which extensions ended up in
+                    # which CCD
+                    try:
+                        mapping_dict[key].append(i)
+                    except KeyError:
+                        mapping_dict[key] = [i]
 
                     last_ccdx1 = this_ccdx1
                     last_detx1 = this_detx1
@@ -1070,86 +1073,56 @@ def _tile_objcat(adinput=None,adoutput=None,mapping_dict=None):
         if objcat is None:
             raise Errors.InputError("No OBJCAT found in %s" % ad.filename)
 
-        if ad.count_exts("SCI")!=ad.count_exts("OBJCAT"):
-            raise Errors.InputError("Number of OBJCAT extensions "+
-                                    "does not match number of science "+
-                                    "extensions.")
-
-        # Make dictionary to hold new objcat data
-        objcat_data = {}
         for outext in adout["SCI"]:
-            objcat_data[outext.extver()] = {
-                "x":[],"y":[],"ra":[],"dec":[],"fwhm_pix":[],"fwhm_arcsec":[],
-                "ellipticity":[],"flux":[],"mag":[],"background":[],
-                "class_star":[],"flags":[],"refid":[],"refmag":[]}
+            out_extver = outext.extver()
+            output_wcs = pywcs.WCS(outext.header)
 
-        for sciext in ad["SCI"]:
-            
-            inp_extver = sciext.extver()
-            out_extver = mapping_dict[inp_extver]
+            col_names = None
+            col_fmts = None
+            col_data = {}
+            for inp_extver in mapping_dict[out_extver]:
+                inp_objcat = ad["OBJCAT",inp_extver]
 
-            output_wcs = pywcs.WCS(adout["SCI",out_extver].header)
+                # Make sure there is data in the OBJCAT
+                if inp_objcat is None:
+                    continue
+                if inp_objcat.data is None:
+                    continue
+                if len(inp_objcat.data)==0:
+                    continue
 
-            inp_objcat = ad["OBJCAT",inp_extver]
-            if inp_objcat.data is None:
-                continue
-            if len(inp_objcat.data)==0:
-                continue
+                # Get column names, formats from first OBJCAT
+                if col_names is None:
+                    col_names = inp_objcat.data.names
+                    col_fmts = inp_objcat.data.formats
+                    for name in col_names:
+                        col_data[name] = inp_objcat.data.field(name).tolist()
+                else:
+                    # Stack all OBJCAT data together
+                    for name in col_names:
+                        col_data[name].extend(inp_objcat.data.field(name))
 
             # Get new pixel coordinates for the objects from RA/Dec
-            ra = inp_objcat.data.field("ra")
-            dec = inp_objcat.data.field("dec")
-
+            # and the output WCS
+            ra = col_data["X_WORLD"]
+            dec = col_data["Y_WORLD"]
             newx,newy = output_wcs.wcs_sky2pix(ra,dec,1)
-                
-            objcat_data[out_extver]["x"].append(newx)
-            objcat_data[out_extver]["y"].append(newy)
-            objcat_data[out_extver]["ra"].append(ra)
-            objcat_data[out_extver]["dec"].append(dec)
-            
-            objcat_data[out_extver]["fwhm_pix"].append(
-                inp_objcat.data.field("fwhm_pix"))
-            objcat_data[out_extver]["fwhm_arcsec"].append(
-                inp_objcat.data.field("fwhm_arcsec"))
-            objcat_data[out_extver]["ellipticity"].append(
-                inp_objcat.data.field("ellipticity"))
-            objcat_data[out_extver]["flux"].append(
-                inp_objcat.data.field("flux"))
-            objcat_data[out_extver]["mag"].append(
-                inp_objcat.data.field("mag"))
-            objcat_data[out_extver]["background"].append(
-                inp_objcat.data.field("background"))
-            objcat_data[out_extver]["flags"].append(
-                inp_objcat.data.field("flags"))
-            objcat_data[out_extver]["class_star"].append(
-                inp_objcat.data.field("class_star"))
-            objcat_data[out_extver]["refid"].append(
-                inp_objcat.data.field("refid"))
-            objcat_data[out_extver]["refmag"].append(
-                inp_objcat.data.field("refmag"))
-            
-        
-        for outext in adout["SCI"]:
-            extver = outext.extver()
-            if len(objcat_data[extver]["x"])==0:
-                continue
-            else:
-                adout = ph.add_objcat(
-                    adinput=adout, extver=extver,
-                    x=np.hstack(objcat_data[extver]["x"]),
-                    y=np.hstack(objcat_data[extver]["y"]),
-                    ra=np.hstack(objcat_data[extver]["ra"]),
-                    dec=np.hstack(objcat_data[extver]["dec"]),
-                    fwhm_pix=np.hstack(objcat_data[extver]["fwhm_pix"]),
-                    fwhm_arcsec=np.hstack(objcat_data[extver]["fwhm_arcsec"]),
-                    ellipticity=np.hstack(objcat_data[extver]["ellipticity"]),
-                    flux=np.hstack(objcat_data[extver]["flux"]),
-                    mag=np.hstack(objcat_data[extver]["mag"]),
-                    background=np.hstack(objcat_data[extver]["background"]),
-                    flags=np.hstack(objcat_data[extver]["flags"]),
-                    class_star=np.hstack(objcat_data[extver]["class_star"]),
-                    refid=np.hstack(objcat_data[extver]["refid"]),
-                    refmag=np.hstack(objcat_data[extver]["refmag"]),)[0]
+            col_data["X_IMAGE"] = newx
+            col_data["Y_IMAGE"] = newy
+
+            columns = {}
+            for name,format in zip(col_names,col_fmts):
+                # Let add_objcat auto-number sources
+                if name=="NUMBER":
+                    continue
+
+                # Define pyfits column to pass to add_objcat
+                columns[name] = pf.Column(name=name,format=format,
+                                          array=col_data[name])
+
+
+            adout = ph.add_objcat(adinput=adout, extver=out_extver,
+                                  columns=columns)[0]
 
         adoutput_list.append(adout)
 
