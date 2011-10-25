@@ -9,8 +9,7 @@ detectSources
 measureIQ
 addReferenceCatalog
 measureZP
-#correctWCSToReferenceCatalog
-#measureAstrometricOffset
+correctWCSToReferenceCatalog(correct_WCS=False)
 overscanCorrect
 biasCorrect
 aduToElectrons
@@ -22,7 +21,7 @@ detectSources
 measureIQ
 addReferenceCatalog
 measureZP
-correctWCSToReferenceCatalog
+correctWCSToReferenceCatalog(correct_WCS=False)
 addToList(purpose=forStack)
 getList(purpose=forStack)
 registerAndStack
@@ -30,4 +29,4 @@ detectSources
 measureIQ
 addReferenceCatalog
 measureZP
-correctWCSToReferenceCatalog
+correctWCSToReferenceCatalog(correct_WCS=True)

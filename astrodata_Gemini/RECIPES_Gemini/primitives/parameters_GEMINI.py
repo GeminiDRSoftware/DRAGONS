@@ -119,6 +119,22 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "correctWCSToReferenceCatalog":{
+    "suffix":{
+        "default"       : "_wcsCatalogCorrected",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "correct_WCS": {
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "correctWCSToReferenceImage":{
     "suffix":{
         "default"       : "_wcsCorrected",

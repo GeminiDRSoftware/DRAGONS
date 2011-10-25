@@ -344,8 +344,9 @@ class GEMINIPrimitives(GENERALPrimitives):
         This primitive calculates the average astrometric offset between
         the positions of sources in the reference catalog, and their
         corresponding object in the object catalog.
-        It reports the astrometric correction vector, then applies that
-        correction to the WCS of the image. It also applies the same
+        It then reports the astrometric correction vector.
+        If the 'correctWCS' parameter == True, it then applies that
+        correction to the WCS of the image and also applies the same
         correction to the RA, DEC columns of the object catalog.
         """
 
@@ -364,13 +365,17 @@ class GEMINIPrimitives(GENERALPrimitives):
         for ad in rc.get_inputs_as_astrodata():
 
             # Call the correct_wcs_to_reference_catalog user level function
-            ad = rg.correct_wcs_to_reference_catalog(adinput=ad)
+            ad = rg.correct_wcs_to_reference_catalog(adinput=ad, correctWCS=rc["correct_WCS"])[0]
+
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
+                                             strip=True)
 
             adoutput_list.append(ad)
 
         # Report the list of output AstroData objects to the reduction
         # context
-        #rc.report_output(adoutput_list)
+        rc.report_output(adoutput_list)
 
         yield rc
 
