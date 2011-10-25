@@ -286,7 +286,7 @@ def correct_wcs_to_reference_image(adinput=None,
         log.error(repr(sys.exc_info()[1]))
         raise
 
-def correct_wcs_to_reference_catalog(adinput=None):
+def correct_wcs_to_reference_catalog(adinput=None, correctWCS=True):
     """
     Using co-ordinates of matched objects in the object and reference catalogs,
     calculate the WCS offset needed to bring the two into agreement.
@@ -296,7 +296,6 @@ def correct_wcs_to_reference_catalog(adinput=None):
     Update the ra,dec columns of the objcat componenets of the astrodata object
     with the corrected positions, according to the new WCS.
     """
-
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
@@ -312,6 +311,7 @@ def correct_wcs_to_reference_catalog(adinput=None):
     try:
 
         # Loop over each input AstroData object in the input list
+        adoutput = []
         for ad in adinput:
 
             # Loop over the OBJCAT extensions
@@ -352,14 +352,37 @@ def correct_wcs_to_reference_catalog(adinput=None):
                     ra_sigma = np.std(delta_ra) * 3600.0
                     dec_mean = np.mean(delta_dec) * 3600.0
                     dec_sigma = np.std(delta_dec) * 3600.0
-                    ra_median = np.median(delta_ra) * 3600.0
-                    dec_median = np.median(delta_dec) * 3600.0
+                    ra_median_degs = np.median(delta_ra)
+                    dec_median_degs = np.median(delta_dec)
+                    ra_median = ra_median_degs * 3600.0
+                    dec_median = dec_median_degs * 3600.0
 
                     log.stdinfo("Astrometric Offset between [OBJCAT, %d] and [REFCAT, %d] in arcsec is:" % (extver, extver))
-                    log.stdinfo("RA_mean +- RA_sigma, Dec_mean +- Dec_sigma: %.2f +- %.2f, %.2f +- %.2f" % (ra_mean, ra_sigma, dec_mean, dec_sigma))
+                    log.stdinfo("RA_mean +- RA_sigma: %.2f +- %.2f" % (ra_mean, ra_sigma))
+                    log.stdinfo("Dec_mean +- Dec_sigma: %.2f +- %.2f" % (dec_mean, dec_sigma))
                     log.stdinfo("Median Offset is: %.2f, %.2f" % (ra_median, dec_median))
 
-                    # Need to actually correct the WCS here.
+                    if(correctWCS):
+                        # Handle the image extensions first
+                        for thing in ['SCI', 'VAR', 'DQ']:
+                            image = ad[thing, extver]
+                            if(image):
+                                image.header['CRVAL1'] += ra_median_degs
+                                image.header['CRVAL2'] += dec_median_degs
+                                log.stdinfo("Correcting WCS in [%s, %d]" % (thing, extver))
+
+                        # Now fix the objcat, according to the SCI wcs
+                        sci = ad['SCI', extver]
+                        wcs = pywcs.WCS(sci.header)
+                        log.stdinfo("Correcting RA, Dec columns in ['OBJCAT', %d]" % extver)
+                        for row in objcat.data:
+                            xy = np.array([row['x'], row['y']])
+                            radec = wcs.wcs_pix2sky([xy], 1)
+                            # FIXME - is it correct to set oring to 1 here?
+                            # Also we should be setting ra_dec_order=True, but that 
+                            # breaks with the wcs missing the lattype property
+                            row['ra'] = radec[0][0]
+                            row['dec'] = radec[0][1]
 
         return adinput
 
