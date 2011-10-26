@@ -381,8 +381,8 @@ def correct_wcs_to_reference_catalog(adinput=None, correctWCS=True):
                             # FIXME - is it correct to set oring to 1 here?
                             # Also we should be setting ra_dec_order=True, but that 
                             # breaks with the wcs missing the lattype property
-                            row['ra'] = radec[0][0]
-                            row['dec'] = radec[0][1]
+                            row['X_WORLD'] = radec[0][0]
+                            row['Y_WORLD'] = radec[0][1]
 
         return adinput
 
