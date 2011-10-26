@@ -509,8 +509,8 @@ def convert_to_cal_header(adinput=None, caltype=None):
             # Gemini filename
             if fileno is None:
                 import random
-                fileno = random.randint(1,9999)
-            datalabel = "%s-%s" % (obsid,fileno)
+                fileno = random.randint(1,999)
+            datalabel = "%s-%03d" % (obsid,fileno)
 
             # Set class, type, object to generic defaults
             ad.phu_set_key_value("OBSCLASS","partnerCal")
