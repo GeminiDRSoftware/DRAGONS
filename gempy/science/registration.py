@@ -376,7 +376,7 @@ def correct_wcs_to_reference_catalog(adinput=None, correctWCS=True):
                         wcs = pywcs.WCS(sci.header)
                         log.stdinfo("Correcting RA, Dec columns in ['OBJCAT', %d]" % extver)
                         for row in objcat.data:
-                            xy = np.array([row['x'], row['y']])
+                            xy = np.array([row['X_IMAGE'], row['Y_IMAGE']])
                             radec = wcs.wcs_pix2sky([xy], 1)
                             # FIXME - is it correct to set oring to 1 here?
                             # Also we should be setting ra_dec_order=True, but that 
