@@ -3,6 +3,7 @@
 
 import os
 import sys
+import re
 import subprocess
 from copy import deepcopy
 import numpy as np
@@ -20,6 +21,10 @@ from gempy import astrotools as at
 # to be used for the time stamp for the user level function
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
+
+# Define the earliest acceptable SExtractor version
+# Currently: 2.8.6
+SEXTRACTOR_VERSION = [2,8,6]
 
 def add_objcat(adinput=None, extver=1, replace=False, columns=None):
     """
@@ -204,23 +209,35 @@ def detect_sources(adinput=None, method="sextractor",
                 if method=="sextractor":
                     dqext = ad["DQ",extver]
 
-                    # Call sextractor, go to daofind if it fails
-                    try:
-                        columns,seeing_est = _sextractor(
-                            sciext=sciext, dqext=dqext,
-                            seeing_estimate=seeing_est)
-                    except Errors.ScienceError:
-                        log.warning("Sextractor failed. Setting method=daofind")
+                    # Check sextractor version, go to daofind if task not
+                    # found or wrong version
+                    right_version = _test_sextractor_version()
+
+                    if not right_version:
+                        log.warning("SExtractor version %d.%d.%d or later "\
+                                    "not found. Setting method=daofind" %
+                                    tuple(SEXTRACTOR_VERSION))
                         method="daofind"
                     else:
-                        nobj = len(columns["NUMBER"].array)
-                        if nobj==0:
-                            log.stdinfo("No sources found in %s['SCI',%d]" %
-                                        (ad.filename,extver))
-                            continue
+                        try:
+                            columns,seeing_est = _sextractor(
+                                sciext=sciext, dqext=dqext,
+                                seeing_estimate=seeing_est)
+                        except Errors.ScienceError:
+                            log.warning("SExtractor failed. "\
+                                        "Setting method=daofind")
+                            method="daofind"
                         else:
-                            log.stdinfo("Found %d sources in %s['SCI',%d]" %
-                                        (nobj,ad.filename,extver))
+                            nobj = len(columns["NUMBER"].array)
+                            if nobj==0:
+                                log.stdinfo("No sources found in "\
+                                            "%s['SCI',%d]" %
+                                            (ad.filename,extver))
+                                continue
+                            else:
+                                log.stdinfo("Found %d sources in "\
+                                            "%s['SCI',%d]" %
+                                            (nobj,ad.filename,extver))
 
                 if method=="daofind":
                     pixscale = sciext.pixel_scale()
@@ -1049,9 +1066,6 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
     default_dict = Lookups.get_lookup_table(
                              "Gemini/source_detection/sextractor_default_dict",
                              "sextractor_default_dict")
-    for key in default_dict:
-        default_file = lookup_path(default_dict[key]).rstrip(".py")
-        default_dict[key] = default_file
     
     # Write the science extension to a temporary file on disk
     scitmpfn = "tmp%ssx%s%s%s" % (str(os.getpid()),sciext.extname(),
@@ -1072,10 +1086,21 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
         log.fullinfo("Writing temporary file %s to disk" % dqtmpfn)
         dqext.write(dqtmpfn,rename=False,clobber=True)
 
+        # Get correct default files for this mode
+        default_dict = default_dict['dq']
+        for key in default_dict:
+            default_file = lookup_path(default_dict[key]).rstrip(".py")
+            default_dict[key] = default_file
+
     else:
-        os.remove(scitmpfn)
-        raise Errors.ScienceError("Sextractor method not supported without " +
-                                  "DQ plane.")
+        # Dummy temporary DQ file name
+        dqtmpfn = ""
+
+        # Get correct default files for this mode
+        default_dict = default_dict['no_dq']
+        for key in default_dict:
+            default_file = lookup_path(default_dict[key]).rstrip(".py")
+            default_dict[key] = default_file
 
     outtmpfn = "tmp%ssxOUT%s%s%s" % (str(os.getpid()),sciext.extname(),
                                      sciext.extver(),
@@ -1088,7 +1113,7 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
     else:
         iter = [0]
     
-    log.fullinfo("Calling sextractor")
+    log.fullinfo("Calling SExtractor")
     for i in iter:
 
         if seeing_estimate is None:
@@ -1120,8 +1145,9 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
                                         stderr=subprocess.STDOUT)
         except OSError:
             os.remove(scitmpfn)
-            os.remove(dqtmpfn)
-            raise Errors.ScienceError("SExtractor not found")
+            if dqext is not None:
+                os.remove(dqtmpfn)
+            raise Errors.ScienceError("SExtractor failed")
 
         # Sextractor output is full of non-ascii characters, send it
         # only to debug for now
@@ -1143,7 +1169,10 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
 
         # Get some extra flags to get point sources only
         # for seeing estimate
-        dqflag = tdata["IMAFLAGS_ISO"]
+        if dqext is not None:
+            dqflag = tdata["IMAFLAGS_ISO"]
+        else:
+            dqflag = np.zeros_like(sxflag)
         aflag = np.where(tdata["ISOAREA_IMAGE"]<100,1,0)
         eflag = np.where(tdata["ELLIPTICITY"]>0.5,1,0)
         sflag = np.where(tdata["CLASS_STAR"]<0.6,1,0)
@@ -1163,8 +1192,9 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
     log.fullinfo("Removing temporary files from disk:\n%s\n%s" %
                  (scitmpfn,dqtmpfn))
     os.remove(scitmpfn)
-    os.remove(dqtmpfn)
     os.remove(outtmpfn)
+    if dqext is not None:
+        os.remove(dqtmpfn)
 
     columns = {}
     for col in tcols:
@@ -1179,7 +1209,7 @@ def _parse_sextractor_param():
     default_dict = Lookups.get_lookup_table(
                              "Gemini/source_detection/sextractor_default_dict",
                              "sextractor_default_dict")
-    param_file = lookup_path(default_dict["param"]).rstrip(".py")
+    param_file = lookup_path(default_dict["dq"]["param"]).rstrip(".py")
     
     columns = []
     fp = open(param_file)
@@ -1194,6 +1224,56 @@ def _parse_sextractor_param():
         columns.append(name)
 
     return columns
+
+
+def _test_sextractor_version():
+    """
+    Returns True if sextractor is runnable and version is 
+    SEXTRACTOR_VERSION or later
+    """
+
+    # Compile a regular expression for matching the version
+    # number from sextractor output
+    versioncre = re.compile("^.*version (?P<v1>\d+)(\.(?P<v2>\d+))?"\
+                            "(\.(?P<v3>\d+))?.*$")
+
+    # Get acceptable version from global variable
+    std_version = SEXTRACTOR_VERSION
+
+    right_version = False
+
+    sx_cmd = ["sex", "--version"]
+    try:
+        pipe_out = subprocess.Popen(sx_cmd,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+    except OSError:
+        return right_version
+
+    stdoutdata = pipe_out.communicate()[0]
+    m = versioncre.match(stdoutdata)
+    if m is not None:
+        # Get three version fields from match object
+        v1 = int(m.group("v1"))
+        if m.group("v2") is None:
+            v2 = 0
+        else:
+            v2 = int(m.group("v2"))
+        if m.group("v3") is None:
+            v3 = 0
+        else:
+            v3 = int(m.group("v3"))
+
+        if v1>std_version[0]:
+            right_version = True
+        elif v1==std_version[0]:
+            if v2>std_version[1]:
+                right_version = True
+            elif v2==std_version[1]:
+                if v3>=std_version[2]:
+                    right_version = True
+
+    return right_version
 
 
 def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
