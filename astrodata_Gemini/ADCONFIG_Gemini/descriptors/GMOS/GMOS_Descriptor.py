@@ -151,6 +151,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_central_wavelength
 
     def detector_name(self, dataset, **args):
+        # This is a bit subtle - if we have a non-mosaiced GMOS image, there
+        # will be a CCDNAME keyword in each SCI extension, and that's what we want.
+        # If we have a mosaiced image, these won't be present as the SCI is a mosaic of
+        # several (usually three) detectors. In this case, we return the DETID keyword
+        # from the PHU.
+        #
+        #
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always return a dictionary where the key
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
@@ -162,20 +169,18 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # the local key dictionary (stdkeyDictGMOS) but is read from the
             # updated global key dictionary (self.get_descriptor_key())
             detname = ext.get_key_value(self.get_descriptor_key("key_detector_name"))
-            if detname is None:
-                # The get_key_value() function returns None if a value cannot
-                # be found and stores the exception info. Re-raise the
-                # exception. It will be dealt with by the CalculatorInterface.
-                if hasattr(ext, "exception_info"):
-                    raise ext.exception_info
+            if(detname is None):
+                # Most likely we have a mosaiced image that doesn't have the separate
+                # CCDNAME headers anymore.
+                # In this case, we return the detid keyword from the PHU
+                detname = dataset.phu_get_key_value(self.get_descriptor_key("key_phu_detector_name"))
             # Return a dictionary with the detectorstring as
             # the value
             ret_detector_name.update({
                 (ext.extname(), ext.extver()):str(detname)})
+
         if ret_detector_name == {}:
-            # If the dictionary is still empty, the AstroData object was not
-            # autmatically assigned a "SCI" extension and so the above for loop
-            # was not entered
+            # If the dictionary is still empty, something went quite wrong.
             raise Errors.CorruptDataError()
 
         return ret_detector_name
@@ -619,14 +624,18 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_nod_pixels
     
-    def nominal_zeropoint(self, dataset, **args):
+    def nominal_photometric_zeropoint(self, dataset, **args):
         # Look up the nominal zeropoints for a dataset
         # A value per detector is returned
         table = self.gmoszeropoints
         ret_nominal_zeropoint = {}
         for ext in dataset["SCI"]:
             filt = str(ext.filter_name(pretty=True))
-            det = str(ext.detector_name())
+            try:
+                det = str(ext.detector_name())
+            except KeyError:
+                # Probably we're in a mosaiced image that doesn't have a CCDNAME header
+                det = "Mosaiced"
 
             try:
                 zp = table[(det, filt)]

@@ -1659,22 +1659,22 @@ class CalculatorInterface:
                 self.exception_info = sys.exc_info()[1]
                 return None
     
-    def nominal_extinction(self, format=None, **args):
+    def nominal_atmospheric_extinction(self, format=None, **args):
         """
-        Return the nominal_extinction value
+        Return the nominal_atmospheric_extinction value
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: float as default (i.e., format=None)
-        :return: the nominal_extinction
+        :return: the nominal_atmospheric_extinction
         """
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
-            #print hasattr(self.descriptor_calculator, "nominal_extinction")
-            if not hasattr(self.descriptor_calculator, "nominal_extinction"):
-                key = "key_"+"nominal_extinction"
+            #print hasattr(self.descriptor_calculator, "nominal_atmospheric_extinction")
+            if not hasattr(self.descriptor_calculator, "nominal_atmospheric_extinction"):
+                key = "key_"+"nominal_atmospheric_extinction"
                 #print "mkCI10:",key, repr(keydict)
                 #print "mkCI12:", key in keydict
                 if key in keydict.keys():
@@ -1684,15 +1684,15 @@ class CalculatorInterface:
                             raise self.exception_info
                 else:
                     msg = "Unable to find an appropriate descriptor function "
-                    msg += "or a default keyword for nominal_extinction"
+                    msg += "or a default keyword for nominal_atmospheric_extinction"
                     raise KeyError(msg)
             else:
-                retval = self.descriptor_calculator.nominal_extinction(self, **args)
+                retval = self.descriptor_calculator.nominal_atmospheric_extinction(self, **args)
             
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "nominal_extinction",
+                                   name = "nominal_atmospheric_extinction",
                                    ad = self,
                                    pytype = float )
             return ret
@@ -1707,22 +1707,22 @@ class CalculatorInterface:
                 self.exception_info = sys.exc_info()[1]
                 return None
     
-    def nominal_zeropoint(self, format=None, **args):
+    def nominal_photometric_zeropoint(self, format=None, **args):
         """
-        Return the nominal_zeropoint value
+        Return the nominal_photometric_zeropoint value
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: float as default (i.e., format=None)
-        :return: the nominal_zeropoint
+        :return: the nominal_photometric_zeropoint
         """
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
-            #print hasattr(self.descriptor_calculator, "nominal_zeropoint")
-            if not hasattr(self.descriptor_calculator, "nominal_zeropoint"):
-                key = "key_"+"nominal_zeropoint"
+            #print hasattr(self.descriptor_calculator, "nominal_photometric_zeropoint")
+            if not hasattr(self.descriptor_calculator, "nominal_photometric_zeropoint"):
+                key = "key_"+"nominal_photometric_zeropoint"
                 #print "mkCI10:",key, repr(keydict)
                 #print "mkCI12:", key in keydict
                 if key in keydict.keys():
@@ -1732,15 +1732,15 @@ class CalculatorInterface:
                             raise self.exception_info
                 else:
                     msg = "Unable to find an appropriate descriptor function "
-                    msg += "or a default keyword for nominal_zeropoint"
+                    msg += "or a default keyword for nominal_photometric_zeropoint"
                     raise KeyError(msg)
             else:
-                retval = self.descriptor_calculator.nominal_zeropoint(self, **args)
+                retval = self.descriptor_calculator.nominal_photometric_zeropoint(self, **args)
             
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "nominal_zeropoint",
+                                   name = "nominal_photometric_zeropoint",
                                    ad = self,
                                    pytype = float )
             return ret

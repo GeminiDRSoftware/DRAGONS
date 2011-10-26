@@ -524,7 +524,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # exception if this descriptor is called.
         raise Errors.ExistError()
 
-    def nominal_extinction(self, dataset, **args):
+    def nominal_atmospheric_extinction(self, dataset, **args):
         # Compute the nominal extinction value for this dataset
         # This takes the nominal extinction co-efficients from the lookup table
         # for the appropriate telescope (ie site) and filter and multiplies
