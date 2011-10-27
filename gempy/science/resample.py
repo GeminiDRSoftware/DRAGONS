@@ -731,7 +731,7 @@ def tile_arrays(adinput=None, tile_all=False):
                 # Make chip gaps to tile with science extensions if tiling all
                 # Gap width should come from lookup table
                 gap_height = int(ad["SCI",1].data.shape[0])
-                gap_width = int(37.0/ad.detector_x_bin())     #hcode
+                gap_width = _obtain_arraygap(adinput=ad)
                 chip_gap = np.zeros((gap_height,gap_width))
 
 
@@ -1045,7 +1045,45 @@ def tile_arrays(adinput=None, tile_all=False):
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
 
+def _obtain_arraygap(adinput=None):
+    """
+    This function obtains the raw array gap size for the different GMOS
+    detectors and returns it after correcting for binning. There are two
+    values in the GMOSArrayGaps.py file in the GMOS
+    lookup directory, one for unbinned data and one to be used to calculate
+    the chip gap when the data are binned.
+    """
     
+    # Get the dictionary containing the CCD gaps
+    all_arraygaps_dict = Lookups.get_lookup_table(\
+        "Gemini/GMOS/GMOSArrayGaps.py","gmosArrayGaps")
+    
+    # Obtain the X binning and detector type for the ad input
+    detector_x_bin = adinput.detector_x_bin()
+    detector_type = adinput.phu_get_key_value("DETTYPE")
+
+    # Check the read values
+    if detector_x_bin is None or detector_type is None:
+        if hasattr(ad, "exception_info"):
+            raise adinput.exception_info
+    
+    # Check if the data are binned
+    if detector_x_bin > 1:
+        bin_string = "binned"
+    else:
+        bin_string = "unbinned"
+
+    # Form the key
+    key = (detector_type, bin_string)
+
+    # Obtain the array gap value and fix for any binning
+    if key in all_arraygaps_dict:
+        arraygap = all_arraygaps_dict[key] / detector_x_bin.as_pytype()
+    else:
+        raise Errors.ScienceError("Array gap value not " +
+                              "found for %s" % (detector_type)) 
+    return arraygap
+
 def _tile_objcat(adinput=None,adoutput=None,mapping_dict=None):
     """
     This function tiles together separate OBJCAT extensions, converting
