@@ -889,7 +889,7 @@ def tile_arrays(adinput=None, tile_all=False):
                     elif nsciext!=num_ccd:
                         log.fullinfo("Tiling data into one extension per array")
 
-                    # Get header from the center extension of each CCD
+                    # Get header from the center-left extension of each CCD
                     # (or the center of CCD2 if tiling all)
                     # This is in order to get the most accurate WCS on CCD2
                     ref_header = {}
@@ -906,8 +906,10 @@ def tile_arrays(adinput=None, tile_all=False):
                                 continue
                         else:
                             key = ccd
+                            total_shift = 0
 
-                        refextn = int(amps_per_ccd[ccd]/2.0) + startextn
+                        refextn = ampsorder[int((amps_per_ccd[ccd]+1)/2.0-1)
+                                            + startextn - 1]
 
                         # Get size of reference shift from 0,0 to
                         # start of reference extension
@@ -918,7 +920,7 @@ def tile_arrays(adinput=None, tile_all=False):
                             else:
                                 on_ext+=1
                                 # keep total up to now if it's the reference ext
-                                if on_ext==refextn:
+                                if ampsorder[on_ext-1]==refextn:
                                     ref_shift_temp = total_shift
                                 # add in width of this extension
                                 total_shift += data.shape[1]
@@ -1048,8 +1050,6 @@ def _tile_objcat(adinput=None,adoutput=None,mapping_dict=None):
     """
     This function tiles together separate OBJCAT extensions, converting
     the pixel coordinates to the new WCS.
-
-    Code cleanup desperately needed here.
     """
 
     from gempy.science import photometry as ph
