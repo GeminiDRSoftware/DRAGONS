@@ -67,7 +67,7 @@ def iq_display_gmos_iqtool(adinput=None, frame=1, saturation=58000):
 
             # Display the image with IQ stars marked
             if display:
-                data_shape = disp_ad[0]["SCI",1].data.shape
+                data_shape = disp_ad[0]["SCI"].data.shape
                 iqmask = _iq_overlay(stars,data_shape)
 
                 log.stdinfo('Sources used to measure IQ are marked ' +
@@ -384,7 +384,7 @@ def iq_display_gmos(adinput=None, display=True, frame=1, saturation=58000):
 
             # Display the image with IQ stars marked
             if display:
-                data_shape = disp_ad[0]["SCI",1].data.shape
+                data_shape = disp_ad[0]["SCI"].data.shape
 
                 if len(stars)==0:
                     iqmask = None
