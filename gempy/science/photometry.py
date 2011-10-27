@@ -405,7 +405,12 @@ def add_reference_catalog(adinput=None, source='sdss7', radius=0.067):
                         return adoutput_list
                         
 
-                log.stdinfo("Found %d reference catalog sources for %s['SCI',%d]" % (len(table.array), ad.filename, extver))
+                if len(table.array)==0:
+                    log.stdinfo("No reference catalog sources found "\
+                                "for %s['SCI',%d]" % (ad.filename, extver))
+                    continue
+                else:
+                    log.stdinfo("Found %d reference catalog sources for %s['SCI',%d]" % (len(table.array), ad.filename, extver))
 
                 # Parse the votable that we got back, into arrays for each column.
                 sdssname = table.array['SDSS']
