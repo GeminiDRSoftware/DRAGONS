@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>1.3. AstroData Configuration Package Development Guide &mdash; astrodata documentation v1.00 documentation</title>
+    <title>3. AstroData Configuration Package Development Guide &mdash; astrodata documentation v1.00 documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -23,9 +23,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="astrodata documentation v1.00 documentation" href="index.html" />
-    <link rel="up" title="1. Introduction" href="chapter_intro.html" />
-    <link rel="next" title="1.3.1. Elements" href="configElements.html" />
-    <link rel="prev" title="1.2. Concepts" href="gen.ADMANUAL_ADConcepts.html" /> 
+    <link rel="next" title="3.1. Elements" href="configElements.html" />
+    <link rel="prev" title="2.4.1.1. Using Slices and “Subdata”" href="gen.ADMANUAL-ADSubdata.html" /> 
   </head>
   <body>
     <div class="related">
@@ -35,23 +34,22 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="configElements.html" title="1.3.1. Elements"
+          <a href="configElements.html" title="3.1. Elements"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="gen.ADMANUAL_ADConcepts.html" title="1.2. Concepts"
+          <a href="gen.ADMANUAL-ADSubdata.html" title="2.4.1.1. Using Slices and “Subdata”"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li>
-          <li><a href="chapter_intro.html" accesskey="U">1. Introduction</a> &raquo;</li> 
+        <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
-  <p class="topless"><a href="gen.ADMANUAL_ADConcepts.html"
-                        title="previous chapter">1.2. Concepts</a></p>
+  <p class="topless"><a href="gen.ADMANUAL-ADSubdata.html"
+                        title="previous chapter">2.4.1.1. Using Slices and &#8220;Subdata&#8221;</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="configElements.html"
-                        title="next chapter">1.3.1. Elements</a></p>
+                        title="next chapter">3.1. Elements</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/developmentGuide.txt"
@@ -79,22 +77,33 @@
           <div class="body">
             
   <div class="section" id="astrodata-configuration-package-development-guide">
-<h1>1.3. AstroData Configuration Package Development Guide<a class="headerlink" href="#astrodata-configuration-package-development-guide" title="Permalink to this headline">¶</a></h1>
+<h1>3. AstroData Configuration Package Development Guide<a class="headerlink" href="#astrodata-configuration-package-development-guide" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="configElements.html">1.3.1. Elements</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="configElements.html#the-general-configuration-creation-process">1.3.1.1. The General Configuration Creation Process</a></li>
-<li class="toctree-l2"><a class="reference internal" href="configElements.html#configuration-elements-which-have-to-be-developed">1.3.1.2. Configuration Elements Which Have To Be  Developed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configElements.html">3.1. Elements</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configElements.html#the-general-configuration-creation-process">3.1.1. The General Configuration Creation Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configElements.html#configuration-elements-which-have-to-be-developed">3.1.2. Configuration Elements Which Have To Be  Developed</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="startingTheConfig.html">1.3.2. Creating A Config Package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="startingTheConfig.html#preparation">1.3.2.1. Preparation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="startingTheConfig.html#clone-the-sample-package">1.3.2.2. Clone the Sample Package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="startingTheConfig.html">3.2. Creating A Config Package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="startingTheConfig.html#preparation">3.2.1. Preparation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="startingTheConfig.html#clone-the-sample-package">3.2.2. Clone the Sample Package</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="creatingAnAstroDataType.html">1.3.3. Creating An AstroDataType</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="creatingAnAstroDataType.html#the-class-definition-line-by-line">1.3.3.1. The Class Definition Line by Line</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="creatingAnAstroDataType.html#class-unmarked-dataclassification">1.3.3.1.1. 1 class UNMARKED(DataClassification)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="creatingAnAstroDataType.html">3.3. Creating An AstroDataType</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="creatingAnAstroDataType.html#the-class-definition-line-by-line">3.3.1. The Class Definition Line by Line</a></li>
+<li class="toctree-l2"><a class="reference internal" href="creatingAnAstroDataType.html#the-requirement-classes">3.3.2. The Requirement Classes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="creatingAnAstroDataType.html#concrete-requirements">3.3.2.1. Concrete Requirements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="creatingAnAstroDataType.html#isclass-other-class-name">3.3.2.1.1. ISCLASS(other_class_name)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="creatingAnAstroDataType.html#phu-keyname-re-val-keyname2-re-val2">3.3.2.1.2. PHU(keyname=re_val, [keyname2=re_val2 [...]])</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="creatingAnAstroDataType.html#logical-requirement-classes">3.3.2.2. Logical Requirement Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="creatingAnAstroDataType.html#and-requirement-requirement-requirement-requirement">3.3.2.2.1. AND(&lt;requirement&gt;,&lt;requirement&gt; [, &lt;requirement&gt; [, &lt;requirement&gt; ] .. ])</a></li>
+<li class="toctree-l4"><a class="reference internal" href="creatingAnAstroDataType.html#not-requirement">3.3.2.2.2. NOT(&lt;requirement&gt;)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="creatingAnAstroDataType.html#or-requirement-requirement-requirement-requirement">3.3.2.2.3. OR(&lt;requirement&gt;,&lt;requirement&gt; [, &lt;requirement&gt; [, &lt;requirement&gt; ] .. ])</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -116,13 +125,12 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="configElements.html" title="1.3.1. Elements"
+          <a href="configElements.html" title="3.1. Elements"
              >next</a> |</li>
         <li class="right" >
-          <a href="gen.ADMANUAL_ADConcepts.html" title="1.2. Concepts"
+          <a href="gen.ADMANUAL-ADSubdata.html" title="2.4.1.1. Using Slices and “Subdata”"
              >previous</a> |</li>
-        <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li>
-          <li><a href="chapter_intro.html" >1. Introduction</a> &raquo;</li> 
+        <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

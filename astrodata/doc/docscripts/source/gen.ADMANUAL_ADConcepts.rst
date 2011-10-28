@@ -105,17 +105,12 @@ to overwrite (clobber) any pre-existing bias of the same name.
 Zero Recipe System Overhead for AstroData-only Users
 ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-Use of AstroData does lead to import of any part of the "Recipe
-System", so there is no overhead for users of AstroData borne from the
-Recipe System. Neither the configuration package nor even the relevant
-astrodata package modules are imported when *import astrodata* is
-executed, and are not imported until the Recipe System is explicitly
-requested by the calling program. Our desire with the transformation
-system was to have a system in which high level transformations could
-be built from low level transformations, and users and automation
-systems alike (e.g. pipelines) could invoke these transformations at
-whatever level of interactivity was appropriate for the particular
-type of deployment.
+Use of AstroData does NOT lead to importing any part of the "Recipe
+System". Thus there there is no overhead borne by users of the
+AstroData dataset abstract if they do not specifically invoke the
+Recipe System. Neither the configuration package nor even the related
+astrodata package modules are imported until the Recipe System is
+explicitly invoked by the calling program.
 
 
 The Astrodata Lexicon and Configurations
@@ -144,21 +139,23 @@ Each of these have associated actions:
   type classification criteria, generally by checking key-value pairs in
   the PHU.
 + **Astrodata Descriptors**: calculate and return a named piece of
-  high-level metadata for a particular Astrodata Type.
+  high-level metadata for a particular Astrodata Type in particular
+  units.
 + **Primitives**: performs a named transformation on a dataset of a
   particular Astrodata Type.
 
 
 The "astrodata_Gemini" package contains these definitions for Gemini
-datasets separated into two parts of the configuration, one for the
-basic AstroData related configuration information, and another for
-Recipe System configuration. The first section, in its own
-subdirectory in the configuration package directory, in Gemini's case
-is ADCONFIG_Gemini, which defines types, descriptor functions, and
-other AstroData-related features. The second section, in a sibling
-subdirectory in the configuration package, in Gemini's case is
-RECIPES_Gemini, which defines configurations and implementations
-needed by the Recipe System, such as recipes and primitives.
+datasets separated into two parts, one for the basic AstroData related
+configuration information, and another for Recipe System
+configuration. The first section, in its own subdirectory in the
+configuration package directory, in Gemini's case is found in the
+ADCONFIG_Gemini configuration subdirectory. Configurations in this
+subdirectory define types, descriptor functions, and other AstroData-
+related features. The second section, in a sibling subdirectory in the
+configuration package, in Gemini's case, "RECIPES_Gemini", defines
+configurations and implementations needed by the Recipe System, such
+as recipes and primitives.
 
 
 Astrodata Type
@@ -175,12 +172,12 @@ brittle, for example relying on specific headers which may change when
 an instrument is upgraded.
 
 Astrodata's classification system on the other hand allows defining
-dataset classifications in configuration packages such that the type
+dataset classifications via configuration packaging such that the type
 definitions are shared throughout the system. The calling code can
 refer to type information by a string name for the type, and any
 subtleties in or changes to the means of detection are centralized,
-providing some forward and compatibility. The system also allows
-programmers to check dataset types with a single line of code:
+providing some forward and backward compatibility. The system also
+allows programmers to check dataset types with a single line of code:
 
 .. code-block:: python
     :linenos:

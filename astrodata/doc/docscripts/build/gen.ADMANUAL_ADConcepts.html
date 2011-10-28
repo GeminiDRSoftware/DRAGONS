@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>1.2. Concepts &mdash; astrodata documentation v1.00 documentation</title>
+    <title>4. Concepts &mdash; astrodata documentation v1.00 documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -23,9 +23,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="astrodata documentation v1.00 documentation" href="index.html" />
-    <link rel="up" title="1. Introduction" href="chapter_intro.html" />
-    <link rel="next" title="1.3. AstroData Configuration Package Development Guide" href="developmentGuide.html" />
-    <link rel="prev" title="1.1.2. Document Purpose" href="gen.ADMANUAL_Purpose.html" /> 
+    <link rel="prev" title="<no title>" href="creatingAPrimitive.html" /> 
   </head>
   <body>
     <div class="related">
@@ -35,50 +33,43 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="developmentGuide.html" title="1.3. AstroData Configuration Package Development Guide"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="gen.ADMANUAL_Purpose.html" title="1.1.2. Document Purpose"
+          <a href="creatingAPrimitive.html" title="<no title>"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li>
-          <li><a href="chapter_intro.html" accesskey="U">1. Introduction</a> &raquo;</li> 
+        <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">1.2. Concepts</a><ul>
-<li><a class="reference internal" href="#background">1.2.1. Background</a><ul>
-<li><a class="reference internal" href="#dataset-abstraction">1.2.1.1. Dataset Abstraction</a></li>
-<li><a class="reference internal" href="#dataset-transformations">1.2.1.2. Dataset Transformations</a><ul>
-<li><a class="reference internal" href="#zero-recipe-system-overhead-for-astrodata-only-users">1.2.1.2.1. Zero Recipe System Overhead for AstroData-only Users</a></li>
+<li><a class="reference internal" href="#">4. Concepts</a><ul>
+<li><a class="reference internal" href="#background">4.1. Background</a><ul>
+<li><a class="reference internal" href="#dataset-abstraction">4.1.1. Dataset Abstraction</a></li>
+<li><a class="reference internal" href="#dataset-transformations">4.1.2. Dataset Transformations</a><ul>
+<li><a class="reference internal" href="#zero-recipe-system-overhead-for-astrodata-only-users">4.1.2.1. Zero Recipe System Overhead for AstroData-only Users</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#the-astrodata-lexicon-and-configurations">1.2.1.3. The Astrodata Lexicon and Configurations</a></li>
+<li><a class="reference internal" href="#the-astrodata-lexicon-and-configurations">4.1.3. The Astrodata Lexicon and Configurations</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#astrodata-type">1.2.2. Astrodata Type</a></li>
-<li><a class="reference internal" href="#astrodata-descriptors">1.2.3. Astrodata Descriptors</a></li>
-<li><a class="reference internal" href="#recipe-system-primitives">1.2.4. Recipe System Primitives</a><ul>
-<li><a class="reference internal" href="#some-benefits-of-the-primitive-concept">1.2.4.1. Some Benefits of the Primitive Concept</a><ul>
-<li><a class="reference internal" href="#natural-emergence-of-reusable-primitives">1.2.4.1.1. Natural Emergence of Reusable Primitives</a></li>
+<li><a class="reference internal" href="#astrodata-type">4.2. Astrodata Type</a></li>
+<li><a class="reference internal" href="#astrodata-descriptors">4.3. Astrodata Descriptors</a></li>
+<li><a class="reference internal" href="#recipe-system-primitives">4.4. Recipe System Primitives</a><ul>
+<li><a class="reference internal" href="#some-benefits-of-the-primitive-concept">4.4.1. Some Benefits of the Primitive Concept</a><ul>
+<li><a class="reference internal" href="#natural-emergence-of-reusable-primitives">4.4.1.1. Natural Emergence of Reusable Primitives</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#recipes-calling-recipes">1.2.4.2. Recipes calling Recipes</a></li>
+<li><a class="reference internal" href="#recipes-calling-recipes">4.4.2. Recipes calling Recipes</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#astrodata-lexicon">1.2.5. AstroData Lexicon</a></li>
+<li><a class="reference internal" href="#astrodata-lexicon">4.5. AstroData Lexicon</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="gen.ADMANUAL_Purpose.html"
-                        title="previous chapter">1.1.2. Document Purpose</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="developmentGuide.html"
-                        title="next chapter">1.3. AstroData Configuration Package Development Guide</a></p>
+  <p class="topless"><a href="creatingAPrimitive.html"
+                        title="previous chapter">&lt;no title&gt;</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/gen.ADMANUAL_ADConcepts.txt"
@@ -106,11 +97,11 @@
           <div class="body">
             
   <div class="section" id="concepts">
-<h1>1.2. Concepts<a class="headerlink" href="#concepts" title="Permalink to this headline">¶</a></h1>
+<h1>4. Concepts<a class="headerlink" href="#concepts" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="background">
-<h2>1.2.1. Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
+<h2>4.1. Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="dataset-abstraction">
-<h3>1.2.1.1. Dataset Abstraction<a class="headerlink" href="#dataset-abstraction" title="Permalink to this headline">¶</a></h3>
+<h3>4.1.1. Dataset Abstraction<a class="headerlink" href="#dataset-abstraction" title="Permalink to this headline">¶</a></h3>
 <p>The AstroData class traces back to a request by Gemini Astronomers to
 &#8220;handle MEFs better&#8221; in our reduction package. A &#8220;MEF&#8221; is of course a
 &#8220;Multiple-Extension FITS File&#8221; and is also Gemini&#8217;s standard dataset
@@ -166,7 +157,7 @@ themselves useful, such as generic types such as &#8220;IFU&#8221; vs &#8220;IMA
 processing status types such as &#8220;RAW&#8221; vs &#8220;PREPARED&#8221;.</p>
 </div>
 <div class="section" id="dataset-transformations">
-<h3>1.2.1.2. Dataset Transformations<a class="headerlink" href="#dataset-transformations" title="Permalink to this headline">¶</a></h3>
+<h3>4.1.2. Dataset Transformations<a class="headerlink" href="#dataset-transformations" title="Permalink to this headline">¶</a></h3>
 <p>The Astrodata package&#8217;s &#8220;Recipe System&#8221; handles all abstractions
 involved in transforming a dataset and is built on top of the
 AstroData dataset abstraction. The system is called the &#8220;recipe
@@ -194,22 +185,17 @@ given classification, or another recipe. Note that the
 example, &#8220;clob(ber)&#8221; equals &#8220;True&#8221;, which tells the storage primitive
 to overwrite (clobber) any pre-existing bias of the same name.</p>
 <div class="section" id="zero-recipe-system-overhead-for-astrodata-only-users">
-<h4>1.2.1.2.1. Zero Recipe System Overhead for AstroData-only Users<a class="headerlink" href="#zero-recipe-system-overhead-for-astrodata-only-users" title="Permalink to this headline">¶</a></h4>
-<p>Use of AstroData does lead to import of any part of the &#8220;Recipe
-System&#8221;, so there is no overhead for users of AstroData borne from the
-Recipe System. Neither the configuration package nor even the relevant
-astrodata package modules are imported when <em>import astrodata</em> is
-executed, and are not imported until the Recipe System is explicitly
-requested by the calling program. Our desire with the transformation
-system was to have a system in which high level transformations could
-be built from low level transformations, and users and automation
-systems alike (e.g. pipelines) could invoke these transformations at
-whatever level of interactivity was appropriate for the particular
-type of deployment.</p>
+<h4>4.1.2.1. Zero Recipe System Overhead for AstroData-only Users<a class="headerlink" href="#zero-recipe-system-overhead-for-astrodata-only-users" title="Permalink to this headline">¶</a></h4>
+<p>Use of AstroData does NOT lead to importing any part of the &#8220;Recipe
+System&#8221;. Thus there there is no overhead borne by users of the
+AstroData dataset abstract if they do not specifically invoke the
+Recipe System. Neither the configuration package nor even the related
+astrodata package modules are imported until the Recipe System is
+explicitly invoked by the calling program.</p>
 </div>
 </div>
 <div class="section" id="the-astrodata-lexicon-and-configurations">
-<h3>1.2.1.3. The Astrodata Lexicon and Configurations<a class="headerlink" href="#the-astrodata-lexicon-and-configurations" title="Permalink to this headline">¶</a></h3>
+<h3>4.1.3. The Astrodata Lexicon and Configurations<a class="headerlink" href="#the-astrodata-lexicon-and-configurations" title="Permalink to this headline">¶</a></h3>
 <p>An Astrodata Configuration package, defining types, metadata, and
 transformations, relies on a configuration which defines a lexicon of
 elements which are implemented in the configuration package in a way
@@ -230,24 +216,26 @@ concerned with:</p>
 type classification criteria, generally by checking key-value pairs in
 the PHU.</li>
 <li><strong>Astrodata Descriptors</strong>: calculate and return a named piece of
-high-level metadata for a particular Astrodata Type.</li>
+high-level metadata for a particular Astrodata Type in particular
+units.</li>
 <li><strong>Primitives</strong>: performs a named transformation on a dataset of a
 particular Astrodata Type.</li>
 </ul>
 <p>The &#8220;astrodata_Gemini&#8221; package contains these definitions for Gemini
-datasets separated into two parts of the configuration, one for the
-basic AstroData related configuration information, and another for
-Recipe System configuration. The first section, in its own
-subdirectory in the configuration package directory, in Gemini&#8217;s case
-is ADCONFIG_Gemini, which defines types, descriptor functions, and
-other AstroData-related features. The second section, in a sibling
-subdirectory in the configuration package, in Gemini&#8217;s case is
-RECIPES_Gemini, which defines configurations and implementations
-needed by the Recipe System, such as recipes and primitives.</p>
+datasets separated into two parts, one for the basic AstroData related
+configuration information, and another for Recipe System
+configuration. The first section, in its own subdirectory in the
+configuration package directory, in Gemini&#8217;s case is found in the
+ADCONFIG_Gemini configuration subdirectory. Configurations in this
+subdirectory define types, descriptor functions, and other AstroData-
+related features. The second section, in a sibling subdirectory in the
+configuration package, in Gemini&#8217;s case, &#8220;RECIPES_Gemini&#8221;, defines
+configurations and implementations needed by the Recipe System, such
+as recipes and primitives.</p>
 </div>
 </div>
 <div class="section" id="astrodata-type">
-<h2>1.2.2. Astrodata Type<a class="headerlink" href="#astrodata-type" title="Permalink to this headline">¶</a></h2>
+<h2>4.2. Astrodata Type<a class="headerlink" href="#astrodata-type" title="Permalink to this headline">¶</a></h2>
 <p>An Astrodata Type is a named set of dataset characteristics.</p>
 <p>Lack of a central system for type detection in our legacy package
 meant that scripts and tasks in that system make extended checks on
@@ -257,12 +245,12 @@ common task, yet these checks can still be somewhat complex and
 brittle, for example relying on specific headers which may change when
 an instrument is upgraded.</p>
 <p>Astrodata&#8217;s classification system on the other hand allows defining
-dataset classifications in configuration packages such that the type
+dataset classifications via configuration packaging such that the type
 definitions are shared throughout the system. The calling code can
 refer to type information by a string name for the type, and any
 subtleties in or changes to the means of detection are centralized,
-providing some forward and compatibility. The system also allows
-programmers to check dataset types with a single line of code:</p>
+providing some forward and backward compatibility. The system also
+allows programmers to check dataset types with a single line of code:</p>
 <div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><pre> 1
  2
  3
@@ -298,7 +286,7 @@ assign type-specific behaviors and still provide the using programmer
 with a consistent interface to the type of functionality involved.</p>
 </div>
 <div class="section" id="astrodata-descriptors">
-<h2>1.2.3. Astrodata Descriptors<a class="headerlink" href="#astrodata-descriptors" title="Permalink to this headline">¶</a></h2>
+<h2>4.3. Astrodata Descriptors<a class="headerlink" href="#astrodata-descriptors" title="Permalink to this headline">¶</a></h2>
 <p>A descriptor is named metadata.</p>
 <p>It goes without saying that our scientific datasets contain (and
 require) copious metadata. Significant amounts of &#8220;information about
@@ -363,7 +351,7 @@ themselves are not covered in the Astrodata Users Manual itself
 because they are part of the type-specific configuration package.</p>
 </div>
 <div class="section" id="recipe-system-primitives">
-<h2>1.2.4. Recipe System Primitives<a class="headerlink" href="#recipe-system-primitives" title="Permalink to this headline">¶</a></h2>
+<h2>4.4. Recipe System Primitives<a class="headerlink" href="#recipe-system-primitives" title="Permalink to this headline">¶</a></h2>
 <p>A primitive is a named transformation.</p>
 <p>A primitive is meant to name an abstract dataset transformation for
 which we will want to assign concrete implementations on a per
@@ -480,7 +468,7 @@ shared recipe or in the GEMINI primitive set, while those that require
 special implementation are implemented in the appropriate GMOS or NIRI
 primitive sets within the correct part of the configuration.</p>
 <div class="section" id="some-benefits-of-the-primitive-concept">
-<h3>1.2.4.1. Some Benefits of the Primitive Concept<a class="headerlink" href="#some-benefits-of-the-primitive-concept" title="Permalink to this headline">¶</a></h3>
+<h3>4.4.1. Some Benefits of the Primitive Concept<a class="headerlink" href="#some-benefits-of-the-primitive-concept" title="Permalink to this headline">¶</a></h3>
 <p>Use of primitives instead of scripts for reduction processes has a
 major side benefit besides enjoying automation features supplied by
 the Recipe System. This benefit is due to the fact that the concept of
@@ -514,7 +502,7 @@ appropriate for a &#8220;typical PI&#8221;. Flexibility in the system allows
 satisfaction of these special needs while developing truly shared
 transformation concepts.</p>
 <div class="section" id="natural-emergence-of-reusable-primitives">
-<h4>1.2.4.1.1. Natural Emergence of Reusable Primitives<a class="headerlink" href="#natural-emergence-of-reusable-primitives" title="Permalink to this headline">¶</a></h4>
+<h4>4.4.1.1. Natural Emergence of Reusable Primitives<a class="headerlink" href="#natural-emergence-of-reusable-primitives" title="Permalink to this headline">¶</a></h4>
 <p>Reusable code naturally emerged from the process above because the
 work of isolating the steps taken in a data handling process naturally
 reveals similar or identical steps shared by other processes, which
@@ -628,7 +616,7 @@ be made more robust and moved into the main package.</p>
 </div>
 </div>
 <div class="section" id="recipes-calling-recipes">
-<h3>1.2.4.2. Recipes calling Recipes<a class="headerlink" href="#recipes-calling-recipes" title="Permalink to this headline">¶</a></h3>
+<h3>4.4.2. Recipes calling Recipes<a class="headerlink" href="#recipes-calling-recipes" title="Permalink to this headline">¶</a></h3>
 <p>Recipes can in fact call other recipes as well as primitives.
 Primitives, also, can call recipes and other primitives. During
 execution the Astrodata Recipe System makes little distinction between
@@ -684,7 +672,7 @@ primitive performing all the functions of the reusable set at once.</p>
 </div>
 </div>
 <div class="section" id="astrodata-lexicon">
-<h2>1.2.5. AstroData Lexicon<a class="headerlink" href="#astrodata-lexicon" title="Permalink to this headline">¶</a></h2>
+<h2>4.5. AstroData Lexicon<a class="headerlink" href="#astrodata-lexicon" title="Permalink to this headline">¶</a></h2>
 <p>A lexicon is a list of words, and this is what the designer of an
 Astrodata configuration creates. The set of terms adhere to a grammar
 (types of elements that can be defined) and establishes a vocabulary
@@ -758,13 +746,9 @@ MEF for which a more specific type is not recognized.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="developmentGuide.html" title="1.3. AstroData Configuration Package Development Guide"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="gen.ADMANUAL_Purpose.html" title="1.1.2. Document Purpose"
+          <a href="creatingAPrimitive.html" title="<no title>"
              >previous</a> |</li>
-        <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li>
-          <li><a href="chapter_intro.html" >1. Introduction</a> &raquo;</li> 
+        <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

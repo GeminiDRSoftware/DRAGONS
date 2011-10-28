@@ -15,6 +15,8 @@ The Astrodata Manual
     
     chapter_intro.rst
     chapter_AstroDataClass.rst
+    developmentGuide.rst
+    gen.ADMANUAL_ADConcepts.rst
     
 .. these are related books, can be chapters of The AstroData Book
     Gemini AstroData Type Reference: chapter_Gemini_Types.rst
