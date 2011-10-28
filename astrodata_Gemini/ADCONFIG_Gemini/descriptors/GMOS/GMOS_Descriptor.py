@@ -1,5 +1,6 @@
 from datetime import datetime
 from time import strptime
+import math
 
 from astrodata import Errors
 from astrodata import Lookups
@@ -631,14 +632,21 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_nominal_zeropoint = {}
         for ext in dataset["SCI"]:
             filt = str(ext.filter_name(pretty=True))
-            try:
-                det = str(ext.detector_name())
-            except KeyError:
-                # Probably we're in a mosaiced image that doesn't have a CCDNAME header
-                det = "Mosaiced"
+            det = str(ext.detector_name())
 
+            # Need to figure out here if we're in ADU or electrons
             try:
-                zp = table[(det, filt)]
+                bunit = ext.header['BUNIT']
+            except KeyError:
+                bunit = None
+            if(bunit == 'electron'):
+                # We're in electrons. All good
+                gain_factor = 0.0
+            else:
+                # We're in ADU
+                gain_factor = 2.5*math.log10(float(ext.gain()))
+            try:
+                zp = table[(det, filt)] - gain_factor
             except KeyError:
                 zp = None
 
