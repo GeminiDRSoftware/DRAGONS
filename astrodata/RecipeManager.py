@@ -1931,7 +1931,7 @@ class RecipeLibrary(object):
         ro.recipeLib = self
         if primsetlist:
             ro.curPrimType = primsetlist[0].astrotype
-            print "RM1916:", repr([ps.astrotype for ps in primsetlist])
+            #print "RM1916:", repr([ps.astrotype for ps in primsetlist])
         else:
             return None
         for primset in primsetlist:
@@ -1966,7 +1966,7 @@ class RecipeLibrary(object):
         for astrotype in k:
             if (astrotype != None) and (astrotype in centralPrimitivesIndex):
                 primdeflist = centralPrimitivesIndex[astrotype]
-                print "RM1948:", repr(primdeflist)
+                #print "RM1948:", repr(primdeflist)
                 for primdef in primdeflist:
                     rfilename = primdef[0] # the first in the tuple is the primset file
                     rpathname = centralReductionMap[rfilename]
@@ -1974,7 +1974,7 @@ class RecipeLibrary(object):
                     importname = os.path.splitext(rfilename)[0]
                     a = datetime.now()
                     try:
-                        print "RM1282: about to import", importname, primdef[1]
+                        #print "RM1282: about to import", importname, primdef[1]
                         exec ("import " + importname)
                         # print ("RM1285: after import")
                     except:
