@@ -15,10 +15,12 @@ biasCorrect
 aduToElectrons
 addVAR(poisson_noise=True)
 flatCorrect
-fringeCorrectFromScience
+makeFringe
+fringeCorrect
 mosaicDetectors
 detectSources
 measureIQ
+measureBG
 addReferenceCatalog
 measureZP
 correctWCSToReferenceCatalog(correct_WCS=False)
