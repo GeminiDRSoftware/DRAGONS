@@ -227,6 +227,56 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         yield rc
     
+    def alignAndStack(self, rc):
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "alignAndStack", "starting"))
+         
+        # Add the input frame to the forStack list and 
+        # get other available frames from the same list
+        rc.run("addToList(purpose=forStack)")
+        rc.run("getList(purpose=forStack)")
+
+        # Check whether two or more input AstroData objects were provided
+        adinput = rc.get_inputs_as_astrodata()
+        if len(adinput) <= 1:
+            log.stdinfo("No alignment or correction will be performed, " \
+                        "since at least two input AstroData objects are " \
+                        "required for alignAndStack")
+            rc.report_output(adinput)
+        else:
+            recipe_list = []
+
+            # Check to see if detectSources needs to be run
+            run_ds = False
+            for ad in adinput:
+                objcat = ad["OBJCAT"]
+                if objcat is None:
+                    run_ds = True
+                    break
+            if run_ds:
+                recipe_list.append("detectSources")
+            
+            # Register all images to the first one
+            recipe_list.append("correctWCSToReferenceImage")
+            
+            # Align all images to the first one
+            recipe_list.append("alignToReferenceImage")
+            
+            # Correct background level in all images to the first one
+            recipe_list.append("correctBackgroundToReferenceImage")
+
+            # Stack all frames
+            recipe_list.append("stackFrames")
+            
+            # Run all the needed primitives
+            rc.run("\n".join(recipe_list))
+        
+        yield rc
+    
     def alignToReferenceImage(self, rc):
         """
         This primitive applies the transformation encoded in the input images
@@ -1077,56 +1127,6 @@ class GEMINIPrimitives(GENERALPrimitives):
     
     def pause(self, rc):
         rc.request_pause()
-        yield rc
-    
-    def alignAndStack(self, rc):
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "alignAndStack", "starting"))
-         
-        # Add the input frame to the forStack list and 
-        # get other available frames from the same list
-        rc.run("addToList(purpose=forStack)")
-        rc.run("getList(purpose=forStack)")
-
-        # Check whether two or more input AstroData objects were provided
-        adinput = rc.get_inputs_as_astrodata()
-        if len(adinput) <= 1:
-            log.stdinfo("No alignment or correction will be performed, " \
-                        "since at least two input AstroData objects are " \
-                        "required for alignAndStack")
-            rc.report_output(adinput)
-        else:
-            recipe_list = []
-
-            # Check to see if detectSources needs to be run
-            run_ds = False
-            for ad in adinput:
-                objcat = ad["OBJCAT"]
-                if objcat is None:
-                    run_ds = True
-                    break
-            if run_ds:
-                recipe_list.append("detectSources")
-            
-            # Register all images to the first one
-            recipe_list.append("correctWCSToReferenceImage")
-            
-            # Align all images to the first one
-            recipe_list.append("alignToReferenceImage")
-            
-            # Correct background level in all images to the first one
-            recipe_list.append("correctBackgroundToReferenceImage")
-
-            # Stack all frames
-            recipe_list.append("stackFrames")
-            
-            # Run all the needed primitives
-            rc.run("\n".join(recipe_list))
-        
         yield rc
     
     def setContext(self, rc):
