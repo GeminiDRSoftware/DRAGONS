@@ -12,11 +12,85 @@ from gempy import geminiTools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from gempy.science import resample as rs
+from gempy.science import qa
 
 # Load the timestamp keyword dictionary that will be used to define the keyword
 # to be used for the time stamp for the user level function
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
+
+def correct_background_to_reference_image(adinput=None):
+    """
+    This function does an additive correction to a set
+    of images to put their sky background at the same level
+    as the reference image before stacking.
+    """
+
+    # Instantiate log
+    log = gemLog.getGeminiLog()
+    
+    # Ensure that adinput is not None and return
+    # a list containing one or more AstroData objects
+    adinput = gt.validate_input(adinput=adinput)
+    
+    # Keyword to be used for time stamp
+    timestamp_key = timestamp_keys["correct_background_to_reference_image"]
+    
+    adoutput_list = []
+    try:        
+        # Check that there are at least 2 images provided
+        if len(adinput)<2:
+            raise Errors.InputError("At least two images must be provided.")
+
+        # Check that all images have the same number of science extensions
+        next = np.array([ad.count_exts("SCI") for ad in adinput])
+        if not np.all(next==next[0]):
+            raise Errors.InputError("Number of science extensions in input "\
+                                    "images do not match")
+
+        ref_bg = None
+        for ad in adinput:
+
+            ref_bg_dict = {}
+            diff_dict = {}
+            for sciext in ad["SCI"]:
+                # Get background value from header if it exists
+                bg = sciext.get_key_value("SKYLEVEL")
+
+                # Run measure_bg if it doesn't
+                if bg is None:
+                    log.fullinfo("SKYLEVEL not found, measuring background")
+                    ad = qa.measure_bg(ad,separate_ext=True)[0]
+                    sciext = ad["SCI",sciext.extver()]
+                    bg = sciext.get_key_value("SKYLEVEL")
+                    if bg is None:
+                        raise Errors.ScienceError(
+                            "Could not get background level from %s[SCI,%d]" %
+                            (sciext.filename,sciext.extver))
+                
+                if ref_bg is None:
+                    ref_bg_dict[(sciext.extname(),sciext.extver())]=bg
+                else:
+                    ref = ref_bg[(sciext.extname(),sciext.extver())]
+                    difference = ref - bg
+                    sciext.add(difference)
+                    sciext.set_key_value("SKYLEVEL",bg+difference)
+
+            # Store background level of first image
+            if ref_bg is None:
+                ref_bg = ref_bg_dict
+
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            adoutput_list.append(ad)
+        
+        return adoutput_list
+    
+    except:
+        # Log the message from the exception
+        log.error(repr(sys.exc_info()[1]))
+        raise
+
+
 
 def make_fringe_image_gmos(adinput=None, operation="median", 
                            reject_method="avsigclip", suffix="_fringe"):
