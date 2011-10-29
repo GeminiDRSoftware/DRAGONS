@@ -20,7 +20,7 @@ from gempy.science import resample as rs
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
-def display_gmos(adinput=None, frame=1, saturation=None, overlay=None,
+def display_gmos(adinput=None, frame=1, threshold=None, overlay=None,
                  extname="SCI", zscale=True):
     """
     This function does a quick tiling if necessary, and calls numdisplay
@@ -42,10 +42,10 @@ def display_gmos(adinput=None, frame=1, saturation=None, overlay=None,
         if frame is None:
             frame = 1
 
-        # Saturation parameter only makes sense for SCI extension;
+        # Threshold parameter only makes sense for SCI extension;
         # turn it off for others
         if extname!="SCI":
-            saturation=None
+            threshold=None
 
         # Initialize the local version of numdisplay
         # (overrides the display function to allow for quick overlays)
@@ -69,29 +69,30 @@ def display_gmos(adinput=None, frame=1, saturation=None, overlay=None,
 
             masks = []
 
-            # Make saturation mask if desired
-            if saturation is not None:
-                if saturation=="auto":
-                    saturation = disp_ad.saturation_level()
+            # Make threshold mask if desired
+            if threshold is not None:
+                if threshold=="auto":
+                    # Set default threshold level to the saturation level
+                    threshold = disp_ad.saturation_level()
             
                 # Check units of 1st science extension; if electrons, 
-                # convert saturation limit from ADU to electrons. Also
+                # convert threshold limit from ADU to electrons. Also
                 # subtract approximate overscan level if needed
                 overscan_level = sciext.get_key_value("OVERSCAN")
                 if overscan_level is not None:
-                    saturation -= overscan_level
+                    threshold -= overscan_level
                     log.fullinfo("Subtracting overscan level " +
-                                 "%.2f from saturation parameter" % 
+                                 "%.2f from threshold parameter" % 
                                  overscan_level)
                 bunit = sciext.get_key_value("BUNIT")
                 if bunit=="electron":
                     gain = sciext.gain().as_pytype()
-                    saturation *= gain 
-                    log.fullinfo("Saturation parameter converted to " +
-                                 "%.2f electrons" % saturation)
+                    threshold *= gain 
+                    log.fullinfo("Threshold parameter converted to " +
+                                 "%.2f electrons" % threshold)
 
-                # Make saturation mask
-                satmask = np.where(data>saturation)
+                # Make threshold mask
+                satmask = np.where(data>threshold)
                 masks.append(satmask)
 
             if overlay is not None:
@@ -161,7 +162,7 @@ class _localNumDisplay(nd.NumDisplay):
 
     mask, if specified, should be a tuple of numpy arrays: the y- and
     x-coordinates of points to be masked.  For example,
-    mask = np.where(data>saturation_limit)
+    mask = np.where(data>threshold_limit)
     """
     def display(self, pix, name=None, bufname=None, z1=None, z2=None,
                 transform=None, zscale=False, contrast=0.25, scale=None,

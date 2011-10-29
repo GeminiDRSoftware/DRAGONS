@@ -20,7 +20,7 @@ from gempy.science import resample as rs
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
-def iq_display_gmos(adinput=None, display=True, frame=1, saturation=58000):
+def iq_display_gmos(adinput=None, display=True, frame=1, threshold=None):
 
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
@@ -73,7 +73,7 @@ def iq_display_gmos(adinput=None, display=True, frame=1, saturation=58000):
                 try:
                     disp_ad = ds.display_gmos(adinput=disp_ad[0],
                                               frame=frame,
-                                              saturation=saturation,
+                                              threshold=threshold,
                                               overlay=iqmask)
                 except:
                     log.warning("Could not display %s" % disp_ad[0].filename)

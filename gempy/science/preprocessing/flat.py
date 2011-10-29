@@ -162,7 +162,7 @@ def normalize_image(adinput=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def normalize_image_gmos(adinput=None, saturation=45000):
+def normalize_image_gmos(adinput=None, threshold=None):
     """
     This function will calculate a normalization factor from statistics
     on CCD2, then divide by this factor and propagate variance accordingly.
@@ -173,8 +173,8 @@ def normalize_image_gmos(adinput=None, saturation=45000):
     :param adinput: Astrodata input flat(s) to be normalized
     :type adinput: Astrodata
     
-    :param saturation: Defines saturation level for the raw frame, in ADU
-    :type saturation: float. If None, the saturation_level descriptor is used.
+    :param threshold: Defines threshold level for the raw frame, in ADU
+    :type threshold: float. If None, the threshold_level descriptor is used.
     """
     
     # Instantiate the log. This needs to be done outside of the try block,
@@ -193,9 +193,12 @@ def normalize_image_gmos(adinput=None, saturation=45000):
     adoutput_list = []
     try:
         for ad in adinput:
-            
-            if saturation is None:
-                saturation = ad.saturation_level()
+
+            # This threshold value has a default value in the primitive
+            # that calls it so this should never be none (for now). It
+            # is sensible to leave this here for future work though.           
+            if threshold is None:
+                threshold = ad.saturation_level()
                 
             # Get all CCD2 data
             if ad.count_exts("SCI")==1:
@@ -213,20 +216,20 @@ def normalize_image_gmos(adinput=None, saturation=45000):
 
             central_data = sciext.data
 
-            # Check units of CCD2; if electrons, convert saturation
+            # Check units of CCD2; if electrons, convert threshold
             # limit from ADU to electrons. Also subtract overscan
             # level if needed
             overscan_level = sciext.get_key_value("OVERSCAN")
             if overscan_level is not None:
-                saturation -= overscan_level
+                threshold -= overscan_level
                 log.fullinfo("Subtracting overscan level " +
-                             "%.2f from saturation parameter" % overscan_level)
+                             "%.2f from threshold parameter" % overscan_level)
             bunit = sciext.get_key_value("BUNIT")
             if bunit=="electron":
                 gain = sciext.gain().as_pytype()
-                saturation *= gain 
-                log.fullinfo("Saturation parameter converted to " +
-                             "%.2f electrons" % saturation)
+                threshold *= gain 
+                log.fullinfo("Threshold parameter converted to " +
+                             "%.2f electrons" % threshold)
             
             # Take off 5% of the width as a border
             xborder = int(0.05 * central_data.shape[1])
@@ -241,12 +244,12 @@ def normalize_image_gmos(adinput=None, saturation=45000):
                           yborder,central_data.shape[0]-yborder))
             stat_region = central_data[yborder:-yborder,xborder:-xborder]
             
-            # Remove negative and saturated values
+            # Remove negative values and values above the threshold
             stat_region = stat_region[np.logical_and(stat_region>0,
-                                                     stat_region<saturation)]
+                                                     stat_region<threshold)]
             
             # Find the mode and standard deviation
-            hist,edges = np.histogram(stat_region, bins=saturation/0.1)
+            hist,edges = np.histogram(stat_region, bins=threshold/0.1)
             mode = edges[np.argmax(hist)]
             std = np.std(stat_region)
             
