@@ -119,6 +119,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "correctBackgroundToReferenceImage":{
+    "suffix":{
+        "default"       : "_backgroundCorrected",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "correctWCSToReferenceCatalog":{
     "suffix":{
         "default"       : "_wcsCatalogCorrected",
@@ -259,6 +268,22 @@
     "purpose":{
         "default"       : None,
         "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "measureBG":{
+    "suffix":{
+        "default"       : "_bgMeasured",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "separate_ext":{
+        "default"       : False,
+        "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",

@@ -339,6 +339,52 @@ class GEMINIPrimitives(GENERALPrimitives):
         
         yield rc
     
+    def correctBackgroundToReferenceImage(self, rc):
+        """
+        This primitive does an additive correction to a set
+        of images to put their sky background at the same level
+        as the reference image before stacking.
+        """
+
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", 
+                                 "correctBackgroundToReferenceImage",
+                                 "starting"))
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Check whether two or more input AstroData objects were provided
+        adinput = rc.get_inputs_as_astrodata()
+        if len(adinput) <= 1:
+            log.warning("No correction will be performed, since at least " \
+                        "two input AstroData objects are required for " \
+                        "correctBackgroundToReferenceImage")
+
+            # Set the input AstroData object list equal to the output AstroData
+            # objects list without further processing
+            adoutput_list = adinput
+
+        else:
+            # Call the user level function
+            adoutput = pp.correct_background_to_reference_image(adinput=adinput)
+            
+            # Change the filenames and append to output list
+            for ad in adoutput:
+                ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                                 strip=True)
+                adoutput_list.append(ad)
+ 
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+
+        yield rc
+
     def correctWCSToReferenceCatalog(self, rc):
         """
         This primitive calculates the average astrometric offset between
@@ -378,8 +424,6 @@ class GEMINIPrimitives(GENERALPrimitives):
         rc.report_output(adoutput_list)
 
         yield rc
-
-
 
     def correctWCSToReferenceImage(self, rc):
         """ 
@@ -893,6 +937,38 @@ class GEMINIPrimitives(GENERALPrimitives):
 
         yield rc
 
+    def measureBG(self, rc):
+
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "measureBG", "starting"))
+        
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+
+            # Call the measure_bg user level function
+            ad = qa.measure_bg(adinput=ad,separate_ext=rc["separate_ext"])[0]
+
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list 
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+
+        yield rc
+
     def measureIQ(self, rc):
         """
         This primitive will detect the sources in the input images and fit
@@ -1037,6 +1113,9 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Align all images to the first one
             recipe_list.append("alignToReferenceImage")
             
+            # Correct background level in all images to the first one
+            recipe_list.append("correctBackgroundToReferenceImage")
+
             # Stack all frames
             recipe_list.append("stackFrames")
             
