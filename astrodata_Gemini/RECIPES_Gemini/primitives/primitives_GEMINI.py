@@ -1079,24 +1079,29 @@ class GEMINIPrimitives(GENERALPrimitives):
         rc.request_pause()
         yield rc
     
-    def registerAndStack(self, rc):
+    def alignAndStack(self, rc):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "registerAndStack", "starting"))
+        log.debug(gt.log_message("primitive", "alignAndStack", "starting"))
          
+        # Add the input frame to the forStack list and 
+        # get other available frames from the same list
+        rc.run("addToList(purpose=forStack)")
+        rc.run("getList(purpose=forStack)")
+
         # Check whether two or more input AstroData objects were provided
         adinput = rc.get_inputs_as_astrodata()
         if len(adinput) <= 1:
             log.stdinfo("No alignment or correction will be performed, " \
                         "since at least two input AstroData objects are " \
-                        "required for registerAndStack")
+                        "required for alignAndStack")
             rc.report_output(adinput)
         else:
             recipe_list = []
-            
+
             # Check to see if detectSources needs to be run
             run_ds = False
             for ad in adinput:

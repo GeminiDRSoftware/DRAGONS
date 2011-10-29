@@ -24,9 +24,7 @@ measureBG
 addReferenceCatalog
 measureZP
 correctWCSToReferenceCatalog(correct_WCS=False)
-addToList(purpose=forStack)
-getList(purpose=forStack)
-registerAndStack
+alignAndStack
 detectSources
 measureIQ
 addReferenceCatalog
