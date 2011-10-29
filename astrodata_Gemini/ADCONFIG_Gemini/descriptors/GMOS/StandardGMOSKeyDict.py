@@ -7,6 +7,7 @@ stdkeyDictGMOS = {
     "key_central_wavelength":"GRWLEN",
     "key_detector_name":"CCDNAME",
     "key_phu_detector_name":"DETID",
+    "key_detector_type":"DETTYPE",
     "key_disperser":"GRATING",
     "key_dispersion":"CD1_1",
     "key_filter1":"FILTER1",

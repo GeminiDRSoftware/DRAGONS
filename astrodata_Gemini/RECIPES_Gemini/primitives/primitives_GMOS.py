@@ -1,4 +1,5 @@
 from astrodata import Errors
+from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.data import AstroData
 from gempy import geminiTools as gt
@@ -38,11 +39,31 @@ class GMOSPrimitives(GEMINIPrimitives):
                 break
 
             try:
+
+                threshold = rc["threshold"]
+                if threshold is None:
+                    # Get the pre-defined threshold for the given detector type
+                    # and specific use case, i.e., display; using a look up
+                    # dictionary (table)
+                    gmosThresholds = Lookups.get_lookup_table(
+                        "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
+                    
+                    # Read the detector type from the phu
+                    detector_type = ad.phu_get_key_value("DETTYPE")
+
+                    # Form the key
+                    threshold_key = ("display", detector_type)
+                    if threshold_key in gmosThresholds:
+                        # This is an integer with units ADU
+                        threshold = gmosThresholds[threshold_key]
+                    else:
+                        raise Errors.TableKeyError()
+                
                 ad = ds.display_gmos(adinput=ad,
                                      frame=frame,
                                      extname=rc["extname"],
                                      zscale=rc["zscale"],
-                                     saturation=rc["saturation"])
+                                     threshold=threshold)
             except:
                 log.warning("Could not display %s" % ad.filename)
             

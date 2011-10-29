@@ -1,6 +1,7 @@
 import os
 from astrodata import AstroData
 from astrodata import Errors
+from astrodata import Lookups
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
 from gempy.science import preprocessing as pp
@@ -38,11 +39,30 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
-            
+
+            threshold = rc["threshold"]
+            if threshold is None:
+                # Get the pre-defined threshold for the given detector type
+                # and specific use case, i.e., display; using a look up
+                # dictionary (table)
+                gmosThresholds = Lookups.get_lookup_table(
+                    "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
+
+                # Read the detector type from the PHU
+                detector_type = ad.phu_get_key_value("DETTYPE")
+
+                # Form the key
+                threshold_key = ("display", detector_type)
+                if threshold_key in gmosThresholds:
+                    # This is an integer with units ADU
+                    threshold = gmosThresholds[threshold_key]
+                else:
+                    raise Errors.TableKeyError()
+                
             # Call the iq_display_gmos user level function,
             # which returns a list; take the first entry
             ad = qa.iq_display_gmos(adinput=ad, frame=frame,
-                                    saturation=rc["saturation"])[0]
+                                    threshold=threshold)[0]
             
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
@@ -301,8 +321,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         """
         This primitive will normalize a stacked flat frame
         
-        :param saturation: Defines saturation level for the raw frame, in ADU
-        :type saturation: string, can be 'default', or a number (default
+        :param threshold: Defines threshold level for the raw frame, in ADU
+        :type threshold: string, can be 'default', or a number (default
                           value for this primitive is '45000')
         """
         
@@ -330,10 +350,29 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 adoutput_list.append(ad)
                 continue
             
+            threshold = rc["threshold"]
+            if threshold is None:
+                # Get the pre-defined threshold for the given detector type
+                # and specific use case, i.e., display; using a look up
+                # dictionary (table)
+                gmosThresholds = Lookups.get_lookup_table(
+                    "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
+
+                # Read the detector type from the PHU
+                detector_type = ad.phu_get_key_value("DETTYPE")
+
+                # Form the key
+                threshold_key = ("processing", detector_type)
+                if threshold_key in gmosThresholds:
+                    # This is an integer with units ADU
+                    threshold = gmosThresholds[threshold_key]
+                else:
+                    raise Errors.TableKeyError()
+                
             # Call the normalize_image_gmos user level function,
             # which returns a list; take the first entry
             ad = pp.normalize_image_gmos(adinput=ad,
-                                         saturation=rc["saturation"])[0]
+                                         threshold=threshold)[0]
             
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 

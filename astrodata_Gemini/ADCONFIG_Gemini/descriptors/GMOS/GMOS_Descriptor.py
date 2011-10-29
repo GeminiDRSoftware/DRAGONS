@@ -18,6 +18,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     gmosampsGainBefore20060831 = None
     gmosampsRdnoise = None
     gmosampsRdnoiseBefore20060831 = None
+    gmosThresholds = None
+    gmosPixelScales = None
+    
     
     def __init__(self):
         # We can get both at once since they are in the same lookup space
@@ -29,6 +32,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
                                      "gmosampsRdnoise",
                                      "gmosampsRdnoiseBefore20060831")
+        self.gmosThresholds = Lookups.get_lookup_table(
+            "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
+        self.gmosPixelScales = Lookups.get_lookup_table(
+            "Gemini/GMOS/GMOSPixelScale", "gmosPixelScales")
         self.gmoszeropoints = Lookups.get_lookup_table("Gemini/GMOS/Nominal_Zeropoints", "nominal_zeropoints")
         GEMINI_DescriptorCalc.__init__(self)
     
@@ -704,27 +711,42 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_overscan_section
     
     def pixel_scale(self, dataset, **args):
-        # Get the instrument value and the binning of the y-axis value using
-        # the appropriate descriptors
-        instrument = dataset.instrument()
+        # Get the instrument value, detector type and the binning of the y-axis
+        # value using the appropriate descriptors / functions
+        # Use as_pytype() for instrument as one cannot use a mutable object
+        # as part of a key for a dictionary
+        instrument = dataset.instrument().as_pytype()
         detector_y_bin = dataset.detector_y_bin()
-        if instrument is None or detector_y_bin is None:
+        detector_type = dataset.phu_get_key_value(
+            self.get_descriptor_key("key_detector_type"))
+        if instrument is None or detector_y_bin is None or \
+               detector_type is None:
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
-        # Set the default pixel scales for GMOS-N and GMOS-S
-        if instrument == "GMOS-N":
-            scale = 0.0727
-        if instrument == "GMOS-S":
-            scale = 0.073
-        # The binning of the y-axis is used to calculate the pixel scale.
-        # Return the pixel scale float
-        ret_pixel_scale = float(detector_y_bin * scale)
+
+        # Obtain the default pixel scale from a look up table
+        # Form the key
+        pixel_scale_key = (instrument, detector_type)
         
+        if pixel_scale_key in getattr(self, "gmosPixelScales"):
+            # raw_pixel_scale is a float with units arcseconds per unbinnned
+            # pixel
+            raw_pixel_scale = self.gmosPixelScales[pixel_scale_key]
+        else:
+            raise Errors.TableKeyError()        
+
+        # The binning of the y-axis is used to calculate the returned pixel
+        # scale.
+        ret_pixel_scale = float(detector_y_bin * raw_pixel_scale)
+
+        # Return the pixel scale float
         return ret_pixel_scale
-    
+
+    gmosPixelScales = None
+
     def read_noise(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always return a dictionary where the key
@@ -848,10 +870,28 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_read_speed_setting
     
     def saturation_level(self, dataset, **args):
+        # Get the detector type from the header of the
+        # PHU. The detector type keyword is defined in the local key dictionary
+        # (stdkeyDictGMOS) but is read from the updated global key dictionary
+        # (self.get_descriptor_key())
+        detector_type = dataset.phu_get_key_value(
+            self.get_descriptor_key("key_detector_type"))
+        if detector_type is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+
+        # Form the key
+        saturation_key = ("saturation", detector_type)
+        if saturation_key in getattr(self, "gmosThresholds"):
+            # saturation value is an integer  with units ADU
+            ret_saturation_level = self.gmosThresholds[saturation_key]
+        else:
+            raise Errors.TableKeyError()
+
         # Return the saturation level integer
-        # This is the ADC saturation level (2^16) minus a couple
-        # of ADUs to account for noise
-        ret_saturation_level = int(65530)
-        
         return ret_saturation_level
 
+    gmosThresholds = None

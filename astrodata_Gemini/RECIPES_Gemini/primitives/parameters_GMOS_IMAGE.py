@@ -15,8 +15,8 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    "saturation":{
-        "default"       : 58000,
+    "threshold":{
+        "default"       : None,
         "type"          : "float",
         "recipeOverride": True,
         "userOverride"  : True,
@@ -54,8 +54,8 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    "saturation":{
-        "default"       : 45000,
+    "threshold":{
+        "default"       : None,
         "type"          : "float",
         "recipeOverride": True,
         "userOverride"  : True,
