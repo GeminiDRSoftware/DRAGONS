@@ -663,6 +663,11 @@ def measure_zp(adinput=None):
             for objcat in objcats:
                 extver = objcat.extver()
                 mags = objcat.data['MAG_AUTO']
+                if np.all(mags==-999):
+                    log.warning("No magnitudes present in %s[OBJCAT,%d]"%
+                                (ad.filename,extver))
+                    adoutput_list.append(ad)
+                    continue
 
                 # Need to correct the mags for the exposure time
                 et = float(ad.exposure_time())
