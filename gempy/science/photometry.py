@@ -516,6 +516,8 @@ def match_objcat_refcat(adinput=None):
                 magcolname = None
 
             # Loop through the objcat extensions
+            if ad['OBJCAT'] is None:
+                raise Errors.InputError("Missing OBJCAT in %s" % (ad.filename))
             for objcat in ad['OBJCAT']:
                 extver = objcat.extver()
 
