@@ -23,7 +23,7 @@ from gempy.science.preprocessing import bias as bs
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
-def align_to_reference_image(adinput, interpolator="linear"):
+def align_to_reference_image(adinput, interpolator="linear", trim_data=False):
     """
     This function applies the transformation encoded in the input images
     WCSs to align them with a reference image, in reference image pixel
@@ -64,6 +64,10 @@ def align_to_reference_image(adinput, interpolator="linear"):
     :param interpolator: type of interpolation desired
     :type interpolator: string, possible values are None, 'nearest', 'linear',
                         'spline2', 'spline3', 'spline4', or 'spline5'
+
+    :param trim_data: flag to indicate whether output image should be trimmed
+                      to the size of the reference image.
+    :type trim_data: Boolean
     """
     
     # instantiate log
@@ -142,37 +146,49 @@ def align_to_reference_image(adinput, interpolator="linear"):
             
             all_corners.append(img_corners)
         
-        cenoff = []
-        out_shape = []
-        for axis in range(naxis):
-            # get output shape from corner values
-            cvals = [corner[axis] for ic in all_corners for corner in ic]
-            out_shape.append(int(max(cvals)-min(cvals)+1))
-            
-            # if just shifting, need to set centering shift for reference
-            # image from offsets already calculated
-            if interpolator is None:
-                svals = [shift[axis] for shift in shifts]
-                # include a 0 shift for the reference image
-                # (in case it's already centered)
-                svals.append(0.0)
-                cenoff.append(-int(max(svals)))
+        # If data should be trimmed to size of reference image,
+        # output shape is same as ref_shape, and centering offsets are zero
+        if trim_data:
+            cenoff=[0]*naxis
+            out_shape = ref_shape
+        else:
+            # Otherwise, use the corners of the images to get the minimum
+            # required output shape to hold all data
+            cenoff = []
+            out_shape = []
+            for axis in range(naxis):
+                # get output shape from corner values
+                cvals = [corner[axis] for ic in all_corners for corner in ic]
+                out_shape.append(int(max(cvals)-min(cvals)+1))
+                
+                # if just shifting, need to set centering shift for reference
+                # image from offsets already calculated
+                if interpolator is None:
+                    svals = [shift[axis] for shift in shifts]
+                    # include a 0 shift for the reference image
+                    # (in case it's already centered)
+                    svals.append(0.0)
+                    cenoff.append(-int(max(svals)))
         
-        out_shape = tuple(out_shape)
+            out_shape = tuple(out_shape)
         
-        # if not shifting, get offset required to center reference image
-        # from the size of the image
-        if interpolator is not None:
-            incen = [0.5*(axlen-1) for axlen in ref_shape]
-            outcen = [0.5*(axlen-1) for axlen in out_shape]
-            cenoff = np.rint(incen) - np.rint(outcen)
-        
+            # if not shifting, get offset required to center reference image
+            # from the size of the image
+            if interpolator is not None:
+                incen = [0.5*(axlen-1) for axlen in ref_shape]
+                outcen = [0.5*(axlen-1) for axlen in out_shape]
+                cenoff = np.rint(incen) - np.rint(outcen)
+
         # shift the reference image to keep it in the center of the new array
         # (do the same for VAR and DQ)
-        log.fullinfo("Growing reference image to keep all data; " +
-                     "centering data, and updating WCS to account " +
-                     "for shift")
-        log.fullinfo("New output shape: "+repr(out_shape))
+
+        if trim_data:
+            log.fullinfo("Trimming data to size of reference image")
+        else:
+            log.fullinfo("Growing reference image to keep all data; " +
+                         "centering data, and updating WCS to account " +
+                         "for shift")
+            log.fullinfo("New output shape: "+repr(out_shape))
         
         ref_corners = [(corner[1]-cenoff[1]+1,corner[0]-cenoff[0]+1) # x,y
                        for corner in ref_corners]
