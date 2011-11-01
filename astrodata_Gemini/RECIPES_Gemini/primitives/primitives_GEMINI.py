@@ -346,7 +346,8 @@ class GEMINIPrimitives(GENERALPrimitives):
             # Call the align_to_reference_image user level function,
             # which returns a list
             adoutput = rs.align_to_reference_image(
-                adinput=adinput, interpolator=rc["interpolator"])
+                adinput=adinput, interpolator=rc["interpolator"],
+                trim_data=rc["trim_data"])
             
             # Change the filenames and append to output list
             for ad in adoutput:

@@ -74,6 +74,13 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    "trim_data":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     },
  "contextReport":{
     "report_history":{
