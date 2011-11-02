@@ -306,7 +306,7 @@ def correct_wcs_to_reference_catalog(adinput=None, correctWCS=True):
 
     # Define the keyword to be used for the time stamp for this user level
     # function
-    timestamp_key = timestamp_keys["match_objcat_refcat"]
+    timestamp_key = timestamp_keys["correct_wcs_to_reference_catalog"]
 
     try:
 
