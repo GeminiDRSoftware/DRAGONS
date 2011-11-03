@@ -59,9 +59,9 @@ def checkInputsMatch(adInsA=None, adInsB=None, check_filter=True):
             log.error('Inputs have different numbers of SCI extensions.')
             raise Errors.ToolboxError('Mismatching number of SCI ' \
                                       'extensions in inputs')
-        for extCount in range(1,A.count_exts('SCI')+1):
+        for sciA in A["SCI"]:
             # grab matching SCI extensions from A's and B's
-            sciA = A[('SCI',extCount)]
+            extCount = sciA.extver()
             sciB = B[('SCI',extCount)]
             
             log.fullinfo('Checking SCI extension '+str(extCount))

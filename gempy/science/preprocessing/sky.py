@@ -353,8 +353,8 @@ def remove_fringe_image_gmos(adinput=None, fringe=None,
                 # Get CCD2 data for statistics
                 if ad.count_exts("SCI")==1:
                     # Only one CCD present, assume it is CCD2
-                    sciext = ad["SCI",1]
-                    frngext = this_fringe["SCI",1]
+                    sciext = ad["SCI"]
+                    frngext = this_fringe["SCI"]
                 else:
                     # Otherwise, take the second science extension
 
