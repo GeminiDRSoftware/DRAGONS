@@ -19,6 +19,12 @@ class GENERALPrimitives(PrimitiveSet):
         # primitive due to primitive inheritance.
         self.timestamp_keys = Lookups.get_lookup_table(
             "Gemini/timestamp_keywords", "timestamp_keys")
+
+        # Also load the standard comments for header keywords that will be
+        # updated in the primitives
+        self.keyword_comments = Lookups.get_lookup_table(
+            "Gemini/keyword_comments", "keyword_comments")
+
         return 
     init.pt_hide = True
     

@@ -762,8 +762,10 @@ class GEMINIPrimitives(GENERALPrimitives):
         for ad in rc.get_inputs_as_astrodata():
             
             # Change the two keywords -- BAD and NO = Fail
-            ad.phu_set_key_value("RAWGEMQA","BAD")
-            ad.phu_set_key_value("RAWPIREQ","NO")
+            ad.phu_set_key_value("RAWGEMQA","BAD",
+                                 comment=self.keyword_comments["RAWGEMQA"])
+            ad.phu_set_key_value("RAWPIREQ","NO",
+                                 comment=self.keyword_comments["RAWPIREQ"])
             log.fullinfo("%s has been marked %s" % (ad.filename,ad.qa_state()))
             
             # Append the output AstroData object to the list

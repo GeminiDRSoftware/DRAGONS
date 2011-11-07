@@ -20,13 +20,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"airmass"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "airmass")
             if not hasattr(self.descriptor_calculator, "airmass"):
-                key = "key_"+"airmass"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -41,6 +45,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "airmass",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -76,13 +81,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"amp_read_area"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "amp_read_area")
             if not hasattr(self.descriptor_calculator, "amp_read_area"):
-                key = "key_"+"amp_read_area"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -97,6 +106,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "amp_read_area",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -124,13 +134,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"array_section"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "array_section")
             if not hasattr(self.descriptor_calculator, "array_section"):
-                key = "key_"+"array_section"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -145,6 +159,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "array_section",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = list )
             return ret
@@ -172,13 +187,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"azimuth"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "azimuth")
             if not hasattr(self.descriptor_calculator, "azimuth"):
-                key = "key_"+"azimuth"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -193,6 +212,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "azimuth",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -220,13 +240,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"camera"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "camera")
             if not hasattr(self.descriptor_calculator, "camera"):
-                key = "key_"+"camera"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -241,6 +265,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "camera",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -269,13 +294,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"cass_rotator_pa"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "cass_rotator_pa")
             if not hasattr(self.descriptor_calculator, "cass_rotator_pa"):
-                key = "key_"+"cass_rotator_pa"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -290,6 +319,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "cass_rotator_pa",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -332,13 +362,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"central_wavelength"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "central_wavelength")
             if not hasattr(self.descriptor_calculator, "central_wavelength"):
-                key = "key_"+"central_wavelength"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -353,6 +387,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "central_wavelength",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -380,13 +415,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"coadds"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "coadds")
             if not hasattr(self.descriptor_calculator, "coadds"):
-                key = "key_"+"coadds"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -401,6 +440,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "coadds",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = int )
             return ret
@@ -428,13 +468,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"data_label"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "data_label")
             if not hasattr(self.descriptor_calculator, "data_label"):
-                key = "key_"+"data_label"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -449,6 +493,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "data_label",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -490,13 +535,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"data_section"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "data_section")
             if not hasattr(self.descriptor_calculator, "data_section"):
-                key = "key_"+"data_section"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -511,6 +560,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "data_section",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = list )
             return ret
@@ -538,13 +588,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"dec"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "dec")
             if not hasattr(self.descriptor_calculator, "dec"):
-                key = "key_"+"dec"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -559,6 +613,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "dec",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -590,13 +645,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"decker"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "decker")
             if not hasattr(self.descriptor_calculator, "decker"):
-                key = "key_"+"decker"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -611,6 +670,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "decker",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -652,13 +712,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"detector_section"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "detector_section")
             if not hasattr(self.descriptor_calculator, "detector_section"):
-                key = "key_"+"detector_section"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -673,6 +737,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "detector_section",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = list )
             return ret
@@ -700,13 +765,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"detector_name"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "detector_name")
             if not hasattr(self.descriptor_calculator, "detector_name"):
-                key = "key_"+"detector_name"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -721,6 +790,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "detector_name",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -755,13 +825,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"detector_x_bin"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "detector_x_bin")
             if not hasattr(self.descriptor_calculator, "detector_x_bin"):
-                key = "key_"+"detector_x_bin"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -776,6 +850,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "detector_x_bin",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = int )
             return ret
@@ -810,13 +885,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"detector_y_bin"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "detector_y_bin")
             if not hasattr(self.descriptor_calculator, "detector_y_bin"):
-                key = "key_"+"detector_y_bin"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -831,6 +910,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "detector_y_bin",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = int )
             return ret
@@ -862,13 +942,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"disperser"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "disperser")
             if not hasattr(self.descriptor_calculator, "disperser"):
-                key = "key_"+"disperser"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -883,6 +967,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "disperser",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -925,13 +1010,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"dispersion"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "dispersion")
             if not hasattr(self.descriptor_calculator, "dispersion"):
-                key = "key_"+"dispersion"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -946,6 +1035,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "dispersion",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -973,13 +1063,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"dispersion_axis"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "dispersion_axis")
             if not hasattr(self.descriptor_calculator, "dispersion_axis"):
-                key = "key_"+"dispersion_axis"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -994,6 +1088,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "dispersion_axis",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = int )
             return ret
@@ -1021,13 +1116,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"elevation"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "elevation")
             if not hasattr(self.descriptor_calculator, "elevation"):
-                key = "key_"+"elevation"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1042,6 +1141,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "elevation",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -1069,13 +1169,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"exposure_time"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "exposure_time")
             if not hasattr(self.descriptor_calculator, "exposure_time"):
-                key = "key_"+"exposure_time"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1090,6 +1194,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "exposure_time",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -1122,13 +1227,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"filter_name"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "filter_name")
             if not hasattr(self.descriptor_calculator, "filter_name"):
-                key = "key_"+"filter_name"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1143,6 +1252,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "filter_name",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1174,13 +1284,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"focal_plane_mask"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "focal_plane_mask")
             if not hasattr(self.descriptor_calculator, "focal_plane_mask"):
-                key = "key_"+"focal_plane_mask"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1195,6 +1309,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "focal_plane_mask",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1228,13 +1343,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"gain"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "gain")
             if not hasattr(self.descriptor_calculator, "gain"):
-                key = "key_"+"gain"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1249,6 +1368,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "gain",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -1280,13 +1400,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"grating"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "grating")
             if not hasattr(self.descriptor_calculator, "grating"):
-                key = "key_"+"grating"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1301,6 +1425,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "grating",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1328,13 +1453,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"group_id"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "group_id")
             if not hasattr(self.descriptor_calculator, "group_id"):
-                key = "key_"+"group_id"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1349,6 +1478,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "group_id",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1376,13 +1506,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"gain_setting"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "gain_setting")
             if not hasattr(self.descriptor_calculator, "gain_setting"):
-                key = "key_"+"gain_setting"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1397,6 +1531,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "gain_setting",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1424,13 +1559,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"instrument"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "instrument")
             if not hasattr(self.descriptor_calculator, "instrument"):
-                key = "key_"+"instrument"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1445,6 +1584,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "instrument",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1472,13 +1612,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"local_time"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "local_time")
             if not hasattr(self.descriptor_calculator, "local_time"):
-                key = "key_"+"local_time"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1493,6 +1637,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "local_time",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1526,13 +1671,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"mdf_row_id"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "mdf_row_id")
             if not hasattr(self.descriptor_calculator, "mdf_row_id"):
-                key = "key_"+"mdf_row_id"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1547,6 +1696,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "mdf_row_id",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = int )
             return ret
@@ -1575,13 +1725,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"nod_count"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "nod_count")
             if not hasattr(self.descriptor_calculator, "nod_count"):
-                key = "key_"+"nod_count"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1596,6 +1750,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "nod_count",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = int )
             return ret
@@ -1624,13 +1779,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"nod_pixels"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "nod_pixels")
             if not hasattr(self.descriptor_calculator, "nod_pixels"):
-                key = "key_"+"nod_pixels"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1645,6 +1804,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "nod_pixels",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = int )
             return ret
@@ -1672,13 +1832,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"nominal_atmospheric_extinction"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "nominal_atmospheric_extinction")
             if not hasattr(self.descriptor_calculator, "nominal_atmospheric_extinction"):
-                key = "key_"+"nominal_atmospheric_extinction"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1693,6 +1857,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "nominal_atmospheric_extinction",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -1720,13 +1885,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"nominal_photometric_zeropoint"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "nominal_photometric_zeropoint")
             if not hasattr(self.descriptor_calculator, "nominal_photometric_zeropoint"):
-                key = "key_"+"nominal_photometric_zeropoint"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1741,6 +1910,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "nominal_photometric_zeropoint",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -1769,13 +1939,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"non_linear_level"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "non_linear_level")
             if not hasattr(self.descriptor_calculator, "non_linear_level"):
-                key = "key_"+"non_linear_level"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1790,6 +1964,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "non_linear_level",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = int )
             return ret
@@ -1817,13 +1992,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"object"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "object")
             if not hasattr(self.descriptor_calculator, "object"):
-                key = "key_"+"object"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1838,6 +2017,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "object",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1866,13 +2046,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"observation_class"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "observation_class")
             if not hasattr(self.descriptor_calculator, "observation_class"):
-                key = "key_"+"observation_class"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1887,6 +2071,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "observation_class",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1914,13 +2099,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"observation_epoch"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "observation_epoch")
             if not hasattr(self.descriptor_calculator, "observation_epoch"):
-                key = "key_"+"observation_epoch"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1935,6 +2124,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "observation_epoch",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -1962,13 +2152,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"observation_id"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "observation_id")
             if not hasattr(self.descriptor_calculator, "observation_id"):
-                key = "key_"+"observation_id"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -1983,6 +2177,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "observation_id",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2011,13 +2206,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"observation_type"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "observation_type")
             if not hasattr(self.descriptor_calculator, "observation_type"):
-                key = "key_"+"observation_type"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2032,6 +2231,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "observation_type",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2059,13 +2259,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"overscan_section"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "overscan_section")
             if not hasattr(self.descriptor_calculator, "overscan_section"):
-                key = "key_"+"overscan_section"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2080,6 +2284,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "overscan_section",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = list )
             return ret
@@ -2107,13 +2312,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"pixel_scale"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "pixel_scale")
             if not hasattr(self.descriptor_calculator, "pixel_scale"):
-                key = "key_"+"pixel_scale"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2128,6 +2337,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "pixel_scale",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -2159,13 +2369,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"prism"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "prism")
             if not hasattr(self.descriptor_calculator, "prism"):
-                key = "key_"+"prism"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2180,6 +2394,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "prism",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2208,13 +2423,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"program_id"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "program_id")
             if not hasattr(self.descriptor_calculator, "program_id"):
-                key = "key_"+"program_id"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2229,6 +2448,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "program_id",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2256,13 +2476,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"pupil_mask"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "pupil_mask")
             if not hasattr(self.descriptor_calculator, "pupil_mask"):
-                key = "key_"+"pupil_mask"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2277,6 +2501,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "pupil_mask",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2305,13 +2530,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"qa_state"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "qa_state")
             if not hasattr(self.descriptor_calculator, "qa_state"):
-                key = "key_"+"qa_state"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2326,6 +2555,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "qa_state",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2353,13 +2583,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"ra"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "ra")
             if not hasattr(self.descriptor_calculator, "ra"):
-                key = "key_"+"ra"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2374,6 +2608,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "ra",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -2402,13 +2637,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"raw_bg"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "raw_bg")
             if not hasattr(self.descriptor_calculator, "raw_bg"):
-                key = "key_"+"raw_bg"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2423,6 +2662,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "raw_bg",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2451,13 +2691,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"raw_cc"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "raw_cc")
             if not hasattr(self.descriptor_calculator, "raw_cc"):
-                key = "key_"+"raw_cc"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2472,6 +2716,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "raw_cc",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2500,13 +2745,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"raw_iq"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "raw_iq")
             if not hasattr(self.descriptor_calculator, "raw_iq"):
-                key = "key_"+"raw_iq"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2521,6 +2770,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "raw_iq",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2549,13 +2799,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"raw_wv"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "raw_wv")
             if not hasattr(self.descriptor_calculator, "raw_wv"):
-                key = "key_"+"raw_wv"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2570,6 +2824,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "raw_wv",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2601,13 +2856,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"read_mode"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "read_mode")
             if not hasattr(self.descriptor_calculator, "read_mode"):
-                key = "key_"+"read_mode"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2622,6 +2881,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "read_mode",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2655,13 +2915,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"read_noise"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "read_noise")
             if not hasattr(self.descriptor_calculator, "read_noise"):
-                key = "key_"+"read_noise"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2676,6 +2940,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "read_noise",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -2704,13 +2969,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"read_speed_setting"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "read_speed_setting")
             if not hasattr(self.descriptor_calculator, "read_speed_setting"):
-                key = "key_"+"read_speed_setting"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2725,6 +2994,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "read_speed_setting",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2753,13 +3023,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"saturation_level"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "saturation_level")
             if not hasattr(self.descriptor_calculator, "saturation_level"):
-                key = "key_"+"saturation_level"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2774,6 +3048,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "saturation_level",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = int )
             return ret
@@ -2805,13 +3080,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"slit"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "slit")
             if not hasattr(self.descriptor_calculator, "slit"):
-                key = "key_"+"slit"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2826,6 +3105,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "slit",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2853,13 +3133,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"telescope"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "telescope")
             if not hasattr(self.descriptor_calculator, "telescope"):
-                key = "key_"+"telescope"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2874,6 +3158,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "telescope",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -2901,13 +3186,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"ut_date"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "ut_date")
             if not hasattr(self.descriptor_calculator, "ut_date"):
-                key = "key_"+"ut_date"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2922,6 +3211,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "ut_date",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = datetime )
             return ret
@@ -2974,13 +3264,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"ut_datetime"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "ut_datetime")
             if not hasattr(self.descriptor_calculator, "ut_datetime"):
-                key = "key_"+"ut_datetime"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -2995,6 +3289,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "ut_datetime",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = datetime )
             return ret
@@ -3022,13 +3317,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"ut_time"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "ut_time")
             if not hasattr(self.descriptor_calculator, "ut_time"):
-                key = "key_"+"ut_time"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -3043,6 +3342,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "ut_time",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = datetime )
             return ret
@@ -3072,13 +3372,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"wavefront_sensor"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "wavefront_sensor")
             if not hasattr(self.descriptor_calculator, "wavefront_sensor"):
-                key = "key_"+"wavefront_sensor"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -3093,6 +3397,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "wavefront_sensor",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -3127,13 +3432,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"wavelength_reference_pixel"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "wavelength_reference_pixel")
             if not hasattr(self.descriptor_calculator, "wavelength_reference_pixel"):
-                key = "key_"+"wavelength_reference_pixel"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -3148,6 +3457,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "wavelength_reference_pixel",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -3176,13 +3486,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"well_depth_setting"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "well_depth_setting")
             if not hasattr(self.descriptor_calculator, "well_depth_setting"):
-                key = "key_"+"well_depth_setting"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -3197,6 +3511,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "well_depth_setting",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
@@ -3224,13 +3539,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"x_offset"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "x_offset")
             if not hasattr(self.descriptor_calculator, "x_offset"):
-                key = "key_"+"x_offset"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -3245,6 +3564,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "x_offset",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret
@@ -3272,13 +3592,17 @@ class CalculatorInterface:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"y_offset"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "y_offset")
             if not hasattr(self.descriptor_calculator, "y_offset"):
-                key = "key_"+"y_offset"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -3293,6 +3617,7 @@ class CalculatorInterface:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "y_offset",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = float )
             return ret

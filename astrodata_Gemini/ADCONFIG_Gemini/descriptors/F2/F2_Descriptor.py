@@ -22,20 +22,27 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             "Gemini/F2/F2ConfigDict", "f2ConfigDict")
         GEMINI_DescriptorCalc.__init__(self)
     
-    def data_section(self, dataset, pretty=False, **args):
+    def data_section(self, dataset, pretty=False, extname="SCI", **args):
+        ret_data_section = {}
         data_section = "[1:2048,1:2048]"
         
-        if pretty:
-            # Return the data section string that uses 1-based indexing as the
-            # value in the form [x1:x2,y1:y2]
-            ret_data_section = data_section
-        else:
-            # Return the data section list that used 0-based, non-inclusive
-            # indexing as the value in the form [x1, x2, y1, y2]
-            ret_data_section = sectionStrToIntList(data_section)
-        
+        for ext in dataset[extname]:
+            if pretty:
+                # Return the data section string that uses 1-based 
+                # indexing as the value in the form [x1:x2,y1:y2]
+                ret_data_section.update(
+                    {(ext.extname(), ext.extver()): data_section})
+            else:
+                # Return the data section list that used 0-based, non-inclusive
+                # indexing as the value in the form [x1, x2, y1, y2]
+                ret_data_section.update(
+                    {(ext.extname(), ext.extver()): sectionStrToIntList(
+                                                                data_section)})
         return ret_data_section
         
+    array_section = data_section
+    detector_section = data_section
+
     def gain(self, dataset, **args):
         # Get the number of non-destructive read pairs (lnrs) from the header
         # of the PHU. The lnrs keyword is defined in the local key dictionary

@@ -18,13 +18,17 @@ class DescriptorDescriptor:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"%(name)s"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
             #print hasattr(self.descriptor_calculator, "%(name)s")
             if not hasattr(self.descriptor_calculator, "%(name)s"):
-                key = "key_"+"%(name)s"
-                #print "mkCI10:",key, repr(keydict)
-                #print "mkCI12:", key in keydict
-                if key in keydict.keys():
-                    retval = self.phu_get_key_value(keydict[key])
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
                     if retval is None:
                         if hasattr(self, "exception_info"):
                             raise self.exception_info
@@ -39,6 +43,7 @@ class DescriptorDescriptor:
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "%(name)s",
+                                   keyword = keyword,
                                    ad = self,
                                    pytype = %(pytype)s )
             return ret
