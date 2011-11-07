@@ -156,6 +156,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
                                             "not have a detector section" %
                                             ad.filename)
                 else:
+                    detsec_kw = sci_detsec.keyword
                     sci_detsec = sci_detsec.as_list()
 
                 sci_datasec = sciext.data_section()
@@ -164,6 +165,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
                                             "not have a data section" %
                                             ad.filename)
                 else:
+                    datasec_kw = sci_datasec.keyword
                     sci_datasec = sci_datasec.as_list()
 
                 sci_arraysec = sciext.array_section()
@@ -172,6 +174,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
                                             "not have an array section" %
                                             ad.filename)
                 else:
+                    arraysec_kw = sci_arraysec.keyword
                     sci_arraysec = sci_arraysec.as_list()
 
                 # Array section is unbinned; to use as indices for
@@ -403,18 +406,18 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
                             ext.data = clipped
 
                         # Set the section keywords as appropriate
-                        # Note: this needs attention.  The CCDSEC keyword
-                        # is only for GMOS, DETSEC/DATASEC may be too.
-                        if sciext.get_key_value("DATASEC") is not None:
-                            ext.set_key_value("DATASEC",
-                                              sciext.header["DATASEC"],
-                                              keyword_comments["DATASEC"])
-                        if sciext.get_key_value("DETSEC") is not None:
-                            ext.set_key_value("DETSEC",sciext.header["DETSEC"],
-                                              keyword_comments["DETSEC"])
-                        if sciext.get_key_value("CCDSEC") is not None:
-                            ext.set_key_value("CCDSEC",sciext.header["CCDSEC"],
-                                              keyword_comments["DETSEC"])
+                        if sciext.get_key_value(datasec_kw) is not None:
+                            ext.set_key_value(datasec_kw,
+                                              sciext.header[datasec_kw],
+                                              keyword_comments[datasec_kw])
+                        if sciext.get_key_value(detsec_kw) is not None:
+                            ext.set_key_value(detsec_kw,
+                                              sciext.header[detsec_kw],
+                                              keyword_comments[detsec_kw])
+                        if sciext.get_key_value(arraysec_kw) is not None:
+                            ext.set_key_value(arraysec_kw,
+                                              sciext.header[arraysec_kw],
+                                              keyword_comments[arraysec_kw])
         
                         # Rename the auxext to the science extver
                         ext.rename_ext(name=ext.extname(),ver=sciext.extver())
