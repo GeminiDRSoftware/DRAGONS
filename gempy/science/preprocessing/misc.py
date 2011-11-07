@@ -13,6 +13,11 @@ from gempy import geminiTools as gt
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
+# Load the standard comments for header keywords that will be updated
+# in these functions
+keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
+                                            "keyword_comments")
+
 def adu_to_electrons(adinput):
     """
     The adu_to_electrons user level function will convert the units of the
@@ -61,10 +66,15 @@ def adu_to_electrons(adinput):
             
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
-            gt.update_key_value(adinput=ad, function="bunit",
-                                value="electron", extname="SCI")
-            gt.update_key_value(adinput=ad, function="bunit",
-                                value="electron*electron", extname="VAR")
+            for ext in ad["SCI"]:
+                ext.set_key_value("BUNIT","electron",
+                                  comment=keyword_comments["BUNIT"])
+            varext = ad["VAR"]
+            if varext is not None:
+                for ext in varext:
+                    ext.set_key_value("BUNIT","electron*electron",
+                                      comment=keyword_comments["BUNIT"])
+
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             

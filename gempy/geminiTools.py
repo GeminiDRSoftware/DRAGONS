@@ -5,9 +5,15 @@ import pyfits as pf
 import numpy as np
 import tempfile
 import astrodata
+from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from astrodata import Errors
+
+# Load the standard comments for header keywords that will be updated
+# in these functions
+keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
+                                            "keyword_comments")
 
 def checkInputsMatch(adInsA=None, adInsB=None, check_filter=True):
     """
@@ -399,15 +405,16 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
                         # Set the section keywords as appropriate
                         # Note: this needs attention.  The CCDSEC keyword
                         # is only for GMOS, DETSEC/DATASEC may be too.
-                        if sciext.header["DATASEC"] is not None:
+                        if sciext.get_key_value("DATASEC") is not None:
                             ext.set_key_value("DATASEC",
-                                              sciext.header["DATASEC"])
-                        if sciext.header["DETSEC"] is not None:
-                            ext.set_key_value("DETSEC",
-                                              sciext.header["DETSEC"])
-                        if sciext.header["CCDSEC"] is not None:
-                            ext.set_key_value("CCDSEC",
-                                              sciext.header["CCDSEC"])
+                                              sciext.header["DATASEC"],
+                                              keyword_comments["DATASEC"])
+                        if sciext.get_key_value("DETSEC") is not None:
+                            ext.set_key_value("DETSEC",sciext.header["DETSEC"],
+                                              keyword_comments["DETSEC"])
+                        if sciext.get_key_value("CCDSEC") is not None:
+                            ext.set_key_value("CCDSEC",sciext.header["CCDSEC"],
+                                              keyword_comments["DETSEC"])
         
                         # Rename the auxext to the science extver
                         ext.rename_ext(name=ext.extname(),ver=sciext.extver())
@@ -513,34 +520,43 @@ def convert_to_cal_header(adinput=None, caltype=None):
             datalabel = "%s-%03d" % (obsid,fileno)
 
             # Set class, type, object to generic defaults
-            ad.phu_set_key_value("OBSCLASS","partnerCal")
+            ad.phu_set_key_value("OBSCLASS","partnerCal",
+                                 keyword_comments["OBSCLASS"])
 
             if "fringe" in caltype:
-                ad.phu_set_key_value("OBSTYPE","FRINGE")
-                ad.phu_set_key_value("OBJECT","Fringe Frame")
+                ad.phu_set_key_value("OBSTYPE","FRINGE",
+                                     keyword_comments["OBSTYPE"])
+                ad.phu_set_key_value("OBJECT","Fringe Frame",
+                                     keyword_comments["OBJECT"])
             elif "sky" in caltype:
-                ad.phu_set_key_value("OBSTYPE","SKY")
-                ad.phu_set_key_value("OBJECT","Sky Frame")
+                ad.phu_set_key_value("OBSTYPE","SKY",
+                                     keyword_comments["OBSTYPE"])
+                ad.phu_set_key_value("OBJECT","Sky Frame",
+                                     keyword_comments["OBJECT"])
             else:
                 raise Errors.InputError("Caltype %s not supported" % caltype)
             
             # Blank out program information
-            ad.phu_set_key_value("GEMPRGID",prgid)
-            ad.phu_set_key_value("OBSID",obsid)
-            ad.phu_set_key_value("DATALAB",datalabel)
+            ad.phu_set_key_value("GEMPRGID",prgid,
+                                 keyword_comments["GEMPRGID"])
+            ad.phu_set_key_value("OBSID",obsid,
+                                 keyword_comments["OBSID"])
+            ad.phu_set_key_value("DATALAB",datalabel,
+                                 keyword_comments["DATALAB"])
 
             # Set release date
-            ad.phu_set_key_value("RELEASE",release)
+            ad.phu_set_key_value("RELEASE",release,
+                                 keyword_comments["RELEASE"])
 
             # Blank out positional information
-            ad.phu_set_key_value("RA",0.0)
-            ad.phu_set_key_value("DEC",0.0)
+            ad.phu_set_key_value("RA",0.0,keyword_comments["RA"])
+            ad.phu_set_key_value("DEC",0.0,keyword_comments["DEC"])
             
             # Blank out RA/Dec in WCS information in PHU if present
             if ad.phu_get_key_value("CRVAL1") is not None:
-                ad.phu_set_key_value("CRVAL1",0.0)
+                ad.phu_set_key_value("CRVAL1",0.0,keyword_comments["CRVAL1"])
             if ad.phu_get_key_value("CRVAL2") is not None:
-                ad.phu_set_key_value("CRVAL2",0.0)
+                ad.phu_set_key_value("CRVAL2",0.0,keyword_comments["CRVAL2"])
 
             # Do the same for each SCI,VAR,DQ extension
             # as well as the object name
@@ -548,14 +564,16 @@ def convert_to_cal_header(adinput=None, caltype=None):
                 if ext.extname() not in ["SCI","VAR","DQ"]:
                     continue
                 if ext.get_key_value("CRVAL1") is not None:
-                    ext.set_key_value("CRVAL1",0.0)
+                    ext.set_key_value("CRVAL1",0.0,keyword_comments["CRVAL1"])
                 if ext.get_key_value("CRVAL2") is not None:
-                    ext.set_key_value("CRVAL2",0.0)
+                    ext.set_key_value("CRVAL2",0.0,keyword_comments["CRVAL2"])
                 if ext.get_key_value("OBJECT") is not None:
                     if "fringe" in caltype:
-                        ext.set_key_value("OBJECT","Fringe Frame")
+                        ext.set_key_value("OBJECT","Fringe Frame",
+                                          keyword_comments["OBJECT"])
                     elif "sky" in caltype:
-                        ext.set_key_value("OBJECT","Sky Frame")
+                        ext.set_key_value("OBJECT","Sky Frame",
+                                          keyword_comments["OBJECT"])
 
             adoutput_list.append(ad)
 
@@ -750,7 +768,8 @@ def mark_history(adinput=None, keyword=None):
                      % (ad.phu_get_key_value("GEM-TLM"), ad.filename),
                      category='header')
 
-def update_key_value(adinput=None, function=None, value=None, extname=None):
+def update_key_from_descriptor(adinput=None, descriptor=None, 
+                               keyword=None, extname=None):
     """
     This function updates keywords in the headers of the input dataset,
     performs logging of the changes and writes history keyword related to the
@@ -759,11 +778,10 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
     :param adinput: astrodata instance to perform header key updates on
     :type adinput: an AstroData instance
     
-    :param function: string for an astrodata function or descriptor to 
-                         perform on the input ad.
-                         ie. for ad.count_exts('SCI'), 
-                         function='count_exts('SCI')'
-    :type function: string 
+    :param descriptor: string for an astrodata function or descriptor function
+                       to perform on the input ad.
+                       ie. for ad.gain(), descriptor='gain()'
+    :type descriptor: string 
     
     :param extname: Set to 'PHU', 'SCI', 'VAR' or 'DQ' to update the given
                     keyword in the PHU, SCI, VAR or DQ extension, respectively.
@@ -772,144 +790,59 @@ def update_key_value(adinput=None, function=None, value=None, extname=None):
     """
     log = gemLog.getGeminiLog()
     historyComment = None
-    keyAndCommentDict = {
-        'bpmname':['BPMNAME', 'Name of BPM used to identify bad pixels'],
-        'bunit':['BUNIT', 'Physical units of the array values'],
-        'count_exts("SCI")':['NSCIEXT', 'Number of science extensions'],
-        'dispersion_axis()':['DISPAXIS','Dispersion axis'],
-        'exposure_time()':['EXPTIME','Exposure time [seconds]'],
-        'filter_name(stripID=True, pretty=True)':
-            ['FILTER', 'Combined filter name'],
-        'gain()':['GAIN', 'Gain [electrons/ADU]'],
-        'gain_setting()':['GAINSET', 'Gain setting (low / high)'],
-        'non_linear_level()':['NONLINEA', 'Non-linear regime [ADU]'],
-        'numext':['NEXTEND', 'Number of extensions'],
-        'pixel_scale()':['PIXSCALE', 'Pixel scale [arcsec/pixel]'],
-        'read_noise()':['RDNOISE', 'Estimated read noise [electrons]'],
-        'saturation_level()':['SATLEVEL', 'Saturation level [ADU]'],
-        'store_original_name()':
-            ['ORIGNAME', 'Original filename prior to processing'],
-                        }
-    # Extract key and comment for input function from above dict
-    if function not in keyAndCommentDict:
-        raise Errors.Error("Unknown value for the 'function' parameter")
-    else:
-        key = keyAndCommentDict[function][0]
-        raw_comment = keyAndCommentDict[function][1]
-    
-    if extname == "PHU":
-        # Check to see whether the keyword is already in the PHU
-        original_value = adinput.phu_get_key_value(key)
-        if original_value is not None:
-            # The keyword exists, so store a history comment for later use
-            log.debug("Keyword %s = %s already exists in the PHU" \
-                  % (key, original_value))
-            comment = '(UPDATED) %s' % raw_comment
-            msg = "updated in"
-            historyComment = "The keyword %s = %s was overwritten in the " \
-                             "PHU by AstroData" % (key, original_value)
-        else:
-            comment = '(NEW) %s' % raw_comment
-            msg = "added to"
-        # Use exec to perform the requested function on input
-        try:
-            exec('output_value = adinput.%s' % function)
-        except:
-            output_value = value
-        # Only update the keyword value in the PHU if it is different from the
-        # value already in the PHU
-        log.debug ("Original value = %s, Output value = %s" \
-                  % (original_value, output_value))
-        if output_value is not None:
-            if output_value != original_value:
-                # Update the header and write a history comment
-                adinput.phu_set_key_value(key, str(output_value), comment)
-                log.info("PHU keyword %s = %s %s %s" \
-                         % (key, adinput.phu_get_key_value(key), msg,
-                            adinput.filename), category='header')
-                if original_value is None:
-                    # A new keyword was written to the PHU. Update the
-                    # historyComment accordingly.
-                    historyComment = "New keyword %s = %s was written to " \
-                                     "the PHU by AstroData" \
-                                     % (key, adinput.phu_get_key_value(key))
-                else:
-                    historyComment = "The keyword %s = %s was overwritten " \
-                                     "with a new value of %s in the PHU by " \
-                                     "AstroData" \
-                                     % (key, original_value,
-                                        adinput.phu_get_key_value(key))
-                adinput.get_phuheader().add_history(historyComment)
-                log.fullinfo(historyComment, category="history")
-            else:
-                # The keyword value in the pixel data extension is the same
-                # as the new value just determined.
-                log.info("PHU keyword %s = %s already exists" \
-                         % (key, adinput.phu_get_key_value(key)),
-                         category="header")
-        else:
-            log.info("No value found for keyword %s" % (key))
-    else:
-        if extname is None:
-            extname = "SCI"
-        # Get the PHU here so that we can write history to the PHU in the loop
-        # below
-        phu = adinput.get_phuheader()
-        for ext in adinput[extname]:
-            # Check to see whether the keyword is already in the pixel data
-            # extension 
-            original_value = ext.get_key_value(key)
-            if original_value is not None:
-                # The keyword exists, so store a history comment for later use
-                log.debug("Keyword %s = %s already in extension %s,%s" \
-                          % (key, original_value, extname, ext.extver()))
-                comment = '(UPDATED) %s' % raw_comment
-                msg = "updated in"
-            else:
-                comment = '(NEW) %s' % raw_comment
-                msg = "added to"
-            # Use exec to perform the requested function on input
-            try:
-                exec('output_value = ext.%s' % function)
-            except:
-                output_value = value
-            # Only update the keyword value in the pixel data extension if it
-            # is different from the value already in the pixel data extension
-            log.debug ("Original value = %s, Output value = %s" \
-                       % (original_value, output_value))
-            if output_value is not None:
-                if output_value != original_value:
-                    # Update the header and write a history comment
-                    ext.set_key_value(key, str(output_value), comment)
-                    log.info("%s,%s keyword %s = %s %s %s" \
-                             % (extname, ext.extver(), key,
-                                ext.get_key_value(key), msg, adinput.filename),
-                             category="header")
-                    if original_value is None:
-                        # A new keyword was written to the pixel data
-                        # extension. Update the historyComment accordingly.
-                        historyComment = "New keyword %s = %s was written " \
-                                         "to extension %s,%s by AstroData" \
-                                         % (key, ext.get_key_value(key),
-                                            extname, ext.extver())
-                    else:
-                        historyComment = "The keyword %s = %s was " \
-                                         "overwritten with a new value of " \
-                                         "%s in extension %s,%s by AstroData" \
-                                         % (key, original_value,
-                                         ext.get_key_value(key), extname,
-                                         ext.extver())
 
-                    phu.add_history(historyComment)
-                    log.fullinfo(historyComment, category="history")
-                else:
-                    # The keyword value in the pixel data extension is the same
-                    # as the new value just determined.
-                    log.info("%s,%s keyword %s = %s already exists" \
-                             % (extname, ext.extver(), key,
-                                ext.get_key_value(key)), category="header")
+    # Make sure a valid extname is specified
+    if extname is None:
+        extname = "SCI"
+
+    if extname == "PHU":
+        # Use exec to perform the requested function on full AD 
+        # Allow it to raise the error if the descriptor fails
+        exec('dv = adinput.%s' % descriptor)
+        if dv is None:
+            log.fullinfo("No value found for descriptor %s on %s" % 
+                         (descriptor,adinput.filename))
+        else:
+            if keyword is not None:
+                key = keyword
             else:
-                log.info("No value found for keyword %s" % (key))
+                key = dv.keyword
+                if key is None:
+                    raise Errors.ToolboxError(
+                        "No keyword found for descriptor %s" % descriptor)
+
+            # Get comment from lookup table
+            # Allow it to raise the KeyError if it can't find it
+            comment = keyword_comments[key]
+            
+            # Set the keyword value and comment
+            adinput.phu_set_key_value(key, dv.as_pytype(), comment)
+    else:
+        for ext in adinput[extname]:
+            # Use exec to perform the requested function on a single extension
+            # Allow it to raise the error if the descriptor fails
+            exec('dv = ext.%s' % descriptor)
+            if dv is None:
+                log.fullinfo("No value found for descriptor %s on %s[%s,%d]" %
+                             (descriptor,adinput.filename,
+                              ext.extname(),ext.extver()))
+            else:
+                if keyword is not None:
+                    key = keyword
+                else:
+                    key = dv.keyword
+                    if key is None:
+                        raise Errors.ToolboxError(
+                            "No keyword found for descriptor %s" % descriptor)
+        
+                # Get comment from lookup table
+                # Allow it to raise the KeyError if it can't find it
+                comment = keyword_comments[key]
+            
+                # Set the keyword value and comment
+                ext.set_key_value(key, dv.as_pytype(), comment)
+            
+
 
 def validate_input(adinput=None):
     """

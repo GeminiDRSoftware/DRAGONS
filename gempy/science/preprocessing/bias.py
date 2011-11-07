@@ -19,6 +19,11 @@ from gempy.geminiCLParDicts import CLDefaultParamsDict
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
+# Load the standard comments for header keywords that will be updated
+# in these functions
+keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
+                                            "keyword_comments")
+
 def subtract_bias(adinput=None, bias=None):
     """
     This function will subtract the biases from the inputs using the 
@@ -91,18 +96,13 @@ def subtract_bias(adinput=None, bias=None):
             # Subtract the bias and handle VAR/DQ appropriately
             ad = ad.sub(this_bias)
             
-            # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
-            
             # Record the bias file used
             ad.phu_set_key_value("BIASIM", 
                                  os.path.basename(this_bias.filename),
-                                 "Bias image subtracted") 
+                                 comment=keyword_comments["BIASIM"])
             
-            # Update log with new BIASIM header key
-            log.fullinfo("PHU keyword added:", "header")
-            log.fullinfo("BIASIM = "+ad.phu_get_key_value("BIASIM")+"\n", 
-                         category="header")
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
             
             # Append to output list
             adoutput_list.append(ad)
@@ -354,11 +354,14 @@ def trim_overscan(adinput=None):
                 # Update header keys to match new dimensions
                 newDataSecStr = "[1:"+str(dsl[1]-dsl[0])+",1:"+\
                                 str(dsl[3]-dsl[2])+"]" 
-                sciExt.header["NAXIS1"] = dsl[1]-dsl[0]
-                sciExt.header["NAXIS2"] = dsl[3]-dsl[2]
-                sciExt.header["DATASEC"]=newDataSecStr
-                sciExt.header.update("TRIMSEC", datasecStr, 
-                                   "Data section prior to trimming")
+                sciExt.set_key_value("NAXIS1",dsl[1]-dsl[0],
+                                     comment=keyword_comments["NAXIS1"])
+                sciExt.set_key_value("NAXIS2",dsl[3]-dsl[2],
+                                     comment=keyword_comments["NAXIS2"])
+                sciExt.set_key_value("DATASEC",newDataSecStr,
+                                     comment=keyword_comments["DATASEC"])
+                sciExt.set_key_value("TRIMSEC", datasecStr, 
+                                     comment=keyword_comments["TRIMSEC"])
                 
                 # Update WCS reference pixel coordinate
                 try:
@@ -367,25 +370,28 @@ def trim_overscan(adinput=None):
                 except:
                     log.warning("Could not access WCS keywords; using dummy " +
                                 "CRPIX1 and CRPIX2")
-                    crpix1 = 0
-                    crpix2 = 0
-                sciExt.header.update("CRPIX1",crpix1,"Ref pix of axis 1")
-                sciExt.header.update("CRPIX2",crpix2,"Ref pix of axis 2")
-                
+                    crpix1 = 1
+                    crpix2 = 1
+                sciExt.set_key_value("CRPIX1",crpix1,
+                                     comment=keyword_comments["CRPIX1"])
+                sciExt.set_key_value("CRPIX2",crpix2,
+                                     comment=keyword_comments["CRPIX2"])
 
                 # If VAR and DQ planes present, update them to match
                 if varExt is not None:
                     varExt.data=varExt.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
-                    varExt.header["NAXIS1"] = dsl[1]-dsl[0]
-                    varExt.header["NAXIS2"] = dsl[3]-dsl[2]
-                    varExt.header.update("DATASEC", newDataSecStr,
-                                        "Data section(s)")
-                    varExt.header.update("TRIMSEC", datasecStr, 
-                                         "Data section prior to trimming")
-                    varExt.header.update("CRPIX1", crpix1,
-                                         "RA at Ref pix in decimal degrees")
-                    varExt.header.update("CRPIX2", crpix2,
-                                         "DEC at Ref pix in decimal degrees")
+                    varExt.set_key_value("NAXIS1",dsl[1]-dsl[0],
+                                         comment=keyword_comments["NAXIS1"])
+                    varExt.set_key_value("NAXIS2",dsl[3]-dsl[2],
+                                         comment=keyword_comments["NAXIS2"])
+                    varExt.set_key_value("DATASEC",newDataSecStr,
+                                         comment=keyword_comments["DATASEC"])
+                    varExt.set_key_value("TRIMSEC", datasecStr, 
+                                         comment=keyword_comments["TRIMSEC"])
+                    varExt.set_key_value("CRPIX1",crpix1,
+                                         comment=keyword_comments["CRPIX1"])
+                    varExt.set_key_value("CRPIX2",crpix2,
+                                         comment=keyword_comments["CRPIX2"])
                 
                 if dqExt is not None:
                     # gireduce DQ planes do not include
@@ -393,38 +399,26 @@ def trim_overscan(adinput=None):
                     # already matches the science
                     if dqExt.data.shape!=sciExt.data.shape:
                         dqExt.data=dqExt.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
-                    dqExt.header["NAXIS1"] = dsl[1]-dsl[0]
-                    dqExt.header["NAXIS2"] = dsl[3]-dsl[2]
-                    dqExt.header.update("DATASEC", newDataSecStr,
-                                        "Data section(s)")
-                    dqExt.header.update("TRIMSEC", datasecStr, 
-                                        "Data section prior to trimming")
-                    dqExt.header.update("CRPIX1", crpix1,
-                                         "RA at Ref pix in decimal degrees")
-                    dqExt.header.update("CRPIX2", crpix2,
-                                         "DEC at Ref pix in decimal degrees")
+                    dqExt.set_key_value("NAXIS1",dsl[1]-dsl[0],
+                                        comment=keyword_comments["NAXIS1"])
+                    dqExt.set_key_value("NAXIS2",dsl[3]-dsl[2],
+                                        comment=keyword_comments["NAXIS2"])
+                    dqExt.set_key_value("DATASEC",newDataSecStr,
+                                        comment=keyword_comments["DATASEC"])
+                    dqExt.set_key_value("TRIMSEC", datasecStr, 
+                                        comment=keyword_comments["TRIMSEC"])
+                    dqExt.set_key_value("CRPIX1",crpix1,
+                                        comment=keyword_comments["CRPIX1"])
+                    dqExt.set_key_value("CRPIX2",crpix2,
+                                        comment=keyword_comments["CRPIX2"])
                 
-                # Update logger with updated/added keywords to each SCI frame
-                log.fullinfo("\n", category="header")
-                log.fullinfo("File = "+ad.filename, category="header")
-                log.fullinfo("SCI extension number "+str(sciExt.extver())+
-                             " keywords updated/added:\n", "header")
-                log.fullinfo("NAXIS1= "+str(sciExt.get_key_value("NAXIS1")),
-                            category="header")
-                log.fullinfo("NAXIS2= "+str(sciExt.get_key_value("NAXIS2")),
-                             category="header")
-                log.fullinfo("DATASEC= "+newDataSecStr, category="header")
-                log.fullinfo("TRIMSEC= "+datasecStr, category="header")
-            
             # Update GEM-TLM (automatic) and BIASCORR time stamps to the PHU
             # and update logger with updated/added time stamps
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             
             # Set 'TRIMMED' to 'yes' in the PHU and update the log
-            ad.phu_set_key_value("TRIMMED","yes","Overscan section trimmed")
-            log.fullinfo("Another PHU keyword added:", "header")
-            log.fullinfo("TRIMMED = "+ad.phu_get_key_value("TRIMMED")+"\n", 
-                         category="header")
+            ad.phu_set_key_value("TRIMMED","yes",
+                                 comment=keyword_comments["TRIMMED"])
             
             # Append to output list
             adoutput_list.append(ad)

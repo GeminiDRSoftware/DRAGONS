@@ -1,6 +1,7 @@
 # This module contains user level functions related to the preprocessing of
 # the input dataset with a flat frame
 
+import os
 import sys
 from copy import deepcopy
 import numpy as np
@@ -17,6 +18,11 @@ from gempy.science import resample as rs
 # to be used for the time stamp for the user level function
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
+
+# Load the standard comments for header keywords that will be updated
+# in these functions
+keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
+                                            "keyword_comments")
 
 def divide_by_flat(adinput=None, flat=None):
     """
@@ -83,6 +89,11 @@ def divide_by_flat(adinput=None, flat=None):
                          "by this flat:\n%s" % (ad.filename,
                                                 this_flat.filename))
             ad = ad.div(this_flat)
+            
+            # Record the flat file used
+            ad.phu_set_key_value("FLATIM", 
+                                 os.path.basename(this_flat.filename),
+                                 comment=keyword_comments["FLATIM"])
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
@@ -358,7 +369,7 @@ def scale_by_intensity_gmos(adinput=None):
             log.fullinfo("Relative intensity for %s: %.3f" % (ad.filename,
                                                               scale))
             ad.phu_set_key_value("RELINT", scale,
-                                 comment="Relative intensity factor")
+                                 comment=keyword_comments["RELINT"])
 
             # Multiply by the scaling factor
             ad.mult(scale)

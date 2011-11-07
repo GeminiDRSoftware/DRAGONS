@@ -1,6 +1,7 @@
 # This module contains user level functions related to the preprocessing of
 # the input dataset with a dark frame
 
+import os
 import sys
 from astrodata import Errors
 from astrodata import Lookups
@@ -11,6 +12,11 @@ from gempy import geminiTools as gt
 # to be used for the time stamp for the user level function
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
+
+# Load the standard comments for header keywords that will be updated
+# in these functions
+keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
+                                            "keyword_comments")
 
 def subtract_dark(adinput=None, dark=None):
     """
@@ -64,6 +70,11 @@ def subtract_dark(adinput=None, dark=None):
                          "AstroData object %s" \
                          % (dark_dict[ad].filename, ad.filename))
             ad = ad.sub(dark_dict[ad])
+            
+            # Record the dark file used
+            ad.phu_set_key_value("DARKIM", 
+                                 os.path.basename(dark_dict[ad].filename),
+                                 comment=keyword_comments["DARKIM"])
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)

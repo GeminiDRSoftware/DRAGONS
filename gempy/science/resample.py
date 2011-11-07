@@ -23,6 +23,11 @@ from gempy.science.preprocessing import bias as bs
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
+# Load the standard comments for header keywords that will be updated
+# in these functions
+keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
+                                            "keyword_comments")
+
 def align_to_reference_image(adinput, interpolator="linear", trim_data=False):
     """
     This function applies the transformation encoded in the input images
@@ -224,16 +229,20 @@ def align_to_reference_image(adinput, interpolator="linear", trim_data=False):
             ext.data = trans_data
             
             # update the WCS in the reference image to account for the shift
-            ext.set_key_value("CRPIX1", ref_wcs.wcs.crpix[0]-cenoff[1])
-            ext.set_key_value("CRPIX2", ref_wcs.wcs.crpix[1]-cenoff[0])
+            ext.set_key_value("CRPIX1", ref_wcs.wcs.crpix[0]-cenoff[1],
+                              comment=keyword_comments["CRPIX1"])
+            ext.set_key_value("CRPIX2", ref_wcs.wcs.crpix[1]-cenoff[0],
+                              comment=keyword_comments["CRPIX2"])
             
             # set area keywords
             for key in area_keys:
                 ext.set_key_value(key[0],key[1],key[2])
         
         # update the WCS in the PHU as well
-        reference.phu_set_key_value("CRPIX1", ref_wcs.wcs.crpix[0]-cenoff[1])
-        reference.phu_set_key_value("CRPIX2", ref_wcs.wcs.crpix[1]-cenoff[0])
+        reference.phu_set_key_value("CRPIX1", ref_wcs.wcs.crpix[0]-cenoff[1],
+                                    comment=keyword_comments["CRPIX1"])
+        reference.phu_set_key_value("CRPIX2", ref_wcs.wcs.crpix[1]-cenoff[0],
+                                    comment=keyword_comments["CRPIX2"])
         
         out_wcs = pywcs.WCS(reference["SCI"].header)
         
@@ -266,8 +275,10 @@ def align_to_reference_image(adinput, interpolator="linear", trim_data=False):
                 # update PHU WCS keywords
                 log.fullinfo("Offsets: "+repr(np.roll(shift,1)))
                 log.fullinfo("Updating WCS to track shift in data")
-                ad.phu_set_key_value("CRPIX1", img_wcs.wcs.crpix[0]-shift[1])
-                ad.phu_set_key_value("CRPIX2", img_wcs.wcs.crpix[1]-shift[0])
+                ad.phu_set_key_value("CRPIX1", img_wcs.wcs.crpix[0]-shift[1],
+                                     comment=keyword_comments["CRPIX1"])
+                ad.phu_set_key_value("CRPIX2", img_wcs.wcs.crpix[1]-shift[0],
+                                     comment=keyword_comments["CRPIX2"])
             
             else:
                 # get transformation matrix from composite of wcs's
@@ -300,14 +311,22 @@ def align_to_reference_image(adinput, interpolator="linear", trim_data=False):
                 log.fullinfo("Offsets: "+repr(np.roll(offset,1)))
                 log.fullinfo("Transformation matrix:\n"+repr(matrix))
                 log.fullinfo("Updating WCS to match reference WCS")
-                ad.phu_set_key_value("CRPIX1", out_wcs.wcs.crpix[0])
-                ad.phu_set_key_value("CRPIX2", out_wcs.wcs.crpix[1])
-                ad.phu_set_key_value("CRVAL1", out_wcs.wcs.crval[0])
-                ad.phu_set_key_value("CRVAL2", out_wcs.wcs.crval[1])
-                ad.phu_set_key_value("CD1_1", out_wcs.wcs.cd[0,0])
-                ad.phu_set_key_value("CD1_2", out_wcs.wcs.cd[0,1])
-                ad.phu_set_key_value("CD2_1", out_wcs.wcs.cd[1,0])
-                ad.phu_set_key_value("CD2_2", out_wcs.wcs.cd[1,1])
+                ad.phu_set_key_value("CRPIX1", out_wcs.wcs.crpix[0],
+                                     comment=keyword_comments["CRPIX1"])
+                ad.phu_set_key_value("CRPIX2", out_wcs.wcs.crpix[1],
+                                     comment=keyword_comments["CRPIX2"])
+                ad.phu_set_key_value("CRVAL1", out_wcs.wcs.crval[0],
+                                     comment=keyword_comments["CRVAL1"])
+                ad.phu_set_key_value("CRVAL2", out_wcs.wcs.crval[1],
+                                     comment=keyword_comments["CRVAL2"])
+                ad.phu_set_key_value("CD1_1", out_wcs.wcs.cd[0,0],
+                                     comment=keyword_comments["CD1_1"])
+                ad.phu_set_key_value("CD1_2", out_wcs.wcs.cd[0,1],
+                                     comment=keyword_comments["CD1_2"])
+                ad.phu_set_key_value("CD2_1", out_wcs.wcs.cd[1,0],
+                                     comment=keyword_comments["CD2_1"])
+                ad.phu_set_key_value("CD2_2", out_wcs.wcs.cd[1,1],
+                                     comment=keyword_comments["CD2_2"])
             
             # transform corners to find new location of original data
             data_corners = out_wcs.wcs_sky2pix(img_wcs.wcs_pix2sky(
@@ -355,8 +374,10 @@ def align_to_reference_image(adinput, interpolator="linear", trim_data=False):
                     matrix_det = 1.0
                     
                     # update the wcs to track the transformation
-                    ext.set_key_value("CRPIX1", img_wcs.wcs.crpix[0]-shift[1])
-                    ext.set_key_value("CRPIX2", img_wcs.wcs.crpix[1]-shift[0])
+                    ext.set_key_value("CRPIX1", img_wcs.wcs.crpix[0]-shift[1],
+                                      comment=keyword_comments["CRPIX1"])
+                    ext.set_key_value("CRPIX2", img_wcs.wcs.crpix[1]-shift[0],
+                                      comment=keyword_comments["CRPIX2"])
                 
                 else:
                     # use ndimage to interpolate values
@@ -438,14 +459,22 @@ def align_to_reference_image(adinput, interpolator="linear", trim_data=False):
                                                       order=order, cval=cval)
                     
                     # update the wcs
-                    ext.set_key_value("CRPIX1", out_wcs.wcs.crpix[0])
-                    ext.set_key_value("CRPIX2", out_wcs.wcs.crpix[1])
-                    ext.set_key_value("CRVAL1", out_wcs.wcs.crval[0])
-                    ext.set_key_value("CRVAL2", out_wcs.wcs.crval[1])
-                    ext.set_key_value("CD1_1", out_wcs.wcs.cd[0,0])
-                    ext.set_key_value("CD1_2", out_wcs.wcs.cd[0,1])
-                    ext.set_key_value("CD2_1", out_wcs.wcs.cd[1,0])
-                    ext.set_key_value("CD2_2", out_wcs.wcs.cd[1,1])
+                    ext.set_key_value("CRPIX1", out_wcs.wcs.crpix[0],
+                                      comment=keyword_comments["CRPIX1"])
+                    ext.set_key_value("CRPIX2", out_wcs.wcs.crpix[1],
+                                      comment=keyword_comments["CRPIX2"])
+                    ext.set_key_value("CRVAL1", out_wcs.wcs.crval[0],
+                                      comment=keyword_comments["CRVAL1"])
+                    ext.set_key_value("CRVAL2", out_wcs.wcs.crval[1],
+                                      comment=keyword_comments["CRVAL2"])
+                    ext.set_key_value("CD1_1", out_wcs.wcs.cd[0,0],
+                                      comment=keyword_comments["CD1_1"])
+                    ext.set_key_value("CD1_2", out_wcs.wcs.cd[0,1],
+                                      comment=keyword_comments["CD1_2"])
+                    ext.set_key_value("CD2_1", out_wcs.wcs.cd[1,0],
+                                      comment=keyword_comments["CD2_1"])
+                    ext.set_key_value("CD2_2", out_wcs.wcs.cd[1,1],
+                                      comment=keyword_comments["CD2_2"])
                     
                     # set area keywords
                     for key in area_keys:
@@ -646,33 +675,7 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
                 log.fullinfo("File "+ad_out.filename+\
                             " was successfully mosaicked")
 
-            # Restore BUNIT, OVERSCAN, AMPNAME keywords
-            # to science extension header
-            if bunit is not None:
-                gt.update_key_value(adinput=ad_out, function="bunit",
-                                    value=bunit, extname="SCI")
-                if ad_out["VAR"] is not None:
-                    gt.update_key_value(adinput=ad_out, function="bunit",
-                                        value="%s*%s" % (bunit,bunit),
-                                        extname="VAR")
-            if avg_overscan is not None:
-                for ext in ad_out["SCI"]:
-                    ext.set_key_value("OVERSCAN",avg_overscan,
-                                      comment="Overscan mean value")
-            if all_ampname is not None:
-                # These ampnames can be long, so truncate
-                # the comment by hand to avoid the error
-                # message from pyfits
-                comment = "Amplifier name(s)"
-                if len(all_ampname)>=65:
-                    comment = ""
-                else:
-                    comment = comment[0:65-len(all_ampname)]
-                for ext in ad_out["SCI"]:
-                    ext.set_key_value("AMPNAME",all_ampname,
-                                      comment=comment)
-
-            # Set DETSEC keyword
+            # Get new DETSEC keyword
             data_shape = ad_out["SCI",1].data.shape
             xbin = ad_out.detector_x_bin()
             if xbin is not None:
@@ -683,16 +686,60 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
                 new_detsec = "[%i:%i,%i:%i]" % (old_detsec[0]+1,
                                                 old_detsec[0]+unbin_width,
                                                 old_detsec[2]+1,old_detsec[3])
-                ext.set_key_value("DETSEC",new_detsec)
             else:
-                ext.set_key_value("DETSEC","")
+                new_detsec = ""
+
+            # Get comment for new ampname
+            if all_ampname is not None:
+                # These ampnames can be long, so truncate
+                # the comment by hand to avoid the error
+                # message from pyfits
+                ampcomment = keyword_comments["AMPNAME"]
+                if len(all_ampname)>=65:
+                    ampcomment = ""
+                else:
+                    ampcomment = ampcomment[0:65-len(all_ampname)]
+            else:
+                ampcomment = ""
+
+            # Restore BUNIT, OVERSCAN, AMPNAME, DETSEC keywords
+            # to science extension header
+            for ext in ad_out["SCI"]:
+                if bunit is not None:
+                    ext.set_key_value("BUNIT",bunit,
+                                      comment=keyword_comments["BUNIT"])
+                if avg_overscan is not None:
+                    ext.set_key_value("OVERSCAN",avg_overscan,
+                                      comment=keyword_comments["OVERSCAN"])
+
+                if all_ampname is not None:
+                    ext.set_key_value("AMPNAME",all_ampname,
+                                      comment=ampcomment)
+
+                ext.set_key_value("DETSEC",new_detsec,
+                                  comment=keyword_comments["DETSEC"])
+
+            # Restore BUNIT, DETSEC,AMPNAME to VAR ext also
+            if ad_out["VAR"] is not None:
+                for ext in ad_out["VAR"]:
+                    if bunit is not None:
+                        ext.set_key_value("BUNIT","%s*%s" % (bunit,bunit),
+                                          comment=keyword_comments["BUNIT"])
+                    if all_ampname is not None:
+                        ext.set_key_value("AMPNAME",all_ampname,
+                                          comment=ampcomment)
+                    ext.set_key_value("DETSEC",new_detsec,
+                                      comment=keyword_comments["DETSEC"])
 
 
             # Change type of DQ plane back to int16
             # (gmosaic sets it to float32)
+            # and restore DETSEC
             if ad_out["DQ"] is not None:
-                for dqext in ad_out["DQ"]:
-                    dqext.data = dqext.data.astype(np.int16)
+                for ext in ad_out["DQ"]:
+                    ext.data = ext.data.astype(np.int16)
+                    ext.set_key_value("DETSEC",new_detsec,
+                                      comment=keyword_comments["DETSEC"])
 
             # Update GEM-TLM (automatic) and MOSAIC time stamps to the PHU
             # and update logger with updated/added time stamps
@@ -985,8 +1032,10 @@ def tile_arrays(adinput=None, tile_all=False):
 
                     # Update header keywords with appropriate values
                     # for the new data set
-                    adoutput.phu_set_key_value("NSCIEXT",num_ccd)
-                    adoutput.phu_set_key_value("NEXTEND",nextend)
+                    adoutput.phu_set_key_value(
+                        "NSCIEXT",num_ccd,comment=keyword_comments["NSCIEXT"])
+                    adoutput.phu_set_key_value(
+                        "NEXTEND",nextend,comment=keyword_comments["NEXTEND"])
                     for ext in adoutput:
                         extname = ext.extname()
                         extver = ext.extver()
@@ -998,7 +1047,7 @@ def tile_arrays(adinput=None, tile_all=False):
                             # These ampnames can be long, so truncate
                             # the comment by hand to avoid the error
                             # message from pyfits
-                            comment = "Amplifier name(s)"
+                            comment = keyword_comments["AMPNAME"]
                             if len(new_ampname)>=65:
                                 comment = ""
                             else:
@@ -1009,7 +1058,8 @@ def tile_arrays(adinput=None, tile_all=False):
                         data_shape = ext.data.shape
                         new_datasec = "[1:%i,1:%i]" % (data_shape[1],
                                                        data_shape[0])
-                        ext.set_key_value("DATASEC",new_datasec)
+                        ext.set_key_value("DATASEC",new_datasec,
+                                          comment=keyword_comments["DATASEC"])
 
                         # Update DETSEC
                         unbin_width = data_shape[1] * ad.detector_x_bin()
@@ -1017,20 +1067,24 @@ def tile_arrays(adinput=None, tile_all=False):
                         new_detsec = "[%i:%i,%i:%i]" % (old_detsec[0]+1,
                                                   old_detsec[0]+unbin_width,
                                                   old_detsec[2]+1,old_detsec[3])
-                        ext.set_key_value("DETSEC",new_detsec)
+                        ext.set_key_value("DETSEC",new_detsec,
+                                          comment=keyword_comments["DETSEC"])
 
                         # Update CCDSEC
                         old_ccdsec = refsec[extver]["CCD"]
                         new_ccdsec = "[%i:%i,%i:%i]" % (old_ccdsec[0]+1,
                                                   old_ccdsec[0]+unbin_width,
                                                   old_ccdsec[2]+1,old_ccdsec[3])
-                        ext.set_key_value("CCDSEC",new_ccdsec)
+                        ext.set_key_value("CCDSEC",new_ccdsec,
+                                          comment=keyword_comments["CCDSEC"])
 
                         # Update CRPIX1
                         crpix1 = ext.get_key_value("CRPIX1")
                         if crpix1 is not None:
                             new_crpix1 = crpix1 + ref_shift[extver]
-                            ext.set_key_value("CRPIX1",new_crpix1)
+                            ext.set_key_value(
+                                "CRPIX1",new_crpix1,
+                                comment=keyword_comments["CRPIX1"])
 
                     
                     # Update and attach OBJCAT if needed

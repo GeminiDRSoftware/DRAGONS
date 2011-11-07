@@ -16,6 +16,11 @@ from gempy import astrotools as at
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
+# Load the standard comments for header keywords that will be updated
+# in these functions
+keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
+                                            "keyword_comments")
+
 def correct_wcs_to_reference_image(adinput=None, 
                                    method="sources", fallback=None, 
                                    cull_sources=False,
@@ -722,21 +727,33 @@ def _align_wcs(reference, adinput, objIns, rotate=False, scale=False):
         # update WCS in ad
         if update:
             log.fullinfo("Updating WCS in header")
-            ad.phu_set_key_value("CRVAL1", wcstweak.wcs.wcs.crval[0])
-            ad.phu_set_key_value("CRVAL2", wcstweak.wcs.wcs.crval[1])
-            ad.phu_set_key_value("CD1_1", wcstweak.wcs.wcs.cd[0,0])
-            ad.phu_set_key_value("CD1_2", wcstweak.wcs.wcs.cd[0,1])
-            ad.phu_set_key_value("CD2_1", wcstweak.wcs.wcs.cd[1,0])
-            ad.phu_set_key_value("CD2_2", wcstweak.wcs.wcs.cd[1,1])
+            ad.phu_set_key_value("CRVAL1", wcstweak.wcs.wcs.crval[0],
+                                 comment=keyword_comments["CRVAL1"])
+            ad.phu_set_key_value("CRVAL2", wcstweak.wcs.wcs.crval[1],
+                                 comment=keyword_comments["CRVAL2"])
+            ad.phu_set_key_value("CD1_1", wcstweak.wcs.wcs.cd[0,0],
+                                 comment=keyword_comments["CD1_1"])
+            ad.phu_set_key_value("CD1_2", wcstweak.wcs.wcs.cd[0,1],
+                                 comment=keyword_comments["CD1_2"])
+            ad.phu_set_key_value("CD2_1", wcstweak.wcs.wcs.cd[1,0],
+                                 comment=keyword_comments["CD2_1"])
+            ad.phu_set_key_value("CD2_2", wcstweak.wcs.wcs.cd[1,1],
+                                 comment=keyword_comments["CD2_2"])
             
             for ext in ad:
                 if ext.extname() in ["SCI","VAR","DQ"]:
-                    ext.set_key_value("CRVAL1", wcstweak.wcs.wcs.crval[0])
-                    ext.set_key_value("CRVAL2", wcstweak.wcs.wcs.crval[1])
-                    ext.set_key_value("CD1_1", wcstweak.wcs.wcs.cd[0,0])
-                    ext.set_key_value("CD1_2", wcstweak.wcs.wcs.cd[0,1])
-                    ext.set_key_value("CD2_1", wcstweak.wcs.wcs.cd[1,0])
-                    ext.set_key_value("CD2_2", wcstweak.wcs.wcs.cd[1,1])
+                    ext.set_key_value("CRVAL1", wcstweak.wcs.wcs.crval[0],
+                                      comment=keyword_comments["CRVAL1"])
+                    ext.set_key_value("CRVAL2", wcstweak.wcs.wcs.crval[1],
+                                      comment=keyword_comments["CRVAL2"])
+                    ext.set_key_value("CD1_1", wcstweak.wcs.wcs.cd[0,0],
+                                      comment=keyword_comments["CD1_1"])
+                    ext.set_key_value("CD1_2", wcstweak.wcs.wcs.cd[0,1],
+                                      comment=keyword_comments["CD1_2"])
+                    ext.set_key_value("CD2_1", wcstweak.wcs.wcs.cd[1,0],
+                                      comment=keyword_comments["CD2_1"])
+                    ext.set_key_value("CD2_2", wcstweak.wcs.wcs.cd[1,1],
+                                      comment=keyword_comments["CD2_2"])
         
         adoutput_list.append(ad)
     

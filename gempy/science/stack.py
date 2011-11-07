@@ -17,6 +17,11 @@ from gempy.geminiCLParDicts import CLDefaultParamsDict
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
+# Load the standard comments for header keywords that will be updated
+# in these functions
+keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
+                                            "keyword_comments")
+
 def stack_frames(adinput=None, suffix=None, operation="average", 
                  reject_method="avsigclip", mask_type="goodvalue",
                  nlow=1, nhigh=1, grow=0.0):
@@ -140,30 +145,34 @@ def stack_frames(adinput=None, suffix=None, operation="average",
         # Fix BUNIT in VAR plane as well
         # (gemcombine sets it to same value as SCI)
         bunit = adout["SCI",1].get_key_value("BUNIT")
-        if adout["VAR"] is not None:
-            gt.update_key_value(adinput=adout, function="bunit",
-                                value="%s*%s" % (bunit,bunit),
-                                extname="VAR")
+        if adout["VAR"] is not None and bunit is not None:
+            for ext in adout["VAR"]:
+                ext.set_key_value("BUNIT","%s*%s" % (bunit,bunit),
+                                  comment=keyword_comments["BUNIT"])
 
         # Gemcombine sets the GAIN keyword to the sum of the gains; reset
         # it to the average instead.  Set the RDNOISE to the sum in 
         # quadrature of the input read noise. Set VAR/DQ keywords to 
         # the same as the science.
         for ext in adout:
-            ext.set_key_value("GAIN", gain[("SCI",ext.extver())])
-            ext.set_key_value("RDNOISE", ron[("SCI",ext.extver())])
+            ext.set_key_value("GAIN", gain[("SCI",ext.extver())],
+                              comment=keyword_comments["GAIN"])
+            ext.set_key_value("RDNOISE", ron[("SCI",ext.extver())],
+                              comment=keyword_comments["RDNOISE"])
             
         if adout.phu_get_key_value("GAIN") is not None:
-            adout.phu_set_key_value("GAIN",gain[("SCI",1)])
+            adout.phu_set_key_value("GAIN",gain[("SCI",1)],
+                                    comment=keyword_comments["GAIN"])
         if adout.phu_get_key_value("RDNOISE") is not None:
-            adout.phu_set_key_value("RDNOISE",ron[("SCI",1)])
+            adout.phu_set_key_value("RDNOISE",ron[("SCI",1)],
+                                    comment=keyword_comments["RDNOISE"])
 
         # Add suffix to the ORIGNAME header so future filenames
         # can't strip it out
         adout.phu_set_key_value("ORIGNAME",
                                 gt.fileNameUpdater(adinput[0],suffix=suffix,
                                                    strip=True),
-                                comment="Original filename")
+                                comment=keyword_comments["ORIGNAME"])
 
         # Add the appropriate time stamps to the PHU
         gt.mark_history(adinput=adstack, keyword=timestamp_key)

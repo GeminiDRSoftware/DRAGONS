@@ -13,6 +13,11 @@ from gempy import geminiTools as gt
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
+# Load the standard comments for header keywords that will be updated
+# in these functions
+keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
+                                            "keyword_comments")
+
 def standardize_headers_f2(adinput=None):
     """
     This user level function is used to update headers of FLAMINGOS-2 data.
@@ -53,24 +58,29 @@ def standardize_headers_f2(adinput=None):
             # Now, update the keywords in the headers that are specific to
             # FLAMINGOS-2
             log.status("Updating keywords that are specific to FLAMINGOS-2")
+
             # Filter name (required for IRAF?)
-            gt.update_key_value(adinput=ad,
-                                function=
-                                "filter_name(stripID=True, pretty=True)",
-                                extname="PHU")
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="filter_name(stripID=True, pretty=True)",
+                keyword="FILTER", extname="PHU")
+
             # Pixel scale
-            gt.update_key_value(adinput=ad, function="pixel_scale()",
-                                extname="PHU")
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="pixel_scale()", extname="PHU")
+
             # Read noise (new keyword, should it be written?)
-            gt.update_key_value(adinput=ad, function="read_noise()",
-                                extname="SCI")
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="read_noise()", extname="SCI")
+
             # Gain (new keyword, should it be written?)
-            gt.update_key_value(adinput=ad, function="gain()",
-                                extname="SCI")
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="gain()", extname="SCI")
+
             # Dispersion axis (new keyword, should it be written?)
             if "IMAGE" not in ad.types:
-                gt.update_key_value(adinput=ad, function="dispersion_axis()",
-                                    extname="SCI")
+                gt.update_key_from_descriptor(
+                    adinput=ad, descriptor="dispersion_axis()", extname="SCI")
+
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             gt.mark_history(adinput=ad, keyword=timestamp_keys["prepare"])
@@ -130,24 +140,31 @@ def standardize_headers_gemini(adinput=None):
             
             # Standardize the headers of the input AstroData object. Update the
             # keywords in the headers that are common to all Gemini data
-            # Number of science extensions
-            gt.update_key_value(adinput=ad, function="count_exts(\"SCI\")",
-                                extname="PHU")
+
             # Original name
-            gt.update_key_value(adinput=ad, function="store_original_name()",
-                                extname="PHU")
+            ad.store_original_name()
+
+            # Number of science extensions
+            ad.phu_set_key_value("NSCIEXT",ad.count_exts("SCI"),
+                                 comment=keyword_comments["NSCIEXT"])
+
             # Number of extensions
-            gt.update_key_value(adinput=ad, function="numext", value=len(ad),
-                                extname="PHU")
+            ad.phu_set_key_value("NEXTEND", len(ad),
+                                 comment=keyword_comments["NEXTEND"])
+
             # Non linear level
-            gt.update_key_value(adinput=ad, function="non_linear_level()",
-                                extname="SCI")
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="non_linear_level()", extname="SCI")
+
             # Saturation level
-            gt.update_key_value(adinput=ad, function="saturation_level()",
-                                extname="SCI")
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="saturation_level()", extname="SCI")
+
             # Physical units (assuming raw data has units of ADU)
-            gt.update_key_value(adinput=ad, function="bunit", value="adu",
-                                extname="SCI")
+            for ext in ad["SCI"]:
+                ext.set_key_value("BUNIT","adu",
+                                  comment=keyword_comments["BUNIT"])
+
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             gt.mark_history(adinput=ad, keyword=timestamp_keys["prepare"])
@@ -212,25 +229,28 @@ def standardize_headers_gmos(adinput=None):
             
             # Now, update the keywords in the headers that are specific to GMOS
             log.fullinfo("Updating keywords that are specific to GMOS")
+
             # Pixel scale
-            gt.update_key_value(adinput=ad, function="pixel_scale()",
-                                extname="SCI")
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="pixel_scale()", extname="SCI")
+
             # Read noise
-            gt.update_key_value(adinput=ad, function="read_noise()",
-                                extname="SCI")
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="read_noise()", extname="SCI")
 
             # Gain setting
-            gt.update_key_value(adinput=ad, function="gain_setting()",
-                                extname="SCI")
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="gain_setting()", extname="SCI")
 
             # Gain
-            gt.update_key_value(adinput=ad, function="gain()",
-                                extname="SCI")
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="gain()", extname="SCI")
 
             # Dispersion axis
             if "IMAGE" not in ad.types:
-                gt.update_key_value(adinput=ad, function="dispersion_axis()",
-                                    extname="SCI")
+                gt.update_key_from_descriptor(
+                    adinput=ad, descriptor="dispersion_axis()", extname="SCI")
+
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             gt.mark_history(adinput=ad, keyword=timestamp_keys["prepare"])

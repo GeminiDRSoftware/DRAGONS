@@ -20,6 +20,11 @@ from gempy.science import resample as rs
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
+# Load the standard comments for header keywords that will be updated
+# in these functions
+keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
+                                            "keyword_comments")
+
 def iq_display_gmos(adinput=None, display=True, frame=1, threshold=None):
 
     # Instantiate the log. This needs to be done outside of the try block,
@@ -86,12 +91,10 @@ def iq_display_gmos(adinput=None, display=True, frame=1, threshold=None):
             mean_ellp = disp_ad[0].phu_get_key_value("MEANELLP")
             if mean_fwhm is not None:
                 ad.phu_set_key_value("MEANFWHM",mean_fwhm,
-                                     comment=("Mean point source FWHM "+
-                                              "(arcsec)"))
+                                     comment=keyword_comments["MEANFWHM"])
             if mean_ellp is not None:
                 ad.phu_set_key_value("MEANELLP",mean_ellp,
-                                     comment=("Mean point source "+
-                                              "ellipticity"))
+                                     comment=keyword_comments["MEANELLP"])
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             
 
@@ -209,8 +212,8 @@ def measure_bg(adinput=None, separate_ext=False):
                 # Write sky background to science header and log the value
                 # if not averaging all together
                 sciext.set_key_value("SKYLEVEL", sci_bg,
-                                     comment=("Sky background level "\
-                                              "(%s)" % bunit))
+                    comment="%s [%s]" % (keyword_comments["SKYLEVEL"],bunit))
+
                 if separate_ext:
                     log.stdinfo("\n    Filename: %s[SCI,%d]" % 
                                 (ad.filename,extver))
@@ -224,8 +227,8 @@ def measure_bg(adinput=None, separate_ext=False):
             # (or if there's only one science extension)
             if ad.count_exts("SCI")==1 or not separate_ext:
                 ad.phu_set_key_value("SKYLEVEL", all_bg,
-                                     comment=("Sky background level "\
-                                                  "(%s)" % bunit))
+                    comment="%s [%s]" % (keyword_comments["SKYLEVEL"],bunit))
+
                 if not separate_ext:
                     log.stdinfo("\n    Filename: %s" % ad.filename)
                     log.stdinfo("    "+"-"*dlen)
@@ -362,18 +365,14 @@ def measure_iq(adinput=None, return_source_info=False, separate_ext=False):
                 if separate_ext:
                     sciext = ad[key]
                     sciext.set_key_value("MEANFWHM", mean_fwhm,
-                                         comment=("Mean point source FWHM "+
-                                                  "(arcsec)"))
+                                         comment=keyword_comments["MEANFWHM"])
                     sciext.set_key_value("MEANELLP", mean_ellip,
-                                         comment=("Mean point source "+
-                                                  "ellipticity"))
+                                         comment=keyword_comments["MEANELLP"])
                 else:
                     ad.phu_set_key_value("MEANFWHM", mean_fwhm,
-                                         comment=("Mean point source FWHM "+
-                                                  "(arcsec)"))
+                                         comment=keyword_comments["MEANFWHM"])
                     ad.phu_set_key_value("MEANELLP", mean_ellip,
-                                         comment=("Mean point source "+
-                                                  "ellipticity"))
+                                         comment=keyword_comments["MEANELLP"])
 
                 # Add the appropriate time stamps to the PHU
                 gt.mark_history(adinput=ad, keyword=timestamp_key)
@@ -393,241 +392,6 @@ def measure_iq(adinput=None, return_source_info=False, separate_ext=False):
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
         raise
-
-
-def measure_iq_iqtool(adinput=None, centroid_function='moffat', display=False,
-                      qa=True, return_source_info=False):
-    """
-    This function will detect the sources in the input images and fit
-    either Gaussian or Moffat models to their profiles and calculate the 
-    Image Quality and seeing from this.
-    
-    Since the resultant parameters are formatted into one nice string and 
-    normally recorded in a logger message, the returned dictionary of these 
-    parameters may be ignored. 
-    The dictionary's format is:
-    {adIn1.filename:formatted results string for adIn1, 
-    adIn2.filename:formatted results string for adIn2,...}
-    
-    NOTE:
-    Either a 'main' type logger object, if it exists, or a null logger 
-    (ie, no log file, no messages to screen) will be retrieved/created
-    and used within this function.
-    
-    Warning:
-    ALL inputs of adinput must have either 1 SCI extension, indicating they 
-    have been mosaic'd, or 3 like a normal un-mosaic'd GMOS image.
-    
-    :param adinput: Astrodata inputs to have their image quality measured
-    :type adinput: Astrodata objects, either a single or a list of objects
-    
-    :param centroid_function: Function for centroid fitting
-    :type centroid_function: string, can be: 'moffat','gauss' or 'both'; 
-                    Default: 'moffat'
-                    
-    :param display: Flag to turn on displaying the fitting to ds9
-    :type display: Python boolean (True/False)
-                   Default: False
-                  
-    :param qa: flag to use a limited number of sources to estimate the IQ
-               NOTE: in the future, this parameters should be replaced with
-               a max_sources parameter that determines how many sources to
-               use.
-    :type qa: Python boolean (True/False)
-              default: True
-    
-    """
-    # Instantiate the log. This needs to be done outside of the try block,
-    # since the log object is used in the except block 
-    log = gemLog.getGeminiLog()
-
-    # The validate_input function ensures that adinput is not None and returns
-    # a list containing one or more AstroData objects
-    adinput = gt.validate_input(adinput=adinput)
-
-    # Define the keyword to be used for the time stamp for this user level
-    # function
-    timestamp_key = timestamp_keys["measure_iq"]
-
-    # Initialize the list of output AstroData objects
-    adoutput_list = []
-    
-    try:
-        # Import the getiq module to perform the source detection and IQ
-        # measurements of the inputs
-        from iqtool.iq import getiq
-        
-        # Initialize a total time sum variable for logging purposes 
-        total_IQ_time = 0
-        
-        # Loop over each input AstroData object
-        for ad in adinput:
-            # Write the input to disk under a temp name in the current 
-            # working directory for getiq to use (to be deleted after getiq)
-            tmpWriteName = 'tmp_measure_iq'+os.path.basename(ad.filename)
-            log.fullinfo('Writing input temporarily to file '+
-                         tmpWriteName)
-            ad.write(tmpWriteName, rename=False, clobber=True)
-            
-            # Automatically determine the 'mosaic' parameter for gemiq
-            # if there are 3 SCI extensions -> mosaic=False
-            # if only one -> mosaic=True, else raise error
-            # NOTE: this may be a problem for the new GMOS-N CCDs
-            numExts = ad.count_exts('SCI')
-            if numExts==1:
-                mosaic = True
-            elif numExts==3:
-                mosaic = False
-            else:
-                raise Errors.ScienceError('The input '+ad.filename+' had '+\
-                                   str(numExts)+' SCI extensions and inputs '+
-                                   'with only 1 or 3 extensions are allowed')
-            
-            # Start time for measuring IQ of current file
-            st = time.time()
-            
-            log.debug('Calling getiq.gemiq for input '+ad.filename)
-            
-            # Call the gemiq function to detect the sources and then
-            # measure the IQ of the current image 
-            iqdata = getiq.gemiq(tmpWriteName, function=centroid_function, 
-                                 display=display, mosaic=mosaic, qa=qa,
-                                 verbose=False, debug=False)
-            
-            # End time for measuring IQ of current file
-            et = time.time()
-            total_IQ_time = total_IQ_time + (et - st)
-            # Log the amount of time spent measuring the IQ 
-            log.debug('MeasureIQ time: '+repr(et - st), category='IQ')
-            
-            # If input was written to temp file on disk, delete it
-            if os.path.exists(tmpWriteName):
-                os.remove(tmpWriteName)
-                log.fullinfo('Temporary file ' +
-                             tmpWriteName+ ' removed from disk.')
-            
-            # Get star information from the .dat file on disk
-            # NOTE: this information should be stored in the OBJCAT
-            stars = []
-            datName = os.path.splitext(tmpWriteName)[0]+'.dat'
-            dat_fh = open(datName)
-            for line in dat_fh:
-                line = line.strip()
-                if line=='' or line.startswith("#") or line.startswith("A"):
-                    continue
-                fields = line.split()
-                try:
-                    cx = float(fields[7])
-                    cy = float(fields[8])
-                    fwhm = float(fields[10])
-                except:
-                    continue
-                stars.append({"x": cx,
-                              "y": cy,
-                              "fwhm": fwhm})
-
-            # Delete the .dat file
-            if os.path.exists(datName):
-                os.remove(datName)
-                log.fullinfo('Temporary file '+
-                             datName+ ' removed from disk.')
-                
-            # iqdata is list of tuples with image quality metrics
-            # (ellMean, ellSig, fwhmMean, fwhmSig)
-            # First check if it is empty (ie. gemiq failed in some way)
-            if len(iqdata) == 0:
-                log.warning('Problem Measuring IQ Statistics, '+
-                            'none reported')
-            # If it all worked, then format the output and log it
-            else:
-
-                log.stdinfo("%d sources used to measure IQ." % len(stars))
-
-                # correct the seeing measurement to zenith
-                fwhm = iqdata[0][2]
-                airmass = float(ad.airmass())
-                if fwhm is None:
-                    log.warning("No good seeing measurement found.")
-                elif airmass is None:
-                    log.warning("Airmass not found, not correcting to zenith")
-                    corr = fwhm
-                else:
-                    corr = fwhm * airmass**(-0.6)
-
-                    # Get IQ constraint band corresponding to
-                    # the corrected FWHM number
-                    iq_band = _iq_band(adinput=ad,fwhm=corr)[0]
-
-                    # Format output for printing or logging                
-                    llen = 32
-                    rlen = 24
-                    dlen = llen+rlen
-                    pm = '+/-'
-                    fnStr = 'Filename: '+ad.filename
-                    fmStr = ('FWHM Mean %s Sigma:' % pm).ljust(llen) + \
-                            ('%.3f %s %.3f arcsec' % (iqdata[0][2], pm,
-                                                      iqdata[0][3])).rjust(rlen)
-                    emStr = ('Ellipticity Mean %s Sigma:' % pm).ljust(llen) + \
-                            ('%.3f %s %.3f' % (iqdata[0][0], pm, 
-                                               iqdata[0][1])).rjust(rlen)
-                    csStr = ('Zenith-corrected FWHM (AM %.2f):'% \
-                             airmass).ljust(llen) + \
-                            ('%.3f arcsec' % corr).rjust(rlen)
-                    if iq_band!='':
-                        filter = ad.filter_name(pretty=True)
-                        iqStr = ('IQ band for %s filter:'%filter).ljust(llen)+\
-                                iq_band.rjust(rlen)
-                    else:
-                        iqStr = '(IQ band could not be determined)'
-
-                    # Warn if high ellipticity
-                    if iqdata[0][0]>0.1:
-                        ell_warn = "\n    "+\
-                                   "WARNING: high ellipticity".rjust(dlen)
-                    else:
-                        ell_warn = ""                    
-
-                    # Create final formatted string
-                    finalStr = '\n    '+fnStr+'\n    '+'-'*dlen+\
-                               '\n    '+fmStr+'\n    '+emStr+\
-                               '\n    '+csStr+'\n    '+iqStr+ell_warn+\
-                               '\n    '+'-'*dlen+'\n'
-                    # Log final string
-                    if display:
-                        log.stdinfo('Sources used to measure IQ are marked ' +
-                                    'with blue circles.')
-                    log.stdinfo(finalStr, category='IQ')
-                
-                    # Store average FWHM and ellipticity to header
-                    ad.phu_set_key_value("MEANFWHM", iqdata[0][2],
-                                         comment=("Mean point source FWHM "+
-                                                  "(arcsec)"))
-                    ad.phu_set_key_value("MEANELLP", iqdata[0][0],
-                                         comment=("Mean point source "+
-                                                  "ellipticity"))
-
-            # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
-
-            # Append the output AstroData object to the list of output
-            # AstroData objects
-            adoutput_list.append(ad)
-
-        # Logging the total amount of time spent measuring the IQ of all
-        # the inputs
-        log.debug('Total measureIQ time: '+repr(total_IQ_time), 
-                    category='IQ')
-        
-        # Return the list of output AstroData objects
-        if return_source_info:
-            return adoutput_list, stars
-        else:
-            return adoutput_list
-    except:
-        # Log the message from the exception
-        log.critical(repr(sys.exc_info()[1]))
-        raise
-
 
 def measure_zp(adinput=None):
     """
@@ -664,7 +428,7 @@ def measure_zp(adinput=None):
                 extver = objcat.extver()
                 mags = objcat.data['MAG_AUTO']
                 if np.all(mags==-999):
-                    log.warning("No magnitudes present in %s[OBJCAT,%d]"%
+                    log.warning("No magnitudes found in %s[OBJCAT,%d]"%
                                 (ad.filename,extver))
                     adoutput_list.append(ad)
                     continue

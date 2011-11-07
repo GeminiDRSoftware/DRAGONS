@@ -1,6 +1,7 @@
 # This module contains user level functions related to the preprocessing of
 # the input dataset with a sky or fringe frame
 
+import os
 import sys
 from copy import deepcopy
 import numpy as np
@@ -18,6 +19,11 @@ from gempy.science import qa
 # to be used for the time stamp for the user level function
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
+
+# Load the standard comments for header keywords that will be updated
+# in these functions
+keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
+                                            "keyword_comments")
 
 def correct_background_to_reference_image(adinput=None):
     """
@@ -74,7 +80,8 @@ def correct_background_to_reference_image(adinput=None):
                     ref = ref_bg[(sciext.extname(),sciext.extver())]
                     difference = ref - bg
                     sciext.add(difference)
-                    sciext.set_key_value("SKYLEVEL",bg+difference)
+                    sciext.set_key_value("SKYLEVEL",bg+difference,
+                                         comment=keyword_comments["SKYLEVEL"])
 
             # Store background level of first image
             if ref_bg is None:
@@ -232,11 +239,9 @@ def make_fringe_image_gmos(adinput=None, operation="median",
         # (gemcombine sets it to same value as SCI)
         bunit = ad_out["SCI",1].get_key_value("BUNIT")
         if ad_out["VAR"] is not None:
-            gt.update_key_value(adinput=ad_out, function="bunit",
-                                value="%s*%s" % (bunit,bunit),
-                                extname="VAR")
-       
-
+            for varext in ad_out["VAR"]:
+                varext.set_key_value("BUNIT","%s*%s" % (bunit,bunit),
+                                     comment=keyword_comments["BUNIT"])
 
         # Update GEM-TLM (automatic) and COMBINE time stamps to the PHU
         # and update logger with updated/added time stamps
@@ -412,6 +417,11 @@ def remove_fringe_image_gmos(adinput=None, fringe=None,
             # Subtract the scaled fringe from the science
             ad_out = ad.sub(scaled_fringe)
             
+            # Record the flat file used
+            ad.phu_set_key_value("FRINGEIM", 
+                                 os.path.basename(this_fringe.filename),
+                                 comment=keyword_comments["FRINGEIM"])
+
             # Update GEM-TLM (automatic) and RMFRINGE time stamps to the PHU
             # and update logger with updated/added time stamps
             gt.mark_history(adinput=ad_out, keyword=timestamp_key)

@@ -18,6 +18,11 @@ from gempy import geminiTools as gt
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
+# Load the standard comments for header keywords that will be updated
+# in these functions
+keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
+                                            "keyword_comments")
+
 def add_dq(adinput=None, bpm=None):
     """
     This user level function (ulf) is used to add a DQ extension to the input
@@ -577,8 +582,9 @@ def _calculate_var(adinput=None, add_read_noise=False,
 def _update_dq_header(sci=None, dq=None, bpmname=None):
 
     # Add the name of the bad pixel mask
-    gt.update_key_value(adinput=dq, function="bpmname", value=bpmname,
-                        extname="DQ")
+    for ext in dq:
+        ext.set_key_value("BPMNAME",bpmname,
+                          comment=keyword_comments["BPMNAME"])
     
     # These should probably be done using descriptors (?)
     keywords_from_sci = ["CTYPE1", "CRPIX1", "CRVAL1", "CTYPE2", "CRPIX2",
@@ -599,8 +605,9 @@ def _update_dq_header(sci=None, dq=None, bpmname=None):
 
 def _update_var_header(sci=None, var=None, bunit=None):
     # Add the physical units keyword
-    gt.update_key_value(adinput=var, function="bunit", value="%s*%s" \
-                        % (bunit, bunit), extname="VAR")
+    for ext in var:
+        ext.set_key_value("BUNIT","%s*%s"%(bunit, bunit),
+                          comment=keyword_comments["BUNIT"])
     
     # These should probably be done using descriptors (?)
     keywords_from_sci = ["CTYPE1", "CRPIX1", "CRVAL1", "CTYPE2", "CRPIX2",
