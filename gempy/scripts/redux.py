@@ -14,7 +14,7 @@ from astrodata.adutils import gemutil as gu
 GEMINI_NORTH = 'gemini-north'
 GEMINI_SOUTH = 'gemini-south'
 OPSDATAPATH = { GEMINI_NORTH : '/net/archie/staging/perm/',
-                GEMINI_SOUTH : '/net/reggie/staging/perm/' }
+                GEMINI_SOUTH : '/net/petrohue/tier1/gem/dhs/perm/' }
 OBSPREF = { GEMINI_NORTH : 'N',
             GEMINI_SOUTH : 'S' }
 
