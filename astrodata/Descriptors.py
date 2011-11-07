@@ -49,11 +49,13 @@ class DescriptorValue():
     dict_val = None
     _val = None
     name = None
+    keyword = None
     pytype = None
     unit = None
     def __init__(self,  initval, 
                         format = None, 
                         name = "unknown", 
+                        keyword = None,
                         ad = None, 
                         pytype = None,
                         unit = None):
@@ -114,6 +116,7 @@ class DescriptorValue():
         #   in memory due to descriptor values persisting
        
         self.name = name
+        self.keyword = keyword
         
         if format:
             self.format = format

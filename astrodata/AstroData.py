@@ -1779,6 +1779,14 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
         string, so it must have a string operator member function or be passed
         in as string. 
         """
+
+        # Prepend (UPDATED) if key already exists, or (NEW) if it does not
+        original_value = self.phu_get_key_value(key)
+        if original_value is not None:
+            comment = "(UPDATED) %s" % comment
+        else:
+            comment = "(NEW) %s" % comment
+
         hdus = self.hdulist
         hdus[0].header.update(key, value, comment)
         return
@@ -1961,6 +1969,14 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
             mes = "Extension %s not present in AstroData instance" % \
                 str(origextension)
             raise Errors.AstroDataError(mes)
+
+        # Prepend (UPDATED) if key already exists, or (NEW) if it does not
+        original_value = self.get_key_value(key)
+        if original_value is not None:
+            comment = "(UPDATED) %s" % comment
+        else:
+            comment = "(NEW) %s" % comment
+
         hdul = self.gethdul()
         hdul[extension].header.update(key, value, comment)
         self.relhdul()
@@ -2081,8 +2097,8 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
             raise Errors.AstroDataError(self.filename + mes)
         elif (phuOrigFilename is None) and (origFilename is not None):
             # phu key doesn't exist yet, so add it
-            mes = "Original name of file prior to processing"
-            self.phu_set_key_value("ORIGNME", origFilename, mes)
+            mes = "Original filename prior to processing"
+            self.phu_set_key_value("ORIGNAME", origFilename, mes)
         # The check could be useful in the future
         #elif (phuOrigFilename is not None) and (origFilename is not None):
             # phu key exists, so check if it matches private members value
