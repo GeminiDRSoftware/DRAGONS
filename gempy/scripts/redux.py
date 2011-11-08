@@ -181,8 +181,13 @@ if __name__=='__main__':
         print "\nProblem accessing file %s.\n" % filenm
         sys.exit()
 
+    try:
+        fp_mask = ad.focal_plane_mask()
+    except:
+        fp_mask = None
+
     if (("GMOS_IMAGE" in ad.types and
-         ad.focal_plane_mask()=="Imaging" and
+         fp_mask=="Imaging" and
          "GMOS_DARK" not in ad.types) or
         "GMOS_BIAS" in ad.types or 
         "GMOS_IMAGE_FLAT" in ad.types):
@@ -210,7 +215,7 @@ if __name__=='__main__':
               "\nOnly GMOS images can be reduced at this time."
 
         print "\nTypes:",ad.types
-        print "Focal plane mask:",ad.focal_plane_mask(),"\n"
+        print "Focal plane mask:",fp_mask,"\n"
 
         sys.exit()
 
