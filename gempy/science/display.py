@@ -20,6 +20,88 @@ from gempy.science import resample as rs
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
                                           "timestamp_keys")
 
+def display(adinput=None, frame=1, threshold=None, overlay=None,
+            extname="SCI", zscale=True):
+    """
+    This function calls numdisplay to display the data to ds9.
+    It assumes there is only one extension with the given extname.
+    """
+
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+
+    # The validate_input function ensures that adinput is not None and returns
+    # a list containing one or more AstroData objects
+    adinput = gt.validate_input(adinput=adinput)
+
+    # Initialize the list of output AstroData objects
+    adoutput_list = adinput
+    
+    try:
+        if frame is None:
+            frame = 1
+
+        # Threshold parameter only makes sense for SCI extension;
+        # turn it off for others
+        if extname!="SCI":
+            threshold=None
+
+        # Initialize the local version of numdisplay
+        # (overrides the display function to allow for quick overlays)
+        lnd = _localNumDisplay()
+
+        for ad in adinput:
+
+            # Check for more than one science extension
+            nsciext = ad.count_exts(extname)
+            if nsciext!=1:
+                raise Errors.InputError("Display requires exactly 1 " +
+                                        "extension in %s with extname %s" %
+                                        (ad.filename,extname))
+
+            sciext = ad[extname]
+            data = sciext.data
+
+            # Make threshold mask if desired
+            masks = []
+            if threshold is not None:
+                if threshold=="auto":
+                    # Set default threshold level to the saturation level
+                    threshold = ad.saturation_level()
+            
+                # Check units of extension; if electrons, 
+                # convert threshold limit from ADU to electrons
+                bunit = sciext.get_key_value("BUNIT")
+                if bunit=="electron":
+                    gain = sciext.gain().as_pytype()
+                    threshold *= gain 
+                    log.fullinfo("Threshold parameter converted to " +
+                                 "%.2f electrons" % threshold)
+
+                # Make threshold mask
+                satmask = np.where(data>threshold)
+                masks.append(satmask)
+
+            if overlay is not None:
+                masks.append(overlay)
+
+            # Display the data
+            lnd.display(data,name=ad.filename,
+                        frame=frame,zscale=zscale,quiet=True,
+                        masks=masks, mask_colors=[204,206])
+
+            frame+=1
+
+
+        # Return the list of output AstroData objects (unchanged)
+        return adoutput_list
+
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
+
 def display_gmos(adinput=None, frame=1, threshold=None, overlay=None,
                  extname="SCI", zscale=True):
     """
