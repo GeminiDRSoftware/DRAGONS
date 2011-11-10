@@ -7,6 +7,7 @@ from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
 from gempy import geminiTools as gt
+from gempy.science.standardization.extension import add_mdf
 
 # Load the timestamp keyword dictionary that will be used to define the keyword
 # to be used for the time stamp for the user level function
@@ -419,7 +420,7 @@ def standardize_structure_gmos(adinput=None, attach_mdf=False, mdf=None):
                                             "it has an AstroData Type of " \
                                             "'IMAGE'" % (ad.filename))
                 # Call the add_mdf user level function
-                ad = add_mdf(adinput=ad, mdf=mdf)
+                ad = add_mdf(adinput=ad, mdf=mdf)[0]
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)

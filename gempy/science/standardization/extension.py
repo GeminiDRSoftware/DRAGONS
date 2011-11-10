@@ -208,8 +208,9 @@ def add_mdf(adinput=None, mdf=None):
             
             # Call the _select_mdf helper function to get the appropriate MDF
             # for the input AstroData object
-            mdffile = _select_mdf(adinput=ad, mdf=mdf)
-            
+            mdfdict = _select_mdf(adinput=ad, mdf=mdf)
+            mdffile = mdfdict[ad]
+
             # Append the MDF AstroData object to the input AstroData object
             ad.append(moredata=mdffile)
             log.fullinfo("Adding the MDF %s to the input AstroData object %s" \
@@ -388,10 +389,14 @@ def _select_mdf(adinput=None, mdf=None):
     a single extension.
     """
     
+    if not isinstance(adinput, list):
+        adinput = [adinput]
     if mdf is not None:
         # The user supplied an input to the mdf parameter
         if not isinstance(mdf, list):
             mdf_list = [mdf]
+        else:
+            mdf_list = mdf
     else:
         # Initialize the list of output MDF AstroData objects
         mdf_list = []
@@ -435,11 +440,13 @@ def _select_mdf(adinput=None, mdf=None):
             mdf_list.append(mdf)
     
     # Name the extension appropriately
-    mdf.rename_ext("MDF", 1)
+    for mdf in mdf_list:
+        mdf.rename_ext("MDF", 1)
     
-    # Check if the MDF is a single extension fits file
-    if len(mdf) > 1:
-        raise Errors.InputError("The MDF is not a single extension fits file")
+        # Check if the MDF is a single extension fits file
+        if len(mdf) > 1:
+            raise Errors.InputError(
+                "The MDF is not a single extension fits file")
     
     # Create a dictionary that has the AstroData objects specified by adinput
     # as the key and the AstroData objects specified by mdf as the value
