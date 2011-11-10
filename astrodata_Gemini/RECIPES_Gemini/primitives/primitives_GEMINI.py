@@ -10,6 +10,7 @@ from gempy.science import photometry as ph
 from gempy.science import preprocessing as pp
 from gempy.science import registration as rg
 from gempy.science import resample as rs
+from gempy.science import display as ds
 from gempy.science import qa
 from gempy.science import stack as sk
 from gempy.science import standardization as sdz
@@ -674,7 +675,29 @@ class GEMINIPrimitives(GENERALPrimitives):
 
 
     def display(self, rc):
-        rc.rq_display(display_id=rc["display_id"])
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "display", "starting"))
+        
+        # Loop over each input AstroData object in the input list
+        frame = rc["frame"]
+        for ad in rc.get_inputs_as_astrodata():
+            
+            if frame>16:
+                log.warning("Too many images; only the first 16 are displayed.")
+                break
+
+            try:
+                pass
+            except:
+                log.warning("Could not display %s" % ad.filename)
+            ad = ds.display(adinput=ad, frame=frame, extname=rc["extname"],
+                                zscale=rc["zscale"], threshold=rc["threshold"])
+            
+            frame+=1
         
         yield rc
     

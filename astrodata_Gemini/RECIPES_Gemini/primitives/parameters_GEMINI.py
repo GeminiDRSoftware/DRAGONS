@@ -246,6 +246,36 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+"display":{ 
+    "extname":{
+        "default"       : "SCI",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "frame":{
+        "default"       : 1,
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "threshold":{
+        "default"       : None,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "zscale":{
+        "default"       : True,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "divideByFlat":{
     "suffix":{
         "default"       : "_flatCorrected",
