@@ -453,8 +453,8 @@ def convert_to_cal_header(adinput=None, caltype=None):
     :param adinput: astrodata instance to perform header key updates on
     :type adinput: an AstroData instance
 
-    :param caltype: type of calibration.  Accepted values are 'fringe' or
-                    'sky'
+    :param caltype: type of calibration.  Accepted values are 'fringe',
+                    'sky', or 'flat'
     :type caltype: string
     """
 
@@ -536,6 +536,11 @@ def convert_to_cal_header(adinput=None, caltype=None):
                                      keyword_comments["OBSTYPE"])
                 ad.phu_set_key_value("OBJECT","Sky Frame",
                                      keyword_comments["OBJECT"])
+            elif "flat" in caltype:
+                ad.phu_set_key_value("OBSTYPE","FLAT",
+                                     keyword_comments["OBSTYPE"])
+                ad.phu_set_key_value("OBJECT","Flat Frame",
+                                     keyword_comments["OBJECT"])
             else:
                 raise Errors.InputError("Caltype %s not supported" % caltype)
             
@@ -576,6 +581,9 @@ def convert_to_cal_header(adinput=None, caltype=None):
                                           keyword_comments["OBJECT"])
                     elif "sky" in caltype:
                         ext.set_key_value("OBJECT","Sky Frame",
+                                          keyword_comments["OBJECT"])
+                    elif "flat" in caltype:
+                        ext.set_key_value("OBJECT","Flat Frame",
                                           keyword_comments["OBJECT"])
 
             adoutput_list.append(ad)
