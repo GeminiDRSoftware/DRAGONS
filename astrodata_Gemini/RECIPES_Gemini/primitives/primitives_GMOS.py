@@ -4,8 +4,8 @@ from astrodata.adutils import gemLog
 from astrodata.data import AstroData
 from gempy import geminiTools as gt
 from gempy.science import preprocessing as pp
-from gempy.science import display as ds
 from gempy.science import resample as rs
+from gempy.science import display as ds
 from gempy.science import standardization as sdz
 from primitives_GEMINI import GEMINIPrimitives
 
@@ -38,27 +38,26 @@ class GMOSPrimitives(GEMINIPrimitives):
                 log.warning("Too many images; only the first 16 are displayed.")
                 break
 
-            try:
-
-                threshold = rc["threshold"]
-                if threshold is None:
-                    # Get the pre-defined threshold for the given detector type
-                    # and specific use case, i.e., display; using a look up
-                    # dictionary (table)
-                    gmosThresholds = Lookups.get_lookup_table(
-                        "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
-                    
-                    # Read the detector type from the phu
-                    detector_type = ad.phu_get_key_value("DETTYPE")
-
-                    # Form the key
-                    threshold_key = ("display", detector_type)
-                    if threshold_key in gmosThresholds:
-                        # This is an integer with units ADU
-                        threshold = gmosThresholds[threshold_key]
-                    else:
-                        raise Errors.TableKeyError()
+            threshold = rc["threshold"]
+            if threshold is None:
+                # Get the pre-defined threshold for the given detector type
+                # and specific use case, i.e., display; using a look up
+                # dictionary (table)
+                gmosThresholds = Lookups.get_lookup_table(
+                    "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
                 
+                # Read the detector type from the phu
+                detector_type = ad.phu_get_key_value("DETTYPE")
+
+                # Form the key
+                threshold_key = ("display", detector_type)
+                if threshold_key in gmosThresholds:
+                    # This is an integer with units ADU
+                    threshold = gmosThresholds[threshold_key]
+                else:
+                    raise Errors.TableKeyError()
+                
+            try:
                 ad = ds.display_gmos(adinput=ad,
                                      frame=frame,
                                      extname=rc["extname"],
@@ -378,6 +377,39 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         yield rc
     
+    def tileArrays(self,rc):
+        
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "tileArrays", "starting"))
+        
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+        
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+            
+            # Call the user level function,
+            # which returns a list; take the first entry
+            ad = rs.tile_arrays(adinput=ad,tile_all=rc["tile_all"])[0]
+            
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+            
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
+        
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+        
+        yield rc
+
     def trimOverscan(self,rc):
         """
         The trimOverscan primitive trims the overscan region from the input

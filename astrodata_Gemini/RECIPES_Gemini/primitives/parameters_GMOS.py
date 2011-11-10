@@ -110,6 +110,22 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "tileArrays":{
+    "suffix":{
+        "default"       : "_tiled",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "tile_all":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "trimOverscan":{
     "suffix":{
         "default"       : "_overscanTrimmed",
