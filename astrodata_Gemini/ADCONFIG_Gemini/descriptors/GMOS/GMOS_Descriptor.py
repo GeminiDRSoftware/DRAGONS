@@ -338,6 +338,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             raise Errors.CorruptDataError()
         
         return ret_dispersion
+
+    def dispersion_axis(self, dataset, **args):
+        # The GMOS dispersion axis should always be 1
+        return 1
     
     def exposure_time(self, dataset, **args):
         # Get the exposure time from the header of the PHU
