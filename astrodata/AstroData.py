@@ -1312,7 +1312,11 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
             else:
                 # infer bad extvers to a number.
                 inferEXT = max(hdul, key= lambda arg: arg.header.get("EXTVER"))
-                inferEV = int(inferEXT.header.get("EXTVER"))
+                inferEV = inferEXT.header.get("EXTVER")
+                if inferEV is None:
+                    inferEV = 0
+                else:
+                    inferEV = int(inferEV)
                 if inferEV < 1:
                     inferEV = 0
                     
@@ -1780,15 +1784,47 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
         in as string. 
         """
 
-        # Prepend (UPDATED) if key already exists, or (NEW) if it does not
+        # Get original value
         original_value = self.phu_get_key_value(key)
-        if original_value is not None:
-            comment = "(UPDATED) %s" % comment
-        else:
-            comment = "(NEW) %s" % comment
 
+        # Define history_comment
+        if original_value is not None:
+            if original_value!=value:
+                history_comment = "The keyword %s=%s was overwritten in "\
+                                  "the PHU with new value %s" % \
+                                  (key,str(original_value),value)
+            else:
+                history_comment = None
+        else:
+            history_comment = "New keyword %s=%s was written to "\
+                              "the PHU" % \
+                              (key,value)
+
+        # Prepend (UPDATED) to the comment if key already exists, 
+        # or (NEW) if it does not; don't prepend anything if value
+        # is the same as the original value
+        if comment is not None:
+            if original_value is None:
+                comment = "(NEW) %s" % comment
+            elif original_value!=value:
+                comment = "(UPDATED) %s" % comment
+
+            # Truncate comment if necessary
+            if len(str(value))>=65:
+                comment = ""
+            elif len(comment)>47:
+                comment = comment[0:47]
+            else:
+                comment = comment[0:65-len(str(value))]
+
+        # Set key, value, comment
         hdus = self.hdulist
         hdus[0].header.update(key, value, comment)
+
+        # Add history comment
+        if history_comment is not None:
+            hdus[0].header.add_history(history_comment)
+
         return
         
     def get_phu(self):
@@ -1970,15 +2006,52 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
                 str(origextension)
             raise Errors.AstroDataError(mes)
 
-        # Prepend (UPDATED) if key already exists, or (NEW) if it does not
-        original_value = self.get_key_value(key)
-        if original_value is not None:
-            comment = "(UPDATED) %s" % comment
-        else:
-            comment = "(NEW) %s" % comment
-
         hdul = self.gethdul()
-        hdul[extension].header.update(key, value, comment)
+        ext = hdul[extension]
+        extname = ext.header.get("EXTNAME")
+        extver = ext.header.get("EXTVER")
+
+        # Get original value
+        original_value = ext.header.get(key)
+
+        # Define history comment
+        if original_value is not None:
+            if original_value!=value:
+                history_comment = "The keyword %s=%s was overwritten in "\
+                                  "extension %s,%s with new value %s" % \
+                                  (key,str(original_value),extname,
+                                   extver,value)
+            else:
+                history_comment = None
+        else:
+            history_comment = "New keyword %s=%s was written to "\
+                              "extension %s,%s" % \
+                              (key,value,extname,extver)
+
+        # Prepend (UPDATED) to the comment if key already exists,
+        # or (NEW) if it does not; don't prepend anything if value
+        # is the same as the original value
+        if comment is not None:
+            if original_value is None:
+                comment = "(NEW) %s" % comment
+            elif original_value!=value:
+                comment = "(UPDATED) %s" % comment
+
+            # Truncate comment if necessary
+            if len(str(value))>=65:
+                comment = ""
+            elif len(comment)>47:
+                comment = comment[0:47]
+            else:
+                comment = comment[0:65-len(str(value))]
+
+        # Set key, value, comment
+        ext.header.update(key, value, comment)
+
+        # Add history comment to PHU
+        if history_comment is not None:
+            self.get_phuheader().add_history(history_comment)
+
         self.relhdul()
         return 
    
