@@ -157,18 +157,18 @@ def get_calculator_interface():
     """Combination of making and getting calc iface objects
     """
     from astrodata.ConfigSpace import ConfigSpace
-    print "mci239:", repr(ConfigSpace.calc_iface_list)
+    # print "mci239:", repr(ConfigSpace.calc_iface_list)
     calcIfaces = []
     for cil_el in ConfigSpace.calc_iface_list:
         ifType = cil_el[0]
         ifFile = cil_el[1]
         if ifType == "CALCIFACE":
-            print CALCIFACEMARKER
+            # print CALCIFACEMARKER
             cib = open(ifFile)
             d = globals()
             exec(cib, d)
             for key in d:
-                print "key",key
+                # print "key",key
                 if re.match(CALCIFACECLASSMARKER, key):
                     print "ADDING a calc iface"
                     calcIfaces.append(d[key])

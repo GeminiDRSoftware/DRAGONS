@@ -661,7 +661,7 @@ def get_calculator(dataset):
     
     foundtypes = cfg.keys()
     # to the descriptor type.
-    print "D661:",repr(foundtypes)
+    # print "D661:",repr(foundtypes)
     if (len(foundtypes) == 0):
         #then none were found, use default calculator
         return Calculator()
@@ -669,26 +669,26 @@ def get_calculator(dataset):
     else:
         foundcalcs = []
         for calctype in foundtypes:
-            print "D669: checking", calctype
+            #print "D669: checking", calctype
             if loadedCalculatorIndex.has_key(calctype):
-                print "D671: already loaded"
+                #print "D671: already loaded"
                 foundcalcs.append(loadedCalculatorIndex[calctype])
             else:
-                print "D674: loading", calctype
+                #print "D674: loading", calctype
                 # if here we need to import and instantiate the basic calculator
                 # note: module name is first part of calc string
                 calcID = cfg[calctype]
                 modname = calcID.split(".")[0]
-                print "D679:",modname, calcID
+                #print "D679:",modname, calcID
                 if calcID[-2:] == "()":
                     calcID = calcID[:-2]
-                print "D682:",modname, calcID
+                # print "D682:",modname, calcID
                 exec "import " + modname
                 calcClass = eval(calcID)
                 # add this calculator to the loadedCalculatorIndex (aka "calculator cache")
                 loadedCalculatorIndex.update({calctype: calcClass})
                 foundcalcs.append(calcClass)
-                print "what?"
+                
         concreteCalcClass = type("CompositeCalcClass", tuple(foundcalcs), {})
         #for calc in foundcalcs:
         #    concreteCalcClass.__bases__ += (calc.__class__, )
