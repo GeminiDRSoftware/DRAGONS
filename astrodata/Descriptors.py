@@ -653,50 +653,45 @@ def get_calculator(dataset):
     cl = dataset.get_classification_library()
     
     calc = None
-    for typ in types:
-        try:
-            newcalc = centralCalculatorIndex[typ]
-            newcalctype = typ
-            calcs.append(newcalc)
-            if (calc == None):
-                calc = newcalc
-                calctype = newcalctype
-            else:
-                # if the new calc is related to a type that the old
-                nt = cl.get_type_obj(newcalctype)
-                if nt.is_subtype_of(calctype):
-                # subtypes "win" calculator type assignment "conflicts"
-                    calc = newcalc
-                    calctype = newcalctype
-                else:
-                    ot = cl.get_type_obj(calctype)
-                    if not ot.is_subtype_of(nt):
-                        # if more than one type applies, they must have a subtype
-                        raise Errors.DescriptorsError()
-        except KeyError:
-            pass  # just wasn't in dictionary, no problem, most types don't have
-                  #  calculators
-
-    # by now we should have calc, and calctype, both strings... get the object
-    # first, if none were found, create the default, base Calculator
-    # NOTE: the base calculator looks up the descriptor in the PHU or EXTENSIONS 
-    # as appropriate for that descriptor
+    leaflist = []
     
+    from gdpgutil import pick_config
+    
+    cfg = pick_config(dataset, centralCalculatorIndex, style="leaves")
+    
+    foundtypes = cfg.keys()
     # to the descriptor type.
-    if (len(calcs) == 0):
+    print "D661:",repr(foundtypes)
+    if (len(foundtypes) == 0):
         #then none were found, use default calculator
         return Calculator()
     # first check loadedDescriptorIndex
-    elif loadedCalculatorIndex.has_key(calctype):
-        return loadedCalculatorIndex[calctype]
     else:
-        # if here we need to import and instantiate the basic calculator
-        # note: module name is first part of calc string
-        modname = calc.split(".")[0]
-        exec "import " + modname
-        calcObj = eval (calc)
-        # add this calculator to the loadedCalculatorIndex (aka "calculator cache")
-        loadedCalculatorIndex.update({calctype: calcObj})
-        return calcObj
-    
+        foundcalcs = []
+        for calctype in foundtypes:
+            print "D669: checking", calctype
+            if loadedCalculatorIndex.has_key(calctype):
+                print "D671: already loaded"
+                foundcalcs.append(loadedCalculatorIndex[calctype])
+            else:
+                print "D674: loading", calctype
+                # if here we need to import and instantiate the basic calculator
+                # note: module name is first part of calc string
+                calcID = cfg[calctype]
+                modname = calcID.split(".")[0]
+                print "D679:",modname, calcID
+                if calcID[-2:] == "()":
+                    calcID = calcID[:-2]
+                print "D682:",modname, calcID
+                exec "import " + modname
+                calcClass = eval(calcID)
+                # add this calculator to the loadedCalculatorIndex (aka "calculator cache")
+                loadedCalculatorIndex.update({calctype: calcClass})
+                foundcalcs.append(calcClass)
+                print "what?"
+        concreteCalcClass = type("CompositeCalcClass", tuple(foundcalcs), {})
+        #for calc in foundcalcs:
+        #    concreteCalcClass.__bases__ += (calc.__class__, )
+        finalCalc = concreteCalcClass()
+        return finalCalc
 #@@DOCPROJECT@@ done pass 1

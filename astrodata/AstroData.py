@@ -21,11 +21,15 @@ from astrodata import Errors
 from adutils.netutil import urlfetch
 from astrodata.ExtTable import ExtTable
 from adutils.gemutil import rename_hdu
-try:
-    from CalculatorInterface import CalculatorInterface
-except ImportError:
-    class CalculatorInterface:
-        pass
+from mkcalciface import get_calculator_interface
+
+CalculatorInterface = get_calculator_interface()
+
+# try:
+#     from CalculatorInterface import CalculatorInterface
+# except ImportError:
+#     class CalculatorInterface:
+#         pass
 
 verbose = False
 verboseLoadTypes = True

@@ -106,7 +106,7 @@ class UserParams(object):
             self.user_param_dict[up.astrotype][up.primname].update({up.param:up.value})
             
 class ReductionContext(dict):
-    """The ReductionContext is used by primitives and recipiesen, hidden in the
+    """The ReductionContext is used by primitives and recipies, implicitely in the
     later case, to get input and report output. This allows primitives to be
     controlled in many different running environments, from pipelines to command
     line interactive reduction.
@@ -203,6 +203,15 @@ class ReductionContext(dict):
         return retval
     
     def __contains__(self, thing):
+        """
+        :param thing: A key to check if for presences in the Reduction Context
+        :type thing: str
+        
+        The __contains__ function implements the python 'in' operator. The 
+        ReductionContext is a subclass of a ``dict``, but it also has a secondary
+        dicts of "local parameters" which are avaialable to the current primitive \
+        only.
+        """
         if thing in self._localparms:
             return True
         return dict.__contains__(self, thing)
@@ -214,20 +223,24 @@ class ReductionContext(dict):
     context = property(getContext)
     
     def inContext(self, context):
+        context = context.lower()
         return context in self._running_contexts
         
     def addContext(self, context):
+        context = context.lower()
         if context not in self._running_contexts:
             self._running_contexts.append(context)
     def setContext(self, context):
         if type(context) == list:
+            context = [cstr.lower() for cstr in context]
             self._running_contexts = context
         else:
-            self._running_contexts = [context]
+            self._running_contexts = [context.lower()]
     def clearContext(self, context = None):
         if context == None:
             self._running_contexts = []
         else:
+            context = context.lower()
             if context in self._running_contexts:
                 self._running_contexts.remove(context)
         

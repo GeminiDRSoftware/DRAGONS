@@ -15,6 +15,7 @@ The Astrodata Manual
     
     chapter_intro.rst
     chapter_AstroDataClass.rst
+    chapter_ReductionContextClass.rst
     developmentGuide.rst
     gen.ADMANUAL_ADConcepts.rst
     

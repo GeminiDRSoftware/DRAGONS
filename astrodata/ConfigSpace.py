@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 from copy import copy
 # OPTIMISATION IDEAS #
 #
@@ -18,6 +19,8 @@ spaces = {  "descriptors":"descriptors",
             }
 RECIPEMARKER = "RECIPES_"
 LOOKUPDIRNAME = "lookups"
+CALCIFACEMARKER = "CalculatorInterface(.*).py$"
+DDLISTMARKER    = "DescriptorsList(.*).py"
 cs = None
 class ConfigSpaceExcept:
     """This class is an exception class for the ConfigSpace module"""
@@ -51,6 +54,9 @@ class ConfigSpace(object):
     recipepath = None
     adconfigpath = None
     wholepath = None
+    
+    calc_iface_list=[]
+    
     def __init__(self):
         self.configdirs = {}
         self.configpacks = []
@@ -98,6 +104,25 @@ class ConfigSpace(object):
                 goodpath = (".svn" not in path) and ("CVS" not in path)
                 if goodpath:
                     if "edge" in elem: print "CS72:", elem
+                    thefile = None
+                    for fil in elem[2]:
+                        if re.match(CALCIFACEMARKER, fil):
+                            self.calc_iface_list.append(
+                                    (   "CALCIFACE",
+                                        os.path.join(
+                                            elem[0], fil
+                                            )
+                                    )    
+                                )
+                        elif re.match(DDLISTMARKER, fil):
+                            self.calc_iface_list.append(
+                                    ( "DDLIST",
+                                        os.path.join(
+                                            elem[0], fil
+                                            )
+                                    )
+                                )
+                            
                     yield elem
             
     def get_config_dirs(self, spacename):
