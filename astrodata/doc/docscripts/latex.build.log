@@ -1,8 +1,34 @@
 Running Sphinx v1.0b2
 loading pickled environment... done
 building [latex]: all documents
-updating environment: 0 added, 0 changed, 0 removed
-looking for now-outdated files... 111 found
+updating environment: 0 added, 12 changed, 99 removed
+reading sources... [  8%] appendix_typegraphs
+reading sources... [ 16%] gatref/gen.GATREF-Audience
+reading sources... [ 25%] gatref/gen.GATREF-Purpose
+reading sources... [ 33%] gatref/gen.GATREF-RevisionHistory
+reading sources... [ 41%] gen.ADMANUAL-ADSubdata
+reading sources... [ 50%] gen.ADMANUAL-AccessingPyfitsObjects
+reading sources... [ 58%] gen.ADMANUAL_ADConcepts
+reading sources... [ 66%] gen.ADMANUAL_Purpose
+reading sources... [ 75%] gen.ADMANUAL_RevisionHistory
+reading sources... [ 83%] gen.ADMANUAL_SingleHDUAD
+reading sources... [ 91%] gen.AstroDataLexicon
+reading sources... [100%] gen.AstroDataPackageOverview
+
+/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/GENERIC-tree-pd.png
+/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/GEMINI-tree-pd.png
+/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/GMOS-tree-pd.png
+/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/GNIRS-tree-pd.png
+/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/NICI-tree-pd.png
+/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/NIFS-tree-pd.png
+/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/NIRI-tree-pd.png
+/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/MICHELLE-tree-pd.png
+/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/RAW-tree-pd.png
+/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/TRECS-tree-pd.png
+/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.ADMANUAL_ADConcepts.rst:691: (WARNING/2) Explicit markup ends without a blank line; unexpected unindent.
+/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.AstroDataLexicon.rst:13: (WARNING/2) Bullet list ends without a blank line; unexpected unindent.
+/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.AstroDataLexicon.rst:28: (ERROR/3) Unexpected indentation.
+looking for now-outdated files... 8 found
 pickling environment... done
 checking consistency... /home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/chapter_Gemini_Types.rst:: WARNING: document isn't included in any toctree
 /home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.ADMANUAL-AccessingPyfitsObjects.rst:: WARNING: document isn't included in any toctree
@@ -10,7 +36,6 @@ checking consistency... /home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/do
 /home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.ADMANUAL_SingleHDUAD.rst:: WARNING: document isn't included in any toctree
 /home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.AstroDataLexicon.rst:: WARNING: document isn't included in any toctree
 /home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.AstroDataPackageOverview.rst:: WARNING: document isn't included in any toctree
-/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/~creatingADescriptor.rst:: WARNING: document isn't included in any toctree
 done
 processing astrodatadocumentation.tex... index chapter_intro documentBrief gen.ADMANUAL_RevisionHistory gen.ADMANUAL_Purpose chapter_AstroDataClass gen.ADMANUAL-ADSubdata chapter_ReductionContextClass developmentGuide configElements startingTheConfig creatingAnAstroDataType creatingADescriptor creatingAPrimitive gen.ADMANUAL_ADConcepts 
 resolving references...
@@ -20,6 +45,12 @@ done
 processing ADtypereference.tex... chapter_Gemini_Types gatref/GATREF-introduction gatref/gatrefdocbrief gatref/gen.GATREF-RevisionHistory gatref/gen.GATREF-Purpose gatref/gen.GATREF-Audience gatref/GATREF-overview appendix_typegraphs gen.typedefs/gen.TypeSourceAppendix gen.typedefs/gen.gemdtype.ACQUISITION gen.typedefs/gen.gemdtype.BIAS gen.typedefs/gen.gemdtype.CAL gen.typedefs/gen.gemdtype.DARK gen.typedefs/gen.gemdtype.F2 gen.typedefs/gen.gemdtype.F2_CAL gen.typedefs/gen.gemdtype.F2_DARK gen.typedefs/gen.gemdtype.F2_IMAGE gen.typedefs/gen.gemdtype.F2_IMAGE_FLAT gen.typedefs/gen.gemdtype.F2_IMAGE_TWILIGHT gen.typedefs/gen.gemdtype.F2_LS gen.typedefs/gen.gemdtype.F2_LS_ARC gen.typedefs/gen.gemdtype.F2_LS_FLAT gen.typedefs/gen.gemdtype.F2_LS_TWILIGHT gen.typedefs/gen.gemdtype.F2_MOS gen.typedefs/gen.gemdtype.F2_MOS_ARC gen.typedefs/gen.gemdtype.F2_MOS_FLAT gen.typedefs/gen.gemdtype.F2_MOS_TWILIGHT gen.typedefs/gen.gemdtype.F2_SPECT gen.typedefs/gen.gemdtype.FLAT gen.typedefs/gen.gemdtype.FRINGE gen.typedefs/gen.gemdtype.GEMINI gen.typedefs/gen.gemdtype.GEMINI_NORTH gen.typedefs/gen.gemdtype.GEMINI_SOUTH gen.typedefs/gen.gemdtype.GENERIC gen.typedefs/gen.gemdtype.GMOS gen.typedefs/gen.gemdtype.GMOS_BIAS gen.typedefs/gen.gemdtype.GMOS_CAL gen.typedefs/gen.gemdtype.GMOS_DARK gen.typedefs/gen.gemdtype.GMOS_IFU gen.typedefs/gen.gemdtype.GMOS_IFU_ARC gen.typedefs/gen.gemdtype.GMOS_IFU_BLUE gen.typedefs/gen.gemdtype.GMOS_IFU_FLAT gen.typedefs/gen.gemdtype.GMOS_IFU_RED gen.typedefs/gen.gemdtype.GMOS_IFU_TWILIGHT gen.typedefs/gen.gemdtype.GMOS_IFU_TWO gen.typedefs/gen.gemdtype.GMOS_IMAGE gen.typedefs/gen.gemdtype.GMOS_IMAGE_FLAT gen.typedefs/gen.gemdtype.GMOS_IMAGE_TWILIGHT gen.typedefs/gen.gemdtype.GMOS_LS gen.typedefs/gen.gemdtype.GMOS_LS_ARC gen.typedefs/gen.gemdtype.GMOS_LS_FLAT gen.typedefs/gen.gemdtype.GMOS_LS_TWILIGHT gen.typedefs/gen.gemdtype.GMOS_MOS gen.typedefs/gen.gemdtype.GMOS_MOS_ARC gen.typedefs/gen.gemdtype.GMOS_MOS_FLAT gen.typedefs/gen.gemdtype.GMOS_MOS_TWILIGHT gen.typedefs/gen.gemdtype.GMOS_N gen.typedefs/gen.gemdtype.GMOS_NODANDSHUFFLE gen.typedefs/gen.gemdtype.GMOS_RAW gen.typedefs/gen.gemdtype.GMOS_S gen.typedefs/gen.gemdtype.GMOS_SPECT gen.typedefs/gen.gemdtype.GNIRS gen.typedefs/gen.gemdtype.GNIRS_IMAGE gen.typedefs/gen.gemdtype.GNIRS_PINHOLE gen.typedefs/gen.gemdtype.GNIRS_SPECT gen.typedefs/gen.gemdtype.QUIRC gen.typedefs/gen.gemdtype.HRWFS gen.typedefs/gen.gemdtype.IFU gen.typedefs/gen.gemdtype.IMAGE gen.typedefs/gen.gemdtype.LS gen.typedefs/gen.gemdtype.MICHELLE gen.typedefs/gen.gemdtype.MICHELLE_IMAGE gen.typedefs/gen.gemdtype.MICHELLE_SPECT gen.typedefs/gen.gemdtype.MOS gen.typedefs/gen.gemdtype.NEEDSFLUXCAL gen.typedefs/gen.gemdtype.NICI gen.typedefs/gen.gemdtype.NICI_ADI_B gen.typedefs/gen.gemdtype.NICI_ADI_R gen.typedefs/gen.gemdtype.NICI_ASDI gen.typedefs/gen.gemdtype.NICI_CAL gen.typedefs/gen.gemdtype.NICI_DARK gen.typedefs/gen.gemdtype.NICI_DARK_CURRENT gen.typedefs/gen.gemdtype.NICI_DARK_OLD gen.typedefs/gen.gemdtype.NICI_FLAT gen.typedefs/gen.gemdtype.NICI_IMAGE gen.typedefs/gen.gemdtype.NICI_SDI gen.typedefs/gen.gemdtype.NIFS gen.typedefs/gen.gemdtype.NIFS_IMAGE gen.typedefs/gen.gemdtype.NIFS_RONCHI gen.typedefs/gen.gemdtype.NIFS_SPECT gen.typedefs/gen.gemdtype.NIRI gen.typedefs/gen.gemdtype.NIRI_IMAGE gen.typedefs/gen.gemdtype.NIRI_SPECT gen.typedefs/gen.gemdtype.NODCHOP gen.typedefs/gen.gemdtype.OSCIR gen.typedefs/gen.gemdtype.PHOENIX gen.typedefs/gen.gemdtype.PREPARED gen.typedefs/gen.gemdtype.PROCESSED_BIAS gen.typedefs/gen.gemdtype.PROCESSED_DARK gen.typedefs/gen.gemdtype.PROCESSED_FLAT gen.typedefs/gen.gemdtype.PROCESSED_FRINGE gen.typedefs/gen.gemdtype.RAW gen.typedefs/gen.gemdtype.SPECT gen.typedefs/gen.gemdtype.TRECS gen.typedefs/gen.gemdtype.TRECS_IMAGE gen.typedefs/gen.gemdtype.TRECS_SPECT gen.typedefs/gen.gemdtype.UNPREPARED 
 resolving references...
 writing... done
-copying images... images_types/NIFS-tree-pd.png images_types/MICHELLE-tree-pd.png images_types/GMOS-tree-pd.png images_types/GEMINI-tree-pd.png images_types/NIRI-tree-pd.png images_types/NICI-tree-pd.png images_types/GENERIC-tree-pd.png images_types/RAW-tree-pd.png images_types/TRECS-tree-pd.png images_types/GNIRS-tree-pd.png
-copying TeX support files... done
-build succeeded, 9 warnings.
+copying images... images_types/NIFS-tree-pd.png
+Exception occurred:
+  File "/usr/lib/python2.6/shutil.py", line 52, in copyfile
+    fsrc = open(src, 'rb')
+IOError: [Errno 2] No such file or directory: u'/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/images_types/NIFS-tree-pd.png'
+The full traceback has been saved in /tmp/sphinx-err-T9Ecpe.log, if you want to report the issue to the developers.
+Please also report this if it was a user error, so that a better error message can be provided next time.
+Either send bugs to the mailing list at <http://groups.google.com/group/sphinx-dev/>,
+or report them in the tracker at <http://bitbucket.org/birkenfeld/sphinx/issues/>. Thanks!
