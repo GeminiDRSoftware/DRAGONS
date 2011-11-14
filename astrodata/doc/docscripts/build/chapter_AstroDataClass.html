@@ -23,7 +23,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="astrodata documentation v1.00 documentation" href="index.html" />
-    <link rel="next" title="2.4.1.1. Using Slices and “Subdata”" href="gen.ADMANUAL-ADSubdata.html" />
+    <link rel="next" title="3. Concepts" href="gen.ADMANUAL_ADConcepts.html" />
     <link rel="prev" title="1.2. Document Purpose" href="gen.ADMANUAL_Purpose.html" /> 
   </head>
   <body>
@@ -34,7 +34,7 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="gen.ADMANUAL-ADSubdata.html" title="2.4.1.1. Using Slices and “Subdata”"
+          <a href="gen.ADMANUAL_ADConcepts.html" title="3. Concepts"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="gen.ADMANUAL_Purpose.html" title="1.2. Document Purpose"
@@ -136,8 +136,8 @@
   <p class="topless"><a href="gen.ADMANUAL_Purpose.html"
                         title="previous chapter">1.2. Document Purpose</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="gen.ADMANUAL-ADSubdata.html"
-                        title="next chapter">2.4.1.1. Using Slices and &#8220;Subdata&#8221;</a></p>
+  <p class="topless"><a href="gen.ADMANUAL_ADConcepts.html"
+                        title="next chapter">3. Concepts</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/chapter_AstroDataClass.txt"
@@ -177,6 +177,51 @@ documentation is generated from in source docstrings. To import the
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
 </pre></div>
 </div>
+<dl class="class">
+<dt id="astrodata.data.AstroData">
+<em class="property">class </em><tt class="descclassname">astrodata.data.</tt><tt class="descname">AstroData</tt><big>(</big><em>dataset=None</em>, <em>mode='readonly'</em>, <em>exts=None</em>, <em>extInsts=None</em>, <em>phu=None</em>, <em>header=None</em>, <em>data=None</em>, <em>store=None</em>, <em>storeClobber=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData" title="Permalink to this definition">¶</a></dt>
+<dd><p>The AstroData class abstracts datasets stored in MEF files
+and provides uniform interfaces for working on datasets from different
+instruments and modes.  Configuration packages are used to describe
+the specific data characteristics, layout, and to store type-specific
+implementations.</p>
+<p>MEFs can be generalized as lists of header-data units, with key-value 
+pairs populating headers and pixel data populating data,
+AstroData interprets a MEF as a single complex entity.  The individual
+&#8220;extensions&#8221; with the MEF are available using python list (&#8220;[]&#8221;) syntax and are 
+wrapped in AstroData objects (see 
+:meth:AstroData.__getitem__()&lt;astrodata.data.AstroData&gt;). AstroData uses 
+pyfits for MEF I/O and numpy for pixel manipulations.</p>
+<p>While the pyfits and numpy objects are available to the programmer, AstroData
+provides analagous methods for most pyfits functionality which allows it to
+maintain the dataset  as a cohesive whole. The programmer does however use the
+numpy pixel arrays directly for pixel manipulation.</p>
+<p>In order to identify types of dataset and provide type-specific behavior
+AstroData relies on configuration packages either in the PYTHONPATH environment
+variable or the Astrodata package environment variables, ADCONFIGPATH, or
+RECIPEPATH. The configuration (i.e. astrodata_Gemini) contains definitions for
+all  instrument-mode-specific behavior. The configuration contains type
+definitions, meta-data functions, information lookup tables, and any other code
+or information needed to handle specific types of dataset.</p>
+<p>This allows AstroData to manage access to the dataset for convienience and
+consistency.
+For example AstroData is able...:</p>
+<ul class="simple">
+<li>... to allow reduction scripts to have easy access to dataset classification 
+information in a consistent way across all instrument-modes</li>
+<li>... to provide consistent interfaces for obtaining common meta-data across all
+instrument modes</li>
+<li>... to relates internal extensions, e.g. discriminate between science and 
+variance arrays and associate them properly</li>
+<li>... to help propagate header-data units important to the given instrument mode,
+but unknown to general purpose transformations</li>
+</ul>
+<p>AstroData&#8217;s purpose in general is to provide smart dataset-centered interfaces
+which adapt to dataset type. The primary interfaces of note are for file
+handling, dataset-type checking, and managing meta-data, but AstroData also
+integrates other functionality.</p>
+</dd></dl>
+
 <div class="section" id="basic-functions">
 <h2>2.1. Basic Functions<a class="headerlink" href="#basic-functions" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="astrodata-constructor">
@@ -185,6 +230,70 @@ documentation is generated from in source docstrings. To import the
 <ul class="simple">
 </ul>
 </div>
+<dl class="method">
+<dt id="astrodata.data.AstroData.__init__">
+<tt class="descclassname">AstroData.</tt><tt class="descname">__init__</tt><big>(</big><em>dataset=None</em>, <em>mode='readonly'</em>, <em>exts=None</em>, <em>extInsts=None</em>, <em>phu=None</em>, <em>header=None</em>, <em>data=None</em>, <em>store=None</em>, <em>storeClobber=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dataset</strong> &#8211; the dataset to load, either a filename (string), an
+AstroData instance, or a pyfits.HDUList</li>
+<li><strong>mode</strong> &#8211; IO access mode, same as pyfits mode (&#8220;readonly&#8221;, &#8220;update&#8221;,
+&#8220;or append&#8221;) with one additional AstroData-specific mode, &#8220;new&#8221;.
+If the mode is &#8220;new&#8221;, and a filename is provided, the constructor
+checks the named file does not exist, and if it does not already
+exist, it creates an empty AstroData of that name (to save the
+filename), but does not write it to disk. Such an AstroData 
+instance is ready to have HDUs appended, and to be written to disk
+at the user&#8217;s command with &#8220;ad.write()&#8221;.</li>
+<li><strong>exts</strong> &#8211; <p>(advanced) a list of extension indexes in the parent
+HDUList that this instance should refer to, given  integer or 
+(EXTNAME, EXTVER) tuples specifying each extention in the &#8220;pyfits&#8221;
+index space where the PHU is at index 0, the first data extension
+is at index 1, and so on. I.e. This is primarilly intended for 
+internal use creating &#8220;sub-data&#8221;, which are AstroData instances
+that represent a slice, or subset, of some other AstroData instance.</p>
+<p>NOTE: if present this option will override and obscure the extInsts
+argument which will be ignored.</p>
+<p>Example of sub-data:</p>
+<blockquote>
+sci_subdata = ad[&#8220;SCI&#8221;]</blockquote>
+<p>The sub-data is is created by passing &#8220;SCI&#8221; as an argument to the
+constructor. The &#8216;sci_subdata&#8217; object would consist of its own 
+AstroData instance referring to it&#8217;s own HDUList, but the HDUs in
+this list would still be shared (in memory) with the &#8216;ad&#8217; object,
+and appear in its HDUList as well.</p>
+</li>
+<li><strong>extInsts</strong> &#8211; a list of extensions this instance should contain,
+given as actual pyfits.HDU instances. NOTE: if the &#8220;exts&#8221; argument
+is also set, this argument is ignored.</li>
+<li><strong>phu</strong> &#8211; primary header unit. This object is propagated to all 
+astrodata sub-data ImageHDUs. Special handling is made for header
+instances that are passed in as this arg., where a phu will be 
+created and the &#8216;.header&#8217; will be assigned (ex. hdulist[0], ad.phu,
+ad[0].hdulist[0], ad[&#8216;SCI&#8217;,1].hdulist[0], ad[0].phu, 
+ad[&#8216;SCI&#8217;,1].phu, and all the previous with .header appended)</li>
+<li><strong>header</strong> &#8211; extension header for images (ex. hdulist[1].header,
+ad[0].hdulist[1].header, ad[&#8216;SCI&#8217;,1].hdulist[1].header)</li>
+<li><strong>data</strong> &#8211; the image pixel array (ex. hdulist[1].data,
+ad[0].hdulist[1].data, ad[&#8216;SCI&#8217;,1].hdulist[1].data)</li>
+<li><strong>store</strong> &#8211; directory where a copy of the original file will be 
+stored. Special handling is done for remote files.</li>
+<li><strong>storeClobber</strong> &#8211; remote file handling for existing files with the
+same name.  If true will save, if not, will delete.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The AstroData constructor constructs an in-memory representation of a
+dataset. If given a filename it uses pyfits to open the dataset, reads
+the header and detects applicable types. Binary data, such as pixel
+data, is left on disk until referenced.</p>
+</dd></dl>
+
 </div>
 <div class="section" id="append">
 <h3>2.1.2. append(..)<a class="headerlink" href="#append" title="Permalink to this headline">¶</a></h3>
@@ -192,6 +301,36 @@ documentation is generated from in source docstrings. To import the
 <ul class="simple">
 </ul>
 </div>
+<dl class="method">
+<dt id="astrodata.data.AstroData.append">
+<tt class="descclassname">AstroData.</tt><tt class="descname">append</tt><big>(</big><em>moredata=None</em>, <em>data=None</em>, <em>header=None</em>, <em>auto_number=False</em>, <em>extname=None</em>, <em>extver=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.append" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>moredata</strong> &#8211; either an AstroData instance, an HDUList instance, 
+or an HDU instance to add to this AstroData object.
+When present, data and header arguments will be ignored.</li>
+<li><strong>data</strong> &#8211; if moredata <em>is not</em> specified, data and header should 
+both be set and are used to construct a new HDU which is then 
+added to the  AstroData object. The &#8216;data&#8217; argument should be set
+to a valid numpy array.</li>
+<li><strong>header</strong> &#8211; if moredata <em>is not</em> specified, data and header are used
+to make  an HDU which is then added to the HDUList associated with
+this AstroData instance. The &#8216;header&#8217; argument should be set to a
+valid pyfits.Header object.</li>
+<li><strong>auto_number</strong> &#8211; auto-increment extver to fit file convention</li>
+<li><strong>extname</strong> &#8211; extension name (ex, &#8216;SCI&#8217;, &#8216;VAR&#8217;, &#8216;DQ&#8217;)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>This function appends more data units (aka &#8220;HDUs&#8221;) to the AstroData
+instance.</p>
+</dd></dl>
+
 </div>
 <div class="section" id="close">
 <h3>2.1.3. close(..)<a class="headerlink" href="#close" title="Permalink to this headline">¶</a></h3>
@@ -199,6 +338,16 @@ documentation is generated from in source docstrings. To import the
 <ul class="simple">
 </ul>
 </div>
+<dl class="method">
+<dt id="astrodata.data.AstroData.close">
+<tt class="descclassname">AstroData.</tt><tt class="descname">close</tt><big>(</big><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>The close(..) function will close the HDUList associated with this
+AstroData instance. If this is subdata, e.g. (sd = gd[SCI] where gd is
+another AstroData instance, sd is &#8220;sub-data&#8221;)  then sd.close() will not
+close the original hdulist because gd will actually own the hold on 
+that HDUList and its related file.</p>
+</dd></dl>
+
 </div>
 <div class="section" id="insert">
 <h3>2.1.4. insert(..)<a class="headerlink" href="#insert" title="Permalink to this headline">¶</a></h3>
@@ -206,6 +355,39 @@ documentation is generated from in source docstrings. To import the
 <ul class="simple">
 </ul>
 </div>
+<dl class="method">
+<dt id="astrodata.data.AstroData.insert">
+<tt class="descclassname">AstroData.</tt><tt class="descname">insert</tt><big>(</big><em>index</em>, <em>moredata=None</em>, <em>data=None</em>, <em>header=None</em>, <em>auto_number=False</em>, <em>extname=None</em>, <em>extver=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.insert" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>index</strong> &#8211; the extension index, either an int or (EXTNAME, EXTVER)
+pair before which the extension is to be inserted. Note, the 
+first data extension is [0], you cannot insert before the PHU.
+Index always refers to Astrodata Numbering system, 0 = HDU</li>
+<li><strong>moredata</strong> &#8211; Either an AstroData instance, an HDUList instance, or
+an HDU instance. When present, data and header will be ignored.</li>
+<li><strong>data</strong> &#8211; if moredata <em>is not</em> specified, data and header should 
+both be set and are used to construct a new HDU which is then 
+added to the AstroData instance.</li>
+<li><strong>header</strong> &#8211; if moredata <em>is not</em> specified, data and header are 
+used to make an HDU which is then added to the HDUList associated
+with this AstroData instance.</li>
+<li><strong>auto_number</strong> &#8211; auto-increment appends to match existing extname - extver 
+convention.</li>
+<li><strong>extname</strong> &#8211; extension name (ex, &#8216;SCI&#8217;, &#8216;VAR&#8217;, &#8216;DQ&#8217;)</li>
+<li><strong>extver</strong> &#8211; extension version (ex, 1, 2, 3)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>This function inserts more data units (aka an &#8220;HDU&#8221;) to the AstroData
+instance.</p>
+</dd></dl>
+
 </div>
 <div class="section" id="info">
 <h3>2.1.5. info(..)<a class="headerlink" href="#info" title="Permalink to this headline">¶</a></h3>
@@ -213,6 +395,13 @@ documentation is generated from in source docstrings. To import the
 <ul class="simple">
 </ul>
 </div>
+<dl class="method">
+<dt id="astrodata.data.AstroData.info">
+<tt class="descclassname">AstroData.</tt><tt class="descname">info</tt><big>(</big><em>oid=False</em>, <em>table=False</em>, <em>subref=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>The info(..) function prints self.infostr() and 
+is maintained for convienience and low level debugging.</p>
+</dd></dl>
+
 </div>
 <div class="section" id="infostr">
 <h3>2.1.6. infostr(..)<a class="headerlink" href="#infostr" title="Permalink to this headline">¶</a></h3>
@@ -220,6 +409,28 @@ documentation is generated from in source docstrings. To import the
 <ul class="simple">
 </ul>
 </div>
+<dl class="method">
+<dt id="astrodata.data.AstroData.infostr">
+<tt class="descclassname">AstroData.</tt><tt class="descname">infostr</tt><big>(</big><em>as_html=False</em>, <em>oid=False</em>, <em>table=False</em>, <em>subref=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.infostr" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>as_html</strong> &#8211; return as HTML formatted string</li>
+<li><strong>oid</strong> &#8211; include object id</li>
+<li><strong>subref</strong> &#8211; include sub-data reference information</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The infostr(..) function is used to get a string ready for display
+either as plain text or HTML.  It provides AstroData-relative
+information, unlike the pyfits-forwarded function AstroData.info(),
+and so uses AstroData relative indexes, descriptors, and so on.</p>
+</dd></dl>
+
 </div>
 <div class="section" id="open">
 <h3>2.1.7. open(..)<a class="headerlink" href="#open" title="Permalink to this headline">¶</a></h3>
@@ -227,6 +438,35 @@ documentation is generated from in source docstrings. To import the
 <ul class="simple">
 </ul>
 </div>
+<dl class="method">
+<dt id="astrodata.data.AstroData.open">
+<tt class="descclassname">AstroData.</tt><tt class="descname">open</tt><big>(</big><em>source</em>, <em>mode='readonly'</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.open" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>source</strong> &#8211; source contains some reference for the dataset to 
+be opened and associated with this instance. Generally
+it would be a filename, but can also be
+an AstroData instance or a pyfits.HDUList instance.</li>
+<li><strong>mode</strong> &#8211; IO access mode, same as the pyfits open mode, &#8220;readonly,
+&#8220;update&#8221;, or &#8220;append&#8221;.  The mode is passed to pyfits so
+if it is an illegal mode name, pyfits will be the
+subsystem reporting the error.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>This function wraps a source dataset, which can be in memory as another
+AstroData or pyfits HDUList, or on disk, given as the string filename.</p>
+<p>Please note that generally one does not use &#8220;open&#8221; directly, but passes
+the filename to the AstroData constructor. The constructor uses
+open(..) however.  Most users should use the constructor, which may 
+perform extra operations.</p>
+</dd></dl>
+
 </div>
 <div class="section" id="write">
 <h3>2.1.8. write(..)<a class="headerlink" href="#write" title="Permalink to this headline">¶</a></h3>
@@ -234,6 +474,35 @@ documentation is generated from in source docstrings. To import the
 <ul class="simple">
 </ul>
 </div>
+<dl class="method">
+<dt id="astrodata.data.AstroData.write">
+<tt class="descclassname">AstroData.</tt><tt class="descname">write</tt><big>(</big><em>filename=None</em>, <em>clobber=False</em>, <em>rename=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.write" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fname</strong> &#8211; file name to write to, optional if instance already has
+name, which might not be the case for new AstroData
+instances created in memory.</li>
+<li><strong>clobber</strong> &#8211; This flag drives if AstroData will overwrite an existing
+file.</li>
+<li><strong>rename</strong> &#8211; This flag allows you to write the AstroData instance to
+a new filename, but leave the &#8220;current&#8221; name in tact.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The write function acts similarly to the pyfits HDUList.writeto(..)
+function if a filename is given, or like pyfits.HDUList.update(..) if 
+no name is given, using whatever the current name is set to. When a name
+is given, this becomes the new on-disk name of the AstroData object and
+will be used on subsequent calls to  write for which a filename is not
+provided. If the clobber flag is False (the default) then write(..)
+throws an exception if the file already exists.</p>
+</dd></dl>
+
 </div>
 </div>
 <div class="section" id="type-information">
@@ -242,6 +511,134 @@ documentation is generated from in source docstrings. To import the
 <ul class="simple">
 </ul>
 </div>
+<dl class="method">
+<dt id="astrodata.data.AstroData.is_type">
+<tt class="descclassname">AstroData.</tt><tt class="descname">is_type</tt><big>(</big><em>*typenames</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.is_type" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>typename</strong> &#8211; specifies the type name to check.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">True if the given type applies to this dataset,
+False otherwise</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Bool</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>This function checks the AstroData object to see if it is the
+given type(s) and returns True if so.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Note :</th><td class="field-body">&#8220;AstroData.check_type(..)&#8221; is an alias for 
+&#8220;AstroData.is_type(..)&#8221;.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrodata.data.AstroData.get_types">
+<tt class="descclassname">AstroData.</tt><tt class="descname">get_types</tt><big>(</big><em>prune=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.get_types" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>prune</strong> &#8211; flag which controls &#8216;pruning&#8217; the returned type list 
+so that only the leaf node type for a given set of related types
+is returned.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a list of classification names that apply to this data</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of strings</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The get_types(..) function returns a list of type names, where type 
+names are as always, strings. It is possible to &#8220;prune&#8221; the list so
+that only leaf nodes are returned, which is useful when features (such
+as descriptors) are set and leaf node settings take priority.</p>
+<p>Note: types are divided into two categories, one intended for types
+which represent processing status (i.e. RAW vs PREPARED), and another
+which contains a more traditional &#8220;typology&#8221; consisting of a 
+heirarchical tree of datastypes. This latter tree maps roughly to
+instrument-modes, with instrument types branching from the general
+observatory type, (e.g. &#8220;GEMINI&#8221;).</p>
+<p>To retrieve only status types, use get_status(..); to retreive just
+typological types use get_typology(..).  Note that the system does not
+enforce what checks are actually performed by types in each category,
+that is, one could miscategorize a type when authoring a configuration
+package. Both classifications use the same DataClassification objects
+to classify datasets. It is up to  those implementing the
+type-specific configuration package to ensure types related to status
+appear in the correct part of the configuration space.</p>
+<p>Currently the distinction betwen status and typology is not used by the
+system (e.g. in type-specific default recipe assignments) and is
+provided as a service for higher level code, e.g. primitives and
+scripts which make use of the distinction.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrodata.data.AstroData.get_status">
+<tt class="descclassname">AstroData.</tt><tt class="descname">get_status</tt><big>(</big><em>prune=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.get_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function returns the set of type names (strings) which apply to
+this dataset and which come from the status section of the AstroData
+Type library. &#8220;Status&#8221; classifications are those which tend to change
+during the reduction of a dataset based on the amount of processing as
+opposed to instrument-mode classifications, such as GMOS_MOS,  which
+will tend to persist. e.g. RAW vs PREPARED.  Strictly a &#8220;status&#8221; type 
+is any type defined in or below the status part of the classification
+configuration, i.e. in the Gemini type configuration any type 
+definition files in or below the 
+&#8220;astrodata_Gemini/ADCONFIG/classification/status&#8221; directory.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">a list of string classification names</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">list of strings</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrodata.data.AstroData.get_typology">
+<tt class="descclassname">AstroData.</tt><tt class="descname">get_typology</tt><big>(</big><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.get_typology" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function returns the set of type names (strings) which apply to
+this dataset and which come from the typology section of the AstroData
+Type library. &#8220;Typology&#8221; classifications are those which tend to remain
+with the data in spite of reduction status, e.g. those related to the
+instrument-mode of the dataset or of the datasets used to produce
+it. Strictly these consist of any type defined in or below
+the correct configuration directory, i.e. in Gemini&#8217;s configuration,
+&#8220;astrodata_Gemini/ADCONFIG/classification/types&#8221;  directory.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">a list of classification name strings</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">list of strings</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 <div class="section" id="header-manipulations">
 <h2>2.3. Header Manipulations<a class="headerlink" href="#header-manipulations" title="Permalink to this headline">¶</a></h2>
@@ -283,6 +680,55 @@ header-data section in the MEF.</li>
 <ul class="simple">
 </ul>
 </div>
+<dl class="method">
+<dt id="astrodata.data.AstroData.phu_get_key_value">
+<tt class="descclassname">AstroData.</tt><tt class="descname">phu_get_key_value</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.phu_get_key_value" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>key</strong> &#8211; name of header value to retrieve</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">string</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the key&#8217;s value as string or None if not present.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The phu_get_key_value(..) function returns the value associated with the
+given key within the primary header unit
+of the dataset. The value is returned as a string (storage format)
+and must be converted as necessary by the caller.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrodata.data.AstroData.phu_set_key_value">
+<tt class="descclassname">AstroData.</tt><tt class="descname">phu_set_key_value</tt><big>(</big><em>key</em>, <em>value</em>, <em>comment=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.phu_set_key_value" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>key</strong> &#8211; name of PHU header value to set</li>
+<li><strong>value</strong> &#8211; value to apply to PHU header</li>
+<li><strong>comment</strong> &#8211; value to be put in the comment part of the header key</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The phu_set_key_value(..) function is used to set the value  (and
+optionally the comment) associated with a given key in the primary
+header unit of the dataset. The value argument will be converted to
+string, so it must have a string operator member function or be passed
+in as string.</p>
+</dd></dl>
+
 </div>
 <div class="section" id="set-get-single-hdu-headers">
 <h3>2.3.2. Set/Get Single-HDU Headers<a class="headerlink" href="#set-get-single-hdu-headers" title="Permalink to this headline">¶</a></h3>
@@ -290,6 +736,98 @@ header-data section in the MEF.</li>
 <ul class="simple">
 </ul>
 </div>
+<dl class="method">
+<dt id="astrodata.data.AstroData.get_key_value">
+<tt class="descclassname">AstroData.</tt><tt class="descname">get_key_value</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.get_key_value" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>key</strong> &#8211; name of header value to set</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the specified value</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">string</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The get_key_value(..) function is used to get the value associated
+with a given key in the data-header unit of a single-HDU
+AstroData instance (such as returned by iteration). The value argument
+will be converted to string, so it must have a string operator member
+function or be passed in as string.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Note :</th><td class="field-body"><p class="first">Single extension AstroData objects are those with only a single
+header-data unit besides the PHU.  They may exist if a single
+extension file is loaded, but in general are produced by indexing or
+iteration instructions, i.e.:</p>
+<blockquote>
+<p>sead = ad[(&#8220;SCI&#8221;,1)]</p>
+<dl class="docutils">
+<dt>for sead in ad[&#8220;SCI&#8221;]:</dt>
+<dd><p class="first last">...</p>
+</dd>
+</dl>
+</blockquote>
+<p class="last">The variable &#8220;sead&#8221; above is ensured to hold a single extension
+AstroData object, and can be used more convieniently.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrodata.data.AstroData.set_key_value">
+<tt class="descclassname">AstroData.</tt><tt class="descname">set_key_value</tt><big>(</big><em>key</em>, <em>value</em>, <em>comment=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.set_key_value" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>key</strong> &#8211; name of data header value to set</li>
+<li><strong>value</strong> &#8211; value to apply to header</li>
+<li><strong>comment</strong> &#8211; value to be put in the comment part of the header key</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The set_key_value(..) function is used to set the value (and optionally
+the comment) associated
+with a given key in the data-header of a single-HDU AstroData instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Note :</th><td class="field-body"><p class="first">Single extension AstroData objects are those with only a single
+header-data unit besides the PHU.  They may exist if a single
+extension file is loaded, but in general are produced by indexing or
+iteration instructions, i.e.:</p>
+<blockquote>
+<p>sead = ad[(&#8220;SCI&#8221;,1)]</p>
+<dl class="docutils">
+<dt>for sead in ad[&#8220;SCI&#8221;]:</dt>
+<dd><p class="first last">...</p>
+</dd>
+</dl>
+</blockquote>
+<p class="last">The variable &#8220;sead&#8221; above is ensured to hold a single extension
+AstroData object, and can be used more convieniently.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 <div class="section" id="set-get-multiple-hdu-headers">
 <h3>2.3.3. Set/Get Multiple-HDU Headers<a class="headerlink" href="#set-get-multiple-hdu-headers" title="Permalink to this headline">¶</a></h3>
@@ -297,6 +835,58 @@ header-data section in the MEF.</li>
 <ul class="simple">
 </ul>
 </div>
+<dl class="method">
+<dt id="astrodata.data.AstroData.ext_get_key_value">
+<tt class="descclassname">AstroData.</tt><tt class="descname">ext_get_key_value</tt><big>(</big><em>extension</em>, <em>key</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.ext_get_key_value" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>extension</strong> &#8211; identifies which extension, either an integer index 
+or (EXTNAME, EXTVER) tuple</li>
+<li><strong>key</strong> &#8211; name of header entry to retrieve</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">string</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the value associated with the key, or None if not present</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>This function returns the value from the given extension&#8217;s
+header, with &#8220;0&#8221; being the first data extension.  To get
+values from the PHU use phu_get_key_value(..).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrodata.data.AstroData.ext_set_key_value">
+<tt class="descclassname">AstroData.</tt><tt class="descname">ext_set_key_value</tt><big>(</big><em>extension</em>, <em>key</em>, <em>value</em>, <em>comment=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.ext_set_key_value" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>extension</strong> &#8211; identifies which extension, either an integer index 
+or (EXTNAME, EXTVER) tuple</li>
+<li><strong>key</strong> &#8211; name of PHU header value to set</li>
+<li><strong>value</strong> &#8211; value to apply to PHU header</li>
+<li><strong>comment</strong> &#8211; value to be put in the comment part of the header key</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The ext_set_key_value(..) function is used to set the value (and optionally
+the comment) associated with a given key in the header unit of the given
+extension within the dataset. This function sets the value in the
+given extension&#8217;s header, with &#8220;0&#8221; being the first data extension.  To
+set values in the PHU use phusetKeyValue(..).</p>
+</dd></dl>
+
 </div>
 </div>
 <div class="section" id="iteration-and-subdata">
@@ -308,8 +898,7 @@ header-data section in the MEF.</li>
 <div class="section" id="overview">
 <h3>2.4.1. Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="gen.ADMANUAL-ADSubdata.html">2.4.1.1. Using Slices and &#8220;Subdata&#8221;</a></li>
+<ul class="simple">
 </ul>
 </div>
 </div>
@@ -319,6 +908,32 @@ header-data section in the MEF.</li>
 <ul class="simple">
 </ul>
 </div>
+<dl class="method">
+<dt id="astrodata.data.AstroData.count_exts">
+<tt class="descclassname">AstroData.</tt><tt class="descname">count_exts</tt><big>(</big><em>extname</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.count_exts" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>extname</strong> &#8211; the name of the extension, equivalent to the
+value associated with the &#8220;EXTNAME&#8221; key in the extension 
+header.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">number of extensions of that name</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">int</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The count_exts(..) function counts the extensions of a given name
+(as stored in the HDUs &#8220;EXTVER&#8221; header).</p>
+</dd></dl>
+
 </div>
 <div class="section" id="the-operator">
 <h3>2.4.3. The [] Operator<a class="headerlink" href="#the-operator" title="Permalink to this headline">¶</a></h3>
@@ -326,6 +941,70 @@ header-data section in the MEF.</li>
 <ul class="simple">
 </ul>
 </div>
+<dl class="method">
+<dt id="astrodata.data.AstroData.__getitem__">
+<tt class="descclassname">AstroData.</tt><tt class="descname">__getitem__</tt><big>(</big><em>ext</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>ext</strong> &#8211; The integeter index, indexing(EXTNAME, EXTVER) tuple,
+EXTNAME name for the desired subdata. If an int or tuple, a  single
+extension is wrapped with an AstroData instance, and
+&#8220;single-extension&#8221; members of the AstroData object can be used. If
+a string is given then all extensions with the given EXTNAME will
+be wrapped by the  new AstroData instance.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">an AstroData instance associated with the subset of data.</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">AstroData</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>This function supports the &#8220;[]&#8221; syntax for AstroData instances,
+e.g. <em>ad[(&#8220;SCI&#8221;,1)]</em>.  We use it to create
+AstroData objects associated with &#8220;subdata&#8221; of the parent
+AstroData object, that is, consisting of an HDUList which
+consists of some subset of the parent MEF. e.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">datasetA</span> <span class="o">=</span> <span class="n">AstroData</span><span class="o">.</span><span class="n">AstroData</span><span class="p">(</span><span class="s">&quot;datasetMEF.fits&quot;</span><span class="p">)</span>
+<span class="n">datasetB</span> <span class="o">=</span> <span class="n">datasetA</span><span class="p">[</span><span class="n">SCI</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>In this case, after the operations, datasetB is an AstroData object
+associated with the same MEF, sharing some of the the same actual HDUs
+in memory as  datasetA. The object in &#8220;datasetB&#8221; will behave as if the
+SCI extensions are its only members, and it does in fact have its own
+pyfits.HDUList. Note that datasetA and datasetB share the PHU and also
+the data structures of the HDUs they have in common, so that a change
+to &#8220;datasetA[(&#8216;SCI&#8217;,1)].data&#8221; will change the 
+&#8220;datasetB[(&#8216;SCI&#8217;,1)].data&#8221; member and vice versa. They are in fact both
+references to the same numpy array in memory. The HDUList is a 
+different list, however, that references common HDUs. If a subdata 
+related AstroData object is written to disk, the resulting MEF will
+contain only the extensions in datasetB&#8217;s HDUList.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Note :</th><td class="field-body">Integer extensions start at 0 for the data-containing 
+extensions, not at the PHU as with pyfits.  This is important:
+ad[0] is the first content extension, in traditional MEF 
+percpective, the extension AFTER the PHU; it is not the PHU!  In
+AstroData instances, the PHU is purely a header, and not counted
+as an extension in the way that headers generally are not counted
+as their own elements in the array they contain meta-data for.
+The PHU can be accessed  with the code, &#8216;&#8217;ad.phu&#8217;&#8216;, or via the
+AstroData PHU-related member functions.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 </div>
 <div class="section" id="single-hdu-astrodata-attributes">
@@ -340,6 +1019,80 @@ header-data section in the MEF.</li>
 <ul class="simple">
 </ul>
 </div>
+<dl class="attribute">
+<dt id="astrodata.data.AstroData.data">
+<tt class="descclassname">AstroData.</tt><tt class="descname">data</tt><a class="headerlink" href="#astrodata.data.AstroData.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>The data property can only be used for single-HDU AstroData
+instances, such as those returned during iteration. It is a property
+attribute which uses <em>get_data(..)</em> and <em>set_data(..)</em> to access the
+data members with &#8220;=&#8221; syntax. To set the data member, use <em>ad.data =
+newdata</em>, where <em>newdata</em> must be a numpy array. To get the data
+member, use <em>npdata = ad.data</em>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrodata.data.AstroData.get_data">
+<tt class="descclassname">AstroData.</tt><tt class="descname">get_data</tt><big>(</big><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.get_data" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">data array associated with the single extension</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">pyfits.ndarray</td>
+</tr>
+</tbody>
+</table>
+<p>The <em>get_data(..)</em> member is the function behind the property-style
+&#8220;data&#8221; member and returns appropriate HDU&#8217;s data member(s) specifically
+for the case in which the AstroData instance has ONE HDU (in addition to
+the PHU). This allows a single-extension AstroData, such as AstroData
+generates through iteration,  to be used as though it simply is just the
+one extension, e.g. allowing <em>gd.data</em> to be used in place of the more
+esoteric and ultimately more dangerous <em>gd[0].data</em>. One can assure one
+is dealing with single extension AstroData instances when iterating over
+the AstroData extensions and when picking out an extension  by integer
+or tuple indexing, e.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">gd</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="n">SCI</span><span class="p">]:</span>
+    <span class="c"># gd is a single-HDU index</span>
+    <span class="n">gd</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">newdata</span>
+
+<span class="c"># assuming the named extension exists,</span>
+<span class="c"># sd will be a single-HDU AstroData</span>
+<span class="n">sd</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[(</span><span class="s">&quot;SCI&quot;</span><span class="p">,</span><span class="mf">1</span><span class="p">)]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrodata.data.AstroData.set_data">
+<tt class="descclassname">AstroData.</tt><tt class="descname">set_data</tt><big>(</big><em>newdata</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.set_data" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>newdata</strong> &#8211; new data objects</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Raises Errors.SingleHDUMemberExcept:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body"><p class="first last">if AstroData instance has more 
+than one extension (not including PHU).</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>This function sets the data member of a data section of an AstroDat
+object, specifically for the case in which the AstroData instance has
+ONE header-data unit (in addition to PHU).  This case is assured when
+iterating over the AstroData extensions, e.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">gd</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="n">SCI</span><span class="p">]:</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+</dd></dl>
+
 </div>
 <div class="section" id="header-attribute">
 <h3>2.5.2. header attribute<a class="headerlink" href="#header-attribute" title="Permalink to this headline">¶</a></h3>
@@ -347,6 +1100,80 @@ header-data section in the MEF.</li>
 <ul class="simple">
 </ul>
 </div>
+<dl class="attribute">
+<dt id="astrodata.data.AstroData.header">
+<tt class="descclassname">AstroData.</tt><tt class="descname">header</tt><a class="headerlink" href="#astrodata.data.AstroData.header" title="Permalink to this definition">¶</a></dt>
+<dd><p>The header property can only be used for single-HDU AstroData
+instances, such as those returned during iteration. It is a
+property attribute which uses <em>get_header(..)</em> and
+<em>set_header(..)</em> to access the header member with the &#8220;=&#8221; syntax.
+To set the header member, use <em>ad.header = newheader</em>, where
+<em>newheader</em> must be a pyfits.Header object. To get the header
+member, use <em>hduheader = ad.header</em>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrodata.data.AstroData.get_header">
+<tt class="descclassname">AstroData.</tt><tt class="descname">get_header</tt><big>(</big><em>extension=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.get_header" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">header</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">pyfits.Header</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Raises Errors.SingleHDUMemberExcept:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body">Will raise an exception if more
+than one extension exists. 
+(note: The PHU is not considered an extension in this case)</td>
+</tr>
+</tbody>
+</table>
+<p>The get_header(..) function returns the header member for Single-HDU
+AstroData instances (which are those that have only one extension plus
+PHU). This case  can be assured when iterating over extensions using
+AstroData, e.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">gd</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="n">SCI</span><span class="p">]:</span> 
+    <span class="o">...</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrodata.data.AstroData.set_header">
+<tt class="descclassname">AstroData.</tt><tt class="descname">set_header</tt><big>(</big><em>header</em>, <em>extension=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.set_header" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>header</strong> &#8211; pyfits Header to set for given extension</li>
+<li><strong>extension</strong> &#8211; Extension index to retrieve header, if None
+or not present then this must be a single extension AstroData
+instance, which contains just the PHU and a single data extension,
+and the data extension&#8217;s header is returned.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2">Raises Errors.SingleHDUMemberExcept:</th></tr>
+<tr><td>&nbsp;</td><td class="field-body"><p class="first last">Will raise an exception if more 
+than one extension exists.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The set_header(..) function sets the extension header member for single
+extension (which are those that have only one extension plus PHU). This
+case  is assured when iterating over extensions using AstroData, e.g.:</p>
+<blockquote>
+<dl class="docutils">
+<dt>for gd in dataset[SCI]: </dt>
+<dd>...</dd>
+</dl>
+</blockquote>
+</dd></dl>
+
 </div>
 <div class="section" id="renaming-an-extension">
 <h3>2.5.3. Renaming an Extension<a class="headerlink" href="#renaming-an-extension" title="Permalink to this headline">¶</a></h3>
@@ -354,6 +1181,43 @@ header-data section in the MEF.</li>
 <ul class="simple">
 </ul>
 </div>
+<dl class="method">
+<dt id="astrodata.data.AstroData.rename_ext">
+<tt class="descclassname">AstroData.</tt><tt class="descname">rename_ext</tt><big>(</big><em>name</em>, <em>ver=None</em>, <em>force=True</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.rename_ext" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> &#8211; New &#8220;EXTNAME&#8221; for the given extension.</li>
+<li><strong>ver</strong> &#8211; New &#8220;EXTVER&#8221; for the given extension</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Note: This member only works on single extension AstroData instances.</p>
+<p>The rename_ext() function is used in order to rename an HDU with a new
+EXTNAME and EXTVER based identifier.  Merely changing the EXTNAME and 
+EXTEVER values in the extensions pyfits.Header are not sufficient.
+Though the values change in the pyfits.Header object, there are special
+HDU class members which are not updated.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Warning :</th><td class="field-body">This function maniplates private (or somewhat private)  HDU
+members, specifically &#8220;name&#8221; and &#8220;_extver&#8221;. STSCI has been
+informed of the issue and
+has made a special HDU function for performing the renaming. 
+When generally available, this new function will be used instead of
+manipulating the  HDU&#8217;s properties directly, and this function will 
+call the new pyfits.HDUList(..) function.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 </div>
 <div class="section" id="accessing-pyfits-and-numpy-objects">
@@ -375,6 +1239,51 @@ header-data section in the MEF.</li>
 <ul class="simple">
 </ul>
 </div>
+<dl class="function">
+<dt id="astrodata.data.correlate">
+<tt class="descclassname">astrodata.data.</tt><tt class="descname">correlate</tt><big>(</big><em>*iary</em><big>)</big><a class="headerlink" href="#astrodata.data.correlate" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>iary</strong> &#8211; A list of AstroData instances for which a correlation dictionary
+will be constructed to produce a correlation dict.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a list of tuples containing correlated extensions from the arguments.</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of tuples</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The <em>correlate(..)</em> function is a module-level helper function which returns
+a list of tuples of Single Extension AstroData instances which associate
+extensions from each listed AstroData object, to identically named
+extensions among the rest of the input array. The <em>correlate(..)</em> function
+accepts a variable number of arguments, all of which should be AstroData
+instances.</p>
+<p>The function returns a structured dictionary of dictories of lists of
+AstroData objects. For example, given three inputs, <em>ad</em>, <em>bd</em> and <em>cd</em>, all
+with three &#8220;SCI&#8221;, &#8220;VAR&#8221; and &#8220;DQ&#8221; extensions. Given <em>adlist = [ad, bd,
+cd]</em>, then <em>corstruct = correlate(adlist)</em> will return to <em>corstruct</em> a
+dictionary first keyed by the EXTNAME, then keyed by tuple. The contents
+(e.g. of <em>corstruct[&#8220;SCI&#8221;][1]</em>) are just a list of AstroData instances each
+containing a header-data unit from <em>ad</em>, <em>bd</em>, and <em>cd</em> respectively.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Info :</th><td class="field-body">to appear in the list, all the given arguments must have an extension
+with the given (EXTNAME,EXTVER) for that tuple.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 <div class="section" id="prep-output">
 <h3>2.7.2. prep_output(..)<a class="headerlink" href="#prep-output" title="Permalink to this headline">¶</a></h3>
@@ -382,6 +1291,72 @@ header-data section in the MEF.</li>
 <ul class="simple">
 </ul>
 </div>
+<dl class="function">
+<dt id="astrodata.data.prep_output">
+<tt class="descclassname">astrodata.data.</tt><tt class="descname">prep_output</tt><big>(</big><em>input_ary=None</em>, <em>name=None</em>, <em>clobber=False</em><big>)</big><a class="headerlink" href="#astrodata.data.prep_output" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>input_ary</strong> &#8211; The input array from which propagated content (such as
+the  source PHU) will be taken. Note: the zero-th element in the list
+is  used as the reference dataset, for PHU or other items which require
+a particular reference.</li>
+<li><strong>name</strong> &#8211; File name to use for returned AstroData, optional.</li>
+<li><strong>clobber</strong> &#8211; By default prep_output(..) checks to see if a file of the
+given name already exists, and will raise an exception if found.
+Set <em>clobber</em> to <em>True</em> to override this behavior and potentially
+overwrite the extant file.  The datset on disk will not be overwritten
+as a direct result of prep_output, which only prepares the object
+in memory, but will occur when the AstroData object returned is 
+written (i.e. <em>ad.write()</em>)).</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">&lt;paragraph&gt;an AstroData instance initialized with appropriate
+header-data units such as the PHU, Standard Gemini headers
+and with type-specific associated  data-header units such as
+binary table Mask Definition tables (aka MDF).&lt;/paragraph&gt;<p>..info: File will not have been written to disk by prep_output(..).</p>
+</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">AstroData</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The prep_output(..) function creates a new AstroData object ready for
+appending output information (i.e. <em>ad.append(..)</em>).  While you can also
+create an empty AstroData object by giving no arguments to the AstroData
+constructor  (i.e. <em>ad = AstroData()</em>), <em>prep_output(..)</em> exists for the
+common case where a new dataset object is intended as the output of
+come combinatorial process on a list of source dataset, and some information
+from the source inputs must be propagated.</p>
+<p>The <em>prep_output(..)</em> function makes use of this knowledge to ensure the
+file meets standards in what is considered a complete output file given
+such a combination.  In the future this function can make use of dataset
+history and structure definitions in the ADCONFIG configuration space. As
+<em>AstroData.prepOutpu(..)</em> it improves, scripts and primtiives that use it
+will benefit in a forward compatible way, in that their output datasets will
+benefit from more automatic propagation, validations, and data flow control,
+such as the emergence of history database propagation.</p>
+<p>Presently, it already provides the following:</p>
+<ul>
+<li><p class="first">Ensures that all standard headers  are in place in the new file, using the
+configuration .</p>
+</li>
+<li><p class="first">Copy the PHU of the reference image (input_ary[0]).</p>
+</li>
+<li><dl class="first docutils">
+<dt>Propagate associated information such as the MDF in the case of a MOS </dt>
+<dd><p class="first last">observation, configurable by the Astrodata Structures system.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
 </div>
 <div class="section" id="re-header-keys">
 <h3>2.7.3. re_header_keys(..)<a class="headerlink" href="#re-header-keys" title="Permalink to this headline">¶</a></h3>
@@ -389,6 +1364,31 @@ header-data section in the MEF.</li>
 <ul class="simple">
 </ul>
 </div>
+<dl class="function">
+<dt id="astrodata.data.re_header_keys">
+<tt class="descclassname">astrodata.data.</tt><tt class="descname">re_header_keys</tt><big>(</big><em>rekey</em>, <em>header</em><big>)</big><a class="headerlink" href="#astrodata.data.re_header_keys" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rekey</strong> &#8211; a regular expresion to match to keys in header</li>
+<li><strong>header</strong> &#8211; a pyfits.Header object as returned by <em>ad[(&#8220;SCI&#8221;,1)].header</em></li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a list of keys that appear in the given header</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of strings</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>This utility function returns a list of keys from 
+the header passed in which match the given regular expression.</p>
+</dd></dl>
+
 </div>
 </div>
 </div>
@@ -406,7 +1406,7 @@ header-data section in the MEF.</li>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="gen.ADMANUAL-ADSubdata.html" title="2.4.1.1. Using Slices and “Subdata”"
+          <a href="gen.ADMANUAL_ADConcepts.html" title="3. Concepts"
              >next</a> |</li>
         <li class="right" >
           <a href="gen.ADMANUAL_Purpose.html" title="1.2. Document Purpose"
