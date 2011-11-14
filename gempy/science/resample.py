@@ -675,8 +675,13 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
                 log.fullinfo("File "+ad_out.filename+\
                             " was successfully mosaicked")
 
-            # Get new DETSEC keyword
+            # Get new DATASEC keyword, using the full shape of the
+            # image extension
             data_shape = ad_out["SCI",1].data.shape
+            new_datasec = "[1:%i,1:%i]" % (data_shape[1],
+                                           data_shape[0])
+
+            # Get new DETSEC keyword
             xbin = ad_out.detector_x_bin()
             if xbin is not None:
                 unbin_width = data_shape[1] * xbin
@@ -702,8 +707,8 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
             else:
                 ampcomment = ""
 
-            # Restore BUNIT, OVERSCAN, AMPNAME, DETSEC keywords
-            # to science extension header
+            # Restore BUNIT, OVERSCAN, AMPNAME, DETSEC, DATASEC,CCDSEC
+            # keywords to science extension header
             for ext in ad_out["SCI"]:
                 if bunit is not None:
                     ext.set_key_value("BUNIT",bunit,
@@ -719,7 +724,13 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
                 ext.set_key_value("DETSEC",new_detsec,
                                   comment=keyword_comments["DETSEC"])
 
-            # Restore BUNIT, DETSEC,AMPNAME to VAR ext also
+                ext.set_key_value("CCDSEC",new_detsec,
+                                  comment=keyword_comments["CCDSEC"])
+
+                ext.set_key_value("DATASEC",new_datasec,
+                                  comment=keyword_comments["DATASEC"])
+
+            # Restore BUNIT, DETSEC, DATASEC, CCDSEC, AMPNAME to VAR ext also
             if ad_out["VAR"] is not None:
                 for ext in ad_out["VAR"]:
                     if bunit is not None:
@@ -730,16 +741,24 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
                                           comment=ampcomment)
                     ext.set_key_value("DETSEC",new_detsec,
                                       comment=keyword_comments["DETSEC"])
+                    ext.set_key_value("CCDSEC",new_detsec,
+                                      comment=keyword_comments["CCDSEC"])
+                    ext.set_key_value("DATASEC",new_datasec,
+                                      comment=keyword_comments["DATASEC"])
 
 
             # Change type of DQ plane back to int16
             # (gmosaic sets it to float32)
-            # and restore DETSEC
+            # and restore DETSEC, DATASEC, CCDSEC
             if ad_out["DQ"] is not None:
                 for ext in ad_out["DQ"]:
                     ext.data = ext.data.astype(np.int16)
                     ext.set_key_value("DETSEC",new_detsec,
                                       comment=keyword_comments["DETSEC"])
+                    ext.set_key_value("CCDSEC",new_detsec,
+                                      comment=keyword_comments["CCDSEC"])
+                    ext.set_key_value("DATASEC",new_datasec,
+                                      comment=keyword_comments["DATASEC"])
 
             # Update GEM-TLM (automatic) and MOSAIC time stamps to the PHU
             # and update logger with updated/added time stamps
