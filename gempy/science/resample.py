@@ -507,7 +507,8 @@ def align_to_reference_image(adinput, interpolator="linear", trim_data=False):
         log.error(repr(sys.exc_info()[1]))
         raise
 
-def mosaic_detectors(adinput, tile=False, interpolator="linear"):
+def mosaic_detectors(adinput, tile=False, interpolate_gaps=False,
+                     interpolator="linear"):
     """
     This function will mosaic the SCI frames of the input images, 
     along with the VAR and DQ frames if they exist.
@@ -528,6 +529,9 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
     
     :param tile: Tile images instead of mosaic?
     :type tile: Python boolean (True/False)
+    
+    :param interpolate_gaps: Interpolate across gaps?
+    :type interpolate_gaps: Python boolean (True/False)
     
     :param interpolator: type of interpolation algorithm to use for between 
                             the chip gaps.
@@ -631,7 +635,7 @@ def mosaic_detectors(adinput, tile=False, interpolator="linear"):
             clSoftcodedParams = {
                 # pyrafBoolean converts the python booleans to pyraf ones
                 "fl_paste"    :mgr.pyrafBoolean(tile),
-                #"outpref"     :suffix,
+                "fl_fixpix"   :mgr.pyrafBoolean(interpolate_gaps),
                 "geointer"    :interpolator,
                 }
             # Grab the default params dict and update it with 

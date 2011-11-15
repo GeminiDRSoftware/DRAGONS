@@ -520,6 +520,10 @@ class CLManager(object):
                 ad.history_mark(key='GBIAS', 
                                 comment='Temporary key for GIREDUCE')
 
+            if 'GMOS_LS_FLAT' in types:
+                ad.history_mark(key='GSREDUCE', 
+                                comment='Temporary key for GSFLAT')
+
             try:
                 if 'GMOS_IMAGE' in types:
                     typeStr = 'IMAGE'
@@ -550,6 +554,7 @@ class CLManager(object):
             del ad.get_phu().header['OBSMODE']
             del ad.get_phu().header['GPREPARE']
             del ad.get_phu().header['GBIAS']
+            del ad.get_phu().header['GSREDUCE']
                 
 
         return ad

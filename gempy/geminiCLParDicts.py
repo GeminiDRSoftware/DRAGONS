@@ -29,7 +29,8 @@ def CLDefaultParamsDict(CLscript):
         (CLscript != 'giflat') and
         (CLscript != 'gmosaic') and
         (CLscript != 'gdisplay') and 
-        (CLscript != 'gifringe')):
+        (CLscript != 'gifringe') and 
+        (CLscript != 'gsflat')):
         log.critical('The CLscript '+CLscript+' does not have a default'+
                      ' dictionary')
         raise ToolboxError('The CLscript '+CLscript+
@@ -236,7 +237,7 @@ def CLDefaultParamsDict(CLscript):
             'fl_clean'   :yes ,                   # Clean imaging data outside imaging field
             'geointer'   :'linear',               # Interpolant to use with geotran
             'gap'        :'default',              # Gap between the CCDs in unbinned pixels
-            'bpmfile'    :'gmos$data/chipgaps.dat',   # Info on location of chip gaps ## HUH??? Why is variable called 'bpmfile' if it for chip gaps??
+            'bpmfile'    :'gmos$data/chipgaps.dat',   # Info on location of chip gaps
             'statsec'    :'default',              # Statistics section for cleaning
             'obsmode'    :'IMAGE',                # Value of key_obsmode for imaging data
             'sci_ext'    :'SCI',                  # Science extension(s) to mosaic, use '' for raw data
@@ -316,4 +317,93 @@ def CLDefaultParamsDict(CLscript):
             'Stdout'    :man.IrafStdout(),
             'Stderr'    :man.IrafStdout()
                        }
+
+    if CLscript == 'gsflat':
+        defaultParams = {
+            'inflats': '',            # Input flatfields
+            'specflat':'',            # Output normalized flat (MEF)
+            'fl_slitcorr': no,        # Correct output for Illumination/Slit-Function
+            'slitfunc': '',           # Slit Function (MEF output of gsslitfunc)
+            'fl_keep': no,            # Keep imcombined flat?
+            'combflat': "",           # Filename for imcombined flat
+            'fl_over': no,            # Subtract overscan level
+            'fl_trim': no,            # Trim off overscan region
+            'fl_bias': no,            # Subtract bias image
+            'fl_dark': no,            # Subtract (scaled) dark image
+            'fl_fixpix': yes,         # Interpolate across chip gaps
+            'fl_vardq': no,           # Create variance and data quality frames
+            'bias': "",               # Bias image
+            'dark': "",               # Dark image
+            'key_exptime': "EXPTIME", # Exposure time header keyword
+            'key_biassec': "BIASSEC", # Header keyword for overscan strip image section
+            'key_datasec': "DATASEC", # Header keyword for data section (excludes the overscan)
+            'rawpath': "",            # GPREPARE: Path for input raw images
+            'sci_ext': "SCI",         # Name of science extension
+            'var_ext': "VAR",         # Name of variance extension
+            'dq_ext': "DQ",           # Name of data quality extension
+            'key_mdf': "MASKNAME",    # Header keyword for the MDF
+            'mdffile': "",            # MDF to use if keyword not found
+            'mdfdir': "gmos$data/",   # MDF database directory
+            'bpm': "",                # Name of bad pixel mask file or image
+            'gaindb': "default",      # Database with gain data
+            'gratingdb': "gmos$data/GMOSgratings.dat", # Gratings database file
+            'filterdb': "gmos$data/GMOSfilters.dat", # Filters database file
+            'bpmfile': "gmos$data/chipgaps.dat", # Info on location of chip gaps
+            'refimage': "",           # Reference image for slit positions
+            'sat': "default",         # Saturation level in raw images
+            'xoffset': 'INDEF',       # X offset in wavelength [nm]
+            'yoffset': 'INDEF',       # Y offset in unbinned pixels
+            'yadd': 0.0,              # Additional pixels to add to each end of MOS slitlet lengths
+            'fl_usegrad': no,         # Use gradient method to find MOS slits
+            'fl_emis': no,            # mask emission lines from lamp (affected pixels set to 1. in output)
+            'nbiascontam': "default", # Number of columns removed from overscan region
+            'biasrows': "default",    # Rows to use for overscan region
+            'fl_inter': no,           # Fit response interactively?
+            'fl_answer': yes,         # Continue interactive fitting?
+            'fl_detec': no,           # Fit response detector by detector rather than slit by slit?
+            'function': "spline3",    # Fitting function for response
+            'order': "15",            # Order of fitting function, minimum value=1
+            'low_reject': 3.0,        # Low rejection in sigma of response fit
+            'high_reject': 3.0,       # High rejection in sigma of response fit
+            'niterate': 2,            # Number of rejection iterations in response fit
+            'combine': "average",     # Combination operation
+            'reject': "avsigclip",    # Rejection algorithm
+            'masktype': "goodvalue",  # Mask type
+            'maskvalue': 0.0,         # Mask value
+            'scale': "mean",          # Image scaling
+            'zero': "none",           # Image zeropoint offset
+            'weight': "none",         # Image weights
+            'statsec': "",            # Statistics section
+            'lthreshold': 'INDEF',    # Lower threshold
+            'hthreshold': 'INDEF',    # Upper threshold
+            'nlow': 1,                # minmax: Number of low pixels to reject
+            'nhigh': 1,               # minmax: Number of high pixels to reject
+            'nkeep': 0,               # Minimum to keep or maximum to reject
+            'mclip': yes,             # Use median in sigma clipping algorithms?
+            'lsigma': 3.0,            # Lower sigma clipping factor
+            'hsigma': 3.0,            # Upper sigma clipping factor
+            'key_ron': "RDNOISE",     # Keyword for readout noise in e-
+            'key_gain': "GAIN",       # Keyword for gain in electrons/ADU
+            'ron': 3.5,               # Readout noise rms in electrons
+            'gain': 2.2,              # Gain in e-/ADU
+            'snoise': "0.0",          # ccdclip: Sensitivity noise (electrons)
+            'sigscale': 0.1,          # Tolerance for sigma clipping scaling correction
+            'pclip': -0.5,            # pclip: Percentile clipping parameter
+            'grow': 0.0,              # Radius (pixels, for neighbor rejection)
+            'ovs_flinter': no,        # Interactive overscan fitting?
+            'ovs_med': no,            # Use median instead of average in column bias?
+            'ovs_func': "chebyshev",  # Overscan fitting function
+            'ovs_order': 1,           # Order of overscan fitting function
+            'ovs_lowr': 3.0,          # Low sigma rejection factor
+            'ovs_highr': 3.0,         # High sigma rejection factor
+            'ovs_niter': 2,           # Number of rejection iterations
+            'fl_double': no,          # Make double flats for nod-and-shuffle science
+            'nshuffle': 0,            # Number of shuffle pixels (unbinned)
+            'logfile': "",            # Logfile name
+            'verbose': yes,           # Verbose
+            'status': 0,              # Exit status (0=good)
+            'Stdout'    :man.IrafStdout(),
+            'Stderr'    :man.IrafStdout()
+                       }
+
     return defaultParams
