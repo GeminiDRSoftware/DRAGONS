@@ -17,6 +17,7 @@ timestamp_keys = {
     "cut_slits": "CUTSLITS",
     "detect_sources": "DETECSRC",
     "divide_by_flat": "DIVFLAT",
+    "makeFlat": "MAKEFLAT",
     "make_fringe_image_gmos": "FRINGE",
     "match_objcat_refcat" : "MATORCAT",
     "measure_bg": "MEASREBG",

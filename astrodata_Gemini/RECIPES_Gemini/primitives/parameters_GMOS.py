@@ -45,6 +45,13 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    "interpolate_gaps":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     "interpolator":{
         "default"       : "linear",
         "type"          : "str",

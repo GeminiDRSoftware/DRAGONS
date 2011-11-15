@@ -122,6 +122,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Call the mosaic_detectors user level function,
             # which returns a list; take the first entry
             ad = rs.mosaic_detectors(adinput=ad, tile=rc["tile"],
+                                     interpolate_gaps=rc["interpolate_gaps"],
                                      interpolator=rc["interpolator"])[0]
             
             # Change the filename
