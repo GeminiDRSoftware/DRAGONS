@@ -170,7 +170,7 @@ def get_calculator_interface():
             for key in d:
                 # print "key",key
                 if re.match(CALCIFACECLASSMARKER, key):
-                    print "ADDING a calc iface"
+                    #print "ADDING a calc iface"
                     calcIfaces.append(d[key])
                     break; # just get the first one, only one per module
         if ifType == "DDLIST":
