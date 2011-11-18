@@ -71,7 +71,7 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None):
         expected_columns = _parse_sextractor_param()
 
         # Append a few more that don't come from directly from detectSources
-        expected_columns.extend(["REF_NUMBER","REF_MAG"])
+        expected_columns.extend(["REF_NUMBER","REF_MAG","REF_MAG_ERR"])
         
         # Loop over each input AstroData object in the input list
         for ad in adinput:
@@ -412,57 +412,59 @@ def add_reference_catalog(adinput=None, source='sdss7', radius=0.067):
                 else:
                     log.stdinfo("Found %d reference catalog sources for %s['SCI',%d]" % (len(table.array), ad.filename, extver))
 
-                # Parse the votable that we got back, into arrays for each column.
-                sdssname = table.array['SDSS']
-                umag = table.array['umag']
-                e_umag = table.array['e_umag']
-                gmag = table.array['gmag']
-                e_gmag = table.array['e_gmag']
-                rmag = table.array['rmag']
-                e_rmag = table.array['e_rmag']
-                imag = table.array['imag']
-                e_imag = table.array['e_imag']
-                zmag = table.array['zmag']
-                e_zmag = table.array['e_zmag']
-                ra = table.array['RAJ2000']
-                dec = table.array['DEJ2000']
+                # Did we get anying?
+                if(len(table.array)):
+                    # Parse the votable that we got back, into arrays for each column.
+                    sdssname = table.array['SDSS']
+                    umag = table.array['umag']
+                    e_umag = table.array['e_umag']
+                    gmag = table.array['gmag']
+                    e_gmag = table.array['e_gmag']
+                    rmag = table.array['rmag']
+                    e_rmag = table.array['e_rmag']
+                    imag = table.array['imag']
+                    e_imag = table.array['e_imag']
+                    zmag = table.array['zmag']
+                    e_zmag = table.array['e_zmag']
+                    ra = table.array['RAJ2000']
+                    dec = table.array['DEJ2000']
 
-                # Create a running id number
-                refid=range(1, len(sdssname)+1)
+                    # Create a running id number
+                    refid=range(1, len(sdssname)+1)
 
-                # Make the pyfits columns and table
-                c1 = pf.Column(name="Id",format="J",array=refid)
-                c2 = pf.Column(name="Name", format="24A", array=sdssname)
-                c3 = pf.Column(name="RAJ2000",format="D",unit="deg",array=ra)
-                c4 = pf.Column(name="DEJ2000",format="D",unit="deg",array=dec)
-                c5 = pf.Column(name="umag",format="E",array=umag)
-                c6 = pf.Column(name="e_umag",format="E",array=e_umag)
-                c7 = pf.Column(name="gmag",format="E",array=gmag)
-                c8 = pf.Column(name="e_gmag",format="E",array=e_gmag)
-                c9 = pf.Column(name="rmag",format="E",array=rmag)
-                c10 = pf.Column(name="e_rmag",format="E",array=e_rmag)
-                c11 = pf.Column(name="imag",format="E",array=imag)
-                c12 = pf.Column(name="e_imag",format="E",array=e_imag)
-                c13 = pf.Column(name="zmag",format="E",array=zmag)
-                c14 = pf.Column(name="e_zmag",format="E",array=e_zmag)
-                col_def = pf.ColDefs([c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14])
-                tb_hdu = pf.new_table(col_def)
+                    # Make the pyfits columns and table
+                    c1 = pf.Column(name="Id",format="J",array=refid)
+                    c2 = pf.Column(name="Name", format="24A", array=sdssname)
+                    c3 = pf.Column(name="RAJ2000",format="D",unit="deg",array=ra)
+                    c4 = pf.Column(name="DEJ2000",format="D",unit="deg",array=dec)
+                    c5 = pf.Column(name="umag",format="E",array=umag)
+                    c6 = pf.Column(name="e_umag",format="E",array=e_umag)
+                    c7 = pf.Column(name="gmag",format="E",array=gmag)
+                    c8 = pf.Column(name="e_gmag",format="E",array=e_gmag)
+                    c9 = pf.Column(name="rmag",format="E",array=rmag)
+                    c10 = pf.Column(name="e_rmag",format="E",array=e_rmag)
+                    c11 = pf.Column(name="imag",format="E",array=imag)
+                    c12 = pf.Column(name="e_imag",format="E",array=e_imag)
+                    c13 = pf.Column(name="zmag",format="E",array=zmag)
+                    c14 = pf.Column(name="e_zmag",format="E",array=e_zmag)
+                    col_def = pf.ColDefs([c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14])
+                    tb_hdu = pf.new_table(col_def)
 
-                # Add comments to the REFCAT header to describe it.
-                tb_hdu.header.add_comment('Source catalog derived from the %s catalog on vizier' % table.name)
-                tb_hdu.header.add_comment('Vizier Server queried: %s' % url)
-                for fieldname in ('RAJ2000', 'DEJ2000', 'umag', 'e_umag', 'gmag', 'e_gmag', 'rmag', 'e_rmag', 'imag', 'e_imag', 'zmag', 'e_zmag'):
-                    tb_hdu.header.add_comment('UCD for field %s is: %s' % (fieldname, table.get_field_by_id(fieldname).ucd))
+                    # Add comments to the REFCAT header to describe it.
+                    tb_hdu.header.add_comment('Source catalog derived from the %s catalog on vizier' % table.name)
+                    tb_hdu.header.add_comment('Vizier Server queried: %s' % url)
+                    for fieldname in ('RAJ2000', 'DEJ2000', 'umag', 'e_umag', 'gmag', 'e_gmag', 'rmag', 'e_rmag', 'imag', 'e_imag', 'zmag', 'e_zmag'):
+                        tb_hdu.header.add_comment('UCD for field %s is: %s' % (fieldname, table.get_field_by_id(fieldname).ucd))
 
-                tb_ad = AstroData(tb_hdu)
-                tb_ad.rename_ext('REFCAT', extver)
+                    tb_ad = AstroData(tb_hdu)
+                    tb_ad.rename_ext('REFCAT', extver)
 
-                if(ad['REFCAT',extver]):
-                    log.fullinfo("Replacing existing REFCAT in %s" % ad.filename)
-                    ad.remove(('REFCAT', extver))
-                else:
-                    log.fullinfo("Adding REFCAT to %s" % ad.filename)
-                ad.append(tb_ad)
+                    if(ad['REFCAT',extver]):
+                        log.fullinfo("Replacing existing REFCAT in %s" % ad.filename)
+                        ad.remove(('REFCAT', extver))
+                    else:
+                        log.fullinfo("Adding REFCAT to %s" % ad.filename)
+                    ad.append(tb_ad)
 
 
             adoutput_list.append(ad)
@@ -511,9 +513,11 @@ def match_objcat_refcat(adinput=None):
             filter_name = ad.filter_name(pretty=True).as_pytype()
             if filter_name in ['u', 'g', 'r', 'i', 'z']:
                 magcolname = filter_name+'mag'
+                magerrcolname = 'e_'+filter_name+'mag'
             else:
                 log.warning("Filter %s is not in SDSS - will not be able to flux calibrate" % filter_name)
                 magcolname = None
+                magerrcolname = None
 
             # Loop through the objcat extensions
             if ad['OBJCAT'] is None:
@@ -536,7 +540,7 @@ def match_objcat_refcat(adinput=None):
                     # FIXME - need to address the wraparound problem here
                     # if we straddle ra = 360.00 = 0.00
 
-                    initial = 10.0/3600.0 # 10 arcseconds in degrees
+                    initial = 15.0/3600.0 # 15 arcseconds in degrees
                     final = 0.5/3600.0 # 0.5 arcseconds in degrees
 
                     (oi, ri) = at.match_cxy(xx,sx,yy,sy, firstPass=initial, delta=final, log=log)
@@ -549,6 +553,7 @@ def match_objcat_refcat(adinput=None):
                         objcat.data['REF_NUMBER'][oi[i]] = refcat.data['Id'][ri[i]]
                         if(magcolname):
                             objcat.data['REF_MAG'][oi[i]] = refcat.data[magcolname][ri[i]]
+                            objcat.data['REF_MAG_ERR'][oi[i]] = refcat.data[magerrcolname][ri[i]]
 
 
             adoutput_list.append(ad)

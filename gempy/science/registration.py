@@ -291,7 +291,7 @@ def correct_wcs_to_reference_image(adinput=None,
         log.error(repr(sys.exc_info()[1]))
         raise
 
-def correct_wcs_to_reference_catalog(adinput=None, correctWCS=True):
+def determine_astrometric_solution(adinput=None, correctWCS=True):
     """
     Using co-ordinates of matched objects in the object and reference catalogs,
     calculate the WCS offset needed to bring the two into agreement.
@@ -311,7 +311,7 @@ def correct_wcs_to_reference_catalog(adinput=None, correctWCS=True):
 
     # Define the keyword to be used for the time stamp for this user level
     # function
-    timestamp_key = timestamp_keys["correct_wcs_to_reference_catalog"]
+    timestamp_key = timestamp_keys["determine_astrometric_solution"]
 
     try:
 
@@ -322,6 +322,9 @@ def correct_wcs_to_reference_catalog(adinput=None, correctWCS=True):
             # Loop over the OBJCAT extensions
             for objcat in ad['OBJCAT']:
                 extver = objcat.extver()
+
+                all_delta_ra = []
+                all_delta_dec = []
 
                 # Check that a refcat exists for this objcat extver
                 refcat = ad['REFCAT',extver]
@@ -351,6 +354,8 @@ def correct_wcs_to_reference_catalog(adinput=None, correctWCS=True):
                             if(ref_ra and ref_dec):
                                 delta_ra.append(ref_ra - obj_ra)
                                 delta_dec.append(ref_dec - obj_dec)
+                                all_delta_ra.append(ref_ra - obj_ra)
+                                all_delta_dec.append(ref_dec - obj_dec)
 
                     # Report the mean and standard deviation of the offsets:
                     ra_mean = np.mean(delta_ra) * 3600.0
@@ -362,11 +367,16 @@ def correct_wcs_to_reference_catalog(adinput=None, correctWCS=True):
                     ra_median = ra_median_degs * 3600.0
                     dec_median = dec_median_degs * 3600.0
 
-                    log.stdinfo("Astrometric Offset between [OBJCAT, %d] and [REFCAT, %d] in arcsec is:" % (extver, extver))
-                    log.stdinfo("RA_mean +- RA_sigma: %.2f +- %.2f" % (ra_mean, ra_sigma))
-                    log.stdinfo("Dec_mean +- Dec_sigma: %.2f +- %.2f" % (dec_mean, dec_sigma))
-                    log.stdinfo("Median Offset is: %.2f, %.2f" % (ra_median, dec_median))
+                    log.fullinfo("Astrometric Offset between [OBJCAT, %d] and [REFCAT, %d] is:" % (extver, extver))
+                    log.fullinfo("RA_mean +- RA_sigma: %.2f +- %.2f arcsec" % (ra_mean, ra_sigma))
+                    log.fullinfo("Dec_mean +- Dec_sigma: %.2f +- %.2f arcsec" % (dec_mean, dec_sigma))
+                    log.fullinfo("Median Offset is: %.2f, %.2f arcsec" % (ra_median, dec_median))
 
+
+                    # Once we've done the great ULF - primitive refactor of late 2011, we agreed we should
+                    # split this out into a separate primitive - this primitive should store the WCS solution
+                    # in the rc (preferably as James' fancy WCS object that doesn't actually exist yet)
+                    # then the other primitive should apply that to the WCS in the astrodata instance.
                     if(correctWCS):
                         # Handle the image extensions first
                         for thing in ['SCI', 'VAR', 'DQ']:
@@ -374,7 +384,10 @@ def correct_wcs_to_reference_catalog(adinput=None, correctWCS=True):
                             if(image):
                                 image.header['CRVAL1'] += ra_median_degs
                                 image.header['CRVAL2'] += dec_median_degs
-                                log.stdinfo("Correcting WCS in [%s, %d]" % (thing, extver))
+                                if(thing == 'SCI'):
+                                    log.stdinfo("Correcting WCS in [%s, %d] by (%.3f, %.3f) arcsec" % (thing, extver, ra_median, dec_median))
+                                else:
+                                    log.fullinfo("Correcting WCS in [%s, %d] by (%.3f, %.3f) arcsec" % (thing, extver, ra_median, dec_median))
 
                         # Now fix the objcat, according to the SCI wcs
                         sci = ad['SCI', extver]
@@ -382,12 +395,21 @@ def correct_wcs_to_reference_catalog(adinput=None, correctWCS=True):
                         log.stdinfo("Correcting RA, Dec columns in ['OBJCAT', %d]" % extver)
                         for row in objcat.data:
                             xy = np.array([row['X_IMAGE'], row['Y_IMAGE']])
-                            radec = wcs.wcs_pix2sky([xy], 1)
+                            radec = wcs.wcs_pix2sky([xy], 1)[0]
                             # FIXME - is it correct to set oring to 1 here?
                             # Also we should be setting ra_dec_order=True, but that 
                             # breaks with the wcs missing the lattype property
-                            row['X_WORLD'] = radec[0][0]
-                            row['Y_WORLD'] = radec[0][1]
+                            row['X_WORLD'] = radec[0]
+                            row['Y_WORLD'] = radec[1]
+
+            # Report the mean and standard deviation of all the offsets over all the sci extensions:
+            ra_mean = np.mean(all_delta_ra) * 3600.0
+            ra_sigma = np.std(all_delta_ra) * 3600.0
+            dec_mean = np.mean(all_delta_dec) * 3600.0
+            dec_sigma = np.std(all_delta_dec) * 3600.0
+
+            log.stdinfo("Mean Astrometric Offset between OBJCAT and REFCAT:")
+            log.stdinfo("     RA: %.2f +- %.2f    Dec: %.2f +- %.2f   arcsec" % (ra_mean, ra_sigma, dec_mean, dec_sigma))
 
         return adinput
 
