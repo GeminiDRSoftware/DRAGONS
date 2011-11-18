@@ -61,7 +61,10 @@ def display(adinput=None, frame=1, threshold=None, overlay=None,
                                         (ad.filename,extname))
 
             sciext = ad[extname]
-            data = sciext.data
+            
+            # Squeeze the data to get rid of any empty dimensions
+            # (eg. in raw F2 data)
+            data = np.squeeze(sciext.data)
 
             # Make threshold mask if desired
             masks = []
