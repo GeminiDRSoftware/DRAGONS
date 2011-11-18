@@ -1,12 +1,15 @@
 import os
+import numpy as np
 from astrodata import AstroData
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
+from astrodata.adutils.gemutil import pyrafLoader
 from gempy import geminiTools as gt
+from gempy import managers as mgr
+from gempy.geminiCLParDicts import CLDefaultParamsDict
 from gempy.science import preprocessing as pp
 from gempy.science import qa
-from gempy.science import stack as sk
 from primitives_GMOS import GMOSPrimitives
 
 class GMOS_IMAGEPrimitives(GMOSPrimitives):
@@ -241,7 +244,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 adoutput_list = orig_input
 
             elif filter=="i" and len(adinput)<5:
-                if "QA" in rc.context:
+                if "qa" in rc.context:
                     # If fewer than 5 frames and in QA context, don't
                     # bother making a fringe -- it'll just make the data
                     # look worse.
@@ -298,6 +301,9 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
 
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["makeFringeFrame"]
+
         # Check for at least 3 input frames
         adinput = rc.get_inputs_as_astrodata()
         if len(adinput)<3:
@@ -305,12 +311,107 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                         'Not making fringe frame.')
             adoutput_list = adinput
         else:
-            # Call the make_fringe_image_gmos user level function,
-            # which returns a list with filenames already updated
-            adoutput_list = pp.make_fringe_image_gmos(
-                adinput=adinput, suffix=rc["suffix"],
-                operation=rc["operation"], reject_method=rc["reject_method"])
         
+            # Get the parameters from the RC
+            suffix = rc["suffix"]
+            operation = rc["operation"]
+            reject_method = rc["reject_method"]
+
+            # load and bring the pyraf related modules into the name-space
+            pyraf, gemini, yes, no = pyrafLoader()
+        
+            # Determine whether VAR/DQ needs to be propagated 
+            for ad in adinput:
+                if (ad.count_exts("VAR") == 
+                    ad.count_exts("DQ") == 
+                    ad.count_exts("SCI")):
+                    fl_vardq=yes
+                else:
+                    fl_vardq=no
+                    break
+                
+            # Prepare input files, lists, parameters... for input to 
+            # the CL script
+            clm = mgr.CLManager(imageIns=adinput, suffix=suffix, 
+                                funcName="makeFringeFrame", 
+                                combinedImages=True, log=log)
+        
+            # Check the status of the CLManager object, 
+            # True=continue, False= issue warning
+            if not clm.status:
+                raise Errors.InputError("Inputs must be prepared")
+        
+            # Parameters set by the mgr.CLManager or the definition 
+            # of the primitive 
+            clPrimParams = {
+                # Retrieve the inputs as a list from the CLManager
+                "inimages"    :clm.imageInsFiles(type="listFile"),
+                # Maybe allow the user to override this in the future. 
+                "outimage"    :clm.imageOutsFiles(type="string"), 
+                # This returns a unique/temp log file for IRAF
+                "logfile"     :clm.templog.name,
+                "fl_vardq"    :fl_vardq,
+                }
+        
+            # Create a dictionary of the parameters from the Parameter 
+            # file adjustable by the user
+            clSoftcodedParams = {
+                "combine"       :operation,
+                "reject"        :reject_method,
+                }
+        
+            # Grab the default parameters dictionary and update 
+            # it with the two above dictionaries
+            clParamsDict = CLDefaultParamsDict("gifringe")
+            clParamsDict.update(clPrimParams)
+            clParamsDict.update(clSoftcodedParams)
+        
+            # Log the parameters
+            mgr.logDictParams(clParamsDict)
+        
+            log.debug("Calling the gifringe CL script for input list "+
+                      clm.imageInsFiles(type="listFile"))
+        
+            gemini.gifringe(**clParamsDict)
+        
+            if gemini.gifringe.status:
+                raise Errors.ScienceError("gifringe failed for inputs "+
+                                          clm.imageInsFiles(type="string"))
+            else:
+                log.fullinfo("Exited the gifringe CL script successfully")
+        
+            # Rename CL outputs and load them back into memory 
+            # and clean up the intermediate temp files written to disk
+            # refOuts and arrayOuts are None here
+            imageOuts, refOuts, arrayOuts = clm.finishCL() 
+            ad_out = imageOuts[0]
+
+            # Change type of DQ plane back to int16 
+            # (gemcombine sets it to int32)
+            if ad_out["DQ"] is not None:
+                for dqext in ad_out["DQ"]:
+                    dqext.data = dqext.data.astype(np.int16)
+
+                    # Also delete the BUNIT keyword (gemcombine
+                    # sets it to same value as SCI)
+                    if dqext.get_key_value("BUNIT") is not None:
+                        del dqext.header['BUNIT']
+
+            # Fix BUNIT in VAR plane as well
+            # (gemcombine sets it to same value as SCI)
+            bunit = ad_out["SCI",1].get_key_value("BUNIT")
+            if ad_out["VAR"] is not None:
+                for varext in ad_out["VAR"]:
+                    varext.set_key_value("BUNIT","%s*%s" % (bunit,bunit),
+                                         comment=self.keyword_comments["BUNIT"])
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad_out, keyword=timestamp_key)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad_out)
+
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
@@ -479,7 +580,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                         "stackFlats")
             # Report input to RC without change
             adoutput_list = adinput
-        
+            rc.report_output(adoutput_list)
         else:
             # Define rejection parameters based on number of input frames,
             # to be used with minmax rejection. Note: if reject_method
@@ -503,17 +604,12 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             # Scale images by relative intensity before stacking
             adinput = pp.scale_by_intensity_gmos(adinput=adinput)
 
-            # Call the stack_frames user level function,
-            # which returns a list with filenames already updated
-            adoutput_list = sk.stack_frames(
-                adinput=adinput, suffix=rc["suffix"],
-                operation=rc["operation"], mask_type=rc["mask_type"],
-                reject_method=reject_method, grow=rc["grow"], nlow=nlow,
-                nhigh=nhigh)
-        
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
+            # Run the stackFrames primitive with the defined parameters
+            prim_str = "stackFrames(suffix=%s,operation=%s,mask_type=%s," \
+                       "reject_method=%s,nlow=%s,nhigh=%s)" % \
+                       (rc["suffix"],rc["operation"],rc["mask_type"],
+                        reject_method,nlow,nhigh)
+            rc.run(prim_str)
         
         yield rc
 

@@ -8,10 +8,32 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    "bpm":{
+        "default"       : None,
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     },
  "addReferenceCatalog":{
     "suffix":{
         "default"       : "_refcatAdded",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "radius":{
+        # in degrees; default is 4 arcmin
+        "default"       : 0.067,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True, 
+        "uiLevel"       : "UIBASIC",
+       },
+    "source":{
+        "default"       : "sdss7",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
@@ -145,7 +167,7 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    "correct_WCS": {
+    "correct_wcs": {
         "default"       : False,
         "type"          : "bool",
         "recipeOverride": True,
@@ -358,6 +380,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "measureZP":{
+    "suffix":{
+        "default"       : "_zpMeasured",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "nonlinearityCorrect":{
     "suffix":{
         "default"       : "_nonlinearityCorrected",
@@ -418,6 +449,20 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         }, 
+    "nhigh":{
+        "default"       : 1,
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "nlow":{
+        "default"       : 1,
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     "operation":{
         "default"       : "average",
         "type"          : "str",

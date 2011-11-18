@@ -86,13 +86,6 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    "grow":{
-        "default"       : 0.0,
-        "type"          : "float",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
     "mask_type":{
         "default"       : "goodvalue",
         "type"          : "str",

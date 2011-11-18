@@ -120,12 +120,19 @@ class F2Primitives(GEMINIPrimitives):
     def validateData(self, rc):
         """
         This primitive is used to validate FLAMINGOS-2 data, specifically.
+
+        :param repair: Set to True (the default) to repair the data 
+                       Note: this feature does not work yet.
+        :type repair: Python boolean
         """
         
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["validateData"]
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "validateData", "starting"))
         
@@ -136,7 +143,6 @@ class F2Primitives(GEMINIPrimitives):
         for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the validateData primitive has been run previously
-            timestamp_key = self.timestamp_keys["validate_data_f2"]
             if ad.phu_get_key_value(timestamp_key):
                 log.warning("No changes will be made to %s, since it has " \
                             "already been processed by validateData" \
@@ -146,9 +152,15 @@ class F2Primitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Call the validate_data_f2 user level function,
-            # which returns a list; take the first entry
-            ad = sdz.validate_data_f2(adinput=ad, repair=rc["repair"])[0]
+            # Get the repair parameter from the RC
+            repair = rc["repair"]
+
+            # Validate the input AstroData object. ACTUALLY DO SOMETHING HERE?
+            log.stdinfo("No validation required for FLAMINGOS-2")
+            
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, keyword=self.timestamp_keys["prepare"])
             
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
