@@ -437,13 +437,13 @@ class GEMINIPrimitives(GENERALPrimitives):
 
         yield rc
 
-    def correctWCSToReferenceCatalog(self, rc):
+    def determineAstrometricSolution(self, rc):
         """
         This primitive calculates the average astrometric offset between
         the positions of sources in the reference catalog, and their
         corresponding object in the object catalog.
         It then reports the astrometric correction vector.
-        If the 'correctWCS' parameter == True, it then applies that
+        If the 'correct_WCS' parameter == True, it then applies that
         correction to the WCS of the image and also applies the same
         correction to the RA, DEC columns of the object catalog.
         """
@@ -453,7 +453,7 @@ class GEMINIPrimitives(GENERALPrimitives):
                                   logLevel=rc["logLevel"])
 
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "correctWCSToReferenceCatalog",
+        log.debug(gt.log_message("primitive", "determineAstrometricSolution",
                                  "starting"))
 
         # Initialize the list of output AstroData objects
@@ -463,10 +463,11 @@ class GEMINIPrimitives(GENERALPrimitives):
         for ad in rc.get_inputs_as_astrodata():
 
             # Call the correct_wcs_to_reference_catalog user level function
-            ad = rg.correct_wcs_to_reference_catalog(adinput=ad, correctWCS=rc["correct_WCS"])[0]
+            ad = rg.determine_astrometric_solution(adinput=ad, correctWCS=rc["correct_WCS"])[0]
 
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
+            if(rc["correct_WCS"]):
+                ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
                                              strip=True)
 
             adoutput_list.append(ad)
@@ -985,6 +986,10 @@ class GEMINIPrimitives(GENERALPrimitives):
         This primitive will determine the zeropoint by looking at
         sources in the OBJCAT for whic a reference catalog magnitude
         has been determined.
+
+        It will also compare the measured zeropoint against the nominal
+        zeropoint for the instrument and the nominal atmospheric extinction
+        as a function of airmass, to compute the estimated cloud attenuation.
         """
 
         # Instantiate the log
