@@ -9,7 +9,7 @@ detectSources
 measureIQ
 addReferenceCatalog
 measureZP
-correctWCSToReferenceCatalog(correct_WCS=False)
+determineAstrometricSolution
 overscanCorrect
 biasCorrect
 aduToElectrons
@@ -23,10 +23,10 @@ measureIQ
 measureBG
 addReferenceCatalog
 measureZP
-correctWCSToReferenceCatalog(correct_WCS=False)
+determineAstrometricSolution
 alignAndStack
 detectSources
 measureIQ
 addReferenceCatalog
 measureZP
-correctWCSToReferenceCatalog(correct_WCS=True)
+determineAstrometricSolution(correct_WCS=True)
