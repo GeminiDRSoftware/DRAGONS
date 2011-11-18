@@ -135,16 +135,18 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "correctWCSToReferenceCatalog":{
+ "determineAstrometricSolution":{
     "suffix":{
-        "default"       : "_wcsCatalogCorrected",
+        # This primitive only sets the filename if you
+        # ask it to correct the Astrometry
+        "default"       : "_AstrometryCorrected",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
     "correct_WCS": {
-        "default"       : True,
+        "default"       : False,
         "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,
