@@ -141,7 +141,6 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-
 def detect_sources(adinput=None, method="sextractor", 
                    sigma=None, threshold=3.0, fwhm=None,
                    max_sources=50, centroid_function="moffat"):

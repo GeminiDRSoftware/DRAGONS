@@ -1183,8 +1183,6 @@ def _tile_objcat(adinput=None,adoutput=None,mapping_dict=None):
     the pixel coordinates to the new WCS.
     """
 
-    from gempy.science import photometry as ph
-
     adinput = gt.validate_input(adinput=adinput)
     adoutput = gt.validate_input(adinput=adoutput)
 
@@ -1252,7 +1250,7 @@ def _tile_objcat(adinput=None,adoutput=None,mapping_dict=None):
                                           array=col_data[name])
 
 
-            adout = ph.add_objcat(adinput=adout, extver=out_extver,
+            adout = gt.add_objcat(adinput=adout, extver=out_extver,
                                   columns=columns)[0]
 
         adoutput_list.append(adout)

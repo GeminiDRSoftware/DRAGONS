@@ -7,6 +7,7 @@ import tempfile
 import astrodata
 from astrodata import Lookups
 from astrodata.adutils import gemLog
+from astrodata.ConfigSpace import lookup_path
 from astrodata.AstroData import AstroData
 from astrodata import Errors
 
@@ -14,6 +15,114 @@ from astrodata import Errors
 # in these functions
 keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
                                             "keyword_comments")
+
+def add_objcat(adinput=None, extver=1, replace=False, columns=None):
+    """
+    Add OBJCAT table if it does not exist, update or replace it if it does.
+    
+    :param adinput: AD object(s) to add table to
+    :type adinput: AstroData objects, either a single instance or a list
+    
+    :param extver: Extension number for the table (should match the science
+                   extension).
+    :type extver: int
+    
+    :param replace: Flag to determine if an existing OBJCAT should be
+                    replaced or updated in place. If replace=False, the
+                    length of all lists provided must match the number
+                    of entries currently in OBJCAT.
+    :type replace: boolean
+    
+    :param columns: Columns to add to table.  Columns named 'X_IMAGE',
+                    'Y_IMAGE','X_WORLD','Y_WORLD' are required if making
+                    new table.
+    :type columns: dictionary of Pyfits Column objects with column names
+                   as keys
+    """
+    
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+    
+    # The validate_input function ensures that adinput is not None and returns
+    # a list containing one or more AstroData objects
+    adinput = validate_input(adinput=adinput)
+    
+    # Initialize the list of output AstroData objects
+    adoutput_list = []
+    try:
+        
+        # Parse sextractor parameters for the list of expected columns
+        expected_columns = parse_sextractor_param()
+
+        # Append a few more that don't come from directly from detectSources
+        expected_columns.extend(["REF_NUMBER","REF_MAG","REF_MAG_ERR"])
+        
+        # Loop over each input AstroData object in the input list
+        for ad in adinput:
+            
+            # Check if OBJCAT already exists and just update if desired
+            objcat = ad["OBJCAT",extver]
+            if objcat and not replace:
+                log.fullinfo("Table already exists; updating values.")
+                for name in columns.keys():
+                    objcat.data.field(name)[:] = columns[name].array
+            else:
+            
+                # Make new table: x, y, ra, dec required
+                x = columns.get("X_IMAGE",None)
+                y = columns.get("Y_IMAGE",None)
+                ra = columns.get("X_WORLD",None)
+                dec = columns.get("Y_WORLD",None)
+                if x is None or y is None or ra is None or dec is None:
+                    raise Errors.InputError("Columns X_IMAGE, Y_IMAGE, "\
+                                            "X_WORLD, Y_WORLD must be present.")
+
+                # Append columns in order of definition in sextractor params
+                table_columns = []
+                nlines = len(x.array)
+                for name in expected_columns:
+                    if name in ["NUMBER"]:
+                        default = range(1,nlines+1)
+                        format = "J"
+                    elif name in ["FLAGS","IMAFLAGS_ISO","REF_NUMBER"]:
+                        default = [-999]*nlines
+                        format = "J"
+                    else:
+                        default = [-999]*nlines
+                        format = "E"
+
+                    # Get column from input if present, otherwise
+                    # define a new Pyfits column with sensible placeholders
+                    data = columns.get(name,
+                                       pf.Column(name=name,format=format,
+                                                 array=default))
+                    table_columns.append(data)
+
+                # Make new pyfits table
+                col_def = pf.ColDefs(table_columns)
+                tb_hdu = pf.new_table(col_def)
+                tb_ad = AstroData(tb_hdu)
+                tb_ad.rename_ext("OBJCAT",extver)
+            
+                # Replace old version or append new table to AD object
+                if objcat:
+                    log.fullinfo("Replacing existing OBJCAT in %s" % 
+                                 ad.filename)
+                    ad.remove(("OBJCAT",extver))
+                ad.append(tb_ad)
+            
+            # Append the output AstroData object to the list of output
+            # AstroData objects
+            adoutput_list.append(ad)
+        
+        # Return the list of output AstroData objects
+        return adoutput_list
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
+
 
 def checkInputsMatch(adInsA=None, adInsB=None, check_filter=True):
     """
@@ -778,6 +887,28 @@ def mark_history(adinput=None, keyword=None):
         log.fullinfo("PHU keyword GEM-TLM = %s added to %s" \
                      % (ad.phu_get_key_value("GEM-TLM"), ad.filename),
                      category='header')
+
+def parse_sextractor_param():
+
+    # Get path to default sextractor parameter files
+    default_dict = Lookups.get_lookup_table(
+                             "Gemini/source_detection/sextractor_default_dict",
+                             "sextractor_default_dict")
+    param_file = lookup_path(default_dict["dq"]["param"]).rstrip(".py")
+    
+    columns = []
+    fp = open(param_file)
+    for line in fp:
+        fields = line.split()
+        if len(fields)==0:
+            continue
+        if fields[0].startswith("#"):
+            continue
+        
+        name = fields[0]
+        columns.append(name)
+
+    return columns
 
 def update_key_from_descriptor(adinput=None, descriptor=None, 
                                keyword=None, extname=None):
