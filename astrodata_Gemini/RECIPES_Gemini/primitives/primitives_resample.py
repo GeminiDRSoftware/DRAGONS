@@ -166,7 +166,8 @@ class ResamplePrimitives(GENERALPrimitives):
                 out_shape = []
                 for axis in range(naxis):
                     # get output shape from corner values
-                    cvals = [corner[axis] for ic in all_corners for corner in ic]
+                    cvals = [
+                        corner[axis] for ic in all_corners for corner in ic]
                     out_shape.append(int(max(cvals)-min(cvals)+1))
                     
                     # if just shifting, need to set centering shift
@@ -464,7 +465,8 @@ class ResamplePrimitives(GENERALPrimitives):
                                     cval = 0
                                 trans_mask = affine_transform(
                                     mask, matrix, offset=offset,
-                                    output_shape=out_shape, order=order, cval=cval)
+                                    output_shape=out_shape, order=order,
+                                    cval=cval)
                                 del mask; mask = None
                                 
                                 # flag any pixels with >1% influence

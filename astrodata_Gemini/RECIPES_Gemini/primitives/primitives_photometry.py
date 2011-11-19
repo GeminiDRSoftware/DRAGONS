@@ -1,3 +1,4 @@
+import os
 import sys
 import re
 import subprocess
@@ -11,8 +12,11 @@ from astrodata.adutils import gemLog
 from astrodata.ConfigSpace import lookup_path
 from gempy import astrotools as at
 from gempy import geminiTools as gt
-from gempy.science import photometry as ph
 from primitives_GENERAL import GENERALPrimitives
+
+# Define the earliest acceptable SExtractor version
+# Currently: 2.8.6
+SEXTRACTOR_VERSION = [2,8,6]
 
 class PhotometryPrimitives(GENERALPrimitives):
     """
@@ -202,6 +206,34 @@ class PhotometryPrimitives(GENERALPrimitives):
         yield rc
 
     def detectSources(self, rc):
+        """
+        Find x,y positions of all the objects in the input image. Append 
+        a FITS table extension with position information plus columns for
+        standard objects to be updated with position from addReferenceCatalog
+        (if any are found for the field).
+    
+        :param method: source detection algorithm to use
+        :type method: string; options are 'daofind','sextractor'
+
+        :param centroid_function: Function for centroid fitting with daofind
+        :type centroid_function: string, can be: 'moffat','gauss'
+                                 Default: 'moffat'
+
+        :param sigma: The mean of the background value for daofind. If nothing
+                      is passed, it will be automatically determined
+        :type sigma: float
+        
+        :param threshold: Threshold intensity for a point source for daofind;
+                      should generally be at least 3 or 4 sigma above
+                      background RMS.
+        :type threshold: float
+        
+        :param fwhm: FWHM to be used in the convolve filter for daofind. This
+                     ends up playing a factor in determining the size of the
+                     kernel put through the gaussian convolve.
+        :type fwhm: float
+        """
+ 
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -212,17 +244,135 @@ class PhotometryPrimitives(GENERALPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["detectSources"]
+
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
+
+            # Get the necessary parameters from the RC
+            sigma = rc["sigma"]
+            threshold = rc["threshold"]
+            fwhm = rc["fwhm"]
+            max_sources = rc["max_sources"]
+            centroid_function = rc["centroid_function"]
+            method = rc["method"]
+
+            seeing_est = ad.phu_get_key_value("MEANFWHM")
+            for sciext in ad["SCI"]:
+                
+                extver = sciext.extver()
+                
+                # Check source detection method
+                if method not in ["sextractor","daofind"]:
+                    raise Errors.InputError("Source detection method "+
+                                            method+" is unsupported.")
+                
+                if method=="sextractor":
+                    dqext = ad["DQ",extver]
+
+                    # Check sextractor version, go to daofind if task not
+                    # found or wrong version
+                    right_version = _test_sextractor_version()
+
+                    if not right_version:
+                        log.warning("SExtractor version %d.%d.%d or later "\
+                                    "not found. Setting method=daofind" %
+                                    tuple(SEXTRACTOR_VERSION))
+                        method="daofind"
+                    else:
+                        try:
+                            columns,seeing_est = _sextractor(
+                                sciext=sciext, dqext=dqext,
+                                seeing_estimate=seeing_est)
+                        except Errors.ScienceError:
+                            log.warning("SExtractor failed. "\
+                                        "Setting method=daofind")
+                            method="daofind"
+                        else:
+                            nobj = len(columns["NUMBER"].array)
+                            if nobj==0:
+                                log.stdinfo("No sources found in "\
+                                            "%s['SCI',%d]" %
+                                            (ad.filename,extver))
+                                continue
+                            else:
+                                log.stdinfo("Found %d sources in "\
+                                            "%s['SCI',%d]" %
+                                            (nobj,ad.filename,extver))
+
+                if method=="daofind":
+                    pixscale = sciext.pixel_scale()
+                    if pixscale is None:
+                        log.warning("%s does not have a pixel scale, " \
+                                    "using 1.0 arcsec/pix" % ad.filename)
+                        pixscale = 1.0
+
+                    if fwhm is None:
+                        if seeing_est is not None:
+                            fwhm = seeing_est / pixscale
+                        else:
+                            fwhm = 0.8 / pixscale
+
+                    obj_list = _daofind(sciext=sciext, sigma=sigma,
+                                        threshold=threshold, fwhm=fwhm)
+
+                    nobj = len(obj_list)
+                    if nobj==0:
+                        log.stdinfo("No sources found in %s['SCI',%d]" %
+                                    (ad.filename,extver))
+                        continue
+                    else:
+                        log.stdinfo("Found %d sources in %s['SCI',%d]" %
+                                    (nobj,ad.filename,extver))
+
+                    # Separate pixel coordinates into x, y lists
+                    obj_x,obj_y = [np.asarray(obj_list)[:,k] for k in [0,1]]
+                
+                    # Use WCS to convert pixel coordinates to RA/Dec
+                    wcs = pywcs.WCS(sciext.header)
+                    obj_ra, obj_dec = wcs.wcs_pix2sky(obj_x,obj_y,1)
+                
+                    # Define pyfits columns to pass to add_objcat
+                    columns = {
+                        "X_IMAGE":pf.Column(name="X_IMAGE",format="E",
+                                            array=obj_x),
+                        "Y_IMAGE":pf.Column(name="Y_IMAGE",format="E",
+                                            array=obj_y),
+                        "X_WORLD":pf.Column(name="X_WORLD",format="E",
+                                            array=obj_ra),
+                        "Y_WORLD":pf.Column(name="Y_WORLD",format="E",
+                                            array=obj_dec),
+                        }
+
+                
+                # For either method, add OBJCAT
+                ad = gt.add_objcat(adinput=ad, extver=extver, 
+                                   replace=True, columns=columns)[0]
+
+            # In daofind case, do some simple photometry on all
+            # extensions to get fwhm, ellipticity
+            if method=="daofind":
+                log.stdinfo("Fitting sources for simple photometry")
+                if seeing_est is None:
+                    # Run the fit once to get a rough seeing estimate 
+                    if max_sources>20:
+                        tmp_max=20
+                    else:
+                        tmp_max=max_sources
+                    junk,seeing_est = _fit_sources(
+                        ad,ext=1,max_sources=tmp_max,threshold=threshold,
+                        centroid_function=centroid_function,
+                        seeing_estimate=None)
+                ad,seeing_est = _fit_sources(
+                    ad,max_sources=max_sources,threshold=threshold,
+                    centroid_function=centroid_function,
+                    seeing_estimate=seeing_est)
+
             
-            # Call the detect_sources user level function,
-            # which returns a list; take the first entry
-            ad = ph.detect_sources(adinput=ad, sigma=rc["sigma"],
-                                   threshold=rc["threshold"], fwhm=rc["fwhm"],
-                                   max_sources=rc["max_sources"],
-                                   centroid_function=rc["centroid_function"],
-                                   method=rc["method"])[0]
-            
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                              strip=True)
@@ -965,30 +1115,6 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
         columns[col.name] = col
     
     return columns,seeing_estimate
-
-
-def _parse_sextractor_param():
-
-    # Get path to default sextractor parameter files
-    default_dict = Lookups.get_lookup_table(
-                             "Gemini/source_detection/sextractor_default_dict",
-                             "sextractor_default_dict")
-    param_file = lookup_path(default_dict["dq"]["param"]).rstrip(".py")
-    
-    columns = []
-    fp = open(param_file)
-    for line in fp:
-        fields = line.split()
-        if len(fields)==0:
-            continue
-        if fields[0].startswith("#"):
-            continue
-        
-        name = fields[0]
-        columns.append(name)
-
-    return columns
-
 
 def _test_sextractor_version():
     """

@@ -1,4 +1,5 @@
 import os
+import numpy as np
 from astrodata import AstroData
 from astrodata import Errors
 from astrodata import Lookups
@@ -82,6 +83,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         :param tile: tile images instead of mosaic
         :type tile: Python boolean (True/False), default is False
         
+        :param interpolate_gaps: Interpolate across gaps?
+        :type interpolate_gaps: Python boolean (True/False)
+
         :param interpolator: Type of interpolation function to use accross
                              the chip gaps. Options: 'linear', 'nearest',
                              'poly3', 'poly5', 'spine3', 'sinc'
@@ -95,15 +99,20 @@ class GMOSPrimitives(GEMINIPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "mosaicDetectors", "starting"))
         
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["mosaicDetectors"]
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
+        # Load the pyraf related modules into the name-space
+        pyraf, gemini, yes, no = pyrafLoader()
+
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the mosaicDetectors primitive has been run
             # previously
-            timestamp_key = self.timestamp_keys["mosaic_detectors"]
             if ad.phu_get_key_value(timestamp_key):
                 log.warning("No changes will be made to %s, since it has " \
                             "already been processed by mosaicDetectors" \
@@ -123,19 +132,223 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Call the mosaic_detectors user level function,
-            # which returns a list; take the first entry
-            ad = rs.mosaic_detectors(adinput=ad, tile=rc["tile"],
-                                     interpolate_gaps=rc["interpolate_gaps"],
-                                     interpolator=rc["interpolator"])[0]
+            # Get the necessary parameters from the RC
+            tile = rc["tile"]
+            interpolate_gaps = rc["interpolate_gaps"],
+            interpolator = rc["interpolator"]
             
+            # Get BUNIT, OVERSCAN,and AMPNAME from science extensions 
+            # (gmosaic wipes out these keywords, they need to 
+            # be restored after runnning it)
+            bunit = None
+            overscan = []
+            ampname = []
+            for ext in ad["SCI"]:
+                ext_bunit = ext.get_key_value("BUNIT")
+                if bunit is None:
+                    bunit = ext_bunit
+                else:
+                    if ext_bunit!=bunit:
+                        raise Errors.ScienceError("BUNIT needs to be the" +
+                                                  "same for all extensions")
+                ext_overscan = ext.get_key_value("OVERSCAN")
+                if ext_overscan is not None:
+                    overscan.append(ext_overscan)
+
+                ext_ampname = ext.get_key_value("AMPNAME")
+                if ext_ampname is not None:
+                    ampname.append(ext_ampname)
+
+            if len(overscan)>0:
+                avg_overscan = np.mean(overscan)
+            else:
+                avg_overscan = None
+
+            if len(ampname)>0:
+                all_ampname = ",".join(ampname)
+            else:
+                all_ampname = None
+
+            # Save detector section from 1st extension
+            # FIXME - this assumes extensions are in order
+            old_detsec = ad["SCI",1].detector_section().as_list()
+
+            # Determine whether VAR/DQ needs to be propagated
+            if (ad.count_exts("VAR") == 
+                ad.count_exts("DQ") == 
+                ad.count_exts("SCI")):
+                fl_vardq=yes
+            else:
+                fl_vardq=no
+            
+            # Prepare input files, lists, parameters... for input to 
+            # the CL script
+            clm=mgr.CLManager(imageIns=ad, suffix="_out", 
+                              funcName="mosaicDetectors", log=log)
+            
+            # Check the status of the CLManager object, 
+            # True=continue, False= issue warning
+            if not clm.status: 
+                raise Errors.ScienceError("One of the inputs has not been " +
+                                          "prepared, the " + 
+                                          "mosaic_detectors function " +
+                                          "can only work on prepared data.")
+            
+            # Parameters set by the mgr.CLManager or the 
+            # definition of the prim 
+            clPrimParams = {
+                # Retrieve the inputs as a string of filenames
+                "inimages"    :clm.imageInsFiles(type="string"),
+                "outimages"   :clm.imageOutsFiles(type="string"),
+                # Set the value of FL_vardq set above
+                "fl_vardq"    :fl_vardq,
+                # This returns a unique/temp log file for IRAF 
+                "logfile"     :clm.templog.name,
+                }
+            # Parameters from the Parameter file adjustable by the user
+            clSoftcodedParams = {
+                # pyrafBoolean converts the python booleans to pyraf ones
+                "fl_paste"    :mgr.pyrafBoolean(tile),
+                "fl_fixpix"   :mgr.pyrafBoolean(interpolate_gaps),
+                #"fl_clean"    :mgr.pyrafBoolean(False),
+                "geointer"    :interpolator,
+                }
+            # Grab the default params dict and update it with 
+            # the two above dicts
+            clParamsDict = CLDefaultParamsDict("gmosaic")
+            clParamsDict.update(clPrimParams)
+            clParamsDict.update(clSoftcodedParams)
+            
+            # Log the parameters that were not defaults
+            log.fullinfo("\nParameters set automatically:", 
+                         category="parameters")
+            # Loop through the parameters in the clPrimParams dictionary
+            # and log them
+            mgr.logDictParams(clPrimParams)
+            
+            log.fullinfo("\nParameters adjustable by the user:", 
+                         category="parameters")
+            # Loop through the parameters in the clSoftcodedParams 
+            # dictionary and log them
+            mgr.logDictParams(clSoftcodedParams)
+
+            gemini.gmos.gmosaic(**clParamsDict)
+            
+            if gemini.gmos.gmosaic.status:
+                raise Errors.ScienceError("gireduce failed for inputs "+
+                             clm.imageInsFiles(type="string"))
+            else:
+                log.fullinfo("Exited the gmosaic CL script successfully")
+            
+            # Rename CL outputs and load them back into memory 
+            # and clean up the intermediate temp files written to disk
+            # refOuts and arrayOuts are None here
+            imageOuts, refOuts, arrayOuts = clm.finishCL()
+            
+            ad_out = imageOuts[0]
+            ad_out.filename = ad.filename
+            
+            # Verify gmosaic was actually run on the file
+            # then log file names of successfully reduced files
+            if ad_out.phu_get_key_value("GMOSAIC"): 
+                log.fullinfo("File "+ad_out.filename+\
+                            " was successfully mosaicked")
+
+            # Get new DATASEC keyword, using the full shape of the
+            # image extension
+            data_shape = ad_out["SCI",1].data.shape
+            new_datasec = "[1:%i,1:%i]" % (data_shape[1],
+                                           data_shape[0])
+
+            # Get new DETSEC keyword
+            xbin = ad_out.detector_x_bin()
+            if xbin is not None:
+                unbin_width = data_shape[1] * xbin
+            else:
+                unbin_width = data_shape[1]
+            if old_detsec is not None:
+                new_detsec = "[%i:%i,%i:%i]" % (old_detsec[0]+1,
+                                                old_detsec[0]+unbin_width,
+                                                old_detsec[2]+1,old_detsec[3])
+            else:
+                new_detsec = ""
+
+            # Get comment for new ampname
+            if all_ampname is not None:
+                # These ampnames can be long, so truncate
+                # the comment by hand to avoid the error
+                # message from pyfits
+                ampcomment = self.keyword_comments["AMPNAME"]
+                if len(all_ampname)>=65:
+                    ampcomment = ""
+                else:
+                    ampcomment = ampcomment[0:65-len(all_ampname)]
+            else:
+                ampcomment = ""
+
+            # Restore BUNIT, OVERSCAN, AMPNAME, DETSEC, DATASEC,CCDSEC
+            # keywords to science extension header
+            for ext in ad_out["SCI"]:
+                if bunit is not None:
+                    ext.set_key_value("BUNIT",bunit,
+                                      comment=self.keyword_comments["BUNIT"])
+                if avg_overscan is not None:
+                    ext.set_key_value("OVERSCAN",avg_overscan,
+                                      comment=self.keyword_comments["OVERSCAN"])
+
+                if all_ampname is not None:
+                    ext.set_key_value("AMPNAME",all_ampname,
+                                      comment=ampcomment)
+
+                ext.set_key_value("DETSEC",new_detsec,
+                                  comment=self.keyword_comments["DETSEC"])
+
+                ext.set_key_value("CCDSEC",new_detsec,
+                                  comment=self.keyword_comments["CCDSEC"])
+
+                ext.set_key_value("DATASEC",new_datasec,
+                                  comment=self.keyword_comments["DATASEC"])
+
+            # Restore BUNIT, DETSEC, DATASEC, CCDSEC, AMPNAME to VAR ext also
+            if ad_out["VAR"] is not None:
+                for ext in ad_out["VAR"]:
+                    if bunit is not None:
+                        ext.set_key_value("BUNIT","%s*%s" % (bunit,bunit),
+                                        comment=self.keyword_comments["BUNIT"])
+                    if all_ampname is not None:
+                        ext.set_key_value("AMPNAME",all_ampname,
+                                          comment=ampcomment)
+                    ext.set_key_value("DETSEC",new_detsec,
+                                      comment=self.keyword_comments["DETSEC"])
+                    ext.set_key_value("CCDSEC",new_detsec,
+                                      comment=self.keyword_comments["CCDSEC"])
+                    ext.set_key_value("DATASEC",new_datasec,
+                                      comment=self.keyword_comments["DATASEC"])
+
+
+            # Change type of DQ plane back to int16
+            # (gmosaic sets it to float32)
+            # and restore DETSEC, DATASEC, CCDSEC
+            if ad_out["DQ"] is not None:
+                for ext in ad_out["DQ"]:
+                    ext.data = ext.data.astype(np.int16)
+                    ext.set_key_value("DETSEC",new_detsec,
+                                      comment=self.keyword_comments["DETSEC"])
+                    ext.set_key_value("CCDSEC",new_detsec,
+                                      comment=self.keyword_comments["CCDSEC"])
+                    ext.set_key_value("DATASEC",new_datasec,
+                                      comment=self.keyword_comments["DATASEC"])
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad_out, keyword=timestamp_key)
+
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                             strip=True)
+            ad_out.filename = gt.fileNameUpdater(
+                adIn=ad_out, suffix=rc["suffix"], strip=True)
             
             # Append the output AstroData object to the list
             # of output AstroData objects
-            adoutput_list.append(ad)
+            adoutput_list.append(ad_out)
         
         # Report the list of output AstroData objects to the reduction
         # context

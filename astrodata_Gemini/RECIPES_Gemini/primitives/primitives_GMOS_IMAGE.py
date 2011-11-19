@@ -125,11 +125,18 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             fringes = rc.get_stream("fringe",empty=True)
             if fringes is None or len(fringes)!=1:
                 rc.run("getProcessedFringe")
+
+                # If using generic fringe, scale by calculated statistics
+                stats_scale=True
+
             else:
                 log.stdinfo("Using fringe: %s" % fringes[0].filename)
                 for ad in rc.get_inputs_as_astrodata():
                     rc.add_cal(ad,"processed_fringe",
                                os.path.abspath(fringes[0].filename))
+
+                # If fringe was created from science, scale by exposure time
+                stats_scale=False
             
             rc.run("removeFringe")
         
