@@ -75,13 +75,6 @@ ADCC Services
 Calibrations
 @@@@@@@@@@@@@@
 
-add_cal(..)
-############
-
-.. toctree::
-
-.. automethod:: astrodata.RecipeManager.ReductionContext.add_cal
-
 get_cal(..)
 ############
 
@@ -116,12 +109,12 @@ rq_stack_update(..)
 Lists
 @@@@@@
 
-append_list(..)
+list_append(..)
 ###################
 
 .. toctree::
 
-.. automethod:: astrodata.RecipeManager.ReductionContext.append_list
+.. automethod:: astrodata.RecipeManager.ReductionContext.list_append
 
 get_list(..)
 ###################
@@ -130,12 +123,6 @@ get_list(..)
 
 .. automethod:: astrodata.RecipeManager.ReductionContext.get_list
 
-rq_stack_update(..)
-###################
-
-.. toctree::
-
-.. automethod:: astrodata.RecipeManager.ReductionContext.rq_stack_update
 
 Utility
 @@@@@@@@

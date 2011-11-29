@@ -52,4 +52,51 @@ The ``DescriptorList.py`` file contains  a list of descriptors.  The entries
 declared by declaring "DD" objects that gives at the least the name of the
 descriptor, and in more advanced cases also other descriptor related meta-data.
 
-Adding a New Descriptor to the 
+Adding a New Descriptor to the configuration involves:
+
+1. Adding a "DescriptorDescriptor" to the DescriptorList.py file.
+1. Adding the descriptor function to the appropriate Descriptor Calculator class.
+
+The DescriptorList.py File
+###########################
+
+The contents of the ``DescriptorList.py`` is a list of "DD" object constructors, as follows
+from the astrodata_Sample package::
+
+    [
+      DD("observatory"),
+    ]
+
+To add a descriptor named "telescope" we'd add the following line to the ``DescriptorList.py`` file::
+
+    DD("telescope")
+    
+This tells the infrastructure the name of the descriptor, and in more complicated cases can provide other descriptor
+metadata to the infrastructure.  The final file would look as follows::
+
+    [
+      DD("observatory"),
+      DD("telescope")
+     ]
+     
+Adding the Descriptor Function to the CalculatorClass
+######################################################
+
+To add the descriptor once the descriptor is present in the ``DescriptorList.py`` one merely needs to add a function to the
+appropriate DescriptorCalculator class. The contents of ``OBSERVED_Descriptors.py" module in the astrodata_Sample
+configuration is::
+
+    class OBSERVED_DescriptorCalc:
+        def observatory(self, dataset, **args):
+            return dataset.get_phu_key_value("OBSERVAT")
+        
+To add the "telescope" descriptor means adding another function to this class::
+
+        def telescope(self, dataset, **args):
+            return dataset.get_phu_key_value("TELESCOP")
+
+Note, all descriptors should have the same signature, including a ``dataset`` argument and ``**args``. The latter is
+requires to the infrastructure can send unexpected parameters to the function which may be provided by the infrastructure
+but of no interest to that particular descriptor algorithm.
+
+

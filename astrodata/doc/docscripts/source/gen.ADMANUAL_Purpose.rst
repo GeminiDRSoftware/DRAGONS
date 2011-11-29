@@ -15,9 +15,9 @@ three related but somewhat distinct sections:
 
 + The first chapters are API reference manuals for the AstroData and
   ReductionContext classes respectively.
-+ An Appendix on Creating an AstroData configuration Package, written
-  as a hands on startup-guide.
-+ An Appendix on the Concepts in the AstroData Infrastructure
++ A chapter on Creating an AstroData configuration Package, written as
+  a hands on startup-guide.
++ A chapter on the Concepts in the AstroData Infrastructure
 
 
 The AstroData class is a dataset abstraction for MEF files, while the
@@ -50,12 +50,15 @@ Intended Audience
 This document is intended for both new and experience developers using
 astrodata:
 
-1. users of the astrodata package in conjunction with the
-"astrodata_Gemini" configuration package 1. developers creating new
-configuration information (types, descriptors, and transformations),
-e.g. instrument developers 1. potential developers needing to
-understand the work involved prior to development (e.g. for making
-proposals) 1. those trying to understand both what the system
-currently does, it's design philosophy, and where the package can or
-is expected to evolve
+
+#. users of the astrodata package in conjunction with the
+   "astrodata_Gemini" configuration package
+#. developers creating new configuration information (types,
+   descriptors, and transformations), e.g. instrument developers
+#. potential developers needing to understand the work involved prior
+   to development (e.g. for making proposals)
+#. those trying to understand both what the system currently does,
+   it's design philosophy, and where the package can or is expected to
+   evolve
+
 

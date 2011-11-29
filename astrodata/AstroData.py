@@ -72,7 +72,7 @@ pairs populating headers and pixel data populating data,
 AstroData interprets a MEF as a single complex entity.  The individual
 "extensions" with the MEF are available using python list ("[]") syntax and are 
 wrapped in AstroData objects (see 
-:meth:AstroData.__getitem__()<astrodata.data.AstroData>). AstroData uses 
+:meth:`AstroData.__getitem__()<astrodata.data.AstroData.__getitem__>`). AstroData uses 
 pyfits for MEF I/O and numpy for pixel manipulations. 
 
 While the pyfits and numpy objects are available to the programmer, AstroData
@@ -101,7 +101,7 @@ For example AstroData is able...:
 - ... to help propagate header-data units important to the given instrument mode,
   but unknown to general purpose transformations
 
-AstroData's purpose in general is to provide smart dataset-centered interfaces
+AstroData's purpose in general is to provide smart dataset-oriented interfaces
 which adapt to dataset type. The primary interfaces of note are for file
 handling, dataset-type checking, and managing meta-data, but AstroData also
 integrates other functionality.
@@ -130,23 +130,51 @@ integrates other functionality.
     #   get_classification_library()
     classification_library = None
 
-    def __init__(self, dataset=None, mode="readonly", exts=None, extInsts=None,
+    def __init__(self, dataset=None, mode="readonly", 
                     phu=None, header=None, data=None, store=None, 
-                    storeClobber=False):
+                    storeClobber=False, exts=None, extInsts=None,):
         """
-        :param dataset: the dataset to load, either a filename (string), an
+        :param dataset: the dataset to load, either a filename (string) path
+            or URL, an
             AstroData instance, or a pyfits.HDUList 
         :type dataset:  string, AstroData, HDUList
 
         :param mode: IO access mode, same as pyfits mode ("readonly", "update",
             "or append") with one additional AstroData-specific mode, "new".
             If the mode is "new", and a filename is provided, the constructor
-            checks the named file does not exist, and if it does not already
-            exist, it creates an empty AstroData of that name (to save the
-            filename), but does not write it to disk. Such an AstroData 
+            checks that the named file does not exist on disk,
+            and if it does not it creates an empty AstroData of that name 
+            but does not write it to disk. Such an AstroData 
             instance is ready to have HDUs appended, and to be written to disk
             at the user's command with "ad.write()".
         :type mode: string
+        
+        :param phu: primary header unit. This object is propagated to all 
+            astrodata sub-data ImageHDUs. Special handling is made for header
+            instances that are passed in as this arg., where a phu will be 
+            created and the '.header' will be assigned (ex. hdulist[0], ad.phu,
+            ad[0].hdulist[0], ad['SCI',1].hdulist[0], ad[0].phu, 
+            ad['SCI',1].phu, and all the previous with .header appended) 
+        :type phu: pyfits.core.PrimaryHDU, pyfits.core.Header 
+
+
+        :param header: extension header for images (ex. hdulist[1].header,
+            ad[0].hdulist[1].header, ad['SCI',1].hdulist[1].header)
+        :type phu: pyfits.core.Header
+
+        :param data: the image pixel array (ex. hdulist[1].data,
+            ad[0].hdulist[1].data, ad['SCI',1].hdulist[1].data)
+        :type data: numpy.ndarray
+        
+        :param store: directory where a copy of the original file will be 
+            stored.  This is used in the special case where the
+            filename is an URL to a remote fits file.  Otherwise it has
+            no effect.
+        :type store: string
+        
+        :param storeClobber: remote file handling for existing files with the
+            same name.  If true will save, if not, will delete.
+        :type storeClobber: boolean
         
         :param exts: (advanced) a list of extension indexes in the parent
             HDUList that this instance should refer to, given  integer or 
@@ -170,35 +198,10 @@ integrates other functionality.
             and appear in its HDUList as well.
         :type exts: list
         
-        :param extInsts: a list of extensions this instance should contain,
+        :param extInsts: (advanced) a list of extensions this instance should contain,
             given as actual pyfits.HDU instances. NOTE: if the "exts" argument
             is also set, this argument is ignored.
         :type extInsts: list of pyfits.HDU objects
-
-        :param phu: primary header unit. This object is propagated to all 
-            astrodata sub-data ImageHDUs. Special handling is made for header
-            instances that are passed in as this arg., where a phu will be 
-            created and the '.header' will be assigned (ex. hdulist[0], ad.phu,
-            ad[0].hdulist[0], ad['SCI',1].hdulist[0], ad[0].phu, 
-            ad['SCI',1].phu, and all the previous with .header appended) 
-        :type phu: pyfits.core.PrimaryHDU, pyfits.core.Header 
-
-
-        :param header: extension header for images (ex. hdulist[1].header,
-            ad[0].hdulist[1].header, ad['SCI',1].hdulist[1].header)
-        :type phu: pyfits.core.Header
-
-        :param data: the image pixel array (ex. hdulist[1].data,
-            ad[0].hdulist[1].data, ad['SCI',1].hdulist[1].data)
-        :type data: numpy.ndarray
-        
-        :param store: directory where a copy of the original file will be 
-            stored. Special handling is done for remote files.
-        :type store: string
-        
-        :param storeClobber: remote file handling for existing files with the
-            same name.  If true will save, if not, will delete.
-        :type storeClobber: boolean
 
         The AstroData constructor constructs an in-memory representation of a
         dataset. If given a filename it uses pyfits to open the dataset, reads
@@ -319,12 +322,12 @@ integrates other functionality.
                     
     def __getitem__(self,ext):
         """
-        :param ext: The integeter index, indexing(EXTNAME, EXTVER) tuple,
-            EXTNAME name for the desired subdata. If an int or tuple, a  single
-            extension is wrapped with an AstroData instance, and
+        :param ext: The integeter index, an indexing ``(EXTNAME, EXTVER)`` tuple,
+            or EXTNAME name. If an int or tuple, the single
+            extension identified is wrapped with an AstroData instance, and
             "single-extension" members of the AstroData object can be used. If
-            a string is given then all extensions with the given EXTNAME will
-            be wrapped by the  new AstroData instance.
+            a string, ``EXTNAME``, is given, then all extensions with the given 
+            EXTNAME will be wrapped by the  new AstroData instance.
         :type ext: string, int, or tuple
         
         :returns: an AstroData instance associated with the subset of data.
@@ -351,17 +354,17 @@ integrates other functionality.
         references to the same numpy array in memory. The HDUList is a 
         different list, however, that references common HDUs. If a subdata 
         related AstroData object is written to disk, the resulting MEF will
-        contain only the extensions in datasetB's HDUList.
+        contain only the extensions in the subdata's HDUList.
 
         :note: Integer extensions start at 0 for the data-containing 
             extensions, not at the PHU as with pyfits.  This is important:
-            ad[0] is the first content extension, in traditional MEF 
-            percpective, the extension AFTER the PHU; it is not the PHU!  In
+            ad[0] is the first content extension, in a traditional MEF 
+            perspective, the extension AFTER the PHU; it is not the PHU!  In
             AstroData instances, the PHU is purely a header, and not counted
             as an extension in the way that headers generally are not counted
             as their own elements in the array they contain meta-data for.
-            The PHU can be accessed  with the code, ''ad.phu'', or via the
-            AstroData PHU-related member functions.
+            The PHU can be accessed via the ``phu`` AstroData member of using
+            the PHU related member functions.
         """
         hdul = self.gethdul()
         # ext can be tuple, an int, or string ("EXTNAME")
@@ -650,7 +653,10 @@ integrates other functionality.
         :param extname: extension name (ex, 'SCI', 'VAR', 'DQ')
         :type extname: string
 
-        This function appends more data units (aka "HDUs") to the AstroData
+        :param extver: extension's "extver" value
+        :type extname: int
+
+        This function appends more header-data units (aka "HDUs") to the AstroData
         instance.
         """
         hdulist = None
@@ -666,10 +672,7 @@ integrates other functionality.
 
     def close(self):
         """The close(..) function will close the HDUList associated with this
-        AstroData instance. If this is subdata, e.g. (sd = gd[SCI] where gd is
-        another AstroData instance, sd is "sub-data")  then sd.close() will not
-        close the original hdulist because gd will actually own the hold on 
-        that HDUList and its related file."""
+        AstroData instance."""
         if self.borrowed_hdulist:
             self.container.relhdul()
             self.hdulist = None
@@ -1015,7 +1018,7 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
         :raise Errors.SingleHDUMemberExcept: if AstroData instance has more 
             than one extension (not including PHU).
 
-        This function sets the data member of a data section of an AstroDat
+        This function sets the data member of a data section of an AstroData
         object, specifically for the case in which the AstroData instance has
         ONE header-data unit (in addition to PHU).  This case is assured when
         iterating over the AstroData extensions, e.g.::
@@ -1449,13 +1452,13 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
                     file.
         :type clobber: bool
         :param rename: This flag allows you to write the AstroData instance to
-            a new filename, but leave the "current" name in tact.
+            a new filename, but leave the "current" name in tact in memory.
         :type rename: bool
 
         The write function acts similarly to the pyfits HDUList.writeto(..)
         function if a filename is given, or like pyfits.HDUList.update(..) if 
         no name is given, using whatever the current name is set to. When a name
-        is given, this becomes the new on-disk name of the AstroData object and
+        is given, this becomes the new name of the AstroData object and
         will be used on subsequent calls to  write for which a filename is not
         provided. If the clobber flag is False (the default) then write(..)
         throws an exception if the file already exists.
@@ -1570,13 +1573,14 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
 
         The get_types(..) function returns a list of type names, where type 
         names are as always, strings. It is possible to "prune" the list so
-        that only leaf nodes are returned, which is useful when features (such
-        as descriptors) are set and leaf node settings take priority.  
-         
+        that only leaf nodes are returned, which is useful when leaf
+        nodes take precedence such
+        as descriptors.
+        
         Note: types are divided into two categories, one intended for types
         which represent processing status (i.e. RAW vs PREPARED), and another
         which contains a more traditional "typology" consisting of a 
-        heirarchical tree of datastypes. This latter tree maps roughly to
+        heirarchical tree of dataset types. This latter tree maps roughly to
         instrument-modes, with instrument types branching from the general
         observatory type, (e.g. "GEMINI"). 
         
@@ -1642,11 +1646,11 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
         This function returns the set of type names (strings) which apply to
         this dataset and which come from the status section of the AstroData
         Type library. "Status" classifications are those which tend to change
-        during the reduction of a dataset based on the amount of processing as
-        opposed to instrument-mode classifications, such as GMOS_MOS,  which
-        will tend to persist. e.g. RAW vs PREPARED.  Strictly a "status" type 
-        is any type defined in or below the status part of the classification
-        configuration, i.e. in the Gemini type configuration any type 
+        during the reduction of a dataset based on the amount of processing,
+        e.g. RAW vs PREPARED.  Strictly, a "status" type 
+        is any type defined in or below the status part of the 
+        ``classification`` directory within the 
+        configuration. I.e. in the Gemini type configuration any type 
         definition files in or below the 
         "astrodata_Gemini/ADCONFIG/classification/status" directory.
 
@@ -1706,7 +1710,7 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
         """
         :param typename: specifies the type name to check.
         :type typename: string
-        :returns: True if the given type applies to this dataset,
+        :returns: True if the given types all apply to this dataset,
             False otherwise
         :rtype: Bool
 
@@ -2282,22 +2286,23 @@ def prep_output(input_ary=None, name=None, clobber=False):
         and with type-specific associated  data-header units such as
         binary table Mask Definition tables (aka MDF).
         
-        ..info: File will not have been written to disk by prep_output(..).
     :rtype: AstroData
 
+    ..info: File will not have been written to disk by prep_output(..).
+    
     The prep_output(..) function creates a new AstroData object ready for
-    appending output information (i.e. *ad.append(..)*).  While you can also
+    appending output information (e.g. ``ad.append(..)``).  While you can also
     create an empty AstroData object by giving no arguments to the AstroData
-    constructor  (i.e. *ad = AstroData()*), *prep_output(..)* exists for the
+    constructor  (i.e. ``ad = AstroData()``), ``prep_output(..)`` exists for the
     common case where a new dataset object is intended as the output of
     come combinatorial process on a list of source dataset, and some information
     from the source inputs must be propagated. 
     
-    The *prep_output(..)* function makes use of this knowledge to ensure the
+    The ``prep_output(..)`` function makes use of this knowledge to ensure the
     file meets standards in what is considered a complete output file given
     such a combination.  In the future this function can make use of dataset
     history and structure definitions in the ADCONFIG configuration space. As
-    *AstroData.prepOutpu(..)* it improves, scripts and primtiives that use it
+    ``prepOutput`` improves, scripts and primitives that use it
     will benefit in a forward compatible way, in that their output datasets will
     benefit from more automatic propagation, validations, and data flow control,
     such as the emergence of history database propagation.

@@ -308,22 +308,24 @@ class ReductionContext(dict):
     
     def add_cal(self, data, caltyp, calname, timestamp=None):
         '''
-        Add a calibration to the calibration index with a key 
-        (DATALAB, caltype).
+        :param data: The path or AstroData for which the calibration will be applied to.
+        :type data: str or AstroData instance
         
-        @param data: The path or AstroData for which the calibration will be applied to.
-        @type data: str or AstroData instance
+        :param caltyp: The type of calibration. For example, 'bias' and 'flat'.
+        :type caltyp: str
         
-        @param caltyp: The type of calibration. For example, 'bias' and 'flat'.
-        @type caltyp: str
+        :param calname: The URI for the MEF calibration file.
+        :type calname: str
         
-        @param calname: The URI for the MEF calibration file.
-        @type calname: str
-        
-        @param timestamp: Default= None. Timestamp for when calibration was added.
+        :param timestamp: Default= None. Timestamp for when calibration was added.
             The format of time is
         taken from datetime.datetime.
-        @type timestamp: str
+        :type timestamp: str
+        
+        Add a calibration to the calibration index with a key related to the
+        dataset's "datalabel", so it will apply, generally to later, processed
+        versions of the dataset, and thus allow retrieval of the same calibration.
+        
         '''
         adID = idFac.generate_astro_data_id(data)
         calname = os.path.abspath(calname)
@@ -591,6 +593,17 @@ class ReductionContext(dict):
         return None    
     
     def get_inputs(self, style=None):
+        """
+        :param style: Controls the type of return value. Supported values are "AD"
+            and "FN" for ``AstroData`` and ``string`` filenames respectively.
+        :type style: string
+        :return: a list of ``AstroData`` instances or ``string`` filenames
+        :rtype: list
+        
+        Get inputs gets the current input datasets from the current stream. You cannot
+        choose the stream, use ``get_stream(..)`` for that.  To report modified
+        datasets back to the stream use ``report_output(..)``.
+        """
         if style==None:
             return self.inputs
         elif style == "AD": #@@HARDCODED: means "as AstroData instances"
@@ -611,14 +624,22 @@ class ReductionContext(dict):
     def get_stream(self, stream=MAINSTREAM, empty=False, style = None):
         """
         :param stream: A string name for the stream in question.  
-            To use the standard stream do no set.
+            To use the standard stream do not set.
         :type stream: str
-        :param empty: A boolean used to control if the stream is
+        :param empty: Controls if the stream is
             emptied, defaults to "True".
+        :type empty: bool
+        :param style: controls the type of output. "AD" directs the function
+            to return a list
+            of AstroData instances. "FN" directs it to return a list of filenames.
+            If left blank or set to ``None``, the AstroDataRecord structures used
+            by the Reduction Context will be returned.
+        :returns: a list of datasets as ``AstroData`` or filenames.
+        :rtype: list
         
         Get stream returns a list of AstroData instances in the given stream.
-        Currently they have to have been opened datasets.
         """
+        
         if stream in self.outputs:
             outputs = self.outputs[stream]
         else:
@@ -642,10 +663,20 @@ class ReductionContext(dict):
             raise Errors.ReduceError("get_outputs: BAD STYLE ARGUMENT")
             
     def get_inputs_as_astrodata(self):
+        """
+            This function is shorthand for::
+            
+                get_inputs(style="AD")
+        """
         return self.get_inputs(style="AD")
     get_inputs_as_astro_data = get_inputs_as_astrodata
     
     def get_inputs_as_filenames(self):
+        """
+            This function is shorthand for::
+            
+                get_inputs(style="FN")
+        """
         return self.get_inputs(style="FN")
 
     def get_input_from_parent(self, parent):
@@ -670,6 +701,13 @@ class ReductionContext(dict):
             return sys.stdout
         
     def get_reference_image(self):
+        """
+        This function returns the current reference image.  At the moment
+        this is simply the first dataset in the current inputs.  However,
+        use of this function allows us to evolve our concept of reference
+        image for more complicated issues where choice of a "reference" image
+        may be more complicated (i.e. require some data analysis to determine).
+        """
         if len(self.inputs) == 0:
             return None
         if self.inputs[0].ad == None:
@@ -885,7 +923,14 @@ class ReductionContext(dict):
                 return ", ".join([os.path.basename(path) for path in outputlist])
     
     def run(self, stepname):
-        """proxy for rc.ro.runstep, since runstep take a context"""
+        """ :param stepname: The primitive or recipe name to run. Note: this is 
+                actually compiled as a recipe... proxy recipe names may appear
+                in the logs.
+            :type stepname: string
+            
+            The ``run(..)`` function allows a primitive to use the reduction
+            context to execute another recipe or primitive.
+        """
         a = stepname.split()
         cleanname = ""
         for line in a:
@@ -1147,17 +1192,22 @@ class ReductionContext(dict):
     
     def prepend_names(self, prepend, current_dir=True, filepaths=None):
         '''
-        Prepend a string to a filename.
+        :param prepend: The string to be put at the front of the file.
+        :type prepend: string
         
-        @param prepend: The string to be put at the front of the file.
-        @type prepend: string
+        :param current_dir: Used if the filename (astrodata filename) is in the
+                            current working directory.
+        :type current_dir: boolean
         
-        @param current_dir: Used if the filename (astrodata filename) is in the
-        current working directory.
-        @type current_dir: boolean
+        :param filepaths: If present, these file paths will be modified, otherwise
+                          the current inputs are modified.
+        :type filepaths:
         
-        @return: List of new prepended paths.
-        @rtype: list  
+        :return: List of new prepended paths.
+        :rtype: list  
+        
+        Prepends a prefix string to either the inputs or the given list of filenamesfilename.
+        
         '''
         retlist = []
         if filepaths is None:
@@ -1330,7 +1380,12 @@ class ReductionContext(dict):
         :type stream: str
         :param load: A boolean (default: True) which specifies if string
             arguments (pathnames) should be loaded or if an unloaded
-            AstroData record should be created with only the path.
+            ``AstroData`` record should be created with only the path. Has no affect
+            on ``AstroData`` instances already in memory.
+            
+        This function, along with ``get_inputs(..)`` allow a primitive to
+        interact with the datastream in which it was invoked (or access
+        other streams).
         """
         ##@@TODO: Read the new way code is done.
         #if category != MAINSTREAM:
@@ -1637,11 +1692,11 @@ class ReductionContext(dict):
         """
         :param switch_to: The string name of the stream to switch to. The 
             named stream must already exist.
-            
-            :note: This function is used by the infrastructure (in an
-            application such as reduce and in the ReductionContext) 
-            to switch the stream being used. Reported outputs then goes to
-            the specified stream.
+        :type switch_to: str
+        
+        :note: This function is used by the infrastructure (in an application
+            such as reduce and in the ReductionContext) to switch the stream
+            being used. Reported outputs then goes to the specified stream.
         """
         if switch_to not in self.outputs:
             #raise ReduceError(

@@ -8,6 +8,9 @@ arguments shown for the class constructor, see AstroData.__init__(..).  This
 documentation is generated from in source docstrings. To import the
 ``AstroData`` class use::
 
+AstroData Class
+@@@@@@@@@@@@@@@@
+
     from astrodata import AstroData
 
 .. autoclass:: astrodata.data.AstroData
@@ -57,13 +60,6 @@ infostr(..)
 
 .. automethod:: astrodata.data.AstroData.infostr
 
-open(..)
-#########
-
-.. toctree::
-
-.. automethod:: astrodata.data.AstroData.open
-
 write(..)
 ############
 
@@ -93,11 +89,9 @@ Manipulations of headers, specifically retrieving and setting key-value
 pair settings in the header section of header-data units
 can be done directly using the AstroData header manipulation functions
 which cover both PHU and extension headers.
-For higher level metadata which is availalbe for all types in the tree
-(in a properly constructed configuration space) data is retreived by 
-descriptor functions, as members of the AstroData object.  Descriptor functions
-access the lower level headers to return data more consistently than they
-exist as stored across all instrument-modes.
+For higher level metadata which is available for all types in the tree
+in a properly constructed configuration space, the metadata is retreived by 
+descriptor functions, accessed as members of the AstroData object.
 
 To set information or retrieve meta-data not covered by descriptors, one must
 read and write key-value pairs to the HDU headers at the lower-level. AstroData
@@ -116,7 +110,7 @@ purposes:
   object".
 + set/get headers in an extension of a multi-HDU (aka "multi-extension") 
   AstroData instance. This requires specifying the extension index, and
-  cannot be used to modify the PHU as extension 0 is the first real 
+  cannot be used to modify the PHU. HDU #0 is the first real 
   header-data section in the MEF.
 
 Set/Get PHU Headers
@@ -210,13 +204,6 @@ Renaming an Extension
 .. toctree::
 
 .. automethod:: astrodata.data.AstroData.rename_ext
-
-Accessing Pyfits and Numpy Objects
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-.. toctree::
-    
-    gen.ADMANUAL-AccessingPyfitsOjbects
 
 Module Level Functions
 @@@@@@@@@@@@@@@@@@@@@@@@

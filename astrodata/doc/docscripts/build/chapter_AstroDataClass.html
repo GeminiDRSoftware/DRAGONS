@@ -23,8 +23,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="astrodata documentation v1.00 documentation" href="index.html" />
-    <link rel="next" title="3. Concepts" href="gen.ADMANUAL_ADConcepts.html" />
-    <link rel="prev" title="1.2. Document Purpose" href="gen.ADMANUAL_Purpose.html" /> 
+    <link rel="next" title="2.4.1.1. Using Slices and “Subdata”" href="gen.ADMANUAL-ADSubdata.html" />
+    <link rel="prev" title="1.1.2. Document Purpose" href="gen.ADMANUAL_Purpose.html" /> 
   </head>
   <body>
     <div class="related">
@@ -34,10 +34,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="gen.ADMANUAL_ADConcepts.html" title="3. Concepts"
+          <a href="gen.ADMANUAL-ADSubdata.html" title="2.4.1.1. Using Slices and “Subdata”"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="gen.ADMANUAL_Purpose.html" title="1.2. Document Purpose"
+          <a href="gen.ADMANUAL_Purpose.html" title="1.1.2. Document Purpose"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li> 
       </ul>
@@ -134,10 +134,10 @@
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="gen.ADMANUAL_Purpose.html"
-                        title="previous chapter">1.2. Document Purpose</a></p>
+                        title="previous chapter">1.1.2. Document Purpose</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="gen.ADMANUAL_ADConcepts.html"
-                        title="next chapter">3. Concepts</a></p>
+  <p class="topless"><a href="gen.ADMANUAL-ADSubdata.html"
+                        title="next chapter">2.4.1.1. Using Slices and &#8220;Subdata&#8221;</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/chapter_AstroDataClass.txt"
@@ -179,7 +179,7 @@ documentation is generated from in source docstrings. To import the
 </div>
 <dl class="class">
 <dt id="astrodata.data.AstroData">
-<em class="property">class </em><tt class="descclassname">astrodata.data.</tt><tt class="descname">AstroData</tt><big>(</big><em>dataset=None</em>, <em>mode='readonly'</em>, <em>exts=None</em>, <em>extInsts=None</em>, <em>phu=None</em>, <em>header=None</em>, <em>data=None</em>, <em>store=None</em>, <em>storeClobber=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">astrodata.data.</tt><tt class="descname">AstroData</tt><big>(</big><em>dataset=None</em>, <em>mode='readonly'</em>, <em>phu=None</em>, <em>header=None</em>, <em>data=None</em>, <em>store=None</em>, <em>storeClobber=False</em>, <em>exts=None</em>, <em>extInsts=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData" title="Permalink to this definition">¶</a></dt>
 <dd><p>The AstroData class abstracts datasets stored in MEF files
 and provides uniform interfaces for working on datasets from different
 instruments and modes.  Configuration packages are used to describe
@@ -190,7 +190,7 @@ pairs populating headers and pixel data populating data,
 AstroData interprets a MEF as a single complex entity.  The individual
 &#8220;extensions&#8221; with the MEF are available using python list (&#8220;[]&#8221;) syntax and are 
 wrapped in AstroData objects (see 
-:meth:AstroData.__getitem__()&lt;astrodata.data.AstroData&gt;). AstroData uses 
+<a class="reference internal" href="~chapter_AstroDataClass.html#astrodata.data.AstroData.__getitem__" title="astrodata.data.AstroData.__getitem__"><tt class="xref py py-meth docutils literal"><span class="pre">AstroData.__getitem__()</span></tt></a>). AstroData uses 
 pyfits for MEF I/O and numpy for pixel manipulations.</p>
 <p>While the pyfits and numpy objects are available to the programmer, AstroData
 provides analagous methods for most pyfits functionality which allows it to
@@ -232,22 +232,37 @@ integrates other functionality.</p>
 </div>
 <dl class="method">
 <dt id="astrodata.data.AstroData.__init__">
-<tt class="descclassname">AstroData.</tt><tt class="descname">__init__</tt><big>(</big><em>dataset=None</em>, <em>mode='readonly'</em>, <em>exts=None</em>, <em>extInsts=None</em>, <em>phu=None</em>, <em>header=None</em>, <em>data=None</em>, <em>store=None</em>, <em>storeClobber=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.__init__" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">AstroData.</tt><tt class="descname">__init__</tt><big>(</big><em>dataset=None</em>, <em>mode='readonly'</em>, <em>phu=None</em>, <em>header=None</em>, <em>data=None</em>, <em>store=None</em>, <em>storeClobber=False</em>, <em>exts=None</em>, <em>extInsts=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>dataset</strong> &#8211; the dataset to load, either a filename (string), an
+<li><strong>dataset</strong> &#8211; the dataset to load, either a filename (string) path
+or URL, an
 AstroData instance, or a pyfits.HDUList</li>
 <li><strong>mode</strong> &#8211; IO access mode, same as pyfits mode (&#8220;readonly&#8221;, &#8220;update&#8221;,
 &#8220;or append&#8221;) with one additional AstroData-specific mode, &#8220;new&#8221;.
 If the mode is &#8220;new&#8221;, and a filename is provided, the constructor
-checks the named file does not exist, and if it does not already
-exist, it creates an empty AstroData of that name (to save the
-filename), but does not write it to disk. Such an AstroData 
+checks that the named file does not exist on disk,
+and if it does not it creates an empty AstroData of that name 
+but does not write it to disk. Such an AstroData 
 instance is ready to have HDUs appended, and to be written to disk
 at the user&#8217;s command with &#8220;ad.write()&#8221;.</li>
+<li><strong>phu</strong> &#8211; primary header unit. This object is propagated to all 
+astrodata sub-data ImageHDUs. Special handling is made for header
+instances that are passed in as this arg., where a phu will be 
+created and the &#8216;.header&#8217; will be assigned (ex. hdulist[0], ad.phu,
+ad[0].hdulist[0], ad[&#8216;SCI&#8217;,1].hdulist[0], ad[0].phu, 
+ad[&#8216;SCI&#8217;,1].phu, and all the previous with .header appended)</li>
+<li><strong>header</strong> &#8211; extension header for images (ex. hdulist[1].header,
+ad[0].hdulist[1].header, ad[&#8216;SCI&#8217;,1].hdulist[1].header)</li>
+<li><strong>data</strong> &#8211; the image pixel array (ex. hdulist[1].data,
+ad[0].hdulist[1].data, ad[&#8216;SCI&#8217;,1].hdulist[1].data)</li>
+<li><strong>store</strong> &#8211; directory where a copy of the original file will be 
+stored. Special handling is done for remote files.</li>
+<li><strong>storeClobber</strong> &#8211; remote file handling for existing files with the
+same name.  If true will save, if not, will delete.</li>
 <li><strong>exts</strong> &#8211; <p>(advanced) a list of extension indexes in the parent
 HDUList that this instance should refer to, given  integer or 
 (EXTNAME, EXTVER) tuples specifying each extention in the &#8220;pyfits&#8221;
@@ -266,23 +281,9 @@ AstroData instance referring to it&#8217;s own HDUList, but the HDUs in
 this list would still be shared (in memory) with the &#8216;ad&#8217; object,
 and appear in its HDUList as well.</p>
 </li>
-<li><strong>extInsts</strong> &#8211; a list of extensions this instance should contain,
+<li><strong>extInsts</strong> &#8211; (advanced) a list of extensions this instance should contain,
 given as actual pyfits.HDU instances. NOTE: if the &#8220;exts&#8221; argument
 is also set, this argument is ignored.</li>
-<li><strong>phu</strong> &#8211; primary header unit. This object is propagated to all 
-astrodata sub-data ImageHDUs. Special handling is made for header
-instances that are passed in as this arg., where a phu will be 
-created and the &#8216;.header&#8217; will be assigned (ex. hdulist[0], ad.phu,
-ad[0].hdulist[0], ad[&#8216;SCI&#8217;,1].hdulist[0], ad[0].phu, 
-ad[&#8216;SCI&#8217;,1].phu, and all the previous with .header appended)</li>
-<li><strong>header</strong> &#8211; extension header for images (ex. hdulist[1].header,
-ad[0].hdulist[1].header, ad[&#8216;SCI&#8217;,1].hdulist[1].header)</li>
-<li><strong>data</strong> &#8211; the image pixel array (ex. hdulist[1].data,
-ad[0].hdulist[1].data, ad[&#8216;SCI&#8217;,1].hdulist[1].data)</li>
-<li><strong>store</strong> &#8211; directory where a copy of the original file will be 
-stored. Special handling is done for remote files.</li>
-<li><strong>storeClobber</strong> &#8211; remote file handling for existing files with the
-same name.  If true will save, if not, will delete.</li>
 </ul>
 </td>
 </tr>
@@ -898,7 +899,8 @@ set values in the PHU use phusetKeyValue(..).</p>
 <div class="section" id="overview">
 <h3>2.4.1. Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
-<ul class="simple">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="gen.ADMANUAL-ADSubdata.html">2.4.1.1. Using Slices and &#8220;Subdata&#8221;</a></li>
 </ul>
 </div>
 </div>
@@ -1406,10 +1408,10 @@ the header passed in which match the given regular expression.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="gen.ADMANUAL_ADConcepts.html" title="3. Concepts"
+          <a href="gen.ADMANUAL-ADSubdata.html" title="2.4.1.1. Using Slices and “Subdata”"
              >next</a> |</li>
         <li class="right" >
-          <a href="gen.ADMANUAL_Purpose.html" title="1.2. Document Purpose"
+          <a href="gen.ADMANUAL_Purpose.html" title="1.1.2. Document Purpose"
              >previous</a> |</li>
         <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li> 
       </ul>
