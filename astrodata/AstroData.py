@@ -1797,12 +1797,9 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
 
         # Define history_comment
         if original_value is not None:
-            if original_value!=value:
-                history_comment = "The keyword %s=%s was overwritten in "\
-                                  "the PHU with new value %s" % \
-                                  (key,str(original_value),value)
-            else:
-                history_comment = None
+            history_comment = "The keyword %s=%s was overwritten in "\
+                              "the PHU with new value %s" % \
+                              (key,str(original_value),value)
         else:
             history_comment = "New keyword %s=%s was written to "\
                               "the PHU" % \
@@ -2024,13 +2021,10 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
 
         # Define history comment
         if original_value is not None:
-            if original_value!=value:
-                history_comment = "The keyword %s=%s was overwritten in "\
-                                  "extension %s,%s with new value %s" % \
-                                  (key,str(original_value),extname,
-                                   extver,value)
-            else:
-                history_comment = None
+            history_comment = "The keyword %s=%s was overwritten in "\
+                              "extension %s,%s with new value %s" % \
+                              (key,str(original_value),extname,
+                               extver,value)
         else:
             history_comment = "New keyword %s=%s was written to "\
                               "extension %s,%s" % \
