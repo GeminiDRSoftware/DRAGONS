@@ -2167,8 +2167,8 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
         
         if origFilename == phuOrigFilename == None:
             # No private member value was found so throw an exception
-            mes = "failed to have its original filename stored when astrodata"
-            mes += "instantiated it"
+            mes = " failed to have its original filename stored when astrodata"
+            mes += " instantiated it"
             raise Errors.AstroDataError(self.filename + mes)
         elif (phuOrigFilename is None) and (origFilename is not None):
             # phu key doesn't exist yet, so add it
