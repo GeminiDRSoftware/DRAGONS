@@ -941,7 +941,7 @@ class ReductionContext(dict):
         # cleanname not used!
         name = "proxy_recipe%d"%self.proxy_id
         self.proxy_id += 1
-        # print "RM630:", stepname
+        #print "RM630:", stepname
         self.ro.recipeLib.load_and_bind_recipe(self.ro, name, src=stepname)
         ret = self.ro.runstep(name, self)
         self.initialize_inputs()
@@ -2119,7 +2119,7 @@ def %(name)s(self,cfgObj):
             newl = """
             
     if "%(line)s" in recipeLocalParms:
-        dostep = (recipeLocalParms["%(line)s"].lower() != "false")
+        dostep = (str(recipeLocalParms["%(line)s"]).lower() != "false")
     else:
         dostep = True
     if dostep:
