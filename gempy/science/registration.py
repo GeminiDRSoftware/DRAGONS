@@ -336,6 +336,18 @@ def determine_astrometric_solution(adinput=None, correctWCS=True):
                     delta_ra = []
                     delta_dec = []
 
+                    # Need to build an dindex array that lets us quickly find the
+                    # row in the refcat, given the id from the objcat
+                    m = max(refcat.data['Id'])
+                    m = m+1
+                    refindex=([None] * m)
+                    # Loop through the refcat, populating the index
+                    for i in range(len(refcat.data)):
+                        ref=refcat.data[i]
+                        refindex[ref['Id']] = i
+                    # so now you can find a refid with refcat.data[refindex[refid]]
+                        
+
                     # Loop through the objcat, 
                     for obj in objcat.data:
                         if(obj['REF_NUMBER'] != -999):
@@ -345,12 +357,10 @@ def determine_astrometric_solution(adinput=None, correctWCS=True):
                             ref_ra = None
                             ref_dec = None
                             # Find the reference catalog line.
-                            # There must be a more efficient way to do this...
-                            for ref in refcat.data:
-                                if(ref['Id'] == refid):
-                                    ref_ra = ref['RAJ2000']
-                                    ref_dec = ref['DEJ2000']
-                                    break
+                            ref = refcat.data[refindex[refid]]
+                            if(ref['Id'] == refid):
+                                ref_ra = ref['RAJ2000']
+                                ref_dec = ref['DEJ2000']
                             if(ref_ra and ref_dec):
                                 delta_ra.append(ref_ra - obj_ra)
                                 delta_dec.append(ref_dec - obj_dec)
