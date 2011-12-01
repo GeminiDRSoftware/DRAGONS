@@ -189,6 +189,10 @@ class QAPrimitives(GENERALPrimitives):
 
                 refmags = objcat.data['REF_MAG']
                 refmag_errs = objcat.data['REF_MAG_ERR']
+                if np.all(refmags==-999):
+                    log.warning("No reference magnitudes found in %s[OBJCAT,%d]"%
+                                (ad.filename,extver))
+                    continue
 
                 zps = refmags - mags - nom_at_ext
        
@@ -217,6 +221,11 @@ class QAPrimitives(GENERALPrimitives):
                 zperrs = zperrs[np.flatnonzero(zperrs)]
                 ids = ids[np.flatnonzero(ids)]
 
+                if len(zps)==0:
+                    log.warning('No reference sources found in %s[OBJCAT,%d]'%
+                                (ad.filename,extver))
+                    continue
+
                 # Because these are magnitude (log) values, we weight directly from the
                 # 1/variance, not signal / variance
                 weights = 1.0 / (zperrs * zperrs)
@@ -229,14 +238,6 @@ class QAPrimitives(GENERALPrimitives):
                 d = d*d * weights
                 zpv = d.sum() / weights.sum()
                 zpe = math.sqrt(zpv)
-
-                
-            
-                
-                if len(zps)==0:
-                    log.warning('No reference sources found in %s[OBJCAT,%d]'%
-                                (ad.filename,extver))
-                    continue
 
                 nominal_zeropoint = float(ad['SCI', extver].nominal_photometric_zeropoint())
                 cloud = nominal_zeropoint - zp
