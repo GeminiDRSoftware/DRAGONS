@@ -363,12 +363,13 @@ class RegistrationPrimitives(GENERALPrimitives):
             if ad['REFCAT'] is None:
                 objcats = []
 
+            # Initialise lists to keep the total offsets in
+            all_delta_ra = []
+            all_delta_dec = []
+
             # Loop over the OBJCAT extensions
             for objcat in objcats:
                 extver = objcat.extver()
-
-                all_delta_ra = []
-                all_delta_dec = []
 
                 # Check that a refcat exists for this objcat extver
                 refcat = ad['REFCAT',extver]
@@ -404,11 +405,13 @@ class RegistrationPrimitives(GENERALPrimitives):
                             if(ref['Id'] == refid):
                                 ref_ra = ref['RAJ2000']
                                 ref_dec = ref['DEJ2000']
-                            if(ref_ra and ref_dec):
-                                delta_ra.append(ref_ra - obj_ra)
-                                delta_dec.append(ref_dec - obj_dec)
-                                all_delta_ra.append(ref_ra - obj_ra)
-                                all_delta_dec.append(ref_dec - obj_dec)
+                            dra = ref_ra - obj_ra
+                            ddec = ref_dec - obj_dec
+                            if(np.isfinite(dra) and np.isfinite(ddec)):
+                                delta_ra.append(dra)
+                                delta_dec.append(ddec)
+                                all_delta_ra.append(dra)
+                                all_delta_dec.append(ddec)
 
                     # Report the mean and standard deviation of the offsets:
                     ra_mean = np.mean(delta_ra) * 3600.0
