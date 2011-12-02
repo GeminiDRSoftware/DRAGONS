@@ -91,9 +91,31 @@ class PhotometryPrimitives(GENERALPrimitives):
         url += "-source=%s&" % source
 
         # Loop over each input AstroData object in the input list
-        problem = False
         adinput = rc.get_inputs_as_astrodata()
         for ad in adinput:
+
+            # Fetch the reference catalog here. Really, we should fetch a separate one for each
+            # extension, but it turns out that you can only actually do a cone search (ie a 
+            # circular area), so there's a huge overlap between the results anyway, and in fact the separate
+            # ad[SCI]s don't report separate RA,Dec anyway, unless de decdoe the WCS directly.
+            # More to the point, with 6 amp mode, doing 6 queries to an external server is annoyingly slow,
+            # so for now at least I'm moving it to do one query and store the same refcat for each extver.
+            # PH 20111202
+            problem = False
+            ra = ad.ra().as_pytype()
+            dec = ad.dec().as_pytype()
+            log.fullinfo("Calling Vizier at %s" % url)
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                try:
+                    import vo.conesearch
+                    import vo.table
+                    table = vo.conesearch.conesearch(catalog_db=url, ra=ra, dec=dec, sr=radius, pedantic=False, verb=2, verbose=False)
+                except:
+                    log.critical("Problem importing the vo module. This isn't going to work")
+                    adoutput_list = adinput
+                    problem = True
 
             # Loop through the science extensions
             for sciext in ad['SCI']:
@@ -102,21 +124,22 @@ class PhotometryPrimitives(GENERALPrimitives):
                 ra = sciext.ra().as_pytype()
                 dec = sciext.dec().as_pytype()
 
+                # See the note above - moved this to outside the loop, at least for now
                 # Query the vizier server, get the votable
                 # Catch and ignore the warning about DEFINITIONS element being deprecated in VOTable 1.1
-                log.fullinfo("Calling Vizier at %s" % url)
-                import warnings
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    try:
-                        import vo.conesearch
-                        import vo.table
-                        table = vo.conesearch.conesearch(catalog_db=url, ra=ra, dec=dec, sr=radius, pedantic=False, verb=2, verbose=False)
-                    except:
-                        log.critical("Problem importing the vo module. This isn't going to work")
-                        adoutput_list = adinput
-                        problem = True
-                        break
+                #log.fullinfo("Calling Vizier at %s" % url)
+                #import warnings
+                #with warnings.catch_warnings():
+                    #warnings.simplefilter("ignore")
+                    #try:
+                        #import vo.conesearch
+                        #import vo.table
+                        #table = vo.conesearch.conesearch(catalog_db=url, ra=ra, dec=dec, sr=radius, pedantic=False, verb=2, verbose=False)
+                    #except:
+                        #log.critical("Problem importing the vo module. This isn't going to work")
+                        #adoutput_list = adinput
+                        #problem = True
+                        #break
                         
                 if len(table.array)==0:
                     log.stdinfo("No reference catalog sources found "\
