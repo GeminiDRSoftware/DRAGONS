@@ -357,8 +357,14 @@ class RegistrationPrimitives(GENERALPrimitives):
             # Get the necessary parameters from the RC
             correctWCS = rc["correct_wcs"]
 
+            # Objcats to process
+            objcats = ad['OBJCAT']
+            # If there are *no* reference catalogs, don't even bother
+            if ad['REFCAT'] is None:
+                objcats = []
+
             # Loop over the OBJCAT extensions
-            for objcat in ad['OBJCAT']:
+            for objcat in objcats:
                 extver = objcat.extver()
 
                 all_delta_ra = []
@@ -367,8 +373,7 @@ class RegistrationPrimitives(GENERALPrimitives):
                 # Check that a refcat exists for this objcat extver
                 refcat = ad['REFCAT',extver]
                 if(not(refcat)):
-                    log.warning("Missing [REFCAT,%d] in %s" % (extver, ad.filename))
-                    log.warning("Cannot calculate astrometry against missing refcat")
+                    log.warning("Missing [REFCAT,%d] in %s - cannot calculate astrometry" % (extver, ad.filename))
                 else:
                     # Initialise lists to keep the offsets in
                     delta_ra = []
@@ -451,24 +456,27 @@ class RegistrationPrimitives(GENERALPrimitives):
                             row['Y_WORLD'] = radec[1]
 
             
-            # Report the mean and standard deviation of all the offsets over all the sci extensions:
-            ra_mean = np.mean(all_delta_ra) * 3600.0
-            ra_sigma = np.std(all_delta_ra) * 3600.0
-            dec_mean = np.mean(all_delta_dec) * 3600.0
-            dec_sigma = np.std(all_delta_dec) * 3600.0
+            if(objcats):
+                # Report the mean and standard deviation of all the offsets over all the sci extensions:
+                ra_mean = np.mean(all_delta_ra) * 3600.0
+                ra_sigma = np.std(all_delta_ra) * 3600.0
+                dec_mean = np.mean(all_delta_dec) * 3600.0
+                dec_sigma = np.std(all_delta_dec) * 3600.0
 
-            log.stdinfo("Mean Astrometric Offset between OBJCAT and REFCAT:")
-            log.stdinfo("     RA: %.2f +- %.2f    Dec: %.2f +- %.2f   arcsec" % (ra_mean, ra_sigma, dec_mean, dec_sigma))
+                log.stdinfo("Mean Astrometric Offset between OBJCAT and REFCAT:")
+                log.stdinfo("     RA: %.2f +- %.2f    Dec: %.2f +- %.2f   arcsec" % (ra_mean, ra_sigma, dec_mean, dec_sigma))
 
-            # Only change the name and set the timestamp if the
-            # correct_wcs parameter was set
-            if(correctWCS):
-                # Add the appropriate time stamps to the PHU
-                gt.mark_history(adinput=ad, keyword=timestamp_key)
+                # Only change the name and set the timestamp if the
+                # correct_wcs parameter was set
+                if(correctWCS):
+                    # Add the appropriate time stamps to the PHU
+                    gt.mark_history(adinput=ad, keyword=timestamp_key)
 
-                # Change the filename
-                ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
-                                             strip=True)
+                    # Change the filename
+                    ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
+                                                 strip=True)
+            else:
+                log.stdinfo("Could not determine astrometric offset as no reference sources found")
 
             adoutput_list.append(ad)
 

@@ -426,41 +426,44 @@ def _match_objcat_refcat(adinput=None):
                 magcolname = None
                 magerrcolname = None
 
-            # Loop through the objcat extensions
-            if ad['OBJCAT'] is None:
-                raise Errors.InputError("Missing OBJCAT in %s" % (ad.filename))
-            for objcat in ad['OBJCAT']:
-                extver = objcat.extver()
+            # If there are no refcats, don't try to go through them.
+            if ad['REFCAT'] is None:
+                log.warning("No Reference Catalogs present - cannot match to objcat")
+            else:
+                # Loop through the objcat extensions
+                if ad['OBJCAT'] is None:
+                    raise Errors.InputError("Missing OBJCAT in %s" % (ad.filename))
+                for objcat in ad['OBJCAT']:
+                    extver = objcat.extver()
+    
+                    # Check that a refcat exists for this objcat extver
+                    refcat = ad['REFCAT',extver]
+                    if(not(refcat)):
+                        log.warning("Missing [REFCAT,%d] in %s - Cannot match objcat against missing refcat" % (extver,ad.filename))
+                    else:
+                        # Get the x and y position lists from both catalogs
+                        xx = objcat.data['X_WORLD']
+                        yy = objcat.data['Y_WORLD']
+                        sx = refcat.data['RAJ2000']
+                        sy = refcat.data['DEJ2000']
+    
+                        # FIXME - need to address the wraparound problem here
+                        # if we straddle ra = 360.00 = 0.00
 
-                # Check that a refcat exists for this objcat extver
-                refcat = ad['REFCAT',extver]
-                if(not(refcat)):
-                    log.warning("Missing [REFCAT,%d] in %s" % (extver,ad.filename))
-                    log.warning("Cannot match objcat against missing refcat")
-                else:
-                    # Get the x and y position lists from both catalogs
-                    xx = objcat.data['X_WORLD']
-                    yy = objcat.data['Y_WORLD']
-                    sx = refcat.data['RAJ2000']
-                    sy = refcat.data['DEJ2000']
+                        initial = 15.0/3600.0 # 15 arcseconds in degrees
+                        final = 0.5/3600.0 # 0.5 arcseconds in degrees
 
-                    # FIXME - need to address the wraparound problem here
-                    # if we straddle ra = 360.00 = 0.00
+                        (oi, ri) = at.match_cxy(xx,sx,yy,sy, firstPass=initial, delta=final, log=log)
+    
+                        log.stdinfo("Matched %d objects in ['OBJCAT',%d] against ['REFCAT',%d]" % (len(oi), extver, extver))
 
-                    initial = 15.0/3600.0 # 15 arcseconds in degrees
-                    final = 0.5/3600.0 # 0.5 arcseconds in degrees
-
-                    (oi, ri) = at.match_cxy(xx,sx,yy,sy, firstPass=initial, delta=final, log=log)
-
-                    log.stdinfo("Matched %d objects in ['OBJCAT',%d] against ['REFCAT',%d]" % (len(oi), extver, extver))
-
-                    # Loop through the reference list updating the refid in the objcat
-                    # and the refmag, if we can
-                    for i in range(len(oi)):
-                        objcat.data['REF_NUMBER'][oi[i]] = refcat.data['Id'][ri[i]]
-                        if(magcolname):
-                            objcat.data['REF_MAG'][oi[i]] = refcat.data[magcolname][ri[i]]
-                            objcat.data['REF_MAG_ERR'][oi[i]] = refcat.data[magerrcolname][ri[i]]
+                        # Loop through the reference list updating the refid in the objcat
+                        # and the refmag, if we can
+                        for i in range(len(oi)):
+                            objcat.data['REF_NUMBER'][oi[i]] = refcat.data['Id'][ri[i]]
+                            if(magcolname):
+                                objcat.data['REF_MAG'][oi[i]] = refcat.data[magcolname][ri[i]]
+                                objcat.data['REF_MAG_ERR'][oi[i]] = refcat.data[magerrcolname][ri[i]]
 
 
             adoutput_list.append(ad)

@@ -167,6 +167,15 @@ class QAPrimitives(GENERALPrimitives):
             objcats = ad['OBJCAT']
             if objcats is None:
                 raise Errors.ScienceError("No OBJCAT found in %s" % ad.filename)
+            # We really want to check for the presence of reference mags in the objcats
+            # at this point, but we can more easily do a quick check for the presence of
+            # reference catalogs, which are a pre-requisite for this and not bother with
+            # any of this if there are no reference catalogs
+            if ad['REFCAT'] is None:
+                log.warning("No Reference Catalogs Present - not attempting to measure photometric Zeropoints")
+                # This is a bit of a hack, but it circumvents the big for loop
+                objcats = []
+
             for objcat in objcats:
                 extver = objcat.extver()
                 mags = objcat.data['MAG_AUTO']
