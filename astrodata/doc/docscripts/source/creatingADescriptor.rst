@@ -1,7 +1,7 @@
 Creating a New Descriptor
 !!!!!!!!!!!!!!!!!!!!!!!!!!
 
-The descriptor implementation are defined in the
+The descriptor implementations are defined in the
 ``astrodata_Sample/ADCONFIG_Sample/descriptors`` directory tree. A descriptor
 configuration requires the following elements:
 
@@ -19,19 +19,25 @@ The Calculator Class
 @@@@@@@@@@@@@@@@@@@@@
 
 The Calculator Class in the Sample package is in the file
-``astrodata_Sample/ADCONFIG_Sample/descriptors/OBSERVED_Descriptors.py``.
-It contains just one example descriptor functions, ``observatory`` which relies
+``OBSERVED_Descriptors.py``, located in the ``descriptors`` subdirectory of the
+``ADCONFIG_Sample`` of the ``astrodata_Sample`` package.
+It contains just one example descriptor function, ``observatory`` which relies
 on the standards MEF PHU key, ``OBSERVAT``. Full source::
 
     class OBSERVED_DescriptorCalc:
         def observatory(self, dataset, **args):
             return dataset.get_phu_key_value("OBSERVAT")
+            
+In order for this function to be called for the right type of data, this class
+must appear in a "calculator index"
 
 The Calculator Index
 @@@@@@@@@@@@@@@@@@@@@
 
 The Calculator Index for astrodata_Sample is located in the file,
-``astrodata_Sample/ADCONFIG_Sample/descriptors/calculatorIndex.Sample.py``.
+``calculatorIndex.Sample.py``, in the ``descriptors`` directory, withing
+``ADCONFIG_Sample`` in the ``astrodata_Sample`` configuration package.
+
 Here is the source::
 
     calculatorIndex = {
@@ -54,13 +60,13 @@ descriptor, and in more advanced cases also other descriptor related meta-data.
 
 Adding a New Descriptor to the configuration involves:
 
-1. Adding a "DescriptorDescriptor" to the DescriptorList.py file.
-1. Adding the descriptor function to the appropriate Descriptor Calculator class.
+#. Adding a "DescriptorDescriptor" to the DescriptorList.py file.
+#. Adding the descriptor function to the appropriate Descriptor Calculator class.
 
 The DescriptorList.py File
 ###########################
 
-The contents of the ``DescriptorList.py`` is a list of "DD" object constructors, as follows
+The contents of ``DescriptorList.py`` is a list of "DD" object constructors, as follows
 from the astrodata_Sample package::
 
     [

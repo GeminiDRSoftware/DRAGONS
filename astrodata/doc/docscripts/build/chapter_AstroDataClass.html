@@ -23,7 +23,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="astrodata documentation v1.00 documentation" href="index.html" />
-    <link rel="next" title="2.4.1.1. Using Slices and “Subdata”" href="gen.ADMANUAL-ADSubdata.html" />
+    <link rel="next" title="2.5.1.1. Using Slices and “Subdata”" href="gen.ADMANUAL-ADSubdata.html" />
     <link rel="prev" title="1.1.2. Document Purpose" href="gen.ADMANUAL_Purpose.html" /> 
   </head>
   <body>
@@ -34,7 +34,7 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="gen.ADMANUAL-ADSubdata.html" title="2.4.1.1. Using Slices and “Subdata”"
+          <a href="gen.ADMANUAL-ADSubdata.html" title="2.5.1.1. Using Slices and “Subdata”"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="gen.ADMANUAL_Purpose.html" title="1.1.2. Document Purpose"
@@ -47,73 +47,68 @@
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">2. AstroData Class Reference</a><ul>
-<li><a class="reference internal" href="#basic-functions">2.1. Basic Functions</a><ul>
-<li><a class="reference internal" href="#astrodata-constructor">2.1.1. AstroData Constructor</a><ul>
+<li><a class="reference internal" href="#astrodata-class">2.1. AstroData Class</a></li>
+<li><a class="reference internal" href="#basic-functions">2.2. Basic Functions</a><ul>
+<li><a class="reference internal" href="#astrodata-constructor">2.2.1. AstroData Constructor</a><ul>
 </ul>
 </li>
-<li><a class="reference internal" href="#append">2.1.2. append(..)</a><ul>
+<li><a class="reference internal" href="#append">2.2.2. append(..)</a><ul>
 </ul>
 </li>
-<li><a class="reference internal" href="#close">2.1.3. close(..)</a><ul>
+<li><a class="reference internal" href="#close">2.2.3. close(..)</a><ul>
 </ul>
 </li>
-<li><a class="reference internal" href="#insert">2.1.4. insert(..)</a><ul>
+<li><a class="reference internal" href="#insert">2.2.4. insert(..)</a><ul>
 </ul>
 </li>
-<li><a class="reference internal" href="#info">2.1.5. info(..)</a><ul>
+<li><a class="reference internal" href="#info">2.2.5. info(..)</a><ul>
 </ul>
 </li>
-<li><a class="reference internal" href="#infostr">2.1.6. infostr(..)</a><ul>
+<li><a class="reference internal" href="#infostr">2.2.6. infostr(..)</a><ul>
 </ul>
 </li>
-<li><a class="reference internal" href="#open">2.1.7. open(..)</a><ul>
-</ul>
-</li>
-<li><a class="reference internal" href="#write">2.1.8. write(..)</a><ul>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference internal" href="#type-information">2.2. Type Information</a><ul>
-</ul>
-</li>
-<li><a class="reference internal" href="#header-manipulations">2.3. Header Manipulations</a><ul>
-<li><a class="reference internal" href="#set-get-phu-headers">2.3.1. Set/Get PHU Headers</a><ul>
-</ul>
-</li>
-<li><a class="reference internal" href="#set-get-single-hdu-headers">2.3.2. Set/Get Single-HDU Headers</a><ul>
-</ul>
-</li>
-<li><a class="reference internal" href="#set-get-multiple-hdu-headers">2.3.3. Set/Get Multiple-HDU Headers</a><ul>
+<li><a class="reference internal" href="#write">2.2.7. write(..)</a><ul>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#iteration-and-subdata">2.4. Iteration and Subdata</a><ul>
-<li><a class="reference internal" href="#overview">2.4.1. Overview</a><ul>
+<li><a class="reference internal" href="#type-information">2.3. Type Information</a><ul>
 </ul>
 </li>
-<li><a class="reference internal" href="#countexts">2.4.2. countExts(..)</a><ul>
+<li><a class="reference internal" href="#header-manipulations">2.4. Header Manipulations</a><ul>
+<li><a class="reference internal" href="#set-get-phu-headers">2.4.1. Set/Get PHU Headers</a><ul>
 </ul>
 </li>
-<li><a class="reference internal" href="#the-operator">2.4.3. The [] Operator</a><ul>
+<li><a class="reference internal" href="#set-get-single-hdu-headers">2.4.2. Set/Get Single-HDU Headers</a><ul>
 </ul>
 </li>
-</ul>
-</li>
-<li><a class="reference internal" href="#single-hdu-astrodata-attributes">2.5. Single HDU AstroData Attributes</a><ul>
-<li><a class="reference internal" href="#data-attribute">2.5.1. data attribute</a><ul>
-</ul>
-</li>
-<li><a class="reference internal" href="#header-attribute">2.5.2. header attribute</a><ul>
-</ul>
-</li>
-<li><a class="reference internal" href="#renaming-an-extension">2.5.3. Renaming an Extension</a><ul>
+<li><a class="reference internal" href="#set-get-multiple-hdu-headers">2.4.3. Set/Get Multiple-HDU Headers</a><ul>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#accessing-pyfits-and-numpy-objects">2.6. Accessing Pyfits and Numpy Objects</a><ul>
+<li><a class="reference internal" href="#iteration-and-subdata">2.5. Iteration and Subdata</a><ul>
+<li><a class="reference internal" href="#overview">2.5.1. Overview</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#countexts">2.5.2. countExts(..)</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-operator">2.5.3. The [] Operator</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#single-hdu-astrodata-attributes">2.6. Single HDU AstroData Attributes</a><ul>
+<li><a class="reference internal" href="#data-attribute">2.6.1. data attribute</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#header-attribute">2.6.2. header attribute</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#renaming-an-extension">2.6.3. Renaming an Extension</a><ul>
+</ul>
+</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#module-level-functions">2.7. Module Level Functions</a><ul>
@@ -137,7 +132,7 @@
                         title="previous chapter">1.1.2. Document Purpose</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="gen.ADMANUAL-ADSubdata.html"
-                        title="next chapter">2.4.1.1. Using Slices and &#8220;Subdata&#8221;</a></p>
+                        title="next chapter">2.5.1.1. Using Slices and &#8220;Subdata&#8221;</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/chapter_AstroDataClass.txt"
@@ -174,9 +169,10 @@
 arguments shown for the class constructor, see AstroData.__init__(..).  This
 documentation is generated from in source docstrings. To import the
 <tt class="docutils literal"><span class="pre">AstroData</span></tt> class use:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
-</pre></div>
-</div>
+<div class="section" id="astrodata-class">
+<h2>2.1. AstroData Class<a class="headerlink" href="#astrodata-class" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+from astrodata import AstroData</blockquote>
 <dl class="class">
 <dt id="astrodata.data.AstroData">
 <em class="property">class </em><tt class="descclassname">astrodata.data.</tt><tt class="descname">AstroData</tt><big>(</big><em>dataset=None</em>, <em>mode='readonly'</em>, <em>phu=None</em>, <em>header=None</em>, <em>data=None</em>, <em>store=None</em>, <em>storeClobber=False</em>, <em>exts=None</em>, <em>extInsts=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData" title="Permalink to this definition">¶</a></dt>
@@ -190,7 +186,7 @@ pairs populating headers and pixel data populating data,
 AstroData interprets a MEF as a single complex entity.  The individual
 &#8220;extensions&#8221; with the MEF are available using python list (&#8220;[]&#8221;) syntax and are 
 wrapped in AstroData objects (see 
-<a class="reference internal" href="~chapter_AstroDataClass.html#astrodata.data.AstroData.__getitem__" title="astrodata.data.AstroData.__getitem__"><tt class="xref py py-meth docutils literal"><span class="pre">AstroData.__getitem__()</span></tt></a>). AstroData uses 
+<a class="reference internal" href="#astrodata.data.AstroData.__getitem__" title="astrodata.data.AstroData.__getitem__"><tt class="xref py py-meth docutils literal"><span class="pre">AstroData.__getitem__()</span></tt></a>). AstroData uses 
 pyfits for MEF I/O and numpy for pixel manipulations.</p>
 <p>While the pyfits and numpy objects are available to the programmer, AstroData
 provides analagous methods for most pyfits functionality which allows it to
@@ -216,16 +212,17 @@ variance arrays and associate them properly</li>
 <li>... to help propagate header-data units important to the given instrument mode,
 but unknown to general purpose transformations</li>
 </ul>
-<p>AstroData&#8217;s purpose in general is to provide smart dataset-centered interfaces
+<p>AstroData&#8217;s purpose in general is to provide smart dataset-oriented interfaces
 which adapt to dataset type. The primary interfaces of note are for file
 handling, dataset-type checking, and managing meta-data, but AstroData also
 integrates other functionality.</p>
 </dd></dl>
 
+</div>
 <div class="section" id="basic-functions">
-<h2>2.1. Basic Functions<a class="headerlink" href="#basic-functions" title="Permalink to this headline">¶</a></h2>
+<h2>2.2. Basic Functions<a class="headerlink" href="#basic-functions" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="astrodata-constructor">
-<h3>2.1.1. AstroData Constructor<a class="headerlink" href="#astrodata-constructor" title="Permalink to this headline">¶</a></h3>
+<h3>2.2.1. AstroData Constructor<a class="headerlink" href="#astrodata-constructor" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -260,7 +257,9 @@ ad[0].hdulist[1].header, ad[&#8216;SCI&#8217;,1].hdulist[1].header)</li>
 <li><strong>data</strong> &#8211; the image pixel array (ex. hdulist[1].data,
 ad[0].hdulist[1].data, ad[&#8216;SCI&#8217;,1].hdulist[1].data)</li>
 <li><strong>store</strong> &#8211; directory where a copy of the original file will be 
-stored. Special handling is done for remote files.</li>
+stored.  This is used in the special case where the
+filename is an URL to a remote fits file.  Otherwise it has
+no effect.</li>
 <li><strong>storeClobber</strong> &#8211; remote file handling for existing files with the
 same name.  If true will save, if not, will delete.</li>
 <li><strong>exts</strong> &#8211; <p>(advanced) a list of extension indexes in the parent
@@ -297,7 +296,7 @@ data, is left on disk until referenced.</p>
 
 </div>
 <div class="section" id="append">
-<h3>2.1.2. append(..)<a class="headerlink" href="#append" title="Permalink to this headline">¶</a></h3>
+<h3>2.2.2. append(..)<a class="headerlink" href="#append" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -323,18 +322,19 @@ this AstroData instance. The &#8216;header&#8217; argument should be set to a
 valid pyfits.Header object.</li>
 <li><strong>auto_number</strong> &#8211; auto-increment extver to fit file convention</li>
 <li><strong>extname</strong> &#8211; extension name (ex, &#8216;SCI&#8217;, &#8216;VAR&#8217;, &#8216;DQ&#8217;)</li>
+<li><strong>extver</strong> &#8211; extension&#8217;s &#8220;extver&#8221; value</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<p>This function appends more data units (aka &#8220;HDUs&#8221;) to the AstroData
+<p>This function appends more header-data units (aka &#8220;HDUs&#8221;) to the AstroData
 instance.</p>
 </dd></dl>
 
 </div>
 <div class="section" id="close">
-<h3>2.1.3. close(..)<a class="headerlink" href="#close" title="Permalink to this headline">¶</a></h3>
+<h3>2.2.3. close(..)<a class="headerlink" href="#close" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -343,15 +343,12 @@ instance.</p>
 <dt id="astrodata.data.AstroData.close">
 <tt class="descclassname">AstroData.</tt><tt class="descname">close</tt><big>(</big><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.close" title="Permalink to this definition">¶</a></dt>
 <dd><p>The close(..) function will close the HDUList associated with this
-AstroData instance. If this is subdata, e.g. (sd = gd[SCI] where gd is
-another AstroData instance, sd is &#8220;sub-data&#8221;)  then sd.close() will not
-close the original hdulist because gd will actually own the hold on 
-that HDUList and its related file.</p>
+AstroData instance.</p>
 </dd></dl>
 
 </div>
 <div class="section" id="insert">
-<h3>2.1.4. insert(..)<a class="headerlink" href="#insert" title="Permalink to this headline">¶</a></h3>
+<h3>2.2.4. insert(..)<a class="headerlink" href="#insert" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -391,7 +388,7 @@ instance.</p>
 
 </div>
 <div class="section" id="info">
-<h3>2.1.5. info(..)<a class="headerlink" href="#info" title="Permalink to this headline">¶</a></h3>
+<h3>2.2.5. info(..)<a class="headerlink" href="#info" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -405,7 +402,7 @@ is maintained for convienience and low level debugging.</p>
 
 </div>
 <div class="section" id="infostr">
-<h3>2.1.6. infostr(..)<a class="headerlink" href="#infostr" title="Permalink to this headline">¶</a></h3>
+<h3>2.2.6. infostr(..)<a class="headerlink" href="#infostr" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -433,44 +430,8 @@ and so uses AstroData relative indexes, descriptors, and so on.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="open">
-<h3>2.1.7. open(..)<a class="headerlink" href="#open" title="Permalink to this headline">¶</a></h3>
-<div class="toctree-wrapper compound">
-<ul class="simple">
-</ul>
-</div>
-<dl class="method">
-<dt id="astrodata.data.AstroData.open">
-<tt class="descclassname">AstroData.</tt><tt class="descname">open</tt><big>(</big><em>source</em>, <em>mode='readonly'</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.open" title="Permalink to this definition">¶</a></dt>
-<dd><table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>source</strong> &#8211; source contains some reference for the dataset to 
-be opened and associated with this instance. Generally
-it would be a filename, but can also be
-an AstroData instance or a pyfits.HDUList instance.</li>
-<li><strong>mode</strong> &#8211; IO access mode, same as the pyfits open mode, &#8220;readonly,
-&#8220;update&#8221;, or &#8220;append&#8221;.  The mode is passed to pyfits so
-if it is an illegal mode name, pyfits will be the
-subsystem reporting the error.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-<p>This function wraps a source dataset, which can be in memory as another
-AstroData or pyfits HDUList, or on disk, given as the string filename.</p>
-<p>Please note that generally one does not use &#8220;open&#8221; directly, but passes
-the filename to the AstroData constructor. The constructor uses
-open(..) however.  Most users should use the constructor, which may 
-perform extra operations.</p>
-</dd></dl>
-
-</div>
 <div class="section" id="write">
-<h3>2.1.8. write(..)<a class="headerlink" href="#write" title="Permalink to this headline">¶</a></h3>
+<h3>2.2.7. write(..)<a class="headerlink" href="#write" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -489,7 +450,7 @@ instances created in memory.</li>
 <li><strong>clobber</strong> &#8211; This flag drives if AstroData will overwrite an existing
 file.</li>
 <li><strong>rename</strong> &#8211; This flag allows you to write the AstroData instance to
-a new filename, but leave the &#8220;current&#8221; name in tact.</li>
+a new filename, but leave the &#8220;current&#8221; name in tact in memory.</li>
 </ul>
 </td>
 </tr>
@@ -498,7 +459,7 @@ a new filename, but leave the &#8220;current&#8221; name in tact.</li>
 <p>The write function acts similarly to the pyfits HDUList.writeto(..)
 function if a filename is given, or like pyfits.HDUList.update(..) if 
 no name is given, using whatever the current name is set to. When a name
-is given, this becomes the new on-disk name of the AstroData object and
+is given, this becomes the new name of the AstroData object and
 will be used on subsequent calls to  write for which a filename is not
 provided. If the clobber flag is False (the default) then write(..)
 throws an exception if the file already exists.</p>
@@ -507,7 +468,7 @@ throws an exception if the file already exists.</p>
 </div>
 </div>
 <div class="section" id="type-information">
-<h2>2.2. Type Information<a class="headerlink" href="#type-information" title="Permalink to this headline">¶</a></h2>
+<h2>2.3. Type Information<a class="headerlink" href="#type-information" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -524,7 +485,7 @@ throws an exception if the file already exists.</p>
 </ul>
 </td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">True if the given type applies to this dataset,
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">True if the given types all apply to this dataset,
 False otherwise</p>
 </td>
 </tr>
@@ -570,12 +531,13 @@ is returned.</li>
 </table>
 <p>The get_types(..) function returns a list of type names, where type 
 names are as always, strings. It is possible to &#8220;prune&#8221; the list so
-that only leaf nodes are returned, which is useful when features (such
-as descriptors) are set and leaf node settings take priority.</p>
+that only leaf nodes are returned, which is useful when leaf
+nodes take precedence such
+as descriptors.</p>
 <p>Note: types are divided into two categories, one intended for types
 which represent processing status (i.e. RAW vs PREPARED), and another
 which contains a more traditional &#8220;typology&#8221; consisting of a 
-heirarchical tree of datastypes. This latter tree maps roughly to
+heirarchical tree of dataset types. This latter tree maps roughly to
 instrument-modes, with instrument types branching from the general
 observatory type, (e.g. &#8220;GEMINI&#8221;).</p>
 <p>To retrieve only status types, use get_status(..); to retreive just
@@ -598,11 +560,11 @@ scripts which make use of the distinction.</p>
 <dd><p>This function returns the set of type names (strings) which apply to
 this dataset and which come from the status section of the AstroData
 Type library. &#8220;Status&#8221; classifications are those which tend to change
-during the reduction of a dataset based on the amount of processing as
-opposed to instrument-mode classifications, such as GMOS_MOS,  which
-will tend to persist. e.g. RAW vs PREPARED.  Strictly a &#8220;status&#8221; type 
-is any type defined in or below the status part of the classification
-configuration, i.e. in the Gemini type configuration any type 
+during the reduction of a dataset based on the amount of processing,
+e.g. RAW vs PREPARED.  Strictly, a &#8220;status&#8221; type 
+is any type defined in or below the status part of the 
+<tt class="docutils literal"><span class="pre">classification</span></tt> directory within the 
+configuration. I.e. in the Gemini type configuration any type 
 definition files in or below the 
 &#8220;astrodata_Gemini/ADCONFIG/classification/status&#8221; directory.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -642,7 +604,7 @@ the correct configuration directory, i.e. in Gemini&#8217;s configuration,
 
 </div>
 <div class="section" id="header-manipulations">
-<h2>2.3. Header Manipulations<a class="headerlink" href="#header-manipulations" title="Permalink to this headline">¶</a></h2>
+<h2>2.4. Header Manipulations<a class="headerlink" href="#header-manipulations" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -651,11 +613,9 @@ the correct configuration directory, i.e. in Gemini&#8217;s configuration,
 pair settings in the header section of header-data units
 can be done directly using the AstroData header manipulation functions
 which cover both PHU and extension headers.
-For higher level metadata which is availalbe for all types in the tree
-(in a properly constructed configuration space) data is retreived by
-descriptor functions, as members of the AstroData object.  Descriptor functions
-access the lower level headers to return data more consistently than they
-exist as stored across all instrument-modes.</p>
+For higher level metadata which is available for all types in the tree
+in a properly constructed configuration space, the metadata is retreived by
+descriptor functions, accessed as members of the AstroData object.</p>
 <p>To set information or retrieve meta-data not covered by descriptors, one must
 read and write key-value pairs to the HDU headers at the lower-level. AstroData
 offers three pairs of functions for getting and setting header values, for each
@@ -672,11 +632,11 @@ purposes:</p>
 object&#8221;.</li>
 <li>set/get headers in an extension of a multi-HDU (aka &#8220;multi-extension&#8221;)
 AstroData instance. This requires specifying the extension index, and
-cannot be used to modify the PHU as extension 0 is the first real
+cannot be used to modify the PHU. HDU #0 is the first real
 header-data section in the MEF.</li>
 </ul>
 <div class="section" id="set-get-phu-headers">
-<h3>2.3.1. Set/Get PHU Headers<a class="headerlink" href="#set-get-phu-headers" title="Permalink to this headline">¶</a></h3>
+<h3>2.4.1. Set/Get PHU Headers<a class="headerlink" href="#set-get-phu-headers" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -732,7 +692,7 @@ in as string.</p>
 
 </div>
 <div class="section" id="set-get-single-hdu-headers">
-<h3>2.3.2. Set/Get Single-HDU Headers<a class="headerlink" href="#set-get-single-hdu-headers" title="Permalink to this headline">¶</a></h3>
+<h3>2.4.2. Set/Get Single-HDU Headers<a class="headerlink" href="#set-get-single-hdu-headers" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -831,7 +791,7 @@ AstroData object, and can be used more convieniently.</p>
 
 </div>
 <div class="section" id="set-get-multiple-hdu-headers">
-<h3>2.3.3. Set/Get Multiple-HDU Headers<a class="headerlink" href="#set-get-multiple-hdu-headers" title="Permalink to this headline">¶</a></h3>
+<h3>2.4.3. Set/Get Multiple-HDU Headers<a class="headerlink" href="#set-get-multiple-hdu-headers" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -891,21 +851,21 @@ set values in the PHU use phusetKeyValue(..).</p>
 </div>
 </div>
 <div class="section" id="iteration-and-subdata">
-<h2>2.4. Iteration and Subdata<a class="headerlink" href="#iteration-and-subdata" title="Permalink to this headline">¶</a></h2>
+<h2>2.5. Iteration and Subdata<a class="headerlink" href="#iteration-and-subdata" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
 </div>
 <div class="section" id="overview">
-<h3>2.4.1. Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h3>
+<h3>2.5.1. Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="gen.ADMANUAL-ADSubdata.html">2.4.1.1. Using Slices and &#8220;Subdata&#8221;</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gen.ADMANUAL-ADSubdata.html">2.5.1.1. Using Slices and &#8220;Subdata&#8221;</a></li>
 </ul>
 </div>
 </div>
 <div class="section" id="countexts">
-<h3>2.4.2. countExts(..)<a class="headerlink" href="#countexts" title="Permalink to this headline">¶</a></h3>
+<h3>2.5.2. countExts(..)<a class="headerlink" href="#countexts" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -938,7 +898,7 @@ header.</li>
 
 </div>
 <div class="section" id="the-operator">
-<h3>2.4.3. The [] Operator<a class="headerlink" href="#the-operator" title="Permalink to this headline">¶</a></h3>
+<h3>2.5.3. The [] Operator<a class="headerlink" href="#the-operator" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -951,12 +911,12 @@ header.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>ext</strong> &#8211; The integeter index, indexing(EXTNAME, EXTVER) tuple,
-EXTNAME name for the desired subdata. If an int or tuple, a  single
-extension is wrapped with an AstroData instance, and
+<li><strong>ext</strong> &#8211; The integeter index, an indexing <tt class="docutils literal"><span class="pre">(EXTNAME,</span> <span class="pre">EXTVER)</span></tt> tuple,
+or EXTNAME name. If an int or tuple, the single
+extension identified is wrapped with an AstroData instance, and
 &#8220;single-extension&#8221; members of the AstroData object can be used. If
-a string is given then all extensions with the given EXTNAME will
-be wrapped by the  new AstroData instance.</li>
+a string, <tt class="docutils literal"><span class="pre">EXTNAME</span></tt>, is given, then all extensions with the given 
+EXTNAME will be wrapped by the  new AstroData instance.</li>
 </ul>
 </td>
 </tr>
@@ -988,20 +948,20 @@ to &#8220;datasetA[(&#8216;SCI&#8217;,1)].data&#8221; will change the
 references to the same numpy array in memory. The HDUList is a 
 different list, however, that references common HDUs. If a subdata 
 related AstroData object is written to disk, the resulting MEF will
-contain only the extensions in datasetB&#8217;s HDUList.</p>
+contain only the extensions in the subdata&#8217;s HDUList.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Note :</th><td class="field-body">Integer extensions start at 0 for the data-containing 
 extensions, not at the PHU as with pyfits.  This is important:
-ad[0] is the first content extension, in traditional MEF 
-percpective, the extension AFTER the PHU; it is not the PHU!  In
+ad[0] is the first content extension, in a traditional MEF 
+perspective, the extension AFTER the PHU; it is not the PHU!  In
 AstroData instances, the PHU is purely a header, and not counted
 as an extension in the way that headers generally are not counted
 as their own elements in the array they contain meta-data for.
-The PHU can be accessed  with the code, &#8216;&#8217;ad.phu&#8217;&#8216;, or via the
-AstroData PHU-related member functions.</td>
+The PHU can be accessed via the <tt class="docutils literal"><span class="pre">phu</span></tt> AstroData member of using
+the PHU related member functions.</td>
 </tr>
 </tbody>
 </table>
@@ -1010,13 +970,13 @@ AstroData PHU-related member functions.</td>
 </div>
 </div>
 <div class="section" id="single-hdu-astrodata-attributes">
-<h2>2.5. Single HDU AstroData Attributes<a class="headerlink" href="#single-hdu-astrodata-attributes" title="Permalink to this headline">¶</a></h2>
+<h2>2.6. Single HDU AstroData Attributes<a class="headerlink" href="#single-hdu-astrodata-attributes" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
 </div>
 <div class="section" id="data-attribute">
-<h3>2.5.1. data attribute<a class="headerlink" href="#data-attribute" title="Permalink to this headline">¶</a></h3>
+<h3>2.6.1. data attribute<a class="headerlink" href="#data-attribute" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -1085,7 +1045,7 @@ than one extension (not including PHU).</p>
 </tr>
 </tbody>
 </table>
-<p>This function sets the data member of a data section of an AstroDat
+<p>This function sets the data member of a data section of an AstroData
 object, specifically for the case in which the AstroData instance has
 ONE header-data unit (in addition to PHU).  This case is assured when
 iterating over the AstroData extensions, e.g.:</p>
@@ -1097,7 +1057,7 @@ iterating over the AstroData extensions, e.g.:</p>
 
 </div>
 <div class="section" id="header-attribute">
-<h3>2.5.2. header attribute<a class="headerlink" href="#header-attribute" title="Permalink to this headline">¶</a></h3>
+<h3>2.6.2. header attribute<a class="headerlink" href="#header-attribute" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -1178,7 +1138,7 @@ case  is assured when iterating over extensions using AstroData, e.g.:</p>
 
 </div>
 <div class="section" id="renaming-an-extension">
-<h3>2.5.3. Renaming an Extension<a class="headerlink" href="#renaming-an-extension" title="Permalink to this headline">¶</a></h3>
+<h3>2.6.3. Renaming an Extension<a class="headerlink" href="#renaming-an-extension" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -1220,13 +1180,6 @@ call the new pyfits.HDUList(..) function.</td>
 </table>
 </dd></dl>
 
-</div>
-</div>
-<div class="section" id="accessing-pyfits-and-numpy-objects">
-<h2>2.6. Accessing Pyfits and Numpy Objects<a class="headerlink" href="#accessing-pyfits-and-numpy-objects" title="Permalink to this headline">¶</a></h2>
-<div class="toctree-wrapper compound">
-<ul class="simple">
-</ul>
 </div>
 </div>
 <div class="section" id="module-level-functions">
@@ -1316,11 +1269,10 @@ written (i.e. <em>ad.write()</em>)).</li>
 </ul>
 </td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">&lt;paragraph&gt;an AstroData instance initialized with appropriate
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">an AstroData instance initialized with appropriate
 header-data units such as the PHU, Standard Gemini headers
 and with type-specific associated  data-header units such as
-binary table Mask Definition tables (aka MDF).&lt;/paragraph&gt;<p>..info: File will not have been written to disk by prep_output(..).</p>
-</p>
+binary table Mask Definition tables (aka MDF).</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">AstroData</p>
@@ -1328,18 +1280,19 @@ binary table Mask Definition tables (aka MDF).&lt;/paragraph&gt;<p>..info: File 
 </tr>
 </tbody>
 </table>
+<p>..info: File will not have been written to disk by prep_output(..).</p>
 <p>The prep_output(..) function creates a new AstroData object ready for
-appending output information (i.e. <em>ad.append(..)</em>).  While you can also
+appending output information (e.g. <tt class="docutils literal"><span class="pre">ad.append(..)</span></tt>).  While you can also
 create an empty AstroData object by giving no arguments to the AstroData
-constructor  (i.e. <em>ad = AstroData()</em>), <em>prep_output(..)</em> exists for the
+constructor  (i.e. <tt class="docutils literal"><span class="pre">ad</span> <span class="pre">=</span> <span class="pre">AstroData()</span></tt>), <tt class="docutils literal"><span class="pre">prep_output(..)</span></tt> exists for the
 common case where a new dataset object is intended as the output of
 come combinatorial process on a list of source dataset, and some information
 from the source inputs must be propagated.</p>
-<p>The <em>prep_output(..)</em> function makes use of this knowledge to ensure the
+<p>The <tt class="docutils literal"><span class="pre">prep_output(..)</span></tt> function makes use of this knowledge to ensure the
 file meets standards in what is considered a complete output file given
 such a combination.  In the future this function can make use of dataset
 history and structure definitions in the ADCONFIG configuration space. As
-<em>AstroData.prepOutpu(..)</em> it improves, scripts and primtiives that use it
+<tt class="docutils literal"><span class="pre">prepOutput</span></tt> improves, scripts and primitives that use it
 will benefit in a forward compatible way, in that their output datasets will
 benefit from more automatic propagation, validations, and data flow control,
 such as the emergence of history database propagation.</p>
@@ -1408,7 +1361,7 @@ the header passed in which match the given regular expression.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="gen.ADMANUAL-ADSubdata.html" title="2.4.1.1. Using Slices and “Subdata”"
+          <a href="gen.ADMANUAL-ADSubdata.html" title="2.5.1.1. Using Slices and “Subdata”"
              >next</a> |</li>
         <li class="right" >
           <a href="gen.ADMANUAL_Purpose.html" title="1.1.2. Document Purpose"

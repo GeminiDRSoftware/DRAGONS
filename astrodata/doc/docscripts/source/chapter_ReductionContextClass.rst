@@ -2,10 +2,12 @@ ReductionContext Class Reference
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 The following is information about the ReductionContext class. When writing
-primitives the reduction context is the sole argument (generally named ``rc`` by
-Gemini conventions).  This object is used by the primitive to both get inputs
-and store outputs, as well as communication with certain privileged subsystems
-like calibration queries.
+primitives the reduction context is passed into the primitive as the the sole
+argument (generally named ``rc`` by
+Gemini conventions and in addition to the ``self`` argument).
+This object is used by the primitive to both get inputs
+and store outputs, as well as to communicate with subsystems
+like the calibration queries system or list keeping for stacking.
 
 Parameter and Dictionary Features
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@

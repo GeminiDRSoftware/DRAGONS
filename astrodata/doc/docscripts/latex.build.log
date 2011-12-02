@@ -1,65 +1,11 @@
 Running Sphinx v1.0b2
 loading pickled environment... done
 building [latex]: all documents
-updating environment: 1 added, 1 changed, 0 removed
-reading sources... [ 50%] chapter_AstroDataClass
-reading sources... [100%] ~chapter_AstroDataClass
+updating environment: 0 added, 1 changed, 0 removed
+reading sources... [100%] creatingADescriptor
 
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst:217: (WARNING/2) toctree references unknown document u'gen.ADMANUAL-AccessingPyfitsOjbects'
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst:241: (WARNING/2) Title underline too short.
-
-re_header_keys(..)
-#################
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst:241: (WARNING/2) Title underline too short.
-
-re_header_keys(..)
-#################
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:11: (WARNING/2) Literal block expected; none found.
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:12: (WARNING/2) Title underline too short.
-
-AstroData Class
-@@@@@@@@@@@@@@
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.__init__, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.append, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.close, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.insert, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.info, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.infostr, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.open, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.write, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.is_type, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.get_types, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.get_status, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.get_typology, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.phu_get_key_value, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.phu_set_key_value, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.get_key_value, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.set_key_value, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.ext_get_key_value, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.ext_set_key_value, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.count_exts, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.__getitem__, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.data, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.get_data, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.set_data, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.header, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.get_header, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.set_header, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.AstroData.rename_ext, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:220: (WARNING/2) toctree references unknown document u'gen.ADMANUAL-AccessingPyfitsOjbects'
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.correlate, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.prep_output, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:244: (WARNING/2) Title underline too short.
-
-re_header_keys(..)
-#################
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:244: (WARNING/2) Title underline too short.
-
-re_header_keys(..)
-#################
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:2: WARNING: duplicate object description of astrodata.data.re_header_keys, other instance in /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst, use :noindex: for one of them
-looking for now-outdated files... 111 found
+/home/callen/ad26/trunk/astrodata/doc/docscripts/source/creatingADescriptor.rst:86: (WARNING/2) Inline literal start-string without end-string.
+looking for now-outdated files... 110 found
 pickling environment... done
 checking consistency... /home/callen/ad26/trunk/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: document isn't included in any toctree
 /home/callen/ad26/trunk/astrodata/doc/docscripts/source/chapter_Gemini_Types.rst:: WARNING: document isn't included in any toctree
@@ -68,7 +14,6 @@ checking consistency... /home/callen/ad26/trunk/astrodata/doc/docscripts/source/
 /home/callen/ad26/trunk/astrodata/doc/docscripts/source/gen.ADMANUAL_SingleHDUAD.rst:: WARNING: document isn't included in any toctree
 /home/callen/ad26/trunk/astrodata/doc/docscripts/source/gen.AstroDataLexicon.rst:: WARNING: document isn't included in any toctree
 /home/callen/ad26/trunk/astrodata/doc/docscripts/source/gen.AstroDataPackageOverview.rst:: WARNING: document isn't included in any toctree
-/home/callen/ad26/trunk/astrodata/doc/docscripts/source/~chapter_AstroDataClass.rst:: WARNING: document isn't included in any toctree
 done
 processing astrodatadocumentation.tex... index chapter_intro documentBrief gen.ADMANUAL_RevisionHistory gen.ADMANUAL_Purpose chapter_AstroDataClass gen.ADMANUAL-ADSubdata chapter_ReductionContextClass developmentGuide configElements startingTheConfig creatingAnAstroDataType creatingADescriptor creatingAPrimitive gen.ADMANUAL_ADConcepts 
 resolving references...
@@ -79,4 +24,4 @@ processing ADtypereference.tex... chapter_Gemini_Types gatref/GATREF-introductio
 resolving references...
 writing... done
 copying TeX support files... done
-build succeeded, 49 warnings.
+build succeeded, 10 warnings.

@@ -23,9 +23,10 @@ For example, from the ``astrodata_Gemini`` configuration, the ``RAW`` and
 ``NICI``, ``GMOS`` and ``GMOS_IMAGE`` are "typological types" located in the
 ``astrodata_Gemini/status/...`` subdirectory directory.
 
-Since we don't know anything about the instrument or mode of this 
+Since we don't know anything about the instrument or mode that this 
 custom package is being
-developed in, we will add some example types in processing in addition to the types
+developed for, we will add some example types in processing
+in addition to the types
 provided as examples in the Sample package that will demonstrate the point for
 any dataset. For more complicated examples of type requirements, we'll use
 astrodata_Gemini examples.
@@ -97,10 +98,10 @@ The Class Definition Line by Line
 The Requirement Classes
 @@@@@@@@@@@@@@@@@@@@@@@@
 
-The requirment member of a type classification is intended to be declared
-with an expression build from requirement classes.  Again, the type definition
-if evaluated in a controlled environment and these classes, as well as aliases
-for convienience are already in scope.
+The requirement member of a type classification is intended to be declared
+with an expression built from requirement classes.  Again, the type definition
+is evaluated in a controlled environment and these classes, as well as aliases
+for convienience, are already in scope.
 
 Concrete Requirements
 ######################
@@ -154,7 +155,7 @@ Since there are in fact two GMOS instruments at Gemini, one in Hawaii, one in Ch
 type really means checking that one of these two instruments was used.
 
 .. note::
-   This is also an example of use of the OR requirements, and specifically a convienience
+   This is also an example of use of the OR requirement, and specifically a convienience
    feature allowing the "|" symbol to be used for pair-wise or-ing. The included comment 
    shows another form using the OR object constructor
    which allows more than two operands to be listed.
@@ -162,8 +163,10 @@ type really means checking that one of these two instruments was used.
 PHU(keyname=re_val, [keyname2=re_val2 [...]])
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-The PHU requirement accepts any number of arguments.  Each argument name is used as
-the PHU key name, and the value, is the regular expression.
+The PHU requirement accepts any number of arguments.  Each argument name 
+is used as
+the PHU key name, and the value, is the regular expression against which
+the header value will be compared.
 
 An example::
 
@@ -246,9 +249,13 @@ It is possible also to use the "&" operator as a logical and::
 NOT(<requirement>)
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-The NOT requirement accepts a single other requirements as argument. 
-Used to negate some requirement, for example, we have chosen to view a GMOS_BIAS as not a
-GMOS_IMAGE since they require different processing::
+The NOT requirement accepts a single other requirement as argument. 
+"NOT" is used to negate some requirement. For example at Gemini we
+do not view a GMOS_BIAS as a
+GMOS_IMAGE, but it does satisfy the requirements of GMOS_IMAGE. The need
+for a separate type is due to the fact that GMOS_IMAGE and GMOS_BIAS required
+different automated reduction (e.g. in a pipeline deployment). To accomplish
+this we add a ``NOT`` requirement to GMOS_IMAGE::
 
     class GMOS_IMAGE(DataClassification):
         name="GMOS_IMAGE"

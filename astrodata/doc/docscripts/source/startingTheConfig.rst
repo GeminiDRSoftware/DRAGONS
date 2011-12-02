@@ -11,8 +11,7 @@ already
 be installed somewhere on the PYTHONPATH, and Gemini Python scripts such 
 as ``reduce`` and
 ``typewalk`` will be on the system path.  Installations from SVN will 
-include the astrodata/scripts
-package directory in the PATH.
+require that the ``astrodata/scripts`` package directory in the PATH.
 
 Clone the Sample Package
 &&&&&&&&&&&&&&&&&&&&&&&&&
@@ -31,22 +30,22 @@ directory in which the ``astrodata`` package is installed::
 
    cp -r <ad_install_dir>/astrodata/samples/astrodata_Sample .
    
-Note that, presumably, ``<ad_install_dir>`` should be on the PYTHONPATH.
+Note that, presumably, ``<ad_install_dir>`` should already be on the PYTHONPATH.
 
-The name of the destination can, of course, be other than ``astrodata_Custom``,
+The name of the destination can, of course, be other than ``astrodata_Sample``,
 and it can be changed later as well. 
 Every configuration package, wherever on the
 path, must have a unique name.
 
 You must also ensure the the new directory *containing*
-``astrodata_Custom`` is in either ADCONFIGPATH or RECIPEPATH, or alternately
+``astrodata_Sample`` is in either ADCONFIGPATH or RECIPEPATH, or alternately
 for convienience (i.e. when installing packages via setup.py) in the PYTHONPATH.
 If you are following the above steps, you are in the directory to which
-``astrodata_Custom`` was copied.
+``astrodata_Sample`` was copied.
 
     export RECIPEPATH=$(pwd):$RECIPEPATH
     
-You can now test that ``astrodata_Custome`` is being 
+You can now test that ``astrodata_Sample`` is being 
 discovered by the astrodata package
 by running a tool from the ``astrodata/scripts`` directory, but which should
 have been installed to system bin directories by the ``setup.py`` process.
@@ -63,7 +62,7 @@ For these examples, we assume you have copied ``test.fits``
     cp <somepath>/test.fits source_data
 
 We'll assume you are working in this directory for the rest of the example.
-To see if the types from astrodata_Custom are discovered, type::
+To see if the types from ``astrodata_Sample`` are discovered, type::
 
     typewalk -c
     

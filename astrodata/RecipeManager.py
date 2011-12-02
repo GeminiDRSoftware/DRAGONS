@@ -204,13 +204,15 @@ class ReductionContext(dict):
     
     def __contains__(self, thing):
         """
-        :param thing: A key to check if for presences in the Reduction Context
+        :param thing: A key to check for presences in the Reduction Context
         :type thing: str
         
         The __contains__ function implements the python 'in' operator. The 
         ReductionContext is a subclass of a ``dict``, but it also has a secondary
-        dicts of "local parameters" which are avaialable to the current primitive \
-        only.
+        dict of "local parameters" which are available to the current primitive \
+        only, which are also tested by the ``__contains__(..)`` member.
+        These parameters will generally be those passed in as arguments
+        to a primitive call from a recipe.
         """
         if thing in self._localparms:
             return True
@@ -564,14 +566,14 @@ class ReductionContext(dict):
         '''
         Retrieve calibration.
         
-        @param data: File for which calibration will be applied.
-        @type data: str or AstroData instance
+        :param data: File for which calibration will be applied.
+        :type data: str or AstroData instance
         
-        @param caltype: The type of calibration (ex.'bias', 'flat').
-        @type caltype: str
+        :param caltype: The type of calibration (ex.'bias', 'flat').
+        :type caltype: str
         
-        @return: The URI of the currently stored calibration or None.
-        @rtype: str or None 
+        :return: The URI of the currently stored calibration or None.
+        :rtype: str or None 
         '''
         #print "RM467:"+ repr(data)+repr( type( data ))dd
         adID = idFac.generate_astro_data_id(data)
@@ -627,7 +629,7 @@ class ReductionContext(dict):
             To use the standard stream do not set.
         :type stream: str
         :param empty: Controls if the stream is
-            emptied, defaults to "True".
+            emptied, defaults to "False".
         :type empty: bool
         :param style: controls the type of output. "AD" directs the function
             to return a list
@@ -664,7 +666,7 @@ class ReductionContext(dict):
             
     def get_inputs_as_astrodata(self):
         """
-            This function is shorthand for::
+            This function is equivalent to::
             
                 get_inputs(style="AD")
         """
@@ -673,7 +675,7 @@ class ReductionContext(dict):
     
     def get_inputs_as_filenames(self):
         """
-            This function is shorthand for::
+            This function is equivalent for::
             
                 get_inputs(style="FN")
         """
@@ -706,7 +708,7 @@ class ReductionContext(dict):
         this is simply the first dataset in the current inputs.  However,
         use of this function allows us to evolve our concept of reference
         image for more complicated issues where choice of a "reference" image
-        may be more complicated (i.e. require some data analysis to determine).
+        may be more complicated (e.g. require some data analysis to determine).
         """
         if len(self.inputs) == 0:
             return None
@@ -1371,19 +1373,20 @@ class ReductionContext(dict):
     def report_output(self, inp, stream=None, load=True):
         """
         :param inp: The inputs to report (add to the given or current stream).
-            Input can be a string (filename), an AstroData instance, a list of
-            strings and AstroData instances.  Each individual dataset is
+            Input can be a string (filename), an AstroData instance, or a list of
+            strings and/or AstroData instances.  Each individual dataset is
             wrapped in an AstroDataRecord and stored in the current stream.
         :type inp: str, AstroData instance, or list
         :param stream: If not specified the default ("main") stream is used.
-            If specified the named stream is used, and created if necessary.
+            When specified the named stream is created if necessary.
         :type stream: str
-        :param load: A boolean (default: True) which specifies if string
-            arguments (pathnames) should be loaded or if an unloaded
-            ``AstroData`` record should be created with only the path. Has no affect
-            on ``AstroData`` instances already in memory.
+        :param load: A boolean (default: True) which specifies whether string
+            arguments (pathnames) should be loaded into AstroData instances
+            or if it should be kept as a filename, unloaded.  This argument
+            has no effect when "report"
+            ``AstroData`` instances already in memory.
             
-        This function, along with ``get_inputs(..)`` allow a primitive to
+        This function, along with ``get_inputs(..)`` allows a primitive to
         interact with the datastream in which it was invoked (or access
         other streams).
         """
@@ -1487,8 +1490,14 @@ class ReductionContext(dict):
         '''
         Create calibration requests based on raw inputs.
         
-        @param caltype: The type of calibration. For example, 'bias' and 'flat'.
-        @type caltype: str
+        :param caltype: The type of calibration. For example, 'bias' and 'flat'.
+        :type caltype: str
+        
+        :param inputs: The datasets for which to find calibrations, if not present
+                        or ``None`` current "inputs" are used.
+        :type inputs: list of AstroData instances                
+        :param source: Directs what calibration service to contact, for future
+                        compatibility, surrently only "all" is supported.
         '''
         if type(caltype) != str:
             raise RecipeExcept("caltype not string, type = " + str( type(caltype)))
@@ -1696,7 +1705,7 @@ class ReductionContext(dict):
         
         :note: This function is used by the infrastructure (in an application
             such as reduce and in the ReductionContext) to switch the stream
-            being used. Reported outputs then goes to the specified stream.
+            being used. Reported output then goes to the specified stream.
         """
         if switch_to not in self.outputs:
             #raise ReduceError(

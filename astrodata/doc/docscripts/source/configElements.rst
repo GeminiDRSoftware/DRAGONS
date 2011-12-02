@@ -6,8 +6,8 @@ are not implemented in the astrodata package itself, but are instead loaded from
 configuration packages. In the case of Gemini data the 
 configuration package is a directory named ``astrodata_Gemini``.  This
 configuration path is found by astrodata by the containing directory
-appearing either on the PYTHONPATH, or 
-on the RECIPEPATH, an astrodata environment variable.
+appearing either on the PYTHONPATH, or either of two astrodata environment 
+variables, RECIPEPATH and/or ADCONFIGPATH.
 
 The astrodata package searches for all directories named ``astrodata_<anything>``
 in the RECIPEPATH environment variable.  Though the configurations contain
@@ -46,7 +46,8 @@ Configuration Elements Which Have To Be  Developed
    and ``filtername``.  Different instruments (and thus for different AstroDataTypes)
    store information about the gain in unique headers, and may even require
    lookup tables not in the dataset to calculate.  Descriptors are type-appropriate
-   functions   assigned at runtime to astrodata instance.
+   functions assigned at runtime to the astrodata instance, allowing
+   type-specific implementations.
       
 3. **Primitives** are dataset transformations meant to run in the recipe system.
    Primitives are implemented as python generator functions in sets of primitives
