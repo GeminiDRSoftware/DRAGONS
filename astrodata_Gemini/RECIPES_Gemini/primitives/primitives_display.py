@@ -163,9 +163,12 @@ class DisplayPrimitives(GENERALPrimitives):
 
 
             # Display the data
-            lnd.display(data,name=ad.filename,
-                        frame=frame,zscale=rc["zscale"],quiet=True,
-                        masks=masks, mask_colors=mask_colors)
+            try:
+                lnd.display(data,name=ad.filename,
+                            frame=frame,zscale=rc["zscale"],quiet=True,
+                            masks=masks, mask_colors=mask_colors)
+            except IOError:
+                log.warning("DS9 not found; cannot display input")
 
             frame+=1
         
