@@ -123,6 +123,81 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
+def array_number(adinput=None):
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+    
+    # The validate_input function ensures that adinput is not None and returns
+    # a list containing one or more AstroData objects
+    adinput = validate_input(adinput=adinput)
+    
+    # Initialize the list of dictionaries of output array numbers
+    # Keys will be (extname,extver)
+    arraynum_list = []
+    try:
+        # Loop over each input AstroData object in the input list
+        for ad in adinput:
+
+            # Get the number of science extensions
+            nsciext = ad.count_exts("SCI")
+
+            # Get the correct order of the extensions by sorting on
+            # the first element in detector section
+            # (raw ordering is whichever amps read out first)
+            detsecs = ad.detector_section().as_list()
+            if not isinstance(detsecs[0],list):
+                detsecs = [detsecs]
+            detx1 = [sec[0] for sec in detsecs]
+            ampsorder = range(1,nsciext+1)
+            orderarray = np.array(
+                zip(ampsorder,detx1),dtype=[('ext',np.int),('detx1',np.int)])
+            orderarray.sort(order='detx1')
+            if np.all(ampsorder==orderarray['ext']):
+                in_order = True
+            else:
+                ampsorder = orderarray['ext']
+                in_order = False
+                
+            # Get array sections for determining when
+            # a new array is found
+            arraysecs = ad.array_section().as_list()
+            if not isinstance(arraysecs[0],list):
+                arraysecs = [arraysecs]
+            if len(arraysecs)!=nsciext:
+                arraysecs*=nsciext
+            arrayx1 = [sec[0] for sec in arraysecs]
+
+            # Initialize these so that first extension will always
+            # start a new array
+            last_detx1 = detx1[ampsorder[0]-1]-1
+            last_arrayx1 = arrayx1[ampsorder[0]-1]
+
+            arraynum = {}
+            num_array = 0
+            for i in ampsorder:
+                sciext = ad["SCI",i]
+                this_detx1 = detx1[i-1]
+                this_arrayx1 = arrayx1[i-1]
+                
+                if (this_detx1>last_detx1 and this_arrayx1<=last_arrayx1):
+                    # New array found
+                    num_array += 1
+
+                arraynum[(sciext.extname(),sciext.extver())] = num_array
+
+            # Append the output AstroData object to the list of output
+            # AstroData objects
+            arraynum_list.append(arraynum)
+        
+        # Return the list of output AstroData objects
+        return arraynum_list
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
+  
+
 
 def checkInputsMatch(adInsA=None, adInsB=None, check_filter=True):
     """
@@ -826,6 +901,10 @@ def make_dict(key_list=None, value_list=None):
     # Check the inputs have matching filters, binning and SCI shapes.
     #checkInputsMatch(adInsA=darks, adInsB=adInputs)
     ret_dict = {}
+    if not isinstance(key_list, list):
+        key_list = [key_list]
+    if not isinstance(value_list, list):
+        value_list = [value_list]
     if len(key_list) == 1 and len(value_list) == 1:
         # There is only one key and one value - create a single entry in the
         # dictionary
@@ -909,6 +988,151 @@ def parse_sextractor_param():
         columns.append(name)
 
     return columns
+
+def trim_to_data_section(adinput=None):
+    """
+    This function trims the data in each SCI extension to the
+    the section returned by its data_section descriptor.  VAR and DQ
+    planes, if present, are trimmed to the same section as the
+    corresponding SCI extension.
+    This is intended for use in removing overscan sections, or other
+    unused parts of the data array.
+    """
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = gemLog.getGeminiLog()
+    
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
+    adinput = validate_input(adinput=adinput)
+
+    # Initialize the list of output AstroData objects
+    adoutput_list = []
+ 
+    try:
+
+        for ad in adinput:
+
+            for sciext in ad["SCI"]:
+                
+                # Get matching VAR and DQ planes if present
+                extver = sciext.extver()
+                varext = ad["VAR",extver]
+                dqext = ad["DQ",extver]
+                
+                # Get the data section from the descriptor
+                try:
+                    # as a string for printing
+                    datasecStr = str(sciext.data_section(pretty=True))
+
+                    # as int list of form [x1,x2,y1,y2],
+                    # 0-based and non-inclusive
+                    dsl = sciext.data_section().as_pytype()
+
+                    # Get the keyword associated with the data_section
+                    # descriptor, for later updating.  This keyword 
+                    # may be instrument specific.
+                    ds_kw = sciext.data_section().keyword
+                except:
+                    raise Errors.ScienceError("No data section defined; " +
+                                              "cannot trim to data section")
+
+                # Check whether data needs to be trimmed
+                sci_shape = sciext.data.shape
+                if (sci_shape[1]==dsl[1] and 
+                    sci_shape[0]==dsl[3] and
+                    dsl[0]==0 and
+                    dsl[2]==0):
+                    sci_trimmed = True
+                else:
+                    sci_trimmed = False
+               
+                if sci_trimmed:
+                    log.fullinfo("No changes will be made to %s[*,%i], since "\
+                                 "the data section matches the data shape" %
+                                 (ad.filename,sciext.extver()))
+                    continue
+
+                # Update logger with the section being kept
+                log.fullinfo("For "+ad.filename+" extension "+
+                             str(sciext.extver())+
+                             ", keeping the data from the section "+
+                             datasecStr,"science")
+                
+                # Trim the data section from input SCI array
+                # and make it the new SCI data
+                sciext.data=sciext.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
+                
+                # Update header keys to match new dimensions
+                newDataSecStr = "[1:"+str(dsl[1]-dsl[0])+",1:"+\
+                                str(dsl[3]-dsl[2])+"]" 
+                sciext.set_key_value("NAXIS1",dsl[1]-dsl[0],
+                                     comment=keyword_comments["NAXIS1"])
+                sciext.set_key_value("NAXIS2",dsl[3]-dsl[2],
+                                     comment=keyword_comments["NAXIS2"])
+                sciext.set_key_value(ds_kw,newDataSecStr,
+                                     comment=keyword_comments[ds_kw])
+                sciext.set_key_value("TRIMSEC", datasecStr, 
+                                     comment=keyword_comments["TRIMSEC"])
+                
+                # Update WCS reference pixel coordinate
+                try:
+                    crpix1 = sciext.get_key_value("CRPIX1") - dsl[0]
+                    crpix2 = sciext.get_key_value("CRPIX2") - dsl[2]
+                except:
+                    log.warning("Could not access WCS keywords; using dummy " +
+                                "CRPIX1 and CRPIX2")
+                    crpix1 = 1
+                    crpix2 = 1
+                sciext.set_key_value("CRPIX1",crpix1,
+                                     comment=keyword_comments["CRPIX1"])
+                sciext.set_key_value("CRPIX2",crpix2,
+                                     comment=keyword_comments["CRPIX2"])
+
+                # If VAR and DQ planes present, update them to match
+                if varext is not None:
+                    varext.data=varext.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
+                    varext.set_key_value("NAXIS1",dsl[1]-dsl[0],
+                                         comment=keyword_comments["NAXIS1"])
+                    varext.set_key_value("NAXIS2",dsl[3]-dsl[2],
+                                         comment=keyword_comments["NAXIS2"])
+                    varext.set_key_value(ds_kw,newDataSecStr,
+                                         comment=keyword_comments[ds_kw])
+                    varext.set_key_value("TRIMSEC", datasecStr, 
+                                         comment=keyword_comments["TRIMSEC"])
+                    varext.set_key_value("CRPIX1",crpix1,
+                                         comment=keyword_comments["CRPIX1"])
+                    varext.set_key_value("CRPIX2",crpix2,
+                                         comment=keyword_comments["CRPIX2"])
+                
+                if dqext is not None:
+                    # gireduce DQ planes do not include
+                    # overscan region, so don't trim DQ if it
+                    # already matches the science
+                    if dqext.data.shape!=sciext.data.shape:
+                        dqext.data=dqext.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
+                    dqext.set_key_value("NAXIS1",dsl[1]-dsl[0],
+                                        comment=keyword_comments["NAXIS1"])
+                    dqext.set_key_value("NAXIS2",dsl[3]-dsl[2],
+                                        comment=keyword_comments["NAXIS2"])
+                    dqext.set_key_value(ds_kw,newDataSecStr,
+                                        comment=keyword_comments[ds_kw])
+                    dqext.set_key_value("TRIMSEC", datasecStr, 
+                                        comment=keyword_comments["TRIMSEC"])
+                    dqext.set_key_value("CRPIX1",crpix1,
+                                        comment=keyword_comments["CRPIX1"])
+                    dqext.set_key_value("CRPIX2",crpix2,
+                                        comment=keyword_comments["CRPIX2"])
+
+            adoutput_list.append(ad)
+
+        return adoutput_list    
+
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
+
 
 def update_key_from_descriptor(adinput=None, descriptor=None, 
                                keyword=None, extname=None):

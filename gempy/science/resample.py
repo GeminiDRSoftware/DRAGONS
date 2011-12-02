@@ -811,8 +811,8 @@ def tile_arrays(adinput=None, tile_all=False):
 
                 # First trim off any overscan regions still present
                 # so they won't get tiled with science data
-                if not ad.phu_get_key_value(timestamp_keys["trim_overscan"]):
-                    ad = bs.trim_overscan(adinput=ad)[0]
+                log.fullinfo("Trimming data to data section:")
+                ad = gt.trim_to_data_section(adinput=ad)[0]
 
                 # Make chip gaps to tile with science extensions if tiling all
                 # Gap width should come from lookup table
@@ -886,11 +886,14 @@ def tile_arrays(adinput=None, tile_all=False):
                         # (or, if tiling all CCDs together, add a chip gap)
                         if num_ccd>0:
                             if tile_all:
-                                sci_data_list.append(chip_gap)
+                                sci_data_list.append(
+                                    chip_gap.astype(np.float32))
                                 if varext is not None:
-                                    var_data_list.append(chip_gap)
+                                    var_data_list.append(
+                                        chip_gap.astype(np.float32))
                                 if dqext is not None:
-                                    dq_data_list.append(chip_gap)
+                                    dq_data_list.append(
+                                        chip_gap.astype(np.int16))
                             else:
                                 ccd_data[num_ccd] = {"SCI":sci_data_list,
                                                      "VAR":var_data_list,
@@ -1124,7 +1127,7 @@ def tile_arrays(adinput=None, tile_all=False):
                 # Append the output AstroData object to the list of output
                 # AstroData objects
                 adoutput_list.append(adoutput)
-            
+
         # Return the list of output AstroData objects
         return adoutput_list
 
