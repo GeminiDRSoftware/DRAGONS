@@ -4,7 +4,6 @@ from astrodata import Errors
 from astrodata.adutils import gemLog
 from gempy import astrotools as at
 from gempy import geminiTools as gt
-from gempy.science import resample as rs
 from primitives_GENERAL import GENERALPrimitives
 
 class ResamplePrimitives(GENERALPrimitives):

@@ -1,29 +1,6 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_GMOS_IMAGE.py file, in alphabetical order.
-{"iqDisplay":{
-    "suffix":{
-        "default"       : "_iqMeasured",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "frame":{
-        "default"       : 1,
-        "type"          : "int",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "threshold":{
-        "default"       : None,
-        "type"          : "float",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    },
- "makeFringeFrame":{
+{"makeFringeFrame":{
     "suffix":{
         "default"       : "_fringe",
         "type"          : "str",
@@ -55,8 +32,8 @@
         "uiLevel"       : "UIBASIC",
         },
     "threshold":{
-        "default"       : None,
-        "type"          : "float",
+        "default"       : "auto",
+        "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
@@ -73,6 +50,15 @@
     "stats_scale":{
         "default"       : False,
         "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "scaleByIntensity":{
+    "suffix":{
+        "default"       : "_scaled",
+        "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",

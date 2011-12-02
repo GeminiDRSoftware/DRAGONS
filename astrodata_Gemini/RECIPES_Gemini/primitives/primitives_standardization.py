@@ -52,8 +52,6 @@ class StandardizationPrimitives(GENERALPrimitives):
         
         # Check for a user supplied bpm file name
         bpm = rc["bpm"]
-        if bpm is not None:
-            bpm = AstroData(bpm)
 
         # Call the _select_bpm helper function to get the appropriate BPMs for 
         # the input AstroData objects in the form of a dictionary, where the
@@ -171,6 +169,88 @@ class StandardizationPrimitives(GENERALPrimitives):
         
         yield rc
     
+    def addMDF(self,rc):
+        """
+        This primitive is used to add an MDF extension to the input
+        AstroData object. If one MDF is provided, that MDF will be
+        added to all input AstroData object(s). If no MDF is provided,
+        it will be automatically assigned.
+    
+        :param mdf: The MDF filename to be added to the input(s)
+        :type mdf: string
+        """
+
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "addMDF", "starting"))
+
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["addMDF"]
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Get the input AstroData objects
+        adinput = rc.get_inputs_as_astrodata()
+        
+        # Loop over each input AstroData object in the input list
+        for ad in adinput:
+
+            # Check whether the addMDF primitive has been run previously
+            if ad.phu_get_key_value(timestamp_key) or ad["MDF"]:
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by addMDF" \
+                            % (ad.filename))
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
+            
+            # Check whether the input is an IMAGE type
+            if "IMAGE" in ad.types:
+                log.stdinfo("%s has type IMAGE, so no MDF will be added" %
+                            ad.filename)
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
+
+            # Check for a user supplied MDF file name
+            mdf = rc["mdf"]
+
+            # Call the _select_mdf helper function to get the appropriate MDF
+            # for the input AstroData object in the form of a dictionary, where
+            # the key is the input AstroData object and the value is the MDF
+            # for that AstroData object
+            mdf_dict = _select_mdf(adinput=ad, mdf=mdf)
+            mdf = mdf_dict[ad]
+
+            # Append the MDF AstroData object to the input AstroData object
+            ad.append(moredata=mdf)
+            log.fullinfo("Adding the MDF %s to the input AstroData object %s" \
+                             % (mdf.filename, ad.filename))
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+        
+        yield rc
+
+
     def addVAR(self, rc):
         """
         The add_var primitive calculates the variance of each science
@@ -259,6 +339,91 @@ class StandardizationPrimitives(GENERALPrimitives):
         rc.report_output(adoutput_list)
         
         yield rc 
+
+    def standardizeCommonHeaders(self, rc):
+
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "standardizeCommonHeaders",
+                                 "starting"))
+
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["standardizeCommonHeaders"]
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+
+            # Check whether the standardizeCommonHeaders primitive
+            # has been run previously
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by " \
+                            "standardizeCommonHeaders" % (ad.filename))
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
+
+            # Standardize the headers of the input AstroData object. Update the
+            # keywords in the headers that are common to all Gemini data
+
+            # Original name
+            ad.store_original_name()
+
+            # Number of science extensions
+            ad.phu_set_key_value("NSCIEXT",ad.count_exts("SCI"),
+                                 comment=keyword_comments["NSCIEXT"])
+
+            # Number of extensions
+            ad.phu_set_key_value("NEXTEND", len(ad),
+                                 comment=keyword_comments["NEXTEND"])
+
+            # Non linear level
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="non_linear_level()", extname="SCI")
+
+            # Saturation level
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="saturation_level()", extname="SCI")
+
+            # Physical units (assuming raw data has units of ADU)
+            for ext in ad["SCI"]:
+                ext.set_key_value("BUNIT","adu",
+                                  comment=keyword_comments["BUNIT"])
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, keyword=self.timestamp_keys["prepare"])
+            
+            # Refresh the AstroData types to reflect new PREPARED status
+            ad.refresh_types()            
+
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+        
+        yield rc
+
+    def standardizeInstrumentHeaders(self, rc):
+        # There is no instrument at the GEMINI level, so just pass
+        # This primitive should be overridden by intrument-specific
+        # primitives
+        yield rc
+
     
 ##############################################################################
 # Below are the helper functions for the primitives in this module           #
@@ -280,10 +445,22 @@ def _select_bpm(adinput=None, bpm=None):
     the same dimensions as the input AstroData object.
     """
     
+    if not isinstance(adinput, list):
+        adinput = [adinput]
     if bpm is not None:
         # The user supplied an input to the bpm parameter
         if not isinstance(bpm, list):
             bpm_list = [bpm]
+        else:
+            bpm_list = bpm
+
+        # Convert filenames to AD instances if necessary
+        tmp_list = []
+        for bpm in bpm_list:
+            if type(bpm) is not AstroData:
+                bpm = AstroData(bpm)
+            tmp_list.append(bpm)
+        bpm_list = tmp_list
     else:
         # Initialize the list of output BPM AstroData objects
         bpm_list = []
@@ -353,6 +530,14 @@ def _select_mdf(adinput=None, mdf=None):
             mdf_list = [mdf]
         else:
             mdf_list = mdf
+
+        # Convert filenames to AD instances if necessary
+        tmp_list = []
+        for mdf in mdf_list:
+            if type(mdf) is not AstroData:
+                mdf = AstroData(mdf)
+            tmp_list.append(mdf)
+        mdf_list = tmp_list
     else:
         # Initialize the list of output MDF AstroData objects
         mdf_list = []
@@ -389,7 +574,8 @@ def _select_mdf(adinput=None, mdf=None):
                 if os.path.exists(mdf_name):
                     mdf = AstroData(mdf_name)
                 else:
-                    msg = "The MDF file %s was not found either in the " \
+                    msg = "The MDF file %s specified in the MASKNAME "\
+                          "parameter was not found either in the " \
                           "current working directory or in the " \
                           "gemini_python package" % (mdf_name)
                     raise Errors.InputError(msg)

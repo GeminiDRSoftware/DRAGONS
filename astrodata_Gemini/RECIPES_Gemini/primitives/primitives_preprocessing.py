@@ -6,7 +6,6 @@ from astrodata import IDFactory
 from astrodata.adutils import gemLog
 from astrodata.adutils.reduceutils.prsproxyutil import upload_calibration
 from gempy import geminiTools as gt
-from gempy.science import preprocessing as pp
 from primitives_GENERAL import GENERALPrimitives
 
 class PreprocessingPrimitives(GENERALPrimitives):
@@ -112,11 +111,22 @@ class PreprocessingPrimitives(GENERALPrimitives):
                                  "correctBackgroundToReferenceImage",
                                  "starting"))
 
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["correctBackgroundToReferenceImage"]
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
 
-        # Check whether two or more input AstroData objects were provided
+        # Get input files
         adinput = rc.get_inputs_as_astrodata()
+        
+        # Get the number of science extensions in each file
+        next = np.array([ad.count_exts("SCI") for ad in adinput])
+
+        # Initialize reference BG
+        ref_bg = None
+
+        # Check whether two or more input AstroData objects were provided
         if len(adinput) <= 1:
             log.warning("No correction will be performed, since at least " \
                         "two input AstroData objects are required for " \
@@ -126,12 +136,53 @@ class PreprocessingPrimitives(GENERALPrimitives):
             # objects list without further processing
             adoutput_list = adinput
 
+        # Check that all images have the same number of science extensions
+        elif not np.all(next==next[0]):
+            raise Errors.InputError("Number of science extensions in input "\
+                                    "images do not match")
         else:
-            # Call the user level function
-            adoutput = pp.correct_background_to_reference_image(adinput=adinput)
-            
-            # Change the filenames and append to output list
-            for ad in adoutput:
+
+            # Check whether measureBG needs to be run
+            bg_list = [sciext.get_key_value("SKYLEVEL") \
+                           for ad in adinput for sciext in ad["SCI"]]
+            if None in bg_list:
+                log.fullinfo("SKYLEVEL not found, measuring background")
+                rc.run("measureBG(separate_ext=True)")
+
+            # Loop over input files
+            for ad in adinput:
+                ref_bg_dict = {}
+                diff_dict = {}
+                for sciext in ad["SCI"]:
+                    # Get background value from header
+                    bg = sciext.get_key_value("SKYLEVEL")
+                    if bg is None:
+                        raise Errors.ScienceError(
+                            "Could not get background level from %s[SCI,%d]" %
+                            (sciext.filename,sciext.extver))
+                    
+                    log.fullinfo("Background level is %.0f for %s" %
+                                 (bg, ad.filename))
+                    if ref_bg is None:
+                        ref_bg_dict[(sciext.extname(),sciext.extver())]=bg
+                    else:
+                        ref = ref_bg[(sciext.extname(),sciext.extver())]
+                        difference = ref - bg
+                        log.fullinfo("Adding %.0f to match reference " \
+                                     "background level %.0f" % 
+                                     (difference,ref))
+                        sciext.add(difference)
+                        sciext.set_key_value(
+                            "SKYLEVEL",bg+difference,
+                            comment=self.keyword_comments["SKYLEVEL"])
+
+                # Store background level of first image
+                if ref_bg is None:
+                    ref_bg = ref_bg_dict
+
+                # Add time stamps, change the filename, and
+                # append to output list
+                gt.mark_history(adinput=ad, keyword=timestamp_key)
                 ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                                  strip=True)
                 adoutput_list.append(ad)

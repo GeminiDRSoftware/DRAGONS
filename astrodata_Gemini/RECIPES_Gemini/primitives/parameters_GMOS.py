@@ -16,8 +16,15 @@
         "uiLevel"       : "UIBASIC",
         },
     "threshold":{
-        "default"       : None,
-        "type"          : "float",
+        "default"       : "auto",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "tile":{
+        "default"       : True,
+        "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
@@ -60,7 +67,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "standardizeHeaders":{
+ "standardizeInstrumentHeaders":{
     "suffix":{
         "default"       : "_headersStandardized",
         "type"          : "str",

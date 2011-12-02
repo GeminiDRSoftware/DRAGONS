@@ -1,4 +1,5 @@
 import os
+from copy import deepcopy
 import numpy as np
 from astrodata import AstroData
 from astrodata import Errors
@@ -8,8 +9,6 @@ from astrodata.adutils.gemutil import pyrafLoader
 from gempy import geminiTools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
-from gempy.science import preprocessing as pp
-from gempy.science import qa
 from primitives_GMOS import GMOSPrimitives
 
 class GMOS_IMAGEPrimitives(GMOSPrimitives):
@@ -23,66 +22,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     def init(self, rc):
         GMOSPrimitives.init(self, rc)
         return rc
-    
-    def iqDisplay(self, rc):
-        
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "iqDisplay", "starting"))
-        
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-
-        frame = rc["frame"]
-        if frame is None:
-            frame = 1
-        
-        # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
-
-            threshold = rc["threshold"]
-            if threshold is None:
-                # Get the pre-defined threshold for the given detector type
-                # and specific use case, i.e., display; using a look up
-                # dictionary (table)
-                gmosThresholds = Lookups.get_lookup_table(
-                    "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
-
-                # Read the detector type from the PHU
-                detector_type = ad.phu_get_key_value("DETTYPE")
-
-                # Form the key
-                threshold_key = ("display", detector_type)
-                if threshold_key in gmosThresholds:
-                    # This is an integer with units ADU
-                    threshold = gmosThresholds[threshold_key]
-                else:
-                    raise Errors.TableKeyError()
-                
-            # Call the iq_display_gmos user level function,
-            # which returns a list; take the first entry
-            ad = qa.iq_display_gmos(adinput=ad, frame=frame,
-                                    threshold=threshold)[0]
-            
-            # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                             strip=True)
-            
-            # Append the output AstroData object to the list
-            # of output AstroData objects
-            adoutput_list.append(ad)
-            
-            # Increment frame number
-            frame += 1
-        
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
-        
-        yield rc
     
     def fringeCorrect(self,rc):
         # Instantiate the log
@@ -427,11 +366,15 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     
     def normalize(self, rc):
         """
-        This primitive will normalize a stacked flat frame
+        This primitive will calculate a normalization factor from statistics
+        on CCD2, then divide by this factor and propagate variance accordingly.
+        CCD2 is used because of the dome-like shape of the GMOS detector
+        response: CCDs 1 and 3 have lower average illumination than CCD2, 
+        and that needs to be corrected for by the flat.
         
         :param threshold: Defines threshold level for the raw frame, in ADU
-        :type threshold: string, can be 'default', or a number (default
-                          value for this primitive is '45000')
+        :type threshold: float. If None, the saturation_level descriptor
+                         is used.
         """
         
         # Instantiate the log
@@ -441,25 +384,19 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "normalize", "starting"))
         
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["normalize"]
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
-            # Check whether the normalize primitive has been run previously
-            timestamp_key = self.timestamp_keys["normalize_image_gmos"]
-            if ad.phu_get_key_value(timestamp_key):
-                log.warning("No changes will be made to %s, since it has " \
-                            "already been processed by normalize" \
-                            % (ad.filename))
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
-                continue
-            
             threshold = rc["threshold"]
-            if threshold is None:
+            if threshold is None or threshold=="None":
+                threshold = ad.saturation_level().as_pytype()
+            elif threshold=="auto":
                 # Get the pre-defined threshold for the given detector type
                 # and specific use case, i.e., display; using a look up
                 # dictionary (table)
@@ -476,12 +413,90 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     threshold = gmosThresholds[threshold_key]
                 else:
                     raise Errors.TableKeyError()
-                
-            # Call the normalize_image_gmos user level function,
-            # which returns a list; take the first entry
-            ad = pp.normalize_image_gmos(adinput=ad,
-                                         threshold=threshold)[0]
+
+            # Check the number of science extensions; if more than
+            # one, use CCD2 data only
+            if ad.count_exts("SCI")>1:
+
+                # Get the CCD numbers corresponding to each extension
+                sci_ccds = gt.array_number(ad)[0]
+
+                # Pull out CCD2 data
+                central_data = []
+                for sciext in ad["SCI"]:
+                    if sci_ccds[("SCI",sciext.extver())]==2:
+                        central_data.append(sciext.data)
+                        
+                # Stack data if necessary
+                if len(central_data)>1:
+                    central_data = np.hstack(central_data)
+                else:
+                    central_data = central_data[0]
+            else:
+                central_data = ad["SCI"].data
+
+            # Check units of CCD2; if electrons, convert threshold
+            # limit from ADU to electrons. Also subtract overscan
+            # level if needed
+            overscan_level = sciext.get_key_value("OVERSCAN")
+            if overscan_level is not None:
+                threshold -= overscan_level
+                log.fullinfo("Subtracting overscan level " +
+                             "%.2f from threshold parameter" % overscan_level)
+            bunit = sciext.get_key_value("BUNIT")
+            if bunit=="electron":
+                gain = sciext.gain().as_pytype()
+                threshold *= gain 
+                log.fullinfo("Threshold parameter converted to " +
+                             "%.2f electrons" % threshold)
             
+            # Take off 5% of the width as a border
+            xborder = int(0.05 * central_data.shape[1])
+            yborder = int(0.05 * central_data.shape[0])
+            if xborder<20:
+                xborder = 20
+            if yborder<20:
+                yborder = 20
+            log.fullinfo("Using data section [%i:%i,%i:%i] from CCD2 "\
+                             "for statistics" %
+                         (xborder,central_data.shape[1]-xborder,
+                          yborder,central_data.shape[0]-yborder))
+            stat_region = central_data[yborder:-yborder,xborder:-xborder]
+            
+            # Remove negative values and values above the threshold
+            stat_region = stat_region[np.logical_and(stat_region>0,
+                                                     stat_region<threshold)]
+            
+            # Find the mode and standard deviation
+            hist,edges = np.histogram(stat_region, bins=threshold/0.1)
+            mode = edges[np.argmax(hist)]
+            std = np.std(stat_region)
+            
+            # Find the values within 3 sigma of the mode; the normalization
+            # factor is the median of these values
+            central_values = stat_region[
+                np.logical_and(stat_region > mode - 3 * std,
+                               stat_region < mode + 3 * std)]
+            norm_factor = np.median(central_values)
+            log.fullinfo("Normalization factor: %.2f" % norm_factor)
+            
+            # Divide by the normalization factor and propagate the
+            # variance appropriately
+            ad = ad.div(norm_factor)
+            
+            # Set any values flagged in the DQ plane to 1
+            # (to avoid dividing by zero)
+            for sciext in ad["SCI"]:
+                extver = sciext.extver()
+                dqext = ad["DQ",extver]
+                if dqext is not None:
+                    mask = np.where(dqext.data>0)
+                    sciext.data[mask] = 1.0
+
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                              strip=True)
@@ -503,13 +518,24 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         The primitive getProcessedFringe must have been run prior to this in 
         order to find and load the matching fringes into memory.
         
-        :param stats_scale: Use statistics to calculate the scale values?
+        There are two ways to find the value to scale fringes by:
+        1. If stats_scale is set to True, the equation:
+        (letting science data = b (or B), and fringe = a (or A))
+    
+        arrayB = where({where[SCIb < (SCIb.median+2.5*SCIb.std)]} 
+                          > [SCIb.median-3*SCIb.std])
+        scale = arrayB.std / SCIa.std
+    
+        The section of the SCI arrays to use for calculating these statistics
+        is the CCD2 SCI data excluding the outer 5% pixels on all 4 sides.
+        Future enhancement: allow user to choose section
+    
+        2. If stats_scale=False, then scale will be calculated using:
+        exposure time of science / exposure time of fringe
+
+        :param stats_scale: Use statistics to calculate the scale values,
+                            rather than exposure time
         :type stats_scale: Python boolean (True/False)
-        
-        :param logLevel: Verbosity setting for log messages to the screen.
-        :type logLevel: integer from 0-6, 0=nothing to screen, 6=everything to 
-                        screen. OR the message level as a string (i.e.,
-                        'critical', 'status', 'fullinfo'...)
         """
         
         # Instantiate the log
@@ -520,6 +546,9 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         log.debug(gt.log_message("primitive", "removeFringe",
                                  "starting"))
         
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["removeFringe"]
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
@@ -528,7 +557,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             
             # Check whether the removeFringe primitive has been run
             # previously
-            timestamp_key = self.timestamp_keys["remove_fringe_image_gmos"]
             if ad.phu_get_key_value(timestamp_key):
                 log.warning("No changes will be made to %s, since it has " \
                             "already been processed by removeFringe" \
@@ -549,11 +577,123 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Call the remove_fringe_image_gmos user level function,
-            # which returns a list; take the first entry
-            ad = pp.remove_fringe_image_gmos(adinput=ad, fringe=fringe,
-                                             stats_scale=rc["stats_scale"])[0]
+            # Clip the fringe frame to the size of the science data
+            # For a GMOS example, this allows a full frame fringe to
+            # be used for a CCD2-only science frame. 
+            fringe = gt.clip_auxiliary_data(
+                adinput=ad, aux=fringe, aux_type="cal")[0]
+
+            # Check the inputs have matching filters, binning and SCI shapes.
+            gt.checkInputsMatch(adInsA=ad, adInsB=fringe)
             
+            # Check whether statistics should be used
+            stats_scale = rc["stats_scale"]
+
+            # Calculate the scale value
+            scale = 1.0
+            if not stats_scale:
+                # Use the exposure times to calculate the scale
+                log.fullinfo("Using exposure times to calculate the scaling"+
+                             " factor")
+                try:
+                    scale = ad.exposure_time() / fringe.exposure_time()
+                except:
+                    raise Errors.InputError("Could not get exposure times " +
+                                            "for %s, %s. Try stats_scale=True" %
+                                            (ad.filename,fringe.filename))
+            else:
+
+                # Use statistics to calculate the scaling factor, following
+                # masked_sci = where({where[sciExt < 
+                #                    (sciExt.median+2.5*sciExt.std)]} 
+                #                 > [sciExt.median-3*sciExt.std])
+                # scale = masked_sci.std / fringeExt.std
+                log.fullinfo("Using statistics to calculate the " +
+                             "scaling factor")
+
+                # Check the number of science extensions; if more than
+                # one, use CCD2 data only
+                if ad.count_exts("SCI")>1:
+
+                    # Get the CCD numbers corresponding to each extension
+                    sci_ccds,frng_ccds = gt.array_number([ad,fringe])
+                
+                    # Pull out CCD2 data
+                    scidata = []
+                    frngdata = []
+                    for sciext in ad["SCI"]:
+                        extver = sciext.extver()
+
+                        # Get corresponding fringe extension
+                        frngext = fringe["SCI",extver]
+
+                        if sci_ccds[("SCI",extver)]==2:
+                            scidata.append(sciext.data)
+                        if frng_ccds[("SCI",extver)]==2:
+                            frngdata.append(frngext.data)
+                        
+                    # Stack data if necessary
+                    if len(scidata)>1:
+                        scidata = np.hstack(scidata)
+                        frngdata = np.hstack(frngdata)
+                    else:
+                        scidata = scidata[0]
+                        frngdata = frngdata[0]
+                else:
+                    scidata = ad["SCI"].data
+                    frngdata = fringe["SCI"].data
+
+
+                # Take off 5% of the width as a border
+                xborder = int(0.05 * scidata.shape[1])
+                yborder = int(0.05 * scidata.shape[0])
+                if xborder<20:
+                    xborder = 20
+                if yborder<20:
+                    yborder = 20
+                log.fullinfo("Using CCD2 data section "\
+                             "[%i:%i,%i:%i] for statistics" %
+                             (xborder,scidata.shape[1]-xborder,
+                              yborder,scidata.shape[0]-yborder))
+
+                s = scidata[yborder:-yborder,xborder:-xborder]
+                f = frngdata[yborder:-yborder,xborder:-xborder]
+
+                # Get median and standard deviation
+                # (Must flatten for compatibility with 
+                # older versions of numpy)
+                smed = np.median(s.flatten()) 
+                sstd = s.std()
+                      
+                # Remove sources from the science data:
+                # Make an array of all the points where the pixel value is 
+                # less than the median value + 2.5 x the standard deviation.
+                # and greater than the median -3 x the standard deviation.
+                smiddle = s[np.logical_and(s<(smed+(2.5*sstd)),
+                                           s>(smed-(3.0*sstd)))]
+                        
+                # Scale factor
+                # This is the same logic as used in the IRAF girmfringe,
+                # but it doesn't seem to work well in either case.
+                scale = smiddle.std() / f.std() 
+        
+            log.fullinfo("Scale factor found = "+str(scale))
+                
+            # Use mult from the arith toolbox to perform the scaling of 
+            # the fringe frame
+            scaled_fringe = fringe.mult(scale)
+            
+            # Subtract the scaled fringe from the science
+            ad = ad.sub(scaled_fringe)
+            
+            # Record the fringe file used
+            ad.phu_set_key_value("FRINGEIM", 
+                                 os.path.basename(fringe.filename),
+                                 comment=self.keyword_comments["FRINGEIM"])
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                              strip=True)
@@ -561,11 +701,106 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             # Append the output AstroData object to the list 
             # of output AstroData objects
             adoutput_list.append(ad)
-        
+            
         # Report the list of output AstroData objects to the reduction context
         rc.report_output(adoutput_list)
         yield rc
     
+    def scaleByIntensity(self, rc):
+        """
+        This primitive scales input images to the mean value of the first
+        image.  It is intended to be used to scale flats to the same
+        level before stacking.
+        """
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "scaleByIntensity", "starting"))
+
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["scaleByIntensity"]
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Loop over each input AstroData object in the input list
+        first = True
+        reference_mean = 1.0
+        for ad in rc.get_inputs_as_astrodata():
+
+            # Check the number of science extensions; if more than
+            # one, use CCD2 data only
+            if ad.count_exts("SCI")>1:
+
+                # Get the CCD numbers corresponding to each extension
+                sci_ccds = gt.array_number(ad)[0]
+
+                # Pull out CCD2 data
+                central_data = []
+                for sciext in ad["SCI"]:
+                    if sci_ccds[("SCI",sciext.extver())]==2:
+                        central_data.append(sciext.data)
+                        
+                # Stack data if necessary
+                if len(central_data)>1:
+                    central_data = np.hstack(central_data)
+                else:
+                    central_data = central_data[0]
+            else:
+                central_data = ad["SCI"].data
+
+            # Take off 5% of the width as a border
+            xborder = int(0.05 * central_data.shape[1])
+            yborder = int(0.05 * central_data.shape[0])
+            if xborder<20:
+                xborder = 20
+            if yborder<20:
+                yborder = 20
+            log.fullinfo("Using data section [%i:%i,%i:%i] from CCD2 "\
+                             "for statistics" %
+                         (xborder,central_data.shape[1]-xborder,
+                          yborder,central_data.shape[0]-yborder))
+            stat_region = central_data[yborder:-yborder,xborder:-xborder]
+            
+            # Get mean value
+            this_mean = np.mean(stat_region)
+
+            # Get relative intensity
+            if first:
+                reference_mean = this_mean
+                scale = 1.0
+                first = False
+            else:
+                scale = reference_mean / this_mean
+
+            # Log and save the scale factor
+            log.fullinfo("Relative intensity for %s: %.3f" % (ad.filename,
+                                                              scale))
+            ad.phu_set_key_value("RELINT", scale,
+                                 comment=self.keyword_comments["RELINT"])
+
+            # Multiply by the scaling factor
+            ad.mult(scale)
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+        
+        yield rc
+
     def stackFlats(self, rc):
         """
         This primitive will combine the input flats with rejection
@@ -607,9 +842,13 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             else:
                 nlow = 2
                 nhigh = 3
+            log.fullinfo("For %d input frames, using reject_method=%s, "\
+                         "nlow=%d, nhigh=%d" % 
+                         (nframes,reject_method, nlow, nhigh))
 
-            # Scale images by relative intensity before stacking
-            adinput = pp.scale_by_intensity_gmos(adinput=adinput)
+            # Run the scaleByIntensity primitive to scale flats to the
+            # same level
+            rc.run("scaleByIntensity")
 
             # Run the stackFrames primitive with the defined parameters
             prim_str = "stackFrames(suffix=%s,operation=%s,mask_type=%s," \

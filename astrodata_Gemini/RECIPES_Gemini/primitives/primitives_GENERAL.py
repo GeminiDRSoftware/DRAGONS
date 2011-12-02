@@ -65,7 +65,13 @@ class GENERALPrimitives(PrimitiveSet):
             rc.report_output(nd)
         
         yield rc
-    
+
+    def inputInfo(self, rc):
+        for ad in rc.get_inputs_as_astro_data():
+            ad.info()            
+        yield rc
+
+
     def listDir(self, rc):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],

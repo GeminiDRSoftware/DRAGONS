@@ -16,6 +16,22 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+"addMDF":{
+    "suffix":{
+        "default"       : "_mdfAdded",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "mdf":{
+        "default"       : None,
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "addReferenceCatalog":{
     "suffix":{
         "default"       : "_refcatAdded",
@@ -286,8 +302,15 @@
         "uiLevel"       : "UIBASIC",
         },
     "threshold":{
-        "default"       : None,
-        "type"          : "float",
+        "default"       : "auto",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "tile":{
+        "default"       : False,
+        "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
@@ -358,13 +381,6 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    "centroid_function":{
-        "default"       : "moffat",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True, 
-        "uiLevel"       : "UIBASIC",
-       },
     "display":{
         "default"       : True,
         "type"          : "bool",
@@ -372,8 +388,8 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    "qa":{
-        "default"       : True,
+    "separate_ext":{
+        "default"       : False,
         "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,
@@ -472,6 +488,24 @@
         },
     "reject_method":{
         "default"       : "avsigclip",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "standardizeCommonHeaders":{
+    "suffix":{
+        "default"       : "_headersStandardized",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "standardizeInstrumentHeaders":{
+    "suffix":{
+        "default"       : "_headersStandardized",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,

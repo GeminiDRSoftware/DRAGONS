@@ -1,15 +1,13 @@
 import os
 import numpy as np
+import pyfits as pf
+import pywcs
 from astrodata import AstroData
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
 from gempy import geminiTools as gt
-from gempy.science import preprocessing as pp
-from gempy.science import resample as rs
-from gempy.science import display as ds
-from gempy.science import standardization as sdz
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from primitives_GEMINI import GEMINIPrimitives
@@ -25,55 +23,6 @@ class GMOSPrimitives(GEMINIPrimitives):
     def init(self, rc):
         GEMINIPrimitives.init(self, rc)
         return rc
-    
-    def display(self,rc):
-        
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "display", "starting"))
-        
-        # Loop over each input AstroData object in the input list
-        frame = rc["frame"]
-        for ad in rc.get_inputs_as_astrodata():
-            
-            if frame>16:
-                log.warning("Too many images; only the first 16 are displayed.")
-                break
-
-            threshold = rc["threshold"]
-            if threshold is None:
-                # Get the pre-defined threshold for the given detector type
-                # and specific use case, i.e., display; using a look up
-                # dictionary (table)
-                gmosThresholds = Lookups.get_lookup_table(
-                    "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
-                
-                # Read the detector type from the phu
-                detector_type = ad.phu_get_key_value("DETTYPE")
-
-                # Form the key
-                threshold_key = ("display", detector_type)
-                if threshold_key in gmosThresholds:
-                    # This is an integer with units ADU
-                    threshold = gmosThresholds[threshold_key]
-                else:
-                    raise Errors.TableKeyError()
-                
-            try:
-                ad = ds.display_gmos(adinput=ad,
-                                     frame=frame,
-                                     extname=rc["extname"],
-                                     zscale=rc["zscale"],
-                                     threshold=threshold)
-            except:
-                log.warning("Could not display %s" % ad.filename)
-            
-            frame+=1
-        
-        yield rc
     
     def mosaicDetectors(self,rc):
         """
@@ -356,12 +305,10 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         yield rc
     
-    def standardizeHeaders(self,rc):
+    def standardizeInstrumentHeaders(self,rc):
         """
-        This primitive is used to update and add keywords to the headers of the
-        input dataset. First, it calls the standardize_headers_gemini user
-        level function to update Gemini specific keywords and then updates GMOS
-        specific keywords.
+        This primitive is used to update and add keywords specific
+        to GMOS data.
         """
         
         # Instantiate the log
@@ -369,31 +316,60 @@ class GMOSPrimitives(GEMINIPrimitives):
                                   logLevel=rc["logLevel"])
         
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "standardizeHeaders",
+        log.debug(gt.log_message("primitive", "standardizeInstrumentHeaders",
                                  "starting"))
         
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["standardizeInstrumentHeaders"]
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
-            # Check whether the standardizeHeaders primitive has been run
-            # previously
-            timestamp_key = self.timestamp_keys["standardize_headers_gmos"]
+            # Check whether the standardizeInstrumentHeaders primitive
+            # has been run previously
             if ad.phu_get_key_value(timestamp_key):
                 log.warning("No changes will be made to %s, since it has " \
-                            "already been processed by standardizeHeaders" \
-                            % (ad.filename))
+                            "already been processed by "\
+                            "standardizeInstrumentHeaders" % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
             
-            # Call the standardize_headers_gmos user level function,
-            # which returns a list; take the first entry
-            ad = sdz.standardize_headers_gmos(adinput=ad)[0]
-            
+            # Update the keywords in the headers that are specific to GMOS
+            log.fullinfo("Updating keywords that are specific to GMOS")
+
+            # Pixel scale
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="pixel_scale()", extname="SCI")
+
+            # Read noise
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="read_noise()", extname="SCI")
+
+            # Gain setting
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="gain_setting()", extname="SCI")
+
+            # Gain
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="gain()", extname="SCI")
+
+            # Dispersion axis
+            if "IMAGE" not in ad.types:
+                gt.update_key_from_descriptor(
+                    adinput=ad, descriptor="dispersion_axis()", extname="SCI")
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, keyword=self.timestamp_keys["prepare"])
+
+            # Refresh the AstroData types to reflect new PREPARED status
+            ad.refresh_types()
+                        
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                              strip=True)
@@ -410,17 +386,25 @@ class GMOSPrimitives(GEMINIPrimitives):
     
     def standardizeStructure(self,rc):
         """
-        This primitive will add an MDF to the
-        inputs if they are of type SPECT, those of type IMAGE will be handled
-        by the standardizeStructure in the primitives_GMOS_IMAGE set
-        where no MDF will be added.
-        The Science Function standardize_structure_gmos in standardize.py is
-        utilized to do the work for this primitive.
-        
+        This function ensures the MEF structure of GMOS data is ready for
+        further processing, through adding an MDF if necessary. 
+        Appropriately all SPECT type data should have an MDF added, while
+        that of IMAGE should not. If input contains mixed types of GMOS data
+        (ie. some IMAGE and some SPECT), then only those of type SPECT will
+        have MDFs attached.
+
         :param attach_mdf: A flag to turn on/off appending the appropriate MDF 
                            file to the inputs.
         :type attach_mdf: Python boolean (True/False)
                           default: True
+                  
+        :param mdf: A file name (with path) of the MDF file to append onto the
+                     input(s).
+                     Note: If there are multiple inputs and one mdf
+                     provided, then the same MDF will be applied to all inputs;
+                     else the mdf must be in a list of match the length of
+                     the inputs and the inputs must ALL be of type SPECT.
+        :type mdf: String, or list of strings
         """
         
         # Instantiate the log
@@ -431,15 +415,30 @@ class GMOSPrimitives(GEMINIPrimitives):
         log.debug(gt.log_message("primitive", "standardizeStructure",
                                  "starting"))
         
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["standardizeStructure"]
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
+        # First run addMDF if necessary to attach mdf files to the input
+        for ad in rc.get_inputs_as_astrodata():
+            if rc["attach_mdf"]:
+                # Get the mdf parameter from the RC
+                mdf = rc["mdf"]
+                if mdf is not None:
+                    rc.run("addMDF(mdf=%s)" % mdf)
+                else:
+                    rc.run("addMDF")
+
+                # It only needs to run once, on all input, so break loop
+                break
+
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
-            
+
             # Check whether the standardizeStructure primitive has been run
             # previously
-            timestamp_key = self.timestamp_keys["standardize_structure_gmos"]
             if ad.phu_get_key_value(timestamp_key):
                 log.warning("No changes will be made to %s, since it has " \
                             "already been processed by standardizeStructure" \
@@ -449,12 +448,14 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Call the standardize_structure_gmos user level function,
-            # which returns a list; take the first entry
-            ad = sdz.standardize_structure_gmos(adinput=ad,
-                                                attach_mdf=rc["attach_mdf"],
-                                                mdf=rc["mdf"])[0]
-            
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, 
+                            keyword=self.timestamp_keys["prepare"])
+
+            # Refresh the AstroData types to reflect new PREPARED status
+            ad.refresh_types()
+                
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                              strip=True)
@@ -462,11 +463,11 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Append the output AstroData object to the list
             # of output AstroData objects
             adoutput_list.append(ad)
-        
+
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
-        
+            
         yield rc
     
     def subtractBias(self, rc):
@@ -718,23 +719,365 @@ class GMOSPrimitives(GEMINIPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "tileArrays", "starting"))
         
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["tileArrays"]
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
-            # Call the user level function,
-            # which returns a list; take the first entry
-            ad = rs.tile_arrays(adinput=ad,tile_all=rc["tile_all"])[0]
+            # Get the necessary parameters from the RC
+            tile_all = rc["tile_all"]
+
+            # Store PHU to pass to output AD
+            phu = ad.phu
+
+            # Do nothing if there is only one science extension
+            nsciext = ad.count_exts("SCI")
+            if nsciext==1:
+                log.fullinfo("Only one science extension found; " +
+                             "no tiling done for %s" % ad.filename)
+                adoutput_list.append(ad)
+                continue
+
+            # Flag to track whether input has changed
+            changed = False
+
+            # First trim off any overscan regions still present
+            # so they won't get tiled with science data
+            log.fullinfo("Trimming data to data section:")
+            old_shape = " ".join(
+                ["%i,%i" % ext.data.shape for ext in ad["SCI"]])
+            ad = gt.trim_to_data_section(adinput=ad)[0]
+            new_shape = " ".join(
+                ["%i,%i" % ext.data.shape for ext in ad["SCI"]])
+            if old_shape!=new_shape:
+                changed = True
+
+            # Make chip gaps to tile with science extensions if tiling all
+            # Gap width comes from a lookup table
+            gap_height = int(ad["SCI",1].data.shape[0])
+            gap_width = _obtain_arraygap(adinput=ad)
+            chip_gap = np.zeros((gap_height,gap_width))
+
+            # Get the correct order of the extensions by sorting on
+            # the first element in detector section
+            # (raw ordering is whichever amps read out first)
+            detsecs = ad.detector_section().as_list()
+            if not isinstance(detsecs[0],list):
+                detsecs = [detsecs]
+            detx1 = [sec[0] for sec in detsecs]
+            ampsorder = range(1,nsciext+1)
+            orderarray = np.array(
+                zip(ampsorder,detx1),dtype=[('ext',np.int),('detx1',np.int)])
+            orderarray.sort(order='detx1')
+            if np.all(ampsorder==orderarray['ext']):
+                in_order = True
+            else:
+                ampsorder = orderarray['ext']
+                in_order = False
+                
+            # Get array sections for determining when
+            # a new array is found
+            ccdsecs = ad.array_section().as_list()
+            if not isinstance(ccdsecs[0],list):
+                ccdsecs = [ccdsecs]
+            if len(ccdsecs)!=nsciext:
+                ccdsecs*=nsciext
+            ccdx1 = [sec[0] for sec in ccdsecs]
+
+
+            # Now, get the number of extensions per ccd
+
+            # Initialize everything 
+            ccd_data = {}
+            amps_per_ccd = {}
+            sci_data_list = []
+            var_data_list = []
+            dq_data_list = []
+            num_ccd = 0
+            ext_count = 1
+            ampname = {}
+            amplist = []
+            refsec = {}
+            mapping_dict = {}
             
+            # Initialize these so that first extension will always
+            # start a new CCD
+            last_detx1 = detx1[ampsorder[0]-1]-1
+            last_ccdx1 = ccdx1[ampsorder[0]-1]
+
+            for i in ampsorder:
+                sciext = ad["SCI",i]
+                varext = ad["VAR",i]
+                dqext = ad["DQ",i]
+
+                this_detx1 = detx1[i-1]
+                this_ccdx1 = ccdx1[i-1]
+
+                amp = sciext.get_key_value("AMPNAME")
+
+                if (this_detx1>last_detx1 and this_ccdx1<=last_ccdx1):
+                    # New CCD found
+
+                    # If not first extension, store current data lists
+                    # (or, if tiling all CCDs together, add a chip gap)
+                    if num_ccd>0:
+                        if tile_all:
+                            sci_data_list.append(
+                                chip_gap.astype(np.float32))
+                            if varext is not None:
+                                var_data_list.append(
+                                    chip_gap.astype(np.float32))
+                            if dqext is not None:
+                                dq_data_list.append(
+                                    chip_gap.astype(np.int16))
+                        else:
+                            ccd_data[num_ccd] = {"SCI":sci_data_list,
+                                                 "VAR":var_data_list,
+                                                 "DQ":dq_data_list}
+                            ampname[num_ccd] = amplist
+
+                    # Increment CCD number and restart amps per ccd
+                    num_ccd += 1
+                    amps_per_ccd[num_ccd] = 1
+
+                    # Start new data lists (or append if tiling all)
+                    if tile_all:                            
+                        sci_data_list.append(sciext.data)
+                        if varext is not None:
+                            var_data_list.append(varext.data)
+                        if dqext is not None:
+                            dq_data_list.append(dqext.data)
+
+                        # Keep the name of the amplifier
+                        # (for later header updates)
+                        amplist.append(amp)
+
+                        # Keep ccdsec and detsec from first extension only
+                        if num_ccd==1:
+                            refsec[1] = {"CCD":ccdsecs[i-1],
+                                         "DET":detsecs[i-1]} 
+                    else:
+                        sci_data_list = [sciext.data]
+                        if varext is not None:
+                            var_data_list = [varext.data]
+                        if dqext is not None:
+                            dq_data_list = [dqext.data]
+                        amplist = [amp]
+                        # Keep ccdsec and detsec from first extension
+                        # of each CCD
+                        refsec[num_ccd] = {"CCD":ccdsecs[i-1],
+                                           "DET":detsecs[i-1]}
+                else:
+                    # Increment amps and append data
+                    amps_per_ccd[num_ccd] += 1
+                    amplist.append(amp)
+                    sci_data_list.append(sciext.data)
+                    if varext:
+                        var_data_list.append(varext.data)
+                    if dqext:
+                        dq_data_list.append(dqext.data)
+                    
+
+                # If last iteration, store the current data lists
+                if tile_all:
+                    key = 1
+                else:
+                    key = num_ccd
+                if ext_count==nsciext:
+                    ccd_data[key] = {"SCI":sci_data_list,
+                                     "VAR":var_data_list,
+                                     "DQ":dq_data_list}
+                    ampname[key] = amplist
+
+                # Keep track of which extensions ended up in
+                # which CCD
+                try:
+                    mapping_dict[key].append(i)
+                except KeyError:
+                    mapping_dict[key] = [i]
+
+                last_ccdx1 = this_ccdx1
+                last_detx1 = this_detx1
+                ext_count += 1
+
+            if nsciext==num_ccd and in_order and not tile_all:
+                # No reordering or tiling necessary, return input AD
+                log.fullinfo("Only one amplifier per array; " +
+                             "no tiling done for %s" % ad.filename)
+
+                # If file has not changed, go to next file.  If it
+                # has changed, set time stamps and change filename
+                # at the end of the for-loop
+                if changed:
+                    adoutput = ad
+                else:
+                    adoutput_list.append(ad)
+                    continue
+            else:
+                if not in_order:
+                    log.fullinfo("Reordering data by detector section")
+                if tile_all:
+                    log.fullinfo("Tiling all data into one extension")
+                elif nsciext!=num_ccd:
+                    log.fullinfo("Tiling data into one extension per array")
+
+                # Get header from the center-left extension of each CCD
+                # (or the center of CCD2 if tiling all)
+                # This is in order to get the most accurate WCS on CCD2
+                ref_header = {}
+                startextn = 1
+                ref_shift = {}
+                ref_shift_temp = 0
+                total_shift = 0
+                on_ext=0
+                for ccd in range(1,num_ccd+1):
+                    if tile_all:
+                        key = 1
+                        if ccd!=2:
+                            startextn += amps_per_ccd[ccd]
+                            continue
+                    else:
+                        key = ccd
+                        total_shift = 0
+
+                    refextn = ampsorder[int((amps_per_ccd[ccd]+1)/2.0-1)
+                                        + startextn - 1]
+
+                    # Get size of reference shift from 0,0 to
+                    # start of reference extension
+                    for data in ccd_data[key]["SCI"]:
+                        # if it's a chip gap, add width to total, continue
+                        if data.shape[1]==gap_width:
+                            total_shift += gap_width
+                        else:
+                            on_ext+=1
+                            # keep total up to now if it's the reference ext
+                            if ampsorder[on_ext-1]==refextn:
+                                ref_shift_temp = total_shift
+                            # add in width of this extension
+                            total_shift += data.shape[1]
+
+                    # Get header from reference extension
+                    dict = {}
+                    for extname in ["SCI","VAR","DQ"]:
+                        ext = ad[extname,refextn]
+                        if ext is not None:
+                            header = ext.header
+                        else:
+                            header = None
+                        dict[extname] = header
+                    
+                    if dict["SCI"] is None:
+                        raise Errors.ScienceError("Header not found " +
+                                                  "for reference " + 
+                                                  "extension " +
+                                                  "[SCI,%i]" % refextn)
+
+                    ref_header[key] = dict
+                    ref_shift[key] = ref_shift_temp
+
+                    startextn += amps_per_ccd[ccd]
+
+                # Make a new AD
+                adoutput = AstroData()
+                adoutput.filename = ad.filename
+                adoutput.phu = phu
+
+                # Stack data from each array together and
+                # append to output AD
+                if tile_all:
+                    num_ccd = 1
+                nextend = 0
+                for ccd in range(1,num_ccd+1):
+                    for extname in ccd_data[ccd].keys():
+                        if len(ccd_data[ccd][extname])>0:
+                            data = np.hstack(ccd_data[ccd][extname])
+                            header = ref_header[ccd][extname]
+                            new_ext = AstroData(data=data,header=header)
+                            new_ext.rename_ext(name=extname,ver=ccd)
+                            adoutput.append(new_ext)
+                        
+                            nextend += 1
+
+                # Update header keywords with appropriate values
+                # for the new data set
+                adoutput.phu_set_key_value(
+                    "NSCIEXT",num_ccd,comment=self.keyword_comments["NSCIEXT"])
+                adoutput.phu_set_key_value(
+                    "NEXTEND",nextend,comment=self.keyword_comments["NEXTEND"])
+                for ext in adoutput:
+                    extname = ext.extname()
+                    extver = ext.extver()
+
+                    # Update AMPNAME
+                    if extname!="DQ":
+                        new_ampname = ",".join(ampname[extver])
+
+                        # These ampnames can be long, so truncate
+                        # the comment by hand to avoid the error
+                        # message from pyfits
+                        comment = self.keyword_comments["AMPNAME"]
+                        if len(new_ampname)>=65:
+                            comment = ""
+                        else:
+                            comment = comment[0:65-len(new_ampname)]
+                        ext.set_key_value("AMPNAME",new_ampname,
+                                          comment=comment)
+                    # Update DATASEC
+                    data_shape = ext.data.shape
+                    new_datasec = "[1:%i,1:%i]" % (data_shape[1],
+                                                   data_shape[0])
+                    ext.set_key_value("DATASEC",new_datasec,
+                                      comment=self.keyword_comments["DATASEC"])
+
+                    # Update DETSEC
+                    unbin_width = data_shape[1] * ad.detector_x_bin()
+                    old_detsec = refsec[extver]["DET"]
+                    new_detsec = "[%i:%i,%i:%i]" % (old_detsec[0]+1,
+                                              old_detsec[0]+unbin_width,
+                                              old_detsec[2]+1,old_detsec[3])
+                    ext.set_key_value("DETSEC",new_detsec,
+                                      comment=self.keyword_comments["DETSEC"])
+
+                    # Update CCDSEC
+                    old_ccdsec = refsec[extver]["CCD"]
+                    new_ccdsec = "[%i:%i,%i:%i]" % (old_ccdsec[0]+1,
+                                              old_ccdsec[0]+unbin_width,
+                                              old_ccdsec[2]+1,old_ccdsec[3])
+                    ext.set_key_value("CCDSEC",new_ccdsec,
+                                      comment=self.keyword_comments["CCDSEC"])
+
+                    # Update CRPIX1
+                    crpix1 = ext.get_key_value("CRPIX1")
+                    if crpix1 is not None:
+                        new_crpix1 = crpix1 + ref_shift[extver]
+                        ext.set_key_value(
+                            "CRPIX1",new_crpix1,
+                            comment=self.keyword_comments["CRPIX1"])
+
+                
+                # Update and attach OBJCAT if needed
+                if ad["OBJCAT"] is not None:
+                    adoutput = _tile_objcat(ad,adoutput,mapping_dict)[0]
+
+                # Refresh AstroData types in output file (original ones
+                # were lost when new AD was created)
+                adoutput.refresh_types()
+            
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=adoutput, keyword=timestamp_key)
+
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                             strip=True)
+            adoutput.filename = gt.fileNameUpdater(
+                adIn=adoutput, suffix=rc["suffix"], strip=True)
             
             # Append the output AstroData object to the list
             # of output AstroData objects
-            adoutput_list.append(ad)
+            adoutput_list.append(adoutput)
         
         # Report the list of output AstroData objects to the reduction
         # context
@@ -755,6 +1098,9 @@ class GMOSPrimitives(GEMINIPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "trimOverscan", "starting"))
         
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["trimOverscan"]
+
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
@@ -762,7 +1108,6 @@ class GMOSPrimitives(GEMINIPrimitives):
         for ad in rc.get_inputs_as_astrodata():
             
             # Check whether the trimOverscan primitive has been run previously
-            timestamp_key = self.timestamp_keys["trim_overscan"]
             if ad.phu_get_key_value(timestamp_key):
                 log.warning("No changes will be made to %s, since it has " \
                             "already been processed by trimOverscan" \
@@ -772,10 +1117,17 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Call the trim_overscan user level function,
-            # which returns a list; take the first entry
-            ad = pp.trim_overscan(adinput=ad)[0]
+            # Trim the data to its data_section descriptor and update
+            # keywords to match
+            ad = gt.trim_to_data_section(ad)[0]
             
+            # Set 'TRIMMED' to 'yes' in the PHU and update the log
+            ad.phu_set_key_value("TRIMMED","yes",
+                                 comment=self.keyword_comments["TRIMMED"])
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                              strip=True)
@@ -870,3 +1222,125 @@ class GMOSPrimitives(GEMINIPrimitives):
         rc.report_output(adoutput_list)
         
         yield rc
+
+##############################################################################
+# Below are the helper functions for the primitives in this module           #
+##############################################################################
+
+def _obtain_arraygap(adinput=None):
+    """
+    This function obtains the raw array gap size for the different GMOS
+    detectors and returns it after correcting for binning. There are two
+    values in the GMOSArrayGaps.py file in the GMOS
+    lookup directory, one for unbinned data and one to be used to calculate
+    the chip gap when the data are binned.
+    """
+    
+    # Get the dictionary containing the CCD gaps
+    all_arraygaps_dict = Lookups.get_lookup_table(\
+        "Gemini/GMOS/GMOSArrayGaps.py","gmosArrayGaps")
+    
+    # Obtain the X binning and detector type for the ad input
+    detector_x_bin = adinput.detector_x_bin()
+    detector_type = adinput.phu_get_key_value("DETTYPE")
+
+    # Check the read values
+    if detector_x_bin is None or detector_type is None:
+        if hasattr(ad, "exception_info"):
+            raise adinput.exception_info
+    
+    # Check if the data are binned
+    if detector_x_bin > 1:
+        bin_string = "binned"
+    else:
+        bin_string = "unbinned"
+
+    # Form the key
+    key = (detector_type, bin_string)
+
+    # Obtain the array gap value and fix for any binning
+    if key in all_arraygaps_dict:
+        arraygap = all_arraygaps_dict[key] / detector_x_bin.as_pytype()
+    else:
+        raise Errors.ScienceError("Array gap value not " +
+                                  "found for %s" % (detector_type)) 
+    return arraygap
+
+def _tile_objcat(adinput=None,adoutput=None,mapping_dict=None):
+    """
+    This function tiles together separate OBJCAT extensions, converting
+    the pixel coordinates to the new WCS.
+    """
+
+    adinput = gt.validate_input(adinput=adinput)
+    adoutput = gt.validate_input(adinput=adoutput)
+
+    if mapping_dict is None:
+        raise Errors.InputError("mapping_dict must not be None")
+
+    if len(adinput)!=len(adoutput):
+        raise Errors.InputError("adinput must have same length as adoutput")
+    output_dict = gt.make_dict(key_list=adinput, value_list=adoutput)
+
+    adoutput_list = []
+    for ad in adinput:
+        
+        adout = output_dict[ad]
+
+        objcat = ad["OBJCAT"]
+        if objcat is None:
+            raise Errors.InputError("No OBJCAT found in %s" % ad.filename)
+
+        for outext in adout["SCI"]:
+            out_extver = outext.extver()
+            output_wcs = pywcs.WCS(outext.header)
+
+            col_names = None
+            col_fmts = None
+            col_data = {}
+            for inp_extver in mapping_dict[out_extver]:
+                inp_objcat = ad["OBJCAT",inp_extver]
+
+                # Make sure there is data in the OBJCAT
+                if inp_objcat is None:
+                    continue
+                if inp_objcat.data is None:
+                    continue
+                if len(inp_objcat.data)==0:
+                    continue
+
+                # Get column names, formats from first OBJCAT
+                if col_names is None:
+                    col_names = inp_objcat.data.names
+                    col_fmts = inp_objcat.data.formats
+                    for name in col_names:
+                        col_data[name] = inp_objcat.data.field(name).tolist()
+                else:
+                    # Stack all OBJCAT data together
+                    for name in col_names:
+                        col_data[name].extend(inp_objcat.data.field(name))
+
+            # Get new pixel coordinates for the objects from RA/Dec
+            # and the output WCS
+            ra = col_data["X_WORLD"]
+            dec = col_data["Y_WORLD"]
+            newx,newy = output_wcs.wcs_sky2pix(ra,dec,1)
+            col_data["X_IMAGE"] = newx
+            col_data["Y_IMAGE"] = newy
+
+            columns = {}
+            for name,format in zip(col_names,col_fmts):
+                # Let add_objcat auto-number sources
+                if name=="NUMBER":
+                    continue
+
+                # Define pyfits column to pass to add_objcat
+                columns[name] = pf.Column(name=name,format=format,
+                                          array=col_data[name])
+
+            adout = gt.add_objcat(adinput=adout, extver=out_extver,
+                                  columns=columns)[0]
+
+        adoutput_list.append(adout)
+
+    return adoutput_list
