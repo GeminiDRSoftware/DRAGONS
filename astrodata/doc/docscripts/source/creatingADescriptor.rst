@@ -89,7 +89,8 @@ Adding the Descriptor Function to the CalculatorClass
 ######################################################
 
 To add the descriptor once the descriptor is present in the ``DescriptorList.py`` one merely needs to add a function to the
-appropriate DescriptorCalculator class. The contents of ``OBSERVED_Descriptors.py" module in the astrodata_Sample
+appropriate DescriptorCalculator class. The contents of
+``OBSERVED_Descriptors.p`` module in the astrodata_Sample
 configuration is::
 
     class OBSERVED_DescriptorCalc:
@@ -101,8 +102,8 @@ To add the "telescope" descriptor means adding another function to this class::
         def telescope(self, dataset, **args):
             return dataset.get_phu_key_value("TELESCOP")
 
-Note, all descriptors should have the same signature, including a ``dataset`` argument and ``**args``. The latter is
-requires to the infrastructure can send unexpected parameters to the function which may be provided by the infrastructure
-but of no interest to that particular descriptor algorithm.
-
-
+Note, all descriptors should have the same function signature,  including
+``self``, a ``dataset`` argument and ``**args`` to catch all named arguments.
+The latter is required by the infrastructure so that unexpected parameters 
+can be sent to all descriptor algorithms, some of which may be handled by the
+infrastructure on behalf of the descriptor function.
