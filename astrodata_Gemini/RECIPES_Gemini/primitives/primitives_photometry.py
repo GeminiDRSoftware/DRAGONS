@@ -1098,6 +1098,16 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
         tdata = hdulist[1].data
         tcols = hdulist[1].columns
 
+        # If sextractor returned no data, remove files and return an
+        # empty list
+        if tdata is None:
+            log.fullinfo("Removing temporary files from disk:\n%s\n%s" %
+                         (scitmpfn,dqtmpfn))
+            os.remove(scitmpfn)
+            os.remove(dqtmpfn)
+            os.remove(outtmpfn)
+            return [],None
+
         # Convert FWHM_WORLD to arcsec
         fwhm = tdata["FWHM_WORLD"]
         fwhm *= 3600.0

@@ -130,6 +130,22 @@ class GMOSPrimitives(GEMINIPrimitives):
             else:
                 fl_vardq=no
             
+            # Check whether the default statistics section can be used,
+            # if not, turn off fl_clean to avoid crashes
+            # Current default is [2150:3970,100:4400], unbinned
+            xbin = ad.detector_x_bin().as_pytype()
+            ybin = ad.detector_x_bin().as_pytype()
+            default_sec = [2150/xbin,3970/xbin,100/ybin,4400/ybin]
+            fl_clean = yes
+            for ext in ad["SCI"]:
+                shape = ext.data.shape
+                
+                # Check y only, for 6-amp data the x will always
+                # be too small.
+                if shape[0]<default_sec[3]:
+                    fl_clean = no
+                    break
+
             # Prepare input files, lists, parameters... for input to 
             # the CL script
             clm=mgr.CLManager(imageIns=ad, suffix="_out", 
@@ -151,6 +167,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                 "outimages"   :clm.imageOutsFiles(type="string"),
                 # Set the value of FL_vardq set above
                 "fl_vardq"    :fl_vardq,
+                # Set the clean parameter
+                "fl_clean"    :fl_clean,
                 # This returns a unique/temp log file for IRAF 
                 "logfile"     :clm.templog.name,
                 }
