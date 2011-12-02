@@ -186,7 +186,20 @@ if __name__=='__main__':
     except:
         fp_mask = None
 
-    if (("GMOS_IMAGE" in ad.types and
+    if "GMOS" not in ad.types:
+        print "\nFile %s is not a GMOS file." % imgname
+        print "Only GMOS images can be reduced at this time.\n"
+        sys.exit()
+    elif "GMOS_DARK" in ad.types:
+        print "\nFile %s is a GMOS dark." % imgname
+        print "Only GMOS images can be reduced at this time.\n"
+        sys.exit()
+    elif ("GMOS_IMAGE" in ad.types and
+          fp_mask!="Imaging"):
+        print "\nFile %s is a slit image." % imgname
+        print "Only GMOS images can be reduced at this time.\n"
+        sys.exit()
+    elif (("GMOS_IMAGE" in ad.types and
          fp_mask=="Imaging" and
          "GMOS_DARK" not in ad.types) or
         "GMOS_BIAS" in ad.types or 
@@ -211,12 +224,8 @@ if __name__=='__main__':
         print ""
 
     else:
-        print "\nFile %s is not a supported type." % imgname + \
-              "\nOnly GMOS images can be reduced at this time."
-
-        print "\nTypes:",ad.types
-        print "Focal plane mask:",fp_mask,"\n"
-
+        print "\nFile %s is not a supported type." % imgname
+        print "Only GMOS images can be reduced at this time.\n"
         sys.exit()
 
 
