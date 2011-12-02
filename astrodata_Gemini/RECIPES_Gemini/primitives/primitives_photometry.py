@@ -313,7 +313,10 @@ class PhotometryPrimitives(GENERALPrimitives):
                                         "Setting method=daofind")
                             method="daofind"
                         else:
-                            nobj = len(columns["NUMBER"].array)
+                            try:
+                                nobj = len(columns["NUMBER"].array)
+                            except KeyError:
+                                nobj = 0
                             if nobj==0:
                                 log.stdinfo("No sources found in "\
                                             "%s['SCI',%d]" %
@@ -1106,7 +1109,7 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
             os.remove(scitmpfn)
             os.remove(dqtmpfn)
             os.remove(outtmpfn)
-            return [],None
+            return {},None
 
         # Convert FWHM_WORLD to arcsec
         fwhm = tdata["FWHM_WORLD"]

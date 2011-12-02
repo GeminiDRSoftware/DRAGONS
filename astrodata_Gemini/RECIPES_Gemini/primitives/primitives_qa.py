@@ -65,29 +65,44 @@ class QAPrimitives(GENERALPrimitives):
                     bg = None
                 else:
                     bg = objcat.data["BACKGROUND"]
-                    if np.all(bg==-999):
+                    if len(bg)==0 or np.all(bg==-999):
                         log.fullinfo("No background values in %s[OBJCAT,%d], "\
                                      "taking median of data instead." %
                                      (ad.filename,extver))
                         bg = None
+                    else:
+                        flags = objcat.data["FLAGS"]
+                        dqflag = objcat.data["IMAFLAGS_ISO"]
+                        if not np.all(dqflag==-999):
+                            flags |= dqflag
+                        good_bg = bg[flags==0]
 
-                if bg is not None:
-                    flags = objcat.data["FLAGS"]
-                    dqflag = objcat.data["IMAFLAGS_ISO"]
-                    if not np.all(dqflag==-999):
-                        flags |= dqflag
-                    good_bg = bg[flags==0]
+                        if len(good_bg)<3:
+                            log.fullinfo("No good background values in "\
+                                         "%s[OBJCAT,%d], "\
+                                         "taking median of data instead." %
+                                         (ad.filename,extver))
+                            bg = None
+                        else:
 
-                    # sigma-clip
-                    mean = np.mean(good_bg)
-                    sigma = np.std(good_bg)
-                    good_bg = good_bg[((good_bg < mean+sigma) & 
-                                       (good_bg > mean-sigma))]
+                            # sigma-clip
+                            mean = np.mean(good_bg)
+                            sigma = np.std(good_bg)
+                            good_bg = good_bg[((good_bg < mean+sigma) & 
+                                               (good_bg > mean-sigma))]
+                            
 
-                    sci_bg = np.mean(good_bg)
-                    sci_std = np.std(good_bg)
+                            if len(good_bg)<3:
+                                log.fullinfo("No good background values in "\
+                                             "%s[OBJCAT,%d], "\
+                                             "taking median of data instead." %
+                                             (ad.filename,extver))
+                                bg = None
+                            else:
+                                sci_bg = np.mean(good_bg)
+                                sci_std = np.std(good_bg)
 
-                else:
+                if bg is None:
                     scidata = sciext.data
 
                     dqext = ad["DQ",extver]
