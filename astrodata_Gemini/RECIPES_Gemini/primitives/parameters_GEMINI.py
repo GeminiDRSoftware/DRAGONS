@@ -177,7 +177,7 @@
     "suffix":{
         # This primitive only sets the filename if you
         # ask it to correct the Astrometry
-        "default"       : "_AstrometryCorrected",
+        "default"       : "_astrometryCorrected",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
