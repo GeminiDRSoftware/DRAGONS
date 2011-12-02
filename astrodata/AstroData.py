@@ -759,7 +759,7 @@ integrates other functionality.
                 extname=extname, extver=extver, autonum=auto_number,\
                 hduindx=hdu_index)
             
-    def infostr(self, as_html=False, oid=False, table=False, subref=False):
+    def infostr(self, as_html=False, oid=False, table=False, help=False):
         """
         :param as_html: return as HTML formatted string
         :type as_html: bool
@@ -767,8 +767,8 @@ integrates other functionality.
         :param oid: include object id 
         :type oid: bool
         
-        :param subref: include sub-data reference information
-        :type subref: bool
+        :param help: include sub-data reference information
+        :type help: bool
 
         The infostr(..) function is used to get a string ready for display
         either as plain text or HTML.  It provides AstroData-relative
@@ -888,7 +888,23 @@ integrates other functionality.
                         rets +="\n           .header    %s" % extHeaderType 
                         rets +="\n           .data      %s" % extDataType
                 hdu_indx += 1
-            if subref:
+            if table:
+                for i, ext in enumerate(self):
+                    if isinstance(ext.hdulist[1], pyfits.core.BinTableHDU):
+                        rets += "\n" + "="*79 + "\nAD[" + str(i) + "]" 
+                        rets += ", BinTableHDU: " + ext.extname() + \
+                            "\n" + "="*79
+                        rets += "\n      Name            Value" + \
+                            " "*25 + "Format"
+                        rets += "\n" + "-"*79
+                        fitsrec = ext.hdulist[1].data
+                        for j in range(len(fitsrec.names)):
+            #"ext.hdulist[1].header.ascard['TFORM%s']._cardimage.split(':')[1]"
+                            rets += "\n%-15s : %-25s         %3s" % \
+                            (fitsrec.names[j],fitsrec[0][j], \
+                                    fitsrec.formats[j])
+                        rets += "\n" + "="*79 + "\n\n"
+            if help:
                 s = " "*24
                 rets += """
 
@@ -935,32 +951,24 @@ its corresponding AD.hdulist extension (ex. AD[0].hdulist[1] == AD.hdulist[1])
 
 One important difference to note is that astrodata begins its first element 
 '0' with data (ImageHDU), where pyfits HDUList begins its first element '0'
-with meta-data (PrimaryHDU). This causes a 'one off' discrepancy. 
+with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
 
-                """
+Flags    default    Description
+-----    -------    -----------
+as_html   False     return html
+
+oid       False     include object ids
+
+table     False     show BinTableHDU contents
+
+help      False     show help information    """
+
         else:
             rets="<b>Extension List</b>: %d in file" % len(self)
             rets+="<ul>"
             for ext in self:
                 rets += "<li>(%s, %s)</li>" % (ext.extname(), str(ext.extver()))
             rets += "</ul>"
-        if table:
-            rets = ""
-            count = 0
-            for ext in self:
-                if isinstance(ext.hdulist[1], pyfits.core.BinTableHDU):
-                    count += 1
-                    rets += "\n" + "="*79 + "\n" + str(count) 
-                    rets += ". BinTableHDU: " + ext.extname() + "\n" + "="*79
-                    rets += "\n      Name            Value" + " "*25 + "Format"
-                    rets += "\n" + "-"*79
-                    fitsrec = ext.hdulist[1].data
-                    for i in range(len(fitsrec.names)):
-                        fstr = eval(\
-        "ext.hdulist[1].header.ascard['TFORM%s']._cardimage.split(':')[1]" % (i + 1))
-                        rets += "\n%-15s : %-15s         %3s (%-10s)" % \
-                        (fitsrec.names[i],fitsrec[0][i], fitsrec.formats[i], fstr)
-                    rets += "\n" + "="*79
         return rets
         
     def except_if_single(self):
@@ -2057,11 +2065,11 @@ with meta-data (PrimaryHDU). This causes a 'one off' discrepancy.
         self.relhdul()
         return 
    
-    def info(self, oid=False, table=False, subref=False):
+    def info(self, oid=False, table=False, help=False):
         """The info(..) function prints self.infostr() and 
         is maintained for convienience and low level debugging.
         """
-        print self.infostr(oid=oid, table=table, subref=subref)       
+        print self.infostr(oid=oid, table=table, help=help)       
 
     def display_id(self):
         import IDFactory
