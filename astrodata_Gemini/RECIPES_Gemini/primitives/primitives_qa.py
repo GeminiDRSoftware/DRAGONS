@@ -209,6 +209,8 @@ class QAPrimitives(GENERALPrimitives):
                 log.warning('No good sources found in %s' % ad.filename)
                 if display:
                     iq_overlays.append(None)
+                mean_fwhms.append(None)
+                mean_ellips.append(None)
                 continue
 
             # Go through all extensions
@@ -219,7 +221,10 @@ class QAPrimitives(GENERALPrimitives):
                 if len(src)==0:
                     log.warning('No good sources found in %s, %s extensions' %
                                 (ad.filename,key))
-                    gt.mark_history(adinput=ad, keyword=timestamp_key)
+                    if display:
+                        iq_overlays.append(None)
+                    mean_fwhms.append(None)
+                    mean_ellips.append(None)
                     continue
 
                 # Clipped mean of FWHM and ellipticity
@@ -315,24 +320,31 @@ class QAPrimitives(GENERALPrimitives):
         for ad in orig_input:
 
             # Write FWHM and ellipticity to header
-            count = 0
-            for sciext in ad["SCI"]:
-                mean_fwhm = mean_fwhms[count]
-                mean_ellip = mean_ellips[count]
-                sciext.set_key_value(
-                    "MEANFWHM", mean_fwhm,
-                    comment=self.keyword_comments["MEANFWHM"])
-                sciext.set_key_value(
-                    "MEANELLP", mean_ellip,
-                    comment=self.keyword_comments["MEANELLP"])
-                count+=1
+            if separate_ext:
+                count = 0
+                for sciext in ad["SCI"]:
+                    mean_fwhm = mean_fwhms[count]
+                    mean_ellip = mean_ellips[count]
+                    if mean_fwhm is not None:
+                        sciext.set_key_value(
+                            "MEANFWHM", mean_fwhm,
+                            comment=self.keyword_comments["MEANFWHM"])
+                    if mean_ellip is not None:
+                        sciext.set_key_value(
+                            "MEANELLP", mean_ellip,
+                            comment=self.keyword_comments["MEANELLP"])
+                    count+=1
             if ad.count_exts("SCI")==1 or not separate_ext:
-                ad.phu_set_key_value(
-                    "MEANFWHM", mean_fwhms[0],
-                    comment=self.keyword_comments["MEANFWHM"])
-                ad.phu_set_key_value(
-                    "MEANELLP", mean_ellips[0],
-                    comment=self.keyword_comments["MEANELLP"])
+                mean_fwhm = mean_fwhms[0]
+                mean_ellip = mean_ellips[0]
+                if mean_fwhm is not None:
+                    ad.phu_set_key_value(
+                        "MEANFWHM", mean_fwhm,
+                        comment=self.keyword_comments["MEANFWHM"])
+                if mean_ellip is not None:
+                    ad.phu_set_key_value(
+                        "MEANELLP", mean_ellip,
+                        comment=self.keyword_comments["MEANELLP"])
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
