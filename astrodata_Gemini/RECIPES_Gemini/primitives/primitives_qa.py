@@ -124,6 +124,28 @@ class QAPrimitives(GENERALPrimitives):
                     all_bg = np.mean([all_bg,sci_bg])
                     all_std = np.sqrt(all_std**2+sci_std**2)
 
+                # OK, make sure we have a number in electrons
+                if(bunit=='adu'):
+                    bg_e = all_bg * float(sciext.gain())
+                else:
+                    bg_e = all_bg
+                log.fullinfo("BG electrons = %f" % bg_e)
+                # Now divide it by the exposure time
+                bg_e /= float(sciext.exposure_time())
+                log.fullinfo("BG electrons/s = %f" % bg_e)
+
+                # Now, it's in pixels, divide it by the area of a pixel to get arcsec^2
+                pixscale = float(sciext.pixel_scale())
+                bg_e /= (pixscale*pixscale)
+                log.fullinfo("BG electrons/s/as^2 = %f" % bg_e)
+                # Now get that in (instrumental) magnitudes...
+                bg_im = -2.5 * math.log10(bg_e)
+                log.fullinfo("BG inst mag = %f" % bg_im)
+                # And convert to apparent magnitude using the nominal zeropoint
+                bg_am = bg_im + float(sciext.nominal_photometric_zeropoint())
+                log.fullinfo("BG mag = %f" % bg_am)
+
+
                 # Write sky background to science header and log the value
                 # if not averaging all together
                 sciext.set_key_value(
@@ -137,6 +159,7 @@ class QAPrimitives(GENERALPrimitives):
                     log.stdinfo("    "+"Sky level measurement:".ljust(llen) +
                                 ("%.0f +/- %.0f %s" % 
                                  (sci_bg,sci_std,bunit)).rjust(rlen))
+                    log.stdinfo("    mag / sq arcsec in %s: %.1f" % (sciext.filter_name(pretty=True), bg_am))
                     log.stdinfo("    "+"-"*dlen+"\n")
 
             # Write mean background to PHU if averaging all together
@@ -146,12 +169,34 @@ class QAPrimitives(GENERALPrimitives):
                     "SKYLEVEL", all_bg, comment="%s [%s]" % 
                     (self.keyword_comments["SKYLEVEL"],bunit))
 
+                # OK, make sure we have a number in electrons
+                if(bunit=='adu'):
+                    bg_e = all_bg * float(sciext.gain())
+                else:
+                    bg_e = all_bg
+                log.fullinfo("BG electrons = %f" % bg_e)
+                # Now divide it by the exposure time
+                bg_e /= float(sciext.exposure_time())
+                log.fullinfo("BG electrons/s = %f" % bg_e)
+
+                # Now, it's in pixels, divide it by the area of a pixel to get arcsec^2
+                pixscale = float(sciext.pixel_scale())
+                bg_e /= (pixscale*pixscale)
+                log.fullinfo("BG electrons/s/as^2 = %f" % bg_e)
+                # Now get that in (instrumental) magnitudes...
+                bg_im = -2.5 * math.log10(bg_e)
+                log.fullinfo("BG inst mag = %f" % bg_im)
+                # And convert to apparent magnitude using the nominal zeropoint
+                bg_am = bg_im + float(sciext.nominal_photometric_zeropoint())
+                log.fullinfo("BG mag = %f" % bg_am)
+
                 if not separate_ext:
                     log.stdinfo("\n    Filename: %s" % ad.filename)
                     log.stdinfo("    "+"-"*dlen)
                     log.stdinfo("    "+"Sky level measurement:".ljust(llen) +
                                 ("%.0f +/- %.0f %s" % 
                                  (all_bg,all_std,bunit)).rjust(rlen))
+                    log.stdinfo("    Mag / sq arcsec in %s: %.1f" % (sciext.filter_name(pretty=True), bg_am))
                     log.stdinfo("    "+"-"*dlen+"\n")
 
             # Add the appropriate time stamps to the PHU
