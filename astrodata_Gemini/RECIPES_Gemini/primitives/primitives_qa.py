@@ -469,6 +469,10 @@ class QAPrimitives(GENERALPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
 
+        # get the CC band definitions from a lookup table
+        ccConstraints = Lookups.get_lookup_table("Gemini/CCConstraints",
+                                                 "ccConstraints")
+
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
@@ -569,12 +573,29 @@ class QAPrimitives(GENERALPrimitives):
                 detzp_clouds.append(cloud)
                 detzp_sigmas.append(zpe)
                 total_sources += len(zps)
+                
+                # Calculate which CC band we're in. 
+                # Initially, I'm going to base this on a 2-sigma result...
+                adj_cloud = cloud - 2.0*zpe
+                # get cc constraints
+                cc50 = ccConstraints['50']
+                cc70 = ccConstraints['70']
+                cc80 = ccConstraints['80']
+                ccband = 'CCany'
+                if(adj_cloud < cc80):
+                    ccband = 'CC80'
+                if(adj_cloud < cc70):
+                    ccband = 'CC70'
+                if(adj_cloud < cc50):
+                    ccband = 'CC50'
+
                 log.fullinfo("    Filename: %s ['OBJCAT', %d]" % (ad.filename, extver))
                 log.fullinfo("    --------------------------------------------------------")
                 log.fullinfo("    %d sources used to measure Zeropoint" % len(zps))
                 log.fullinfo("    Zeropoint measurement (%s band): %.3f +/- %.3f" % (ad.filter_name(pretty=True), zp, zpe))
                 log.fullinfo("    Nominal Zeropoint in this configuration: %.3f" % nominal_zeropoint)
                 log.fullinfo("    Estimated Cloud Extinction: %.3f +/- %.3f magnitudes" % (cloud, zpe))
+                log.fullinfo("    This Corresponds to %s" % ccband)
                 log.fullinfo("    --------------------------------------------------------")
 
             
@@ -588,12 +609,29 @@ class QAPrimitives(GENERALPrimitives):
                     cloud_esum += (detzp_sigmas[i] * detzp_sigmas[i])
                 cloud = cloud_sum / len(detzp_means)
                 clouderr = math.sqrt(cloud_esum) / len(detzp_means)
+
+                # Calculate which CC band we're in. 
+                # Initially, I'm going to base this on a 2-sigma result...
+                adj_cloud = cloud - 2.0*clouderr
+                # get cc constraints
+                cc50 = ccConstraints['50']
+                cc70 = ccConstraints['70']
+                cc80 = ccConstraints['80']
+                ccband = 'CCany'
+                if(adj_cloud < cc80):
+                    ccband = 'CC80'
+                if(adj_cloud < cc70):
+                    ccband = 'CC70'
+                if(adj_cloud < cc50):
+                    ccband = 'CC50'
+
             
                 log.stdinfo("    Filename: %s" % ad.filename)
                 log.stdinfo("    --------------------------------------------------------")
                 log.stdinfo("    %d sources used to measure Zeropoint" % total_sources)
                 log.stdinfo("    Zeropoint measurements per detector: (%s band): %s" % (ad.filter_name(pretty=True), ', '.join(zp_str)))
                 log.stdinfo("    Estimated Cloud Extinction: %.3f +/- %.3f magnitudes" % (cloud, clouderr))
+                log.stdinfo("      - This corresponds to %s" % ccband)
                 log.stdinfo("    --------------------------------------------------------")
             else:
                 log.stdinfo("    Filename: %s" % ad.filename)
