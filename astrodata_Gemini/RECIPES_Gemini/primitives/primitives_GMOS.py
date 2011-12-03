@@ -541,15 +541,21 @@ class GMOSPrimitives(GEMINIPrimitives):
                     raise Errors.PrimitiveError("No processed bias found "\
                                                 "for %s" % ad.filename)
             
-            # Clip the bias frame to the size of the science data
-            # For a GMOS example, this allows a full frame bias to
-            # be used for a CCD2-only science frame. 
-            bias = gt.clip_auxiliary_data(adinput=ad, aux=bias, 
-                                          aux_type="cal")[0]
-
             # Check the inputs have matching binning and SCI shapes.
-            gt.checkInputsMatch(adInsA=ad, adInsB=bias, 
-                                check_filter=False) 
+            try:
+                gt.checkInputsMatch(adInsA=ad, adInsB=bias, 
+                                    check_filter=False) 
+            except Errors.ToolboxError:
+                # If not, try to clip the bias frame to the size of
+                # the science data
+                # For a GMOS example, this allows a full frame bias to
+                # be used for a CCD2-only science frame. 
+                bias = gt.clip_auxiliary_data(adinput=ad, aux=bias, 
+                                              aux_type="cal")[0]
+
+                # Check again, but allow it to fail if they still don't match
+                gt.checkInputsMatch(adInsA=ad, adInsB=bias, 
+                                    check_filter=False)
 
             log.fullinfo("Subtracting this bias from the input " \
                          "AstroData object (%s):\n%s" % (ad.filename, 

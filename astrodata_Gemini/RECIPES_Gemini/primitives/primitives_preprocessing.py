@@ -244,13 +244,20 @@ class PreprocessingPrimitives(GENERALPrimitives):
                     raise Errors.PrimitiveError("No processed flat found "\
                                                 "for %s" % ad.filename)
             
-            # Clip the flat frame to the size of the science data
-            # For a GMOS example, this allows a full frame flat to
-            # be used for a CCD2-only science frame. 
-            flat = gt.clip_auxiliary_data(adinput=ad,aux=flat,aux_type="cal")[0]
-
             # Check the inputs have matching filters, binning, and SCI shapes.
-            gt.checkInputsMatch(adInsA=ad, adInsB=flat) 
+            try:
+                gt.checkInputsMatch(adInsA=ad, adInsB=flat) 
+            except Errors.ToolboxError:
+                # If not, try to clip the flat frame to the size
+                # of the science data
+                # For a GMOS example, this allows a full frame flat to
+                # be used for a CCD2-only science frame. 
+                flat = gt.clip_auxiliary_data(
+                    adinput=ad,aux=flat,aux_type="cal")[0]
+
+                # Check again, but allow it to fail if they still don't match
+                gt.checkInputsMatch(adInsA=ad, adInsB=flat)
+
 
             # Divide the adinput by the flat
             log.fullinfo("Dividing the input AstroData object (%s) " \

@@ -577,15 +577,20 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Clip the fringe frame to the size of the science data
-            # For a GMOS example, this allows a full frame fringe to
-            # be used for a CCD2-only science frame. 
-            fringe = gt.clip_auxiliary_data(
-                adinput=ad, aux=fringe, aux_type="cal")[0]
-
             # Check the inputs have matching filters, binning and SCI shapes.
-            gt.checkInputsMatch(adInsA=ad, adInsB=fringe)
-            
+            try:
+                gt.checkInputsMatch(adInsA=ad, adInsB=fringe)
+            except Errors.ToolboxError:
+                # If not, try to clip the fringe frame to the size of the
+                # science data
+                # For a GMOS example, this allows a full frame fringe to
+                # be used for a CCD2-only science frame. 
+                fringe = gt.clip_auxiliary_data(
+                    adinput=ad, aux=fringe, aux_type="cal")[0]
+
+                # Check again, but allow it to fail if they still don't match
+                gt.checkInputsMatch(adInsA=ad, adInsB=fringe)
+
             # Check whether statistics should be used
             stats_scale = rc["stats_scale"]
 
