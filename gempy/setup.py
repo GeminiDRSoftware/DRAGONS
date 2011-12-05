@@ -21,9 +21,7 @@ from distutils.core import setup
 MODULENAME = 'gempy'
 
 # PACKAGES and PACKAGE_DIRS
-SUBMODULES = ['science',
-              'science.preprocessing',
-              'science.standardization']
+SUBMODULES = []
 PACKAGES = [MODULENAME]
 for m in SUBMODULES:
     PACKAGES.append('.'.join([MODULENAME,m]))
