@@ -571,6 +571,50 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # exception if this descriptor is called.
         raise Errors.ExistError()
     
+    def requested_bg(self, dataset, **args):
+        # The PI required site conditions were added to the raw data headers
+        # Dec 2011. These descriptor functions return them if they are present
+        # and return 'Undefined' without throwing an exception if they are not.
+        # The descriptor calculator layer treats None differently in that it does not
+        # collapese the dictionary, so a string value is preferable.
+        value = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_bg"))
+        if value is None:
+            value = 'Undefined'
+        return value
+
+    def requested_cc(self, dataset, **args):
+        # The PI required site conditions were added to the raw data headers
+        # Dec 2011. These descriptor functions return them if they are present
+        # and return 'Undefined' without throwing an exception if they are not.
+        # The descriptor calculator layer treats None differently in that it does not
+        # collapese the dictionary, so a string value is preferable.
+        value = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_cc"))
+        if value is None:
+            value = 'Undefined'
+        return value
+
+    def requested_iq(self, dataset, **args):
+        # The PI required site conditions were added to the raw data headers
+        # Dec 2011. These descriptor functions return them if they are present
+        # and return 'Undefined' without throwing an exception if they are not.
+        # The descriptor calculator layer treats None differently in that it does not
+        # collapese the dictionary, so a string value is preferable.
+        value = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_iq"))
+        if value is None:
+            value = 'Undefined'
+        return value
+
+    def requested_wv(self, dataset, **args):
+        # The PI required site conditions were added to the raw data headers
+        # Dec 2011. These descriptor functions return them if they are present
+        # and return 'Undefined' without throwing an exception if they are not.
+        # The descriptor calculator layer treats None differently in that it does not
+        # collapese the dictionary, so a string value is preferable.
+        value = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_wv"))
+        if value is None:
+            value = 'Undefined'
+        return value
+
     def qa_state(self, dataset, **args):
         # Get the value for whether the PI requirements were met (rawpireq)
         # and the value for the raw Gemini Quality Assessment (rawgemqa) from

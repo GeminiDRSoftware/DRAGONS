@@ -3009,6 +3009,218 @@ class CalculatorInterface:
                 self.exception_info = sys.exc_info()[1]
                 return None
     
+    def requested_iq(self, format=None, **args):
+        """
+        Return the requested_iq value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :return: the requested_iq
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"requested_iq"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
+            #print hasattr(self.descriptor_calculator, "requested_iq")
+            if not hasattr(self.descriptor_calculator, "requested_iq"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for requested_iq"
+                    raise KeyError(msg)
+            else:
+                retval = self.descriptor_calculator.requested_iq(self, **args)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "requested_iq",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = str )
+            return ret
+        except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
+                raise
+            else:
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()[1]
+                return None
+    
+    def requested_cc(self, format=None, **args):
+        """
+        Return the requested_cc value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :return: the requested_cc
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"requested_cc"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
+            #print hasattr(self.descriptor_calculator, "requested_cc")
+            if not hasattr(self.descriptor_calculator, "requested_cc"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for requested_cc"
+                    raise KeyError(msg)
+            else:
+                retval = self.descriptor_calculator.requested_cc(self, **args)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "requested_cc",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = str )
+            return ret
+        except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
+                raise
+            else:
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()[1]
+                return None
+    
+    def requested_wv(self, format=None, **args):
+        """
+        Return the requested_wv value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :return: the requested_wv
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"requested_wv"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
+            #print hasattr(self.descriptor_calculator, "requested_wv")
+            if not hasattr(self.descriptor_calculator, "requested_wv"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for requested_wv"
+                    raise KeyError(msg)
+            else:
+                retval = self.descriptor_calculator.requested_wv(self, **args)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "requested_wv",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = str )
+            return ret
+        except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
+                raise
+            else:
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()[1]
+                return None
+    
+    def requested_bg(self, format=None, **args):
+        """
+        Return the requested_bg value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :return: the requested_bg
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"requested_bg"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
+            #print hasattr(self.descriptor_calculator, "requested_bg")
+            if not hasattr(self.descriptor_calculator, "requested_bg"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for requested_bg"
+                    raise KeyError(msg)
+            else:
+                retval = self.descriptor_calculator.requested_bg(self, **args)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "requested_bg",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = str )
+            return ret
+        except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
+                raise
+            else:
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()[1]
+                return None
+    
     def saturation_level(self, format=None, **args):
         """
         Return the saturation_level value
