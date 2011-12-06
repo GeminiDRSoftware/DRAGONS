@@ -105,10 +105,10 @@ be reflected in both AstroData instances. Generally speaking this is
 what you want for efficient operation. If you do want to have entirely
 separate data, such that changes to the data sections of one do not
 affect the other, use the python deepcopy operator:</p>
-<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><pre>1
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
 2
 3
-4</pre></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+4</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 
 <span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&quot;dataset.fits&quot;</span><span class="p">)</span>
 <span class="n">scicopy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">ad</span><span class="p">[</span><span class="s">&quot;SCI&quot;</span><span class="p">])</span>
@@ -118,11 +118,11 @@ affect the other, use the python deepcopy operator:</p>
 dataset on disk, and do not need the original data, untransformed, in
 memory along with the transformed version, which is the usual case,
 then you can write the AstroData subdata instance to a new filename:</p>
-<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><pre>1
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
 2
 3
 4
-5</pre></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+5</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
 
 <span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&quot;dataset.fits&quot;</span><span class="p">)</span>
 <span class="n">scicopy</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&quot;SCI&quot;</span><span class="p">]</span>

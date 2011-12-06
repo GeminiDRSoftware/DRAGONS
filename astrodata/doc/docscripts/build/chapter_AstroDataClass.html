@@ -395,7 +395,7 @@ instance.</p>
 </div>
 <dl class="method">
 <dt id="astrodata.data.AstroData.info">
-<tt class="descclassname">AstroData.</tt><tt class="descname">info</tt><big>(</big><em>oid=False</em>, <em>table=False</em>, <em>subref=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.info" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">AstroData.</tt><tt class="descname">info</tt><big>(</big><em>oid=False</em>, <em>table=False</em>, <em>help=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.info" title="Permalink to this definition">¶</a></dt>
 <dd><p>The info(..) function prints self.infostr() and 
 is maintained for convienience and low level debugging.</p>
 </dd></dl>
@@ -409,7 +409,7 @@ is maintained for convienience and low level debugging.</p>
 </div>
 <dl class="method">
 <dt id="astrodata.data.AstroData.infostr">
-<tt class="descclassname">AstroData.</tt><tt class="descname">infostr</tt><big>(</big><em>as_html=False</em>, <em>oid=False</em>, <em>table=False</em>, <em>subref=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.infostr" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">AstroData.</tt><tt class="descname">infostr</tt><big>(</big><em>as_html=False</em>, <em>oid=False</em>, <em>table=False</em>, <em>help=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.infostr" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -417,7 +417,7 @@ is maintained for convienience and low level debugging.</p>
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>as_html</strong> &#8211; return as HTML formatted string</li>
 <li><strong>oid</strong> &#8211; include object id</li>
-<li><strong>subref</strong> &#8211; include sub-data reference information</li>
+<li><strong>help</strong> &#8211; include sub-data reference information</li>
 </ul>
 </td>
 </tr>
@@ -1021,7 +1021,7 @@ or tuple indexing, e.g.:</p>
 
 <span class="c"># assuming the named extension exists,</span>
 <span class="c"># sd will be a single-HDU AstroData</span>
-<span class="n">sd</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[(</span><span class="s">&quot;SCI&quot;</span><span class="p">,</span><span class="mf">1</span><span class="p">)]</span>
+<span class="n">sd</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[(</span><span class="s">&quot;SCI&quot;</span><span class="p">,</span><span class="mi">1</span><span class="p">)]</span>
 </pre></div>
 </div>
 </dd></dl>
