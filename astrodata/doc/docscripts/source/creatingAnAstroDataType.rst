@@ -6,8 +6,7 @@ subdirectories of either of two path locations in the our configuration package
 (``astrodata_Sample``).
 
 * ``astrodata_Sample/classification/types`` - for typological types
-* ``astrodata_Sample/classification/status`` - for types related to processing
-   status.
+* ``astrodata_Sample/classification/status`` - for types related to processing pstatus.
 
 The type definition syntax are equivalent,
 the distinction is only for organization between two
@@ -23,13 +22,11 @@ For example, from the ``astrodata_Gemini`` configuration, the ``RAW`` and
 ``NICI``, ``GMOS`` and ``GMOS_IMAGE`` are "typological types" located in the
 ``astrodata_Gemini/status/...`` subdirectory directory.
 
-Since we don't know anything about the instrument or mode that this 
-custom package is being
-developed for, we will add some example types in processing
-in addition to the types
-provided as examples in the Sample package that will demonstrate the point for
-any dataset. For more complicated examples of type requirements, we'll use
-astrodata_Gemini examples.
+Since we don't know anything about the instrument or mode that this  custom package is
+being developed for, the sample package will add some somewhat artificial example types
+as processing types,  provided as examples in the sample package that will demonstrate
+the point in general. For more complicated examples of type requirements, we'll
+use examples from ``astrodata_Gemini``..
 
 To inspect the types in the custom package change 
 directory to ``astrodata_Sample/classifications/status`` and get a directory
@@ -54,13 +51,15 @@ The contents of the file should be as below:
 Note that type source files are read into memory and executed in a prepared environment. Thus
 there is no need to import
 the ``DataClassification`` class from the particular astrodata module,
-the standard base class is already in
+this standard base class is already in
 scope. 
 
-The main elements are the class itself, and the ``newtypes.append(UNMARKED())``
-line, which instantiates an object of the class the ClassificaitonLibrary can use to
-inspect types. The Classification inspects the newtypes list for types defined in the
-module.
+The two elements are the class itself and the ``newtypes.append(UNMARKED())`` line
+which instantiates an object of the class and appends it to a list that the
+ClassificationLibrary can use to inspect datasets. The ClassificationLibrary uses the
+``newtypes`` list to recieve types defined in the module, allowing multiple types to be
+added to this list in a single type module if desired. At Gemini we have decided to
+have just one type definition per python type file.
 
 The Class Definition Line by Line
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -69,8 +68,9 @@ The Class Definition Line by Line
 1. ``class UNMARKED(DataClassification)``:
    By convention, we name the class identically to the chosen string name, in
    this case ``UNMARKED``, however this is not required by the system.
+   
 2. ``name="UNMARKED"``:
-   The classification ``name`` property stored the string used by the system
+   The classification ``name`` property stores the string used by the system
    to identify the type. NOTE: when using type functionality, the user never
    sees the classification object, and deals with types as strings.
     
@@ -79,10 +79,11 @@ The Class Definition Line by Line
 
 4. ``parent="OBSERVED"``:
    This is the type name of a parent class.  Note, the type need not also be
-   the given type (a dataset matching a leaf classification may not match the
-   types described by "parent" types).  The parent member is used to assign
-   other features, such as primitive sets, or descriptor calculators.
-    
+   recognizes as the parent type.  The parent member is used to determine
+   overriding assignments in the type tree such that, of course, leaf nodes
+   override root nodes, e.g. for descriptor calculator and primitive set
+   assignments.
+   
 5. ``requirement = PHU({"{prohibit}THEMARK":'.*'})``:
    The requirement member uses requirement classes (see below) to define the given type. 
    In this case, this is a PHU check to ensure that "THEMARK" is not set at all
@@ -113,23 +114,23 @@ Requirement Type  Alias    Description
 ================  =======  ======================================================
 ClassReq          ISCLASS  For ensuring this type is also some other 
                            classification
-PhuReq            PHU      Checked a PHU key/value header against a regular 
+PhuReq            PHU      Checks a PHU key/value header against a regular 
                            expression.
 ================  =======  ======================================================
 
-OO design enables us to extend requirement class ability and/or create new 
+Object Oriented design enables us to extend requirement class ability and/or create new 
 requirements.  Examples: the current PHU requirement checks values only against 
 regular expressions, it could be expanded to make numerical comparisons (e.g. to
 have a dataset type dependent on seeing thresholds). Another example that we 
 anticipate needing is a requirement class that checkes header values in extensions.
 
-One notes that currently all type checking resolves to PHU checks, see below for 
+Note that currently all type checking resolves to PHU checks, see below for 
 a description of the PHU requirement object.
 
 ISCLASS(other_class_name)
 $$$$$$$$$$$$$$$$$$$$$$$$$$
 
-The ISCLASS requiment accepts a string name and will cause the classification to check
+The ISCLASS requirement accepts a string name and will cause the classification to check
 if the other type applies.  Circular definitions are possible and the configuration author
 must ensure such do not exit.
 
@@ -163,10 +164,9 @@ type really means checking that one of these two instruments was used.
 PHU(keyname=re_val, [keyname2=re_val2 [...]])
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-The PHU requirement accepts any number of arguments.  Each argument name 
-is used as
-the PHU key name, and the value, is the regular expression against which
-the header value will be compared.
+The PHU requirement accepts any number of arguments.  Each argument name  is used as
+the PHU key name, and the value is a regular expression against which the header
+value will be compared.
 
 An example::
 
@@ -207,38 +207,39 @@ inefficiency), use the following syntax::
 
     newtypes.append(PREPARED())
 
-Due to our legacy reduction software conventions, Gemini datasets which have been run through
-the system will have a keyword of the sort "<x>PREPARE" with a value set to a time stamp.  The
-need for caution are due to one, the classification must cycle through all headers to see if
-the regular expression matches, and two, this technique is prone to a name collision if the
-regular expressions are not unique, i.e. in our example above... if there is a key including
-``"*PREPARE"`` for some other reason than having been processed by the Gemini Package.  
+Due to our legacy reduction software conventions, Gemini datasets which have been run
+through the system will have a keyword of the sort "<x>PREPARE" with a value set to a
+time stamp.  The need for caution is due to, one, efficiency, since the classification
+must cycle through all headers to see if the regular expression matches, and two, this
+technique is prone to a name collision, i.e. in our example above... if a fits PHU
+happens to have a key matching ``"*PREPARE"`` for some other reason than having been
+processed by the Gemini Package.  
 
 Please use this feature with caution.
 
 Logical Requirement Classes
 #############################
 
-The logical requirement classes use OO design to behave like requirement operators, returning
-true or false based on a combination of requirements used as arguments.
+The logical requirement classes use OO design to behave like requirement operators,
+returning true or false based on a combination of requirements given as arguments.
 
 ================  =======  ======================================================
 Requirement Type  Alias    Description
 ================  =======  ======================================================
 AndReq            AND      For comparing two other requirements with a logical
-                           ``and``.
+                           ``and``
 NotReq            NOT      For negating the truth value of another requirement
 OrReq             OR       For comparing two other requirements with a logical 
-                           ``or``.
+                           ``or``
 ================  =======  ======================================================
 
 AND(<requirement>,<requirement> [, <requirement> [, <requirement> ] .. ])
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-The AND requirement accepts other requirements as argument. At least two arguments are needed
+The AND requirement accepts other requirements as arguments. At least two arguments are needed
 for the AND to be sensible, but if more are present they are also checked for truth value.
 
-It is possible also to use the "&" operator as a logical and::
+It is possible also to use the "&" operator as a logical "and"::
 
     requirement = AND(PHU("key1", "val1"), PHU("key2", "val2"))
     
@@ -249,11 +250,11 @@ It is possible also to use the "&" operator as a logical and::
 NOT(<requirement>)
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-The NOT requirement accepts a single other requirement as argument. 
+The NOT requirement accepts a single other requirement as arguments. 
 "NOT" is used to negate some requirement. For example at Gemini we
 do not view a GMOS_BIAS as a
 GMOS_IMAGE, but it does satisfy the requirements of GMOS_IMAGE. The need
-for a separate type is due to the fact that GMOS_IMAGE and GMOS_BIAS required
+for a separate type is due to the fact that GMOS_IMAGE and GMOS_BIAS require
 different automated reduction (e.g. in a pipeline deployment). To accomplish
 this we add a ``NOT`` requirement to GMOS_IMAGE::
 
@@ -272,10 +273,10 @@ this we add a ``NOT`` requirement to GMOS_IMAGE::
 OR(<requirement>,<requirement> [, <requirement> [, <requirement> ] .. ])
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-The OR requirement accepts other requirements as argument. At least two arguments are needed
+The OR requirement accepts other requirements as arguments. At least two arguments are needed
 for the OR to be sensible, but if more are present they are also checked for truth value.
 
-It is possible also to use the "|" operator as a logical and::
+It is possible also to use the "|" operator as a logical "or"::
 
     requirement = OR(PHU("key1", "val1"), PHU("key2", "val2"))
     

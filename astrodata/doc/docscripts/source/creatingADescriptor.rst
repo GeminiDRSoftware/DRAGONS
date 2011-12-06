@@ -9,33 +9,32 @@ configuration requires the following elements:
    defined (as a method).
 
 2. The Calculator class must appear in a "calculator index", which are any files
-   in the ``descriptors`` directory tree, named ``calculatorIndex.<whatever>.py``
+   in the ``descriptors`` directory tree named ``calculatorIndex.<whatever>.py``
    where ``<whatever>`` can be any unique name.
 
-3. The descriptor must be listed in the ``DescriptorsList.py`` file, used to
-   attach the function to appropriate AstroData instances.
+3. The descriptor must be listed in the ``DescriptorsList.py`` file.
 
 The Calculator Class
 @@@@@@@@@@@@@@@@@@@@@
 
-The Calculator Class in the Sample package is in the file
+The Calculator Class in the Sample package is in the file,
 ``OBSERVED_Descriptors.py``, located in the ``descriptors`` subdirectory of the
 ``ADCONFIG_Sample`` of the ``astrodata_Sample`` package.
 It contains just one example descriptor function, ``observatory`` which relies
-on the standards MEF PHU key, ``OBSERVAT``. Full source::
+on the standard MEF PHU key, ``OBSERVAT``. Full source::
 
     class OBSERVED_DescriptorCalc:
         def observatory(self, dataset, **args):
             return dataset.get_phu_key_value("OBSERVAT")
             
 In order for this function to be called for the right type of data, this class
-must appear in a "calculator index"
+must appear in a "calculator index".
 
 The Calculator Index
 @@@@@@@@@@@@@@@@@@@@@
 
 The Calculator Index for astrodata_Sample is located in the file,
-``calculatorIndex.Sample.py``, in the ``descriptors`` directory, withing
+``calculatorIndex.Sample.py``, in the ``descriptors`` subdirectory of 
 ``ADCONFIG_Sample`` in the ``astrodata_Sample`` configuration package.
 
 Here is the source::
@@ -54,9 +53,11 @@ dictionary.
 The DescriptorList.py
 @@@@@@@@@@@@@@@@@@@@@@
 
-The ``DescriptorList.py`` file contains  a list of descriptors.  The entries
-declared by declaring "DD" objects that gives at the least the name of the
-descriptor, and in more advanced cases also other descriptor related meta-data.
+The ``DescriptorList.py`` file contains  a list of descriptors definitions.
+The entries
+declared must at least declare the name of the new descriptor function.  The
+infrastructure will use these names to create a bridge between AstroData instances and
+the type-specific descriptor functions.
 
 Adding a New Descriptor to the configuration involves:
 
@@ -90,7 +91,7 @@ Adding the Descriptor Function to the CalculatorClass
 
 To add the descriptor once the descriptor is present in the ``DescriptorList.py`` one merely needs to add a function to the
 appropriate DescriptorCalculator class. The contents of
-``OBSERVED_Descriptors.p`` module in the astrodata_Sample
+``OBSERVED_Descriptors.py`` module in the astrodata_Sample
 configuration is::
 
     class OBSERVED_DescriptorCalc:
