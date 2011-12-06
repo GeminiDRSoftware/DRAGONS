@@ -423,9 +423,15 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
 
                 # Pull out CCD2 data
                 central_data = []
+                overscan_level = None
+                bunit = None
+                gain = None
                 for sciext in ad["SCI"]:
                     if sci_ccds[("SCI",sciext.extver())]==2:
                         central_data.append(sciext.data)
+                        overscan_level = sciext.get_key_value("OVERSCAN")
+                        bunit = sciext.get_key_value("BUNIT")
+                        gain = sciext.gain().as_pytype()
                         
                 # Stack data if necessary
                 if len(central_data)>1:
@@ -438,14 +444,11 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             # Check units of CCD2; if electrons, convert threshold
             # limit from ADU to electrons. Also subtract overscan
             # level if needed
-            overscan_level = sciext.get_key_value("OVERSCAN")
             if overscan_level is not None:
                 threshold -= overscan_level
                 log.fullinfo("Subtracting overscan level " +
                              "%.2f from threshold parameter" % overscan_level)
-            bunit = sciext.get_key_value("BUNIT")
             if bunit=="electron":
-                gain = sciext.gain().as_pytype()
                 threshold *= gain 
                 log.fullinfo("Threshold parameter converted to " +
                              "%.2f electrons" % threshold)
