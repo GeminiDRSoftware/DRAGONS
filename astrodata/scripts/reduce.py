@@ -93,6 +93,8 @@ try:
     parser.add_option("--showcolors", dest="show_colors", default=False, 
                       action="store_true", help="Shows available colors based "
                       "on terminal setting (used for debugging color issues)")
+    parser.add_option("--usercal", dest="user_cals", default=None, type="string",
+                      help="Add calibration to User Calibration Service.")
     parser.add_option("--writeInt", dest='writeInt', default=False, 
                       action="store_true", help="write intermediate outputs"
                       " (UNDER CONSTRUCTION)")       
@@ -159,6 +161,15 @@ try:
     #print 'TIME:', (oet -ost)
     b = datetime.now()
 
+    from astrodata.usercalibrationservice import user_cal_service
+    if options.user_cals:
+        user_cals = options.user_cals.split(",")
+        for user_cal in user_cals:
+            ucary = user_cal.split(":")
+            if len(ucary)>1:
+                caltype = ucary[0]
+                calname = ucary[1]
+                user_cal_service.add_calibration(caltype, calname)
     # GLOBAL/CONSTANTS (could be exported to config file)
     cachedirs = [".reducecache",
                  "calibrations",

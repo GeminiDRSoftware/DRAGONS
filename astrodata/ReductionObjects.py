@@ -6,7 +6,7 @@ from astrodata import AstroData
 from astrodata.adutils import gemLog
 import inspect
 import urllib2 #(to get httperror)
-
+from usercalibrationservice import user_cal_service
 log = None
 
 heaptrack = False
@@ -454,6 +454,8 @@ def command_clause(ro, coi):
             calname = None
             ## THIS IS THE CACHE CHECK, DISABLED NOW: calname = coi.get_cal(fn, typ)
             # print "r399:", "handling calibrations"
+            
+        
             if calname == None:
                 # Do the calibration search
                 calurl = None
@@ -464,9 +466,15 @@ def command_clause(ro, coi):
                 if usePRS:
                     #print "RO404:", repr(rq.as_dict())
                     try:
-                        calurl = prs.calibration_search( rq )
+                        if user_cal_service:
+                            calurl = user_cal_service.get_calibration(caltype = rq.caltype)
+                            #if calname:
+                            #    return calname
+                        if calurl == None:
+                            calurl = prs.calibration_search( rq )
                     except:
                         calurl = None
+                        raise
                 if calurl == None:
                     log.warning('No '+str(typ)+' calibration file found for '+\
                                 str(fn))
@@ -483,13 +491,16 @@ def command_clause(ro, coi):
                               "flat":"retrievedflats"
                               }
                               
-                
-                calfname = os.path.join(coi["retrievedcals"], typ, os.path.basename(calurl))
-                caldname = os.path.dirname(calfname)
-                if not os.path.exists(caldname):
+                if os.path.exists(calurl):
+                    calfname = calurl
+                    caldname = None
+                else:
+                    calfname = os.path.join(coi["retrievedcals"], typ, os.path.basename(calurl))
+                    caldname = os.path.dirname(calfname)
+                if caldname and not os.path.exists(caldname):
                     os.mkdir(caldname)
                 # print "RO400:",calfname
-                if os.path.exists(calfname):
+                if os.path.exists(calfname) and caldname:
                     #coi.add_cal(fn, typ, calfname)
                     log.stdinfo("File %s exists at calibration location, " \
                                 "will overwrite." % os.path.basename(calfname))

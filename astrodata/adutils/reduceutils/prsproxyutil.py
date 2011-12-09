@@ -1,5 +1,7 @@
 import urllib, urllib2
 
+from astrodata import AstroData
+from astrodata.usercalibrationservice import user_cal_service
 
 from xml.dom import minidom
 import exceptions
@@ -74,8 +76,6 @@ def calibration_search(rq, fullResult = False):
         source = "central"
     else:
         source = rq["source"]
-    
-    # print "ppu32:", repr(rq), source
     
     token = "" # used for GETs, we're using the post method
     rqurl = None
