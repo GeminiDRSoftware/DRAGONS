@@ -7,9 +7,7 @@ addDQ
 addVAR(read_noise=True)
 detectSources
 measureIQ
-addReferenceCatalog
-measureZP
-determineAstrometricSolution
+compareToReferenceSources
 overscanCorrect
 biasCorrect
 aduToElectrons
@@ -21,12 +19,8 @@ mosaicDetectors
 detectSources
 measureIQ
 measureBG
-addReferenceCatalog
-measureZP
-determineAstrometricSolution
+compareToReferenceSources
 alignAndStack
 detectSources
 measureIQ
-addReferenceCatalog
-measureZP
-determineAstrometricSolution(correct_wcs=True)
+compareToReferenceSources(correct_wcs=True)

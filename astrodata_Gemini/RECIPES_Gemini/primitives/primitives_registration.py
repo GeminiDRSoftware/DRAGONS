@@ -359,6 +359,8 @@ class RegistrationPrimitives(GENERALPrimitives):
 
             # Objcats to process
             objcats = ad['OBJCAT']
+            if objcats is None:
+                objcats = []
             # If there are *no* reference catalogs, don't even bother
             if ad['REFCAT'] is None:
                 objcats = []
@@ -466,7 +468,7 @@ class RegistrationPrimitives(GENERALPrimitives):
                 dec_mean = np.mean(all_delta_dec) * 3600.0
                 dec_sigma = np.std(all_delta_dec) * 3600.0
 
-                log.stdinfo("Mean Astrometric Offset between OBJCAT and REFCAT:")
+                log.stdinfo("Mean Astrometric Offset between OBJCAT and REFCAT for %s:" % ad.filename)
                 log.stdinfo("     RA: %.2f +- %.2f    Dec: %.2f +- %.2f   arcsec" % (ra_mean, ra_sigma, dec_mean, dec_sigma))
 
                 # Only change the name and set the timestamp if the
@@ -479,7 +481,8 @@ class RegistrationPrimitives(GENERALPrimitives):
                     ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
                                                  strip=True)
             else:
-                log.stdinfo("Could not determine astrometric offset as no reference sources found")
+                log.stdinfo("Could not determine astrometric offset for %s" %
+                            ad.filename)
 
             adoutput_list.append(ad)
 

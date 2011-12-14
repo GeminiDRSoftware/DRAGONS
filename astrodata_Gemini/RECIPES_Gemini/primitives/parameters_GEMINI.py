@@ -120,6 +120,22 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "compareToReferenceSources":{
+    "suffix":{
+        "default"       : "_referencesCompared",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "correct_wcs":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "contextReport":{
     "report_history":{
         "default"       : False,

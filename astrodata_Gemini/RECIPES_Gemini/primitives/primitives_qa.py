@@ -485,7 +485,10 @@ class QAPrimitives(GENERALPrimitives):
             # Loop over OBJCATs extensions
             objcats = ad['OBJCAT']
             if objcats is None:
-                raise Errors.ScienceError("No OBJCAT found in %s" % ad.filename)
+                log.warning("No OBJCAT found in %s" % ad.filename)
+                adoutput_list.append(ad)
+                continue
+                #raise Errors.ScienceError("No OBJCAT found in %s" % ad.filename)
             # We really want to check for the presence of reference mags in the objcats
             # at this point, but we can more easily do a quick check for the presence of
             # reference catalogs, which are a pre-requisite for this and not bother with
