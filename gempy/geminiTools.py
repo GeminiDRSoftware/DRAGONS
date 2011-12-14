@@ -123,7 +123,7 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def array_number(adinput=None):
+def array_information(adinput=None):
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
@@ -134,10 +134,12 @@ def array_number(adinput=None):
     
     # Initialize the list of dictionaries of output array numbers
     # Keys will be (extname,extver)
-    arraynum_list = []
+    array_info_list = []
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput:
+
+            arrayinfo = {}
 
             # Get the number of science extensions
             nsciext = ad.count_exts("SCI")
@@ -174,6 +176,7 @@ def array_number(adinput=None):
             last_arrayx1 = arrayx1[ampsorder[0]-1]
 
             arraynum = {}
+            amps_per_array = {}
             num_array = 0
             for i in ampsorder:
                 sciext = ad["SCI",i]
@@ -183,15 +186,30 @@ def array_number(adinput=None):
                 if (this_detx1>last_detx1 and this_arrayx1<=last_arrayx1):
                     # New array found
                     num_array += 1
-
+                    amps_per_array[num_array] = 1
+                else:
+                    amps_per_array[num_array] += 1
+                
                 arraynum[(sciext.extname(),sciext.extver())] = num_array
+
+            # Reference extension if tiling/mosaicing all data together
+            try:
+                refext = ampsorder[int((amps_per_array[2]+1)/2.0-1)
+                                   + amps_per_array[1]]
+            except KeyError:
+                refext = None
+
+            arrayinfo['array_number'] = arraynum
+            arrayinfo['amps_order'] = ampsorder
+            arrayinfo['amps_per_array'] = amps_per_array
+            arrayinfo['reference_extension'] = refext
 
             # Append the output AstroData object to the list of output
             # AstroData objects
-            arraynum_list.append(arraynum)
+            array_info_list.append(arrayinfo)
         
         # Return the list of output AstroData objects
-        return arraynum_list
+        return array_info_list
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
