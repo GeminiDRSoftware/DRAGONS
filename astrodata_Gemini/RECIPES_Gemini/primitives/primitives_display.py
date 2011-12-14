@@ -42,7 +42,13 @@ class DisplayPrimitives(GENERALPrimitives):
             threshold=None
         elif threshold=="auto":
             dqext = np.array([ad["DQ"] for ad in adinput])
-            mosaic = np.array([(ad.phu_get_key_value("MOSAIC") is not None)
+            mosaic = np.array([((ad.phu_get_key_value(
+                                        self.timestamp_keys["mosaicDetectors"])
+                                 is not None)
+                                or
+                                (ad.phu_get_key_value(
+                                        self.timestamp_keys["tileArrays"])
+                                 is not None))
                                for ad in adinput])
             if not np.all(dqext):
                 if not np.any(mosaic):
