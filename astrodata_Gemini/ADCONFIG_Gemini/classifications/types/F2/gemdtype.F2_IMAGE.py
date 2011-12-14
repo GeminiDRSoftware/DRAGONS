@@ -8,7 +8,7 @@ class F2_IMAGE(DataClassification):
     # MASKNAME keyword to specify whether the data is imaging, longslit or
     # mos. The final keyword to use will be DCKERPOS or MOSPOS.
     requirement = ISCLASS("F2") & OR([  PHU(MASKNAME="imaging"),
-                                        PHU(DCKERPOS="imaging"),
-                                        PHU(MOSPOS="imaging")  ])
+                                        PHU(DECKER="Open"),
+                                        PHU(MOSPOS="Open")  ])
 
 newtypes.append(F2_IMAGE())
