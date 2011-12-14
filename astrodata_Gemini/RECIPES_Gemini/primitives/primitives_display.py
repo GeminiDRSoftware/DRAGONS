@@ -69,7 +69,18 @@ class DisplayPrimitives(GENERALPrimitives):
                 rc.run("tileArrays(tile_all=True)")
                 adinput = rc.get_inputs_as_astrodata()
         else:
-            adinput = [ext for ad in adinput for ext in ad[extname]]
+            extinput = []
+            for ad in adinput:
+                exts = ad[extname]
+                if exts is None:
+                    continue
+                for ext in exts:
+                    if extname=="SCI" and threshold=="auto":
+                        dqext = ad["DQ",ext.extver()]
+                        if dqext is not None:
+                            ext.append(dqext)
+                    extinput.append(ext)
+            adinput = extinput
 
         # Get overlays from RC if available (eg. IQ overlays made by measureIQ)
         # then clear them out so they don't persist to the next display call
@@ -86,6 +97,8 @@ class DisplayPrimitives(GENERALPrimitives):
         lnd = _localNumDisplay()
 
         # Loop over each input AstroData object in the input list
+        if len(adinput)<1:
+            log.warning("No extensions to display with extname %s" % extname)
         for ad in adinput:
               
             if frame>16:
@@ -95,7 +108,7 @@ class DisplayPrimitives(GENERALPrimitives):
             # Check for more than one extension
             ndispext = ad.count_exts(extname)
             if ndispext==0:
-                log.warning("Found no extensions in "\
+                log.warning("No extensions to display in "\
                                 "%s with extname %s" %
                             (ad.filename,extname))
                 continue
@@ -129,8 +142,9 @@ class DisplayPrimitives(GENERALPrimitives):
                                     "mask")
                         satmask = None
                     else:
-                        satmask = np.where(np.logical_or(dqext.data & 2,
-                                                         dqext.data & 4))
+                        dqdata = np.squeeze(dqext.data)
+                        satmask = np.where(np.logical_or(dqdata & 2,
+                                                         dqdata & 4))
                 if satmask is not None:
                     masks.append(satmask)
                     mask_colors.append(204)
@@ -159,9 +173,19 @@ class DisplayPrimitives(GENERALPrimitives):
                 # peach = 217
 
 
+            # Define the display name
+            if tile and extname=="SCI":
+                name = ad.filename
+            elif tile:
+                # numdisplay/ds9 doesn't seem to like square brackets
+                # or spaces in the name, so use parentheses for extension
+                name = "%s(%s)" % (ad.filename,extname)
+            else:
+                name = "%s(%s,%d)" % (ad.filename,extname,dispext.extver())
+
             # Display the data
             try:
-                lnd.display(data,name=ad.filename,
+                lnd.display(data,name=name,
                             frame=frame,zscale=rc["zscale"],quiet=True,
                             masks=masks, mask_colors=mask_colors)
             except IOError:
