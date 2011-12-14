@@ -1,8 +1,11 @@
+from datetime import datetime
+from time import strptime
+
 from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
-from gempy.gemini_metadata_utils import sectionStrToIntList
+from gempy.gemini_metadata_utils import removeComponentID, sectionStrToIntList
 
 from StandardF2KeyDict import stdkeyDictF2
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
@@ -42,6 +45,94 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         
     array_section = data_section
     detector_section = data_section
+
+    def filter_name(self, dataset, stripID=False, pretty=False, **args):
+        # Get the UT date using the appropriate descriptor
+        ut_date = str(dataset.ut_date())
+        if ut_date is None:
+            # The descriptor functions return None if a value cannot be
+            # found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
+        # Old commissioning data was taken before March 1, 2010
+        old_ut_date = datetime(2010, 3, 1, 0, 0)
+
+        if obs_ut_date > old_ut_date:
+            
+            # Get the two filter name values from the header of the PHU. The
+            # two filter name keywords may be defined in a local key dictionary
+            # (stdkey_dict<INSTRUMENT>) but are read from the updated global
+            # key dictionary (self.get_descriptor_key())
+            filter1 = dataset.phu_get_key_value(
+                self.get_descriptor_key("key_filter1"))
+            filter2 = dataset.phu_get_key_value(
+                self.get_descriptor_key("key_filter2"))
+            if filter1 is None or filter2 is None:
+                # The phu_get_key_value() function returns None if a value
+                # cannot be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
+        else:
+            # Make sure the filter_name descriptor is backwards compatible with
+            # old engineering data
+            # Get the two filter name values from the header of the PHU. The
+            # two filter name keywords may be defined in a local key dictionary
+            # (stdkey_dict<INSTRUMENT>) but are read from the updated global
+            # key dictionary (self.get_descriptor_key())
+            filter1 = dataset.phu_get_key_value(
+                self.get_descriptor_key("key_old_filter1"))
+            filter2 = dataset.phu_get_key_value(
+                self.get_descriptor_key("key_old_filter2"))
+            if filter1 is None or filter2 is None:
+                # The phu_get_key_value() function returns None if a value
+                # cannot be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
+            
+        if stripID or pretty:
+            # Strip the component ID from the two filter name values
+            filter1 = removeComponentID(filter1)
+            filter2 = removeComponentID(filter2)
+        filter = []
+        if pretty:
+            # Remove any filters that have the value "open" or "Open"
+            if "open" not in filter1 and "Open" not in filter1:
+                filter.append(str(filter1))
+            if "open" not in filter2 and "Open" not in filter2:
+                filter.append(str(filter2))
+            if len(filter) == 0:
+                filter.append("open")
+            if "Block" in filter1 or "Block" in filter2:
+                filter.append("blank")
+            if "Dark" in filter1 or "Dark" in filter2:
+                filter.append("blank")
+            if "DK" in filter1 or "DK" in filter2:
+                filter.append("dark")
+        else:
+            filter = [filter1, filter2]
+        if len(filter) > 1:
+            # Concatenate the filter names with "&"
+            filter_name = "%s&%s" % (filter[0], filter[1])
+        else:
+            filter_name = str(filter[0])
+        # Return a dictionary where the key of the dictionary is an (EXTNAME,
+        # EXTVER) tuple and the value is the filter name string
+        ret_filter_name = {}
+        # Loop over the science extensions of the dataset
+        for ext in dataset["SCI"]:
+            ret_filter_name.update(
+                {(ext.extname(), ext.extver()):filter_name})
+        if ret_filter_name == {}:
+            # If the dictionary is still empty, the AstroData object was not
+            # automatically assigned a "SCI" extension and so the above for loop
+            # was not entered
+            raise Errors.CorruptDataError()
+        
+        return ret_filter_name
 
     def gain(self, dataset, **args):
         # Get the number of non-destructive read pairs (lnrs) from the header
