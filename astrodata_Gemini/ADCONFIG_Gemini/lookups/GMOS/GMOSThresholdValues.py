@@ -1,17 +1,13 @@
-# Dictionary of various threshold levels used for each type of GMOS Detector
-# All values in ADU
-# Keyed by purpose of value and DETTYPE
+# Keyed by : ampname for e2vDD and Hamamatsu CCDs. The old EEV CCDs
+# do not have a well-defined saturation level.
+# These limits are in electrons, for 1x1 unbiased data.
 gmosThresholds = {
-    # EEV CCDs
-    ("saturation", "SDSU II CCD") : 65530,
-    ("display",    "SDSU II CCD") : 58000,
-    ("processing", "SDSU II CCD") : 45000,
-    # e2v CCDs
-    ("saturation", "SDSU II e2v DD CCD42-90") : 65530,
-    ("display",    "SDSU II e2v DD CCD42-90") : 58000,
-    ("processing", "SDSU II e2v DD CCD42-90") : 45000,
+    # GMOS-N e2v DD CCDs
+    "e2v 10031-23-05, left": 110900.0,
+    "e2v 10031-23-05, right": 105100.0,
+    "e2v 10031-01-03, left": 115500.0,
+    "e2v 10031-01-03, right": 108900.0,
+    "e2v 10031-18-04, left": 115700.0,
+    "e2v 10031-18-04, right": 109200.0,
     # Hamamatsu CCDs
-    ("saturation", "S10892-01") : 65530,
-    ("display",    "S10892-01") : 58000,
-    ("processing", "S10892-01") : 45000,
 }

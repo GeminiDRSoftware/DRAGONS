@@ -31,13 +31,6 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    "threshold":{
-        "default"       : "auto",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
     },
  "removeFringe":{
     "suffix":{

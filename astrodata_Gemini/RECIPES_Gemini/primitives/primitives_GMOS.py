@@ -108,15 +108,15 @@ class GMOSPrimitives(GEMINIPrimitives):
                 if ext_ampname is not None:
                     ampname.append(ext_ampname)
 
-            if len(overscan)>0:
-                avg_overscan = np.mean(overscan)
-            else:
-                avg_overscan = None
-
             if len(ampname)>0:
                 all_ampname = ",".join(ampname)
             else:
                 all_ampname = None
+
+            if len(overscan)>0:
+                avg_overscan = np.mean(overscan)
+            else:
+                avg_overscan = None
 
             # Save detector section from 1st extension
             # FIXME - this assumes extensions are in order
@@ -375,6 +375,14 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Gain
             gt.update_key_from_descriptor(
                 adinput=ad, descriptor="gain()", extname="SCI")
+            
+            # Bias level
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="bias_level()", extname="SCI")
+
+            # Saturation level
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="saturation_level()", extname="SCI")
 
             # Dispersion axis
             if "IMAGE" not in ad.types:
@@ -383,11 +391,7 @@ class GMOSPrimitives(GEMINIPrimitives):
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
-            gt.mark_history(adinput=ad, keyword=self.timestamp_keys["prepare"])
 
-            # Refresh the AstroData types to reflect new PREPARED status
-            ad.refresh_types()
-                        
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                              strip=True)
@@ -468,11 +472,6 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
-            gt.mark_history(adinput=ad, 
-                            keyword=self.timestamp_keys["prepare"])
-
-            # Refresh the AstroData types to reflect new PREPARED status
-            ad.refresh_types()
                 
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
@@ -751,11 +750,14 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
-            
+
             # Get the necessary parameters from the RC
             tile_all = rc["tile_all"]
 
             # Store PHU to pass to output AD
+            # The original name must be stored first so that the
+            # output AD can reconstruct it later
+            ad.store_original_name()
             phu = ad.phu
 
             # Do nothing if there is only one science extension
@@ -950,7 +952,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                     log.fullinfo("Tiling data into one extension per array")
 
                 # Get header from the center-left extension of each CCD
-                # (or the center of CCD2 if tiling all)
+                # (or the center-left of CCD2 if tiling all)
                 # This is in order to get the most accurate WCS on CCD2
                 ref_header = {}
                 startextn = 1
@@ -1051,6 +1053,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                             comment = comment[0:65-len(new_ampname)]
                         ext.set_key_value("AMPNAME",new_ampname,
                                           comment=comment)
+
                     # Update DATASEC
                     data_shape = ext.data.shape
                     new_datasec = "[1:%i,1:%i]" % (data_shape[1],
@@ -1231,7 +1234,6 @@ class GMOSPrimitives(GEMINIPrimitives):
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
-            gt.mark_history(adinput=ad, keyword=self.timestamp_keys["prepare"])
 
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 

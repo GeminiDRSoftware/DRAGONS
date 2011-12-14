@@ -9,7 +9,7 @@
         "uiLevel"       : "UIBASIC",
         },
     "bpm":{
-        "default"       : None,
+        "default"       : "auto",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
@@ -351,6 +351,15 @@
  "getList":{
     "purpose":{
         "default"       : None,
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "markAsPrepared":{
+    "suffix":{
+        "default"       : "_prepared",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,

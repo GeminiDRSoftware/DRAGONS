@@ -371,10 +371,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         CCD2 is used because of the dome-like shape of the GMOS detector
         response: CCDs 1 and 3 have lower average illumination than CCD2, 
         and that needs to be corrected for by the flat.
-        
-        :param threshold: Defines threshold level for the raw frame, in ADU
-        :type threshold: float. If None, the saturation_level descriptor
-                         is used.
         """
         
         # Instantiate the log
@@ -390,88 +386,59 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
-        # Loop over each input AstroData object in the input list
+        # Check whether inputs need to be tiled to get CCD2 data
+        adinput = rc.get_inputs_as_astrodata()
+        orig_input = adinput
+        next = np.array([ad.count_exts("SCI") for ad in adinput])
+        if np.any(next>1):
+            # Keep a deep copy of the original, untiled input to
+            # report back to RC
+            orig_input = [deepcopy(ad) for ad in adinput]
+            log.fullinfo("Tiling extensions together to get statistics "\
+                         "from CCD2")
+            rc.run("tileArrays")
+
+        # Loop over each tiled input AstroData object
+        count = 0
         for ad in rc.get_inputs_as_astrodata():
             
-            threshold = rc["threshold"]
-            if threshold is None or threshold=="None":
-                threshold = ad.saturation_level().as_pytype()
-            elif threshold=="auto":
-                # Get the pre-defined threshold for the given detector type
-                # and specific use case, i.e., display; using a look up
-                # dictionary (table)
-                gmosThresholds = Lookups.get_lookup_table(
-                    "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
-
-                # Read the detector type from the PHU
-                detector_type = ad.phu_get_key_value("DETTYPE")
-
-                # Form the key
-                threshold_key = ("processing", detector_type)
-                if threshold_key in gmosThresholds:
-                    # This is an integer with units ADU
-                    threshold = gmosThresholds[threshold_key]
-                else:
-                    raise Errors.TableKeyError()
-
-            # Check the number of science extensions; if more than
-            # one, use CCD2 data only
-            if ad.count_exts("SCI")>1:
-
-                # Get the CCD numbers corresponding to each extension
-                sci_ccds = gt.array_number(ad)[0]
-
-                # Pull out CCD2 data
-                central_data = []
-                overscan_level = None
-                bunit = None
-                gain = None
-                for sciext in ad["SCI"]:
-                    if sci_ccds[("SCI",sciext.extver())]==2:
-                        central_data.append(sciext.data)
-                        overscan_level = sciext.get_key_value("OVERSCAN")
-                        bunit = sciext.get_key_value("BUNIT")
-                        gain = sciext.gain().as_pytype()
-                        
-                # Stack data if necessary
-                if len(central_data)>1:
-                    central_data = np.hstack(central_data)
-                else:
-                    central_data = central_data[0]
+            if ad.count_exts("SCI")==1:
+                # Only one CCD present; use it
+                sciext = ad["SCI"]
             else:
-                central_data = ad["SCI"].data
+                # Otherwise, take the second science extension
+                # from the tiled data
+                sciext = ad["SCI",2]
 
-            # Check units of CCD2; if electrons, convert threshold
-            # limit from ADU to electrons. Also subtract overscan
-            # level if needed
-            if overscan_level is not None:
-                threshold -= overscan_level
-                log.fullinfo("Subtracting overscan level " +
-                             "%.2f from threshold parameter" % overscan_level)
-            if bunit=="electron":
-                threshold *= gain 
-                log.fullinfo("Threshold parameter converted to " +
-                             "%.2f electrons" % threshold)
-            
+            sci_data = sciext.data
+
             # Take off 5% of the width as a border
-            xborder = int(0.05 * central_data.shape[1])
-            yborder = int(0.05 * central_data.shape[0])
+            xborder = int(0.05 * sci_data.shape[1])
+            yborder = int(0.05 * sci_data.shape[0])
             if xborder<20:
                 xborder = 20
             if yborder<20:
                 yborder = 20
-            log.fullinfo("Using data section [%i:%i,%i:%i] from CCD2 "\
-                             "for statistics" %
-                         (xborder,central_data.shape[1]-xborder,
-                          yborder,central_data.shape[0]-yborder))
-            stat_region = central_data[yborder:-yborder,xborder:-xborder]
-            
-            # Remove negative values and values above the threshold
-            stat_region = stat_region[np.logical_and(stat_region>0,
-                                                     stat_region<threshold)]
-            
+            log.fullinfo("Using data section [%i:%i,%i:%i] from "\
+                         "CCD2 for statistics" %
+                         (xborder,sci_data.shape[1]-xborder,
+                          yborder,sci_data.shape[0]-yborder))
+            stat_region = sci_data[yborder:-yborder,
+                                   xborder:-xborder]
+                        
+            # Remove DQ-flagged values (including saturated values)
+            dqext = ad["DQ",sciext.extver()]
+            if dqext is not None:
+                dqdata = dqext.data[yborder:-yborder,
+                                    xborder:-xborder]
+                stat_region = stat_region[dqdata==0]
+
+            # Remove negative values
+            stat_region = stat_region[stat_region>0]
+
             # Find the mode and standard deviation
-            hist,edges = np.histogram(stat_region, bins=threshold/0.1)
+            hist,edges = np.histogram(stat_region,
+                                      bins=np.max(sci_data)/0.1)
             mode = edges[np.argmax(hist)]
             std = np.std(stat_region)
             
@@ -482,7 +449,11 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                stat_region < mode + 3 * std)]
             norm_factor = np.median(central_values)
             log.fullinfo("Normalization factor: %.2f" % norm_factor)
-            
+
+            # Now apply the factor to the original input
+            ad = orig_input[count]
+            count +=1
+
             # Divide by the normalization factor and propagate the
             # variance appropriately
             ad = ad.div(norm_factor)
@@ -496,7 +467,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     mask = np.where(dqext.data>0)
                     sciext.data[mask] = 1.0
 
-
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
@@ -507,7 +477,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             # Append the output AstroData object to the list
             # of output AstroData objects
             adoutput_list.append(ad)
-        
+
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
@@ -619,25 +589,42 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 log.fullinfo("Using statistics to calculate the " +
                              "scaling factor")
 
+                # Deepcopy the input so it can be manipulated without
+                # affecting the original
+                statsad = deepcopy(ad)
+                statsfringe = deepcopy(fringe)
+
+                # Trim off any overscan region still present
+                statsad,statsfringe = gt.trim_to_data_section([statsad,
+                                                               statsfringe])
+
                 # Check the number of science extensions; if more than
                 # one, use CCD2 data only
-                if ad.count_exts("SCI")>1:
+                nsciext = statsad.count_exts("SCI")
+                if nsciext>1:
 
-                    # Get the CCD numbers corresponding to each extension
-                    sci_ccds,frng_ccds = gt.array_number([ad,fringe])
-                
+                    # Get the CCD numbers and ordering information
+                    # corresponding to each extension
+                    log.fullinfo("Trimming data to data section to remove "\
+                                 "overscan region")
+                    sci_info,frng_info = gt.array_information([statsad,
+                                                               statsfringe])
+
                     # Pull out CCD2 data
                     scidata = []
                     frngdata = []
-                    for sciext in ad["SCI"]:
-                        extver = sciext.extver()
+                    for i in range(nsciext):
 
-                        # Get corresponding fringe extension
-                        frngext = fringe["SCI",extver]
+                        # Get the next extension in physical order
+                        sciext = statsad["SCI",sci_info["amps_order"][i]]
+                        frngext = statsfringe["SCI",frng_info["amps_order"][i]]
 
-                        if sci_ccds[("SCI",extver)]==2:
+                        # Check to see if it is on CCD2; if so, keep it
+                        if sci_info[
+                            "array_number"][("SCI",sciext.extver())]==2:
                             scidata.append(sciext.data)
-                        if frng_ccds[("SCI",extver)]==2:
+                        if frng_info[
+                            "array_number"][("SCI",frngext.extver())]==2:
                             frngdata.append(frngext.data)
                         
                     # Stack data if necessary
@@ -648,8 +635,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                         scidata = scidata[0]
                         frngdata = frngdata[0]
                 else:
-                    scidata = ad["SCI"].data
-                    frngdata = fringe["SCI"].data
+                    scidata = statsad["SCI"].data
+                    frngdata = statsfringe["SCI"].data
 
 
                 # Take off 5% of the width as a border
@@ -733,31 +720,33 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
 
-        # Loop over each input AstroData object in the input list
+        # Check whether inputs need to be tiled to get CCD2 data
+        adinput = rc.get_inputs_as_astrodata()
+        orig_input = adinput
+        next = np.array([ad.count_exts("SCI") for ad in adinput])
+        if np.any(next>1):
+            # Keep a deep copy of the original, untiled input to
+            # report back to RC
+            orig_input = [deepcopy(ad) for ad in adinput]
+            log.fullinfo("Tiling extensions together to get statistics "\
+                         "from CCD2")
+            rc.run("tileArrays")
+
+        # Loop over each tiled AstroData object
         first = True
         reference_mean = 1.0
+        count = 0
         for ad in rc.get_inputs_as_astrodata():
 
             # Check the number of science extensions; if more than
             # one, use CCD2 data only
-            if ad.count_exts("SCI")>1:
-
-                # Get the CCD numbers corresponding to each extension
-                sci_ccds = gt.array_number(ad)[0]
-
-                # Pull out CCD2 data
-                central_data = []
-                for sciext in ad["SCI"]:
-                    if sci_ccds[("SCI",sciext.extver())]==2:
-                        central_data.append(sciext.data)
-                        
-                # Stack data if necessary
-                if len(central_data)>1:
-                    central_data = np.hstack(central_data)
-                else:
-                    central_data = central_data[0]
-            else:
+            if ad.count_exts("SCI")==1:
+                # Only one CCD present; use it
                 central_data = ad["SCI"].data
+            else:
+                # Otherwise, take the second science extension
+                # from the tiled data
+               central_data = ad["SCI",2].data
 
             # Take off 5% of the width as a border
             xborder = int(0.05 * central_data.shape[1])
@@ -782,6 +771,10 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 first = False
             else:
                 scale = reference_mean / this_mean
+
+            # Get the original, untiled input to apply the scale to
+            ad = orig_input[count]
+            count +=1
 
             # Log and save the scale factor
             log.fullinfo("Relative intensity for %s: %.3f" % (ad.filename,

@@ -2,6 +2,7 @@ globalStdkeyDict = {
     "key_airmass":"AIRMASS",
     "key_amp_read_area":"AMPROA",
     "key_array_section":"ARRAYSEC",
+    "key_bias_level":"RAWBIAS",
     "key_azimuth":"AZIMUTH",
     "key_camera":"CAMERA",
     "key_cass_rotator_pa":"CRPA",

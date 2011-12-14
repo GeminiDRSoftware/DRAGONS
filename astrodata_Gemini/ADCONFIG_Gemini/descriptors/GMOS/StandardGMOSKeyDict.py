@@ -15,6 +15,7 @@ stdkeyDictGMOS = {
     "key_focal_plane_mask":"MASKNAME",
     "key_maskname":"MASKNAME",
     "key_masktype":"MASKTYP",
+    "key_overscan_value":"OVERSCAN",
     "key_overscan_section":"BIASSEC",
     "key_wavelength_reference_pixel":"CRPIX1",
     }

@@ -44,6 +44,7 @@ keyword_comments = {
     "RA": "Right Ascension",
     "RAWGEMQA": "Gemini Quality Assessment",
     "RAWPIREQ": "PI Requirements Met",
+    "RAWBIAS": "Estimated raw bias level [ADU]",
     "RDNOISE": "Estimated read noise [electrons]",
     "RELEASE": "End of proprietary period YYYY-MM-DD",
     "RELINT": "Relative intensity factor",

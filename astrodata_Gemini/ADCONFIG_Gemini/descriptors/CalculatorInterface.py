@@ -227,6 +227,59 @@ class CalculatorInterface:
                 self.exception_info = sys.exc_info()[1]
                 return None
     
+    def bias_level(self, format=None, **args):
+        """
+        Return the bias_level value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
+        :return: the bias_level
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"bias_level"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
+            #print hasattr(self.descriptor_calculator, "bias_level")
+            if not hasattr(self.descriptor_calculator, "bias_level"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for bias_level"
+                    raise KeyError(msg)
+            else:
+                retval = self.descriptor_calculator.bias_level(self, **args)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "bias_level",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = float )
+            return ret
+        except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
+                raise
+            else:
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()[1]
+                return None
+    
     def camera(self, format=None, **args):
         """
         Return the camera value

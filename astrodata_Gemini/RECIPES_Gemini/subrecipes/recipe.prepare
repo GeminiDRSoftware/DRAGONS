@@ -8,3 +8,4 @@ validateData
 standardizeStructure
 standardizeHeaders
 #validateWCS
+markAsPrepared

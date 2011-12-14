@@ -535,8 +535,11 @@ def _cull_sources(ad, img_obj):
     aperture = default_fwhm
     
     # for rejecting saturated sources
-    saturation = ad.saturation_level()
-    
+    try:
+        saturation = float(ad.saturation_level())
+    except:
+        saturation = None
+
     good_source = []
     for objx,objy in img_obj:
         
@@ -563,7 +566,7 @@ def _cull_sources(ad, img_obj):
         y_width = default_fwhm
         theta = 0.
         
-        if peak >= saturation:
+        if saturation is not None and peak >= saturation:
             # source is too bright, skip it
             continue
         

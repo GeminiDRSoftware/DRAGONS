@@ -70,6 +70,14 @@ class F2Primitives(GEMINIPrimitives):
             gt.update_key_from_descriptor(
                 adinput=ad, descriptor="gain()", extname="SCI")
 
+            # Non linear level
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="non_linear_level()", extname="SCI")
+
+            # Saturation level
+            gt.update_key_from_descriptor(
+                adinput=ad, descriptor="saturation_level()", extname="SCI")
+
             # Dispersion axis (new keyword, should it be written?)
             if "IMAGE" not in ad.types:
                 gt.update_key_from_descriptor(
@@ -77,10 +85,6 @@ class F2Primitives(GEMINIPrimitives):
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
-            gt.mark_history(adinput=ad, keyword=self.timestamp_keys["prepare"])
-            
-            # Refresh the AstroData types to reflect new PREPARED status
-            ad.refresh_types()
             
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
@@ -166,10 +170,6 @@ class F2Primitives(GEMINIPrimitives):
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
-            gt.mark_history(adinput=ad, keyword=self.timestamp_keys["prepare"])
-
-            # Refresh the AstroData types to reflect new PREPARED status
-            ad.refresh_types()
 
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
@@ -228,7 +228,6 @@ class F2Primitives(GEMINIPrimitives):
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
-            gt.mark_history(adinput=ad, keyword=self.timestamp_keys["prepare"])
             
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 

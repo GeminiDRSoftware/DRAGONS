@@ -5,6 +5,9 @@
 
 stdkeyDictGEMINI = {
     "key_aowfs":"AOWFS_ST",
+    "key_bias_image":"BIASIM",
+    "key_dark_image":"DARKIM",
+    "key_bunit":"BUNIT",
     "key_oiwfs":"OIWFS_ST",
     "key_pwfs1":"PWFS1_ST",
     "key_pwfs2":"PWFS2_ST",

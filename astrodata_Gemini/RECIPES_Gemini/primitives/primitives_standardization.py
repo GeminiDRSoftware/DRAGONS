@@ -57,7 +57,11 @@ class StandardizationPrimitives(GENERALPrimitives):
         # the input AstroData objects in the form of a dictionary, where the
         # key is the input AstroData object and the value is the BPM for that
         # AstroData object
-        bpm_dict = _select_bpm(adinput=adinput, bpm=bpm)
+        if bpm is not None and bpm!="None":
+            use_bpm = True
+            bpm_dict = _select_bpm(adinput=adinput, bpm=bpm)
+        else:
+            use_bpm = False
 
         # Loop over each input AstroData object in the input list
         for ad in adinput:
@@ -73,11 +77,14 @@ class StandardizationPrimitives(GENERALPrimitives):
                 continue
             
             # Get the appropriate BPM for this AstroData object
-            bpm = bpm_dict[ad]
-            if bpm is None:
-               log.warning("No BPM found for %s (%s %dx%d)" %
-                           (ad.filename,ad.instrument(),
-                            ad.detector_x_bin(),ad.detector_y_bin()))
+            if use_bpm:
+                bpm = bpm_dict[ad]
+                if bpm is None:
+                    log.warning("No BPM found for %s (%s %dx%d)" %
+                                (ad.filename,ad.instrument(),
+                                 ad.detector_x_bin(),ad.detector_y_bin()))
+            else:
+                bpm = None
             
             # Loop over each science extension in each input AstroData object
             for ext in ad["SCI"]:
@@ -89,13 +96,12 @@ class StandardizationPrimitives(GENERALPrimitives):
                 # using the appropriate descriptors
                 non_linear_level = ext.non_linear_level().as_pytype()
                 saturation_level = ext.saturation_level().as_pytype()
-                log.fullinfo("Non linear level = %d" % non_linear_level)
-                log.fullinfo("Saturation level = %d" % saturation_level)
-                
+
                 # Create an array that contains pixels that have a value of 2
                 # when that pixel is in the non-linear regime in the input
                 # science extension
                 if non_linear_level is not None:
+                    log.fullinfo("Non linear level = %d" % non_linear_level)
                     non_linear_array = np.where(
                         ((ext.data >= non_linear_level) &
                         (ext.data < saturation_level)), 2, 0)
@@ -107,6 +113,7 @@ class StandardizationPrimitives(GENERALPrimitives):
                 # Create an array that contains pixels that have a value of 4
                 # when that pixel is saturated in the input science extension
                 if saturation_level is not None:
+                    log.fullinfo("Saturation level = %d" % saturation_level)
                     saturation_array = np.where(
                         ext.data >= saturation_level, 4, 0)
                     # Set the data type of the array to be int16
@@ -340,6 +347,28 @@ class StandardizationPrimitives(GENERALPrimitives):
         
         yield rc 
 
+    def markAsPrepared(self,rc):
+        adoutput_list = []
+        for ad in rc.get_inputs_as_astrodata():
+            # Attach the PREPARED type to the dataset
+            gt.mark_history(adinput=ad, 
+                            keyword=self.timestamp_keys["prepare"])
+            ad.refresh_types()
+
+            # Change the filename
+            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
+                                             strip=True)
+            
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+        
+        yield rc 
+           
+
+
     def standardizeCommonHeaders(self, rc):
 
         # Instantiate the log
@@ -384,14 +413,6 @@ class StandardizationPrimitives(GENERALPrimitives):
             ad.phu_set_key_value("NEXTEND", len(ad),
                                  comment=keyword_comments["NEXTEND"])
 
-            # Non linear level
-            gt.update_key_from_descriptor(
-                adinput=ad, descriptor="non_linear_level()", extname="SCI")
-
-            # Saturation level
-            gt.update_key_from_descriptor(
-                adinput=ad, descriptor="saturation_level()", extname="SCI")
-
             # Physical units (assuming raw data has units of ADU)
             for ext in ad["SCI"]:
                 ext.set_key_value("BUNIT","adu",
@@ -399,11 +420,7 @@ class StandardizationPrimitives(GENERALPrimitives):
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
-            gt.mark_history(adinput=ad, keyword=self.timestamp_keys["prepare"])
             
-            # Refresh the AstroData types to reflect new PREPARED status
-            ad.refresh_types()            
-
             # Change the filename
             ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
                                              strip=True)
@@ -447,7 +464,9 @@ def _select_bpm(adinput=None, bpm=None):
     
     if not isinstance(adinput, list):
         adinput = [adinput]
-    if bpm is not None:
+    if bpm is None:
+        bpm_list = []
+    elif bpm!="auto":
         # The user supplied an input to the bpm parameter
         if not isinstance(bpm, list):
             bpm_list = [bpm]

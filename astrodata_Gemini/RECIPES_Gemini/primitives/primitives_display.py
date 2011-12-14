@@ -28,17 +28,44 @@ class DisplayPrimitives(GENERALPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "display", "starting"))
         
+        # Check whether a DQ plane needs to be added
+        # ie. threshold="auto" and there is no DQ plane already
+        threshold = rc["threshold"]
+        adinput = rc.get_inputs_as_astrodata()
+        orig_input = adinput
+        deepcopied = False
+
+        # Threshold parameter only makes sense for SCI extension;
+        # turn it off for others
+        extname = rc["extname"]
+        if extname!="SCI" or threshold=="None":
+            threshold=None
+        elif threshold=="auto":
+            dqext = np.array([ad["DQ"] for ad in adinput])
+            mosaic = np.array([(ad.phu_get_key_value("MOSAIC") is not None)
+                               for ad in adinput])
+            if not np.all(dqext):
+                if not np.any(mosaic):
+                    orig_input = [deepcopy(ad) for ad in adinput]
+                    deepcopied = True
+
+                    rc.run("addDQ(bpm=None)")
+                    adinput = rc.get_inputs_as_astrodata()
+                else:
+                    log.warning("Cannot add DQ plane to mosaicked data; " \
+                                "no threshold mask will be displayed")
+                    threshold=None
+
         # Check whether data needs to be tiled before displaying
         # Otherwise, flatten all desired extensions into a single list
         tile = rc["tile"]
-        extname = rc["extname"]
-        adinput = rc.get_inputs_as_astrodata()
-        orig_input = adinput
         if tile:
             next = np.array([ad.count_exts(extname) for ad in adinput])
             if np.any(next>1):
                 log.fullinfo("Tiling extensions together before displaying")
-                orig_input = [deepcopy(ad) for ad in adinput]
+                if not deepcopied:
+                    orig_input = [deepcopy(ad) for ad in adinput]
+                    deepcopied = True
                 rc.run("tileArrays(tile_all=True)")
                 adinput = rc.get_inputs_as_astrodata()
         else:
@@ -83,58 +110,22 @@ class DisplayPrimitives(GENERALPrimitives):
             # (eg. in raw F2 data)
             data = np.squeeze(dispext.data)
 
-            # Threshold parameter only makes sense for SCI extension;
-            # turn it off for others
-            threshold = rc["threshold"]
-            if extname!="SCI" or threshold=="None":
-                threshold=None
-            elif threshold=="auto" and "GMOS" in ad.types:
-                # NOTE: this should be done in some more instrument-agnostic way
-
-                # Get the pre-defined threshold for the given detector type
-                # and specific use case, i.e., display; using a look up
-                # dictionary (table)
-                gmosThresholds = Lookups.get_lookup_table(
-                    "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
-                
-                # Read the detector type from the phu
-                detector_type = ad.phu_get_key_value("DETTYPE")
-
-                # Form the key
-                threshold_key = ("display", detector_type)
-                if threshold_key in gmosThresholds:
-                    # This is an integer with units ADU
-                    threshold = gmosThresholds[threshold_key]
-                else:
-                    raise Errors.TableKeyError()
-            elif threshold=="auto":
-                threshold = ad.saturation_level().as_pytype()
-            elif threshold is not None:
-                threshold = float(threshold)
-
             # Make threshold mask if desired
             masks = []
             mask_colors = []
             if threshold is not None:
             
-                # Check units of extension; if electrons, 
-                # convert threshold limit from ADU to electrons. Also
-                # subtract approximate overscan level if needed
-                overscan_level = dispext.get_key_value("OVERSCAN")
-                if overscan_level is not None:
-                    threshold -= overscan_level
-                    log.fullinfo("Subtracting overscan level " +
-                                 "%.2f from threshold parameter" % 
-                                 overscan_level)
-                bunit = dispext.get_key_value("BUNIT")
-                if bunit=="electron":
-                    gain = dispext.gain().as_pytype()
-                    threshold *= gain 
-                    log.fullinfo("Threshold parameter converted to " +
-                                 "%.2f electrons" % threshold)
-
-                # Make threshold mask
-                satmask = np.where(data>threshold)
+                if threshold!="auto":
+                    # Make threshold mask from user supplied value;
+                    # Assume units match units of data
+                    threshold = float(threshold)
+                    satmask = np.where(data>threshold)
+                else:
+                    # Make the mask from the nonlinear and 
+                    # saturation bits in the DQ plane
+                    dqext = ad["DQ",dispext.extver()]
+                    satmask = np.where(np.logical_or(dqext.data & 2,
+                                                     dqext.data & 4))
                 masks.append(satmask)
                 mask_colors.append(204)
 
@@ -201,7 +192,7 @@ class _localNumDisplay(nd.NumDisplay):
 
     mask, if specified, should be a tuple of numpy arrays: the y- and
     x-coordinates of points to be masked.  For example,
-    mask = np.where(data>threshold_limit)
+    mask = np.where(data>threshold)
     """
     def display(self, pix, name=None, bufname=None, z1=None, z2=None,
                 transform=None, zscale=False, contrast=0.25, scale=None,
