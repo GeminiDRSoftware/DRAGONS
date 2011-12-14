@@ -124,10 +124,16 @@ class DisplayPrimitives(GENERALPrimitives):
                     # Make the mask from the nonlinear and 
                     # saturation bits in the DQ plane
                     dqext = ad["DQ",dispext.extver()]
-                    satmask = np.where(np.logical_or(dqext.data & 2,
-                                                     dqext.data & 4))
-                masks.append(satmask)
-                mask_colors.append(204)
+                    if dqext is None:
+                        log.warning("No DQ plane found; cannot make threshold "\
+                                    "mask")
+                        satmask = None
+                    else:
+                        satmask = np.where(np.logical_or(dqext.data & 2,
+                                                         dqext.data & 4))
+                if satmask is not None:
+                    masks.append(satmask)
+                    mask_colors.append(204)
 
             overlay = overlay_dict[ad]
             if overlay is not None:
