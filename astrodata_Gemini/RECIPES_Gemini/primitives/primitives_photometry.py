@@ -380,6 +380,10 @@ class PhotometryPrimitives(GENERALPrimitives):
             # extensions to get fwhm, ellipticity
             if method=="daofind":
                 log.stdinfo("Fitting sources for simple photometry")
+
+                # Divide the max_sources by the number of extensions
+                max_sources = int(max_sources/ad.count_exts("SCI"))
+
                 if seeing_est is None:
                     # Run the fit once to get a rough seeing estimate 
                     if max_sources>20:
