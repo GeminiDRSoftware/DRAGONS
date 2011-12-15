@@ -12,7 +12,7 @@ from ReductionObjectRequests import CalibrationRequest
 from astrodata.adutils import gemLog
 from Errors import CalibrationDefinitionLibraryError as CDLExcept
 from Errors import AstroDataError
-
+from Errors import ExistError
                
 class CalibrationDefinitionLibrary(object):
     '''
@@ -98,6 +98,11 @@ class CalibrationDefinitionLibrary(object):
             cr.datalabel = inp.data_label().for_db()
             
             ad = inp # saves me time, as I cut/pasted the below from a test script
+
+            # Old version of the descriptor dictionary: this fails badly
+            # for any data type that doesn't have all these descriptors
+            # defined
+            """
             #print "CDL99:", str(ad.ut_datetime())
             cr.descriptors =  {'instrument':ad.instrument().for_db(),
                          'observation_type': ad.observation_type().for_db(),
@@ -114,6 +119,34 @@ class CalibrationDefinitionLibrary(object):
                          'filter_name':ad.filter_name().for_db(),
                          'focal_plane_mask':ad.focal_plane_mask().for_db(),
                          }
+            """
+            # List of all possible needed descriptors
+            descriptor_list = ['instrument',
+                               'observation_type',
+                               'data_label',
+                               'detector_x_bin',
+                               'detector_y_bin',
+                               'read_speed_setting',
+                               'gain_setting',
+                               'amp_read_area',
+                               'ut_datetime',
+                               'exposure_time',
+                               'object',
+                               'filter_name',
+                               'focal_plane_mask',
+                               ]
+            # Check that each descriptor works and returns a 
+            # sensible value before adding it to the dictionary
+            desc_dict = {}
+            for desc_name in descriptor_list:
+                try:
+                    exec('dv = ad.%s()' % desc_name)
+                except (ExistError,KeyError):
+                    continue
+                if dv is not None:
+                    desc_dict[desc_name] = dv.for_db()
+                
+            cr.descriptors = desc_dict
             cr.types = ad.types
             
             reqEvents.append(cr)
