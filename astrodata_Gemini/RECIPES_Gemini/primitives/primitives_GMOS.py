@@ -1021,8 +1021,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                     num_ccd = 1
                 nextend = 0
                 for ccd in range(1,num_ccd+1):
-                    for extname in ccd_data[ccd].keys():
-                        if len(ccd_data[ccd][extname])>0:
+                    for extname in ["SCI","DQ","VAR"]:
+                        if (extname in ccd_data[ccd] and 
+                            len(ccd_data[ccd][extname])>0):
                             data = np.hstack(ccd_data[ccd][extname])
                             header = ref_header[ccd][extname]
                             new_ext = AstroData(data=data,header=header)
