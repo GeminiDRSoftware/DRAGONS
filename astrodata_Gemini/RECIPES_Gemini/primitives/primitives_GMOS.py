@@ -858,8 +858,10 @@ class GMOSPrimitives(GEMINIPrimitives):
                                 var_data_list.append(
                                     chip_gap.astype(np.float32))
                             if dqext is not None:
+                                # For the DQ plane, set the gap value
+                                # to 1 (bad pixel)
                                 dq_data_list.append(
-                                    chip_gap.astype(np.int16))
+                                    chip_gap.astype(np.int16)+1)
                         else:
                             ccd_data[num_ccd] = {"SCI":sci_data_list,
                                                  "VAR":var_data_list,
