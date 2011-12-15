@@ -205,6 +205,18 @@ if __name__=='__main__':
         "GMOS_BIAS" in ad.types or 
         "GMOS_IMAGE_FLAT" in ad.types):
 
+        # Test for 3-amp mode with e2vDD CCDs
+        # This mode has not been commissioned.
+        dettype = ad.phu_get_key_value("DETTYPE")
+        if dettype=="SDSU II e2v DD CCD42-90":
+            namps = ad.phu_get_key_value("NAMPS")
+            if namps is not None and int(namps)==1:
+                print "\nERROR: The GMOS e2v detectors should " \
+                      "not use 3-amp mode!"
+                print "Please set the GMOS CCD Readout Characteristics " \
+                      "to use 6 amplifiers.\n"
+                sys.exit()
+        
         # Call reduce with auto-selected reduction recipe
         print "\nBeginning reduction for file %s, %s\n" % (imgname,
                                                            ad.data_label()) 
