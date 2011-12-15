@@ -509,7 +509,7 @@ def _select_bpm(adinput=None, bpm=None):
             if key in all_bpm_dict:
                 bpm = AstroData(lookup_path(all_bpm_dict[key]))
             else:
-                pass
+                bpm = None
                 #raise Errors.TableKeyError("Unable to find a BPM for %s" % key)
             bpm_list.append(bpm)
     
