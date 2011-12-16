@@ -83,10 +83,10 @@ class StackPrimitives(GENERALPrimitives):
         :type operation: string, options: 'average', 'median'.
 
         :param reject_method: type of rejection algorithm
-        :type reject_method: string, options: 'avsigclip', 'minmax'
+        :type reject_method: string, options: 'avsigclip', 'minmax', None
 
-        :param mask_type: type of masking to use
-        :type mask_type: string, options: 'goodvalue', 'none'
+        :param mask: Use DQ plane to mask bad pixels?
+        :type mask: bool
         
         :param nlow: number of low pixels to reject (used with
                      reject_method=minmax)
@@ -125,7 +125,7 @@ class StackPrimitives(GENERALPrimitives):
             suffix = rc["suffix"]
             operation = rc["operation"]
             reject_method = rc["reject_method"]
-            mask_type = rc["mask_type"]
+            mask = rc["mask"]
             nlow = rc["nlow"]
             nhigh = rc["nhigh"]
 
@@ -160,7 +160,7 @@ class StackPrimitives(GENERALPrimitives):
                 "logfile" : clm.templog.name,
                 }
         
-            # Get the input parameters for IRAF as specified by the user
+            # Determine whether VAR/DQ should be propagated
             fl_vardq = no
             fl_dqprop = no
             for ad in adinput:
@@ -168,6 +168,19 @@ class StackPrimitives(GENERALPrimitives):
                     fl_dqprop = yes
                     if ad["VAR"]:
                         fl_vardq = yes
+
+            # Check whether DQ plane should be used to mask bad pixels
+            if mask:
+                masktype = "goodvalue"
+            else:
+                masktype = "none"
+
+            # Check for a rejection method and translate Python None
+            # to IRAF "none"
+            if reject_method is None or reject_method=="None":
+                reject_method = "none"
+
+            # Get the input parameters for IRAF as specified by the user
             clSoftcodedParams = {
                 "fl_vardq"  : fl_vardq,
                 "fl_dqprop" : fl_dqprop,
@@ -175,7 +188,7 @@ class StackPrimitives(GENERALPrimitives):
                 "reject"    : reject_method,
                 "nlow"      : nlow,
                 "nhigh"     : nhigh,
-                "masktype"  : mask_type,
+                "masktype"  : masktype,
                 }
         
             # Get the default parameters for IRAF and update them

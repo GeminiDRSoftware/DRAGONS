@@ -276,6 +276,11 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     fl_vardq=no
                     break
                 
+            # Check for a rejection method and translate Python None
+            # to IRAF "none"
+            if reject_method is None or reject_method=="None":
+                reject_method = "none"
+
             # Prepare input files, lists, parameters... for input to 
             # the CL script
             clm = mgr.CLManager(imageIns=adinput, suffix=suffix, 
@@ -833,7 +838,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             nlow = 0
             nhigh = 0
             if nframes <= 2:
-                reject_method = "none"
+                reject_method = None
             elif nframes <= 5:
                 nlow = 1
                 nhigh = 1
@@ -845,16 +850,16 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 nhigh = 3
             log.fullinfo("For %d input frames, using reject_method=%s, "\
                          "nlow=%d, nhigh=%d" % 
-                         (nframes,reject_method, nlow, nhigh))
+                         (nframes, reject_method, nlow, nhigh))
 
             # Run the scaleByIntensity primitive to scale flats to the
             # same level
             rc.run("scaleByIntensity")
 
             # Run the stackFrames primitive with the defined parameters
-            prim_str = "stackFrames(suffix=%s,operation=%s,mask_type=%s," \
+            prim_str = "stackFrames(suffix=%s,operation=%s,mask=%s," \
                        "reject_method=%s,nlow=%s,nhigh=%s)" % \
-                       (rc["suffix"],rc["operation"],rc["mask_type"],
+                       (rc["suffix"],rc["operation"],rc["mask"],
                         reject_method,nlow,nhigh)
             rc.run(prim_str)
         

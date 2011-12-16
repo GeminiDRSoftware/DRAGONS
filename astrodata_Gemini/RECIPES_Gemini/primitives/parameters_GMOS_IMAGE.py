@@ -65,9 +65,9 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    "mask_type":{
-        "default"       : "goodvalue",
-        "type"          : "str",
+    "mask":{
+        "default"       : True,
+        "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
