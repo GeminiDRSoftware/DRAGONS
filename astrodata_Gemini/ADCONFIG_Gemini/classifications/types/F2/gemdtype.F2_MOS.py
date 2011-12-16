@@ -6,7 +6,8 @@ class F2_MOS(DataClassification):
     parent = "F2_SPECT"
     requirement = AND ([  ISCLASS("F2_SPECT"),
                           PHU(OBSTYPE="OBJECT"),
-                          OR([  PHU(DCKERPOS="mos"),
+                          OR([  PHU(DECKER="mos"),
+                                PHU(DCKERPOS="mos"),
                                 PHU(MOSPOS="mos.?")  ])  ])
 
 newtypes.append(F2_MOS())
