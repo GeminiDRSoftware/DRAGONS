@@ -220,11 +220,14 @@ class ResamplePrimitives(GENERALPrimitives):
                 
                 ref_data = ext.data
                 
-                trans_data = np.zeros(out_shape)
-                
-                # pad the DQ plane with 1 instead of 0
+                # Make a blank data array to transform into
                 if ext.extname()=="DQ":
-                    trans_data += 1.0
+                    # pad the DQ plane with 1 instead of 0, and make the data
+                    # type int16
+                    trans_data = np.zeros(out_shape).astype(np.int16)
+                    trans_data += 1
+                else:
+                    trans_data = np.zeros(out_shape).astype(np.float32)
                 
                 trans_data[int(-cenoff[0]):int(ref_shape[0]-cenoff[0]),
                            int(-cenoff[1]):int(ref_shape[1]-cenoff[1])] = \
@@ -381,11 +384,14 @@ class ResamplePrimitives(GENERALPrimitives):
                         # just shift the data by an integer number of pixels
                         # (useful for noisy data, also lightning fast)
                         
-                        trans_data = np.zeros(out_shape)
-                        
-                        # pad the DQ plane with 1 instead of 0
+                        # Make a blank data array to transform into
                         if extname=="DQ":
+                            # pad the DQ plane with 1 instead of 0, and
+                            # make the data type int16
+                            trans_data = np.zeros(out_shape).astype(np.int16)
                             trans_data += 1
+                        else:
+                            trans_data = np.zeros(out_shape).astype(np.float32)
                         
                         trans_data[int(-shift[0]):int(img_shape[0]
                                                       -shift[0]),
@@ -441,7 +447,7 @@ class ResamplePrimitives(GENERALPrimitives):
                                 np.uint8(img_data)).reshape(unp)
                             
                             # transform each mask
-                            trans_data = np.zeros(out_shape)
+                            trans_data = np.zeros(out_shape).astype(np.int16)
                             for j in range(0,8):
                                 
                                 # skip the transformation if there are no flags
