@@ -261,7 +261,7 @@ class QAPrimitives(GENERALPrimitives):
         for ad in rc.get_inputs_as_astrodata():
                 
             # Clip sources from the OBJCAT
-            good_source = _clip_sources(ad)
+            good_source = gt.clip_sources(ad)
             keys = good_source.keys()
 
             # Check for no sources found
@@ -810,66 +810,6 @@ def _iq_overlay(stars,data_shape):
 
     iqmask = (np.array(yind),np.array(xind))
     return iqmask
-    
-
-def _clip_sources(ad):
-    """
-    This function takes the source data from the OBJCAT and returns the best
-    sources for IQ measurement.
-    
-    :param ad: input image
-    :type ad: AstroData instance with OBJCAT attached
-    """
-
-    good_source = {}
-    for sciext in ad["SCI"]:
-        extver = sciext.extver()
-
-        objcat = ad["OBJCAT",extver]
-        if objcat is None:
-            continue
-        if objcat.data is None:
-            continue
-
-        x = objcat.data.field("X_IMAGE")
-        y = objcat.data.field("Y_IMAGE")
-        fwhm_pix = objcat.data.field("FWHM_IMAGE")
-        fwhm_arcsec = objcat.data.field("FWHM_WORLD")
-        ellip = objcat.data.field("ELLIPTICITY")
-        sxflag = objcat.data.field("FLAGS")
-        dqflag = objcat.data.field("IMAFLAGS_ISO")
-        class_star = objcat.data.field("CLASS_STAR")
-        area = objcat.data.field("ISOAREA_IMAGE")
-
-        # Source is good if ellipticity defined and <0.5
-        eflag = np.where((ellip>0.5)|(ellip==-999),1,0)
-
-        # Source is good if probability of being a star >0.6
-        sflag = np.where(class_star<0.6,1,0)
-
-        flags = sxflag | eflag | sflag
-
-        # Source is good if greater than 10 connected pixels
-        # Ignore criterion if all undefined (-999)
-        if not np.all(area==-999):
-            aflag = np.where(area<100,1,0)
-            flags |= aflag
-
-        # Source is good if not flagged in DQ plane
-        # Ignore criterion if all undefined (-999)
-        if not np.all(dqflag==-999):
-            flags |= dqflag
-
-        # Use flag=0 to find good data
-        good = (flags==0)
-        rec = np.rec.fromarrays(
-            [x[good],y[good],fwhm_pix[good],fwhm_arcsec[good],ellip[good]],
-            names=["x","y","fwhm","fwhm_arcsec","ellipticity"])
-
-        # Store data
-        good_source[("SCI",extver)] = rec
-
-    return good_source
 
 def _clipped_mean(src):
     """

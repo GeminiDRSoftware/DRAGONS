@@ -654,23 +654,38 @@ def _correlate_sources(ad1, ad2, delta=None, firstPass=10, cull_sources=False):
     :type firstPass: float
     
     :param cull_sources: flag to indicate whether to reject sources that
-                   are insufficiently star-like. If true, will fit
-                   a Gaussian to each correlated source, and return
-                   the fit center of good sources (rather than the raw
-                   OBJCAT position).
+                   are insufficiently star-like
     :type cull_sources: bool
     """
     
     log = gemLog.getGeminiLog()
     
-    # get data and WCS from image 1
-    x1 = ad1["OBJCAT"].data.field("X_IMAGE")
-    y1 = ad1["OBJCAT"].data.field("Y_IMAGE")
+    # If desired, clip out the most star-like sources in the OBJCAT
+    if cull_sources:
+        good_src_1 = gt.clip_sources(ad1)[("SCI",1)]
+        good_src_2 = gt.clip_sources(ad2)[("SCI",1)]
+
+        if len(good_src_1)<3 or len(good_src_2)<3:
+            log.warning("Too few sources in culled list, using full set "\
+                        "of sources")
+            x1 = ad1["OBJCAT"].data.field("X_IMAGE")
+            y1 = ad1["OBJCAT"].data.field("Y_IMAGE")
+            x2 = ad2["OBJCAT"].data.field("X_IMAGE")
+            y2 = ad2["OBJCAT"].data.field("Y_IMAGE")
+        else:
+            x1 = good_src_1["x"]
+            y1 = good_src_1["y"]
+            x2 = good_src_2["x"]
+            y2 = good_src_2["y"]
+    else:
+        # Otherwise, just get all sources
+        x1 = ad1["OBJCAT"].data.field("X_IMAGE")
+        y1 = ad1["OBJCAT"].data.field("Y_IMAGE")
+        x2 = ad2["OBJCAT"].data.field("X_IMAGE")
+        y2 = ad2["OBJCAT"].data.field("Y_IMAGE")
+
+    # get WCS from both images
     wcs1 = pywcs.WCS(ad1["SCI"].header)
-    
-    # get data and WCS from image 2
-    x2 = ad2["OBJCAT"].data.field("X_IMAGE")
-    y2 = ad2["OBJCAT"].data.field("Y_IMAGE")
     wcs2 = pywcs.WCS(ad2["SCI"].header)
     
     # convert image 2 data to sky coordinates
@@ -691,31 +706,6 @@ def _correlate_sources(ad1, ad2, delta=None, firstPass=10, cull_sources=False):
     else:
         obj_list = [zip(x1[ind1], y1[ind1]),
                     zip(x2[ind2], y2[ind2])]
-        
-        if cull_sources:
-            log.stdinfo("Rejecting non-Gaussian sources")
-            obj_list_1 = np.array(_cull_sources(ad1, obj_list[0]))
-            obj_list_2 = np.array(_cull_sources(ad2, obj_list[1]))
-            
-            x1,y1 = obj_list_1[:,0],obj_list_1[:,1]
-            x2,y2 = obj_list_2[:,0],obj_list_2[:,1]
-            
-            # re-match sources
-            ra2, dec2 = wcs2.wcs_pix2sky(x2,y2,1)
-            conv_x2, conv_y2 = wcs1.wcs_sky2pix(ra2,dec2,1)
-            ind1,ind2 = at.match_cxy(x1,conv_x2,y1,conv_y2,
-                                     delta=delta, firstPass=firstPass, log=log)
-            
-            if len(ind1)!=len(ind2):
-                raise Errors.ScienceError("Mismatched arrays returned " +
-                                          "from match_cxy")
-            
-            if len(ind1)<1 or len(ind2)<1:
-                return [[],[]]
-            else:
-                obj_list = [zip(x1[ind1], y1[ind1]),
-                            zip(x2[ind2], y2[ind2])]
-        
         return obj_list
 
 def _align_wcs(reference, adinput, objIns, rotate=False, scale=False):
