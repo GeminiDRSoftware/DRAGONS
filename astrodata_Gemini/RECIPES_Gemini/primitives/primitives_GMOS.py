@@ -522,11 +522,11 @@ class GMOSPrimitives(GEMINIPrimitives):
                 continue
             
             # Retrieve the appropriate bias
-            bias = AstroData(rc.get_cal(ad, "processed_bias"))
+            bias = rc.get_cal(ad, "processed_bias")
             
             # If no appropriate bias is found, it is ok not to subtract the
             # bias in QA context; otherwise, raise error
-            if bias.filename is None:
+            if bias is None:
                 if "qa" in rc.context:
                     log.warning("No changes will be made to %s, since no " \
                                 "appropriate bias could be retrieved" \
@@ -539,7 +539,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                 else:
                     raise Errors.PrimitiveError("No processed bias found "\
                                                 "for %s" % ad.filename)
-            
+            else:
+                bias = AstroData(bias)
+
             # Check the inputs have matching binning and SCI shapes.
             try:
                 gt.checkInputsMatch(adInsA=ad, adInsB=bias, 

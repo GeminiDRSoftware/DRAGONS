@@ -227,11 +227,11 @@ class PreprocessingPrimitives(GENERALPrimitives):
                 continue
             
             # Retrieve the appropriate flat from the reduction context
-            flat = AstroData(rc.get_cal(ad, "processed_flat"))
+            flat = rc.get_cal(ad, "processed_flat")
             
             # If there is no appropriate flat, there is no need to divide by
             # the flat in QA context; in SQ context, raise an error
-            if flat.filename is None:
+            if flat is None:
                 if "qa" in rc.context:
                     log.warning("No changes will be made to %s, since no " \
                                 "appropriate flat could be retrieved" \
@@ -243,6 +243,8 @@ class PreprocessingPrimitives(GENERALPrimitives):
                 else:
                     raise Errors.PrimitiveError("No processed flat found "\
                                                 "for %s" % ad.filename)
+            else:
+                flat = AstroData(flat)
             
             # Check the inputs have matching filters, binning, and SCI shapes.
             try:
@@ -807,11 +809,11 @@ class PreprocessingPrimitives(GENERALPrimitives):
                 continue
             
             # Retrieve the appropriate dark from the reduction context
-            dark = AstroData(rc.get_cal(ad, "processed_dark"))
+            dark = rc.get_cal(ad, "processed_dark")
 
             # If there is no appropriate dark, there is no need to
             # subtract the dark
-            if dark.filename is None:
+            if dark is None:
                 log.warning("No changes will be made to %s, since no " \
                             "appropriate dark could be retrieved" \
                             % (ad.filename))
@@ -819,7 +821,9 @@ class PreprocessingPrimitives(GENERALPrimitives):
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
-            
+            else:
+                dark = AstroData(dark)
+
             # Subtract the dark from the input AstroData object
             log.fullinfo("Subtracting the dark (%s) from the input " \
                          "AstroData object %s" \

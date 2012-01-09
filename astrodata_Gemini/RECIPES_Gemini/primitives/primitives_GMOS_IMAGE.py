@@ -545,16 +545,18 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 continue
             
             # Get the appropriate fringe frame
-            fringe = AstroData(rc.get_cal(ad, "processed_fringe"))
+            fringe = rc.get_cal(ad, "processed_fringe")
             
             # Take care of the case where there was no fringe 
-            if fringe.filename is None:
+            if fringe is None:
                 log.warning("Could not find an appropriate fringe for %s" \
                             % (ad.filename))
                 # Append the input to the output without further processing
                 adoutput_list.append(ad)
                 continue
-            
+            else:
+                fringe = AstroData(fringe)
+
             # Check the inputs have matching filters, binning and SCI shapes.
             try:
                 gt.checkInputsMatch(adInsA=ad, adInsB=fringe)
