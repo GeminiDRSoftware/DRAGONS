@@ -317,6 +317,13 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    "remove_bias":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     "threshold":{
         "default"       : "auto",
         "type"          : "str",

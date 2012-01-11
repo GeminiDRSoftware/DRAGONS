@@ -52,6 +52,8 @@ class DisplayPrimitives(GENERALPrimitives):
                                for ad in adinput])
             if not np.all(dqext):
                 if not np.any(mosaic):
+                    # This is the first possible modification to the data;
+                    # always deepcopy before proceeding
                     orig_input = [deepcopy(ad) for ad in adinput]
                     deepcopied = True
 
@@ -61,6 +63,48 @@ class DisplayPrimitives(GENERALPrimitives):
                     log.warning("Cannot add DQ plane to mosaicked data; " \
                                 "no threshold mask will be displayed")
                     threshold=None
+
+        # Check whether approximate bias level should be removed
+        remove_bias = rc["remove_bias"]
+        if remove_bias:
+            new_adinput = []
+            for ad in adinput:
+                # Check whether data has been bias- or dark-subtracted
+                biasim = ad.phu_get_key_value("BIASIM")
+                darkim = ad.phu_get_key_value("DARKIM")
+
+                # Check whether data has been overscan-subtracted
+                overscan = np.array([ext.get_key_value("OVERSCAN") 
+                                     for ext in ad["SCI"]])
+                if np.any(overscan) or biasim or darkim:
+                    log.fullinfo("Bias level has already been removed "\
+                                 "from data; no approximate correction "\
+                                 "will be performed")
+                else:
+                    # Try to get the bias level from the descriptor
+                    try:
+                        bias_level = ad.bias_level()
+                    except:
+                        log.warning("Bias level not found for %s; " \
+                                    "approximate bias will not be removed" % 
+                                    ad.filename)
+                    else:
+
+                        # Copy the original input if necessary, before
+                        # modifying it
+                        if not deepcopied:
+                            orig_input = [deepcopy(ad) for ad in adinput]
+                            deepcopied = True
+
+                        # Subtract the bias level from each science extension
+                        log.stdinfo("\nSubtracting approximate bias level "\
+                                     "from %s for display\n" \
+                                     % ad.filename)
+                        log.fullinfo("Bias levels used: %s" % str(bias_level))
+                        ad = ad.sub(bias_level.dict_val)
+
+                new_adinput.append(ad)
+            adinput = new_adinput
 
         # Check whether data needs to be tiled before displaying
         # Otherwise, flatten all desired extensions into a single list
