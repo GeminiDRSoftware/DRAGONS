@@ -77,7 +77,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 # If fringe was created from science, scale by exposure time
                 stats_scale=False
             
-            rc.run("removeFringe")
+            rc.run("removeFringe(stats_scale=%s)" % stats_scale)
         
         yield rc
     
@@ -588,11 +588,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                             (ad.filename,fringe.filename))
             else:
 
-                # Use statistics to calculate the scaling factor, following
-                # masked_sci = where({where[sciExt < 
-                #                    (sciExt.median+2.5*sciExt.std)]} 
-                #                 > [sciExt.median-3*sciExt.std])
-                # scale = masked_sci.std / fringeExt.std
+                # Use statistics to calculate the scaling factor
                 log.fullinfo("Using statistics to calculate the " +
                              "scaling factor")
 
@@ -620,16 +616,20 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     # Pull out CCD2 data
                     scidata = []
                     frngdata = []
+                    dqdata = []
                     for i in range(nsciext):
 
                         # Get the next extension in physical order
                         sciext = statsad["SCI",sci_info["amps_order"][i]]
+                        dqext = statsad["DQ",sci_info["amps_order"][i]]
                         frngext = statsfringe["SCI",frng_info["amps_order"][i]]
 
                         # Check to see if it is on CCD2; if so, keep it
                         if sci_info[
                             "array_number"][("SCI",sciext.extver())]==2:
                             scidata.append(sciext.data)
+                            if dqext is not None:
+                                dqdata.append(dqext.data)
                         if frng_info[
                             "array_number"][("SCI",frngext.extver())]==2:
                             frngdata.append(frngext.data)
@@ -641,9 +641,56 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     else:
                         scidata = scidata[0]
                         frngdata = frngdata[0]
+                    if len(dqdata)>0:
+                        if len(dqdata)>1:
+                            dqdata = np.hstack(dqdata)
+                        else:
+                            dqdata = dqdata[0]
+                    else:
+                        dqdata = None
                 else:
                     scidata = statsad["SCI"].data
                     frngdata = statsfringe["SCI"].data
+
+                    dqdata = statsad["DQ"]
+                    if dqdata is not None:
+                        dqdata = dqdata.data
+
+                # Get median and standard deviation
+                if dqdata is not None:
+                    smed = np.median(scidata[dqdata==0])
+                    sstd = scidata[dqdata==0].std()
+                else:                    
+                    smed = np.median(scidata) 
+                    sstd = scidata.std()
+                                      
+                # Aggressively remove any possible sources from the frame
+                # and replace them with the median value
+                smiddle = np.where(scidata>(smed+(0.1*sstd)),smed,scidata)
+
+                # Replace any DQ-flagged data with the median value
+                if dqdata is not None:
+                    smiddle = np.where(dqdata!=0,smed,smiddle)
+                    
+                # Calculate the maximum and minimum in a box centered on 
+                # each data point.  The local depth of the fringe is
+                # max - min.  The overall fringe strength is the median
+                # of the local fringe depths.
+
+                # Width of the box is binning and
+                # filter dependent, determined by experimentation
+                # Results don't seem to depend heavily on the box size
+                if ad.filter_name(pretty=True).as_pytype=="z":
+                    size = 40
+                else:
+                    size = 20
+                size /= ad.detector_x_bin().as_pytype()
+                
+                # Use ndimage maximum_filter and minimum_filter to
+                # get the local maxima and minima
+                import scipy.ndimage as ndimage
+                sci_max = ndimage.filters.maximum_filter(smiddle,size)
+                sci_min = ndimage.filters.minimum_filter(smiddle,size)
 
 
                 # Take off 5% of the width as a border
@@ -653,31 +700,24 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     xborder = 20
                 if yborder<20:
                     yborder = 20
-                log.fullinfo("Using CCD2 data section "\
-                             "[%i:%i,%i:%i] for statistics" %
-                             (xborder,scidata.shape[1]-xborder,
-                              yborder,scidata.shape[0]-yborder))
+                sci_max = sci_max[yborder:-yborder,xborder:-xborder]
+                sci_min = sci_min[yborder:-yborder,xborder:-xborder]
 
-                s = scidata[yborder:-yborder,xborder:-xborder]
-                f = frngdata[yborder:-yborder,xborder:-xborder]
+                # Take the median difference
+                sci_df = np.median(sci_max - sci_min)
 
-                # Get median and standard deviation
-                # (Must flatten for compatibility with 
-                # older versions of numpy)
-                smed = np.median(s.flatten()) 
-                sstd = s.std()
-                      
-                # Remove sources from the science data:
-                # Make an array of all the points where the pixel value is 
-                # less than the median value + 2.5 x the standard deviation.
-                # and greater than the median -3 x the standard deviation.
-                smiddle = s[np.logical_and(s<(smed+(2.5*sstd)),
-                                           s>(smed-(3.0*sstd)))]
-                        
+                # Do the same for the fringe
+                frn_max = ndimage.filters.maximum_filter(frngdata,size)
+                frn_min = ndimage.filters.minimum_filter(frngdata,size)
+                frn_max = frn_max[yborder:-yborder,xborder:-xborder]
+                frn_min = frn_min[yborder:-yborder,xborder:-xborder]
+                frn_df = np.median(frn_max - frn_min)
+
                 # Scale factor
-                # This is the same logic as used in the IRAF girmfringe,
-                # but it doesn't seem to work well in either case.
-                scale = smiddle.std() / f.std() 
+                # This tends to overestimate the factor, but it is
+                # at least in the right ballpark, unlike the estimation
+                # used in girmfringe (masked_sci.std/fringe.std)
+                scale = sci_df / frn_df
         
             log.fullinfo("Scale factor found = "+str(scale))
                 
