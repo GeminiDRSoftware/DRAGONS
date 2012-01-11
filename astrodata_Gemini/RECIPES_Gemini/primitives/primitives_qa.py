@@ -139,6 +139,11 @@ class QAPrimitives(GENERALPrimitives):
                 bg_e /= (pixscale*pixscale)
                 log.fullinfo("BG electrons/s/as^2 = %f" % bg_e)
                 # Now get that in (instrumental) magnitudes...
+                if bg_e<=0:
+                    raise Errors.ScienceError("Background in electrons is "\
+                                              "less than or equal to 0 for "\
+                                              "%s[SCI,%d]" % 
+                                              (ad.filename,extver))
                 bg_im = -2.5 * math.log10(bg_e)
                 log.fullinfo("BG inst mag = %f" % bg_im)
                 # And convert to apparent magnitude using the nominal zeropoint
