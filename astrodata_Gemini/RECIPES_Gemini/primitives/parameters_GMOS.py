@@ -44,6 +44,36 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "measureIQ":{
+    "suffix":{
+        "default"       : "_iqMeasured",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "display":{
+        "default"       : True,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "remove_bias":{
+        "default"       : True,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "separate_ext":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "mosaicDetectors":{
     "suffix":{
         "default"       : "_mosaicked",

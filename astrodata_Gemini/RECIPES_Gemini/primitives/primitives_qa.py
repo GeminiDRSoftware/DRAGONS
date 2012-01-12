@@ -241,9 +241,13 @@ class QAPrimitives(GENERALPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
+        # Check whether display is desired
+        display = rc["display"]
+
         # Check whether inputs need to be tiled, ie. separate_ext=False
         # and at least one input has more than one science extension
         separate_ext = rc["separate_ext"]
+        remove_bias = rc["remove_bias"]
         adinput = rc.get_inputs_as_astrodata()
         orig_input = adinput
         if not separate_ext:
@@ -252,12 +256,55 @@ class QAPrimitives(GENERALPrimitives):
                 # Keep a deep copy of the original, untiled input to
                 # report back to RC
                 orig_input = [deepcopy(ad) for ad in adinput]
+
+                # If necessary, remove an approximate bias before tiling
+                if remove_bias:
+
+                    # Set the remove_bias parameter to False
+                    # so it doesn't get removed again when
+                    # display is run; leave it at default if no
+                    # tiling is being done at this point, so the
+                    # display will handle it later
+                    remove_bias = False
+
+                    new_adinput = []
+                    for ad in adinput:
+                        # Check whether data has been bias- or dark-subtracted
+                        biasim = ad.phu_get_key_value("BIASIM")
+                        darkim = ad.phu_get_key_value("DARKIM")
+
+                        # Check whether data has been overscan-subtracted
+                        overscan = np.array([ext.get_key_value("OVERSCAN") 
+                                             for ext in ad["SCI"]])
+                        if np.any(overscan) or biasim or darkim:
+                            log.fullinfo("Bias level has already been removed "\
+                                         "from data; no approximate "\
+                                         "correction will be performed")
+                        else:
+                            # Try to get the bias level from the descriptor
+                            try:
+                                bias_level = ad.bias_level()
+                            except:
+                                log.warning("Bias level not found for %s; " \
+                                            "approximate bias will not be "\
+                                            "removed from displayed image" % 
+                                            ad.filename)
+                            else:
+                                # Subtract the bias level from each
+                                # science extension
+                                log.stdinfo("\nSubtracting approximate bias "\
+                                            "level from %s for display\n" \
+                                            % ad.filename)
+                                log.fullinfo("Bias levels used: %s" %
+                                             str(bias_level))
+                                ad = ad.sub(bias_level.dict_val)
+
+                        new_adinput.append(ad)
+                    adinput = new_adinput
+
                 log.fullinfo("Tiling extensions together in order to compile "\
                              "IQ data from all extensions")
                 rc.run("tileArrays(tile_all=True)")
-
-        # Check whether display is desired
-        display = rc["display"]
             
         # Loop over each input AstroData object in the input list
         iq_overlays = []
@@ -333,24 +380,51 @@ class QAPrimitives(GENERALPrimitives):
                 csStr = (
                     'Zenith-corrected FWHM (AM %.2f):'%airmass).ljust(llen) + \
                     ('%.3f arcsec' % corr).rjust(rlen)
-                if iq_band!='':
+
+                iq_warn = ""
+                if iq_band is not None:
+
+                    # iq_band is (percentile, lower bound, upper bound)
+                    if iq_band[0]==20:
+                        iq = 'IQ20 (<%.2f arcsec)' % iq_band[2]
+                    elif iq_band[0]==100:
+                        iq = 'IQAny (>%.2f arcsec)' % iq_band[1]
+                    else:
+                        iq = 'IQ%d (%.2f-%.2f arcsec)' % iq_band
+ 
                     filter = ad.filter_name(pretty=True)
                     iqStr = ('IQ band for %s filter:'%filter).ljust(llen)+\
-                            iq_band.rjust(rlen)
+                            iq.rjust(rlen)
+
+                    # Get requested IQ band
+                    try:
+                        req_iq = int(ad.requested_iq())
+                    except:
+                        req_iq = None
+
+                    if req_iq is not None:
+                        reqStr = 'Requested IQ:'.ljust(llen) + \
+                                 ('IQ%d' % req_iq).rjust(rlen)
+                        if req_iq<iq_band[0]:
+                            iq_warn = "\n    "+\
+                                "WARNING: IQ requirement not met".rjust(dlen)
+                    else:
+                        reqStr = '(Requested IQ could not be determined)'
                 else:
                     iqStr = '(IQ band could not be determined)'
 
                 # Warn if high ellipticity
                 if mean_ellip>0.1:
                     ell_warn = "\n    "+\
-                               "WARNING: high ellipticity".rjust(dlen)
+                        "WARNING: high ellipticity".rjust(dlen)
                 else:
                     ell_warn = ""                    
 
                 # Create final formatted string
                 finalStr = '\n    '+fnStr+'\n    '+'-'*dlen+\
                            '\n    '+fmStr+'\n    '+emStr+\
-                           '\n    '+csStr+'\n    '+iqStr+ell_warn+\
+                           '\n    '+csStr+'\n    '+iqStr+\
+                           '\n    '+reqStr+ell_warn+iq_warn+\
                            '\n    '+'-'*dlen+'\n'
                 # Log final string
                 log.stdinfo(finalStr, category='IQ')
@@ -378,7 +452,7 @@ class QAPrimitives(GENERALPrimitives):
             rc["overlay"] = iq_overlays
             log.stdinfo("Sources used to measure IQ are marked " +
                         "with blue circles.\n")
-            rc.run("display(tile=%s)" % tile)
+            rc.run("display(tile=%s,remove_bias=%s)" % (tile,str(remove_bias)))
 
         # Update headers and filename for original input to report
         # back to RC
@@ -589,13 +663,32 @@ class QAPrimitives(GENERALPrimitives):
                 cc50 = ccConstraints['50']
                 cc70 = ccConstraints['70']
                 cc80 = ccConstraints['80']
-                ccband = 'CCany'
+                ccband = 'CCAny'
+                ccnum = 100
                 if(adj_cloud < cc80):
                     ccband = 'CC80'
+                    ccnum = 80
                 if(adj_cloud < cc70):
                     ccband = 'CC70'
+                    ccnum = 70
                 if(adj_cloud < cc50):
                     ccband = 'CC50'
+                    ccnum = 50
+
+                # Get requested CC band
+                cc_warn = None
+                try:
+                    req_cc = int(ad.requested_cc())
+                except:
+                    req_cc = None
+                if req_cc is not None:
+                    if req_cc<ccnum:
+                        cc_warn = '    WARNING: CC requirement not met'
+                    if req_cc==100:
+                        req_cc = 'CCAny'
+                    else:
+                        req_cc = 'CC%d' % req_cc
+                
 
                 log.fullinfo("    Filename: %s ['OBJCAT', %d]" % (ad.filename, extver))
                 log.fullinfo("    --------------------------------------------------------")
@@ -603,7 +696,13 @@ class QAPrimitives(GENERALPrimitives):
                 log.fullinfo("    Zeropoint measurement (%s band): %.3f +/- %.3f" % (ad.filter_name(pretty=True), zp, zpe))
                 log.fullinfo("    Nominal Zeropoint in this configuration: %.3f" % nominal_zeropoint)
                 log.fullinfo("    Estimated Cloud Extinction: %.3f +/- %.3f magnitudes" % (cloud, zpe))
-                log.fullinfo("    This Corresponds to %s" % ccband)
+                log.fullinfo("\n    This corresponds to %s" % ccband)
+                if req_cc is not None:
+                    log.fullinfo("    Requested CC band: %s" % req_cc)
+                else:
+                    log.fullinfo("    (Requested CC could not be determined)")
+                if cc_warn is not None:
+                    log.fullinfo(cc_warn)
                 log.fullinfo("    --------------------------------------------------------")
 
             
@@ -626,20 +725,43 @@ class QAPrimitives(GENERALPrimitives):
                 cc70 = ccConstraints['70']
                 cc80 = ccConstraints['80']
                 ccband = 'CCany'
+                ccnum = 100
                 if(adj_cloud < cc80):
                     ccband = 'CC80'
+                    ccnum = 80
                 if(adj_cloud < cc70):
                     ccband = 'CC70'
+                    ccnum = 70
                 if(adj_cloud < cc50):
                     ccband = 'CC50'
+                    ccnum = 50
 
+                # Get requested CC band
+                cc_warn = None
+                try:
+                    req_cc = int(ad.requested_cc())
+                except:
+                    req_cc = None
+                if req_cc is not None:
+                    if req_cc<ccnum:
+                        cc_warn = '    WARNING: CC requirement not met'
+                    if req_cc==100:
+                        req_cc = 'CCAny'
+                    else:
+                        req_cc = 'CC%d' % req_cc
             
                 log.stdinfo("    Filename: %s" % ad.filename)
                 log.stdinfo("    --------------------------------------------------------")
                 log.stdinfo("    %d sources used to measure Zeropoint" % total_sources)
                 log.stdinfo("    Zeropoint measurements per detector: (%s band): %s" % (ad.filter_name(pretty=True), ', '.join(zp_str)))
                 log.stdinfo("    Estimated Cloud Extinction: %.3f +/- %.3f magnitudes" % (cloud, clouderr))
-                log.stdinfo("      - This corresponds to %s" % ccband)
+                log.stdinfo("\n    This corresponds to %s" % ccband)
+                if req_cc is not None:
+                    log.stdinfo("    Requested CC band: %s" % req_cc)
+                else:
+                    log.stdinfo("    (Requested CC could not be determined)")
+                if cc_warn is not None:
+                    log.stdinfo(cc_warn)
                 log.stdinfo("    --------------------------------------------------------")
             else:
                 log.stdinfo("    Filename: %s" % ad.filename)
@@ -691,8 +813,8 @@ def _iq_band(adinput=None,fwhm=None):
     adinput = gt.validate_input(adinput=adinput)
     fwhm = gt.validate_input(adinput=fwhm)
 
-    # Initialize the list of output IQ band strings
-    str_output = []
+    # Initialize the list of output IQ band tuples
+    list_output = []
 
     try:
 
@@ -726,7 +848,7 @@ def _iq_band(adinput=None,fwhm=None):
                 filter = None
 
             # default value for iq band
-            iq = ''
+            iq = None
 
             # check that ad has valid WFS, filter
             if wfs is not None and filter is not None:
@@ -740,20 +862,25 @@ def _iq_band(adinput=None,fwhm=None):
 
                         # get iq band
                         if fwhm[count]<iq20:
-                            iq='IQ20 (<%.2f arcsec)' % iq20
+                            iq = (20,None,iq20)
+                            #iq='IQ20 (<%.2f arcsec)' % iq20
                         elif fwhm[count]<iq70:
-                            iq='IQ70 (%.2f-%.2f arcsec)' % (iq20,iq70)
+                            iq = (70,iq20,iq70)
+                            #iq='IQ70 (%.2f-%.2f arcsec)' % (iq20,iq70)
                         elif fwhm[count]<iq85:
-                            iq='IQ85 (%.2f-%.2f arcsec)' % (iq70,iq85)
+                            iq = (85,iq70,iq85)
+                            #iq='IQ85 (%.2f-%.2f arcsec)' % (iq70,iq85)
                         else:
-                            iq='IQAny (>%.2f arcsec)' % iq85
+                            iq = (100,iq85,None)
+                            #iq='IQAny (>%.2f arcsec)' % iq85
             
-            # Append the iq band string to the output
-            str_output.append(iq)
+            # Append the iq band tuple to the output
+            # Return value is (percentile, lower bound, upper bound)
+            list_output.append(iq)
             count+=1
 
         # Return the list of output AstroData objects
-        return str_output
+        return list_output
 
     except:
         # Log the message from the exception
