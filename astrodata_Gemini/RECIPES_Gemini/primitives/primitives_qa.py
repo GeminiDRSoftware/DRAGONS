@@ -258,7 +258,7 @@ class QAPrimitives(GENERALPrimitives):
                 orig_input = [deepcopy(ad) for ad in adinput]
 
                 # If necessary, remove an approximate bias before tiling
-                if remove_bias:
+                if remove_bias and display:
 
                     # Set the remove_bias parameter to False
                     # so it doesn't get removed again when
@@ -632,7 +632,7 @@ class QAPrimitives(GENERALPrimitives):
                 ids = ids[np.flatnonzero(ids)]
 
                 if len(zps)==0:
-                    log.warning('No reference sources found in %s[OBJCAT,%d]'%
+                    log.warning('No good reference sources found in %s[OBJCAT,%d]'%
                                 (ad.filename,extver))
                     continue
 
