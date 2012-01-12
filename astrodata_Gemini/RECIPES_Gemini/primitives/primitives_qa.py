@@ -350,7 +350,6 @@ class QAPrimitives(GENERALPrimitives):
                     mean_ellip = src[0]['ellipticity']
                     std_ellip = np.nan
                     
-                log.stdinfo("%d sources used to measure IQ." % len(src))
 
                 airmass = float(ad.airmass())
                 if airmass is None:
@@ -371,6 +370,7 @@ class QAPrimitives(GENERALPrimitives):
                 fnStr = 'Filename: %s' % ad.filename
                 if separate_ext:
                     fnStr += "[%s,%s]" % key
+                srcStr = "%d sources used to measure IQ." % len(src)
                 fmStr = ('FWHM Mean %s Sigma:' % pm).ljust(llen) + \
                         ('%.3f %s %.3f arcsec' % (mean_fwhm, pm,
                                                   std_fwhm)).rjust(rlen)
@@ -421,7 +421,8 @@ class QAPrimitives(GENERALPrimitives):
                     ell_warn = ""                    
 
                 # Create final formatted string
-                finalStr = '\n    '+fnStr+'\n    '+'-'*dlen+\
+                finalStr = '\n    '+fnStr+'\n    '+srcStr+\
+                           '\n    '+'-'*dlen+\
                            '\n    '+fmStr+'\n    '+emStr+\
                            '\n    '+csStr+'\n    '+iqStr+\
                            '\n    '+reqStr+ell_warn+iq_warn+\
@@ -753,7 +754,7 @@ class QAPrimitives(GENERALPrimitives):
                 log.stdinfo("    Filename: %s" % ad.filename)
                 log.stdinfo("    --------------------------------------------------------")
                 log.stdinfo("    %d sources used to measure Zeropoint" % total_sources)
-                log.stdinfo("    Zeropoint measurements per detector: (%s band): %s" % (ad.filter_name(pretty=True), ', '.join(zp_str)))
+                log.stdinfo("    Zeropoint measurements per detector (%s band): %s" % (ad.filter_name(pretty=True), ', '.join(zp_str)))
                 log.stdinfo("    Estimated Cloud Extinction: %.3f +/- %.3f magnitudes" % (cloud, clouderr))
                 log.stdinfo("\n    This corresponds to %s" % ccband)
                 if req_cc is not None:
