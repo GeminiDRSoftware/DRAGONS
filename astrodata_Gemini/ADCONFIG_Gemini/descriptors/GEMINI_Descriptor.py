@@ -577,9 +577,13 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # and return 'Undefined' without throwing an exception if they are not.
         # The descriptor calculator layer treats None differently in that it does not
         # collapese the dictionary, so a string value is preferable.
-        value = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_bg"))
+        string = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_bg"))
+        if string is None:
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        value = self._parse_percentile(string)
         if value is None:
-            value = 'Undefined'
+            raise Errors.InvalidValueError
         return value
 
     def requested_cc(self, dataset, **args):
@@ -588,9 +592,13 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # and return 'Undefined' without throwing an exception if they are not.
         # The descriptor calculator layer treats None differently in that it does not
         # collapese the dictionary, so a string value is preferable.
-        value = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_cc"))
+        string = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_cc"))
+        if string is None:
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        value = self._parse_percentile(string)
         if value is None:
-            value = 'Undefined'
+            raise Errors.InvalidValueError
         return value
 
     def requested_iq(self, dataset, **args):
@@ -599,9 +607,13 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # and return 'Undefined' without throwing an exception if they are not.
         # The descriptor calculator layer treats None differently in that it does not
         # collapese the dictionary, so a string value is preferable.
-        value = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_iq"))
+        string = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_iq"))
+        if string is None:
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        value = self._parse_percentile(string)
         if value is None:
-            value = 'Undefined'
+            raise Errors.InvalidValueError
         return value
 
     def requested_wv(self, dataset, **args):
@@ -610,9 +622,13 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # and return 'Undefined' without throwing an exception if they are not.
         # The descriptor calculator layer treats None differently in that it does not
         # collapese the dictionary, so a string value is preferable.
-        value = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_wv"))
+        string = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_wv"))
+        if string is None:
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        value = self._parse_percentile(string)
         if value is None:
-            value = 'Undefined'
+            raise Errors.InvalidValueError
         return value
 
     def qa_state(self, dataset, **args):
@@ -932,3 +948,19 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # specific descriptor files. For all other Gemini data, raise an
         # exception if this descriptor is called.
         raise Errors.ExistError()
+
+    def _parse_percentile(self, string):
+        # Given the type of string that ought to be present in the site condition
+        # headers, this function returns the integer percentile number
+
+        # Is it 'Any' - ie 100th percentile?
+        if(string == "Any"):
+            return 100
+
+        # Is it a xx-percentile string?
+        m = re.match("^(\d\d)-percentile$", string)
+        if(m):
+          return int(m.group(1))
+
+        # We didn't recognise it
+        return None
