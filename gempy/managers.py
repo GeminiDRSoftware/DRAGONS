@@ -1,13 +1,10 @@
-# Author: Kyle Mede, May 2010. 
-# classes moved geminiTools.py->managers.py April 2011
-
 import os
 
 import tempfile
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from astrodata import Errors
-from gempy import geminiTools as gt
+from gempy import gemini_tools as gt
 from gempy.gemini_metadata_utils import sectionStrToIntList
 
 class CLManager(object):
@@ -360,13 +357,13 @@ class CLManager(object):
         if self.imageOutsNames==None:
             self.imageOutsNames = []
             if self.combinedImages and (self.suffix!=None):
-                name = gt.fileNameUpdater(adIn=self.imageIns[0], 
-                                            suffix=self.suffix, strip=True)
+                name = gt.filename_updater(adinput=self.imageIns[0], 
+                                           suffix=self.suffix, strip=True)
                 self.imageOutsNames.append(name)
             elif (not self.combinedImages) and (self.suffix!=None):
                 for ad in self.imageIns:
-                    name = gt.fileNameUpdater(adIn=ad, suffix=self.suffix, 
-                                              strip=True)
+                    name = gt.filename_updater(adinput=ad, suffix=self.suffix, 
+                                               strip=True)
                     self.imageOutsNames.append(name) 
             else:
                 self.log.error('The "automatic" setting of imageOutsNames can '+
@@ -706,8 +703,8 @@ class CLManager(object):
                 self._preCLimageNames.append(ad.filename)
                 # Strip off all postfixes and prefix filename with a unique 
                 # prefix
-                name = gt.fileNameUpdater(adIn=ad, prefix=self.prefix, 
-                                          strip=True)
+                name = gt.filename_updater(adinput=ad, prefix=self.prefix, 
+                                           strip=True)
                 # store the unique name in imageInsCLdiskNames for later 
                 # reference
                 self.imageInsCLdiskNames.append(name)
@@ -725,8 +722,8 @@ class CLManager(object):
                 # Load up the _preCLrefnames list with the input's filename
                 self._preCLrefnames.append(ad.filename)
                 # Strip off all suffixs and prefix filename with a unique prefix
-                name = gt.fileNameUpdater(adIn=ad, prefix=self.prefix, 
-                                          strip=True)
+                name = gt.filename_updater(adinput=ad, prefix=self.prefix, 
+                                           strip=True)
                 # store the unique name in refInsCLdiskNames for later reference
                 self.refInsCLdiskNames.append(name)
                 # Log the name of this temporary file being written to disk
@@ -827,8 +824,8 @@ class CLManager(object):
             self.refOutsNames = []
             if (self.suffix!=None):
                 for ad in self.refIns:
-                    name = gt.fileNameUpdater(adIn=ad, suffix=self.suffix, 
-                                              strip=True)
+                    name = gt.filename_updater(adinput=ad, suffix=self.suffix, 
+                                               strip=True)
                     self.refOutsNames.append(name) 
             else:
                 self.log.error('The "automatic" setting of refOutsNames can '+

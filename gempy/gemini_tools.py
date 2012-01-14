@@ -215,52 +215,50 @@ def array_information(adinput=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
   
-
-
-def checkInputsMatch(adInsA=None, adInsB=None, check_filter=True):
+def check_inputs_match(ad1=None, ad2=None, check_filter=True):
     """
     This function will check if the inputs match.  It will check the filter,
     binning and shape/size of the every SCI frames in the inputs.
     
-    There must be a matching number of inputs for A and B.
+    There must be a matching number of inputs for 1 and 2.
     
-    :param adInsA: input astrodata instance(s) to be check against adInsB
-    :type adInsA: AstroData objects, either a single or a list of objects
-                Note: inputs A and B must be matching length lists or single 
+    :param ad1: input astrodata instance(s) to be check against ad2
+    :type ad1: AstroData objects, either a single or a list of objects
+                Note: inputs 1 and 2 must be matching length lists or single 
                 objects
     
-    :param adInsB: input astrodata instance(s) to be check against adInsA
-    :type adInsB: AstroData objects, either a single or a list of objects
-                  Note: inputs A and B must be matching length lists or single 
+    :param ad2: input astrodata instance(s) to be check against ad1
+    :type ad2: AstroData objects, either a single or a list of objects
+                  Note: inputs 1 and 2 must be matching length lists or single 
                   objects
     """
     log = gemLog.getGeminiLog() 
     
     # Check inputs are both matching length lists or single objects
-    if (adInsA is None) or (adInsB is None):
-        log.error('Neither A nor B inputs can be None')
-        raise Errors.ToolboxError('Either A or B inputs were None')
-    if isinstance(adInsA,list):
-        if isinstance(adInsB,list):
-            if len(adInsA)!=len(adInsB):
-                log.error('Both the A and B inputs must be lists of MATCHING'+
+    if (ad1 is None) or (ad2 is None):
+        log.error('Inputs ad1 and ad2 must not be None')
+        raise Errors.ToolboxError('Either inputs ad1 or ad2 was None')
+    if isinstance(ad1,list):
+        if isinstance(ad2,list):
+            if len(ad1)!=len(ad2):
+                log.error('Both ad1 and ad2 inputs must be lists of MATCHING'+
                           ' lengths.')
                 raise Errors.ToolboxError('There were mismatched numbers ' \
-                                          'of A and B inputs.')
-    if isinstance(adInsA,AstroData):
-        if isinstance(adInsB,AstroData):
-            # casting both A and B inputs to lists for looping later
-            adInsA = [adInsA]
-            adInsB = [adInsB]
+                                          'of ad1 and ad2 inputs.')
+    if isinstance(ad1,AstroData):
+        if isinstance(ad2,AstroData):
+            # casting both ad1 and ad2 inputs to lists for looping later
+            ad1 = [ad1]
+            ad2 = [ad2]
         else:
-            log.error('Both the A and B inputs must be lists of MATCHING'+
+            log.error('Both ad1 and ad2 inputs must be lists of MATCHING'+
                       ' lengths.')
             raise Errors.ToolboxError('There were mismatched numbers of '+
-                               'A and B inputs.')
+                               'ad1 and ad2 inputs.')
     
-    for count in range(0,len(adInsA)):
-        A = adInsA[count]
-        B = adInsB[count]
+    for count in range(0,len(ad1)):
+        A = ad1[count]
+        B = ad2[count]
         log.fullinfo('Checking inputs '+A.filename+' and '+B.filename)
         
         if A.count_exts('SCI')!=B.count_exts('SCI'):
@@ -857,23 +855,22 @@ def convert_to_cal_header(adinput=None, caltype=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-
-def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='',
+def filename_updater(adinput=None, infilename='', suffix='', prefix='',
                     strip=False):
     """
     This function is for updating the file names of astrodata objects.
     It can be used in a few different ways.  For simple post/pre pending of
-    the infilename string, there is no need to define adIn or strip. The 
-    current filename for adIn will be used if infilename is not defined. 
+    the infilename string, there is no need to define adinput or strip. The 
+    current filename for adinput will be used if infilename is not defined. 
     The examples below should make the main uses clear.
         
     Note: 
     1.if the input filename has a path, the returned value will have
     path stripped off of it.
-    2. if strip is set to True, then adIn must be defined.
+    2. if strip is set to True, then adinput must be defined.
           
-    :param adIn: input astrodata instance having its filename being updated
-    :type adIn: astrodata object
+    :param adinput: input astrodata instance having its filename being updated
+    :type adinput: astrodata object
     
     :param infilename: filename to be updated
     :type infilename: string
@@ -886,20 +883,20 @@ def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='',
     :type prefix: string
     
     :param strip: Boolean to signal that the original filename of the astrodata
-                  object prior to processing should be used. adIn MUST be 
+                  object prior to processing should be used. adinput MUST be 
                   defined for this to work.
     :type strip: Boolean
     
     ::
     
-     fileNameUpdater(adIn=myAstrodataObject, suffix='_prepared', strip=True)
+     filename_updater(adinput=myAstrodataObject, suffix='_prepared', strip=True)
      result: 'N20020214S022_prepared.fits'
         
-     fileNameUpdater(infilename='N20020214S022_prepared.fits',
+     filename_updater(infilename='N20020214S022_prepared.fits',
          suffix='_biasCorrected')
      result: 'N20020214S022_prepared_biasCorrected.fits'
         
-     fileNameUpdater(adIn=myAstrodataObject, prefix='testversion_')
+     filename_updater(adinput=myAstrodataObject, prefix='testversion_')
      result: 'testversion_N20020214S022.fits'
     
     """
@@ -907,13 +904,13 @@ def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='',
 
     # Check there is a name to update
     if infilename=='':
-        # if both infilename and adIn are not passed in, then log critical msg
-        if adIn==None:
+        # if both infilename and adinput are not passed in, then log critical msg
+        if adinput==None:
             log.critical('A filename or an astrodata object must be passed '+
-                         'into fileNameUpdater, so it has a name to update')
-        # adIn was passed in, so set infilename to that ad's filename
+                         'into filename_updater, so it has a name to update')
+        # adinput was passed in, so set infilename to that ad's filename
         else:
-            infilename = adIn.filename
+            infilename = adinput.filename
             
     # Strip off any path that the input file name might have
     basefilename = os.path.basename(infilename)
@@ -923,12 +920,12 @@ def fileNameUpdater(adIn=None, infilename='', suffix='', prefix='',
     
     if strip:
         # Grabbing the value of PHU key 'ORIGNAME'
-        phuOrigFilename = adIn.phu_get_key_value('ORIGNAME') 
+        phuOrigFilename = adinput.phu_get_key_value('ORIGNAME') 
         # If key was 'None', ie. store_original_name() wasn't ran yet, then run
         # it now
         if phuOrigFilename is None:
             # Storing the original name of this astrodata object in the PHU
-            phuOrigFilename = adIn.store_original_name()
+            phuOrigFilename = adinput.store_original_name()
             
         # Split up the filename and the file type ie. the extension
         (name,filetype) = os.path.splitext(phuOrigFilename)
@@ -977,7 +974,6 @@ def make_dict(key_list=None, value_list=None):
     :type value: AstroData
     """
     # Check the inputs have matching filters, binning and SCI shapes.
-    #checkInputsMatch(adInsA=darks, adInsB=adInputs)
     ret_dict = {}
     if not isinstance(key_list, list):
         key_list = [key_list]
