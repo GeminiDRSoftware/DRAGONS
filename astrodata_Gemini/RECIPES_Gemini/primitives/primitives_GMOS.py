@@ -7,7 +7,7 @@ from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
-from gempy import geminiTools as gt
+from gempy import gemini_tools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from primitives_GEMINI import GEMINIPrimitives
@@ -310,8 +310,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             gt.mark_history(adinput=ad_out, keyword=timestamp_key)
 
             # Change the filename
-            ad_out.filename = gt.fileNameUpdater(
-                adIn=ad_out, suffix=rc["suffix"], strip=True)
+            ad_out.filename = gt.filename_updater(
+                adinput=ad_out, suffix=rc["suffix"], strip=True)
             
             # Append the output AstroData object to the list
             # of output AstroData objects
@@ -393,8 +393,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
             
             # Append the output AstroData object to the list
             # of output AstroData objects
@@ -474,8 +474,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
                 
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
             
             # Append the output AstroData object to the list
             # of output AstroData objects
@@ -544,8 +544,8 @@ class GMOSPrimitives(GEMINIPrimitives):
 
             # Check the inputs have matching binning and SCI shapes.
             try:
-                gt.checkInputsMatch(adInsA=ad, adInsB=bias, 
-                                    check_filter=False) 
+                gt.check_inputs_match(ad1=ad, ad2=bias, 
+                                      check_filter=False) 
             except Errors.ToolboxError:
                 # If not, try to clip the bias frame to the size of
                 # the science data
@@ -555,8 +555,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                                               aux_type="cal")[0]
 
                 # Check again, but allow it to fail if they still don't match
-                gt.checkInputsMatch(adInsA=ad, adInsB=bias, 
-                                    check_filter=False)
+                gt.check_inputs_match(ad1=ad, ad2=bias, 
+                                      check_filter=False)
 
             log.fullinfo("Subtracting this bias from the input " \
                          "AstroData object (%s):\n%s" % (ad.filename, 
@@ -573,8 +573,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
             
             # Append the output AstroData object to the list
             # of output AstroData objects
@@ -722,8 +722,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
             
             # Append the output AstroData object to the list
             # of output AstroData objects
@@ -1104,8 +1104,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             gt.mark_history(adinput=adoutput, keyword=timestamp_key)
 
             # Change the filename
-            adoutput.filename = gt.fileNameUpdater(
-                adIn=adoutput, suffix=rc["suffix"], strip=True)
+            adoutput.filename = gt.filename_updater(
+                adinput=adoutput, suffix=rc["suffix"], strip=True)
             
             # Append the output AstroData object to the list
             # of output AstroData objects
@@ -1161,8 +1161,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
             
             # Append the output AstroData object to the list
             # of output AstroData objects
@@ -1241,8 +1241,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
             
             # Append the output AstroData object to the list
             # of output AstroData objects

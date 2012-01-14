@@ -4,7 +4,7 @@ import numdisplay as nd
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
-from gempy import geminiTools as gt
+from gempy import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
 class DisplayPrimitives(GENERALPrimitives):

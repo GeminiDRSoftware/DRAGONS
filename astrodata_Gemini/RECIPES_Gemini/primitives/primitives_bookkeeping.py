@@ -3,7 +3,7 @@ from datetime import datetime
 from astrodata import Errors
 from astrodata import IDFactory
 from astrodata.adutils import gemLog
-from gempy import geminiTools as gt
+from gempy import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
 class BookkeepingPrimitives(GENERALPrimitives):
@@ -48,8 +48,8 @@ class BookkeepingPrimitives(GENERALPrimitives):
         # version is stored before adding it to the list.
         adoutput = []
         for ad in rc.get_inputs_as_astrodata():
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=suffix,
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
+                                              strip=True)
             log.stdinfo("Writing %s to disk" % ad.filename,
                          category="list")
             ad.write(clobber=rc["clobber"])
@@ -306,28 +306,28 @@ class BookkeepingPrimitives(GENERALPrimitives):
         
         for ad in rc.get_inputs_as_astrodata():
             if rc["suffix"] and rc["prefix"]:
-                ad.filename = gt.fileNameUpdater(adIn=ad,
-                                                 prefix=rc["prefix"],
-                                                 suffix=rc["suffix"],
-                                                 strip=rc["strip"])
+                ad.filename = gt.filename_updater(adinput=ad,
+                                                  prefix=rc["prefix"],
+                                                  suffix=rc["suffix"],
+                                                  strip=rc["strip"])
                 log.fullinfo("File name updated to %s" % ad.filename)
                 outfilename = os.path.basename(ad.filename)
             
             elif rc["suffix"]:
                 # If the value of "suffix" was set, then set the file name 
                 # to be written to disk to be postpended by it
-                ad.filename = gt.fileNameUpdater(adIn=ad,
-                                                 suffix=rc["suffix"],
-                                                 strip=rc["strip"])
+                ad.filename = gt.filename_updater(adinput=ad,
+                                                  suffix=rc["suffix"],
+                                                  strip=rc["strip"])
                 log.fullinfo("File name updated to %s" % ad.filename)
                 outfilename = os.path.basename(ad.filename)
             
             elif rc["prefix"]:
                 # If the value of "prefix" was set, then set the file name 
                 # to be written to disk to be pre pended by it
-                ad.filename = gt.fileNameUpdater(adIn=ad,
-                                                 prefix=rc["prefix"],
-                                                 strip=rc["strip"])
+                ad.filename = gt.filename_updater(adinput=ad,
+                                                  prefix=rc["prefix"],
+                                                  strip=rc["strip"])
                 log.fullinfo("File name updated to %s" % ad.filename)
                 outfilename = os.path.basename(ad.filename)
             

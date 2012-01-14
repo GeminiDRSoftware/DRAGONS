@@ -3,7 +3,7 @@ from astrodata import Errors
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
 from primitives_GMOS import GMOSPrimitives
-from gempy import geminiTools as gt
+from gempy import gemini_tools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 

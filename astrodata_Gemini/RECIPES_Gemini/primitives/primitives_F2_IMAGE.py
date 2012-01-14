@@ -1,6 +1,6 @@
 import numpy as np
 from astrodata.adutils import gemLog
-from gempy import geminiTools as gt
+from gempy import gemini_tools as gt
 from primitives_F2 import F2Primitives
 
 class F2_IMAGEPrimitives(F2Primitives):
@@ -63,8 +63,8 @@ class F2_IMAGEPrimitives(F2Primitives):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
 
             # Append the output AstroData object to the list
             # of output AstroData objects

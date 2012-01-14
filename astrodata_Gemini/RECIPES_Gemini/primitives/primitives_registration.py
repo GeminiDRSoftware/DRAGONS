@@ -4,7 +4,7 @@ from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
 from gempy import astrotools as at
-from gempy import geminiTools as gt
+from gempy import gemini_tools as gt
 from gempy import managers as mgr
 from primitives_GENERAL import GENERALPrimitives
 
@@ -315,8 +315,9 @@ class RegistrationPrimitives(GENERALPrimitives):
             for ad in adoutput_list:
                 gt.mark_history(adinput=ad, keyword=timestamp_key)
 
-                ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                                 strip=True)
+                ad.filename = gt.filename_updater(adinput=ad, 
+                                                  suffix=rc["suffix"], 
+                                                  strip=True)
         
         # Report the list of output AstroData objects to the reduction
         # context
@@ -478,8 +479,9 @@ class RegistrationPrimitives(GENERALPrimitives):
                     gt.mark_history(adinput=ad, keyword=timestamp_key)
 
                     # Change the filename
-                    ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
-                                                 strip=True)
+                    ad.filename = gt.filename_updater(adinput=ad, 
+                                                      suffix=rc["suffix"],
+                                                      strip=True)
             else:
                 log.stdinfo("Could not determine astrometric offset for %s" %
                             ad.filename)

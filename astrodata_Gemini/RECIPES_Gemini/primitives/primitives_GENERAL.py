@@ -2,7 +2,7 @@ import os
 from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.ReductionObjects import PrimitiveSet
-from gempy import geminiTools as gt
+from gempy import gemini_tools as gt
 
 class GENERALPrimitives(PrimitiveSet):
     """
@@ -183,8 +183,8 @@ class GENERALPrimitives(PrimitiveSet):
         
         rc.update({"changeI":changeI+1})
         for ad in inputs:
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=ci,
-                                             strip=False)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=ci,
+                                              strip=False)
             # print "pG152:", ad.filename
         rc.report_output(inputs)
         

@@ -11,7 +11,7 @@ from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.ConfigSpace import lookup_path
 from gempy import astrotools as at
-from gempy import geminiTools as gt
+from gempy import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
 # Define the earliest acceptable SExtractor version
@@ -218,8 +218,8 @@ class PhotometryPrimitives(GENERALPrimitives):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
+                                              strip=True)
 
             # Append the output AstroData object to the list 
             # of output AstroData objects
@@ -477,8 +477,8 @@ class PhotometryPrimitives(GENERALPrimitives):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
             
             # Append the output AstroData object to the list 
             # of output AstroData objects

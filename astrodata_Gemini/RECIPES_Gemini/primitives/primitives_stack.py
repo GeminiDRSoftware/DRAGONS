@@ -4,7 +4,7 @@ import numpy as np
 from astrodata import Errors
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
-from gempy import geminiTools as gt
+from gempy import gemini_tools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from primitives_GENERAL import GENERALPrimitives
@@ -257,7 +257,8 @@ class StackPrimitives(GENERALPrimitives):
             # can't strip it out
             adout.phu_set_key_value(
                 "ORIGNAME", 
-                gt.fileNameUpdater(adinput[0],suffix=suffix,strip=True),
+                gt.filename_updater(adinput=adinput[0],
+                                    suffix=suffix,strip=True),
                 comment=self.keyword_comments["ORIGNAME"])
 
             # Add the appropriate time stamps to the PHU

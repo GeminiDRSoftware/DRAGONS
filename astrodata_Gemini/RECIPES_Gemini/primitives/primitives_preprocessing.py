@@ -5,7 +5,7 @@ from astrodata import Errors
 from astrodata import IDFactory
 from astrodata.adutils import gemLog
 from astrodata.adutils.reduceutils.prsproxyutil import upload_calibration
-from gempy import geminiTools as gt
+from gempy import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
 class PreprocessingPrimitives(GENERALPrimitives):
@@ -82,8 +82,8 @@ class PreprocessingPrimitives(GENERALPrimitives):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
             
             # Append the output AstroData object to the list 
             # of output AstroData objects
@@ -183,8 +183,9 @@ class PreprocessingPrimitives(GENERALPrimitives):
                 # Add time stamps, change the filename, and
                 # append to output list
                 gt.mark_history(adinput=ad, keyword=timestamp_key)
-                ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                                 strip=True)
+                ad.filename = gt.filename_updater(adinput=ad, 
+                                                  suffix=rc["suffix"], 
+                                                  strip=True)
                 adoutput_list.append(ad)
  
         # Report the list of output AstroData objects to the reduction
@@ -248,7 +249,7 @@ class PreprocessingPrimitives(GENERALPrimitives):
             
             # Check the inputs have matching filters, binning, and SCI shapes.
             try:
-                gt.checkInputsMatch(adInsA=ad, adInsB=flat) 
+                gt.check_inputs_match(ad1=ad, ad2=flat) 
             except Errors.ToolboxError:
                 # If not, try to clip the flat frame to the size
                 # of the science data
@@ -258,7 +259,7 @@ class PreprocessingPrimitives(GENERALPrimitives):
                     adinput=ad,aux=flat,aux_type="cal")[0]
 
                 # Check again, but allow it to fail if they still don't match
-                gt.checkInputsMatch(adInsA=ad, adInsB=flat)
+                gt.check_inputs_match(ad1=ad, ad2=flat)
 
 
             # Divide the adinput by the flat
@@ -277,8 +278,8 @@ class PreprocessingPrimitives(GENERALPrimitives):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
             
             # Append the output AstroData object to the list 
             # of output AstroData objects
@@ -624,8 +625,8 @@ class PreprocessingPrimitives(GENERALPrimitives):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
             
             # Append the output AstroData object to the list 
             # of output AstroData objects
@@ -704,8 +705,8 @@ class PreprocessingPrimitives(GENERALPrimitives):
             
             # Updating the file name with the suffix for this primitive and
             # then report the new file to the reduction context
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
+                                              strip=True)
             
             # Adding a PROCBIAS time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCBIAS")
@@ -732,8 +733,8 @@ class PreprocessingPrimitives(GENERALPrimitives):
             
             # Updating the file name with the suffix for this primitive and
             # then report the new file to the reduction context
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
+                                              strip=True)
             
             # Adding a PROCDARK time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCDARK")
@@ -760,8 +761,8 @@ class PreprocessingPrimitives(GENERALPrimitives):
             
             # Updating the file name with the suffix for this primitive and
             # then report the new file to the reduction context
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"],
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
+                                              strip=True)
             
             # Adding a PROCFLAT time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCFLAT")
@@ -839,8 +840,8 @@ class PreprocessingPrimitives(GENERALPrimitives):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
             # Change the filename
-            ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                             strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
             
             # Append the output AstroData object to the list
             # of output AstroData objects

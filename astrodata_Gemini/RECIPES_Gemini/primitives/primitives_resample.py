@@ -3,7 +3,7 @@ import pywcs
 from astrodata import Errors
 from astrodata.adutils import gemLog
 from gempy import astrotools as at
-from gempy import geminiTools as gt
+from gempy import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
 class ResamplePrimitives(GENERALPrimitives):
@@ -256,8 +256,8 @@ class ResamplePrimitives(GENERALPrimitives):
             out_wcs = pywcs.WCS(reference["SCI"].header)
             
             # Change the reference filename and append it to the output list
-            reference.filename = gt.fileNameUpdater(
-                adIn=reference, suffix=rc["suffix"], strip=True)
+            reference.filename = gt.filename_updater(
+                adinput=reference, suffix=rc["suffix"], strip=True)
             adoutput_list.append(reference)
             
             # now transform the data
@@ -542,8 +542,9 @@ class ResamplePrimitives(GENERALPrimitives):
                 gt.mark_history(adinput=ad, keyword=timestamp_key)
 
                 # Change the filename
-                ad.filename = gt.fileNameUpdater(adIn=ad, suffix=rc["suffix"], 
-                                                 strip=True)
+                ad.filename = gt.filename_updater(adinput=ad, 
+                                                  suffix=rc["suffix"], 
+                                                  strip=True)
 
                 # Append the output AstroData object to the list
                 # of output AstroData objects
