@@ -157,9 +157,17 @@ class PreprocessingPrimitives(GENERALPrimitives):
                     # Get background value from header
                     bg = sciext.get_key_value("SKYLEVEL")
                     if bg is None:
-                        raise Errors.ScienceError(
-                            "Could not get background level from %s[SCI,%d]" %
-                            (sciext.filename,sciext.extver))
+                        if "qa" in rc.context:
+                            log.warning(
+                                "Could not get background level from "\
+                                "%s[SCI,%d]" %
+                                (sciext.filename,sciext.extver()))
+                            continue
+                        else:
+                            raise Errors.ScienceError(
+                                "Could not get background level from "\
+                                "%s[SCI,%d]" %
+                                (sciext.filename,sciext.extver()))
                     
                     log.fullinfo("Background level is %.0f for %s" %
                                  (bg, ad.filename))
@@ -177,7 +185,7 @@ class PreprocessingPrimitives(GENERALPrimitives):
                             comment=self.keyword_comments["SKYLEVEL"])
 
                 # Store background level of first image
-                if ref_bg is None:
+                if ref_bg is None and ref_bg_dict:
                     ref_bg = ref_bg_dict
 
                 # Add time stamps, change the filename, and

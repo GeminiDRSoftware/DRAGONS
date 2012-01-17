@@ -108,6 +108,11 @@ class QAPrimitives(GENERALPrimitives):
                     dqext = ad["DQ",extver]
                     if dqext is not None:
                         scidata = scidata[dqext.data==0]
+
+                    if len(scidata)<2:
+                        log.warning("No good values in %s[SCI,%d]" % 
+                                    (ad.filename,extver))
+                        continue
                     
                     # Roughly mask sources
                     median = np.median(scidata)
@@ -169,7 +174,8 @@ class QAPrimitives(GENERALPrimitives):
 
             # Write mean background to PHU if averaging all together
             # (or if there's only one science extension)
-            if ad.count_exts("SCI")==1 or not separate_ext:
+            if (ad.count_exts("SCI")==1 or not separate_ext) \
+                    and all_bg is not None:
                 ad.phu_set_key_value(
                     "SKYLEVEL", all_bg, comment="%s [%s]" % 
                     (self.keyword_comments["SKYLEVEL"],bunit))
