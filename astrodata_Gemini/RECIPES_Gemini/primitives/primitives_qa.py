@@ -337,8 +337,13 @@ class QAPrimitives(GENERALPrimitives):
                 src = good_source[key]
 
                 if len(src)==0:
-                    log.warning('No good sources found in %s, %s extensions' %
-                                (ad.filename,key))
+                    if separate_ext:
+                        log.warning('No good sources found in %s, '\
+                                    'extension %s' %
+                                    (ad.filename,key))
+                    else:
+                        log.warning('No good sources found in %s' %
+                                    (ad.filename))
                     if display:
                         iq_overlays.append(None)
                     mean_fwhms.append(None)
