@@ -667,9 +667,15 @@ class GMOSPrimitives(GEMINIPrimitives):
                 log.fullinfo("nbiascontam parameter was updated to = "+
                              str(nbiascontam))
             else: 
-                # Do not try to calculate it, just use default value of 4.
-                log.fullinfo("Using default nbiascontam parameter = 4")
-                nbiascontam = 4
+                # Do not try to calculate it, just use default value
+                # For e2vDD detectors, this is 5. Otherwise, use 4.
+                detector_type = ad.phu_get_key_value("DETTYPE")
+                if detector_type=="SDSU II e2v DD CCD42-90":
+                    log.fullinfo("Using default nbiascontam parameter = 5")
+                    nbiascontam = 5
+                else:
+                    log.fullinfo("Using default nbiascontam parameter = 4")
+                    nbiascontam = 4
             
             # Parameters set by the mgr.CLManager or the definition 
             # of the primitive 
