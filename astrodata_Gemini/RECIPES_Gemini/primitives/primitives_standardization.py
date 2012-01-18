@@ -441,6 +441,18 @@ class StandardizationPrimitives(GENERALPrimitives):
         # primitives
         yield rc
 
+    def standardizeStructure(self, rc):
+        # There is no instrument at the GEMINI level, so just pass
+        # This primitive should be overridden by intrument-specific
+        # primitives
+        yield rc
+
+    def validateData(self, rc):
+        # There is no instrument at the GEMINI level, so just pass
+        # This primitive should be overridden by intrument-specific
+        # primitives
+        yield rc
+
     
 ##############################################################################
 # Below are the helper functions for the primitives in this module           #
