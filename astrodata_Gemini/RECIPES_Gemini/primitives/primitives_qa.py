@@ -466,8 +466,9 @@ class QAPrimitives(GENERALPrimitives):
             # Stuff overlays into RC; display primitive will look for
             # them there
             rc["overlay"] = iq_overlays
-            log.stdinfo("Sources used to measure IQ are marked " +
-                        "with blue circles.\n")
+            if np.any(np.array(iq_overlays)):
+                log.stdinfo("Sources used to measure IQ are marked " +
+                            "with blue circles.\n")
             rc.run("display(tile=%s,remove_bias=%s)" % (tile,str(remove_bias)))
 
         # Update headers and filename for original input to report
