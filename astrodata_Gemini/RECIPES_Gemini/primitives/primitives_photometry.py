@@ -344,6 +344,7 @@ class PhotometryPrimitives(GENERALPrimitives):
         timestamp_key = self.timestamp_keys["detectSources"]
 
         # Loop over each input AstroData object in the input list
+        problem = False
         for ad in rc.get_inputs_as_astrodata():
 
             # Get the necessary parameters from the RC
@@ -401,11 +402,15 @@ class PhotometryPrimitives(GENERALPrimitives):
                                             (nobj,ad.filename,extver))
 
                 if method=="daofind":
-                    pixscale = sciext.pixel_scale()
+                    try:
+                        pixscale = sciext.pixel_scale()
+                    except:
+                        pixscale = None
                     if pixscale is None:
                         log.warning("%s does not have a pixel scale, " \
-                                    "using 1.0 arcsec/pix" % ad.filename)
-                        pixscale = 1.0
+                                    "cannot fit sources" % ad.filename)
+                        problem = True
+                        break
 
                     if fwhm is None:
                         if seeing_est is not None:
@@ -451,7 +456,7 @@ class PhotometryPrimitives(GENERALPrimitives):
 
             # In daofind case, do some simple photometry on all
             # extensions to get fwhm, ellipticity
-            if method=="daofind":
+            if method=="daofind" and not problem:
                 log.stdinfo("Fitting sources for simple photometry")
 
                 # Divide the max_sources by the number of extensions
