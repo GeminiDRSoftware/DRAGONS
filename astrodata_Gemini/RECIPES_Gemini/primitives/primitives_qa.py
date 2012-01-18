@@ -360,7 +360,6 @@ class QAPrimitives(GENERALPrimitives):
                     std_fwhm = np.nan
                     mean_ellip = src[0]['ellipticity']
                     std_ellip = np.nan
-                    
 
                 airmass = float(ad.airmass())
                 if airmass is None:
@@ -406,27 +405,28 @@ class QAPrimitives(GENERALPrimitives):
                     filter = ad.filter_name(pretty=True)
                     iqStr = ('IQ band for %s filter:'%filter).ljust(llen)+\
                             iq.rjust(rlen)
+                else:
+                    iqStr = '(IQ band could not be determined)'
 
-                    # Get requested IQ band
-                    try:
-                        req_iq = int(ad.requested_iq())
-                    except:
-                        req_iq = None
+                # Get requested IQ band
+                try:
+                    req_iq = int(ad.requested_iq())
+                except:
+                    req_iq = None
 
-                    if req_iq is not None:
-                        if req_iq==100:                            
-                            reqStr = 'Requested IQ:'.ljust(llen) + \
-                                     'IQAny'.rjust(rlen)
-                        else:
-                            reqStr = 'Requested IQ:'.ljust(llen) + \
-                                     ('IQ%d' % req_iq).rjust(rlen)
+                if req_iq is not None:
+                    if req_iq==100:                            
+                        reqStr = 'Requested IQ:'.ljust(llen) + \
+                                 'IQAny'.rjust(rlen)
+                    else:
+                        reqStr = 'Requested IQ:'.ljust(llen) + \
+                                 ('IQ%d' % req_iq).rjust(rlen)
+                    if iq_band is not None:
                         if req_iq<iq_band[0]:
                             iq_warn = "\n    "+\
                                 "WARNING: IQ requirement not met".rjust(dlen)
-                    else:
-                        reqStr = '(Requested IQ could not be determined)'
                 else:
-                    iqStr = '(IQ band could not be determined)'
+                    reqStr = '(Requested IQ could not be determined)'
 
                 # Warn if high ellipticity
                 if mean_ellip>0.1:
