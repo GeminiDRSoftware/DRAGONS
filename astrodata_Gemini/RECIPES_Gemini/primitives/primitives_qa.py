@@ -414,8 +414,12 @@ class QAPrimitives(GENERALPrimitives):
                         req_iq = None
 
                     if req_iq is not None:
-                        reqStr = 'Requested IQ:'.ljust(llen) + \
-                                 ('IQ%d' % req_iq).rjust(rlen)
+                        if req_iq==100:                            
+                            reqStr = 'Requested IQ:'.ljust(llen) + \
+                                     'IQAny'.rjust(rlen)
+                        else:
+                            reqStr = 'Requested IQ:'.ljust(llen) + \
+                                     ('IQ%d' % req_iq).rjust(rlen)
                         if req_iq<iq_band[0]:
                             iq_warn = "\n    "+\
                                 "WARNING: IQ requirement not met".rjust(dlen)
