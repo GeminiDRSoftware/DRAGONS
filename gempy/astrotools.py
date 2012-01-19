@@ -404,44 +404,30 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
     return indxy, indr
 
 def clipped_mean(data):
-    mean=0.7
-    sigma=1
     num_total = len(data)
+    mean = data.mean()
+    sigma = data.std()
 
-    if num_total < 3:
-        return np.mean(data),np.std(data)
+    if num_total<3:
+        return mean, sigma
 
     num = num_total
-    clip=0
-    while (num > 0.5*num_total):
-
-        num=0
-        sum = 0
-        sumsq = 0
-
-        upper = mean+sigma
-        lower = mean-(3*sigma)
-
-        for f in data:
-            if(f<upper and f>lower):
-                sum += f
-                sumsq += f*f
-                num+=1
+    clipped_data = data
+    clip = 0
+    while (num>0.5*num_total):
+        clipped_data = data[(data<mean+sigma) & (data>mean-3*sigma)]
+        num = len(clipped_data)
 
         if num>0:
-            mean = sum / num
-            var = (sumsq / num) - mean*mean
-            if var>=0:
-                sigma = math.sqrt(var)
-            else:
-                var = np.nan
+            mean = clipped_data.mean() 
+            sigma = clipped_data.std()
         elif clip==0:
-            return np.mean(data),np.std(data)
+            return mean, sigma
         else:
             break
 
         clip+=1
-        if clip > 10:
+        if clip>10:
             break
 
     return mean,sigma

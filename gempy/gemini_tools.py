@@ -696,6 +696,38 @@ def clip_sources(ad):
             [x[good],y[good],fwhm_pix[good],fwhm_arcsec[good],ellip[good]],
             names=["x","y","fwhm","fwhm_arcsec","ellipticity"])
 
+        # Clip outliers, in FWHM
+        num_total = len(rec)
+        if num_total>=3:
+
+            data = rec["fwhm_arcsec"]
+            mean = data.mean()
+            sigma = data.std()
+
+            num = num_total
+            clipped_rec = rec
+            clip = 0
+            while (num>0.5*num_total):
+                clipped_rec = rec[(data<mean+sigma) & (data>mean-3*sigma)]
+                num = len(clipped_rec)
+
+                if num>0:
+                    mean = clipped_rec["fwhm_arcsec"].mean() 
+                    sigma = clipped_rec["fwhm_arcsec"].std()
+                    previous_rec = clipped_rec
+                elif clip==0:
+                    clipped_rec = rec
+                    break
+                else:
+                    clipped_rec = previous_rec
+                    break
+
+                clip+=1
+                if clip>10:
+                    break
+
+            rec = clipped_rec
+
         # Store data
         good_source[("SCI",extver)] = rec
 
