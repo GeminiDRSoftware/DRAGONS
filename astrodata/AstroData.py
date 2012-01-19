@@ -67,7 +67,7 @@ instruments and modes.  Configuration packages are used to describe
 the specific data characteristics, layout, and to store type-specific
 implementations.
 
-MEFs can be generalized as lists of header-data units, with key-value 
+MEFs can dbe generalized as lists of header-data units, with key-value 
 pairs populating headers and pixel data populating data,
 AstroData interprets a MEF as a single complex entity.  The individual
 "extensions" with the MEF are available using python list ("[]") syntax and are 
@@ -505,14 +505,26 @@ integrates other functionality.
     filename = property(get_filename, set_filename, None, "The filename"
                 " member is monitored so that the mode can be changed from"
                 " readonly when the filename is changed.")
-    
+   
+    def ishdu(self, md=None):
+        """Checks to see if md (moredata) is acutally an hdu.
+        :returns: True or False
+        :rtype: boolean
+        """
+        if hasattr(pyfits.hdu.base, "_BaseHDU"):
+            return isinstance(md, pyfits.hdu.base._BaseHDU)
+        elif hasattr(pyfits.core, "_AllHDU"):
+            return isinstance(md, pyfits.core._AllHDU)
+        else:
+            return False
+
     def moredata_check(self, md=None, append=False, insert=False, \
                        replace=False, index=None):
         if isinstance(md, AstroData):
             return md.hdulist
         elif type(md) is pyfits.HDUList:
             return md
-        elif isinstance(md, pyfits.core._AllHDU):
+        elif self.ishdu(md):
             try:
                 if append:
                     self.hdulist.append(md)
@@ -530,7 +542,7 @@ integrates other functionality.
                         return False
             except:
                 raise Errors.AstroDataError(\
-                   "cannot operate on pyfits.core._AllHDU instance")
+                   "cannot operate on pyfits instance " + repr(md))
         else:
             raise Errors.AstroDataError(\
                 "The 'moredata' argument is of an unsupported type")
@@ -1245,7 +1257,7 @@ help      False     show help information    """
         
         elif type(source) == pyfits.HDUList:
             self.hdulist = source
-        elif isinstance(source, pyfits.core._AllHDU):
+        elif self.ishdu(source):
             phu = pyfits.PrimaryHDU()
             self.hdulist= pyfits.HDUList([phu, source])
         else:
