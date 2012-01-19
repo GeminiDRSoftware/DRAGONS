@@ -511,9 +511,12 @@ integrates other functionality.
         :returns: True or False
         :rtype: boolean
         """
-        if hasattr(pyfits.hdu.base, "_BaseHDU"):
+        if hasattr(pyfits, "hdu") \
+           and  hasattr(pyfits.hdu, "base") \
+           and  hasattr(pyfits.hdu.base, "_BaseHDU"):
             return isinstance(md, pyfits.hdu.base._BaseHDU)
-        elif hasattr(pyfits.core, "_AllHDU"):
+        elif hasattr(pyfits, "core") \
+             and  hasattr(pyfits.core, "_AllHDU"):
             return isinstance(md, pyfits.core._AllHDU)
         else:
             return False
