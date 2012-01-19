@@ -350,16 +350,14 @@ class QAPrimitives(GENERALPrimitives):
                     mean_ellips.append(None)
                     continue
 
-                # Clipped mean of FWHM and ellipticity
-                if len(src)>1:
-                    mean_fwhm,std_fwhm,mean_ellip,std_ellip = _clipped_mean(src)
-                elif len(src)==1:
+                # Mean of clipped FWHM and ellipticity
+                mean_fwhm = src["fwhm_arcsec"].mean()
+                std_fwhm = src["fwhm_arcsec"].std()
+                mean_ellip = src["ellipticity"].mean()
+                std_ellip = src["ellipticity"].std()
+                if len(src)==1:
                     log.warning('Only one source found. IQ numbers may ' +
                                 'not be accurate.')
-                    mean_fwhm = src[0]['fwhm']
-                    std_fwhm = np.nan
-                    mean_ellip = src[0]['ellipticity']
-                    std_ellip = np.nan
 
                 airmass = float(ad.airmass())
                 if airmass is None:
@@ -960,72 +958,3 @@ def _iq_overlay(stars,data_shape):
     iqmask = (np.array(yind),np.array(xind))
     return iqmask
 
-def _clipped_mean(src):
-    """
-    Clipping is done on FWHM
-    """
-
-    fwhm = src['fwhm_arcsec']
-    ellip = src['ellipticity']
-
-    mean=0.7
-    sigma=1
-    num_total = len(fwhm)
-    if num_total < 3:
-        return np.mean(fwhm),np.std(fwhm),np.mean(ellip),np.std(ellip)
-
-    num = num_total
-    clip=0
-    while (num > 0.5*num_total):
-
-        num=0
-
-        # for fwhm
-        sum = 0
-        sumsq = 0
-
-        # for ellipticity
-        esum = 0
-        esumsq = 0
-
-        upper = mean+sigma
-        lower = mean-(3*sigma)
-
-        i = 0
-        for f in fwhm:
-            e = ellip[i]
-            if(f<upper and f>lower):
-                sum += f
-                sumsq += f*f
-                esum += e
-                esumsq += e*e
-                num+=1
-            i+=1
-
-        if num>0:
-            # for fwhm
-            mean = sum / num
-            var = (sumsq / num) - mean*mean
-            if var>=0:
-                sigma = math.sqrt(var)
-            else:
-                var = np.nan
-
-            # for ellipticity
-            emean = esum / num
-            evar = (esumsq / num) - emean*emean
-            if evar>=0:
-                esigma = math.sqrt(evar)
-            else:
-                esigma = np.nan
-
-        elif clip==0:
-            return np.mean(fwhm),np.std(fwhm),np.mean(ellip),np.std(ellip)
-        else:
-            break
-
-        clip+=1
-        if clip>10:
-            break
-
-    return mean,sigma,emean,esigma
