@@ -130,34 +130,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_bias_level = {}
 
-        # Get the detector type from the header of the
-        # PHU. The detector type keyword is defined in the local key dictionary
-        # (stdkeyDictGMOS) but is read from the updated global key dictionary
-        # (self.get_descriptor_key())
-        detector_type = dataset.phu_get_key_value(
-            self.get_descriptor_key("key_detector_type"))
-        if detector_type is None:
-            # The phu_get_key_value() function returns None if a value cannot
-            # be found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, "exception_info"):
-                raise dataset.exception_info
-        
-        # The type of CCD determines the number of contaminated columns
-        # in the overscan region
-        if detector_type=="SDSU II CCD":
-            nbiascontam = 4
-        elif detector_type=="SDSU II e2v DD CCD42-90":
-            nbiascontam = 5
-        elif detector_type=="S10892-01":
-            nbiascontam = 4
-
-        # Check whether data has been bias- or dark-subtracted
-        biasim = dataset.phu_get_key_value(
-            self.get_descriptor_key("key_bias_image"))
-        darkim = dataset.phu_get_key_value(
-            self.get_descriptor_key("key_dark_image"))
-
         # Get the UT date using the appropriate descriptor
         ut_date = str(dataset.ut_date())
         if ut_date is None:
@@ -169,8 +141,29 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
 
+        # Get the gain setting and read speed setting values using the
+        # appropriate descriptors.
+        read_speed_setting_dv = dataset.read_speed_setting()
+        gain_setting_dv = dataset.gain_setting()
+        if read_speed_setting_dv is None or gain_setting_dv is None:
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        else:
+            read_speed_setting_dict = read_speed_setting_dv.dict_val
+            gain_setting_dict = gain_setting_dv.dict_val
+
+        # Get the gain dictionary for the dataset
+        gain_dv = dataset.gain()
+        if gain_dv is None:
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        else:
+            gain_dict = gain_dv.dict_val
+
         # Loop over the science extensions in the dataset
         for ext in dataset["SCI"]:
+
+            dict_key = (ext.extname(),ext.extver())
 
             # Get the amp name from the header of the
             # PHU. The ampname keyword is defined in the local key dictionary
@@ -185,31 +178,16 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             overscan = ext.get_key_value(
                 self.get_descriptor_key("key_overscan_value"))
             
-            # Check units of data (ie. ADU vs. electrons)
-            bunit = ext.get_key_value(
-                self.get_descriptor_key("key_bunit"))
-
             # Check whether a raw bias was written to the header
             # (eg. in the prepare step)
             raw_bias = ext.get_key_value(
                 self.get_descriptor_key("key_bias_level"))
 
-            # Get the gain setting and read speed setting values using the
-            # appropriate descriptors. Use as_pytype() to return the values
-            # as the default python type, rather than an object
-            read_speed_setting = dataset.read_speed_setting().as_pytype()
-            gain_setting = dataset.gain_setting().as_pytype()
-            if read_speed_setting is None or gain_setting is None:
-                if hasattr(dataset, "exception_info"):
-                    raise dataset.exception_info
-
-            # Get the gain for the extension
-            gain = ext.gain()
-            if gain is None:
-                if hasattr(ext, "exception_info"):
-                    raise ext.exception_info
-            else:
-                gain = gain.as_pytype()
+            # Get the gain, gain_setting, and read_speed_setting for the
+            # extension
+            gain = gain_dict[dict_key]
+            gain_setting = gain_setting_dict[dict_key]
+            read_speed_setting = read_speed_setting_dict[dict_key]
 
             # Get the approximate bias level for the extension
             if overscan is not None:
@@ -219,10 +197,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # Use the previously calculated bias level
                 # (written in prepare step)
                 bias_level = raw_bias
-            elif biasim is not None or darkim is not None:
-                # Data was not overscan-corrected, but it was
-                # bias- or dark-corrected. Use the static bias
-                # levels from the lookup table
+            else:
+                # Otherwise, use static bias levels
+                # from the lookup table
                 bias_key = (read_speed_setting, gain_setting, ampname)
                 if obs_ut_date > old_ut_date:
                     if bias_key in getattr(self, "gmosampsBias"):
@@ -236,75 +213,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                         raise Errors.TableKeyError()
 
                 bias_level = static_bias
-
-            else:
-                # Get the bias level from the overscan region, if
-                # present
-
-                # First check whether data is trimmed
-                datasec = dataset.data_section()
-                if datasec is None:
-                    if hasattr(ext, "exception_info"):
-                        raise ext.exception_info
-                else:
-                    datasec = datasec.as_list()
-
-                shape = ext.data.shape
-                if (shape[1]==datasec[1] and 
-                    shape[0]==datasec[3] and
-                    datasec[0]==0 and
-                    datasec[2]==0):
-                    trimmed = True
-                else:
-                    trimmed = False
-                
-                # If not, get data from the overscan section
-                if not trimmed:
-                    oversec = ext.overscan_section()
-                    if oversec is None:
-                        if hasattr(ext, "exception_info"):
-                            raise ext.exception_info
-                    else:
-                        oversec = oversec.as_list()
-
-                    # Don't include columns at edges
-                    if oversec[0]==0:
-                        # Overscan region is on the left
-                        oversec[1]-=nbiascontam
-                        oversec[0]+=1
-                    else:
-                        # Overscan region is on the right
-                        oversec[0]+=nbiascontam
-                        oversec[1]-=1
-                    
-                    # Extract overscan data.  In numpy arrays, 
-                    # y indices come first.
-                    overdata = ext.data[oversec[2]:oversec[3],
-                                        oversec[0]:oversec[1]]
-                
-                    bias_level = np.median(overdata)
-
-                    # Convert the bias level to ADU if needed
-                    if bunit=="electron" or bunit=="electrons":
-                        bias_level /= gain
-
-                else:
-                    # Data was trimmed, but not overscan-corrected or
-                    # bias-corrected.  Use the static bias levels.
-                    bias_key = (read_speed_setting, gain_setting, ampname)
-                    if obs_ut_date > old_ut_date:
-                        if bias_key in getattr(self, "gmosampsBias"):
-                            static_bias = self.gmosampsBias[bias_key]
-                        else:
-                            raise Errors.TableKeyError()
-                    else:
-                        if bias_key in getattr(
-                            self, "gmosampsBiasBefore20060831"):
-                            static_bias = self.gmosampsBiasBefore20060831[
-                                                                   bias_key]
-                        else:
-                            raise Errors.TableKeyError()
-                    bias_level = static_bias
 
             ret_bias_level.update({
                     (ext.extname(), ext.extver()): bias_level})
@@ -1116,53 +1024,44 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         darkim = dataset.phu_get_key_value(
             self.get_descriptor_key("key_dark_image"))
 
-        # Loop over the science extensions in the dataset
-        for ext in dataset["SCI"]:
-
-            # Get the amp name from the header of the
-            # PHU. The ampname keyword is defined in the local key dictionary
-            # (stdkeyDictGMOS) but is read from the updated global key 
-            # dictionary (self.get_descriptor_key())
-            ampname = ext.get_key_value(self.get_descriptor_key("key_ampname"))
-            if ampname is None:
+        # Get the gain dictionary for the dataset
+        gain_dv = dataset.gain()
+        if gain_dv is None:
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        else:
+            gain_dict = gain_dv.dict_val
+        
+        # Get the binning factor for non-eev detectors
+        if not is_eev:
+            xbin_dv = dataset.detector_x_bin()
+            if xbin_dv is None:
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
+            else:
+                xbin_dict = xbin_dv.dict_val
 
+            ybin_dv = dataset.detector_y_bin()
+            if ybin_dv is None:
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
+            else:
+                ybin_dict = ybin_dv.dict_val
+
+        # Loop over the science extensions in the dataset to
+        # determine whether bias level is needed
+        # Also store some useful information in dictionaries
+        # to be retrieved in the next loop
+        need_bias_level = False
+        data_contains_bias_dict = {}
+        bin_factor_dict = {}
+        for ext in dataset["SCI"]:
+            dict_key = (ext.extname(),ext.extver())
+        
             # Check whether data has been overscan-subtracted
             overscan = ext.get_key_value(
                 self.get_descriptor_key("key_overscan_value"))
-            
-            # Check units of data (ie. ADU vs. electrons)
-            bunit = ext.get_key_value(
-                self.get_descriptor_key("key_bunit"))
-
-            # Get the gain for the extension
-            gain = ext.gain()
-            if gain is None:
-                if hasattr(ext, "exception_info"):
-                    raise ext.exception_info
-            else:
-                gain = gain.as_pytype()
-
-            # For the newer CCDs, get the x and y binning. If xbin*ybin
-            # is greater than 2, then saturation will always be the
-            # controller limit
-            if not is_eev:
-                xbin = ext.detector_x_bin()
-                if xbin is None:
-                    # The descriptor functions return None if a value cannot be
-                    # found and stores the exception info. Re-raise the
-                    # exception. It will be dealt with by the 
-                    # CalculatorInterface.
-                    if hasattr(ext, "exception_info"):
-                        raise ext.exception_info
-
-                ybin = ext.detector_y_bin()
-                if ybin is None:
-                    if hasattr(ext, "exception_info"):
-                        raise ext.exception_info
-                bin_factor = xbin.as_pytype()*ybin.as_pytype()
-
+ 
             # Check whether data still contains bias
             if overscan is not None:
                 # Data was overscan-subtracted
@@ -1174,17 +1073,62 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             else:
                 # Data still contains bias level
                 data_contains_bias = True
+            data_contains_bias_dict[dict_key] = data_contains_bias
 
-            # Get the bias level of the extension only if necessary
+            # For the newer CCDs, get the x and y binning. If xbin*ybin
+            # is greater than 2, then saturation will always be the
+            # controller limit
+            if not is_eev:
+                xbin = xbin_dict[dict_key]
+                ybin = ybin_dict[dict_key]
+                bin_factor = xbin*ybin
+                bin_factor_dict[dict_key] = bin_factor
+
+            # Get the bias level for all extensions only if necessary
             # because the bias level calculation can take some time
             if (not data_contains_bias) or \
                (not is_eev and data_contains_bias and bin_factor<=2):
-                bias_level = ext.bias_level()
-                if bias_level is None:
-                    if hasattr(ext, "exception_info"):
-                        raise ext.exception_info
-                else:
-                    bias_level = bias_level.as_pytype()
+                need_bias_level = True
+
+        if need_bias_level:
+            bias_level_dv = dataset.bias_level()
+            if bias_level_dv is None:
+                if hasattr(ext, "exception_info"):
+                    raise ext.exception_info
+            else:
+                bias_level_dict = bias_level_dv.dict_val
+
+        # Loop over extensions to calculate saturation value
+        for ext in dataset["SCI"]:
+            dict_key = (ext.extname(),ext.extver())
+
+            # Get the amp name from the header of the
+            # PHU. The ampname keyword is defined in the local key dictionary
+            # (stdkeyDictGMOS) but is read from the updated global key 
+            # dictionary (self.get_descriptor_key())
+            ampname = ext.get_key_value(self.get_descriptor_key("key_ampname"))
+            if ampname is None:
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
+
+            # Check units of data (ie. ADU vs. electrons)
+            bunit = ext.get_key_value(
+                self.get_descriptor_key("key_bunit"))
+
+            # Get the gain for the extension
+            gain = gain_dict[dict_key]
+
+            # For the newer CCDs, get the bin factor
+            if not is_eev:
+                bin_factor = bin_factor_dict[dict_key]
+
+            # Check whether data still contains bias
+            data_contains_bias = data_contains_bias_dict[dict_key]
+
+            # Get the bias level of the extension only if necessary
+            if (not data_contains_bias) or \
+               (not is_eev and data_contains_bias and bin_factor<=2):
+                bias_level = bias_level_dict[dict_key]
 
             # Correct the controller limit for bias level and units
             processed_limit = controller_limit
@@ -1227,8 +1171,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 if saturation > processed_limit:
                     saturation = processed_limit
 
-            ret_saturation_level.update({
-                    (ext.extname(), ext.extver()): saturation})
+            ret_saturation_level.update({dict_key: saturation})
             
         if ret_saturation_level == {}:
             # If the dictionary is still empty, the AstroData object was not
