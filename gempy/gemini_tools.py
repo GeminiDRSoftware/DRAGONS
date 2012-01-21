@@ -1267,52 +1267,40 @@ def update_key_from_descriptor(adinput=None, descriptor=None,
     if extname is None:
         extname = "SCI"
 
-    if extname == "PHU":
-        # Use exec to perform the requested function on full AD 
-        # Allow it to raise the error if the descriptor fails
-        exec('dv = adinput.%s' % descriptor)
-        if dv is None:
-            log.fullinfo("No value found for descriptor %s on %s" % 
-                         (descriptor,adinput.filename))
-        else:
-            if keyword is not None:
-                key = keyword
-            else:
-                key = dv.keyword
-                if key is None:
-                    raise Errors.ToolboxError(
-                        "No keyword found for descriptor %s" % descriptor)
+    # Use exec to perform the requested function on full AD 
+    # Allow it to raise the error if the descriptor fails
+    exec('dv = adinput.%s' % descriptor)
+    if dv is None:
+        log.fullinfo("No value found for descriptor %s on %s" % 
+                     (descriptor,adinput.filename))
+    else:
 
-            # Get comment from lookup table
-            # Allow it to raise the KeyError if it can't find it
-            comment = keyword_comments[key]
+        if keyword is not None:
+            key = keyword
+        else:
+            key = dv.keyword
+            if key is None:
+                raise Errors.ToolboxError(
+                    "No keyword found for descriptor %s" % descriptor)
+
+        # Get comment from lookup table
+        # Allow it to raise the KeyError if it can't find it
+        comment = keyword_comments[key]
             
+        if extname == "PHU":
             # Set the keyword value and comment
             adinput.phu_set_key_value(key, dv.as_pytype(), comment)
-    else:
-        for ext in adinput[extname]:
-            # Use exec to perform the requested function on a single extension
-            # Allow it to raise the error if the descriptor fails
-            exec('dv = ext.%s' % descriptor)
-            if dv is None:
-                log.fullinfo("No value found for descriptor %s on %s[%s,%d]" %
-                             (descriptor,adinput.filename,
-                              ext.extname(),ext.extver()))
-            else:
-                if keyword is not None:
-                    key = keyword
-                else:
-                    key = dv.keyword
-                    if key is None:
-                        raise Errors.ToolboxError(
-                            "No keyword found for descriptor %s" % descriptor)
+        else:
+            # Use the dictionary form of the descriptor value
+            dv_dict = dv.dict_val
+
+            for ext in adinput[extname]:
+                # Get value from dictionary
+                dict_key = (ext.extname(),ext.extver())
+                value = dv_dict[dict_key]
         
-                # Get comment from lookup table
-                # Allow it to raise the KeyError if it can't find it
-                comment = keyword_comments[key]
-            
                 # Set the keyword value and comment
-                ext.set_key_value(key, dv.as_pytype(), comment)
+                ext.set_key_value(key, value, comment)
             
 
 
