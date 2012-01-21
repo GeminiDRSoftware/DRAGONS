@@ -144,6 +144,7 @@ class MyHandler(BaseHTTPRequestHandler):
     dirdict = None
 
     state = None
+    counter = 0
     
     def address_string(self):
         host, port = self.client_address[:2]
@@ -737,11 +738,42 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.wfile.write(data)
                 return
                 
+            if self.path.startswith("/cmd_queue"):
+                self.counter += 1
+                data = str(self.counter)
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+                self.wfile.write(data)
+                return 
+                
+            if self.path.startswith("/qap"):
+                dirname = os.path.dirname(__file__)
+                print repr(os.path.split(self.path))
+                joinlist = [dirname, "../../scripts/adcc_faceplate/"]
+                for elem in os.path.split(self.path)[1:]:
+                    joinlist.append(elem)
+                
+                fname = os.path.join(*joinlist)
+                print "trying to open %s" % fname
+                try:
+                    f = open(fname, "r")
+                    data = f.read()
+                    f.close()
+                except IOError:
+                    data = "<b>NO SUCH RESOURCE AVAILABLE</b>"
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+                self.wfile.write(data)
+                return 
+            else:
+                print "not qap"    
             if self.path == "/":
                 self.path = "/KitchenSink.html"
                 
             dirname = os.path.dirname(__file__)
-            fname = os.path.join(dirname, "pyjamaface/prsproxygui/output", self.path[1:])
+            fname = os.path.join(dirname, "pyjamaface/prsproxygui/output", *(self.path[1:]))
             
             try:
                 f = open(fname, "r")
@@ -749,6 +781,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 f.close()
             except IOError:
                 data = "<b>NO SUCH RESOURCE FOUND</b>"
+                
             self.send_response(200)
             self.send_header('Content-type',	'text/html')
             self.end_headers()

@@ -2,7 +2,7 @@ import re
 import os
 import traceback
 import gc
-from astrodata import AstroData
+from astrodata import AstroData, IDFactory
 from astrodata.adutils import gemLog
 import inspect
 import urllib2 #(to get httperror)
@@ -455,7 +455,7 @@ def command_clause(ro, coi):
             ## THIS IS THE CACHE CHECK, DISABLED NOW: calname = coi.get_cal(fn, typ)
             # print "r399:", "handling calibrations"
             
-        
+            calmd5 = None
             if calname == None:
                 # Do the calibration search
                 calurl = None
@@ -471,7 +471,8 @@ def command_clause(ro, coi):
                             #if calname:
                             #    return calname
                         if calurl == None:
-                            calurl = prs.calibration_search( rq )
+                            calurl,calmd5 = prs.calibration_search( rq )
+                            # print "RO475:", calurl, calmd5
                     except:
                         calurl = None
                         raise
@@ -487,6 +488,7 @@ def command_clause(ro, coi):
                 #print "RO393:", calurl
                 msg += 'A suitable %s found:\n' %(str(typ))
                 
+                useCached = False
                 storenames = {"bias":"retrievedbiases",
                               "flat":"retrievedflats"
                               }
@@ -502,10 +504,21 @@ def command_clause(ro, coi):
                 # print "RO400:",calfname
                 if os.path.exists(calfname) and caldname:
                     #coi.add_cal(fn, typ, calfname)
-                    log.stdinfo("File %s exists at calibration location, " \
-                                "will overwrite." % os.path.basename(calfname))
+                    # check md5
+                    ondiskmd5 = IDFactory.generate_md5_file( calfname)
+                    if calmd5 == ondiskmd5:
+                        log.stdinfo("File %s exists at calibration location, " \
+                                "md5 checksums match, using cached copy." % os.path.basename(calfname))
+                        useCached = True
+                    else:
+                        log.stdinfo("File %s exists at calibration location, " \
+                                "but md5 checksums DO NOT MATCH, retrieving." % os.path.basename(calfname))
+                    
                 try:
-                    ad = AstroData(calurl, store=caldname)
+                    if useCached:
+                        ad = AstroData(calfname)
+                    else:
+                        ad = AstroData(calurl, store=caldname)
                 except urllib2.HTTPError, error:
                     ad = None
                     errstr = "Could not retrieve %s" % calurl

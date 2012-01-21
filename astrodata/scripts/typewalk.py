@@ -4,6 +4,8 @@ import sys,os
 # gigantic data directories
 # print repr(sys.path)
 
+import cProfile
+
 curpath = os.getcwd()
 # @@REVIEW Note: This is here because it's very confusing when someone runs a script IN the
 # package itself.  This helps a little... perhaps a warning would be better.

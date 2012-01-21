@@ -137,8 +137,8 @@ class TerminalController:
                 setattr(self, 'BG_'+color, curses.tparm(set_bg_ansi, i) or '')
 
     def setupStripping(self):
-        all_chars = (unichr(i) for i in xrange(0x10000))
-        control_chars = ''.join(c for c in all_chars if unicodedata.category(c) == 'Cc')
+        # all_chars = (unichr(i) for i in xrange(0x10000))
+        # control_chars = ''.join(c for c in all_chars if unicodedata.category(c) == 'Cc')
         # or equivalently and much more efficiently
         control_chars = ''.join(map(unichr, range(0,32) + range(127,160)))
 

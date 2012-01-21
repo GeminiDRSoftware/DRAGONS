@@ -2,11 +2,23 @@ import hashlib
 import pyfits as pf
 import re
 #------------------------------------------------------------------------------ 
-from astrodata.AstroData import AstroData
+import  AstroData
 import Descriptors
 #------------------------------------------------------------------------------ 
 version_index = {"stackID":"1_0", "recipeID":"1_0", "display_id":"1_0"}
 
+def generate_md5_file( filename, version = "1_0"):
+    f = open(filename);
+    block_size = 2**18 # 262 144 byte chunks
+    md5 = hashlib.md5()
+    while True:
+        data = f.read(block_size)
+        if not data:
+            break
+        md5.update(data)
+    return md5.hexdigest()
+
+    
 def generate_fingerprint( dataset, version = "1_0"):
     h = hashlib.md5()
     fullid = repr(dataset.types)+repr(dataset.all_descriptors())
@@ -103,6 +115,7 @@ def generate_astro_data_id( dataset, version="1_0" ):
     Let's say a recipe performs
     
     getProcessedBias
+
     prepare
     biasCorrect
     
@@ -127,10 +140,11 @@ def generate_astro_data_id( dataset, version="1_0" ):
     if type(dataset) == str:
         ad = AstroData( dataset )
         return ad.data_label().as_pytype()
-    elif type( dataset ) == AstroData:
+    elif isinstance( dataset, AstroData.AstroData):
         return dataset.data_label().as_pytype()
     else:
-        raise "BAD ARGUMENT TYPE"
+        print 
+        raise "BAD ARGUMENT TYPE: "+type(dataset)
     
 def generate_fringe_list_id( dataset, version='1_0' ):
     '''

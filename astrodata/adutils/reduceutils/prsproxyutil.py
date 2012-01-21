@@ -115,13 +115,15 @@ def calibration_search(rq, fullResult = False):
     calel = dom.getElementsByTagName("calibration")
     try:
         calurlel = dom.getElementsByTagName('url')[0].childNodes[0]
+        calurlmd5 = dom.getElementsByTagName('md5')[0].childNodes[0]
     except exceptions.IndexError:
         print "No url for calibration in response, calibration not found"
         return None
     #print "prs70:", calurlel.data
     
     #@@TODO: test only 
-    return calurlel.data
+    print "prspu124:", repr(calurlel.data)
+    return (calurlel.data, calurlmd5.data)
 
 
 def old_calibration_search(rq, fullResult = False):
