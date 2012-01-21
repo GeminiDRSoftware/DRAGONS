@@ -70,32 +70,47 @@ class DescriptorValue():
         if pytype:
             self.pytype = pytype
         else:
+            # Commenting out this code so that if pytype is not provided,
+            # it just gets the default value of float.  Pytype should
+            # always be provided,and it turns out that inspect.stack is
+            # insufficiently efficient
+
             # careful moving this to a function, it gets the CALLER's function name!
-            st = inspect.stack()
-            callername = st[1][3]
-            callerframe = inspect.stack()[1][0]
-            fargs = inspect.getargvalues(callerframe)
-            callercalc = fargs[3]["self"]
-            try:
-                self.pytype = eval("callercalc.%s.pytype" % callername)
-            except:
-                self.pytype = float
+            #st = inspect.stack()
+            #callername = st[1][3]
+            #callerframe = inspect.stack()[1][0]
+            #fargs = inspect.getargvalues(callerframe)
+            #callercalc = fargs[3]["self"]
+            #try:
+            #    self.pytype = eval("callercalc.%s.pytype" % callername)
+            #except:
+            #    self.pytype = float
+
+            self.pytype = float
+
         pytype = self.pytype
 
         # unit logic
         if unit:
             self.unit = unit
         else:
+            # Ditto for this code; inspect.stack is too inefficient and
+            # this functionality is not used. Default value of Units.scaler
+            # is used if unit is not provided.
+
             # careful moving this to a function, it gets the CALLER's function name!
-            st = inspect.stack()
-            callername = st[1][3]
-            callerframe = inspect.stack()[1][0]
-            fargs = inspect.getargvalues(callerframe)
-            callercalc = fargs[3]["self"]
-            try:
-                self.unit = eval("callercalc.%s.unit" % callername)
-            except:
-                self.unit = Units.scaler # can be DescriptorUnits.scaler (or whatever)
+            #st = inspect.stack()
+            #callername = st[1][3]
+            #callerframe = inspect.stack()[1][0]
+            #fargs = inspect.getargvalues(callerframe)
+            #callercalc = fargs[3]["self"]
+            #try:
+            #    self.unit = eval("callercalc.%s.unit" % callername)
+            #except:
+            #    self.unit = Units.scaler # can be DescriptorUnits.scaler (or whatever)
+
+            self.unit = Units.scaler
+
         unit = self.unit
 
         if isinstance(initval, dict):
