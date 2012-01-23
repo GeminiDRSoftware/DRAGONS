@@ -475,7 +475,7 @@ def command_clause(ro, coi):
                             # print "RO475:", calurl, calmd5
                     except:
                         calurl = None
-                        raise
+                        
                 if calurl == None:
                     log.warning('No '+str(typ)+' calibration file found for '+\
                                 str(fn))
