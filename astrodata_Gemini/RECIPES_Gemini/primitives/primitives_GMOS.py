@@ -434,8 +434,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                                             oversec[0]:oversec[1]]
                 
                         bias_level = np.median(overdata)
-                        ext.set_key_value("RAWBIAS",bias_level,
-                                          comment=self.keyword_comments["BIASIM"])
+                        ext.set_key_value(
+                            "RAWBIAS",bias_level,
+                            comment=self.keyword_comments["RAWBIAS"])
 
             # Saturation level
             gt.update_key_from_descriptor(
