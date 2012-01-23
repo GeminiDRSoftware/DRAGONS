@@ -36,6 +36,9 @@ class QAPrimitives(GENERALPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
 
+        # Get the BG band definitions from a lookup table
+        bgConstraints = Lookups.get_lookup_table("Gemini/BGConstraints",
+                                                 "bgConstraints")
         # Define a few useful numbers for formatting output
         llen = 23
         rlen = 24
@@ -47,8 +50,43 @@ class QAPrimitives(GENERALPrimitives):
             # Get the necessary parameters from the RC
             separate_ext = rc["separate_ext"]
 
+            # If bias is still present, it should be subtracted
+            # out of the sky level number
+
+            # Check whether data has been bias- or dark-subtracted
+            biasim = ad.phu_get_key_value("BIASIM")
+            darkim = ad.phu_get_key_value("DARKIM")
+
+            # Check whether data has been overscan-subtracted
+            overscan = np.array([ext.get_key_value("OVERSCAN") 
+                                 for ext in ad["SCI"]])
+            if np.any(overscan) or biasim or darkim:
+                bias_level = None
+            else:
+                # Try to get the bias level from the descriptor
+                try:
+                    bias_level = ad.bias_level().dict_val
+                except:
+                    log.warning("Bias level not found for %s; " \
+                                "approximate bias will not be removed " \
+                                "from the sky level" % ad.filename)
+                    bias_level = None
+
+            # Get the filter name and the corresponding BG band definition
+            # and the requested band
+            filter = str(ad.filter_name(pretty=True))
+            try:
+                bg_band_limits = bgConstraints[filter]
+            except KeyError:
+                bg_band_limits = None
+            try:
+                req_bg = int(ad.requested_bg())
+            except:
+                req_bg = None
+
             # Loop over SCI extensions
             all_bg = None
+            all_bg_am = None
             bunit = None
             for sciext in ad["SCI"]:
                 extver = sciext.extver()
@@ -122,27 +160,39 @@ class QAPrimitives(GENERALPrimitives):
                     sci_bg = np.median(scidata)
                     sci_std = np.std(scidata)
 
-                if all_bg is None:
-                    all_bg = sci_bg
-                    all_std = sci_std
-                else:
-                    all_bg = np.mean([all_bg,sci_bg])
-                    all_std = np.sqrt(all_std**2+sci_std**2)
+                log.fullinfo("Raw BG level = %f" % sci_bg)
+                # Subtract bias level from BG number
+                if bias_level is not None:
+                    sci_bg -= bias_level[(sciext.extname(),sciext.extver())]
+                    log.fullinfo("Bias-subtracted BG level = %f" % sci_bg)
 
-                # OK, make sure we have a number in electrons
+                # Write sky background to science header
+                sciext.set_key_value(
+                    "SKYLEVEL", sci_bg, comment="%s [%s]" % 
+                    (self.keyword_comments["SKYLEVEL"],bunit))
+                
+                # Get nominal zeropoint
+                npz = float(sciext.nominal_photometric_zeropoint())
+
+                # Make sure we have a number in electrons
                 if(bunit=='adu'):
-                    bg_e = all_bg * float(sciext.gain())
+                    gain = float(sciext.gain())
+                    bg_e = sci_bg * gain
+                    npz = npz + 2.5*math.log10(gain)
                 else:
-                    bg_e = all_bg
+                    bg_e = sci_bg
                 log.fullinfo("BG electrons = %f" % bg_e)
+
                 # Now divide it by the exposure time
                 bg_e /= float(sciext.exposure_time())
                 log.fullinfo("BG electrons/s = %f" % bg_e)
 
-                # Now, it's in pixels, divide it by the area of a pixel to get arcsec^2
+                # Now, it's in pixels, divide it by the area of a pixel
+                # to get arcsec^2
                 pixscale = float(sciext.pixel_scale())
                 bg_e /= (pixscale*pixscale)
                 log.fullinfo("BG electrons/s/as^2 = %f" % bg_e)
+
                 # Now get that in (instrumental) magnitudes...
                 if bg_e<=0:
                     raise Errors.ScienceError("Background in electrons is "\
@@ -151,17 +201,64 @@ class QAPrimitives(GENERALPrimitives):
                                               (ad.filename,extver))
                 bg_im = -2.5 * math.log10(bg_e)
                 log.fullinfo("BG inst mag = %f" % bg_im)
+
                 # And convert to apparent magnitude using the nominal zeropoint
-                bg_am = bg_im + float(sciext.nominal_photometric_zeropoint())
+                bg_am = bg_im + npz
                 log.fullinfo("BG mag = %f" % bg_am)
 
+                # Keep a running average value
+                if all_bg is None:
+                    all_bg = sci_bg
+                    all_bg_am = bg_am
+                    all_std = sci_std
+                else:
+                    all_bg = np.mean([all_bg,sci_bg])
+                    all_bg_am = np.mean([all_bg_am,bg_am])
+                    all_std = np.sqrt(all_std**2+sci_std**2)
 
-                # Write sky background to science header and log the value
-                # if not averaging all together
-                sciext.set_key_value(
-                    "SKYLEVEL", sci_bg, comment="%s [%s]" % 
-                    (self.keyword_comments["SKYLEVEL"],bunit))
+                # Get percentile corresponding to this number
+                if separate_ext:
+                    use_bg = bg_am
+                else:
+                    use_bg = all_bg_am
+                bg_str = "BG band:".ljust(llen)
+                if bg_band_limits is not None:
+                    bg20 = bg_band_limits[20]
+                    bg50 = bg_band_limits[50]
+                    bg80 = bg_band_limits[80]
+                    if(use_bg > bg20):
+                        bg_num = 20
+                        bg_str += ("BG20 (>%.2f)" % bg20).rjust(rlen)
+                    elif(use_bg > bg50):
+                        bg_num = 50
+                        bg_str += ("BG50 (%.2f-%.2f)" % (bg50,bg20)).rjust(rlen)
+                    elif(use_bg > bg80):
+                        bg_num = 80
+                        bg_str += ("BG80 (%.2f-%.2f)" % (bg80,bg50)).rjust(rlen)
+                    else:
+                        bg_num = 100
+                        bg_str += ("BGAny (<%.2f)" % bg80).rjust(rlen)
+                else:
+                    bg_num = None
+                    bg_str = "(BG band could not be determined)"
 
+                # Get requested BG band
+                bg_warn = ""
+                if req_bg is not None:
+                    if req_bg==100:                            
+                        req_str = 'Requested BG:'.ljust(llen) + \
+                                  'BGAny'.rjust(rlen)
+                    else:
+                        req_str = 'Requested BG:'.ljust(llen) + \
+                                  ('BG%d' % req_bg).rjust(rlen)
+                    if bg_num is not None:
+                        if req_bg<bg_num:
+                            bg_warn = "\n    "+\
+                                "WARNING: BG requirement not met".rjust(dlen)
+                else:
+                    req_str = '(Requested BG could not be determined)'
+
+                # Log the calculated values for this extension if desired    
                 if separate_ext:
                     log.stdinfo("\n    Filename: %s[SCI,%d]" % 
                                 (ad.filename,extver))
@@ -169,7 +266,11 @@ class QAPrimitives(GENERALPrimitives):
                     log.stdinfo("    "+"Sky level measurement:".ljust(llen) +
                                 ("%.0f +/- %.0f %s" % 
                                  (sci_bg,sci_std,bunit)).rjust(rlen))
-                    log.stdinfo("    mag / sq arcsec in %s: %.1f" % (sciext.filter_name(pretty=True), bg_am))
+                    log.stdinfo("    "+
+                                ("Mag / sq arcsec in %s:"% filter).ljust(llen)+
+                                ("%.1f" % bg_am).rjust(rlen))
+                    log.stdinfo("    "+bg_str)
+                    log.stdinfo("    "+req_str+bg_warn)
                     log.stdinfo("    "+"-"*dlen+"\n")
 
             # Write mean background to PHU if averaging all together
@@ -180,34 +281,18 @@ class QAPrimitives(GENERALPrimitives):
                     "SKYLEVEL", all_bg, comment="%s [%s]" % 
                     (self.keyword_comments["SKYLEVEL"],bunit))
 
-                # OK, make sure we have a number in electrons
-                if(bunit=='adu'):
-                    bg_e = all_bg * float(sciext.gain())
-                else:
-                    bg_e = all_bg
-                log.fullinfo("BG electrons = %f" % bg_e)
-                # Now divide it by the exposure time
-                bg_e /= float(sciext.exposure_time())
-                log.fullinfo("BG electrons/s = %f" % bg_e)
-
-                # Now, it's in pixels, divide it by the area of a pixel to get arcsec^2
-                pixscale = float(sciext.pixel_scale())
-                bg_e /= (pixscale*pixscale)
-                log.fullinfo("BG electrons/s/as^2 = %f" % bg_e)
-                # Now get that in (instrumental) magnitudes...
-                bg_im = -2.5 * math.log10(bg_e)
-                log.fullinfo("BG inst mag = %f" % bg_im)
-                # And convert to apparent magnitude using the nominal zeropoint
-                bg_am = bg_im + float(sciext.nominal_photometric_zeropoint())
-                log.fullinfo("BG mag = %f" % bg_am)
-
+                # Log overall values if desired
                 if not separate_ext:
                     log.stdinfo("\n    Filename: %s" % ad.filename)
                     log.stdinfo("    "+"-"*dlen)
                     log.stdinfo("    "+"Sky level measurement:".ljust(llen) +
                                 ("%.0f +/- %.0f %s" % 
                                  (all_bg,all_std,bunit)).rjust(rlen))
-                    log.stdinfo("    Mag / sq arcsec in %s: %.1f" % (sciext.filter_name(pretty=True), bg_am))
+                    log.stdinfo("    "+
+                                ("Mag / sq arcsec in %s:"% filter).ljust(llen)+
+                                ("%.1f" % all_bg_am).rjust(rlen))
+                    log.stdinfo("    "+bg_str)
+                    log.stdinfo("    "+req_str+bg_warn)
                     log.stdinfo("    "+"-"*dlen+"\n")
 
             # Add the appropriate time stamps to the PHU

@@ -403,8 +403,8 @@ class GMOSPrimitives(GEMINIPrimitives):
 
                     detector_type = ad.phu_get_key_value("DETTYPE")
         
-                    # The type of CCD determines the number of contaminated columns
-                    # in the overscan region
+                    # The type of CCD determines the number of contaminated
+                    # columns in the overscan region
                     if detector_type=="SDSU II CCD":
                         nbiascontam = 4
                     elif detector_type=="SDSU II e2v DD CCD42-90":
