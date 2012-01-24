@@ -164,8 +164,6 @@ class QAPrimitives(GENERALPrimitives):
                 # Subtract bias level from BG number
                 if bias_level is not None:
                     sci_bg -= bias_level[(sciext.extname(),sciext.extver())]
-                    if sci_bg<1:
-                        sci_bg = 1
                     log.fullinfo("Bias-subtracted BG level = %f" % sci_bg)
 
                 # Write sky background to science header
@@ -182,37 +180,38 @@ class QAPrimitives(GENERALPrimitives):
                                  "available for %s[SCI,%d], filter %s" %
                                  (ad.filename,sciext.extver(),filter))
                     
-                # Make sure we have a number in electrons
-                if(bunit=='adu'):
-                    gain = float(sciext.gain())
-                    bg_e = sci_bg * gain
-                    if npz is not None:
-                        npz = npz + 2.5*math.log10(gain)
-                else:
-                    bg_e = sci_bg
-                log.fullinfo("BG electrons = %f" % bg_e)
-
-                # Now divide it by the exposure time
-                bg_e /= float(sciext.exposure_time())
-                log.fullinfo("BG electrons/s = %f" % bg_e)
-
-                # Now, it's in pixels, divide it by the area of a pixel
-                # to get arcsec^2
-                pixscale = float(sciext.pixel_scale())
-                bg_e /= (pixscale*pixscale)
-                log.fullinfo("BG electrons/s/as^2 = %f" % bg_e)
-
-                # Now get that in (instrumental) magnitudes...
-                if bg_e<=0:
-                    raise Errors.ScienceError("Background in electrons is "\
-                                              "less than or equal to 0 for "\
-                                              "%s[SCI,%d]" % 
-                                              (ad.filename,extver))
-                bg_im = -2.5 * math.log10(bg_e)
-                log.fullinfo("BG inst mag = %f" % bg_im)
-
-                # And convert to apparent magnitude using the nominal zeropoint
                 if npz is not None:
+                    # Make sure we have a number in electrons
+                    if(bunit=='adu'):
+                        gain = float(sciext.gain())
+                        bg_e = sci_bg * gain
+                        if npz is not None:
+                            npz = npz + 2.5*math.log10(gain)
+                    else:
+                        bg_e = sci_bg
+                    log.fullinfo("BG electrons = %f" % bg_e)
+
+                    # Now divide it by the exposure time
+                    bg_e /= float(sciext.exposure_time())
+                    log.fullinfo("BG electrons/s = %f" % bg_e)
+
+                    # Now, it's in pixels, divide it by the area of a pixel
+                    # to get arcsec^2
+                    pixscale = float(sciext.pixel_scale())
+                    bg_e /= (pixscale*pixscale)
+                    log.fullinfo("BG electrons/s/as^2 = %f" % bg_e)
+
+                    # Now get that in (instrumental) magnitudes...
+                    if bg_e<=0:
+                        raise Errors.ScienceError(
+                            "Background in electrons is "\
+                            "less than or equal to 0 for "\
+                            "%s[SCI,%d]" % (ad.filename,extver))
+                    bg_im = -2.5 * math.log10(bg_e)
+                    log.fullinfo("BG inst mag = %f" % bg_im)
+
+                    # And convert to apparent magnitude using the
+                    # nominal zeropoint
                     bg_am = bg_im + npz
                     log.fullinfo("BG mag = %f" % bg_am)
                 else:
