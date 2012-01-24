@@ -769,10 +769,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             else:
                 # We're in ADU
                 gain_factor = 2.5*math.log10(float(ext.gain()))
-            try:
-                zp = table[(det, filt)] - gain_factor
-            except KeyError:
-                zp = None
+
+            key = (det,filt)
+            if key in table:
+                zp = table[key] - gain_factor
+            else:
+                raise Errors.TableKeyError()
 
             ret_nominal_zeropoint.update({(ext.extname(), ext.extver()) : zp})
 

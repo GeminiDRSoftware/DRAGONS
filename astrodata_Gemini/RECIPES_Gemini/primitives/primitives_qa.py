@@ -164,6 +164,8 @@ class QAPrimitives(GENERALPrimitives):
                 # Subtract bias level from BG number
                 if bias_level is not None:
                     sci_bg -= bias_level[(sciext.extname(),sciext.extver())]
+                    if sci_bg<1:
+                        sci_bg = 1
                     log.fullinfo("Bias-subtracted BG level = %f" % sci_bg)
 
                 # Write sky background to science header
@@ -172,13 +174,20 @@ class QAPrimitives(GENERALPrimitives):
                     (self.keyword_comments["SKYLEVEL"],bunit))
                 
                 # Get nominal zeropoint
-                npz = float(sciext.nominal_photometric_zeropoint())
-
+                try:
+                    npz = float(sciext.nominal_photometric_zeropoint())
+                except:
+                    npz = None
+                    log.stdinfo("No nominal photometric zeropoint "\
+                                 "available for %s[SCI,%d], filter %s" %
+                                 (ad.filename,sciext.extver(),filter))
+                    
                 # Make sure we have a number in electrons
                 if(bunit=='adu'):
                     gain = float(sciext.gain())
                     bg_e = sci_bg * gain
-                    npz = npz + 2.5*math.log10(gain)
+                    if npz is not None:
+                        npz = npz + 2.5*math.log10(gain)
                 else:
                     bg_e = sci_bg
                 log.fullinfo("BG electrons = %f" % bg_e)
@@ -203,44 +212,52 @@ class QAPrimitives(GENERALPrimitives):
                 log.fullinfo("BG inst mag = %f" % bg_im)
 
                 # And convert to apparent magnitude using the nominal zeropoint
-                bg_am = bg_im + npz
-                log.fullinfo("BG mag = %f" % bg_am)
+                if npz is not None:
+                    bg_am = bg_im + npz
+                    log.fullinfo("BG mag = %f" % bg_am)
+                else:
+                    bg_am = None
 
                 # Keep a running average value
                 if all_bg is None:
                     all_bg = sci_bg
-                    all_bg_am = bg_am
                     all_std = sci_std
+                    if bg_am is not None:
+                        all_bg_am = bg_am
                 else:
                     all_bg = np.mean([all_bg,sci_bg])
-                    all_bg_am = np.mean([all_bg_am,bg_am])
                     all_std = np.sqrt(all_std**2+sci_std**2)
+                    if bg_am is not None:
+                        all_bg_am = np.mean([all_bg_am,bg_am])
 
-                # Get percentile corresponding to this number
-                if separate_ext:
-                    use_bg = bg_am
-                else:
-                    use_bg = all_bg_am
-                bg_str = "BG band:".ljust(llen)
-                if bg_band_limits is not None:
-                    bg20 = bg_band_limits[20]
-                    bg50 = bg_band_limits[50]
-                    bg80 = bg_band_limits[80]
-                    if(use_bg > bg20):
-                        bg_num = 20
-                        bg_str += ("BG20 (>%.2f)" % bg20).rjust(rlen)
-                    elif(use_bg > bg50):
-                        bg_num = 50
-                        bg_str += ("BG50 (%.2f-%.2f)" % (bg50,bg20)).rjust(rlen)
-                    elif(use_bg > bg80):
-                        bg_num = 80
-                        bg_str += ("BG80 (%.2f-%.2f)" % (bg80,bg50)).rjust(rlen)
+                bg_num = None
+                bg_str = "(BG band could not be determined)"
+                if bg_am is not None:
+
+                    # Get percentile corresponding to this number
+                    if separate_ext:
+                        use_bg = bg_am
                     else:
-                        bg_num = 100
-                        bg_str += ("BGAny (<%.2f)" % bg80).rjust(rlen)
-                else:
-                    bg_num = None
-                    bg_str = "(BG band could not be determined)"
+                        use_bg = all_bg_am
+                    bg_str = "BG band:".ljust(llen)
+                    if bg_band_limits is not None:
+                        bg20 = bg_band_limits[20]
+                        bg50 = bg_band_limits[50]
+                        bg80 = bg_band_limits[80]
+                        if(use_bg > bg20):
+                            bg_num = 20
+                            bg_str += ("BG20 (>%.2f)" % bg20).rjust(rlen)
+                        elif(use_bg > bg50):
+                            bg_num = 50
+                            bg_str += ("BG50 (%.2f-%.2f)" % 
+                                       (bg50,bg20)).rjust(rlen)
+                        elif(use_bg > bg80):
+                            bg_num = 80
+                            bg_str += ("BG80 (%.2f-%.2f)" % 
+                                       (bg80,bg50)).rjust(rlen)
+                        else:
+                            bg_num = 100
+                            bg_str += ("BGAny (<%.2f)" % bg80).rjust(rlen)
 
                 # Get requested BG band
                 bg_warn = ""
@@ -266,9 +283,11 @@ class QAPrimitives(GENERALPrimitives):
                     log.stdinfo("    "+"Sky level measurement:".ljust(llen) +
                                 ("%.0f +/- %.0f %s" % 
                                  (sci_bg,sci_std,bunit)).rjust(rlen))
-                    log.stdinfo("    "+
-                                ("Mag / sq arcsec in %s:"% filter).ljust(llen)+
-                                ("%.1f" % bg_am).rjust(rlen))
+                    if bg_am is not None:
+                        log.stdinfo("    "+
+                                    ("Mag / sq arcsec in %s:"% 
+                                     filter).ljust(llen)+
+                                    ("%.1f" % bg_am).rjust(rlen))
                     log.stdinfo("    "+bg_str)
                     log.stdinfo("    "+req_str+bg_warn)
                     log.stdinfo("    "+"-"*dlen+"\n")
@@ -288,9 +307,11 @@ class QAPrimitives(GENERALPrimitives):
                     log.stdinfo("    "+"Sky level measurement:".ljust(llen) +
                                 ("%.0f +/- %.0f %s" % 
                                  (all_bg,all_std,bunit)).rjust(rlen))
-                    log.stdinfo("    "+
-                                ("Mag / sq arcsec in %s:"% filter).ljust(llen)+
-                                ("%.1f" % all_bg_am).rjust(rlen))
+                    if all_bg_am is not None:
+                        log.stdinfo("    "+
+                                    ("Mag / sq arcsec in %s:"% 
+                                     filter).ljust(llen)+
+                                    ("%.1f" % all_bg_am).rjust(rlen))
                     log.stdinfo("    "+bg_str)
                     log.stdinfo("    "+req_str+bg_warn)
                     log.stdinfo("    "+"-"*dlen+"\n")
