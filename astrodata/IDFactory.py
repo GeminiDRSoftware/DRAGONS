@@ -54,12 +54,12 @@ def generate_stackable_id( dataset, version = "1_0" ):
         shaObj.update( phu['OBSID'] )
         shaObj.update( phu['OBJECT'] )
     """
-    
+    # print "IDF57: %s"%type(dataset)
     try:
         if type(dataset) == str:
             ad = AstroData(dataset)
             ID = version + str(ad.group_id())
-        elif type(dataset) == AstroData:
+        elif type(dataset) == AstroData.AstroData:
             ID = version + str(dataset.group_id())
     except:
         print "Filename:", dataset.filename
