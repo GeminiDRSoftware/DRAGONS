@@ -286,7 +286,7 @@ class QAPrimitives(GENERALPrimitives):
                         log.stdinfo("    "+
                                     ("Mag / sq arcsec in %s:"% 
                                      filter).ljust(llen)+
-                                    ("%.1f" % bg_am).rjust(rlen))
+                                    ("%.2f" % bg_am).rjust(rlen))
                     log.stdinfo("    "+bg_str)
                     log.stdinfo("    "+req_str+bg_warn)
                     log.stdinfo("    "+"-"*dlen+"\n")
@@ -310,7 +310,7 @@ class QAPrimitives(GENERALPrimitives):
                         log.stdinfo("    "+
                                     ("Mag / sq arcsec in %s:"% 
                                      filter).ljust(llen)+
-                                    ("%.1f" % all_bg_am).rjust(rlen))
+                                    ("%.2f" % all_bg_am).rjust(rlen))
                     log.stdinfo("    "+bg_str)
                     log.stdinfo("    "+req_str+bg_warn)
                     log.stdinfo("    "+"-"*dlen+"\n")
@@ -418,6 +418,7 @@ class QAPrimitives(GENERALPrimitives):
                 rc.run("tileArrays(tile_all=True)")
             
         # Loop over each input AstroData object in the input list
+        overlays_exist = False
         iq_overlays = []
         mean_fwhms = []
         mean_ellips = []
@@ -559,6 +560,7 @@ class QAPrimitives(GENERALPrimitives):
                     data_shape=ad[key].data.shape
                     iqmask = _iq_overlay(src,data_shape)
                     iq_overlays.append(iqmask)
+                    overlays_exist = True
 
         # Display image with stars used circled
         if display:
@@ -569,7 +571,7 @@ class QAPrimitives(GENERALPrimitives):
             # Stuff overlays into RC; display primitive will look for
             # them there
             rc["overlay"] = iq_overlays
-            if np.any(np.array(iq_overlays)):
+            if overlays_exist:
                 log.stdinfo("Sources used to measure IQ are marked " +
                             "with blue circles.\n")
             rc.run("display(tile=%s,remove_bias=%s)" % (tile,str(remove_bias)))
