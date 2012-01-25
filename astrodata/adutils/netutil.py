@@ -81,6 +81,6 @@ def urlfetch(url, store = None, clobber = False):
     f.close()
     res.close()
     
-    print "nu84:md5(%s) %s" %(outname, IDFactory.generate_md5_file(outname))
+    #print "nu84:md5(%s) %s" %(outname, IDFactory.generate_md5_file(outname))
     
     return outname
