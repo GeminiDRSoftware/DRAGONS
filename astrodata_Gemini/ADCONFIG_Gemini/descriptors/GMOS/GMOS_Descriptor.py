@@ -530,6 +530,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # exception. It will be dealt with by the CalculatorInterface.
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
+
             # Get the UT date using the appropriate descriptor
             ut_date = str(dataset.ut_date())
             if ut_date is None:
@@ -540,6 +541,23 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     raise dataset.exception_info
             obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
             old_ut_date = datetime(2006, 8, 31, 0, 0)
+
+            # Get the gain setting and read speed setting values using the
+            # appropriate descriptors. Use .dict_val to return the values
+            # as a dictionary keyed by the extension name and number
+            read_speed_setting_dv = dataset.read_speed_setting()
+            gain_setting_dv = dataset.gain_setting()
+            if read_speed_setting_dv is None or gain_setting_dv is None:
+                # The descriptor functions return None if a value cannot be
+                # found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the
+                # CalculatorInterface.
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
+            else:
+                read_speed_setting_dict = read_speed_setting_dv.dict_val
+                gain_setting_dict = gain_setting_dv.dict_val
+
             # Loop over the science extensions in the dataset
             for ext in dataset["SCI"]:
                 # Get the name of the detector amplifier (ampname) from the
@@ -556,18 +574,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     # CalculatorInterface.
                     if hasattr(ext, "exception_info"):
                         raise ext.exception_info
+
                 # Get the gain setting and read speed setting values using the
-                # appropriate descriptors. Use as_pytype() to return the values
-                # as the default python type, rather than an object
-                read_speed_setting = dataset.read_speed_setting().as_pytype()
-                gain_setting = dataset.gain_setting().as_pytype()
-                if read_speed_setting is None or gain_setting is None:
-                    # The descriptor functions return None if a value cannot be
-                    # found and stores the exception info. Re-raise the
-                    # exception. It will be dealt with by the
-                    # CalculatorInterface.
-                    if hasattr(dataset, "exception_info"):
-                        raise dataset.exception_info
+                # dictionary created above
+                dict_key = (ext.extname(),ext.extver())
+                read_speed_setting = read_speed_setting_dict[dict_key]
+                gain_setting = gain_setting_dict[dict_key]
+
                 gain_key = (read_speed_setting, gain_setting, ampname)
                 if obs_ut_date > old_ut_date:
                     if gain_key in getattr(self, "gmosampsGain"):
