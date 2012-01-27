@@ -39,6 +39,7 @@ class QAPrimitives(GENERALPrimitives):
         # Get the BG band definitions from a lookup table
         bgConstraints = Lookups.get_lookup_table("Gemini/BGConstraints",
                                                  "bgConstraints")
+
         # Define a few useful numbers for formatting output
         llen = 23
         rlen = 24
@@ -670,9 +671,14 @@ class QAPrimitives(GENERALPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
 
-        # get the CC band definitions from a lookup table
+        # Get the CC band definitions from a lookup table
         ccConstraints = Lookups.get_lookup_table("Gemini/CCConstraints",
                                                  "ccConstraints")
+
+        # Define a few useful numbers for formatting output
+        llen = 32
+        rlen = 26
+        dlen = llen + rlen
 
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
@@ -812,28 +818,46 @@ class QAPrimitives(GENERALPrimitives):
                         req_cc = 'CC%d' % req_cc
                 
 
-                log.fullinfo("    Filename: %s ['OBJCAT', %d]" % (ad.filename, extver))
-                log.fullinfo("    --------------------------------------------------------")
-                log.fullinfo("    %d sources used to measure Zeropoint" % len(zps))
-                log.fullinfo("    Zeropoint measurement (%s band): %.3f +/- %.3f" % (ad.filter_name(pretty=True), zp, zpe))
-                log.fullinfo("    Nominal Zeropoint in this configuration: %.3f" % nominal_zeropoint)
-                log.fullinfo("    Estimated Cloud Extinction: %.3f +/- %.3f magnitudes" % (cloud, zpe))
-                log.fullinfo("\n    This corresponds to %s" % ccband)
+                log.fullinfo("\n    Filename: %s ['OBJCAT', %d]" % 
+                             (ad.filename, extver))
+                log.fullinfo("    %d sources used to measure zeropoint" % 
+                             len(zps))
+                log.fullinfo("    "+"-"*dlen)
+                log.fullinfo("    "+
+                             ("Zeropoint measurement (%s band):" % 
+                              ad.filter_name(pretty=True)).ljust(llen) +
+                             ("%.2f +/- %.2f" % (zp, zpe)).rjust(rlen))
+                log.fullinfo("    "+
+                             ("Nominal zeropoint:").ljust(llen) +
+                             ("%.2f" % nominal_zeropoint).rjust(rlen))
+                log.fullinfo("    "+
+                             "Estimated cloud extinction:".ljust(llen) +
+                             ("%.2f +/- %.2f magnitudes" % 
+                              (cloud, zpe)).rjust(rlen))
+                log.fullinfo("    " + "CC band:".ljust(llen) + 
+                             ccband.rjust(rlen))
                 if req_cc is not None:
-                    log.fullinfo("    Requested CC band: %s" % req_cc)
+                    log.fullinfo("    "+
+                                 "Requested CC band:".ljust(llen)+
+                                 req_cc.rjust(rlen))
                 else:
                     log.fullinfo("    (Requested CC could not be determined)")
                 if cc_warn is not None:
                     log.fullinfo(cc_warn)
-                log.fullinfo("    --------------------------------------------------------")
+                log.fullinfo("    "+"-"*dlen)
 
             
-            zp_str = []
             cloud_sum = 0
             cloud_esum = 0
             if(len(detzp_means)):
                 for i in range(len(detzp_means)):
-                    zp_str.append("%.3f +/- %.3f" % (detzp_means[i], detzp_sigmas[i]))
+                    if i==0:
+                        zp_str = ("%.2f +/- %.2f" % 
+                                 (detzp_means[i], detzp_sigmas[i])).rjust(rlen)
+                    else:
+                        zp_str += "\n    "
+                        zp_str += ("%.2f +/- %.2f" % 
+                                 (detzp_means[i], detzp_sigmas[i])).rjust(dlen)
                     cloud_sum += detzp_clouds[i]
                     cloud_esum += (detzp_sigmas[i] * detzp_sigmas[i])
                 cloud = cloud_sum / len(detzp_means)
@@ -872,22 +896,32 @@ class QAPrimitives(GENERALPrimitives):
                     else:
                         req_cc = 'CC%d' % req_cc
             
-                log.stdinfo("    Filename: %s" % ad.filename)
-                log.stdinfo("    --------------------------------------------------------")
-                log.stdinfo("    %d sources used to measure Zeropoint" % total_sources)
-                log.stdinfo("    Zeropoint measurements per detector (%s band): %s" % (ad.filter_name(pretty=True), ', '.join(zp_str)))
-                log.stdinfo("    Estimated Cloud Extinction: %.3f +/- %.3f magnitudes" % (cloud, clouderr))
-                log.stdinfo("\n    This corresponds to %s" % ccband)
+                log.stdinfo("\n    Filename: %s" % ad.filename)
+                log.stdinfo("    %d sources used to measure zeropoint" % 
+                             total_sources)
+                log.stdinfo("    "+"-"*dlen)
+                log.stdinfo("    "+
+                            ("Zeropoints by detector (%s band):"%
+                             ad.filter_name(pretty=True)).ljust(llen)+
+                            zp_str)
+                log.stdinfo("    "+
+                             "Estimated cloud extinction:".ljust(llen) +
+                            ("%.2f +/- %.2f magnitudes" % 
+                             (cloud, clouderr)).rjust(rlen))
+                log.stdinfo("    " + "CC band:".ljust(llen) + 
+                            ccband.rjust(rlen))
                 if req_cc is not None:
-                    log.stdinfo("    Requested CC band: %s" % req_cc)
+                    log.stdinfo("    "+
+                                "Requested CC band:".ljust(llen)+
+                                req_cc.rjust(rlen))
                 else:
                     log.stdinfo("    (Requested CC could not be determined)")
                 if cc_warn is not None:
                     log.stdinfo(cc_warn)
-                log.stdinfo("    --------------------------------------------------------")
+                log.stdinfo("    "+"-"*dlen)
             else:
                 log.stdinfo("    Filename: %s" % ad.filename)
-                log.stdinfo("    Could not measure Zeropoint - no catalog sources associated")
+                log.stdinfo("    Could not measure zeropoint - no catalog sources associated")
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
