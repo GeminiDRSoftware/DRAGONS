@@ -345,42 +345,92 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
             new_aux.filename = this_aux.filename
             new_aux.phu = this_aux.phu
 
+            # Get the necessary section information from descriptors
+            # This should be done outside the loop over extensions
+            # for efficiency
+
+            # For the science file
+            sci_detsec_dv = ad.detector_section()
+            if sci_detsec_dv is None:
+                raise Errors.InputError("Input file %s does " \
+                                        "not have a detector section" %
+                                        ad.filename)
+            else:
+                detsec_kw = sci_detsec_dv.keyword
+                sci_detsec_dict = sci_detsec_dv.dict_val
+
+            sci_datasec_dv = ad.data_section()
+            if sci_datasec_dv is None:
+                raise Errors.InputError("Input file %s does " \
+                                        "not have a data section" %
+                                        ad.filename)
+            else:
+                datasec_kw = sci_datasec_dv.keyword
+                sci_datasec_dict = sci_datasec_dv.dict_val
+
+            sci_arraysec_dv = ad.array_section()
+            if sci_arraysec_dv is None:
+                raise Errors.InputError("Input file %s does " \
+                                        "not have an array section" %
+                                        ad.filename)
+            else:
+                arraysec_kw = sci_arraysec_dv.keyword
+                sci_arraysec_dict = sci_arraysec_dv.dict_val
+
+            sci_xbin_dv = ad.detector_x_bin()
+            if sci_xbin_dv is None:
+                raise Errors.InputError("Input file %s does " \
+                                        "not have an x-binning" %
+                                        ad.filename)
+            else:
+                sci_xbin_dict = sci_xbin_dv.dict_val
+
+            sci_ybin_dv = ad.detector_y_bin()
+            if sci_ybin_dv is None:
+                raise Errors.InputError("Input file %s does " \
+                                        "not have a y-binning" %
+                                        ad.filename)
+            else:
+                sci_ybin_dict = sci_ybin_dv.dict_val
+
+            # For the auxiliary file
+            aux_detsec_dv = this_aux.detector_section(extname=extname)
+            if aux_detsec_dv is None:
+                raise Errors.InputError("Input file %s does " \
+                                        "not have a detector section" %
+                                        ad.filename)
+            else:
+                aux_detsec_dict = aux_detsec_dv.dict_val
+
+            aux_datasec_dv = this_aux.data_section(extname=extname)
+            if aux_datasec_dv is None:
+                raise Errors.InputError("Input file %s does " \
+                                        "not have a data section" %
+                                        ad.filename)
+            else:
+                aux_datasec_dict = aux_datasec_dv.dict_val
+
+            aux_arraysec_dv = this_aux.array_section(extname=extname)
+            if aux_arraysec_dv is None:
+                raise Errors.InputError("Input file %s does " \
+                                        "not have an array section" %
+                                        ad.filename)
+            else:
+                aux_arraysec_dict = aux_arraysec_dv.dict_val
+            
             for sciext in ad["SCI"]:
 
-                # Get science detector, data, and array section
-                # Should these be errors or should it try something
-                # reasonable?
-                sci_detsec = sciext.detector_section()
-                if sci_detsec is None:
-                    raise Errors.InputError("Input file %s does " \
-                                            "not have a detector section" %
-                                            ad.filename)
-                else:
-                    detsec_kw = sci_detsec.keyword
-                    sci_detsec = sci_detsec.as_list()
-
-                sci_datasec = sciext.data_section()
-                if sci_datasec is None:
-                    raise Errors.InputError("Input file %s does " \
-                                            "not have a data section" %
-                                            ad.filename)
-                else:
-                    datasec_kw = sci_datasec.keyword
-                    sci_datasec = sci_datasec.as_list()
-
-                sci_arraysec = sciext.array_section()
-                if sci_arraysec is None:
-                    raise Errors.InputError("Input file %s does " \
-                                            "not have an array section" %
-                                            ad.filename)
-                else:
-                    arraysec_kw = sci_arraysec.keyword
-                    sci_arraysec = sci_arraysec.as_list()
+                # Get the section information for this extension
+                # from the dictionary formed above
+                dict_key = (sciext.extname(),sciext.extver())
+                sci_detsec = sci_detsec_dict[dict_key]
+                sci_datasec = sci_datasec_dict[dict_key]
+                sci_arraysec = sci_arraysec_dict[dict_key]
 
                 # Array section is unbinned; to use as indices for
                 # extracting data, need to divide by the binning
-                xbin = int(sciext.detector_x_bin())
-                ybin = int(sciext.detector_y_bin())
+                xbin = sci_xbin_dict[dict_key]
+                ybin = sci_ybin_dict[dict_key]
                 sci_arraysec = [sci_arraysec[0]/xbin,
                                 sci_arraysec[1]/xbin,
                                 sci_arraysec[2]/ybin,
@@ -404,46 +454,13 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
                                    sci_datasec[2],sci_shape[0]-sci_datasec[3]]
 
                 found = False
-                for orig_auxext in this_aux[extname]:
-
-                    auxext = deepcopy(orig_auxext)
-
-                    # Get auxiliary VAR/DQ planes if they exist
-                    # (in the non-BPM case)
-                    ext_to_clip = [auxext]
-                    if aux_type!="bpm":
-                        varext = this_aux["VAR",orig_auxext.extver()]
-                        if varext is not None:
-                            ext_to_clip.append(deepcopy(varext))
-                            
-                        dqext = this_aux["DQ",orig_auxext.extver()]
-                        if dqext is not None:
-                            ext_to_clip.append(deepcopy(dqext))
-
-                    # Get auxiliary detector, data, and array section
-                    aux_detsec = auxext.detector_section(extname=extname)
-                    if aux_detsec is None:
-                        raise Errors.InputError("Auxiliary file %s does " \
-                                                "not have a detector section" %
-                                                this_aux.filename)
-                    else:
-                        aux_detsec = aux_detsec.as_list()
-
-                    aux_datasec = auxext.data_section(extname=extname)
-                    if aux_datasec is None:
-                        raise Errors.InputError("Auxiliary file %s does " \
-                                                "not have a data section" %
-                                                this_aux.filename)
-                    else:
-                        aux_datasec = aux_datasec.as_list()
-
-                    aux_arraysec = auxext.array_section(extname=extname)
-                    if aux_arraysec is None:
-                        raise Errors.InputError("Input file %s does " \
-                                                "not have an array section" %
-                                                ad.filename)
-                    else:
-                        aux_arraysec = aux_arraysec.as_list()
+                for auxext in this_aux[extname]:
+                    
+                    # Get the section information for this extension
+                    dict_key = (auxext.extname(),auxext.extver())
+                    aux_detsec = aux_detsec_dict[dict_key]
+                    aux_datasec = aux_datasec_dict[dict_key]
+                    aux_arraysec = aux_arraysec_dict[dict_key]
 
                     # Array section is unbinned; to use as indices for
                     # extracting data, need to divide by the binning
@@ -492,6 +509,24 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
                               sci_datasec[3] + y_translation,
                               sci_datasec[0] + x_translation,
                               sci_datasec[1] + x_translation]
+
+                    # Deepcopy auxiliary SCI plane
+                    # and auxiliary VAR/DQ planes if they exist
+                    # (in the non-BPM case)
+                    # This must be done here so that the same
+                    # auxiliary extension can be used for a
+                    # different science extension; without the
+                    # deepcopy, the original auxiliary extension
+                    # gets clipped
+                    ext_to_clip = [deepcopy(auxext)]
+                    if aux_type!="bpm":
+                        varext = this_aux["VAR",auxext.extver()]
+                        if varext is not None:
+                            ext_to_clip.append(deepcopy(varext))
+                            
+                        dqext = this_aux["DQ",auxext.extver()]
+                        if dqext is not None:
+                            ext_to_clip.append(deepcopy(dqext))
 
                     # Clip all relevant extensions
                     for ext in ext_to_clip:
