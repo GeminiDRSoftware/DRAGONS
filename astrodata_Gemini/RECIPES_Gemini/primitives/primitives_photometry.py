@@ -383,20 +383,7 @@ class PhotometryPrimitives(GENERALPrimitives):
                         for sciext in ad["SCI"]:
                             extver = sciext.extver()
                             columns = result[("SCI",extver)]
-                            try:
-                                nobj = len(columns["NUMBER"].array)
-                            except KeyError:
-                                nobj = 0
-                            if nobj==0:
-                                log.stdinfo("No sources found in "\
-                                            "%s[SCI,%d]" %
-                                            (ad.filename,extver))
-                                continue
-                            else:
-                                log.stdinfo("Found %d sources in "\
-                                            "%s[SCI,%d]" %
-                                            (nobj,ad.filename,extver))
-
+                            if columns:
                                 # Add OBJCAT
                                 ad = gt.add_objcat(
                                     adinput=ad, extver=extver, 
@@ -1199,6 +1186,8 @@ def _sextractor(ad=None,seeing_estimate=None):
             if tdata is None:
                 problem = True
                 result[dict_key]={}
+                log.stdinfo("No sources found in %s[SCI,%d]" %
+                            (ad.filename,extver))
                 break
 
             # Convert FWHM_WORLD to arcsec
@@ -1238,6 +1227,11 @@ def _sextractor(ad=None,seeing_estimate=None):
             for col in tcols:
                 columns[col.name] = col
             result[dict_key] = columns
+
+            nobj = len(columns["NUMBER"].array)
+            log.stdinfo("Found %d sources in %s[SCI,%d]" %
+                        (nobj,ad.filename,extver))
+
 
     log.fullinfo("Removing temporary file from disk: %s" % tmpfn)
     os.remove(tmpfn)
