@@ -344,7 +344,6 @@ class PhotometryPrimitives(GENERALPrimitives):
         timestamp_key = self.timestamp_keys["detectSources"]
 
         # Loop over each input AstroData object in the input list
-        problem = False
         for ad in rc.get_inputs_as_astrodata():
 
             # Get the necessary parameters from the RC
@@ -355,63 +354,68 @@ class PhotometryPrimitives(GENERALPrimitives):
             centroid_function = rc["centroid_function"]
             method = rc["method"]
 
+            # Check source detection method
+            if method not in ["sextractor","daofind"]:
+                raise Errors.InputError("Source detection method "+
+                                        method+" is unsupported.")
+
+            # Get a seeing estimate from the header, if available
             seeing_est = ad.phu_get_key_value("MEANFWHM")
-            for sciext in ad["SCI"]:
-                
-                extver = sciext.extver()
-                
-                # Check source detection method
-                if method not in ["sextractor","daofind"]:
-                    raise Errors.InputError("Source detection method "+
-                                            method+" is unsupported.")
-                
-                if method=="sextractor":
-                    dqext = ad["DQ",extver]
 
-                    # Check sextractor version, go to daofind if task not
-                    # found or wrong version
-                    right_version = _test_sextractor_version()
+            if method=="sextractor":
+                # Check sextractor version, go to daofind if task not
+                # found or wrong version
+                right_version = _test_sextractor_version()
 
-                    if not right_version:
-                        log.warning("SExtractor version %d.%d.%d or later "\
-                                    "not found. Setting method=daofind" %
-                                    tuple(SEXTRACTOR_VERSION))
+                if not right_version:
+                    log.warning("SExtractor version %d.%d.%d or later "\
+                                "not found. Setting method=daofind" %
+                                tuple(SEXTRACTOR_VERSION))
+                    method="daofind"
+                else:
+                    try:
+                        result = _sextractor(ad, seeing_est)
+                    except Errors.ScienceError:
+                        log.warning("SExtractor failed. "\
+                                    "Setting method=daofind")
                         method="daofind"
                     else:
-                        try:
-                            columns,seeing_est = _sextractor(
-                                sciext=sciext, dqext=dqext,
-                                seeing_estimate=seeing_est)
-                        except Errors.ScienceError:
-                            log.warning("SExtractor failed. "\
-                                        "Setting method=daofind")
-                            method="daofind"
-                        else:
+                        for sciext in ad["SCI"]:
+                            extver = sciext.extver()
+                            columns = result[("SCI",extver)]
                             try:
                                 nobj = len(columns["NUMBER"].array)
                             except KeyError:
                                 nobj = 0
                             if nobj==0:
                                 log.stdinfo("No sources found in "\
-                                            "%s['SCI',%d]" %
+                                            "%s[SCI,%d]" %
                                             (ad.filename,extver))
                                 continue
                             else:
                                 log.stdinfo("Found %d sources in "\
-                                            "%s['SCI',%d]" %
+                                            "%s[SCI,%d]" %
                                             (nobj,ad.filename,extver))
 
-                if method=="daofind":
-                    try:
-                        pixscale = sciext.pixel_scale()
-                    except:
-                        pixscale = None
-                    if pixscale is None:
-                        log.warning("%s does not have a pixel scale, " \
-                                    "cannot fit sources" % ad.filename)
-                        problem = True
-                        break
+                                # Add OBJCAT
+                                ad = gt.add_objcat(
+                                    adinput=ad, extver=extver, 
+                                    replace=True, columns=columns)[0]
+                
+            if method=="daofind":
+                try:
+                    pixscale = ad.pixel_scale()
+                except:
+                    pixscale = None
+                if pixscale is None:
+                    log.warning("%s does not have a pixel scale, " \
+                                "cannot fit sources" % ad.filename)
+                    continue
 
+                for sciext in ad["SCI"]:
+                
+                    extver = sciext.extver()
+                
                     if fwhm is None:
                         if seeing_est is not None:
                             fwhm = seeing_est / pixscale
@@ -450,13 +454,12 @@ class PhotometryPrimitives(GENERALPrimitives):
                         }
 
                 
-                # For either method, add OBJCAT
-                ad = gt.add_objcat(adinput=ad, extver=extver, 
-                                   replace=True, columns=columns)[0]
-
-            # In daofind case, do some simple photometry on all
-            # extensions to get fwhm, ellipticity
-            if method=="daofind" and not problem:
+                    # Add OBJCAT
+                    ad = gt.add_objcat(adinput=ad, extver=extver, 
+                                       replace=True, columns=columns)[0]
+            
+                # Do some simple photometry on all
+                # extensions to get fwhm, ellipticity
                 log.stdinfo("Fitting sources for simple photometry")
 
                 # Divide the max_sources by the number of extensions
@@ -1082,7 +1085,8 @@ def _average_each_cluster( xyArray, pixApart=10.0 ):
     return newXYArray
 
 
-def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
+def _sextractor(ad=None,seeing_estimate=None):
+#def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
 
     # Get the log
     log = gemLog.getGeminiLog()
@@ -1092,150 +1096,152 @@ def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
                              "Gemini/source_detection/sextractor_default_dict",
                              "sextractor_default_dict")
     
-    # Write the science extension to a temporary file on disk
-    scitmpfn = "tmp%ssx%s%s%s" % (str(os.getpid()),sciext.extname(),
-                                  sciext.extver(),
-                                  os.path.basename(sciext.filename))
-    log.fullinfo("Writing temporary file %s to disk" % scitmpfn)
-    sciext.write(scitmpfn,rename=False,clobber=True)
+    # Write the AD instance to a temporary FITS file on disk
+    tmpfn = "tmp%ssx%s" % (str(os.getpid()),
+                           os.path.basename(ad.filename))
+    log.fullinfo("Writing temporary file %s to disk" % tmpfn)
+    ad.write(tmpfn,rename=False,clobber=True)
 
-    # If DQ extension is given, do the same for it
-    if dqext is not None:
-        # Make sure DQ data is 16-bit; flagging doesn't work
-        # properly if it is 32-bit
-        dqext.data = dqext.data.astype(np.int16)
-        
-        dqtmpfn = "tmp%ssx%s%s%s" % (str(os.getpid()),dqext.extname(),
-                                   dqext.extver(),
-                                   os.path.basename(dqext.filename))
-        log.fullinfo("Writing temporary file %s to disk" % dqtmpfn)
-        dqext.write(dqtmpfn,rename=False,clobber=True)
+    result = {}
+    for sciext in ad["SCI"]:
 
-        # Get correct default files for this mode
-        default_dict = default_dict['dq']
-        for key in default_dict:
-            default_file = lookup_path(default_dict[key]).rstrip(".py")
-            default_dict[key] = default_file
+        extver = sciext.extver()
+        dict_key = ("SCI",extver)
 
-    else:
-        # Dummy temporary DQ file name
-        dqtmpfn = ""
+        # Get the integer extension number, relative to the
+        # AstroData numbering convention (0=first extension
+        # after PHU). This is the same convension sextractor
+        # uses.
+        extnum = ad.get_int_ext(("SCI",extver))
+        scitmpfn = "%s[%d]" % (tmpfn,extnum)
 
-        # Get correct default files for this mode
-        default_dict = default_dict['no_dq']
-        for key in default_dict:
-            default_file = lookup_path(default_dict[key]).rstrip(".py")
-            default_dict[key] = default_file
-
-    outtmpfn = "tmp%ssxOUT%s%s%s" % (str(os.getpid()),sciext.extname(),
-                                     sciext.extver(),
-                                     os.path.basename(sciext.filename))
-
-    # if no seeing estimate provided, run sextractor once with
-    # default, then re-run to get proper stellar classification
-    if seeing_estimate is None:
-        iter = [0,1]
-    else:
-        iter = [0]
-    
-    log.fullinfo("Calling SExtractor")
-    for i in iter:
-
-        if seeing_estimate is None:
-            # use default seeing estimate for a first pass
-            sx_cmd = ["sex",
-                      "%s[0]" % scitmpfn,
-                      "-c","%s" % default_dict["sex"],
-                      "-FLAG_IMAGE","%s[0]" % dqtmpfn,
-                      "-CATALOG_NAME","%s" % outtmpfn,
-                      "-PARAMETERS_NAME","%s" % default_dict["param"],
-                      "-FILTER_NAME","%s" % default_dict["conv"],
-                      "-STARNNW_NAME","%s" % default_dict["nnw"],]
-        else:
-            # run with provided seeing estimate
-            sx_cmd = ["sex",
-                      "%s[0]" % scitmpfn,
-                      "-c","%s" % default_dict["sex"],
-                      "-FLAG_IMAGE","%s[0]" % dqtmpfn,
-                      "-CATALOG_NAME","%s" % outtmpfn,
-                      "-PARAMETERS_NAME","%s" % default_dict["param"],
-                      "-FILTER_NAME","%s" % default_dict["conv"],
-                      "-STARNNW_NAME","%s" % default_dict["nnw"],
-                      "-SEEING_FWHM","%f" % seeing_estimate,
-                      ]
-
-        try:
-            pipe_out = subprocess.Popen(sx_cmd,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT)
-        except OSError:
-            os.remove(scitmpfn)
-            if dqext is not None:
-                os.remove(dqtmpfn)
-            raise Errors.ScienceError("SExtractor failed")
-
-        # Sextractor output is full of non-ascii characters, send it
-        # only to debug for now
-        stdoutdata = pipe_out.communicate()[0]
-        log.debug(stdoutdata)
-
-        hdulist = pf.open(outtmpfn)
-        tdata = hdulist[1].data
-        tcols = hdulist[1].columns
-
-        # If sextractor returned no data, remove files and return an
-        # empty list
-        if tdata is None:
-            log.fullinfo("Removing temporary files from disk:\n%s\n%s" %
-                         (scitmpfn,dqtmpfn))
-            os.remove(scitmpfn)
-            os.remove(dqtmpfn)
-            os.remove(outtmpfn)
-            return {},None
-
-        # Convert FWHM_WORLD to arcsec
-        fwhm = tdata["FWHM_WORLD"]
-        fwhm *= 3600.0
-        
-        # Mask out the bottom 3 bits of the sextractor flags
-        # These are used for purposes we don't need here
-        sxflag = tdata["FLAGS"]
-        sxflag &= 65528
-
-        # Get some extra flags to get point sources only
-        # for seeing estimate
+        dqext = ad["DQ",extver]
         if dqext is not None:
-            dqflag = tdata["IMAFLAGS_ISO"]
-        else:
-            dqflag = np.zeros_like(sxflag)
-        aflag = np.where(tdata["ISOAREA_IMAGE"]<100,1,0)
-        eflag = np.where(tdata["ELLIPTICITY"]>0.5,1,0)
-        sflag = np.where(tdata["CLASS_STAR"]<0.6,1,0)
+            # Make sure DQ data is 16-bit; flagging doesn't work
+            # properly if it is 32-bit
+            dqext.data = dqext.data.astype(np.int16)
+        
+            extnum = ad.get_int_ext(("DQ",extver))
+            dqtmpfn = "%s[%d]" % (tmpfn,extnum)
 
-        # Bitwise-or all the flags
-        flags = sxflag | dqflag | aflag | eflag | sflag
-        good_fwhm = fwhm[flags==0]
-        if len(good_fwhm)>2:
-            seeing_estimate,sigma = at.clipped_mean(good_fwhm)
-            if np.isnan(seeing_estimate) or seeing_estimate==0:
+            # Get correct default files for this mode
+            dd = default_dict['dq'].copy()
+            for key in dd:
+                default_file = lookup_path(dd[key]).rstrip(".py")
+                dd[key] = default_file
+
+        else:
+            # Dummy temporary DQ file name
+            dqtmpfn = ""
+
+            # Get correct default files for this mode
+            dd = default_dict['no_dq'].copy()
+            for key in dd:
+                default_file = lookup_path(dd[key]).rstrip(".py")
+                dd[key] = default_file
+    
+        # Temporary output name for this extension
+        outtmpfn = "%sSCI%dOUT" % (tmpfn, extver)
+
+        # if no seeing estimate provided, run sextractor once with
+        # default, then re-run to get proper stellar classification
+        if seeing_estimate is None:
+            iter = [0,1]
+        else:
+            iter = [0]
+    
+        problem = False
+        for i in iter:
+
+            if seeing_estimate is None:
+                # use default seeing estimate for a first pass
+                sx_cmd = ["sex",
+                          scitmpfn,
+                          "-c",dd["sex"],
+                          "-FLAG_IMAGE",dqtmpfn,
+                          "-CATALOG_NAME",outtmpfn,
+                          "-PARAMETERS_NAME",dd["param"],
+                          "-FILTER_NAME",dd["conv"],
+                          "-STARNNW_NAME",dd["nnw"],]
+            else:
+                # run with provided seeing estimate
+                sx_cmd = ["sex",
+                          scitmpfn,
+                          "-c",dd["sex"],
+                          "-FLAG_IMAGE",dqtmpfn,
+                          "-CATALOG_NAME",outtmpfn,
+                          "-PARAMETERS_NAME",dd["param"],
+                          "-FILTER_NAME",dd["conv"],
+                          "-STARNNW_NAME",dd["nnw"],
+                          "-SEEING_FWHM","%f" % seeing_estimate,
+                          ]
+
+            log.fullinfo("Calling SExtractor on [SCI,%d] with "\
+                         "seeing estimate %s" % (extver,str(seeing_estimate)))
+            try:
+                pipe_out = subprocess.Popen(sx_cmd,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.STDOUT)
+            except OSError:
+                os.remove(tmpfn)
+                raise Errors.ScienceError("SExtractor failed")
+
+            # Sextractor output is full of non-ascii characters, throw
+            # it away for now
+            stdoutdata = pipe_out.communicate()[0]
+
+            hdulist = pf.open(outtmpfn)
+            tdata = hdulist[1].data
+            tcols = hdulist[1].columns
+
+            # If sextractor returned no data, remove files and return an
+            # empty list
+            if tdata is None:
+                problem = True
+                result[dict_key]={}
+                break
+
+            # Convert FWHM_WORLD to arcsec
+            fwhm = tdata["FWHM_WORLD"]
+            fwhm *= 3600.0
+            
+            # Mask out the bottom 3 bits of the sextractor flags
+            # These are used for purposes we don't need here
+            sxflag = tdata["FLAGS"]
+            sxflag &= 65528
+
+            # Get some extra flags to get point sources only
+            # for seeing estimate
+            if dqext is not None:
+                dqflag = tdata["IMAFLAGS_ISO"]
+            else:
+                dqflag = np.zeros_like(sxflag)
+            aflag = np.where(tdata["ISOAREA_IMAGE"]<100,1,0)
+            eflag = np.where(tdata["ELLIPTICITY"]>0.5,1,0)
+            sflag = np.where(tdata["CLASS_STAR"]<0.6,1,0)
+
+            # Bitwise-or all the flags
+            flags = sxflag | dqflag | aflag | eflag | sflag
+            good_fwhm = fwhm[flags==0]
+            if len(good_fwhm)>2:
+                seeing_estimate,sigma = at.clipped_mean(good_fwhm)
+                if np.isnan(seeing_estimate) or seeing_estimate==0:
+                    seeing_estimate = None
+                    break
+            else:
                 seeing_estimate = None
                 break
-        else:
-            seeing_estimate = None
-            break
-        
-    log.fullinfo("Removing temporary files from disk:\n%s\n%s" %
-                 (scitmpfn,dqtmpfn))
-    os.remove(scitmpfn)
-    os.remove(outtmpfn)
-    if dqext is not None:
-        os.remove(dqtmpfn)
+            
+        os.remove(outtmpfn)
+        if not problem:
+            columns = {}
+            for col in tcols:
+                columns[col.name] = col
+            result[dict_key] = columns
 
-    columns = {}
-    for col in tcols:
-        columns[col.name] = col
-    
-    return columns,seeing_estimate
+    log.fullinfo("Removing temporary file from disk: %s" % tmpfn)
+    os.remove(tmpfn)
+    return result
 
 def _test_sextractor_version():
     """
