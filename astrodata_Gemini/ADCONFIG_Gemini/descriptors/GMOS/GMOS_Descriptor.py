@@ -15,35 +15,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     # associated with this descriptor class
     _update_stdkey_dict = stdkeyDictGMOS
     
-    gmosampsBias = None
-    gmosampsBiasBefore20060831 = None
-    gmosampsGain = None
-    gmosampsGainBefore20060831 = None
-    gmosampsRdnoise = None
-    gmosampsRdnoiseBefore20060831 = None
-    gmosThresholds = None
-    gmosPixelScales = None
-    
-    
     def __init__(self):
-        # We can get both at once since they are in the same lookup space
-        self.gmosampsBias, self.gmosampsBiasBefore20060831 = \
-            Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
-                                     "gmosampsBias",
-                                     "gmosampsBiasBefore20060831")
-        self.gmosampsGain, self.gmosampsGainBefore20060831 = \
-            Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
-                                     "gmosampsGain",
-                                     "gmosampsGainBefore20060831")
-        self.gmosampsRdnoise, self.gmosampsRdnoiseBefore20060831 = \
-            Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
-                                     "gmosampsRdnoise",
-                                     "gmosampsRdnoiseBefore20060831")
-        self.gmosThresholds = Lookups.get_lookup_table(
-            "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
-        self.gmosPixelScales = Lookups.get_lookup_table(
-            "Gemini/GMOS/GMOSPixelScale", "gmosPixelScales")
-        self.gmoszeropoints = Lookups.get_lookup_table("Gemini/GMOS/Nominal_Zeropoints", "nominal_zeropoints")
         GEMINI_DescriptorCalc.__init__(self)
     
 
@@ -125,6 +97,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_array_section
     
     def bias_level(self, dataset, **args):
+        # Get the static bias lookup table
+        gmosampsBias, gmosampsBiasBefore20060831 = \
+            Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
+                                     "gmosampsBias",
+                                     "gmosampsBiasBefore20060831")
+
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always return a dictionary where the key
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
@@ -202,13 +180,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # from the lookup table
                 bias_key = (read_speed_setting, gain_setting, ampname)
                 if obs_ut_date > old_ut_date:
-                    if bias_key in getattr(self, "gmosampsBias"):
-                        static_bias = self.gmosampsBias[bias_key]
+                    if bias_key in gmosampsBias:
+                        static_bias = gmosampsBias[bias_key]
                     else:
                         raise Errors.TableKeyError()
                 else:
-                    if bias_key in getattr(self, "gmosampsBiasBefore20060831"):
-                        static_bias = self.gmosampsBiasBefore20060831[bias_key]
+                    if bias_key in gmosampsBiasBefore20060831:
+                        static_bias = gmosampsBiasBefore20060831[bias_key]
                     else:
                         raise Errors.TableKeyError()
 
@@ -225,9 +203,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
 
         # Return the saturation level dictionary
         return ret_bias_level
-
-    gmosampsBias = None
-    gmosampsBiasBefore20060831 = None
 
     def central_wavelength(self, dataset, asMicrometers=False,
                            asNanometers=False, asAngstroms=False, **args):
@@ -518,6 +493,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # Return a dictionary with the gain float as the value
                 ret_gain.update({(ext.extname(), ext.extver()):float(gain)})
         else:
+            # Get lookup table for GMOS gains by amp
+            gmosampsGain, gmosampsGainBefore20060831 = \
+                Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
+                                         "gmosampsGain",
+                                         "gmosampsGainBefore20060831")
+
             # Get the amplifier integration time (ampinteg) and the UT date
             # from the header of the PHU. The ampinteg keyword is defined in
             # the local key dictionary (stdkeyDictGMOS) but is read from the
@@ -583,13 +564,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
 
                 gain_key = (read_speed_setting, gain_setting, ampname)
                 if obs_ut_date > old_ut_date:
-                    if gain_key in getattr(self, "gmosampsGain"):
-                        gain = self.gmosampsGain[gain_key]
+                    if gain_key in gmosampsGain:
+                        gain = gmosampsGain[gain_key]
                     else:
                         raise Errors.TableKeyError()
                 else:
-                    if gain_key in getattr(self, "gmosampsGainBefore20060831"):
-                        gain = self.gmosampsGainBefore20060831[gain_key]
+                    if gain_key in gmosampsGainBefore20060831:
+                        gain = gmosampsGainBefore20060831[gain_key]
                     else:
                         raise Errors.TableKeyError()
 
@@ -602,9 +583,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             raise Errors.CorruptDataError()
         
         return ret_gain
-    
-    gmosampsGain = None
-    gmosampsGainBefore20060831 = None
     
     def gain_setting(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
@@ -765,7 +743,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     def nominal_photometric_zeropoint(self, dataset, **args):
         # Look up the nominal zeropoints for a dataset
         # A value per detector is returned
-        table = self.gmoszeropoints
+        table = Lookups.get_lookup_table("Gemini/GMOS/Nominal_Zeropoints",
+                                         "nominal_zeropoints")
         ret_nominal_zeropoint = {}
         for ext in dataset["SCI"]:
             filt = str(ext.filter_name(pretty=True))
@@ -842,6 +821,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_overscan_section
     
     def pixel_scale(self, dataset, **args):
+        # Get the pixel scale lookup table
+        gmosPixelScales = Lookups.get_lookup_table(
+            "Gemini/GMOS/GMOSPixelScale", "gmosPixelScales")
+
         # Get the instrument value, detector type and the binning of the y-axis
         # value using the appropriate descriptors / functions
         # Use as_pytype() for instrument as one cannot use a mutable object
@@ -862,10 +845,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Form the key
         pixel_scale_key = (instrument, detector_type)
         
-        if pixel_scale_key in getattr(self, "gmosPixelScales"):
+        if pixel_scale_key in gmosPixelScales:
             # raw_pixel_scale is a float with units arcseconds per unbinnned
             # pixel
-            raw_pixel_scale = self.gmosPixelScales[pixel_scale_key]
+            raw_pixel_scale = gmosPixelScales[pixel_scale_key]
         else:
             raise Errors.TableKeyError()        
 
@@ -875,8 +858,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
 
         # Return the pixel scale float
         return ret_pixel_scale
-
-    gmosPixelScales = None
 
     def read_noise(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
@@ -903,6 +884,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 ret_read_noise.update({
                     (ext.extname(), ext.extver()):float(read_noise)})
         else:
+            
+            # Get the lookup table containing read noise numbers by amplifier
+            gmosampsRdnoise, gmosampsRdnoiseBefore20060831 = \
+                Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
+                                         "gmosampsRdnoise",
+                                         "gmosampsRdnoiseBefore20060831")
+
             # Get the amplifier integration time (ampinteg) and the UT date
             # from the header of the PHU. The ampinteg keyword is defined in
             # the local key dictionary (stdkeyDictGMOS) but is read from the
@@ -955,14 +943,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                         raise dataset.exception_info
                 read_noise_key = (read_speed_setting, gain_setting, ampname)
                 if obs_ut_date > old_ut_date:
-                    if read_noise_key in getattr(self, "gmosampsRdnoise"):
-                        read_noise = self.gmosampsRdnoise[read_noise_key]
+                    if read_noise_key in gmosampsRdnoise:
+                        read_noise = gmosampsRdnoise[read_noise_key]
                     else:
                         raise Errors.TableKeyError()
                 else:
-                    if read_noise_key in getattr(self,
-                        "gmosampsRdnoiseBefore20060831[read_noise_key]"):
-                        read_noise = self.gmosampsRdnoiseBefore20060831[
+                    if read_noise_key in gmosampsRdnoiseBefore20060831:
+                        read_noise = gmosampsRdnoiseBefore20060831[
                             read_noise_key]
                     else:
                         raise Errors.TableKeyError()
@@ -976,9 +963,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             raise Errors.CorruptDataError()
         
         return ret_read_noise
-    
-    gmosampsRdnoise = None
-    gmosampsRdnoiseBefore20060831 = None
     
     def read_speed_setting(self, dataset, **args):
         # Get the amplifier integration time (ampinteg) from the header of the
@@ -1001,6 +985,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_read_speed_setting
     
     def saturation_level(self, dataset, **args):       
+        # Get the lookup table containing saturation values by amplifier
+        gmosThresholds = Lookups.get_lookup_table(
+            "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
+
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always return a dictionary where the key
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
@@ -1160,9 +1148,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # the table, then correct for binning, units, and bias level
 
                 # Get the base saturation value from the lookup table
-                if ampname in getattr(self, "gmosThresholds"):
+                if ampname in gmosThresholds:
                     # saturation value is an integer  with units ADU
-                    saturation = self.gmosThresholds[ampname]
+                    saturation = gmosThresholds[ampname]
                 else:
                     # This error condition will be hit for all mosaicked
                     # or tiled data
@@ -1196,5 +1184,3 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
 
         # Return the saturation level dictionary
         return ret_saturation_level
-
-    gmosThresholds = None
