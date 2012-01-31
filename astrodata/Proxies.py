@@ -85,8 +85,7 @@ def start_adcc(callerlockfile = None):
         
     
     from time import sleep
-    racefile = ".adcc/racefile.py"
-    
+    racefile = ".adcc/adccinfo.py"
     logdir = ".autologs"
     if not os.path.exists(logdir):
         os.mkdir(logdir)
@@ -118,12 +117,15 @@ def start_adcc(callerlockfile = None):
                             stderr = subprocess.STDOUT #prserr,
                             ).pid
 
-    # wait for adccinfo
-    while not os.path.exists(clfn):
-        # print "P123:waiting for", clfn
-        sleep(1)
+    # wait for adccinfo, unless there is a lockfile, we'll trust it and deal later
+    # with a dead host.
+    if True: # not os.path.exists(racefile):
+        while not os.path.exists(clfn):
+            print "P123:waiting for", clfn, pid
+            sleep(1)
         
-    os.remove(clfn)
+    if os.path.exists(clfn):
+        os.remove(clfn)
     return pid
                                         
 class PRSProxy(object):
@@ -140,12 +142,14 @@ class PRSProxy(object):
     reducecmds = None
     xmlrpcthread = None
     reduce_server = None
-            
+    log = None        
     def __init__(self, reduce_server = None, port = None):
         # retrieving global logger and creating it if None
         global log
         if log==None:
             log = gemLog.getGeminiLog() 
+            if log == None:
+                log = gemLog.createGeminiLog(debug = True) # move to adcc
             
         try:
             if port != None:
@@ -163,9 +167,15 @@ class PRSProxy(object):
         
     @classmethod
     def get_adcc(cls, reduce_server = None, check_once = False):
+        global log
+        if log==None:
+            log = gemLog.getGeminiLog() 
+            print repr(log)+"Adsf"
         # note: the correct ADCC will store it's info in .adcc/adccinfo.py
         racefile = ".adcc/adccinfo.py"
         if not os.path.exists(racefile):
+            if check_once == True:
+                return None
             raise "SYSTEM ERROR: ADCC not found after being started"
         infof = file(racefile)
         infos = infof.read()

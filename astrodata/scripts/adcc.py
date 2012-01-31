@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import exceptions
+
 from optparse import OptionParser
 import os, sys
 import pickle
@@ -45,12 +46,14 @@ from astrodata import AstroData
 parser = OptionParser()
 
 parser.set_description("This is the proxy to PRS functionality, also invoked locally, e.g. for calibration requests.")
-parser.add_option("-i", "--invoked", dest = "invoked", action = "store_true",
+parser.add_option("-i", "--invoked", 
+            dest = "invoked", action = "store_true",
             default = False,
             help = """Used by processes that invoke prsproxy, so that PRS proxy knows
             when to exit. If not present, the prsproxy registers itself and will
             only exit by user control (or by os-level signal).""")
-parser.add_option("--startup-report", dest = "adccsrn", default = None, 
+parser.add_option("--startup-report", 
+            dest = "adccsrn", default = None, 
             help = """Specify a file name for the adcc startup report""")
 parser.add_option("--preload", dest = "preload", action = "store_true",
             default = False,
@@ -98,9 +101,9 @@ def numpy2im(ad):
 def writeADCCSR(filename, vals=None):
     if filename == None:
         print "adcc93: no filename for sr"
-        return
-    else:
-        print "adcc95: startup report going to",filename
+        filename = ".adcc/adccReport"
+        
+    print "adcc95: startup report going to",filename
     sr = open(filename, "w+")
     if vals == None:
         sr.write("ADCC ALREADY RUNNING\n")
@@ -301,14 +304,14 @@ racefile = ".adcc/adccinfo.py"
 clfn = options.adccsrn
 adccdir = getPersistDir()
 if os.path.exists(racefile):
-    print "ADCC263: adcc already has lockfile"
+    print "ADCC307: adcc already has lockfile"
     from astrodata.Proxies import PRSProxy
     adcc = PRSProxy.get_adcc(check_once = True)
     if adcc == None:
-        print "ADCC267: no adcc running, clearing lockfile"
+        print "ADCC311: no adcc running, clearing lockfile"
         os.remove(racefile)
     else:
-        print "ADCC270: adcc instance found running, halting"
+        print "ADCC314: adcc instance found running, halting"
         adcc.unregister()
         writeADCCSR(clfn)
         sys.exit()
@@ -327,6 +330,9 @@ while findingPort:
 vals = { "xmlrpc_port": options.listenport,
         "http_port":options.httpport,
         "pid":os.getpid()}
+
+#print "exit for profiling"
+#sys.exit()
         
 #write racefile and ADCC Startup Report
 ports = file(racefile, "w")

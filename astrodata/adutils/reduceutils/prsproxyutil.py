@@ -1,4 +1,3 @@
-import urllib, urllib2
 
 from astrodata import AstroData
 from astrodata.usercalibrationservice import user_cal_service
@@ -29,6 +28,7 @@ def urljoin(*args):
     return ret
 
 def upload_calibration(filename):
+    import urllib, urllib2
     import httplib, mimetypes
     import os
 
@@ -64,6 +64,7 @@ def upload_calibration(filename):
 
 
 def calibration_search(rq, fullResult = False):
+    import urllib, urllib2
     print "calibration_search" * 6
     from astrodata.FitsStorageFeatures import FitsStorageSetup
     from xmlrpclib import DateTime 
@@ -118,7 +119,7 @@ def calibration_search(rq, fullResult = False):
         calurlmd5 = dom.getElementsByTagName('md5')[0].childNodes[0]
     except exceptions.IndexError:
         print "No url for calibration in response, calibration not found"
-        return None
+        return (None,None)
     #print "prs70:", calurlel.data
     
     #@@TODO: test only 

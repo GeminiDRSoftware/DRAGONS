@@ -5,7 +5,6 @@
 #import hotshot
 #importprof = hotshot.Profile("hotshot_edi_stats")
 #------------------------------------------------------------------------------ 
-
 try:
     #print "reduce IN BRANCH"
     from astrodata.adutils import gemLog
@@ -116,6 +115,12 @@ try:
     import re
 
     from datetime import datetime
+    
+    _show_times = True
+    if _show_times:
+        start_time = datetime.now()
+        print "start time:%s" % start_time
+    
     
     from astrodata.adutils import terminal
     from astrodata.adutils.terminal import TerminalController, ProgressBar 
@@ -475,17 +480,34 @@ try:
 
         return input_files
 
+    #
+    # START ADCC
+    #
     from astrodata import Proxies
     # I think it best to start the adcc always, since it wants the reduceServer I prefer not
     # to provide to every component that wants to use the adcc as an active-library
-    adccpid = Proxies.start_adcc()
-
+    pradcc = datetime.now()
+    if (_show_times):
+        print "from start to start_adcc: %s" % (pradcc-start_time)
+    
+    pprox = Proxies.PRSProxy.get_adcc(check_once = True)
+    if not pprox:
+        adccpid = Proxies.start_adcc()
+    
+    afadcc = datetime.now()
+    if (_show_times):
+        print "time to execute start_adcc: %s %s %s" % (afadcc-pradcc,pradcc, afadcc)
+    
     # launch xmlrpc interface for control and communication
     reduceServer = Proxies.ReduceServer()
     prs = Proxies.PRSProxy.get_adcc(reduce_server=reduceServer)
 
     usePRS = True
 
+    
+    
+    
+    
     # print "r395: usePRS=", usePRS
 
     # called once per substep (every yeild in any primitive when struck)
