@@ -407,7 +407,7 @@ class ReductionContext(dict):
             #if origFlag:
             #    if filename not in self.original_inputs:
             #        self.original_inputs.append(filename)    
-            print "RM393:", repr(self.inputs)
+            #print "RM393:", repr(self.inputs)
        
     def add_rq(self, rq):
         '''
