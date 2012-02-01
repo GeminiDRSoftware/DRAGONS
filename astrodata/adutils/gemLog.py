@@ -258,9 +258,7 @@ class GeminiLogger(object):
             self._debug = True
         elif debug==False:
             self._debug = False
-        self.initializeHandlers()
         self.setConsoleLevel(logLevel)
-        self.finalizeHandlers()
         return self
     
     def logname(self):
