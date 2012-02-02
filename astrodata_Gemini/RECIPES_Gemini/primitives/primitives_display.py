@@ -35,11 +35,12 @@ class DisplayPrimitives(GENERALPrimitives):
         orig_input = adinput
         deepcopied = False
 
-        # Threshold parameter only makes sense for SCI extension;
+        # Threshold and bias parameters only make sense for SCI extension;
         # turn it off for others
         extname = rc["extname"]
         if extname!="SCI" or threshold=="None":
             threshold=None
+            remove_bias=False
         elif threshold=="auto":
             dqext = np.array([ad["DQ"] for ad in adinput])
             mosaic = np.array([((ad.phu_get_key_value(

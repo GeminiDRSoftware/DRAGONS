@@ -898,6 +898,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             sci_data_list = []
             var_data_list = []
             dq_data_list = []
+            mask_data_list = []
             num_ccd = 0
             ext_count = 1
             ampname = {}
@@ -914,6 +915,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 sciext = ad["SCI",i]
                 varext = ad["VAR",i]
                 dqext = ad["DQ",i]
+                maskext = ad["OBJMASK",i]
 
                 this_detx1 = detx1[i-1]
                 this_ccdx1 = ccdx1[i-1]
@@ -937,10 +939,14 @@ class GMOSPrimitives(GEMINIPrimitives):
                                 # to 1 (bad pixel)
                                 dq_data_list.append(
                                     chip_gap.astype(np.int16)+1)
+                            if maskext is not None:
+                                mask_data_list.append(
+                                    chip_gap.astype(np.int16))
                         else:
                             ccd_data[num_ccd] = {"SCI":sci_data_list,
                                                  "VAR":var_data_list,
-                                                 "DQ":dq_data_list}
+                                                 "DQ":dq_data_list,
+                                                 "OBJMASK":mask_data_list}
                             ampname[num_ccd] = amplist
 
                     # Increment CCD number and restart amps per ccd
@@ -954,6 +960,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                             var_data_list.append(varext.data)
                         if dqext is not None:
                             dq_data_list.append(dqext.data)
+                        if maskext is not None:
+                            mask_data_list.append(maskext.data)
 
                         # Keep the name of the amplifier
                         # (for later header updates)
@@ -969,6 +977,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                             var_data_list = [varext.data]
                         if dqext is not None:
                             dq_data_list = [dqext.data]
+                        if maskext is not None:
+                            mask_data_list = [maskext.data]
                         amplist = [amp]
                         # Keep ccdsec and detsec from first extension
                         # of each CCD
@@ -983,6 +993,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                         var_data_list.append(varext.data)
                     if dqext:
                         dq_data_list.append(dqext.data)
+                    if maskext:
+                        mask_data_list.append(maskext.data)
                     
 
                 # If last iteration, store the current data lists
@@ -993,7 +1005,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                 if ext_count==nsciext:
                     ccd_data[key] = {"SCI":sci_data_list,
                                      "VAR":var_data_list,
-                                     "DQ":dq_data_list}
+                                     "DQ":dq_data_list,
+                                     "OBJMASK":mask_data_list}
                     ampname[key] = amplist
 
                 # Keep track of which extensions ended up in
@@ -1066,7 +1079,7 @@ class GMOSPrimitives(GEMINIPrimitives):
 
                     # Get header from reference extension
                     dict = {}
-                    for extname in ["SCI","VAR","DQ"]:
+                    for extname in ["SCI","VAR","DQ","OBJMASK"]:
                         ext = ad[extname,refextn]
                         if ext is not None:
                             header = ext.header
@@ -1096,7 +1109,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                     num_ccd = 1
                 nextend = 0
                 for ccd in range(1,num_ccd+1):
-                    for extname in ["SCI","DQ","VAR"]:
+                    for extname in ["SCI","DQ","VAR","OBJMASK"]:
                         if (extname in ccd_data[ccd] and 
                             len(ccd_data[ccd][extname])>0):
                             data = np.hstack(ccd_data[ccd][extname])
@@ -1118,7 +1131,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                     extver = ext.extver()
 
                     # Update AMPNAME
-                    if extname!="DQ":
+                    if extname=="SCI" or extname=="VAR":
                         new_ampname = ",".join(ampname[extver])
 
                         # These ampnames can be long, so truncate
