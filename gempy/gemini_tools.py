@@ -1156,10 +1156,11 @@ def trim_to_data_section(adinput=None):
 
             for sciext in ad["SCI"]:
                 
-                # Get matching VAR and DQ planes if present
+                # Get matching VAR, DQ, OBJMASK planes if present
                 extver = sciext.extver()
                 varext = ad["VAR",extver]
                 dqext = ad["DQ",extver]
+                objmask = ad["OBJMASK",extver]
                 
                 # Get the data section from the descriptor
                 try:
@@ -1230,40 +1231,31 @@ def trim_to_data_section(adinput=None):
                 sciext.set_key_value("CRPIX2",crpix2,
                                      comment=keyword_comments["CRPIX2"])
 
-                # If VAR and DQ planes present, update them to match
-                if varext is not None:
-                    varext.data=varext.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
-                    varext.set_key_value("NAXIS1",dsl[1]-dsl[0],
-                                         comment=keyword_comments["NAXIS1"])
-                    varext.set_key_value("NAXIS2",dsl[3]-dsl[2],
-                                         comment=keyword_comments["NAXIS2"])
-                    varext.set_key_value(ds_kw,newDataSecStr,
-                                         comment=keyword_comments[ds_kw])
-                    varext.set_key_value("TRIMSEC", datasecStr, 
-                                         comment=keyword_comments["TRIMSEC"])
-                    varext.set_key_value("CRPIX1",crpix1,
-                                         comment=keyword_comments["CRPIX1"])
-                    varext.set_key_value("CRPIX2",crpix2,
-                                         comment=keyword_comments["CRPIX2"])
-                
-                if dqext is not None:
-                    # gireduce DQ planes do not include
-                    # overscan region, so don't trim DQ if it
-                    # already matches the science
-                    if dqext.data.shape!=sciext.data.shape:
-                        dqext.data=dqext.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
-                    dqext.set_key_value("NAXIS1",dsl[1]-dsl[0],
-                                        comment=keyword_comments["NAXIS1"])
-                    dqext.set_key_value("NAXIS2",dsl[3]-dsl[2],
-                                        comment=keyword_comments["NAXIS2"])
-                    dqext.set_key_value(ds_kw,newDataSecStr,
-                                        comment=keyword_comments[ds_kw])
-                    dqext.set_key_value("TRIMSEC", datasecStr, 
-                                        comment=keyword_comments["TRIMSEC"])
-                    dqext.set_key_value("CRPIX1",crpix1,
-                                        comment=keyword_comments["CRPIX1"])
-                    dqext.set_key_value("CRPIX2",crpix2,
-                                        comment=keyword_comments["CRPIX2"])
+                # If other planes are present, update them to match
+                for ext in [dqext, varext, objmask]:
+                    if ext is not None:
+                        # Check that ext does not already match the science
+                        # (eg. gireduce DQ planes)
+                        if ext.data.shape!=sciext.data.shape:
+                            # Trim the data
+                            ext.data=ext.data[dsl[2]:dsl[3],dsl[0]:dsl[1]]
+                            # Set NAXIS keywords
+                            ext.set_key_value("NAXIS1",dsl[1]-dsl[0],
+                                          comment=keyword_comments["NAXIS1"])
+                            ext.set_key_value("NAXIS2",dsl[3]-dsl[2],
+                                          comment=keyword_comments["NAXIS2"])
+                            # Skip the rest for object masks
+                            if ext.extname() in ["VAR","DQ"]:
+                                # Set section keywords
+                                ext.set_key_value(ds_kw,newDataSecStr,
+                                            comment=keyword_comments[ds_kw])
+                                ext.set_key_value("TRIMSEC", datasecStr, 
+                                            comment=keyword_comments["TRIMSEC"])
+                                # Set WCS keywords
+                                ext.set_key_value("CRPIX1",crpix1,
+                                            comment=keyword_comments["CRPIX1"])
+                                ext.set_key_value("CRPIX2",crpix2,
+                                            comment=keyword_comments["CRPIX2"])
 
             adoutput_list.append(ad)
 
