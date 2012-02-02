@@ -116,7 +116,8 @@ try:
 
     from datetime import datetime
     
-    _show_times = True
+    #_show_times = True
+    _show_times = False
     if _show_times:
         start_time = datetime.now()
         print "start time:%s" % start_time

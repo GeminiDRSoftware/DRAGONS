@@ -121,7 +121,7 @@ def start_adcc(callerlockfile = None):
     # with a dead host.
     if True: # not os.path.exists(racefile):
         while not os.path.exists(clfn):
-            print "P123:waiting for", clfn, pid
+            #print "P123:waiting for", clfn, pid
             sleep(1)
         
     if os.path.exists(clfn):
@@ -170,7 +170,7 @@ class PRSProxy(object):
         global log
         if log==None:
             log = gemLog.getGeminiLog() 
-            print repr(log)+"Adsf"
+            #print repr(log)+"Adsf"
         # note: the correct ADCC will store it's info in .adcc/adccinfo.py
         racefile = ".adcc/adccinfo.py"
         if not os.path.exists(racefile):
