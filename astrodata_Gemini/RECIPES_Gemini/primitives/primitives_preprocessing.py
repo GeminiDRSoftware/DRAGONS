@@ -95,6 +95,59 @@ class PreprocessingPrimitives(GENERALPrimitives):
         
         yield rc
     
+    def applyObjectMask(self, rc):
+        """
+        This primitive combines the object mask in a OBJMASK extension
+        into the DQ plane
+        """
+        
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "applyObjectMask", "starting"))
+        
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["applyObjectMask"]
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+        
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+            
+            for sciext in ad["SCI"]:
+                extver = sciext.extver()
+                dqext = ad["DQ",extver]
+                mask = ad["OBJMASK",extver]
+                if mask is None:
+                    log.warning("No object mask present for "\
+                                    "%s[SCI,%d]; "\
+                                    "cannot apply object mask" %
+                                (ad.filename,extver))
+                else:
+                    if dqext is not None:
+                        ad["DQ",extver].data = dqext.data | mask.data
+                    else:
+                        dqext = deepcopy(mask)
+                        dqext.rename_ext("DQ",extver)
+                        ad.append(dqext)
+
+            # Change the filename
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
+            
+            # Append the output AstroData object to the list 
+            # of output AstroData objects
+            adoutput_list.append(ad)
+        
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+        
+        yield rc
+    
     def correctBackgroundToReferenceImage(self, rc):
         """
         This primitive does an additive correction to a set
@@ -123,6 +176,9 @@ class PreprocessingPrimitives(GENERALPrimitives):
         # Get the number of science extensions in each file
         next = np.array([ad.count_exts("SCI") for ad in adinput])
 
+        # Check whether we are scaling to zero or to 1st image
+        remove_zero_level = rc["remove_zero_level"]
+
         # Initialize reference BG
         ref_bg = None
 
@@ -147,7 +203,12 @@ class PreprocessingPrimitives(GENERALPrimitives):
                            for ad in adinput for sciext in ad["SCI"]]
             if None in bg_list:
                 log.fullinfo("SKYLEVEL not found, measuring background")
-                rc.run("measureBG(separate_ext=True)")
+                if rc["logLevel"]=="stdinfo":
+                    log.changeLevels(logLevel="status")
+                    rc.run("measureBG(separate_ext=True,remove_bias=False)")
+                    log.changeLevels(logLevel=rc["logLevel"])
+                else:
+                    rc.run("measureBG(separate_ext=True,remove_bias=False)")
 
             # Loop over input files
             for ad in adinput:
@@ -172,7 +233,14 @@ class PreprocessingPrimitives(GENERALPrimitives):
                     log.fullinfo("Background level is %.0f for %s" %
                                  (bg, ad.filename))
                     if ref_bg is None:
-                        ref_bg_dict[(sciext.extname(),sciext.extver())]=bg
+                        if remove_zero_level:
+                            log.fullinfo("Subtracting %.0f to remove " \
+                                         "zero level from reference image" %
+                                         bg)
+                            sciext.sub(bg)
+                            ref_bg_dict[(sciext.extname(),sciext.extver())]=0
+                        else:
+                            ref_bg_dict[(sciext.extname(),sciext.extver())]=bg
                     else:
                         ref = ref_bg[(sciext.extname(),sciext.extver())]
                         difference = ref - bg
@@ -181,8 +249,8 @@ class PreprocessingPrimitives(GENERALPrimitives):
                                      (difference,ref))
                         sciext.add(difference)
                         sciext.set_key_value(
-                            "SKYLEVEL",bg+difference,
-                            comment=self.keyword_comments["SKYLEVEL"])
+                            "SKYLEVEL",bg+difference,     
+                       comment=self.keyword_comments["SKYLEVEL"])
 
                 # Store background level of first image
                 if ref_bg is None and ref_bg_dict:

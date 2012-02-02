@@ -120,6 +120,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "applyObjectMask":{
+    "suffix":{
+        "default"       : "_objectMaskApplied",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "compareToReferenceSources":{
     "suffix":{
         "default"       : "_referencesCompared",
@@ -184,6 +193,13 @@
     "suffix":{
         "default"       : "_backgroundCorrected",
         "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "remove_zero_level":{
+        "default"       : False,
+        "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
@@ -393,6 +409,13 @@
     "suffix":{
         "default"       : "_bgMeasured",
         "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "remove_bias":{
+        "default"       : True,
+        "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",

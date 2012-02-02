@@ -374,20 +374,11 @@ class PhotometryPrimitives(GENERALPrimitives):
                     method="daofind"
                 else:
                     try:
-                        result = _sextractor(ad, seeing_est)
+                        ad = _sextractor(ad, seeing_est)
                     except Errors.ScienceError:
                         log.warning("SExtractor failed. "\
                                     "Setting method=daofind")
                         method="daofind"
-                    else:
-                        for sciext in ad["SCI"]:
-                            extver = sciext.extver()
-                            columns = result[("SCI",extver)]
-                            if columns:
-                                # Add OBJCAT
-                                ad = gt.add_objcat(
-                                    adinput=ad, extver=extver, 
-                                    replace=True, columns=columns)[0]
                 
             if method=="daofind":
                 try:
@@ -467,7 +458,6 @@ class PhotometryPrimitives(GENERALPrimitives):
                     centroid_function=centroid_function,
                     seeing_estimate=seeing_est)
 
-            
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
@@ -1128,7 +1118,8 @@ def _sextractor(ad=None,seeing_estimate=None):
                 dd[key] = default_file
     
         # Temporary output name for this extension
-        outtmpfn = "%sSCI%dOUT" % (tmpfn, extver)
+        outtmpfn = "%sSCI%dtab.fits" % (tmpfn.rstrip(".fits"), extver)
+        objtmpfn  ="%sSCI%dimg.fits" % (tmpfn.rstrip(".fits"), extver)
 
         # if no seeing estimate provided, run sextractor once with
         # default, then re-run to get proper stellar classification
@@ -1149,7 +1140,10 @@ def _sextractor(ad=None,seeing_estimate=None):
                           "-CATALOG_NAME",outtmpfn,
                           "-PARAMETERS_NAME",dd["param"],
                           "-FILTER_NAME",dd["conv"],
-                          "-STARNNW_NAME",dd["nnw"],]
+                          "-STARNNW_NAME",dd["nnw"],
+                          "-CHECKIMAGE_NAME",objtmpfn,
+                          "-CHECKIMAGE_TYPE","OBJECTS",
+                          ]
             else:
                 # run with provided seeing estimate
                 sx_cmd = ["sex",
@@ -1161,6 +1155,8 @@ def _sextractor(ad=None,seeing_estimate=None):
                           "-FILTER_NAME",dd["conv"],
                           "-STARNNW_NAME",dd["nnw"],
                           "-SEEING_FWHM","%f" % seeing_estimate,
+                          "-CHECKIMAGE_NAME",objtmpfn,
+                          "-CHECKIMAGE_TYPE","OBJECTS",
                           ]
 
             log.fullinfo("Calling SExtractor on [SCI,%d] with "\
@@ -1181,11 +1177,10 @@ def _sextractor(ad=None,seeing_estimate=None):
             tdata = hdulist[1].data
             tcols = hdulist[1].columns
 
-            # If sextractor returned no data, remove files and return an
-            # empty list
+            # If sextractor returned no data, don't bother with the
+            # next iteration
             if tdata is None:
                 problem = True
-                result[dict_key]={}
                 log.stdinfo("No sources found in %s[SCI,%d]" %
                             (ad.filename,extver))
                 break
@@ -1232,10 +1227,30 @@ def _sextractor(ad=None,seeing_estimate=None):
             log.stdinfo("Found %d sources in %s[SCI,%d]" %
                         (nobj,ad.filename,extver))
 
+            # Add OBJCAT
+            ad = gt.add_objcat(adinput=ad, extver=extver, 
+                               replace=True, columns=columns)[0]
+
+            # Read in object mask
+            mask_hdu = pf.open(objtmpfn)[0]
+            mask_hdu.header.add_comment("Object mask created by SExtractor.")
+            mask_hdu.header.add_comment("0 indicates no object, 1 "\
+                                        "indicates object")
+            mask_ad = AstroData(mask_hdu)
+            mask_ad.rename_ext("OBJMASK",extver)
+            mask_ad.data = np.where(mask_ad.data>0,1,0).astype(np.int16)
+
+            # Remove old object mask if it exists 
+            # (ie. this is a re-run of detectSources)
+            old_mask = ad["OBJMASK",extver]
+            if old_mask is not None:
+                ad.remove(("OBJMASK",extver))
+            ad.append(mask_ad)
+            os.remove(objtmpfn)
 
     log.fullinfo("Removing temporary file from disk: %s" % tmpfn)
     os.remove(tmpfn)
-    return result
+    return ad
 
 def _test_sextractor_version():
     """

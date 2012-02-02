@@ -13,9 +13,9 @@ biasCorrect
 aduToElectrons
 addVAR(poisson_noise=True)
 flatCorrect
+mosaicDetectors
 makeFringe
 fringeCorrect
-mosaicDetectors
 detectSources
 measureIQ
 measureBG

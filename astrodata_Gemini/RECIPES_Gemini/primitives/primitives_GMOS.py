@@ -705,9 +705,12 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Get overscan_section parameter from the RC
             overscan_section = rc["overscan_section"]
 
-            # Save VAR and DQ extensions
+            # Save VAR, DQ, OBJCAT, REFCAT, OBJMASK extensions
             var_ext = ad["VAR"]
             dq_ext = ad["DQ"]
+            objcat = ad["OBJCAT"]
+            refcat = ad["REFCAT"]
+            objmask = ad["OBJMASK"]
             
             # Prepare input files, lists, parameters... for input to 
             # the CL script
@@ -775,12 +778,18 @@ class GMOSPrimitives(GEMINIPrimitives):
             imageOuts, refOuts, arrayOuts = clm.finishCL() 
             ad = imageOuts[0]
 
-            # Restore VAR/DQ planes; no additional propagation 
+            # Restore non-SCI planes; no additional propagation 
             # should be needed
             if dq_ext is not None:
                 ad.append(dq_ext)
             if var_ext is not None:
                 ad.append(var_ext)
+            if objcat is not None:
+                ad.append(objcat)
+            if refcat is not None:
+                ad.append(refcat)
+            if objmask is not None:
+                ad.append(objmask)
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)

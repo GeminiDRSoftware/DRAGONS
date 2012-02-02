@@ -10,6 +10,7 @@ timestamp_keys = {
     "addVAR": "ADDVAR",
     "aduToElectrons": "ADUTOELE",
     "alignToReferenceImage": "ALIGN",
+    "applyObjectMask": "APOBJMSK",
     "correctBackgroundToReferenceImage": "CORRBG",
     "correctWCSToReferenceImage": "CORWCSIM",
     "cut_slits": "CUTSLITS",

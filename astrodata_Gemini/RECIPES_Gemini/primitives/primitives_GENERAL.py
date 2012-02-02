@@ -130,23 +130,35 @@ class GENERALPrimitives(PrimitiveSet):
         else:
             stream = "main"
         prefix = rc["prefix"];
-        
+        do_deepcopy = rc["deepcopy"]
+        if do_deepcopy is None:
+            do_deepcopy = True
+
         if "by_token" in rc:
             bt = rc["by_token"]
             for ar in rc.inputs:
                 if bt in ar.filename:
                     rc.report_output(ar.ad, stream = stream)
-            # print "pG110:",repr(rc.outputs)
+            #print "pG110:",repr(rc.outputs)
         else:
             inputs = rc.get_inputs_as_astrodata()
-                
-            log.fullinfo("Reporting Output: "+ \
-                         ", ".join([ ad.filename for ad in inputs]))
-            if prefix:
-                for inp in inputs:
-                    inp.filename = os.path.join(
+            inputs_copy = []
+            for ad in inputs:
+                if do_deepcopy:
+                    from copy import deepcopy
+                    ad_copy = deepcopy(ad)
+                else:
+                    ad_copy = ad
+                if prefix:
+                    ad_copy.filename = os.path.join(
                                         prefix+os.path.basename(ad.filename))
-            rc.report_output(inputs, stream = stream, )
+                else:
+                    ad_copy.filename = ad.filename
+                inputs_copy.append(ad_copy)
+
+            log.fullinfo("Reporting Output: "+ \
+                             ", ".join([ ad.filename for ad in inputs_copy]))
+            rc.report_output(inputs_copy, stream = stream, )
         
         yield rc
     forwardStream = forwardInput

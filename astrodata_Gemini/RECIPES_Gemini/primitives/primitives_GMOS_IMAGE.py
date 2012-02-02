@@ -117,7 +117,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                   logLevel=rc["logLevel"])
 
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "fringeCorrectFromScience", 
+        log.debug(gt.log_message("primitive", "makeFringe", 
                                  "starting"))
 
         # Get input, initialize output
@@ -171,6 +171,9 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         enough = False
         if red and long_exposure:
 
+            # Detect sources to get an object mask
+            rc.run("detectSources")
+
             # Add the current frame to a list
             rc.run("addToList(purpose=forFringe)")
 
@@ -207,19 +210,14 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
 
         if enough:
 
+            # Forward the science input to the fringe stream
+            rc.run("forwardInput(to_stream=fringe)")
+
             # Call the makeFringeFrame primitive
-            rc.run("makeFringeFrame")
+            rc.run("makeFringeFrame(stream=fringe)")
 
             # Store the generated fringe
-            rc.run("storeProcessedFringe")
-
-            # Report the fringe to the "fringe" stream
-            # This is because the calibration system has a potential latency
-            # between storage and retrieval; sending the file to a stream
-            # ensures that will be available to the fringeCorrect
-            # primitive if it is called immediately after makeFringe
-            fringe_frame = rc.get_inputs_as_astrodata()
-            rc.report_output(fringe_frame,stream="fringe")
+            rc.run("storeProcessedFringe(stream=fringe)")
 
             # Get the list of science frames back into the main stream
             adoutput_list = adinput
@@ -230,7 +228,45 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         rc.report_output(adoutput_list)
         yield rc
 
-    def makeFringeFrame(self, rc):
+    def makeFringeFrame(self,rc):
+
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "makeFringeFrame", 
+                                 "starting"))
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Check for at least 3 input frames
+        adinput = rc.get_inputs_as_astrodata()
+        if len(adinput)<3:
+            log.stdinfo('Fewer than 3 frames provided as input. ' +
+                        'Not making fringe frame.')
+            adoutput_list = adinput
+
+            # Report the list of output AstroData objects to the reduction
+            # context
+            rc.report_output(adoutput_list)
+        
+        else:
+            if len(adinput)<5:
+                operation = "average"
+            else:
+                operation = "median"
+
+            rc.run("correctBackgroundToReferenceImage"\
+                       "(remove_zero_level=True)")
+            rc.run("applyObjectMask")
+            rc.run("stackFrames(operation=%s)" % operation)
+
+        yield rc
+
+
+    def makeFringeFrameIRAF(self, rc):
         """
         This primitive makes a fringe frame by masking out sources
         in the science frames and stacking them together. It calls 
@@ -621,15 +657,24 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
 
                         # Get the next extension in physical order
                         sciext = statsad["SCI",sci_info["amps_order"][i]]
-                        dqext = statsad["DQ",sci_info["amps_order"][i]]
                         frngext = statsfringe["SCI",frng_info["amps_order"][i]]
 
                         # Check to see if it is on CCD2; if so, keep it
                         if sci_info[
                             "array_number"][("SCI",sciext.extver())]==2:
+
                             scidata.append(sciext.data)
-                            if dqext is not None:
+
+                            dqext = statsad["DQ",sci_info["amps_order"][i]]
+                            maskext = statsad["OBJMASK",
+                                              sci_info["amps_order"][i]]
+                            if dqext is not None and maskext is not None:
+                                dqdata.append(dqext.data | maskext.data)
+                            elif dqext is not None:
                                 dqdata.append(dqext.data)
+                            elif maskext is not None:
+                                dqdata.append(maskext.data)
+
                         if frng_info[
                             "array_number"][("SCI",frngext.extver())]==2:
                             frngdata.append(frngext.data)
@@ -652,26 +697,22 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     scidata = statsad["SCI"].data
                     frngdata = statsfringe["SCI"].data
 
-                    dqdata = statsad["DQ"]
-                    if dqdata is not None:
-                        dqdata = dqdata.data
+                    dqext = statsad["DQ"]
+                    maskext = statsad["OBJMASK"]
+                    if dqext is not None and maskext is not None:
+                        dqdata = dqext.data | maskext.data
+                    elif dqext is not None:
+                        dqdata = dqext.data
+                    elif maskext is not None:
+                        dqdata = maskext.data
+                    else:
+                        dqdata = None
 
-                # Get median and standard deviation
                 if dqdata is not None:
+                    # Replace any DQ-flagged data with the median value
                     smed = np.median(scidata[dqdata==0])
-                    sstd = scidata[dqdata==0].std()
-                else:                    
-                    smed = np.median(scidata) 
-                    sstd = scidata.std()
-                                      
-                # Aggressively remove any possible sources from the frame
-                # and replace them with the median value
-                smiddle = np.where(scidata>(smed+(0.1*sstd)),smed,scidata)
+                    scidata = np.where(dqdata!=0,smed,scidata)
 
-                # Replace any DQ-flagged data with the median value
-                if dqdata is not None:
-                    smiddle = np.where(dqdata!=0,smed,smiddle)
-                    
                 # Calculate the maximum and minimum in a box centered on 
                 # each data point.  The local depth of the fringe is
                 # max - min.  The overall fringe strength is the median
@@ -689,8 +730,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 # Use ndimage maximum_filter and minimum_filter to
                 # get the local maxima and minima
                 import scipy.ndimage as ndimage
-                sci_max = ndimage.filters.maximum_filter(smiddle,size)
-                sci_min = ndimage.filters.minimum_filter(smiddle,size)
+                sci_max = ndimage.filters.maximum_filter(scidata,size)
+                sci_min = ndimage.filters.minimum_filter(scidata,size)
 
 
                 # Take off 5% of the width as a border
@@ -718,7 +759,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 # at least in the right ballpark, unlike the estimation
                 # used in girmfringe (masked_sci.std/fringe.std)
                 scale = sci_df / frn_df
-        
+
             log.fullinfo("Scale factor found = "+str(scale))
                 
             # Use mult from the arith toolbox to perform the scaling of 
@@ -915,7 +956,10 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "storeProcessedFringe",
                                  "starting"))
-        
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
@@ -933,9 +977,15 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             
             # Refresh the AD types to reflect new processed status
             ad.refresh_types()
+            
+            adoutput_list.append(ad)
         
         # Upload to cal system
         rc.run("storeCalibration")
         
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+
         yield rc
     

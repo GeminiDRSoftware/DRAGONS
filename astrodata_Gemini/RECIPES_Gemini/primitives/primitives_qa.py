@@ -52,26 +52,30 @@ class QAPrimitives(GENERALPrimitives):
             separate_ext = rc["separate_ext"]
 
             # If bias is still present, it should be subtracted
-            # out of the sky level number
+            # out of the sky level number, unless user specifies not to
+            remove_bias = rc["remove_bias"]
+            if remove_bias:
+                
+                # Check whether data has been bias- or dark-subtracted
+                biasim = ad.phu_get_key_value("BIASIM")
+                darkim = ad.phu_get_key_value("DARKIM")
 
-            # Check whether data has been bias- or dark-subtracted
-            biasim = ad.phu_get_key_value("BIASIM")
-            darkim = ad.phu_get_key_value("DARKIM")
-
-            # Check whether data has been overscan-subtracted
-            overscan = np.array([ext.get_key_value("OVERSCAN") 
-                                 for ext in ad["SCI"]])
-            if np.any(overscan) or biasim or darkim:
-                bias_level = None
-            else:
-                # Try to get the bias level from the descriptor
-                try:
-                    bias_level = ad.bias_level().dict_val
-                except:
-                    log.warning("Bias level not found for %s; " \
-                                "approximate bias will not be removed " \
-                                "from the sky level" % ad.filename)
+                # Check whether data has been overscan-subtracted
+                overscan = np.array([ext.get_key_value("OVERSCAN") 
+                                     for ext in ad["SCI"]])
+                if np.any(overscan) or biasim or darkim:
                     bias_level = None
+                else:
+                    # Try to get the bias level from the descriptor
+                    try:
+                        bias_level = ad.bias_level().dict_val
+                    except:
+                        log.warning("Bias level not found for %s; " \
+                                    "approximate bias will not be removed " \
+                                    "from the sky level" % ad.filename)
+                        bias_level = None
+            else:
+                bias_level = None
 
             # Get the filter name and the corresponding BG band definition
             # and the requested band
@@ -162,6 +166,7 @@ class QAPrimitives(GENERALPrimitives):
                     sci_std = np.std(scidata)
 
                 log.fullinfo("Raw BG level = %f" % sci_bg)
+
                 # Subtract bias level from BG number
                 if bias_level is not None:
                     sci_bg -= bias_level[(sciext.extname(),sciext.extver())]
