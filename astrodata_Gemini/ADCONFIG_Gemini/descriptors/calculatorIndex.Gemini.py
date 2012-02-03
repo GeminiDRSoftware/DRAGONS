@@ -29,4 +29,5 @@ calculatorIndex = {
     "OSCIR":"GEMINI_Descriptor.GEMINI_DescriptorCalc()",
     "HOKUPAAQUIRC":"GEMINI_Descriptor.GEMINI_DescriptorCalc()",
     "HRWFS":"GEMINI_Descriptor.GEMINI_DescriptorCalc()",
+    "GSAOI":"GEMINI_Descriptor.GEMINI_DescriptorCalc()",
     }
