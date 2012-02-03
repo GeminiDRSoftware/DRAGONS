@@ -736,7 +736,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
 
         # Get and validate the ut time header, if present. We try several
         # header keywords that might contain a ut time.
-        for kw in [self.get_descriptor_key("key_ut_time"), "UT", "TIME-OBS", "STARTUT"]:
+        for kw in [self.get_descriptor_key("key_ut_time"), "UT", "TIME-OBS", "STARTUT", "UTSTART"]:
             try:
                 uttime_hdr = dataset.phu_get_key_value(kw).strip()
             except (KeyError, AttributeError):
