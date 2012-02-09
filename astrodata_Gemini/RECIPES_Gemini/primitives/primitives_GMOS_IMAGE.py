@@ -39,17 +39,13 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             # Test the filter to see if we need to fringeCorrect at all
             filter = ad.filter_name(pretty=True)
             exposure = ad.exposure_time()
-            if filter not in ['i','z']:
+            if filter not in ["i","z","Z","Y"]:
                 log.stdinfo("No fringe correction necessary for filter " +
                             filter)
                 break
-            elif exposure<60.0 and filter=="i":
-                log.stdinfo("No fringe necessary for filter " +
-                            filter + " with exposure time %.1fs" % exposure)
-                break
-            elif exposure<6.0 and filter=="z":
-                log.stdinfo("No fringe necessary for filter " +
-                            filter + " with exposure time %.1fs" % exposure)
+            elif exposure<60.0:
+                log.stdinfo("No fringe necessary with exposure time %.1fs" %
+                            exposure)
                 break
             else:
                 rm_fringe = True
@@ -124,13 +120,14 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         orig_input = rc.get_inputs_as_astrodata()
         adoutput_list = []
 
-        # Check that filter is either i or z; this step doesn't
+        # Check that filter is i, z, Z, or Y; this step doesn't
         # help data taken in other filters
         # Also check that exposure time is not too short;
         # there isn't much fringing for the shortest exposure times
         red = True
         long_exposure = True
         all_filter = None
+        tel = [ad.telescope().as_pytype() for ad in orig_input]
         for ad in orig_input:
             filter = ad.filter_name(pretty=True)
             exposure = ad.exposure_time()
@@ -147,32 +144,65 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 break
 
             # Check for red filters
-            if filter not in ["i","z"]:
+            if filter not in ["i","z","Z","Y"]:
                 red = False
                 log.stdinfo("No fringe necessary for filter " +
                             filter)
                 adoutput_list = orig_input
                 break
+            elif filter=="i" and "Gemini-North" in tel:
+                if "qa" in rc.context:
+                    red = False
+                    log.stdinfo("No fringe necessary for filter " +
+                                filter + " with GMOS-N")
+                    adoutput_list = orig_input
+                    break
+                else:
+                    # Allow it in the science case, but warn that it
+                    # may not be helpful.
+                    log.warning("Data uses filter " + filter +
+                                "with GMOS-N. Fringe " +
+                                "frame generation is not recommended.")
 
             # Check for long exposure times
-            if exposure<60.0 and filter=="i":
+            if exposure<60.0:
                 long_exposure=False
-                log.stdinfo("No fringe necessary for filter " +
-                            filter + " with exposure time %.1fs" % exposure)
-                adoutput_list = orig_input
-                break
-            elif exposure<6.0 and filter=="z":
-                long_exposure=False
-                log.stdinfo("No fringe necessary for filter " +
-                            filter + " with exposure time %.1fs" % exposure)
+                log.stdinfo("No fringe necessary with exposure time %.1fs" %
+                            exposure)
                 adoutput_list = orig_input
                 break
 
         enough = False
         if red and long_exposure:
+            # Fringing on Cerro Pachon is generally stronger than
+            # on Mauna Kea. A sextractor mask alone is usually
+            # sufficient for GN data, but GS data needs to be median-
+            # subtracted to distinguish fringes from objects
+            sub_med = rc["subtract_median_image"]
+            if sub_med is None:
+                if "Gemini-South" in tel:
+                    sub_med = True
+                else:
+                    sub_med = False
 
-            # Detect sources to get an object mask
-            rc.run("detectSources")
+            if not sub_med:
+                # Detect sources to get an object mask
+                # Do it before the list for efficiency in
+                # the case where it's possible
+                rc.run("detectSources")
+
+            # Measure BG levels (for zero-level removal, later)
+            # This is done before the addToList so that it
+            # doesn't have to be repeated on all frames later
+            if rc["logLevel"]=="stdinfo":
+                # Turn down logging from measureBG - no need
+                # to see the numbers in the console at this
+                # point in processing
+                log.changeLevels(logLevel="status")
+                rc.run("measureBG(separate_ext=True,remove_bias=False)")
+                log.changeLevels(logLevel=rc["logLevel"])
+            else:
+                rc.run("measureBG(separate_ext=True,remove_bias=False)")
 
             # Add the current frame to a list
             rc.run("addToList(purpose=forFringe)")
@@ -192,20 +222,20 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                             "Not making fringe frame.")
                 adoutput_list = orig_input
 
-            elif filter=="i" and len(adinput)<5:
+            elif "Gemini-North" in tel and len(adinput)<5:
                 if "qa" in rc.context:
                     # If fewer than 5 frames and in QA context, don't
                     # bother making a fringe -- it'll just make the data
                     # look worse.
                     enough = False
                     log.stdinfo("Fewer than 5 frames provided as input " +
-                                "with filter i. Not making fringe frame.")
+                                "for GMOS-N data. Not making fringe frame.")
                     adoutput_list = orig_input
                 else:
                     # Allow it in the science case, but warn that it
                     # may not be helpful.
                     log.warning("Fewer than 5 frames " +
-                                "provided as input with filter i. Fringe " +
+                                "provided as input for GMOS-N data. Fringe " +
                                 "frame generation is not recommended.")
 
         if enough:
@@ -214,7 +244,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             rc.run("forwardInput(to_stream=fringe)")
 
             # Call the makeFringeFrame primitive
-            rc.run("makeFringeFrame(stream=fringe)")
+            rc.run("makeFringeFrame(stream=fringe,subtract_median_image=%s)" %
+                   str(sub_med))
 
             # Store the generated fringe
             rc.run("storeProcessedFringe(stream=fringe)")
@@ -222,9 +253,9 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             # Get the list of science frames back into the main stream
             adoutput_list = adinput
 
-        # Report files back to the reduction context: if all went well,
-        # these are the fringe-corrected frames.  If fringe generation/
-        # correction did not happen, these are the original inputs
+        # Report files back to the reduction context: if no fringe
+        # is needed, this is the original input file. If fringe
+        # processing is needed, this is the list of associated inputs.
         rc.report_output(adoutput_list)
         yield rc
 
@@ -253,15 +284,53 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             rc.report_output(adoutput_list)
         
         else:
-            if len(adinput)<5:
-                operation = "average"
-            else:
-                operation = "median"
-
             rc.run("correctBackgroundToReferenceImage"\
                        "(remove_zero_level=True)")
+
+            # If needed, do a rough median on all frames, subtract,
+            # and then redetect to help distinguish sources from fringes
+            sub_med = rc["subtract_median_image"]
+            if sub_med:
+                adinput = rc.get_inputs_as_astrodata()
+
+                # Get data by science extension
+                data = {}
+                for ad in adinput:
+                    for sciext in ad["SCI"]:
+                        key = (sciext.extname(),sciext.extver())
+                        if data.has_key(key):
+                            data[key].append(sciext.data)
+                        else:
+                            data[key] = [sciext.data]
+
+
+                # Make a median image for each extension
+                import pyfits as pf
+                median_ad = AstroData()
+                median_ad.filename = gt.filename_updater(
+                    adinput=adinput[0], suffix="_stack_median", strip=True)
+                for key in data:
+                    med_data = np.median(np.dstack(data[key]),axis=2)
+                    hdr = pf.Header()
+                    ext = AstroData(data=med_data, header=hdr)
+                    ext.rename_ext(key)
+                    median_ad.append(ext)
+
+                # Subtract the median image
+                rc["value"] = median_ad
+                rc.run("subtractFromInput")
+
+                # Redetect to get a good object mask
+                rc.run("detectSources")
+
+                # Add the median image back in to the input
+                rc.run("addToInput")
+
+            # Add the object mask into the DQ plane
             rc.run("applyObjectMask")
-            rc.run("stackFrames(operation=%s)" % operation)
+            
+            # Stack frames with masking from DQ plane
+            rc.run("stackFrames(operation=%s)" % rc["operation"])
 
         yield rc
 
@@ -721,10 +790,10 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 # Width of the box is binning and
                 # filter dependent, determined by experimentation
                 # Results don't seem to depend heavily on the box size
-                if ad.filter_name(pretty=True).as_pytype=="z":
-                    size = 40
-                else:
+                if ad.filter_name(pretty=True).as_pytype=="i":
                     size = 20
+                else:
+                    size = 40
                 size /= ad.detector_x_bin().as_pytype()
                 
                 # Use ndimage maximum_filter and minimum_filter to

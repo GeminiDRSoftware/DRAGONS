@@ -1,4 +1,5 @@
 import os
+from astrodata import AstroData
 from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.ReductionObjects import PrimitiveSet
@@ -221,40 +222,223 @@ class GENERALPrimitives(PrimitiveSet):
         
         yield rc
 
-    def callerTest(self, rc):
-        rc.run("addToList(purpose=forFringe)")
-        from astrodata import IDFactory 
-        rc.run("getList(purpose=forFringe)")
-        fs = rc.get_inputs_as_astrodata()
-        print "p203:", repr(fs)
-        print "p204:", repr(rc.inputs)
-        print "p205:", repr(rc.outputs)
+    def addToInput(self,rc):
+        # This is a bare-bones primitive interface to the ad add
+        # function from the arith module.  The number, dictionary,
+        # or AD instance to be added to the input is stored in
+        # rc["value"]
 
-        adinput = fs
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "addToInput", "starting"))
+
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["addToInput"]
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
         
-        rc.run("stackFrames")
-        fs = rc.get_inputs_as_astrodata()
-        print "p211:", repr(fs)
-        print "p212:", [ad.filename for ad in fs]
+        # Get data to be added from the RC
+        value = rc["value"]
+        if value is None:
+            log.stdinfo("No value to add; no changes will be "\
+                        "made to input")
+        elif type(value)==AstroData:
+            log.stdinfo("Adding %s to input" % 
+                        (value.filename))
+        else:
+            log.stdinfo("Adding %s to input" % 
+                        (repr(value)))
+  
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
 
-        rc.run("storeProcessedFringe")
-        fringe_frame = rc.get_inputs_as_astrodata()
+            if value is not None:
+                # Add value to data
+                ad.add(value)
 
-        rc.report_output(adinput)
+                # Add the appropriate time stamps to the PHU
+                gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+                # Change the filename
+                ad.filename = gt.filename_updater(
+                    adinput=ad, suffix=rc["suffix"], strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+        
         yield rc
 
-        fs = rc.get_inputs_as_astrodata()
-        print "p222:", repr(fs)
-        print "p223:", [ad.filename for ad in fs]
+    def divideInputBy(self,rc):
+        # This is a bare-bones primitive interface to the ad div
+        # function from the arith module.  The value, dictionary,
+        # or AD instance to be divided into the input is stored in
+        # rc["value"]
 
-        for ad in fs:
-            rc.add_cal(ad,"processed_fringe",
-                       os.path.abspath(fringe_frame[0].filename))
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
 
-        rc.run("removeFringe")
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "divideInputBy", "starting"))
 
-        fs = rc.get_inputs_as_astrodata()
-        print "p226:", repr(fs)
-        print "p227:", [ad.filename for ad in fs]
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["divideInputBy"]
 
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+        
+        # Get data to be divided from the RC
+        value = rc["value"]
+        if value is None:
+            log.stdinfo("No value to divide; no changes will be "\
+                        "made to input")
+        elif type(value)==AstroData:
+            log.stdinfo("Dividing input by %s" % 
+                        (value.filename))
+        else:
+            log.stdinfo("Dividing input by %s" % 
+                        (repr(value)))
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+
+            if value is not None:
+                # Divide ad by value
+                ad.div(value)
+
+                # Add the appropriate time stamps to the PHU
+                gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+                # Change the filename
+                ad.filename = gt.filename_updater(
+                    adinput=ad, suffix=rc["suffix"], strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+        
         yield rc
+
+    def multiplyInputBy(self,rc):
+        # This is a bare-bones primitive interface to the ad mult
+        # function from the arith module.  The value, dictionary,
+        # or AD instance to be multiplied into the input is stored in
+        # rc["value"]
+
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "multiplyInputBy", "starting"))
+
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["multiplyInputBy"]
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+        
+        # Get data to be multiplied from the RC
+        value = rc["value"]
+        if value is None:
+            log.stdinfo("No value to multiply; no changes will be "\
+                            "made to input")
+        elif type(value)==AstroData:
+            log.stdinfo("Multiplying input by %s" % 
+                        (value.filename))
+        else:
+            log.stdinfo("Multiplying input by %s" % 
+                        (repr(value)))
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+
+            if value is not None:
+                # Multiply ad by value
+                ad.mult(value)
+
+                # Add the appropriate time stamps to the PHU
+                gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+                # Change the filename
+                ad.filename = gt.filename_updater(
+                    adinput=ad, suffix=rc["suffix"], strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+        
+        yield rc
+
+    def subtractFromInput(self,rc):
+        # This is a bare-bones primitive interface to the ad sub
+        # function from the arith module.  The value, dictionary,
+        # or AD instance to be subtracted from the input is stored in
+        # rc["value"]
+
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "subtractFromInput", "starting"))
+
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["subtractFromInput"]
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+        
+        # Get data to be subtracted from the RC
+        value = rc["value"]
+        if value is None:
+            log.stdinfo("No value to subtract; no changes will be "\
+                            "made to input")
+        elif type(value)==AstroData:
+            log.stdinfo("Subtracting %s from input" % 
+                        (value.filename))
+        else:
+            log.stdinfo("Subtracting %s from input" % 
+                        (repr(value)))
+            
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+
+            if value is not None:
+                # Subtract value from data
+                ad.sub(value)
+
+                # Add the appropriate time stamps to the PHU
+                gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+                # Change the filename
+                ad.filename = gt.filename_updater(
+                    adinput=ad, suffix=rc["suffix"], strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+        
+        yield rc
+

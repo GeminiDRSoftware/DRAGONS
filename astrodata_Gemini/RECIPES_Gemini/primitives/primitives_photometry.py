@@ -1063,7 +1063,6 @@ def _average_each_cluster( xyArray, pixApart=10.0 ):
 
 
 def _sextractor(ad=None,seeing_estimate=None):
-#def _sextractor(sciext=None,dqext=None,seeing_estimate=None):
 
     # Get the log
     log = gemLog.getGeminiLog()
@@ -1238,7 +1237,7 @@ def _sextractor(ad=None,seeing_estimate=None):
                                         "indicates object")
             mask_ad = AstroData(mask_hdu)
             mask_ad.rename_ext("OBJMASK",extver)
-            mask_ad.data = np.where(mask_ad.data>0,1,0).astype(np.int16)
+            mask_ad.data = np.where(mask_ad.data!=0,1,0).astype(np.int16)
 
             # Remove old object mask if it exists 
             # (ie. this is a re-run of detectSources)

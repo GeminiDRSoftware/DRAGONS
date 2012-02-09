@@ -1,4 +1,5 @@
 import os
+from copy import deepcopy
 import numpy as np
 from astrodata import AstroData
 from astrodata import Errors

@@ -1,6 +1,15 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_GMOS_IMAGE.py file, in alphabetical order.
-{"makeFringeFrame":{
+{"makeFringe":{
+    "subtract_median_image":{
+        "default"       : None,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "makeFringeFrame":{
     "suffix":{
         "default"       : "_fringe",
         "type"          : "str",
@@ -18,6 +27,13 @@
     "reject_method":{
         "default"       : "avsigclip",
         "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "subtract_median_image":{
+        "default"       : True,
+        "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
