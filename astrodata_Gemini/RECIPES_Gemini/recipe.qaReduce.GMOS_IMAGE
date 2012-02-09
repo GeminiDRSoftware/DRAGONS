@@ -7,7 +7,8 @@ addDQ
 addVAR(read_noise=True)
 detectSources
 measureIQ
-compareToReferenceSources
+measureBG
+measureCCAndAstrometry
 overscanCorrect
 biasCorrect
 aduToElectrons
@@ -19,8 +20,8 @@ fringeCorrect
 detectSources
 measureIQ
 measureBG
-compareToReferenceSources
+measureCCAndAstrometry
 alignAndStack
 detectSources
 measureIQ
-compareToReferenceSources(correct_wcs=True)
+measureCCAndAstrometry(correct_wcs=True)

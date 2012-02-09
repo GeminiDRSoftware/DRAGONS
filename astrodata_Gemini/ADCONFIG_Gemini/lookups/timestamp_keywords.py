@@ -23,7 +23,7 @@ timestamp_keys = {
     "makeFringeFrame": "FRINGE",
     "measureBG": "MEASREBG",
     "measureIQ": "MEASREIQ",
-    "measureZP": "MEASREZP",
+    "measureCC": "MEASRECC",
     "mosaicDetectors": "MOSAIC",
     "multiplyInputBy": "MULINPBY",
     "nonlinearityCorrect": "LINCORR",

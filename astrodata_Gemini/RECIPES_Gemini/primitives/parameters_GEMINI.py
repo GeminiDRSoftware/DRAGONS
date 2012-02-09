@@ -129,22 +129,6 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "compareToReferenceSources":{
-    "suffix":{
-        "default"       : "_referencesCompared",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "correct_wcs":{
-        "default"       : False,
-        "type"          : "bool",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    },
  "contextReport":{
     "report_history":{
         "default"       : False,
@@ -428,6 +412,31 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "measureCC":{
+    "suffix":{
+        "default"       : "_ccMeasured",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "measureCCAndAstrometry":{
+    "suffix":{
+        "default"       : "_ccAndAstrometryMeasured",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "correct_wcs":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "measureIQ":{
     "suffix":{
         "default"       : "_iqMeasured",
@@ -453,15 +462,6 @@
     "separate_ext":{
         "default"       : False,
         "type"          : "bool",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    },
- "measureZP":{
-    "suffix":{
-        "default"       : "_zpMeasured",
-        "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",

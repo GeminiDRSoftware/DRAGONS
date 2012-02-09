@@ -338,6 +338,328 @@ class QAPrimitives(GENERALPrimitives):
 
         yield rc
 
+    def measureCC(self, rc):
+        """
+        This primitive will determine the zeropoint by looking at
+        sources in the OBJCAT for which a reference catalog magnitude
+        has been determined.
+
+        It will also compare the measured zeropoint against the nominal
+        zeropoint for the instrument and the nominal atmospheric extinction
+        as a function of airmass, to compute the estimated cloud attenuation.
+
+        This function is for use with sextractor-style source-detection.
+        It relies on having already added a reference catalog and done the
+        cross match to populate the refmag column of the objcat
+
+        The reference magnitudes (refmag) are straight from the reference
+        catalog. The measured magnitudes (mags) are straight from the object
+        detection catalog.
+
+        We correct for astromepheric extinction at the point where we
+        calculate the zeropoint, ie we define:
+        actual_mag = zeropoint + instrumental_mag + extinction_correction
+
+        where in this case, actual_mag is the refmag, instrumental_mag is
+        the mag from the objcat, and we use the nominal extinction value as
+        we don't have a measured one at this point. ie  we're actually
+        computing zeropoint as:
+        zeropoint = refmag - mag - nominal_extinction_correction
+
+        Then we can treat zeropoint as: 
+        zeropoint = nominal_photometric_zeropoint - cloud_extinction
+        to estimate the cloud extinction.
+        """
+
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "measureCC", "starting"))
+        
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["measureCC"]
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Get the CC band definitions from a lookup table
+        ccConstraints = Lookups.get_lookup_table("Gemini/CCConstraints",
+                                                 "ccConstraints")
+
+        # Define a few useful numbers for formatting output
+        llen = 32
+        rlen = 26
+        dlen = llen + rlen
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+            
+            found_mag = True
+
+            detzp_means=[]
+            detzp_clouds=[]
+            detzp_sigmas=[]
+            total_sources=0
+            # Loop over OBJCATs extensions
+            objcats = ad['OBJCAT']
+            if objcats is None:
+                log.warning("No OBJCAT found in %s" % ad.filename)
+                adoutput_list.append(ad)
+                continue
+                #raise Errors.ScienceError("No OBJCAT found in %s" % ad.filename)
+            # We really want to check for the presence of reference mags in the objcats
+            # at this point, but we can more easily do a quick check for the presence of
+            # reference catalogs, which are a pre-requisite for this and not bother with
+            # any of this if there are no reference catalogs
+            if ad['REFCAT'] is None:
+                log.warning("No Reference Catalogs Present - not attempting to measure photometric Zeropoints")
+                # This is a bit of a hack, but it circumvents the big for loop
+                objcats = []
+
+            for objcat in objcats:
+                extver = objcat.extver()
+                mags = objcat.data['MAG_AUTO']
+                mag_errs = objcat.data['MAGERR_AUTO']
+                flags = objcat.data['FLAGS']
+                iflags = objcat.data['IMAFLAGS_ISO']
+                ids = objcat.data['NUMBER']
+                if np.all(mags==-999):
+                    log.warning("No magnitudes found in %s[OBJCAT,%d]"%
+                                (ad.filename,extver))
+                    continue
+
+                # Need to correct the mags for the exposure time
+                et = float(ad.exposure_time())
+                magcor = 2.5*math.log10(et)
+                mags = np.where(mags==-999,mags,mags+magcor)
+
+                # Need to get the nominal atmospheric extinction
+                nom_at_ext = float(ad.nominal_atmospheric_extinction())
+
+                refmags = objcat.data['REF_MAG']
+                refmag_errs = objcat.data['REF_MAG_ERR']
+                if np.all(refmags==-999):
+                    log.warning("No reference magnitudes found in %s[OBJCAT,%d]"%
+                                (ad.filename,extver))
+                    continue
+
+                zps = refmags - mags - nom_at_ext
+       
+                # Is this mathematically correct? These are logarithmic values... (PH)
+                # It'll do for now as an estimate at least
+                zperrs = np.sqrt((refmag_errs * refmag_errs) + (mag_errs * mag_errs))
+ 
+                # OK, trim out bad values
+                zps = np.where((zps > -500), zps, None)
+                zps = np.where((flags == 0), zps, None)
+                zps = np.where((iflags == 0), zps, None)
+                zperrs = np.where((zps > -500), zperrs, None)
+                zperrs = np.where((flags == 0), zperrs, None)
+                zperrs = np.where((iflags == 0), zperrs, None)
+                ids = np.where((zps > -500), ids, None)
+                ids = np.where((flags == 0), ids, None)
+                ids = np.where((iflags == 0), ids, None)
+
+                # Trim out where zeropoint error > 0.1
+                zps = np.where((zperrs < 0.1), zps, None)
+                zperrs = np.where((zperrs < 0.1), zperrs, None)
+                ids = np.where((zperrs < 0.1), ids, None)
+                
+                # Discard the None values we just patched in
+                zps = zps[np.flatnonzero(zps)]
+                zperrs = zperrs[np.flatnonzero(zperrs)]
+                ids = ids[np.flatnonzero(ids)]
+
+                if len(zps)==0:
+                    log.warning('No good reference sources found in %s[OBJCAT,%d]'%
+                                (ad.filename,extver))
+                    continue
+
+                # Because these are magnitude (log) values, we weight directly from the
+                # 1/variance, not signal / variance
+                weights = 1.0 / (zperrs * zperrs)
+
+                wzps = zps * weights
+                zp = wzps.sum() / weights.sum()
+
+
+                d = zps - zp
+                d = d*d * weights
+                zpv = d.sum() / weights.sum()
+                zpe = math.sqrt(zpv)
+
+                nominal_zeropoint = float(ad['SCI', extver].nominal_photometric_zeropoint())
+                cloud = nominal_zeropoint - zp
+                detzp_means.append(zp)
+                detzp_clouds.append(cloud)
+                detzp_sigmas.append(zpe)
+                total_sources += len(zps)
+                
+                # Write the zeropoint to the SCI extension header
+                ad['SCI', extver].set_key_value(
+                    "MEANZP", zp, comment=self.keyword_comments["MEANZP"])
+
+                # Calculate which CC band we're in. 
+                # Initially, I'm going to base this on a 2-sigma result...
+                adj_cloud = cloud - 2.0*zpe
+                # get cc constraints
+                cc50 = ccConstraints['50']
+                cc70 = ccConstraints['70']
+                cc80 = ccConstraints['80']
+                ccband = 'CCAny'
+                ccnum = 100
+                if(adj_cloud < cc80):
+                    ccband = 'CC80'
+                    ccnum = 80
+                if(adj_cloud < cc70):
+                    ccband = 'CC70'
+                    ccnum = 70
+                if(adj_cloud < cc50):
+                    ccband = 'CC50'
+                    ccnum = 50
+
+                # Get requested CC band
+                cc_warn = None
+                try:
+                    req_cc = int(ad.requested_cc())
+                except:
+                    req_cc = None
+                if req_cc is not None:
+                    if req_cc<ccnum:
+                        cc_warn = '    WARNING: CC requirement not met'
+                    if req_cc==100:
+                        req_cc = 'CCAny'
+                    else:
+                        req_cc = 'CC%d' % req_cc
+                
+
+                log.fullinfo("\n    Filename: %s ['OBJCAT', %d]" % 
+                             (ad.filename, extver))
+                log.fullinfo("    %d sources used to measure zeropoint" % 
+                             len(zps))
+                log.fullinfo("    "+"-"*dlen)
+                log.fullinfo("    "+
+                             ("Zeropoint measurement (%s band):" % 
+                              ad.filter_name(pretty=True)).ljust(llen) +
+                             ("%.2f +/- %.2f" % (zp, zpe)).rjust(rlen))
+                log.fullinfo("    "+
+                             ("Nominal zeropoint:").ljust(llen) +
+                             ("%.2f" % nominal_zeropoint).rjust(rlen))
+                log.fullinfo("    "+
+                             "Estimated cloud extinction:".ljust(llen) +
+                             ("%.2f +/- %.2f magnitudes" % 
+                              (cloud, zpe)).rjust(rlen))
+                log.fullinfo("    " + "CC band:".ljust(llen) + 
+                             ccband.rjust(rlen))
+                if req_cc is not None:
+                    log.fullinfo("    "+
+                                 "Requested CC band:".ljust(llen)+
+                                 req_cc.rjust(rlen))
+                else:
+                    log.fullinfo("    (Requested CC could not be determined)")
+                if cc_warn is not None:
+                    log.fullinfo(cc_warn)
+                log.fullinfo("    "+"-"*dlen)
+
+            
+            cloud_sum = 0
+            cloud_esum = 0
+            if(len(detzp_means)):
+                for i in range(len(detzp_means)):
+                    if i==0:
+                        zp_str = ("%.2f +/- %.2f" % 
+                                 (detzp_means[i], detzp_sigmas[i])).rjust(rlen)
+                    else:
+                        zp_str += "\n    "
+                        zp_str += ("%.2f +/- %.2f" % 
+                                 (detzp_means[i], detzp_sigmas[i])).rjust(dlen)
+                    cloud_sum += detzp_clouds[i]
+                    cloud_esum += (detzp_sigmas[i] * detzp_sigmas[i])
+                cloud = cloud_sum / len(detzp_means)
+                clouderr = math.sqrt(cloud_esum) / len(detzp_means)
+
+                # Calculate which CC band we're in. 
+                # Initially, I'm going to base this on a 2-sigma result...
+                adj_cloud = cloud - 2.0*clouderr
+                # get cc constraints
+                cc50 = ccConstraints['50']
+                cc70 = ccConstraints['70']
+                cc80 = ccConstraints['80']
+                ccband = 'CCany'
+                ccnum = 100
+                if(adj_cloud < cc80):
+                    ccband = 'CC80'
+                    ccnum = 80
+                if(adj_cloud < cc70):
+                    ccband = 'CC70'
+                    ccnum = 70
+                if(adj_cloud < cc50):
+                    ccband = 'CC50'
+                    ccnum = 50
+
+                # Get requested CC band
+                cc_warn = None
+                try:
+                    req_cc = int(ad.requested_cc())
+                except:
+                    req_cc = None
+                if req_cc is not None:
+                    if req_cc<ccnum:
+                        cc_warn = '    WARNING: CC requirement not met'
+                    if req_cc==100:
+                        req_cc = 'CCAny'
+                    else:
+                        req_cc = 'CC%d' % req_cc
+            
+                log.stdinfo("\n    Filename: %s" % ad.filename)
+                log.stdinfo("    %d sources used to measure zeropoint" % 
+                             total_sources)
+                log.stdinfo("    "+"-"*dlen)
+####here
+                log.stdinfo("    "+str(ad.detector_name()))
+                log.stdinfo("    "+
+                            ("Zeropoints by detector (%s band):"%
+                             ad.filter_name(pretty=True)).ljust(llen)+
+                            zp_str)
+                log.stdinfo("    "+
+                             "Estimated cloud extinction:".ljust(llen) +
+                            ("%.2f +/- %.2f magnitudes" % 
+                             (cloud, clouderr)).rjust(rlen))
+                log.stdinfo("    " + "CC band:".ljust(llen) + 
+                            ccband.rjust(rlen))
+                if req_cc is not None:
+                    log.stdinfo("    "+
+                                "Requested CC band:".ljust(llen)+
+                                req_cc.rjust(rlen))
+                else:
+                    log.stdinfo("    (Requested CC could not be determined)")
+                if cc_warn is not None:
+                    log.stdinfo(cc_warn)
+                log.stdinfo("    "+"-"*dlen)
+
+            else:
+                log.stdinfo("    Filename: %s" % ad.filename)
+                log.stdinfo("    Could not measure zeropoint - no catalog sources associated")
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+            # Change the filename
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
+
+            # Append the output AstroData object to the list 
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+
+        yield rc
+
     def measureIQ(self, rc):
         """
         This primitive is for use with sextractor-style source-detection.
@@ -630,320 +952,6 @@ class QAPrimitives(GENERALPrimitives):
         
         yield rc
     
-    def measureZP(self, rc):
-        """
-        This primitive will determine the zeropoint by looking at
-        sources in the OBJCAT for which a reference catalog magnitude
-        has been determined.
-
-        It will also compare the measured zeropoint against the nominal
-        zeropoint for the instrument and the nominal atmospheric extinction
-        as a function of airmass, to compute the estimated cloud attenuation.
-
-        This function is for use with sextractor-style source-detection.
-        It relies on having already added a reference catalog and done the
-        cross match to populate the refmag column of the objcat
-
-        The reference magnitudes (refmag) are straight from the reference
-        catalog. The measured magnitudes (mags) are straight from the object
-        detection catalog.
-
-        We correct for astromepheric extinction at the point where we
-        calculate the zeropoint, ie we define:
-        actual_mag = zeropoint + instrumental_mag + extinction_correction
-
-        where in this case, actual_mag is the refmag, instrumental_mag is
-        the mag from the objcat, and we use the nominal extinction value as
-        we don't have a measured one at this point. ie  we're actually
-        computing zeropoint as:
-        zeropoint = refmag - mag - nominal_extinction_correction
-
-        Then we can treat zeropoint as: 
-        zeropoint = nominal_photometric_zeropoint - cloud_extinction
-        to estimate the cloud extinction.
-        """
-
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "measureZP", "starting"))
-        
-        # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["measureZP"]
-
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-
-        # Get the CC band definitions from a lookup table
-        ccConstraints = Lookups.get_lookup_table("Gemini/CCConstraints",
-                                                 "ccConstraints")
-
-        # Define a few useful numbers for formatting output
-        llen = 32
-        rlen = 26
-        dlen = llen + rlen
-
-        # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
-            
-            found_mag = True
-
-            detzp_means=[]
-            detzp_clouds=[]
-            detzp_sigmas=[]
-            total_sources=0
-            # Loop over OBJCATs extensions
-            objcats = ad['OBJCAT']
-            if objcats is None:
-                log.warning("No OBJCAT found in %s" % ad.filename)
-                adoutput_list.append(ad)
-                continue
-                #raise Errors.ScienceError("No OBJCAT found in %s" % ad.filename)
-            # We really want to check for the presence of reference mags in the objcats
-            # at this point, but we can more easily do a quick check for the presence of
-            # reference catalogs, which are a pre-requisite for this and not bother with
-            # any of this if there are no reference catalogs
-            if ad['REFCAT'] is None:
-                log.warning("No Reference Catalogs Present - not attempting to measure photometric Zeropoints")
-                # This is a bit of a hack, but it circumvents the big for loop
-                objcats = []
-
-            for objcat in objcats:
-                extver = objcat.extver()
-                mags = objcat.data['MAG_AUTO']
-                mag_errs = objcat.data['MAGERR_AUTO']
-                flags = objcat.data['FLAGS']
-                iflags = objcat.data['IMAFLAGS_ISO']
-                ids = objcat.data['NUMBER']
-                if np.all(mags==-999):
-                    log.warning("No magnitudes found in %s[OBJCAT,%d]"%
-                                (ad.filename,extver))
-                    continue
-
-                # Need to correct the mags for the exposure time
-                et = float(ad.exposure_time())
-                magcor = 2.5*math.log10(et)
-                mags = np.where(mags==-999,mags,mags+magcor)
-
-                # Need to get the nominal atmospheric extinction
-                nom_at_ext = float(ad.nominal_atmospheric_extinction())
-
-                refmags = objcat.data['REF_MAG']
-                refmag_errs = objcat.data['REF_MAG_ERR']
-                if np.all(refmags==-999):
-                    log.warning("No reference magnitudes found in %s[OBJCAT,%d]"%
-                                (ad.filename,extver))
-                    continue
-
-                zps = refmags - mags - nom_at_ext
-       
-                # Is this mathematically correct? These are logarithmic values... (PH)
-                # It'll do for now as an estimate at least
-                zperrs = np.sqrt((refmag_errs * refmag_errs) + (mag_errs * mag_errs))
- 
-                # OK, trim out bad values
-                zps = np.where((zps > -500), zps, None)
-                zps = np.where((flags == 0), zps, None)
-                zps = np.where((iflags == 0), zps, None)
-                zperrs = np.where((zps > -500), zperrs, None)
-                zperrs = np.where((flags == 0), zperrs, None)
-                zperrs = np.where((iflags == 0), zperrs, None)
-                ids = np.where((zps > -500), ids, None)
-                ids = np.where((flags == 0), ids, None)
-                ids = np.where((iflags == 0), ids, None)
-
-                # Trim out where zeropoint error > 0.1
-                zps = np.where((zperrs < 0.1), zps, None)
-                zperrs = np.where((zperrs < 0.1), zperrs, None)
-                ids = np.where((zperrs < 0.1), ids, None)
-                
-                # Discard the None values we just patched in
-                zps = zps[np.flatnonzero(zps)]
-                zperrs = zperrs[np.flatnonzero(zperrs)]
-                ids = ids[np.flatnonzero(ids)]
-
-                if len(zps)==0:
-                    log.warning('No good reference sources found in %s[OBJCAT,%d]'%
-                                (ad.filename,extver))
-                    continue
-
-                # Because these are magnitude (log) values, we weight directly from the
-                # 1/variance, not signal / variance
-                weights = 1.0 / (zperrs * zperrs)
-
-                wzps = zps * weights
-                zp = wzps.sum() / weights.sum()
-
-
-                d = zps - zp
-                d = d*d * weights
-                zpv = d.sum() / weights.sum()
-                zpe = math.sqrt(zpv)
-
-                nominal_zeropoint = float(ad['SCI', extver].nominal_photometric_zeropoint())
-                cloud = nominal_zeropoint - zp
-                detzp_means.append(zp)
-                detzp_clouds.append(cloud)
-                detzp_sigmas.append(zpe)
-                total_sources += len(zps)
-                
-                # Calculate which CC band we're in. 
-                # Initially, I'm going to base this on a 2-sigma result...
-                adj_cloud = cloud - 2.0*zpe
-                # get cc constraints
-                cc50 = ccConstraints['50']
-                cc70 = ccConstraints['70']
-                cc80 = ccConstraints['80']
-                ccband = 'CCAny'
-                ccnum = 100
-                if(adj_cloud < cc80):
-                    ccband = 'CC80'
-                    ccnum = 80
-                if(adj_cloud < cc70):
-                    ccband = 'CC70'
-                    ccnum = 70
-                if(adj_cloud < cc50):
-                    ccband = 'CC50'
-                    ccnum = 50
-
-                # Get requested CC band
-                cc_warn = None
-                try:
-                    req_cc = int(ad.requested_cc())
-                except:
-                    req_cc = None
-                if req_cc is not None:
-                    if req_cc<ccnum:
-                        cc_warn = '    WARNING: CC requirement not met'
-                    if req_cc==100:
-                        req_cc = 'CCAny'
-                    else:
-                        req_cc = 'CC%d' % req_cc
-                
-
-                log.fullinfo("\n    Filename: %s ['OBJCAT', %d]" % 
-                             (ad.filename, extver))
-                log.fullinfo("    %d sources used to measure zeropoint" % 
-                             len(zps))
-                log.fullinfo("    "+"-"*dlen)
-                log.fullinfo("    "+
-                             ("Zeropoint measurement (%s band):" % 
-                              ad.filter_name(pretty=True)).ljust(llen) +
-                             ("%.2f +/- %.2f" % (zp, zpe)).rjust(rlen))
-                log.fullinfo("    "+
-                             ("Nominal zeropoint:").ljust(llen) +
-                             ("%.2f" % nominal_zeropoint).rjust(rlen))
-                log.fullinfo("    "+
-                             "Estimated cloud extinction:".ljust(llen) +
-                             ("%.2f +/- %.2f magnitudes" % 
-                              (cloud, zpe)).rjust(rlen))
-                log.fullinfo("    " + "CC band:".ljust(llen) + 
-                             ccband.rjust(rlen))
-                if req_cc is not None:
-                    log.fullinfo("    "+
-                                 "Requested CC band:".ljust(llen)+
-                                 req_cc.rjust(rlen))
-                else:
-                    log.fullinfo("    (Requested CC could not be determined)")
-                if cc_warn is not None:
-                    log.fullinfo(cc_warn)
-                log.fullinfo("    "+"-"*dlen)
-
-            
-            cloud_sum = 0
-            cloud_esum = 0
-            if(len(detzp_means)):
-                for i in range(len(detzp_means)):
-                    if i==0:
-                        zp_str = ("%.2f +/- %.2f" % 
-                                 (detzp_means[i], detzp_sigmas[i])).rjust(rlen)
-                    else:
-                        zp_str += "\n    "
-                        zp_str += ("%.2f +/- %.2f" % 
-                                 (detzp_means[i], detzp_sigmas[i])).rjust(dlen)
-                    cloud_sum += detzp_clouds[i]
-                    cloud_esum += (detzp_sigmas[i] * detzp_sigmas[i])
-                cloud = cloud_sum / len(detzp_means)
-                clouderr = math.sqrt(cloud_esum) / len(detzp_means)
-
-                # Calculate which CC band we're in. 
-                # Initially, I'm going to base this on a 2-sigma result...
-                adj_cloud = cloud - 2.0*clouderr
-                # get cc constraints
-                cc50 = ccConstraints['50']
-                cc70 = ccConstraints['70']
-                cc80 = ccConstraints['80']
-                ccband = 'CCany'
-                ccnum = 100
-                if(adj_cloud < cc80):
-                    ccband = 'CC80'
-                    ccnum = 80
-                if(adj_cloud < cc70):
-                    ccband = 'CC70'
-                    ccnum = 70
-                if(adj_cloud < cc50):
-                    ccband = 'CC50'
-                    ccnum = 50
-
-                # Get requested CC band
-                cc_warn = None
-                try:
-                    req_cc = int(ad.requested_cc())
-                except:
-                    req_cc = None
-                if req_cc is not None:
-                    if req_cc<ccnum:
-                        cc_warn = '    WARNING: CC requirement not met'
-                    if req_cc==100:
-                        req_cc = 'CCAny'
-                    else:
-                        req_cc = 'CC%d' % req_cc
-            
-                log.stdinfo("\n    Filename: %s" % ad.filename)
-                log.stdinfo("    %d sources used to measure zeropoint" % 
-                             total_sources)
-                log.stdinfo("    "+"-"*dlen)
-                log.stdinfo("    "+
-                            ("Zeropoints by detector (%s band):"%
-                             ad.filter_name(pretty=True)).ljust(llen)+
-                            zp_str)
-                log.stdinfo("    "+
-                             "Estimated cloud extinction:".ljust(llen) +
-                            ("%.2f +/- %.2f magnitudes" % 
-                             (cloud, clouderr)).rjust(rlen))
-                log.stdinfo("    " + "CC band:".ljust(llen) + 
-                            ccband.rjust(rlen))
-                if req_cc is not None:
-                    log.stdinfo("    "+
-                                "Requested CC band:".ljust(llen)+
-                                req_cc.rjust(rlen))
-                else:
-                    log.stdinfo("    (Requested CC could not be determined)")
-                if cc_warn is not None:
-                    log.stdinfo(cc_warn)
-                log.stdinfo("    "+"-"*dlen)
-            else:
-                log.stdinfo("    Filename: %s" % ad.filename)
-                log.stdinfo("    Could not measure zeropoint - no catalog sources associated")
-
-            # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
-
-            # Change the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
-                                              strip=True)
-
-            # Append the output AstroData object to the list 
-            # of output AstroData objects
-            adoutput_list.append(ad)
-
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
-
-        yield rc
 
 
 ##############################################################################

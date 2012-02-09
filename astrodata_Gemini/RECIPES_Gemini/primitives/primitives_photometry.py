@@ -231,76 +231,6 @@ class PhotometryPrimitives(GENERALPrimitives):
 
         yield rc
 
-    def compareToReferenceSources(self, rc):
-
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "compareToReferenceSources",
-                                 "starting"))
-
-        # Test for OBJCATs first; if not present, there's no point in
-        # continuing
-        adinput = rc.get_inputs_as_astrodata()
-        found_objcat = False
-        for ad in adinput:
-            for ext in ad["SCI"]:
-                objcat = ad["OBJCAT",ext.extver()]
-                if objcat is None:
-                    continue
-                elif objcat.data is None:
-                    continue
-                elif len(objcat.data)==0:
-                    continue
-                else:
-                    found_objcat = True
-                    break
-
-        # If at least one non-empty OBJCAT is present, add reference
-        # catalogs to the input
-        if not found_objcat:
-            log.stdinfo("No OBJCAT found in input, so no comparison to "\
-                        "reference sources will be performed")
-            rc.report_output(adinput)
-        else:
-            rc.run("addReferenceCatalog")
-            
-            # Test for reference catalogs; if not present, don't continue
-            adinput = rc.get_inputs_as_astrodata()
-            found_refcat = False
-            for ad in adinput:
-                for ext in ad["SCI"]:
-                    refcat = ad["REFCAT",ext.extver()]
-                    if refcat is None:
-                        continue
-                    elif refcat.data is None:
-                        continue
-                    elif len(refcat.data)==0:
-                        continue
-                    else:
-                        found_refcat = True
-                        break
-            
-            # If at least one non-empty REFCAT is present, measure
-            # the zeropoint and the astrometric offset
-            if not found_refcat:
-                log.stdinfo("No reference sources found; no comparison "\
-                            "will be performed")
-                rc.report_output(adinput)
-            else:
-                # Get the necessary parameter from the RC
-                # This must be passed explicitly because it is sometimes
-                # passed in the recipe itself
-                correct_wcs = rc["correct_wcs"]
-
-                rc.run("measureZP\n"\
-                       "determineAstrometricSolution(correct_wcs=%s)" % 
-                       correct_wcs)
-        
-        yield rc
-
     def detectSources(self, rc):
         """
         Find x,y positions of all the objects in the input image. Append 
@@ -472,6 +402,76 @@ class PhotometryPrimitives(GENERALPrimitives):
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
+        
+        yield rc
+
+    def measureCCAndAstrometry(self, rc):
+
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "measureCCAndAstrometry",
+                                 "starting"))
+
+        # Test for OBJCATs first; if not present, there's no point in
+        # continuing
+        adinput = rc.get_inputs_as_astrodata()
+        found_objcat = False
+        for ad in adinput:
+            for ext in ad["SCI"]:
+                objcat = ad["OBJCAT",ext.extver()]
+                if objcat is None:
+                    continue
+                elif objcat.data is None:
+                    continue
+                elif len(objcat.data)==0:
+                    continue
+                else:
+                    found_objcat = True
+                    break
+
+        # If at least one non-empty OBJCAT is present, add reference
+        # catalogs to the input
+        if not found_objcat:
+            log.stdinfo("No OBJCAT found in input, so no comparison to "\
+                        "reference sources will be performed")
+            rc.report_output(adinput)
+        else:
+            rc.run("addReferenceCatalog")
+            
+            # Test for reference catalogs; if not present, don't continue
+            adinput = rc.get_inputs_as_astrodata()
+            found_refcat = False
+            for ad in adinput:
+                for ext in ad["SCI"]:
+                    refcat = ad["REFCAT",ext.extver()]
+                    if refcat is None:
+                        continue
+                    elif refcat.data is None:
+                        continue
+                    elif len(refcat.data)==0:
+                        continue
+                    else:
+                        found_refcat = True
+                        break
+            
+            # If at least one non-empty REFCAT is present, measure
+            # the zeropoint and the astrometric offset
+            if not found_refcat:
+                log.stdinfo("No reference sources found; no comparison "\
+                            "will be performed")
+                rc.report_output(adinput)
+            else:
+                # Get the necessary parameter from the RC
+                # This must be passed explicitly because it is sometimes
+                # passed in the recipe itself
+                correct_wcs = rc["correct_wcs"]
+
+                rc.run("measureCC\n"\
+                       "determineAstrometricSolution(correct_wcs=%s)" % 
+                       correct_wcs)
         
         yield rc
 

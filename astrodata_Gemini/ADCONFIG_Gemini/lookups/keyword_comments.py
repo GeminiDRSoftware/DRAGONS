@@ -29,6 +29,7 @@ keyword_comments = {
     "GEMPRGID": "Gemini program ID",
     "MEANFWHM": "Mean point source FWHM (arcsec)",
     "MEANELLP": "Mean point source ellipticity",
+    "MEANZP": "Mean zero point",
     "NAXIS1": "Axis length",
     "NAXIS2": "Axis length",
     "NEXTEND": "Number of extensions",
