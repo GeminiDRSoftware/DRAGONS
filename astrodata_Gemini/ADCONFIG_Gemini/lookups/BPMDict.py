@@ -1,10 +1,14 @@
 bpm_dict = {
-    # Dictionary key is the instrument, the x binning and the y binning
+    # Dictionary key is the instrument, x binning, and the y binning for
+    # non-GMOS instruments.  GMOS requires instrument, detector type,
+    # binning, amp-mode, and version.
     # Dictionary value is the lookup path of the BPM for that instrument with
     # that binning
-    "GMOS-N_1_1": "Gemini/GMOS/BPM/GMOS-N_BPM_11.fits",
-    "GMOS-N_2_2": "Gemini/GMOS/BPM/GMOS-N_BPM_22.fits",
-    "GMOS-S_1_1": "Gemini/GMOS/BPM/GMOS-S_BPM_11.fits",
-    "GMOS-S_2_2": "Gemini/GMOS/BPM/GMOS-S_BPM_22.fits",
+    "GMOS-N_EEV_11_3amp_v1": "Gemini/GMOS/BPM/gmos-n_bpm_EEV_11_3amp_v1.fits",
+    "GMOS-N_EEV_22_3amp_v1": "Gemini/GMOS/BPM/gmos-n_bpm_EEV_22_3amp_v1.fits",
+    "GMOS-N_e2v_11_6amp_v1": "Gemini/GMOS/BPM/gmos-n_bpm_e2v_11_6amp_v1.fits",
+    "GMOS-N_e2v_22_6amp_v1": "Gemini/GMOS/BPM/gmos-n_bpm_e2v_22_6amp_v1.fits",
+    "GMOS-S_EEV_11_3amp_v1": "Gemini/GMOS/BPM/gmos-s_bpm_EEV_11_3amp_v1.fits",
+    "GMOS-S_EEV_22_3amp_v1": "Gemini/GMOS/BPM/gmos-s_bpm_EEV_22_3amp_v1.fits",
     "F2_1_1": "Gemini/F2/BPM/F2_bpm.fits",
     }
