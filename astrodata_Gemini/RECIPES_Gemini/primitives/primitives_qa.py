@@ -617,8 +617,6 @@ class QAPrimitives(GENERALPrimitives):
                 log.stdinfo("    %d sources used to measure zeropoint" % 
                              total_sources)
                 log.stdinfo("    "+"-"*dlen)
-####here
-                log.stdinfo("    "+str(ad.detector_name()))
                 log.stdinfo("    "+
                             ("Zeropoints by detector (%s band):"%
                              ad.filter_name(pretty=True)).ljust(llen)+
