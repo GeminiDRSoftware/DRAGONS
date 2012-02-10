@@ -53,7 +53,7 @@
         "uiLevel"       : "UIBASIC",
         },
     "display":{
-        "default"       : True,
+        "default"       : False,
         "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,

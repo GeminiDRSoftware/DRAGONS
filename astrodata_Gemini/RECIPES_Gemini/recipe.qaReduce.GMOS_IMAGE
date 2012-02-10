@@ -6,7 +6,7 @@ prepare
 addDQ
 addVAR(read_noise=True)
 detectSources
-measureIQ
+measureIQ(display=True)
 measureBG
 measureCCAndAstrometry
 overscanCorrect
@@ -18,10 +18,10 @@ mosaicDetectors
 makeFringe
 fringeCorrect
 detectSources
-measureIQ
+measureIQ(display=True)
 measureBG
 measureCCAndAstrometry
 alignAndStack
 detectSources
-measureIQ
+measureIQ(display=True)
 measureCCAndAstrometry(correct_wcs=True)

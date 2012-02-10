@@ -28,9 +28,11 @@ class DisplayPrimitives(GENERALPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "display", "starting"))
         
-        # Check whether a DQ plane needs to be added
-        # ie. threshold="auto" and there is no DQ plane already
+        # Get parameters from RC
         threshold = rc["threshold"]
+        remove_bias = rc["remove_bias"]
+
+        # Get inputs
         adinput = rc.get_inputs_as_astrodata()
         orig_input = adinput
         deepcopied = False
@@ -38,9 +40,11 @@ class DisplayPrimitives(GENERALPrimitives):
         # Threshold and bias parameters only make sense for SCI extension;
         # turn it off for others
         extname = rc["extname"]
-        if extname!="SCI" or threshold=="None":
-            threshold=None
-            remove_bias=False
+        if extname!="SCI":
+            threshold = None
+            remove_bias = False
+        elif threshold=="None":
+            threshold = None
         elif threshold=="auto":
             dqext = np.array([ad["DQ"] for ad in adinput])
             mosaic = np.array([((ad.phu_get_key_value(
@@ -66,7 +70,6 @@ class DisplayPrimitives(GENERALPrimitives):
                     threshold=None
 
         # Check whether approximate bias level should be removed
-        remove_bias = rc["remove_bias"]
         if remove_bias:
             new_adinput = []
             for ad in adinput:
