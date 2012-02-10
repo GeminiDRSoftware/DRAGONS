@@ -506,23 +506,88 @@ def _select_bpm(adinput=None, bpm=None):
             # The BPMs are keyed by the instrument and the binning. Get the
             # instrument, the x binning and the y binning values using the
             # appropriate descriptors 
-            instrument = ad.instrument()
-            detector_x_bin = ad.detector_x_bin()
-            detector_y_bin = ad.detector_y_bin()
-            
-            # Create the key
-            if instrument is None or detector_x_bin is None or detector_x_bin \
-               is None:
-                if hasattr(ad, "exception_info"):
-                    raise ad.exception_info
-            key = "%s_%s_%s" % (instrument, detector_x_bin, detector_y_bin)
-            
-            # Get the BPM from the look up table
-            if key in all_bpm_dict:
-                bpm = AstroData(lookup_path(all_bpm_dict[key]))
-            else:
+            try:
+                instrument = ad.instrument()
+            except:
+                instrument = None
+            try:
+                detector_x_bin = ad.detector_x_bin()
+            except:
+                detector_x_bin = None
+            try:
+                detector_y_bin = ad.detector_y_bin()
+            except:
+                detector_y_bin = None
+
+            if (instrument is None or 
+                detector_x_bin is None or 
+                detector_y_bin is None):
                 bpm = None
-                #raise Errors.TableKeyError("Unable to find a BPM for %s" % key)
+            else:
+                # Note: it would probably be better to make this into
+                # a primitive and put it into the type specific files.
+
+                # GMOS BPMs are keyed by:
+                # GMOS-(N/S)_(EEV/e2v/HAM)_(binning)_(n)amp_v(#)(_mosaic),
+                # to correspond to BPMs named, eg.:
+                # gmos-n_bpm_e2v_22_6amp_v1.fits
+                # gmos-s_bpm_EEV_11_3amp_v1_mosaic.fits
+
+                if ("GMOS" in ad.types):
+
+                    # Format  binning
+                    bin = "%s%s" % (detector_x_bin,detector_y_bin)
+
+                    # Check for detector type
+                    detector_type = ad.phu_get_key_value("DETTYPE")
+                    if detector_type=="SDSU II CCD":
+                        det = "EEV"
+                    elif detector_type=="SDSU II e2v DD CCD42-90":
+                        det = "e2v"
+                    elif detector_type=="S10892-01":
+                        det = "HAM"
+                    else:
+                        det = None
+
+                    # Check the number of amps used
+                    namps = ad.phu_get_key_value("NAMPS")
+                    if namps==2:
+                        amp = "6amp"
+                    elif namps==1:
+                        amp = "3amp"
+                    else:
+                        amp = None
+
+                    # Check whether data is mosaicked
+                    mosaicked = (
+                        (ad.phu_get_key_value(
+                                timestamp_keys["mosaicDetectors"]) is not None)
+                        or
+                        (ad.phu_get_key_value(
+                                timestamp_keys["tileArrays"]) is not None))
+                    if mosaicked:
+                        mos = "_mosaic"
+                    else:
+                        mos = ""
+
+                    # Get version required
+                    # So far, there is only one version.  This may
+                    # change someday.
+                    ver = "v1"
+                    
+                    # Create the key
+                    key = "%s_%s_%s_%s_%s%s" % (instrument,det,bin,amp,ver,mos)
+                
+                else:
+                    # Create the key
+                    key = "%s_%s_%s" % (instrument, detector_x_bin, detector_y_bin)
+            
+                # Get the BPM from the look up table
+                if key in all_bpm_dict:
+                    bpm = AstroData(lookup_path(all_bpm_dict[key]))
+                else:
+                    bpm = None
+                    #raise Errors.TableKeyError("Unable to find a BPM for %s" % key)
             bpm_list.append(bpm)
     
     # Create a dictionary that has the AstroData objects specified by adinput
