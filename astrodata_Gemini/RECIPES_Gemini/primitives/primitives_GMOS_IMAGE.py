@@ -33,22 +33,37 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         
         # Loop over each input AstroData object in the input list to
         # test whether it's appropriate to try to remove the fringes
-        rm_fringe = False
+        rm_fringe = True
         for ad in rc.get_inputs_as_astrodata():
             
-            # Test the filter to see if we need to fringeCorrect at all
+            # Test the filter and exposure time to see if we 
+            # need to fringeCorrect at all
             filter = ad.filter_name(pretty=True)
+            tel = ad.telescope().as_pytype()
             exposure = ad.exposure_time()
             if filter not in ["i","z","Z","Y"]:
                 log.stdinfo("No fringe correction necessary for filter " +
                             filter)
+                rm_fringe = False
                 break
-            elif exposure<60.0:
-                log.stdinfo("No fringe necessary with exposure time %.1fs" %
+            elif filter=="i" and "Gemini-North" in tel:
+                if "qa" in rc.context:
+                    log.stdinfo("No fringe correction necessary for filter " +
+                                filter + " with GMOS-N")
+                    rm_fringe = False
+                    break
+                else:
+                    # Allow it in the science case, but warn that it
+                    # may not be helpful.
+                    log.warning("Data uses filter " + filter +
+                                "with GMOS-N. Fringe " +
+                                "correction is not recommended.")
+            if exposure<60.0:
+                log.stdinfo("No fringe correction necessary with "\
+                            "exposure time %.1fs" %
                             exposure)
+                rm_fringe = False
                 break
-            else:
-                rm_fringe = True
 
         if rm_fringe:
             # Retrieve processed fringes for the input
