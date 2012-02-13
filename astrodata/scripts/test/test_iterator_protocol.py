@@ -1,45 +1,25 @@
-from nose.tools import *
+from nose.tools import ok_ 
 
-import file_urls 
+from file_urls import sci123, sci1 
 from astrodata import AstroData
-
-mef_file = file_urls.testdatafile_1
-sef_file = file_urls.testdatafile_1
 
 def iterprotocol(ad):
     aditerImageObjectIdList = []
     hduImageObjectIdList = []
     for a in ad:
-        isinstance(a, AstroData)
         aditerImageObjectIdList.append(id(a.hdulist[1]))
-    #skipping phu
-    for i in range(1,4):
-        hduImageObjectIdList.append(id(ad.hdulist[i]))
-    print('\t#Created two lists to compare image object ids')
-    print('\taditerImageObjectIdList: %s' % str(aditerImageObjectIdList)) 
-    print('\thduImageObjectIdList: %s' % str(hduImageObjectIdList))
+    for phu in ad.hdulist[1:]:
+        hduImageObjectIdList.append(id(phu))
     ok_(aditerImageObjectIdList == hduImageObjectIdList, \
         msg='Object ids are not the same')
-    print('\t#Assert the two lists are the same')
     ad.close()
-    print('\tad.close()')
 
-def iterator_protocol_test1():
-    '''iterator_protocol_test1 -MEF __iter__() and next()
-    '''
-    print('\n\t#Also tests that AstroData Objects are being iterated and')
-    print('\t#that the iterated ad is mapped to the original ad.hdulist')
-    print('\t*mef_file: %s' % mef_file)
-    print('\tad = AstroData(mef_file)')
-    ad = AstroData(mef_file)
+def test1():
+    '''ASTRODATA-iterator-protocol TEST 1: Compare for AD and for HDUList (MEF)'''
+    ad = AstroData(sci123)
     iterprotocol(ad)
 
-def iterator_protocol_test2():
-    '''iterator_protocol_test2 -single ext. __iter__() and next()
-    '''
-    print('\n\t#Also tests that AstroData Objects are being iterated and')
-    print('\t#that the iterated ad is mapped to the original ad.hdulist')
-    print('\t*sef_file: %s' % mef_file)
-    print('\tad = AstroData(sef_file)')
-    ad = AstroData(sef_file)
+def test2():
+    '''ASTRODATA-iterator-protocol TEST 2: Compare for AD and for HDUList (SEF)'''
+    ad = AstroData(sci1)
     iterprotocol(ad)

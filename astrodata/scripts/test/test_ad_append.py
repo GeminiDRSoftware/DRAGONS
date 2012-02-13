@@ -1,156 +1,112 @@
-from nose.tools import *
+from nose.tools import eq_, raises
 
-import file_urls 
+from file_urls import *
 from astrodata import AstroData
 from astrodata import Errors
 
+def runappend(f1=None, f2=None, auto=False):
+    ad = AstroData(f1)
+    md = AstroData(f2)
+    pstr = "\n\n             >>>>>>>     AD     <<<<<<<<\n"
+    pstr += str(ad.infostr())
+    pstr += "\n\n             >>>>>>>    AD APPEND   <<<<<<<<\n"
+    pstr += str(md.infostr())
+    ad.append(moredata=md, auto_number=auto)
+    pstr +="\n\n             >>>>>>>  NEW AD <<<<<<<<\n"
+    pstr += str(ad.infostr())
+    print(pstr)
+    return ad
 
-def ad_append_test1():
-    """ad_append_test1 -moredata=AD, with auto_number
-    """
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
-    print "\n             >>>>>>>     AD HOST    <<<<<<<<"
-    ad1.info()
-    print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
-    ad3.info()
-    ad1.append(moredata=ad3, auto_number=True)
-    print "\n             >>>>>>>  AD HOST (NEW) <<<<<<<<"
-    ad1.info()
-    print ad1[3].extname()
-    eq_(ad1[3].extname(), "MDF")
-    eq_(ad1[4].extname(), "SCI")
-    eq_(ad1[5].extname(), "VAR")
-    eq_(ad1[6].extname(), "DQ")
-    eq_(ad1[4].extver(), 4)
-    eq_(ad1[5].extver(), 4)
-    eq_(ad1[6].extver(), 4)
+def test1():
+    """ASTRODATA-append TEST 1: AUTO NUMBER, mdfscivardq1 to sci123"""
+    ad = runappend(f1=sci123, f2=mdfscivardq1, auto=True) 
+    eq_(ad[3].extname(), "MDF")
+    eq_(ad[4].extname(), "SCI")
+    eq_(ad[5].extname(), "VAR")
+    eq_(ad[6].extname(), "DQ")
+    eq_(ad[4].extver(), 4)
+    eq_(ad[5].extver(), 4)
+    eq_(ad[6].extver(), 4)
 
-def ad_append_test2():
-    """ad_append_test2 -moredata=AD, with auto_number
-    """
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
-    print "\n             >>>>>>>     AD HOST    <<<<<<<<"
-    ad3.info()
-    print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
-    ad1.info()
-    ad3.append(moredata=ad1, auto_number=True)
-    print "\n             >>>>>>>  AD HOST (NEW) <<<<<<<<"
-    ad3.info()
-    eq_(ad3[4].extname(), "SCI")
-    eq_(ad3[5].extname(), "SCI")
-    eq_(ad3[6].extname(), "SCI")
-    eq_(ad3[4].extver(), 2)
-    eq_(ad3[5].extver(), 3)
-    eq_(ad3[6].extver(), 4)
+def test2():
+    """ASTRODATA-append TEST 2: AUTO NUMBER, sci123 to mdfscivardq1"""
+    ad = runappend(f1=mdfscivardq1, f2=sci123, auto=True) 
+    eq_(ad[4].extname(), "SCI")
+    eq_(ad[5].extname(), "SCI")
+    eq_(ad[6].extname(), "SCI")
+    eq_(ad[4].extver(), 2)
+    eq_(ad[5].extver(), 3)
+    eq_(ad[6].extver(), 4)
 
-def ad_append_test3():
-    """ad_append_test3 -moredata=AD, with auto_number
-    """
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
-    print "\n             >>>>>>>     AD HOST    <<<<<<<<"
-    ad4.info()
-    print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
-    ad1.info()
-    ad4.append(moredata=ad1, auto_number=True)
-    print "\n             >>>>>>>  AD HOST (NEW) <<<<<<<<"
-    ad4.info()
-    eq_(ad4[9].extname(), "SCI")
-    eq_(ad4[10].extname(), "SCI")
-    eq_(ad4[11].extname(), "SCI")
-    eq_(ad4[9].extver(), 4)
-    eq_(ad4[10].extver(), 5)
-    eq_(ad4[11].extver(), 6)
+def test3():
+    """ASTRODATA-append TEST 3: AUTO NUMBER, sci123 to scivardq123"""
+    ad = runappend(f1=scivardq123, f2=sci123, auto=True) 
+    eq_(ad[9].extname(), "SCI")
+    eq_(ad[10].extname(), "SCI")
+    eq_(ad[11].extname(), "SCI")
+    eq_(ad[9].extver(), 4)
+    eq_(ad[10].extver(), 5)
+    eq_(ad[11].extver(), 6)
 
-def ad_append_test4():
-    """ad_append_test4 -moredata=AD, with auto_number
-    """
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
-    print "\n             >>>>>>>     AD HOST    <<<<<<<<"
-    ad1.info()
-    print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
-    ad4.info()
-    ad1.append(moredata=ad4, auto_number=True)
-    print "\n             >>>>>>>  AD HOST (NEW) <<<<<<<<"
-    ad1.info()
-    eq_(ad1[3].extname(), "SCI")
-    eq_(ad1[4].extname(), "SCI")
-    eq_(ad1[5].extname(), "SCI")
-    eq_(ad1[6].extname(), "DQ")
-    eq_(ad1[7].extname(), "DQ")
-    eq_(ad1[8].extname(), "DQ")
-    eq_(ad1[9].extname(), "VAR")
-    eq_(ad1[10].extname(), "VAR")
-    eq_(ad1[11].extname(), "VAR")
-    eq_(ad1[3].extver(), 4)
-    eq_(ad1[4].extver(), 5)
-    eq_(ad1[5].extver(), 6)
-    eq_(ad1[6].extver(), 4)
-    eq_(ad1[7].extver(), 5)
-    eq_(ad1[8].extver(), 6)
-    eq_(ad1[9].extver(), 4)
-    eq_(ad1[10].extver(), 5)
-    eq_(ad1[11].extver(), 6)
+def test4():
+    """ASTRODATA-append TEST 4: AUTO NUMBER, scivardq123 to sci123"""
+    ad = runappend(f1=sci123, f2=scivardq123, auto=True) 
+    eq_(ad[3].extname(), "SCI")
+    eq_(ad[4].extname(), "SCI")
+    eq_(ad[5].extname(), "SCI")
+    eq_(ad[6].extname(), "DQ")
+    eq_(ad[7].extname(), "DQ")
+    eq_(ad[8].extname(), "DQ")
+    eq_(ad[9].extname(), "VAR")
+    eq_(ad[10].extname(), "VAR")
+    eq_(ad[11].extname(), "VAR")
+    eq_(ad[3].extver(), 4)
+    eq_(ad[4].extver(), 5)
+    eq_(ad[5].extver(), 6)
+    eq_(ad[6].extver(), 4)
+    eq_(ad[7].extver(), 5)
+    eq_(ad[8].extver(), 6)
+    eq_(ad[9].extver(), 4)
+    eq_(ad[10].extver(), 5)
+    eq_(ad[11].extver(), 6)
 
-def ad_append_test5():
-    """ad_append_test5 -moredata=AD, with auto_number
-    """
-    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
-    print "\n             >>>>>>>     AD HOST    <<<<<<<<"
-    ad3.info()
-    print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
-    ad4.info()
-    ad3.append(moredata=ad4, auto_number=True)
-    print "\n             >>>>>>>  AD HOST (NEW) <<<<<<<<"
-    ad3.info()
-    eq_(ad3[4].extname(), "SCI")
-    eq_(ad3[5].extname(), "SCI")
-    eq_(ad3[6].extname(), "SCI")
-    eq_(ad3[7].extname(), "DQ")
-    eq_(ad3[8].extname(), "DQ")
-    eq_(ad3[9].extname(), "DQ")
-    eq_(ad3[10].extname(), "VAR")
-    eq_(ad3[11].extname(), "VAR")
-    eq_(ad3[12].extname(), "VAR")
-    eq_(ad3[4].extver(), 2)
-    eq_(ad3[5].extver(), 3)
-    eq_(ad3[6].extver(), 4)
-    eq_(ad3[7].extver(), 2)
-    eq_(ad3[8].extver(), 3)
-    eq_(ad3[9].extver(), 4)
-    eq_(ad3[10].extver(), 2)
-    eq_(ad3[11].extver(), 3)
-    eq_(ad3[12].extver(), 4)
+def test5():
+    """ASTRODATA-append TEST 5: AUTO NUMBER, scivardq123 to mdfscivardq1"""
+    ad = runappend(f1=mdfscivardq1, f2=scivardq123, auto=True) 
+    eq_(ad[4].extname(), "SCI")
+    eq_(ad[5].extname(), "SCI")
+    eq_(ad[6].extname(), "SCI")
+    eq_(ad[7].extname(), "DQ")
+    eq_(ad[8].extname(), "DQ")
+    eq_(ad[9].extname(), "DQ")
+    eq_(ad[10].extname(), "VAR")
+    eq_(ad[11].extname(), "VAR")
+    eq_(ad[12].extname(), "VAR")
+    eq_(ad[4].extver(), 2)
+    eq_(ad[5].extver(), 3)
+    eq_(ad[6].extver(), 4)
+    eq_(ad[7].extver(), 2)
+    eq_(ad[8].extver(), 3)
+    eq_(ad[9].extver(), 4)
+    eq_(ad[10].extver(), 2)
+    eq_(ad[11].extver(), 3)
+    eq_(ad[12].extver(), 4)
 
-def ad_append_test6():
-    """ad_append_test6 -moredata=AD, with auto_number
-    """
-    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
-    print "\n             >>>>>>>     AD HOST    <<<<<<<<"
-    ad4.info()
-    print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
-    ad3.info()
-    ad4.append(moredata=ad3, auto_number=True)
-    print "\n             >>>>>>>  AD HOST (NEW) <<<<<<<<"
-    ad4.info()
-    eq_(ad4[9].extname(), "MDF")
-    eq_(ad4[10].extname(), "SCI")
-    eq_(ad4[11].extname(), "VAR")
-    eq_(ad4[12].extname(), "DQ")
-    eq_(ad4[10].extver(), 4)
-    eq_(ad4[11].extver(), 4)
-    eq_(ad4[12].extver(), 4)
+def test6():
+    """ASTRODATA-append TEST 6: AUTO NUMBER, mdfscivardq1 to scivardq123"""
+    ad = runappend(f1=scivardq123, f2=mdfscivardq1, auto=True) 
+    eq_(ad[9].extname(), "MDF")
+    eq_(ad[10].extname(), "SCI")
+    eq_(ad[11].extname(), "VAR")
+    eq_(ad[12].extname(), "DQ")
+    eq_(ad[10].extver(), 4)
+    eq_(ad[11].extver(), 4)
+    eq_(ad[12].extver(), 4)
 
-def ad_append_test7():
-    """ad_append_test7 -auto_number, add sci1 to existing sci1
-    """
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
+def test7():
+    """ASTRODATA-append TEST 7: AUTO NUMBER, sci1 to sci123"""
+    ad1 = AstroData(sci123) #sci 3
+    ad4 = AstroData(scivardq123) #sci3 var3 dq3
     print "\n             >>>>>>>     AD HOST    <<<<<<<<"
     ad1.info()
     print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
@@ -163,11 +119,10 @@ def ad_append_test7():
     eq_(ad1[3].hdulist[1].name, "SCI")
     eq_(ad1[3].extver(), 4)
 
-def ad_append_test8():
-    """ad_append_test8 -auto_number, append var
-    """
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
+def test8():
+    """ASTRODATA-append TEST 8: AUTO NUMBER, var2 to sci123"""
+    ad1 = AstroData(sci123) #sci 3
+    ad4 = AstroData(scivardq123) #sci3 var3 dq3
     print "\n             >>>>>>>     AD HOST    <<<<<<<<"
     ad1.info()
     print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
@@ -181,11 +136,10 @@ def ad_append_test8():
     eq_(ad1[3].extver(), 4)
 
 
-def ad_append_test9():
-    """ad_append_test9 -auto_number, append high var
-    """
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
+def test9():
+    """ASTRODATA-append TEST 9: AUTO NUMBER, var3 to sci12"""
+    ad1 = AstroData(sci123) #sci 3
+    ad4 = AstroData(scivardq123) #sci3 var3 dq3
     print "\n             >>>>>>>     AD HOST    <<<<<<<<"
     ad1.hdulist.__delitem__(3)
     print("ad1.hdulist.__delitem__(3)")
@@ -201,79 +155,51 @@ def ad_append_test9():
     eq_(ad1[2].extver(), 3)
 
 @ raises(Errors.AstroDataError)
-def ad_append_test10():
-    """ad_append_test10 -auto_number, raise when no header
-    """
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
-    print "\n             >>>>>>>     AD HOST    <<<<<<<<"
-    ad1.info()
-    print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
+def test10():
+    """ASTRODATA-append TEST 10: AUTO NUMBER, Fail when data with no header"""
+    ad1 = AstroData(sci123) #sci 3
+    ad4 = AstroData(scivardq123) #sci3 var3 dq3
     adsci = ad4['SCI', 1]
-    print("adsci = ad4['SCI', 1]")
     ad1.append(data=adsci.data, auto_number=True)
-    print "ad1.append(data=adsci.data, auto_number=True)"
-    print "\n             >>>>>>>  AD HOST (NEW) <<<<<<<<"
-    ad1.info()
-    eq_(ad1[3].extname(), "SCI")
-    eq_(ad1[3].extver(), 4)
 
-def ad_append_test11():
-    """ad_append_test11 -auto_number, append with high sci extver
-    """
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
+def test11():
+    """ASTRODATA-append TEST 11: AUTO NUMBER, Do not alter extver if > existing"""
+    ad1 = AstroData(sci123) #sci 3
+    ad4 = AstroData(scivardq123) #sci3 var3 dq3
     print "\n             >>>>>>>     AD HOST    <<<<<<<<"
     ad1.info()
     print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
     adsci = ad4['SCI', 1]
     print("adsci = ad4['SCI', 1]")
     ad1.append(extver=10, header=adsci.header, data=adsci.data, auto_number=True)
-    print("ad1.append(extver=10, header=adsci.header, data=adsci.data,\
-          auto_number=True)")
+    print("ad1.append(extver=10, header=adsci.header, data=adsci.data,"
+          " auto_number=True)")
     print "\n             >>>>>>>  AD HOST (NEW) <<<<<<<<"
     ad1.info()
     eq_(ad1[3].extname(), "SCI")
     eq_(ad1[3].extver(), 10)
 
 @ raises(Errors.AstroDataError)
-def ad_append_test12():
-    """ad_append_test12 -no auto_number, moredata raise when conflict
-    """
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
-    print "\n             >>>>>>>     AD HOST    <<<<<<<<"
-    ad1.info()
-    print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
-    ad4.info()
-    ad1.append(moredata=ad4)
-    print "ad1.append(moredata=ad4)"
-    print "\n             >>>>>>>  AD HOST (NEW) <<<<<<<<"
-    ad1.info()
+def test12():
+    """ASTRODATA-append TEST 12: Fail scivardq123 to sci123 (NO AUTO NUMBER)"""
+    ad = runappend(f1=sci123, f2=scivardq123) 
 
 @ raises(Errors.AstroDataError)
-def ad_append_test13():
-    """ad_append_test13 -no auto_number, raise when conflict
-    """
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
+def test13():
+    """ASTRODATA-append TEST 13: Fail sci1 to sci123 (NO AUTO NUMBER)"""
+    ad1 = AstroData(sci123) #sci 3
+    ad4 = AstroData(scivardq123) #sci3 var3 dq3
     print "\n             >>>>>>>     AD HOST    <<<<<<<<"
     ad1.info()
     print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
     adsci = ad4['SCI', 1]
     print("adsci = ad4['SCI', 1]")
     ad1.append(header=adsci.header, data=adsci.data)
-    print("ad1.append(extver=10, header=adsci.header, data=adsci.data,\
-          auto_number=True)")
-    print "\n             >>>>>>>  AD HOST (NEW) <<<<<<<<"
-    ad1.info()
 
 
-def ad_append_test14():
-    """ad_append_test14 -auto_number, build mef from phu instantiation
-    """
-    ad1 = AstroData(file_urls.testdatafile_1) #sci 3
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
+def test14():
+    """ASTRODATA-append TEST 14: AUTO NUMBER, given phu, construct sci123"""
+    ad1 = AstroData(sci123) 
     print "\n             >>>>>>>     AD NEW    <<<<<<<<"
     ad_new = AstroData(phu=ad1.phu)
     ad_new.info()
@@ -294,14 +220,15 @@ def ad_append_test14():
     eq_(ad_new[2].extname(), "SCI")
     eq_(ad_new[2].extver(), 3)
 
-def ad_append_test15():
-    """ad_append_test15 -auto_number, extver override
+def test15():
+    """ASTRODATA-append TEST 15: AUTO NUMBER, extver param override (dq2-dq1)
     """
-    ad4 = AstroData(file_urls.testdatafile_4) #sci3 var3 dq3
+    ad4 = AstroData(scivardq123) 
     print "\n             >>>>>>>     AD NEW    <<<<<<<<"
     ad_new = AstroData(phu=ad4.phu)
     ad_new.info()
     print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
+    print ad4.info()
     ad_new.append(header=ad4[1].header, data=ad4[1].data,  extver=1, \
         auto_number=True) 
     ad_new.append(header=ad4[4].header, data=ad4[4].data,  extver=1, \
@@ -313,22 +240,21 @@ def ad_append_test15():
     print mystr
     print "\n             >>>>>>>  AD NEW <<<<<<<<"
     ad_new.info()
-    
     eq_(ad_new[0].extname(), "SCI")
     eq_(ad_new[0].extver(), 1)
     eq_(ad_new[1].extname(), "DQ")
     eq_(ad_new[1].extver(), 1)
 
 
-def ad_append_test16():
-    """ad_append_test16 -auto_number, mdf
+def test16():
+    """ASTRODATA-append TEST 16: AUTO NUMBER MDF
     """
-    ad3 = AstroData(file_urls.testdatafile_3) #mdf sci var dq
+    ad3 = AstroData(mdfscivardq1) 
     print "\n             >>>>>>>     AD NEW    <<<<<<<<"
     ad_new = AstroData(phu=ad3.phu)
     ad_new.info()
     print "\n             >>>>>>>    AD APPEND   <<<<<<<<"
-    print ad3[0].data.__class__
+    #print ad3[0].data.__class__
     ad_new.append(header=ad3[0].header, data=ad3[0].data,\
         auto_number=True) 
     mystr = "ad_new.append(header=ad4[1].header, data=ad4[1].data,"

@@ -1,68 +1,86 @@
 import pyfits
 
-from nose.tools import *
+from nose.tools import eq_
 
 from astrodata import AstroData
-import file_urls
+from file_urls import sci123, sci1
 
-mef_file = file_urls.testdatafile_1
-sef_file = file_urls.testdatafile_1
 
-def inferredsci(testhdulist):
-    alist = []
-    blist = []
+
+def test1():
+    """ASTRODATA-inferred TEST 1: 'SCI',<VER> for all exts if no XNAMs found (MEF)"""
+    testhdulist = pyfits.open(sci123)
+    
+    # make it so no XNAM found
     for hdu in testhdulist[1:]:
-        alist.append(hdu.name)
-    print "\n\tList of ext. names of input:", repr(alist)
+        hdu.name = ""
+        hdu.header.rename_key("extname","xname" )
+    hlist = []
+    alist = []
+    for hdu in testhdulist[1:]:
+        hlist.append(hdu.name)
+    print("\n\n    HDUList EXTNAME: %s" % hlist)
     ad = AstroData(testhdulist) 
-    for ahdu in ad.hdulist[1:]:
-        blist.append(ahdu.name)
-    print "\tList of ext. names after AD instance:", repr(blist)
-    for a in alist:
-        eq_(a, "", msg="Input hdu names have been assigned")
-    for b in blist:
-        eq_(str(b), "SCI", msg="Inferred name is not 'SCI'")
+    for i in range(0,3):
+        alist.append((ad[i].extname(), ad[i].extver()))
+        eq_(ad[i].extname(), 'SCI', msg="extname is not sci")
+        eq_(ad[i].extver(), i + 1, msg="extver is incorrect")
+    print("\n    AD (EXTNAME,EXTVER): %s" % alist)
     ad.close()
     testhdulist.close()
-    alist = []
-    blist = []
 
-def turnoff(testhdulist):
-    alist = []
-    blist = []
-    if testhdulist[1].name == "SCI":
-        for hdu2 in testhdulist[1:]:
-            hdu2.name = ""
-    testhdulist[1].name = "SCI"
+def test2():
+    """ASTRODATA-inferred TEST 2: Do not infer when XNAM found (MEF)"""
+    testhdulist = pyfits.open(sci123)
+    for hdu in testhdulist[2:]:
+        hdu.name = ""
+        hdu.header.rename_key("extname","xname" )
+    hlist = []
+    alist = [] 
     for hdu in testhdulist[1:]:
-        alist.append(hdu.name)
-    print "\n\tList of ext. names of input:", repr(alist)
+        hlist.append(hdu.name)
+    print("\n\n    HDUList EXTNAME: %s" % hlist)
     ad = AstroData(testhdulist) 
-    for ahdu in ad.hdulist[1:]:
-        blist.append(ahdu.name)
-    print "\tList of ext. names after AD instance:", repr(blist)
-    eq_(alist, blist, msg="Inferred naming is on")
+    for i in range(0,3):
+        alist.append((ad[i].extname(), ad[i].extver()))
+    print("\n    AD (EXTNAME,EXTVER): %s" % alist)
+    testhdulist.close()
+    eq_(ad[0].extname(), 'SCI', msg="extname is not sci")
+    eq_(ad[1].extname(), None, msg="extname is not sci")
+    eq_(ad[2].extname(), None, msg="extname is not sci")
+    eq_(ad[0].extver(), 1, msg="extver is incorrect")
+    eq_(ad[1].extver(), 2, msg="extver is incorrect")
+    eq_(ad[2].extver(), 3, msg="extver is incorrect")
 
-def inferred_extname_test1():
-    """inferred_extname_test1 -raw ad MEF extname is inferred 'SCI'
+def test3():
+    """ASTRODATA-inferred TEST 3: 'SCI' 1 if no XNAM found (SEF)"""
+    testhdulist = pyfits.open(sci1)
+    hlist = []
+    alist = []
+    for hdu in testhdulist[1:]:
+        hlist.append(hdu.name)
+    print("\n\n    HDUList EXTNAME: %s" % hlist)
+    ad = AstroData(testhdulist) 
+    alist.append((ad[0].extname(), ad[0].extver()))
+    eq_(ad[0].extname(), 'SCI', msg="extname is not sci")
+    eq_(ad[0].extver(), 1, msg="extver is incorrect")
+    print("\n    AD (EXTNAME,EXTVER): %s" % alist)
+    ad.close()
+    testhdulist.close()
+        
+def test4():
+    """ASTRODATA-inferred TEST 4: Do not infer when XNAM found (SEF)
     """
-    testhdulist = pyfits.open(mef_file)
-    inferredsci(testhdulist)
-
-def inferred_extname_test2():
-    """inferred_extname_test2 -ad MEF inferred off when input ext named
-    """
-    testhdulist = pyfits.open(mef_file)
-    turnoff(testhdulist)
-
-def inferred_extname_test3():
-    """inferred_extname_test3 -raw ad single ext. extname is inferred 'SCI'
-    """
-    testhdulist = pyfits.open(sef_file)
-    inferredsci(testhdulist)
-
-def inferred_extname_test4():
-    """inferred_extname_test4 -ad single ext. inferred off when input ext named
-    """
-    testhdulist = pyfits.open(sef_file)
-    turnoff(testhdulist)
+    testhdulist = pyfits.open(sci1)
+    testhdulist[1].name = "MARS"
+    hlist = []
+    alist = [] 
+    for hdu in testhdulist[1:]:
+        hlist.append(hdu.name)
+    print("\n\n    HDUList EXTNAME: %s" % hlist)
+    ad = AstroData(testhdulist) 
+    alist.append((ad[0].extname(), ad[0].extver()))
+    print("\n    AD (EXTNAME,EXTVER): %s" % alist)
+    testhdulist.close()
+    eq_(ad[0].extname(), 'MARS', msg="extname is not sci")
+    eq_(ad[0].extver(), 1, msg="extver is incorrect")

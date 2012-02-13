@@ -1,107 +1,62 @@
 import os
 from subprocess import call
 
-from nose.tools import *
+from nose.tools import raises, assert_true, ok_
 
-import file_urls 
+from file_urls import sci123
 from astrodata import AstroData
 from astrodata import Errors
 
-testfile = file_urls.testdatafile_1
-
-def accessmode_test1():
-    '''accessmode_test1 -Exception, ad write readonly using same filename  
-    '''
-    print('\n\t* testfile: %s' % testfile)
-    ad = AstroData(testfile)
-    print('\tad = AstroData(testfile)')
-    print('\tad.write()   #expect exception here')
-    throwexcept = False
-    try:
-        ad.write()
-    except Errors.AstroDataError,e:
-        throwexcept = True
-        print("\t%s" % e)
-    assert_true(throwexcept)
-    ad.close()
-    print('\t#ad closed')
-
-def accessmode_test2():
-    '''accessmode_test2 -ad write readonly using different filename
-    '''
-    print('\n\t* testfile: %s' % testfile)
-    ad = AstroData(testfile)
-    print('\tad = AstroData(testfile)   #default is readonly')
-    ad.filename = 'test2.fits'
-    print('\tad.filename = "test2.fits"   #filename changed')
+@raises(Errors.AstroDataError)
+def test1():
+    '''ASTRODATA-accessmode TEST 1: Fail when try to overwrite readonly'''
+    ad = AstroData(sci123)
     ad.write()
-    print('\tad.write()')
-    assert_true(os.path.isfile('./test2.fits'))
-    print("\tassert_true(os.path.isfile('./test2.fits'))")
-    os.remove('./test2.fits')
-    ad.close()
-    print('\t#ad closed and test2.fits removed')
 
-def accessmode_test3():
-    '''accessmode_test3 -Exception, ad write readonly to same file (clobber)
-    '''
-    print('\n\t* testfile: %s' % testfile)
-    ad = AstroData(testfile)
-    print('\tad = AstroData(testfile)')
-    print('\tad.write(clobber=True)   #readonly should override clobber')
-    throwexcept = False
-    try:
-        ad.write(clobber=True)
-    except Errors.AstroDataError,e:
-        throwexcept = True
-        print("\t%s" % e)
-    assert_true(throwexcept)
+def test2():
+    '''ASTRODATA-accessmode TEST 2: Overwrite readonly AD using name change'''
+    ad = AstroData(sci123)
+    outfile = 'python_out/accessmodetest2.fits'
+    if os.path.exists(outfile):
+        os.remove(outfile)
+    ad.filename = outfile
+    ad.write()
+    assert_true(os.path.isfile(outfile), 'ad.write() FAIL')
+    os.remove(outfile)
     ad.close()
-    print('\t#ad closed')
 
-def accessmode_test4():
-    '''accessmode_test4 -Exception, ad write to same file (updated, no clobber)
+def test3():
+    '''ASTRODATA-accessmode TEST 3: Clobber unchanged readonly file'''
+    ad = AstroData(sci123)
+    ad.write(clobber=True)
+    assert_true(os.path.isfile(sci123), 'Clobber fail')
+    ad.close()
+
+def test4():
+    '''ASTRODATA-accessmode TEST 4: Fail when try to update readonly file
     '''
-    print('\n\t* testfile: %s' % testfile)
-    call('cp ' + testfile + ' test4.fits', shell=True)
-    print('\t#moved testfile into current directory as "test4.fits"')
-    ad = AstroData('test4.fits', mode='update')
-    print('\tad = AstroData("test4.fits", mode="update")')
+    outfile = 'python_out/accessmodetest3.fits'
+    call('cp ' + sci123 + ' ' + outfile, shell=True)
+    ad = AstroData(outfile, mode='update')
     ad.hdulist[0].header['INSTRUME'] = 'GMOS-S'
-    print('\t#change keyword INSTRUME from GMOS-N to GMOS-S')
-    print("\tad.hdulist[0].header['INSTRUME'] = 'GMOS-S'")
-    throwexcept = False
     try:
-        print('\tad.write()   #expected failure because clobber=False')
         ad.write()
     except Errors.AstroDataError,e:
         throwexcept = True
-        print("\t%s" % e)
-    assert_true(throwexcept)
+    assert_true(throwexcept, "Updated readonly file")
     ad.close()
-    os.remove('./test4.fits')
-    print('\t#ad closed and test4.fits removed')
+    os.remove(outfile)
 
-def accessmode_test5():
-    '''accessmode_test5 -ad write to same file (updated, with clobber)
-    '''
-    print('\n\t* testfile: %s' % testfile)
-    call('cp ' + testfile + ' test5.fits', shell=True)
-    print('\t#moved testfile into current directory as "test5.fits"')
-    ad = AstroData('test5.fits', mode='update')
-    print('\tad = AstroData("test5.fits", mode="update")')
+def test5():
+    '''ASTRODATA-accessmode TEST 5: Clobber changed readonly file'''
+    outfile = 'python_out/accessmodetest5.fits'
+    call('cp ' + sci123 + ' ' + outfile, shell=True)
+    ad = AstroData(outfile, mode='update')
     ad.hdulist[0].header['INSTRUME'] = 'GMOS-S'
-    print('\t#change keyword INSTRUME from GMOS-N to GMOS-S')
-    print("\tad.hdulist[0].header['INSTRUME'] = 'GMOS-S'")
     ad.write(clobber=True)
-    print('\tad.write(clobber=True)')
     ad.close()
-    print('\tad.close()')
-    ad = AstroData('test5.fits')
-    print('\tad = AstroData("test5.fits")   #re-open ad instance')
+    ad = AstroData(outfile)
     ok_(ad.hdulist[0].header['INSTRUME'] == 'GMOS-S', msg='Keyword is different')
-    print('\t#assert the "INSTRUME" keyword is still GMOS-S')
-    os.remove('./test5.fits')
+    os.remove(outfile)
     ad.close()
-    print('\t#ad closed and test5.fits removed')
 

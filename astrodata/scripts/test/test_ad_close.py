@@ -1,60 +1,35 @@
 from nose.tools import *
 
-import file_urls 
+from  file_urls import sci123, sci1 
 from astrodata import AstroData
 
-mef_file = file_urls.testdatafile_1
-sef_file = file_urls.testdatafile_2
-
-def ad_close_test1():
-    '''ad_close_test1 -close MEF (hdulist is None)  
+def test1():
+    '''ASTRODATA-close TEST 1: MEF, Closing AD will cause hdulist to be None
     '''
-    print('\n\t* mef_file: %s' % mef_file)
-    ad = AstroData(mef_file)
-    print('\tad = AstroData(mef_file)')
-    print('\tad.hdulist == %s' % ad.hdulist)
-    print('\tad.close()')
+    ad = AstroData(sci123)
     ad.close()
     eq_(ad.hdulist, None, msg='ad.hdulist is not None')
-    print('\tad.hdulist == None')
 
-def ad_close_test2():
-    '''ad_close_test2 -close MEF subdata (adhdulist stays open)  
+def test2():
+    '''ASTRODATA-close TEST 2: MEF, Closing AD subdata will not affect hdulist  
     '''
-    print('\n\t* mef_file: %s' % mef_file)
-    ad = AstroData(mef_file)
-    print('\tad = AstroData(mef_file)')
-    sd = ad['SCI,1']
-    print("\tsd = ad['SCI,1']")
-    sd.close()
-    print('\tsd.close()')
+    ad = AstroData(sci123)
+    ad['SCI',1].close()
     assert_not_equal(ad.hdulist, None, msg='original hdulist is None')
-    print('\tad.hdulist != None')
     ad.close() 
 
-def ad_close_test3():
-    '''ad_close_test3 -close single ext fits (hdulist is None)  
+def test3():
+    '''ASTRODATA-close TEST 3: SEF, Closing AD will cause hdulist to be None
     '''
-    print('\n\t* sef_file: %s' % sef_file)
-    ad = AstroData(sef_file)
-    print('\tad = AstroData(sef_file)')
-    print('\tad.hdulist == %s' % ad.hdulist)
-    print('\tad.close()')
+    ad = AstroData(sci1)
     ad.close()
     eq_(ad.hdulist, None, msg='ad.hdulist is not None')
-    print('\tad.hdulist == None')
 
-def ad_close_test4():
-    '''ad_close_test4 -close single ext fits subdata (ad.hdulist stays open)  
+def test4():
+    '''ASTRODATA-close TEST 4: SEF, Closing AD subdata will not affect hdulist  
     '''
-    print('\n\t* sef_file: %s' % sef_file)
-    ad = AstroData(sef_file)
-    print('\tad = AstroData(sef_file)')
-    sd = ad['SCI,1']
-    print("\tsd = ad['SCI,1']")
-    sd.close()
-    print('\tsd.close()')
+    ad = AstroData(sci1)
+    ad['SCI', 1].close()
     assert_not_equal(ad.hdulist, None, msg='original hdulist is None')
-    print('\tad.hdulist != None')
     ad.close() 
 

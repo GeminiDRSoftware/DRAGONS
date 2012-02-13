@@ -2,14 +2,13 @@ import sys
 import os
 import re
 
-from nose.tools import *
+#from nose.tools import *
 from nose.plugins.skip import Skip, SkipTest
 
 from astrodata import AstroData
 from astrodata import Errors
-import file_urls
+from file_urls import sci123
 
-testfile = file_urls.testdatafile_1
 # use debug to print out extra detail for failures
 # '_' is appended to verbose to prevent nose collision
 debug = False
@@ -44,13 +43,20 @@ def result_handler(msg, cmsg, exval, cexval, debug, outstr):
 
 
 
-def dv_operators_test1():
-    """dv_operators_test1 -Python operators vs. descriptor value operators 
+def test1():
+    """ASTRODATA-descriptor-value TEST 1: Python vs. DV"""
+    tstr = """Need to visit 6 Failures and no datetime testing:
+     
+     DESCRIPTOR: observation_id, GN-2009A-Q-2-23,  PYTYPE: <type 'str'>
+    
+     (1, 2, 3) dval % (stringdv, floatdv, intdv) ==> Python=GN-2009A-Q-2-23 DV=None
+    
+     (4, 5, 6) "'hi'" % dval ==> Python=Control Except, DV='hi' (same for float, int)
     """
-    #raise SkipTest
-    ad = AstroData(testfile)
+    print tstr
+    ad = AstroData(sci123)
     outstr = ""
-    outstr += "\n\tTest input file: " + testfile
+    outstr += "\n\tTest input file: " + sci123
     outstr += '''\n\n** Summary: 
         A descriptor value (DV) is first tested as itself, a 
         Descriptor Value class instance, versus a data type of 
