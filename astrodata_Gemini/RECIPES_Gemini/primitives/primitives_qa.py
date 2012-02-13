@@ -490,7 +490,15 @@ class QAPrimitives(GENERALPrimitives):
                 zpv = d.sum() / weights.sum()
                 zpe = math.sqrt(zpv)
 
-                nominal_zeropoint = float(ad['SCI', extver].nominal_photometric_zeropoint())
+                try:
+                    nominal_zeropoint = float(ad['SCI', extver].nominal_photometric_zeropoint())
+                except:
+                    log.warning("No nominal photometric zeropoint "\
+                                "available for %s[SCI,%d], filter %s" %
+                                (ad.filename,extver,
+                                 ad.filter_name(pretty=True)))
+                    continue
+
                 cloud = nominal_zeropoint - zp
                 detzp_means.append(zp)
                 detzp_clouds.append(cloud)
