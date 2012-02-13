@@ -101,21 +101,34 @@ class PhotometryPrimitives(GENERALPrimitives):
             # More to the point, with 6 amp mode, doing 6 queries to an external server is annoyingly slow,
             # so for now at least I'm moving it to do one query and store the same refcat for each extver.
             # PH 20111202
-            problem = False
-            ra = ad.ra().as_pytype()
-            dec = ad.dec().as_pytype()
+            try:
+                ra = ad.ra().as_pytype()
+                dec = ad.dec().as_pytype()
+            except:
+                log.warning("No RA/Dec in header of %s; cannot find "\
+                            "reference sources" % ad.filename)
+                continue
+
             log.fullinfo("Calling Vizier at %s" % url)
             import warnings
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
+
+                # Try importing; break the outer loop if it doesn't work
                 try:
                     import vo.conesearch
                     import vo.table
-                    table = vo.conesearch.conesearch(catalog_db=url, ra=ra, dec=dec, sr=radius, pedantic=False, verb=2, verbose=False)
                 except:
                     log.critical("Problem importing the vo module. This isn't going to work")
                     adoutput_list = adinput
-                    problem = True
+                    break
+
+                # Try the query; go to the next input if it fails
+                try:
+                    table = vo.conesearch.conesearch(catalog_db=url, ra=ra, dec=dec, sr=radius, pedantic=False, verb=2, verbose=False)
+                except:
+                    log.warning("Vizier query failed for %s" % ad.filename)
+                    continue
 
             # Loop through the science extensions
             for sciext in ad['SCI']:
@@ -201,11 +214,6 @@ class PhotometryPrimitives(GENERALPrimitives):
                     else:
                         log.fullinfo("Adding REFCAT to %s" % ad.filename)
                     ad.append(tb_ad)
-
-            # If there was a problem found (ie. vo module couldn't
-            # be imported), break the outer loop
-            if problem:
-                break
 
             # Match the object catalog against the reference catalog
             # Update the refid and refmag columns in the object catalog
