@@ -107,6 +107,7 @@ class PhotometryPrimitives(GENERALPrimitives):
             except:
                 log.warning("No RA/Dec in header of %s; cannot find "\
                             "reference sources" % ad.filename)
+                adoutput_list.append(ad)
                 continue
 
             log.fullinfo("Calling Vizier at %s" % url)
@@ -128,6 +129,7 @@ class PhotometryPrimitives(GENERALPrimitives):
                     table = vo.conesearch.conesearch(catalog_db=url, ra=ra, dec=dec, sr=radius, pedantic=False, verb=2, verbose=False)
                 except:
                     log.warning("Vizier query failed for %s" % ad.filename)
+                    adoutput_list.append(ad)
                     continue
 
             # Loop through the science extensions
