@@ -454,13 +454,16 @@ class QAPrimitives(GENERALPrimitives):
                 # OK, trim out bad values
                 zps = np.where((zps > -500), zps, None)
                 zps = np.where((flags == 0), zps, None)
-                zps = np.where((iflags == 0), zps, None)
                 zperrs = np.where((zps > -500), zperrs, None)
                 zperrs = np.where((flags == 0), zperrs, None)
-                zperrs = np.where((iflags == 0), zperrs, None)
                 ids = np.where((zps > -500), ids, None)
                 ids = np.where((flags == 0), ids, None)
-                ids = np.where((iflags == 0), ids, None)
+                if not np.all(iflags==-999):
+                    # All DQ flags are -999 if sextractor was run without a DQ plane;
+                    # don't use them in this case
+                    zps = np.where((iflags == 0), zps, None)
+                    zperrs = np.where((iflags == 0), zperrs, None)
+                    ids = np.where((iflags == 0), ids, None)
 
                 # Trim out where zeropoint error > 0.1
                 zps = np.where((zperrs < 0.1), zps, None)
