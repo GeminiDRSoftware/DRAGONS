@@ -105,10 +105,13 @@ class PhotometryPrimitives(GENERALPrimitives):
                 ra = ad.ra().as_pytype()
                 dec = ad.dec().as_pytype()
             except:
-                log.warning("No RA/Dec in header of %s; cannot find "\
-                            "reference sources" % ad.filename)
-                adoutput_list.append(ad)
-                continue
+                if "qa" in rc.context:
+                    log.warning("No RA/Dec in header of %s; cannot find "\
+                                "reference sources" % ad.filename)
+                    adoutput_list.append(ad)
+                    continue
+                else:
+                    raise
 
             log.fullinfo("Calling Vizier at %s" % url)
             import warnings
