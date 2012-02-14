@@ -491,6 +491,7 @@ integrates other functionality.
         # Copying over private variables over to copied object
         adReturn.__origFilename = self.__origFilename
         adReturn._filename = self._filename
+        adReturn.mode = self.mode
         # Return fully copied AD instance
         return adReturn
     
