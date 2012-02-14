@@ -416,6 +416,10 @@ class RegistrationPrimitives(GENERALPrimitives):
                                 all_delta_ra.append(dra)
                                 all_delta_dec.append(ddec)
 
+                    if not delta_ra or not delta_dec:
+                        log.fullinfo("No reference sources in %s[SCI,extver]" % ad.filename)
+                        continue
+
                     # Report the mean and standard deviation of the offsets:
                     ra_mean = np.mean(delta_ra) * 3600.0
                     ra_sigma = np.std(delta_ra) * 3600.0
@@ -437,6 +441,7 @@ class RegistrationPrimitives(GENERALPrimitives):
                     # in the rc (preferably as James' fancy WCS object that doesn't actually exist yet)
                     # then the other primitive should apply that to the WCS in the astrodata instance.
                     if(correctWCS):
+
                         # Handle the image extensions first
                         for thing in ['SCI', 'VAR', 'DQ']:
                             image = ad[thing, extver]
@@ -462,7 +467,7 @@ class RegistrationPrimitives(GENERALPrimitives):
                             row['Y_WORLD'] = radec[1]
 
             
-            if(objcats):
+            if(objcats and all_delta_ra and all_delta_dec):
                 # Report the mean and standard deviation of all the offsets over all the sci extensions:
                 ra_mean = np.mean(all_delta_ra) * 3600.0
                 ra_sigma = np.std(all_delta_ra) * 3600.0
