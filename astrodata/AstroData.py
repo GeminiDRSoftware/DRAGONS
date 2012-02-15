@@ -1,4 +1,4 @@
-#!/bin/env pyth
+#!/bin/env python
 __docform__ = "restructuredtext" #for epydoc
 
 import sys
@@ -624,10 +624,10 @@ integrates other functionality.
         host_bigver = et_host.largest_extver()
         if extver:
             xver = extver
-            header.update("EXTVER", xver, "Added by AstroData")
+            header.update("EXTVER", xver, "Added by AstroData", after="EXTNAME")
         elif xver <=  host_bigver and xver is not None:
             xver = host_bigver + 1
-            header.update("EXTVER", xver, "Added by AstroData")
+            header.update("EXTVER", xver, "Added by AstroData", after="EXTNAME")
         if append:
             if isinstance(data, pyfits.core.FITS_rec):
                 self.hdulist.append(pyfits.BinTableHDU(data=data,header=header))
@@ -1456,14 +1456,17 @@ help      False     show help information    """
             else: 
                 header.update("EXTNAME", extname, "Added by AstroData")
             if extver is None:
-                header.update("EXTVER", 1, "Added by AstroData")
+                header.update("EXTVER", 1, "Added by AstroData", \
+                    after="EXTNAME")
             else:
-                header.update("EXTVER", extver, "Added by AstroData")
+                header.update("EXTVER", extver, "Added by AstroData", \
+                    after="EXTNAME")
         else:
-            if extver and header.has_key("EXTVER"):
-                header.update("EXTVER", extver, "Added by AstroData")
             if extname and header.has_key("EXTNAME"):
                 header.update("EXTNAME", extname, "Added by AstroData")
+            if extver and header.has_key("EXTVER"):
+                header.update("EXTVER", extver, "Added by AstroData", \
+                    after="EXTNAME")
         return header
         
     def write(self, filename=None, clobber=False, rename=None):
