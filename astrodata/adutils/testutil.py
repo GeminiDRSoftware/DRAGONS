@@ -7,7 +7,7 @@ from nose.tools import assert_true, eq_, raises, ok_, assert_not_equal
 
 prepath = ''
 for path in sys.path:
-    if 'gemini_python' in path:
+    if 'gemini_python' in path and 'rtftests' not in path:
         splist = path.split('gemini_python')
         prepath += splist[0]
         break
