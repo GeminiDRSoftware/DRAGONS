@@ -1336,6 +1336,7 @@ help      False     show help information    """
                     if hdu.header.get("TFIELDS"): kafter = "TFIELDS"
                     hdu.header.update("EXTNAME", "SCI", \
                         "added by AstroData", after=kafter)
+                    del hdu.header['extver']
                     hdu.header.update("EXTVER", i, \
                         "added by AstroData", after="EXTNAME")
                     hdu.name = SCI
@@ -1357,9 +1358,9 @@ help      False     show help information    """
                     ev = hdu.header.get("EXTVER")
                     inferEV += 1
                     if not ev or int(ev)< 1:
+                        del hdu.header['extver']
                         hdu.header.update("EXTVER", inferEV ,after="EXTNAME")
                         hdu._extver = inferEV
-                        
     
     def rename_ext(self, name, ver=None, force=True):
         """
