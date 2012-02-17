@@ -1274,10 +1274,6 @@ help      False     show help information    """
                 self.filename = source
                 self.__origFilename = source
                 try:
-                    if mode == "new":
-                        if os.access(self.filename, os.F_OK):
-                            os.remove(self.filename)
-                        mode = "append"
                     self.hdulist = pyfits.open(self.filename, mode=mode)
                     self.mode = mode
                     if len(self.hdulist) == 1:   # This is a single FITS
