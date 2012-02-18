@@ -74,9 +74,23 @@ class UserParam(object):
         self.primname = primname
         self.param = param
         self.value = value
-        
+    
+    def __repr__(self):
+        ret = "UserParam: adtype=%s primname=%s %s=%s" % (repr(self.astrotype),
+                                          repr(self.primname),
+                                          repr(self.param),
+                                          repr(self.value),
+                                          )
+        return ret
 class UserParams(object):
     user_param_dict = None
+    
+    def is_empty(self):
+        if self.user_param_dict == None or len(self.user_param_dict.keys()) == 0:
+            return True
+        else:
+            return False
+            
     def get_user_param(self, astrotype, primname):
         if self.user_param_dict == None:
             return None
@@ -104,6 +118,14 @@ class UserParams(object):
             (up.astrotype, up.primname, up.param))
         else:
             self.user_param_dict[up.astrotype][up.primname].update({up.param:up.value})
+    def __repr__(self):
+        ret = "UserParams: "
+        ret += repr(self.user_param_dict)
+        return ret
+        
+    def __contains__(self, arg):
+        if self.user_param_dict:
+            return self.user_param_dict.__contains__(arg0)
             
 class ReductionContext(dict):
     """The ReductionContext is used by primitives and recipies, implicitely in the
@@ -263,8 +285,8 @@ class ReductionContext(dict):
                     elif (value.lower() == "false"):
                         value = False
                     else:
-                        mes = "%s is not legal boolean setting" % value
-                        mes += 'for "boolean %s"' % parname
+                        mes = "%s is not legal boolean setting " % value
+                        mes += 'for "boolean %s"' % parmname
                         raise RCBadParmValue(mes)
             retval = eval("%s(value)"%(vartype))
         else:
@@ -811,14 +833,16 @@ class ReductionContext(dict):
     def parameter_collate(self, astrotype, primset, primname):
         """This function looks at the default primset paramaters for primname
         and sets the localparms member."""
-        
         # @@HERE: is where parameter metadata is respected, or not
         if primname in primset.param_dict:
+            #print "RM818: %s in param_dict"% primname
             # localparms should always be defined by here
             # users can never override argument in recipes (too confusing)
             correctUPD = None
-            if self.user_params != None:
+            #print "RM822: %s" % repr((self.user_params))
+            if not self.user_params.is_empty():
                 correctUPD = self.user_params.get_user_param(astrotype, primname)
+                #print "rm832:" , repr(correctUPD)
                 if correctUPD != None:
                     for param in correctUPD.keys():
                         if param in self.localparms:
@@ -833,10 +857,12 @@ class ReductionContext(dict):
                             raise SettingFixedParam(exs)
                             
             # use primset.param_dict to update self.localparms
+            # print "rm847: %s" % repr(primset.param_dict[primname].keys())
             for param in primset.param_dict[primname].keys():
+                #print "RM848:", param
                 # @@NAMING: naming of default value in parameter dictionary hardcoded
                 # print "RM571:", param, repr(self.localparms), repr(self), param in self
-                if param in self.localparms or param in self:
+                if param in self.localparms: #  or param in self:
                     repOvrd = ("recipeOverride" not in primset.param_dict[primname][param])\
                                  or primset.param_dict[primname][param]["recipeOverride"]
                     # then it's already in there, check metadata
@@ -846,7 +872,7 @@ class ReductionContext(dict):
                         exs += "\tastrotype = %s\n" % astrotype
                         exs += "\tprimitive = %s\n" % primname
                         exs += "\tparameter = %s\n" % str(param)
-                        exs += "\t\tattempt to set to = %s\n" % self.localparms[param]
+                        exs += "\t\tattempt to set to = %s\n" % self[param]
                         exs += "\t\tfixed setting = %s\n" %  \
                             primset.param_dict[primname][param]["default"]
                         raise SettingFixedParam(exs)
@@ -857,20 +883,26 @@ class ReductionContext(dict):
             # context (and not in correct UPD), strictly speaking these may 
             # not have been added by the user but we consider it user space
             # and at any rate expect it to not be overrided by ANY means (we
-            # may want a diferent flag than userOverride
+            # may want a different flag than userOverride
+            # print "RM863: %s ... %s" %( primname,repr(primset.param_dict[primname]))
             for param in primset.param_dict[primname].keys():
                 # if this param is already set in the context... there is a
                 # problem, it's not to be set.
                 userOvrd = ("userOverride" not in primset.param_dict[primname][param])\
                              or primset.param_dict[primname][param]["userOverride"]
-                if param in self:
+                
+                #print "rm869: ", repr(self.localparms)
+                #print "RM869: param="+param
+                #print repr(correctUPD)
+                if dict.__contains__(self, param):
+                    
                     # note: if it's in self.localparms, that's due to legal
                     # behavior above... primitives parameters (as passed in
                     # recipes) are always added to the localparms space
                     # thus, if a value is in the main context, it MUST be
                     # userOverridable
                     if not userOvrd:
-                        exs =  "Parm set in context when userOverride is False\n"
+                        exs =  "\nParm set in context when userOverride is False\n"
                         exs += "\tastrotype = %s\n" % astrotype
                         exs += "\tprimitive = %s\n" % primname
                         exs += "\tparameter = %s\n" % str(param)
@@ -2360,7 +2392,7 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                             rs += "\n  Primitive Index Entry from %s" % fullpath
                             rs += "\n  adds ... %s" % repr(localPrimitiveIndex[typ])
                             rs += "\n  conflicts with already present setting ... %s" % repr(centralPrimitivesIndex[typ])
-                            print "${RED}WARNING:${NORMAL}\n" + rs
+                            print "WARNING:\n" + rs
                 for key in lpis:
                     if key not in cpis:
                         centralPrimitivesIndex.update({key:[]})

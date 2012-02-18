@@ -116,7 +116,6 @@ try:
 
     from datetime import datetime
     
-    #_show_times = True
     _show_times = False
     if _show_times:
         start_time = datetime.now()
@@ -449,30 +448,37 @@ try:
         pfgparms = {}
 
         if options.userparam:
+            # print "r451: user params", options.userparam
             ups = []
             gparms = {}
             allupstr = options.userparam
             allparams = allupstr.split(",")
+            # print "r456:", repr(allparams)
             for upstr in allparams:
+                # print "r458:", upstr
                 tmp = upstr.split("=")
                 spec = tmp[0].strip()
                 # @@TODO: check and convert to correct type
                 val = tmp[1].strip()
-
+                
                 if ":" in spec:
                     typ,prim,param = spec.split(":")
                     up = RecipeManager.UserParam(typ, prim, param, val)
                     ups.append(up)
                 else:
+                    up = RecipeManager.UserParam(None, None, spec, val)
+                    ups.append(up)
                     gparms.update({spec:val})
             # command line ups and gparms
             clups = ups
             clgparms = gparms
-
+        # print "r473:", repr(clgparms)
         fups = RecipeManager.UserParams()
         for up in clups:
+            #print "r473:", up
             fups.add_user_param(up)
         for up in pfups:
+            #print "r476:", up
             fups.add_user_param(up)
         options.user_params = fups
         options.globalParams = {}
@@ -854,6 +860,10 @@ try:
                         if (useTK):
                             cw.running(rec)
 
+                        #import meliae.scanner
+                        #meliae.scanner.dump_all_objects("memory.prof")
+                        #print "r858: memory test"
+                        #sys.exit()
                         controlLoopCounter = 1
                         ################
                         # CONTROL LOOP #

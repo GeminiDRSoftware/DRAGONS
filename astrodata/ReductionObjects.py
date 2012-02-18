@@ -238,7 +238,7 @@ class ReductionObject(object):
                 yield rc
             gc.collect() # @@MEM
         except SettingFixedParam, e:
-            print "${RED}"+str(e)+"${NORMAL}"
+            print str(e)
         except TypeError,e:
             print 'Recieved TypeError: "%s" during iteration' % e
             msg = "The running primitive, '%s'." % primname
