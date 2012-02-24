@@ -574,6 +574,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "storeProcessedArc":{
+    "suffix":{
+        "default"       : "_arc",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    }, 
  "storeProcessedBias":{
     "suffix":{
         "default"       : "_bias",
