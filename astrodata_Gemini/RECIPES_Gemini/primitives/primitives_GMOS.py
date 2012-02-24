@@ -84,7 +84,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Get the necessary parameters from the RC
             tile = rc["tile"]
-            interpolate_gaps = rc["interpolate_gaps"],
+            interpolate_gaps = rc["interpolate_gaps"]
             interpolator = rc["interpolator"]
             
             # Get BUNIT, OVERSCAN,and AMPNAME from science extensions 
@@ -293,13 +293,15 @@ class GMOSPrimitives(GEMINIPrimitives):
                     ext.set_key_value("DATASEC",new_datasec,
                                       comment=self.keyword_comments["DATASEC"])
 
-
             # Change type of DQ plane back to int16
             # (gmosaic sets it to float32)
             # and restore DETSEC, DATASEC, CCDSEC
+            # and replace any -1 values with 1 
+            # (gmosaic marks chip gaps with -1 if fixpix=no and clean=no)
             if ad_out["DQ"] is not None:
                 for ext in ad_out["DQ"]:
                     ext.data = ext.data.astype(np.int16)
+                    ext.data = np.where(ext.data<0,1,ext.data)
                     ext.set_key_value("DETSEC",new_detsec,
                                       comment=self.keyword_comments["DETSEC"])
                     ext.set_key_value("CCDSEC",new_detsec,
