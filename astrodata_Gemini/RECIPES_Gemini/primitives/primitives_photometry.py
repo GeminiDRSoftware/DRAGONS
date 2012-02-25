@@ -1116,7 +1116,9 @@ def _sextractor(ad=None,seeing_estimate=None):
             # Get correct default files for this mode
             dd = default_dict['dq'].copy()
             for key in dd:
-                default_file = lookup_path(dd[key]).rstrip(".py")
+                default_file = lookup_path(dd[key])
+                if default_file.endswith(".py"):
+                    default_file = default_file[:-3]
                 dd[key] = default_file
 
         else:
@@ -1126,12 +1128,18 @@ def _sextractor(ad=None,seeing_estimate=None):
             # Get correct default files for this mode
             dd = default_dict['no_dq'].copy()
             for key in dd:
-                default_file = lookup_path(dd[key]).rstrip(".py")
+                default_file = lookup_path(dd[key])
+                if default_file.endswith(".py"):
+                    default_file = default_file[:-3]
                 dd[key] = default_file
     
         # Temporary output name for this extension
-        outtmpfn = "%sSCI%dtab.fits" % (tmpfn.rstrip(".fits"), extver)
-        objtmpfn  ="%sSCI%dimg.fits" % (tmpfn.rstrip(".fits"), extver)
+        if tmpfn.endswith(".fits"):
+            basename = tmpfn[:-5]
+        else:
+            basename = tmpfn
+        outtmpfn = "%sSCI%dtab.fits" % (basename, extver)
+        objtmpfn  ="%sSCI%dimg.fits" % (basename, extver)
 
         # if no seeing estimate provided, run sextractor once with
         # default, then re-run to get proper stellar classification
