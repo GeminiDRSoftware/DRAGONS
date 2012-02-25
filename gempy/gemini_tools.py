@@ -1114,7 +1114,9 @@ def parse_sextractor_param():
     default_dict = Lookups.get_lookup_table(
                              "Gemini/source_detection/sextractor_default_dict",
                              "sextractor_default_dict")
-    param_file = lookup_path(default_dict["dq"]["param"]).rstrip(".py")
+    param_file = lookup_path(default_dict["dq"]["param"])
+    if param_file.endswith(".py"):
+        param_file = param_file[:-3]
     
     columns = []
     fp = open(param_file)
