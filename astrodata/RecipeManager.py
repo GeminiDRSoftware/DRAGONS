@@ -840,7 +840,7 @@ class ReductionContext(dict):
             # users can never override argument in recipes (too confusing)
             correctUPD = None
             #print "RM822: %s" % repr((self.user_params))
-            if not self.user_params.is_empty():
+            if self.user_params and not self.user_params.is_empty():
                 correctUPD = self.user_params.get_user_param(astrotype, primname)
                 #print "rm832:" , repr(correctUPD)
                 if correctUPD != None:
