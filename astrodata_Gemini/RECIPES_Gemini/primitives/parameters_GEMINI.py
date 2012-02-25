@@ -489,8 +489,8 @@
     "test":{
         "default"       : True,
         "type"          : "bool",
-        "recipeOverride": False,
-        "userOverride"  : True,
+        "recipeOverride": True,
+        "userOverride"  : False, #True,
         "uiLevel"       : "debug",
         "tags"          : ["test", "iraf"],
         },
