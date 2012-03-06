@@ -13,6 +13,7 @@ from astrodata.adutils import gemLog
 from Errors import CalibrationDefinitionLibraryError as CDLExcept
 from Errors import AstroDataError
 from Errors import ExistError
+from Errors import DescriptorTypeError
                
 class CalibrationDefinitionLibrary(object):
     '''
@@ -121,27 +122,38 @@ class CalibrationDefinitionLibrary(object):
                          }
             """
             # List of all possible needed descriptors
-            descriptor_list = ['instrument',
-                               'observation_type',
+            descriptor_list = ['amp_read_area',
+                               'central_wavelength',
                                'data_label',
                                'detector_x_bin',
                                'detector_y_bin',
-                               'read_speed_setting',
-                               'gain_setting',
-                               'amp_read_area',
-                               'ut_datetime',
+                               'disperser',
                                'exposure_time',
-                               'object',
                                'filter_name',
                                'focal_plane_mask',
+                               'gain_setting',
+                               'instrument',
+                               'nod_count',
+                               'nod_pixels',
+                               'object',
+                               'observation_type',
+                               'program_id',
+                               'read_speed_setting',
+                               'ut_datetime',
                                ]
+            options = {'central_wavelength':'asMicrometers=True'}
+
             # Check that each descriptor works and returns a 
             # sensible value before adding it to the dictionary
             desc_dict = {}
             for desc_name in descriptor_list:
+                if options.has_key(desc_name):
+                    opt = options[desc_name]
+                else:
+                    opt = ''
                 try:
-                    exec('dv = ad.%s()' % desc_name)
-                except (ExistError,KeyError):
+                    exec('dv = ad.%s(%s)' % (desc_name,opt))
+                except (ExistError,KeyError,DescriptorTypeError):
                     continue
                 if dv is not None:
                     desc_dict[desc_name] = dv.for_db()
