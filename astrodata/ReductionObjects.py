@@ -3,11 +3,12 @@ import os
 import traceback
 import gc
 from astrodata import AstroData, IDFactory
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 import inspect
 import urllib2 #(to get httperror)
 from usercalibrationservice import user_cal_service
-log = None
+
+log = logutils.get_logger(__name__)
 
 heaptrack = False
 heaptrackfile = None
@@ -83,9 +84,6 @@ class ReductionObject(object):
     
     def __init__(self):
         self.primDict= {}
-        global log
-        if log==None:
-                log = gemLog.getGeminiLog()
     
     def init(self, rc):
         """ This member is purely for overwriting.  Controllers should call this
@@ -165,37 +163,44 @@ class ReductionObject(object):
         if hasattr(primset, primname):
             prim = eval("primset.%s" % primname)
         else:
-            msg = "There is no recipe or primitive named \"%s\" in  %s" % (primname, str(repr(self)))
+            msg = "There is no recipe or primitive named \"%s\" in  %s" % \
+                (primname, str(repr(self)))
             self.curPrimName = prevprimname
             raise ReductionExcept(msg)
         
         # set type of prim for logging
         btype = primset.btype
         logstring = "%s: %s" % (btype,primname)
-        if context.indent==0:
+        if context['index'] == None:
+            # top-level recipe, add some extra demarcation
             # top-level recipe, set indent=0, add some extra demarcation
-            log.changeIndent(indentLevel=0)
+            logutils.update_indent(0, context['logmode'])
+            context.update({'index':0})
             log.status("="*80)
-            spacer = "\n"+"="*80
             if primname.startswith('proxy'):
                 log.debug(logstring)
             else:
-                log.status(logstring + spacer)
+                log.status(logstring)
+                log.status("="*80)
         else:
             if btype=="RECIPE":
-                spacer = "\n"+"="*len(logstring)
 
                 # if it is a proxy recipe, log only at debug level,
-                # don't change indent
                 if primname.startswith('proxy'):
                     log.debug(logstring)
                 else:
-                    log.changeIndent(indentLevel=log.indentLevel+1)
-                    log.status(logstring + spacer)
+                    # increase the index
+                    indx = context['index'] + 1
+                    context.update({'index':indx})
+                    logutils.update_indent(indx, context['logmode'])
+                    log.status(logstring)
+                    log.status("=" * len(logstring))
             else:
-                log.changeIndent(indentLevel=log.indentLevel+1)
-                spacer = "\n"+"-"*len(logstring)
-                log.status(logstring + spacer)
+                indx = context['index'] + 1
+                context.update({'index':indx})
+                logutils.update_indent(indx, context['logmode'])
+                log.status(logstring)
+                log.status("-" * len(logstring))
                 
         # primset init should perhaps be called ready
         # because it needs to be called each step because though
@@ -245,7 +250,7 @@ class ReductionObject(object):
             raise # IterationError(msg)
         except:
             print "%(name)s failed due to an exception." %{'name':primname}
-            log.changeIndent(indentLevel=0)
+            logutils.update_indent(0, context['logmode'])
             raise
         context.curPrimName = None
         self.curPrimName = prevprimname
@@ -257,17 +262,23 @@ class ReductionObject(object):
             context.restore_stream(from_stream = nonStandardStream)
             
         context.localparms = savedLocalparms
-        if context.indent==0:
+        if context['index'] == None:
             # top-level recipe, add some extra demarcation
-            log.changeIndent(indentLevel=0)
+            logutils.update_indent(0, context['logmode'])
+            context.update({'index':0})
             log.status("="*80)
         else:
             if btype=="RECIPE":
                 if not primname.startswith('proxy'):
-                    log.changeIndent(indentLevel=log.indentLevel-1)
+                    indx = context['index'] - 1
+                    context.update({'index':indx})
+                    logutils.update_indent(indx, context['logmode'])
             else:
                 log.status(".")
-                log.changeIndent(indentLevel=log.indentLevel-1)
+                indx = context['index'] - 1
+                context.update({'index':indx})
+                logutils.update_indent(indx, context['logmode'])
+
         yield context
         
     def runstep(self, primname, cfgobj):

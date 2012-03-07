@@ -7,9 +7,8 @@
 #------------------------------------------------------------------------------ 
 try:
     #print "reduce IN BRANCH"
-    from astrodata.adutils import gemLog
+    from astrodata.adutils import logutils
     from optparse import OptionParser
-    # Create Recipe System Log
     
     version = '1_0'
 
@@ -66,25 +65,21 @@ try:
                       help="calibration manager url (overides lookup table)")
     parser.add_option("--clrcal", dest="clr_cal", default=False, 
                       action="store_true", help="remove all calibrations.")
-    parser.add_option("--debug", dest='debug', default=False, action="store_true",
-                      help="set highest verbose level for console AND logfile")
     parser.add_option("--force-height", dest="forceHeight", default=None,
                       help="force height of terminal output")
     parser.add_option("--force-width", dest="forceWidth", default=None,
                       help="force width of terminal output")
     parser.add_option("--invoked", dest="invoked", default=False, 
                       action="store_true", help="tell user reduce invoked by adcc")
-    parser.add_option("--logAllOff", dest='logAllOff', default=False, 
-                      action="store_true", help="Turn logging completely off,"
-                      " no log file, no console logging")
-    parser.add_option("--logName", dest='logName', default='gemini.log', 
-                      type='string', help="name of log (default = 'gemini.log')") 
-    parser.add_option("--logLevel", dest='logLevel', default='stdinfo', 
-                      type='string', help="Set the verbose level for console "
+    parser.add_option("--logmode", dest="logmode", default="standard", 
+                      type="string", help="Set logging mode (standard, "
+                      "console, debug, null)")
+    parser.add_option("--logfile", dest="logfile", default="reduce.log", 
+                      type='string', help="name of log (default = 'reduce.log')") 
+    parser.add_option("--loglevel", dest="loglevel", default="stdinfo", 
+                      type="string", help="Set the verbose level for console "
                       "logging; (critical, error, warning, status, stdinfo, "
                       "fullinfo, debug)")
-    parser.add_option("--noLogFile", dest='noLogFile', default=False, 
-                      action="store_true", help="no log file is created")
     parser.add_option("--remcal", dest="rem_cal", default=False, 
                       action="store_true", help="Remove calibration (of target)"
                       "from cache. NOTE: will not work unless --caltype is set."
@@ -99,10 +94,15 @@ try:
                       " (UNDER CONSTRUCTION)")       
 
     (options,  args) = parser.parse_args()
-
-    log = gemLog.createGeminiLog(logName=options.logName,logLevel=options.logLevel, 
-                                 logType='main', debug=options.debug, 
-                              noLogFile=options.noLogFile, allOff=options.logAllOff)
+    
+    # Configure logging, then instantiate the log
+    if options.recipename == "USER":
+        options.loglevel = "fullinfo"
+    if options.invoked:
+        options.loglevel = "fullinfo"
+    logutils.config(mode=options.logmode, console_lvl=options.loglevel, \
+                     file_name=options.logfile)
+    log = logutils.get_logger(__name__)
 
     import os
     import sys
@@ -216,11 +216,6 @@ try:
     terminal.forceHeight = options.forceHeight
 
 
-    if options.recipename == "USER":
-        options.logLevel = "fullinfo"
-
-    if options.invoked:
-        options.logLevel = "fullinfo"
 
     if options.invoked:
         opener = "reduce started in adcc mode (--invoked)"
@@ -229,10 +224,6 @@ try:
         log.status("."*len(opener))
         sys.stdout.flush()
 
-    # Create Recipe System Log
-    #log = gemLog.createGeminiLog(logName=options.logName,logLevel=options.logLevel, 
-    #                             logType='main', debug=options.debug, 
-    #                          noLogFile=options.noLogFile, allOff=options.logAllOff)
 
     def abortBadParamfile(lines):
         for i in range(0,len(lines)):
@@ -780,12 +771,11 @@ try:
                         if (options.writeInt == True):       
                                 co.update({"writeInt":True})  
 
-                        # Putting the log level and log name set with the --logLevel 
-                        # and --logName parser options into the global dict
-                        # for use throughout the primitives.
-                        co.update({'logLevel':options.logLevel})     
-                        co.update({'logName':options.logName})       
-                        co.update({'logType':'main'})
+                        # Add the log level/name/mode to the global dict
+                        co.update({'loglevel':options.loglevel})     
+                        co.update({'logfile':options.logfile})       
+                        co.update({'logmode':options.logmode})
+                        co.update({'logindent':logutils.SW})
 
                         # Insert calibration url dictionary
                         # if given by command line will overide the lookup

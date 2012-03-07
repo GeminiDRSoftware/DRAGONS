@@ -6,9 +6,9 @@ import os
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 import select
 import socket
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 
-log = None
+log = logutils.get_logger(__name__)
 
 PDEB = False
 
@@ -144,12 +144,6 @@ class PRSProxy(object):
     reduce_server = None
     log = None        
     def __init__(self, reduce_server = None, port = None):
-        # retrieving global logger and creating it if None
-        global log
-        if log==None:
-            log = gemLog.getGeminiLog() 
-            if log == None:
-                log = gemLog.createGeminiLog(debug = True) # move to adcc
             
         try:
             if port != None:
@@ -167,10 +161,6 @@ class PRSProxy(object):
         
     @classmethod
     def get_adcc(cls, reduce_server = None, check_once = False):
-        global log
-        if log==None:
-            log = gemLog.getGeminiLog() 
-            #print repr(log)+"Adsf"
         # note: the correct ADCC will store it's info in .adcc/adccinfo.py
         racefile = ".adcc/adccinfo.py"
         if not os.path.exists(racefile):
