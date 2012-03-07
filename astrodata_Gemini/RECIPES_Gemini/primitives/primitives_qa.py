@@ -4,9 +4,10 @@ from copy import deepcopy
 import numpy as np
 from astrodata import Errors
 from astrodata import Lookups
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from gempy import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
+
 
 class QAPrimitives(GENERALPrimitives):
     """
@@ -24,9 +25,8 @@ class QAPrimitives(GENERALPrimitives):
     def measureBG(self, rc):
 
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        
+        log = logutils.get_logger(__name__)
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "measureBG", "starting"))
         
@@ -282,44 +282,47 @@ class QAPrimitives(GENERALPrimitives):
 
                 # Log the calculated values for this extension if desired    
                 if separate_ext:
-                    log.stdinfo("\n    Filename: %s[SCI,%d]" % 
+                    ind = " " * rc["logindent"]
+                    log.stdinfo(" ")
+                    log.stdinfo(ind + "Filename: %s[SCI,%d]" % 
                                 (ad.filename,extver))
-                    log.stdinfo("    "+"-"*dlen)
-                    log.stdinfo("    "+"Sky level measurement:".ljust(llen) +
+                    log.stdinfo(ind + "-"*dlen)
+                    log.stdinfo(ind + "Sky level measurement:".ljust(llen) +
                                 ("%.0f +/- %.0f %s" % 
                                  (sci_bg,sci_std,bunit)).rjust(rlen))
                     if bg_am is not None:
-                        log.stdinfo("    "+
-                                    ("Mag / sq arcsec in %s:"% 
-                                     filter).ljust(llen)+
+                        log.stdinfo(ind + ("Mag / sq arcsec in %s:" % 
+                                     filter).ljust(llen) + 
                                     ("%.2f" % bg_am).rjust(rlen))
-                    log.stdinfo("    "+bg_str)
-                    log.stdinfo("    "+req_str+bg_warn)
-                    log.stdinfo("    "+"-"*dlen+"\n")
+                    log.stdinfo(ind + bg_str)
+                    log.stdinfo(ind + req_str+bg_warn)
+                    log.stdinfo(ind + "-"*dlen)
+                    log.stdinfo(" ")
 
             # Write mean background to PHU if averaging all together
             # (or if there's only one science extension)
             if (ad.count_exts("SCI")==1 or not separate_ext) \
                     and all_bg is not None:
-                ad.phu_set_key_value(
-                    "SKYLEVEL", all_bg, comment="%s [%s]" % 
-                    (self.keyword_comments["SKYLEVEL"],bunit))
+                ad.phu_set_key_value("SKYLEVEL", all_bg, comment="%s [%s]" % \
+                                     (self.keyword_comments["SKYLEVEL"], bunit))
 
                 # Log overall values if desired
                 if not separate_ext:
-                    log.stdinfo("\n    Filename: %s" % ad.filename)
-                    log.stdinfo("    "+"-"*dlen)
-                    log.stdinfo("    "+"Sky level measurement:".ljust(llen) +
+                    ind = " " * rc["logindent"]
+                    log.stdinfo(" ")
+                    log.stdinfo(ind + "Filename: %s" % ad.filename)
+                    log.stdinfo(ind + "-"*dlen)
+                    log.stdinfo(ind + "Sky level measurement:".ljust(llen) +
                                 ("%.0f +/- %.0f %s" % 
                                  (all_bg,all_std,bunit)).rjust(rlen))
                     if all_bg_am is not None:
-                        log.stdinfo("    "+
-                                    ("Mag / sq arcsec in %s:"% 
-                                     filter).ljust(llen)+
+                        log.stdinfo(ind + ("Mag / sq arcsec in %s:"% 
+                                     filter).ljust(llen) + 
                                     ("%.2f" % all_bg_am).rjust(rlen))
-                    log.stdinfo("    "+bg_str)
-                    log.stdinfo("    "+req_str+bg_warn)
-                    log.stdinfo("    "+"-"*dlen+"\n")
+                    log.stdinfo(ind + bg_str)
+                    log.stdinfo(ind + req_str+bg_warn)
+                    log.stdinfo(ind + "-"*dlen)
+                    log.stdinfo(" ")
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
@@ -372,9 +375,8 @@ class QAPrimitives(GENERALPrimitives):
         """
 
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        
+        log = logutils.get_logger(__name__)
+
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "measureCC", "starting"))
         
@@ -545,47 +547,44 @@ class QAPrimitives(GENERALPrimitives):
                     else:
                         req_cc = 'CC%d' % req_cc
                 
-
-                log.fullinfo("\n    Filename: %s ['OBJCAT', %d]" % 
+                ind = " " * rc["logindent"]
+                log.fullinfo(" ")
+                log.fullinfo(ind + "Filename: %s ['OBJCAT', %d]" % 
                              (ad.filename, extver))
-                log.fullinfo("    %d sources used to measure zeropoint" % 
+                log.fullinfo(ind + "%d sources used to measure zeropoint" % 
                              len(zps))
-                log.fullinfo("    "+"-"*dlen)
-                log.fullinfo("    "+
-                             ("Zeropoint measurement (%s band):" % 
+                log.fullinfo(ind + "    "+"-"*dlen)
+                log.fullinfo(ind + ("Zeropoint measurement (%s band):" % 
                               ad.filter_name(pretty=True)).ljust(llen) +
                              ("%.2f +/- %.2f" % (zp, zpe)).rjust(rlen))
-                log.fullinfo("    "+
-                             ("Nominal zeropoint:").ljust(llen) +
+                log.fullinfo(ind + ("Nominal zeropoint:").ljust(llen) +
                              ("%.2f" % nominal_zeropoint).rjust(rlen))
-                log.fullinfo("    "+
-                             "Estimated cloud extinction:".ljust(llen) +
+                log.fullinfo(ind + "Estimated cloud extinction:".ljust(llen) +
                              ("%.2f +/- %.2f magnitudes" % 
                               (cloud, zpe)).rjust(rlen))
-                log.fullinfo("    " + "CC band:".ljust(llen) + 
-                             ccband.rjust(rlen))
+                log.fullinfo(ind + "CC band:".ljust(llen) + ccband.rjust(rlen))
                 if req_cc is not None:
-                    log.fullinfo("    "+
-                                 "Requested CC band:".ljust(llen)+
+                    log.fullinfo(ind + "Requested CC band:".ljust(llen)+
                                  req_cc.rjust(rlen))
                 else:
-                    log.fullinfo("    (Requested CC could not be determined)")
+                    log.fullinfo(ind + "(Requested CC could not be determined)")
                 if cc_warn is not None:
-                    log.fullinfo(cc_warn)
-                log.fullinfo("    "+"-"*dlen)
+                    log.fullinfo(ind + cc_warn)
+                log.fullinfo(ind + "-"*dlen)
+                log.fullinfo(" ")
 
             
             cloud_sum = 0
             cloud_esum = 0
             if(len(detzp_means)):
+                zplist = []
                 for i in range(len(detzp_means)):
                     if i==0:
-                        zp_str = ("%.2f +/- %.2f" % 
-                                 (detzp_means[i], detzp_sigmas[i])).rjust(rlen)
+                        zplist.append("%.2f +/- %.2f" % 
+                                 (detzp_means[i], detzp_sigmas[i]))
                     else:
-                        zp_str += "\n    "
-                        zp_str += ("%.2f +/- %.2f" % 
-                                 (detzp_means[i], detzp_sigmas[i])).rjust(dlen)
+                        zplist.append("%.2f +/- %.2f" % 
+                                 (detzp_means[i], detzp_sigmas[i]))
                     cloud_sum += detzp_clouds[i]
                     cloud_esum += (detzp_sigmas[i] * detzp_sigmas[i])
                 cloud = cloud_sum / len(detzp_means)
@@ -623,30 +622,35 @@ class QAPrimitives(GENERALPrimitives):
                         req_cc = 'CCAny'
                     else:
                         req_cc = 'CC%d' % req_cc
-            
-                log.stdinfo("\n    Filename: %s" % ad.filename)
-                log.stdinfo("    %d sources used to measure zeropoint" % 
+                ind = " " * rc["logindent"]
+                log.stdinfo(" ")
+                log.stdinfo(ind + "Filename: %s" % ad.filename)
+                log.stdinfo(ind + "%d sources used to measure zeropoint" % 
                              total_sources)
-                log.stdinfo("    "+"-"*dlen)
-                log.stdinfo("    "+
-                            ("Zeropoints by detector (%s band):"%
-                             ad.filter_name(pretty=True)).ljust(llen)+
-                            zp_str)
-                log.stdinfo("    "+
-                             "Estimated cloud extinction:".ljust(llen) +
+                log.stdinfo(ind + "-"*dlen)
+                if len(zplist) < 2:
+                    log.stdinfo(ind + ("Zeropoints by detector (%s band):"%
+                            ad.filter_name(pretty=True)).ljust(llen) + \
+                            zplist[0].rjust(rlen))
+                else:
+                    log.stdinfo(ind + ("Zeropoints by detector (%s band):"%
+                            ad.filter_name(pretty=True)).ljust(llen) + \
+                            zplist[0].rjust(rlen))
+                    for zp in zplist[1:]:
+                        log.stdinfo(ind + zp.rjust(dlen))
+                log.stdinfo(ind + "Estimated cloud extinction:".ljust(llen) +
                             ("%.2f +/- %.2f magnitudes" % 
                              (cloud, clouderr)).rjust(rlen))
-                log.stdinfo("    " + "CC band:".ljust(llen) + 
-                            ccband.rjust(rlen))
+                log.stdinfo(ind + "CC band:".ljust(llen) + ccband.rjust(rlen))
                 if req_cc is not None:
-                    log.stdinfo("    "+
-                                "Requested CC band:".ljust(llen)+
+                    log.stdinfo(ind + "Requested CC band:".ljust(llen) + 
                                 req_cc.rjust(rlen))
                 else:
-                    log.stdinfo("    (Requested CC could not be determined)")
+                    log.stdinfo(ind + "(Requested CC could not be determined)")
                 if cc_warn is not None:
                     log.stdinfo(cc_warn)
-                log.stdinfo("    "+"-"*dlen)
+                log.stdinfo(ind + "-"*dlen)
+                log.stdinfo(" ")
 
             else:
                 log.stdinfo("    Filename: %s" % ad.filename)
@@ -677,8 +681,7 @@ class QAPrimitives(GENERALPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "measureIQ", "starting"))
@@ -740,9 +743,10 @@ class QAPrimitives(GENERALPrimitives):
                             else:
                                 # Subtract the bias level from each
                                 # science extension
-                                log.stdinfo("\nSubtracting approximate bias "\
-                                            "level from %s for display\n" \
+                                log.stdinfo("Subtracting approximate bias "\
+                                            "level from %s for display" \
                                             % ad.filename)
+                                log.stdinfo(" ")
                                 log.fullinfo("Bias levels used: %s" %
                                              str(bias_level))
                                 ad = ad.sub(bias_level.dict_val)
@@ -877,14 +881,26 @@ class QAPrimitives(GENERALPrimitives):
                     ell_warn = ""                    
 
                 # Create final formatted string
-                finalStr = '\n    '+fnStr+'\n    '+srcStr+\
-                           '\n    '+'-'*dlen+\
-                           '\n    '+fmStr+'\n    '+emStr+\
-                           '\n    '+csStr+'\n    '+iqStr+\
-                           '\n    '+reqStr+ell_warn+iq_warn+\
-                           '\n    '+'-'*dlen+'\n'
+                #finalStr = '\n    '+fnStr+'\n    '+srcStr+\
+                #           '\n    '+'-'*dlen+\
+                #           '\n    '+fmStr+'\n    '+emStr+\
+                #           '\n    '+csStr+'\n    '+iqStr+\
+                #           '\n    '+reqStr+ell_warn+iq_warn+\
+                #           '\n    '+'-'*dlen+'\n'
                 # Log final string
-                log.stdinfo(finalStr, category='IQ')
+                #log.stdinfo(finalStr)
+                ind = " " * rc["logindent"]
+                log.stdinfo(" ")
+                log.stdinfo(ind + fnStr)
+                log.stdinfo(ind + srcStr)
+                log.stdinfo(ind + '-'*dlen)
+                log.stdinfo(ind + fmStr)
+                log.stdinfo(ind + emStr)
+                log.stdinfo(ind + csStr)
+                log.stdinfo(ind + iqStr)
+                log.stdinfo(ind + reqStr + ell_warn + iq_warn)
+                log.stdinfo(ind + "-"*dlen)
+                log.stdinfo(" ")
                 
                 # Store average FWHM and ellipticity, for writing
                 # to output header
@@ -910,7 +926,8 @@ class QAPrimitives(GENERALPrimitives):
             rc["overlay"] = iq_overlays
             if overlays_exist:
                 log.stdinfo("Sources used to measure IQ are marked " +
-                            "with blue circles.\n")
+                            "with blue circles.")
+                log.stdinfo("")
             rc.run("display(tile=%s,remove_bias=%s)" % (tile,str(remove_bias)))
 
         # Update headers and filename for original input to report
@@ -984,7 +1001,7 @@ def _iq_band(adinput=None,fwhm=None):
 
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
 
     # The validate_input function ensures that adinput is not None and returns
     # a list containing one or more AstroData objects

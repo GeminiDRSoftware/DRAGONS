@@ -6,7 +6,7 @@ import pywcs
 from astrodata import AstroData
 from astrodata import Errors
 from astrodata import Lookups
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from astrodata.adutils.gemutil import pyrafLoader
 from gempy import gemini_tools as gt
 from gempy import managers as mgr
@@ -43,8 +43,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "mosaicDetectors", "starting"))
@@ -188,14 +187,12 @@ class GMOSPrimitives(GEMINIPrimitives):
             clParamsDict.update(clSoftcodedParams)
             
             # Log the parameters that were not defaults
-            log.fullinfo("\nParameters set automatically:", 
-                         category="parameters")
+            log.fullinfo("\nParameters set automatically:")
             # Loop through the parameters in the clPrimParams dictionary
             # and log them
             mgr.logDictParams(clPrimParams)
             
-            log.fullinfo("\nParameters adjustable by the user:", 
-                         category="parameters")
+            log.fullinfo("\nParameters adjustable by the user:")
             # Loop through the parameters in the clSoftcodedParams 
             # dictionary and log them
             mgr.logDictParams(clSoftcodedParams)
@@ -333,8 +330,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "standardizeInstrumentHeaders",
@@ -490,8 +486,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "standardizeStructure",
@@ -556,8 +551,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "subtractBias", "starting"))
@@ -675,8 +669,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "subtractOverscan", "starting"))
@@ -813,8 +806,7 @@ class GMOSPrimitives(GEMINIPrimitives):
     def tileArrays(self,rc):
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "tileArrays", "starting"))
@@ -1212,8 +1204,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "trimOverscan", "starting"))
@@ -1277,8 +1268,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "validateData", "starting"))

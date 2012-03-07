@@ -50,8 +50,7 @@ class BookkeepingPrimitives(GENERALPrimitives):
         for ad in rc.get_inputs_as_astrodata():
             ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
                                               strip=True)
-            log.stdinfo("Writing %s to disk" % ad.filename,
-                         category="list")
+            log.stdinfo("Writing %s to disk" % ad.filename)
             ad.write(clobber=rc["clobber"])
             adoutput.append(ad)
         
@@ -125,8 +124,7 @@ class BookkeepingPrimitives(GENERALPrimitives):
             log.stdinfo("List for stack id %s(...):" % sid[0:35])
             for f in stacklist:
                 rc.report_output(f, stream=rc["to_stream"])
-                log.stdinfo("   %s" % os.path.basename(f),
-                             category="list")
+                log.stdinfo("   %s" % os.path.basename(f))
         
         yield rc
     
@@ -147,7 +145,7 @@ class BookkeepingPrimitives(GENERALPrimitives):
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
-        log.stdinfo("Inputs:", category="inputs")
+        log.stdinfo("Inputs:")
         print "pG977:", id(rc), repr(rc.inputs)
         #if "stream" in rc:
         #    stream = rc["stream"]
@@ -156,7 +154,7 @@ class BookkeepingPrimitives(GENERALPrimitives):
         
         log.stdinfo("stream: %s" % (rc._current_stream))
         for inf in rc.inputs:
-            log.stdinfo("  %s" % inf.filename, category="inputs")
+            log.stdinfo("  %s" % inf.filename)
         
         yield rc
     showFiles = showInputs
@@ -189,12 +187,12 @@ class BookkeepingPrimitives(GENERALPrimitives):
                 sidset.add(purpose+IDFactory.generate_stackable_id(inp.ad))
         for sid in sidset:
             stacklist = rc.get_list(sid) #.filelist
-            log.status("List for stack id=%s" % sid, category="list")
+            log.status("List for stack id=%s" % sid)
             if len(stacklist) > 0:
                 for f in stacklist:
-                    log.status("   %s" % os.path.basename(f), category="list")
+                    log.status("   %s" % os.path.basename(f))
             else:
-                log.status("No datasets in list", category="list")
+                log.status("No datasets in list")
         
         yield rc
     
@@ -213,15 +211,12 @@ class BookkeepingPrimitives(GENERALPrimitives):
             toshows = rc["show"].split(":")
             for toshow in toshows:
                 if toshow in rcparams:
-                    log.stdinfo("%s = %s" % (toshow, repr(rc[toshow])),
-                                 category="parameters")
+                    log.stdinfo("%s = %s" % (toshow, repr(rc[toshow])))
                 else:
-                    log.stdinfo("%s is not set" % (toshow),
-                                 category="parameters")
+                    log.stdinfo("%s is not set" % (toshow))
         else:
             for param in rcparams:
-                log.stdinfo("%s = %s" % (param, repr(rc[param])),
-                             category="parameters")
+                log.stdinfo("%s = %s" % (param, repr(rc[param])))
         # print "all",repr(rc.parm_dict_by_tag("showParams", "all"))
         # print "iraf",repr(rc.parm_dict_by_tag("showParams", "iraf"))
         # print "test",repr(rc.parm_dict_by_tag("showParams", "test"))
