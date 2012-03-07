@@ -1,25 +1,31 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>A Complete List of Available Descriptors &mdash; Descriptors v0.1 documentation</title>
+    <title>A Complete List of Available Descriptors &mdash; Descriptors 1.0 documentation</title>
+    
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '#',
-        VERSION:     '0.1',
-        COLLAPSE_MODINDEX: false,
+        URL_ROOT:    '',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Descriptors v0.1 documentation" href="index.html" /> 
+    <link rel="top" title="Descriptors 1.0 documentation" href="index.html" /> 
   </head>
   <body>
     <div class="related">
@@ -28,7 +34,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li><a href="index.html">Descriptors v0.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">Descriptors 1.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -45,70 +51,265 @@ consistent manner, regardless of which instrument was used to obtain the
 data. This is particularly useful for Gemini data, since the majority of
 keywords used to describe a particular concept at Gemini are not uniform
 between the instruments.</p>
-<div class="highlight-python"><pre>shell&gt; typewalk -l
-Available Descriptors
-        airmass
-        amp_read_area
-        azimuth
-        camera
-        cass_rotator_pa
-        central_wavelength
-        coadds
-        data_label
-        data_section
-        dec
-        decker
-        detector_section
-        detector_x_bin
-        detector_y_bin
-        disperser
-        dispersion
-        dispersion_axis
-        elevation
-        exposure_time
-        filter_name
-        focal_plane_mask
-        gain
-        gain_setting
-        grating
-        group_id
-        instrument
-        local_time
-        mdf_row_id
-        nod_count
-        nod_pixels
-        non_linear_level
-        object
-        observation_class
-        observation_epoch
-        observation_id
-        observation_type
-        overscan_section
-        pixel_scale
-        prism
-        program_id
-        pupil_mask
-        qa_state
-        ra
-        raw_bg
-        raw_cc
-        raw_iq
-        raw_wv
-        read_mode
-        read_noise
-        read_speed_setting
-        saturation_level
-        slit
-        telescope
-        ut_date
-        ut_datetime
-        ut_time
-        wavefront_sensor
-        wavelength_reference_pixel
-        well_depth_setting
-        x_offset
-        y_offset</pre>
-</div>
+<p><tt class="docutils literal"><span class="pre">airmass</span></tt></p>
+<ul class="simple">
+<li>the mean airmass of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">amp_read_area</span></tt></p>
+<ul class="simple">
+<li>the composite string containing the name of the detector amplifier (ampname)
+and the readout area of the CCD (detsec) used for the observation.</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">azimuth</span></tt></p>
+<ul class="simple">
+<li>the azimuth (in degrees between 0 and 360) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">camera</span></tt></p>
+<ul class="simple">
+<li>the camera used for the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">cass_rotator_pa</span></tt></p>
+<ul class="simple">
+<li>the cassegrain rotator position angle (in degrees between -360 and 360) of
+the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">central_wavelength</span></tt></p>
+<ul class="simple">
+<li>the central wavelength (in meters as default) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">coadds</span></tt></p>
+<ul class="simple">
+<li>the number of coadds used for the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">data_label</span></tt></p>
+<ul class="simple">
+<li>the data label of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">data_section</span></tt></p>
+<ul class="simple">
+<li>the section of the data of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">dec</span></tt></p>
+<ul class="simple">
+<li>the declination (in decimal degrees) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">decker</span></tt></p>
+<ul class="simple">
+<li>the decker position used for the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">detector_section</span></tt></p>
+<ul class="simple">
+<li>the detector section of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">detector_x_bin</span></tt></p>
+<ul class="simple">
+<li>the binning of the x-axis of the detector used for the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">detector_y_bin</span></tt></p>
+<ul class="simple">
+<li>the binning of the y-axis of the detector used for the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">disperser</span></tt></p>
+<ul class="simple">
+<li>the disperser used for the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">dispersion</span></tt></p>
+<ul class="simple">
+<li>the dispersion (in meters per pixel as default) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">dispersion_axis</span></tt></p>
+<ul class="simple">
+<li>the dispersion axis (x = 1; y = 2; z = 3) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">elevation</span></tt></p>
+<ul class="simple">
+<li>the elevation (in degrees) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">exposure_time</span></tt></p>
+<ul class="simple">
+<li>the total exposure time (in seconds) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">filter_name</span></tt></p>
+<ul class="simple">
+<li>the unique, sorted filter name idenifier string used for the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">focal_plane_mask</span></tt></p>
+<ul class="simple">
+<li>the focal plane mask used for the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">gain</span></tt></p>
+<ul class="simple">
+<li>the gain (in electrons per ADU) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">gain_setting</span></tt></p>
+<ul class="simple">
+<li>the gain setting of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">grating</span></tt></p>
+<ul class="simple">
+<li>the grating used for the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">group_id</span></tt></p>
+<ul class="simple">
+<li>the group_id</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">instrument</span></tt></p>
+<ul class="simple">
+<li>the instrument used for the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">local_time</span></tt></p>
+<ul class="simple">
+<li>the local time (in HH:MM:SS.S) at the start of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">mdf_row_id</span></tt></p>
+<ul class="simple">
+<li>the corresponding reference row in the MDF</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">nod_count</span></tt></p>
+<ul class="simple">
+<li>the number of nod and shuffle cycles in the nod and shuffle observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">nod_pixels</span></tt></p>
+<ul class="simple">
+<li>the number of pixel rows the charge is shuffled by in the nod and shuffle
+observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">non_linear_level</span></tt></p>
+<ul class="simple">
+<li>the non linear level in the raw images (in ADU) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">object</span></tt></p>
+<ul class="simple">
+<li>the name of the target object observed</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">observation_class</span></tt></p>
+<ul class="simple">
+<li>the class (either &#8216;science&#8217;, &#8216;progCal&#8217;, &#8216;partnerCal&#8217;, &#8216;acq&#8217;, &#8216;acqCal&#8217; or
+&#8216;dayCal&#8217;) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">observation_epoch</span></tt></p>
+<ul class="simple">
+<li>the epoch (in years) at the start of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">observation_id</span></tt></p>
+<ul class="simple">
+<li>the ID (e.g., GN-2011A-Q-123-45) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">observation_type</span></tt></p>
+<ul class="simple">
+<li>the type (either &#8216;OBJECT&#8217;, &#8216;DARK&#8217;, &#8216;FLAT&#8217;, &#8216;ARC&#8217;, &#8216;BIAS&#8217; or &#8216;MASK&#8217;) of the
+observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">overscan_section</span></tt></p>
+<ul class="simple">
+<li>the overscan_section</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">pixel_scale</span></tt></p>
+<ul class="simple">
+<li>the pixel scale (in arcsec per pixel) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">prism</span></tt></p>
+<ul class="simple">
+<li>the prism used for the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">program_id</span></tt></p>
+<ul class="simple">
+<li>the Gemini program ID (e.g., GN-2011A-Q-123) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">pupil_mask</span></tt></p>
+<ul class="simple">
+<li>the pupil mask used for the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">qa_state</span></tt></p>
+<ul class="simple">
+<li>the quality assessment state (either &#8216;Undefined&#8217;, &#8216;Pass&#8217;, &#8216;Usable&#8217;, &#8216;Fail&#8217; or
+&#8216;CHECK&#8217;) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">ra</span></tt></p>
+<ul class="simple">
+<li>the Right Ascension (in decimal degrees) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">raw_bg</span></tt></p>
+<ul class="simple">
+<li>the raw background (either &#8216;20-percentile&#8217;, &#8216;50-percentile&#8217;, &#8216;80-percentile&#8217;
+or &#8216;Any&#8217;) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">raw_cc</span></tt></p>
+<ul class="simple">
+<li>the raw cloud cover (either &#8216;50-percentile&#8217;, &#8216;70-percentile&#8217;,
+&#8216;80-percentile&#8217;, &#8216;90-percentile&#8217; or &#8216;Any&#8217;) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">raw_iq</span></tt></p>
+<ul class="simple">
+<li>the raw image quality (either &#8216;20-percentile&#8217;, &#8216;70-percentile&#8217;,
+&#8216;85-percentile&#8217; or &#8216;Any&#8217;) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">raw_wv</span></tt></p>
+<ul class="simple">
+<li>the raw water vapour (either &#8216;20-percentile&#8217;, &#8216;50-percentile&#8217;,
+&#8216;80-percentile&#8217; or &#8216;Any&#8217;) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">read_mode</span></tt></p>
+<ul class="simple">
+<li>the read mode (either &#8216;Very Faint Object(s)&#8217;, &#8216;Faint Object(s)&#8217;, &#8216;Medium
+Object&#8217;, &#8216;Bright Object(s)&#8217;, &#8216;Very Bright Object(s)&#8217;, &#8216;Low Background&#8217;,
+&#8216;Medium Background&#8217;, &#8216;High Background&#8217; or &#8216;Invalid&#8217;) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">read_noise</span></tt></p>
+<ul class="simple">
+<li>the estimated readout noise (in electrons) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">read_speed_setting</span></tt></p>
+<ul class="simple">
+<li>the read speed setting (either &#8216;fast&#8217; or &#8216;slow&#8217;) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">saturation_level</span></tt></p>
+<ul class="simple">
+<li>the saturation level in the raw images (in ADU) of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">slit</span></tt></p>
+<ul class="simple">
+<li>the slit used for the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">telescope</span></tt></p>
+<ul class="simple">
+<li>the telescope used for the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">ut_date</span></tt></p>
+<ul class="simple">
+<li>the UT date at the start of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">ut_datetime</span></tt></p>
+<ul class="simple">
+<li>the UT date and time at the start of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">ut_time</span></tt></p>
+<ul class="simple">
+<li>the UT time at the start of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">wavefront_sensor</span></tt></p>
+<ul class="simple">
+<li>the wavefront sensor (either &#8216;AOWFS&#8217;, &#8216;OIWFS&#8217;, &#8216;PWFS1&#8217;, &#8216;PWFS2&#8217;, some
+combination in alphebetic order separated with an ampersand or None) used for
+the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">wavelength_reference_pixel</span></tt></p>
+<ul class="simple">
+<li>the reference pixel of the central wavelength of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">well_depth_setting</span></tt></p>
+<ul class="simple">
+<li>the well depth setting (either &#8216;Shallow&#8217;, &#8216;Deep&#8217; or &#8216;Invalid&#8217;) of the
+observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">x_offset</span></tt></p>
+<ul class="simple">
+<li>the x offset of the observation</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre">y_offset</span></tt></p>
+<ul class="simple">
+<li>the y offset of the observation</li>
+</ul>
 </div>
 <div class="section" id="mkcalculatorinterface-py">
 <span id="appendix-mkci"></span><h1><tt class="docutils literal"><span class="pre">mkCalculatorInterface.py</span></tt><a class="headerlink" href="#mkcalculatorinterface-py" title="Permalink to this headline">¶</a></h1>
@@ -534,33 +735,33 @@ never be edited directly.</p>
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-            <h3><a href="index.html">Table Of Contents</a></h3>
-            <ul>
-<li><a class="reference external" href="#">A Complete List of Available Descriptors</a></li>
-<li><a class="reference external" href="#mkcalculatorinterface-py"><tt class="docutils literal"><span class="pre">mkCalculatorInterface.py</span></tt></a></li>
-<li><a class="reference external" href="#an-example-function-from-calculatorinterface-py">An Example Function from <tt class="docutils literal"><span class="pre">CalculatorInterface.py</span></tt></a></li>
-<li><a class="reference external" href="#standarddescriptorkeydict-py"><tt class="docutils literal"><span class="pre">StandardDescriptorKeyDict.py</span></tt></a></li>
-<li><a class="reference external" href="#an-example-descriptor-function-from-gmos-descriptor-py">An Example Descriptor Function from <tt class="docutils literal"><span class="pre">GMOS_Descriptor.py</span></tt></a></li>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">A Complete List of Available Descriptors</a></li>
+<li><a class="reference internal" href="#mkcalculatorinterface-py"><tt class="docutils literal"><span class="pre">mkCalculatorInterface.py</span></tt></a></li>
+<li><a class="reference internal" href="#an-example-function-from-calculatorinterface-py">An Example Function from <tt class="docutils literal"><span class="pre">CalculatorInterface.py</span></tt></a></li>
+<li><a class="reference internal" href="#standarddescriptorkeydict-py"><tt class="docutils literal"><span class="pre">StandardDescriptorKeyDict.py</span></tt></a></li>
+<li><a class="reference internal" href="#an-example-descriptor-function-from-gmos-descriptor-py">An Example Descriptor Function from <tt class="docutils literal"><span class="pre">GMOS_Descriptor.py</span></tt></a></li>
 </ul>
 
-            <h3>This Page</h3>
-            <ul class="this-page-menu">
-              <li><a href="_sources/appendix.txt"
-                     rel="nofollow">Show Source</a></li>
-            </ul>
-          <div id="searchbox" style="display: none">
-            <h3>Quick search</h3>
-              <form class="search" action="search.html" method="get">
-                <input type="text" name="q" size="18" />
-                <input type="submit" value="Go" />
-                <input type="hidden" name="check_keywords" value="yes" />
-                <input type="hidden" name="area" value="default" />
-              </form>
-              <p class="searchtip" style="font-size: 90%">
-              Enter search terms or a module, class or function name.
-              </p>
-          </div>
-          <script type="text/javascript">$('#searchbox').show(0);</script>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/appendix.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -571,12 +772,12 @@ never be edited directly.</p>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
-        <li><a href="index.html">Descriptors v0.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">Descriptors 1.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-      &copy; Copyright 2011, Gemini Observatory.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.5.
+        &copy; Copyright 2011, Gemini Observatory.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>
 </html>

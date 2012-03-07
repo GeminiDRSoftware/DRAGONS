@@ -11,71 +11,264 @@ data. This is particularly useful for Gemini data, since the majority of
 keywords used to describe a particular concept at Gemini are not uniform
 between the instruments.
 
-::
+``airmass``
 
-  shell> typewalk -l
-  Available Descriptors
-          airmass
-          amp_read_area
-          azimuth
-          camera
-          cass_rotator_pa
-          central_wavelength
-          coadds
-          data_label
-          data_section
-          dec
-          decker
-          detector_section
-          detector_x_bin
-          detector_y_bin
-          disperser
-          dispersion
-          dispersion_axis
-          elevation
-          exposure_time
-          filter_name
-          focal_plane_mask
-          gain
-          gain_setting
-          grating
-          group_id
-          instrument
-          local_time
-          mdf_row_id
-          nod_count
-          nod_pixels
-          non_linear_level
-          object
-          observation_class
-          observation_epoch
-          observation_id
-          observation_type
-          overscan_section
-          pixel_scale
-          prism
-          program_id
-          pupil_mask
-          qa_state
-          ra
-          raw_bg
-          raw_cc
-          raw_iq
-          raw_wv
-          read_mode
-          read_noise
-          read_speed_setting
-          saturation_level
-          slit
-          telescope
-          ut_date
-          ut_datetime
-          ut_time
-          wavefront_sensor
-          wavelength_reference_pixel
-          well_depth_setting
-          x_offset
-          y_offset
+- the mean airmass of the observation
+
+``amp_read_area``
+
+- the composite string containing the name of the detector amplifier (ampname)
+  and the readout area of the CCD (detsec) used for the observation.
+
+``azimuth``
+
+- the azimuth (in degrees between 0 and 360) of the observation
+
+``camera``
+
+- the camera used for the observation
+
+``cass_rotator_pa``
+
+- the cassegrain rotator position angle (in degrees between -360 and 360) of
+  the observation 
+
+``central_wavelength``
+
+- the central wavelength (in meters as default) of the observation
+
+``coadds``
+
+- the number of coadds used for the observation
+
+``data_label``
+
+- the data label of the observation
+
+``data_section``
+
+- the section of the data of the observation
+
+``dec``
+
+- the declination (in decimal degrees) of the observation
+
+``decker``
+
+- the decker position used for the observation
+
+``detector_section``
+
+- the detector section of the observation
+
+``detector_x_bin``
+
+- the binning of the x-axis of the detector used for the observation
+
+``detector_y_bin``
+
+- the binning of the y-axis of the detector used for the observation
+
+``disperser``
+
+- the disperser used for the observation
+
+``dispersion``
+
+- the dispersion (in meters per pixel as default) of the observation
+
+``dispersion_axis``
+
+-  the dispersion axis (x = 1; y = 2; z = 3) of the observation
+
+``elevation``
+
+- the elevation (in degrees) of the observation
+
+``exposure_time``
+
+- the total exposure time (in seconds) of the observation
+
+``filter_name``
+
+- the unique, sorted filter name idenifier string used for the observation
+
+``focal_plane_mask``
+
+- the focal plane mask used for the observation
+
+``gain``
+
+- the gain (in electrons per ADU) of the observation
+
+``gain_setting``
+
+- the gain setting of the observation
+
+``grating``
+
+- the grating used for the observation
+
+``group_id``
+
+- the group_id
+
+``instrument``
+
+- the instrument used for the observation
+
+``local_time``
+
+- the local time (in HH:MM:SS.S) at the start of the observation
+
+``mdf_row_id``
+
+- the corresponding reference row in the MDF
+
+``nod_count``
+
+- the number of nod and shuffle cycles in the nod and shuffle observation
+
+``nod_pixels``
+
+- the number of pixel rows the charge is shuffled by in the nod and shuffle
+  observation 
+
+``non_linear_level``
+
+- the non linear level in the raw images (in ADU) of the observation
+
+``object``
+
+- the name of the target object observed
+
+``observation_class``
+
+- the class (either 'science', 'progCal', 'partnerCal', 'acq', 'acqCal' or
+  'dayCal') of the observation 
+
+``observation_epoch``
+
+- the epoch (in years) at the start of the observation
+
+``observation_id``
+
+- the ID (e.g., GN-2011A-Q-123-45) of the observation
+
+``observation_type``
+
+- the type (either 'OBJECT', 'DARK', 'FLAT', 'ARC', 'BIAS' or 'MASK') of the
+  observation 
+
+``overscan_section``
+
+- the overscan_section
+
+``pixel_scale``
+
+- the pixel scale (in arcsec per pixel) of the observation
+
+``prism``
+
+- the prism used for the observation
+
+``program_id``
+
+- the Gemini program ID (e.g., GN-2011A-Q-123) of the observation
+
+``pupil_mask``
+
+- the pupil mask used for the observation
+
+``qa_state``
+
+- the quality assessment state (either 'Undefined', 'Pass', 'Usable', 'Fail' or
+  'CHECK') of the observation 
+
+``ra``
+
+- the Right Ascension (in decimal degrees) of the observation
+
+``raw_bg``
+
+- the raw background (either '20-percentile', '50-percentile', '80-percentile'
+  or 'Any') of the observation 
+
+``raw_cc``
+
+- the raw cloud cover (either '50-percentile', '70-percentile',
+  '80-percentile', '90-percentile' or 'Any') of the observation 
+
+``raw_iq``
+
+- the raw image quality (either '20-percentile', '70-percentile',
+  '85-percentile' or 'Any') of the observation 
+
+``raw_wv``
+
+- the raw water vapour (either '20-percentile', '50-percentile',
+  '80-percentile' or 'Any') of the observation 
+
+``read_mode``
+
+- the read mode (either 'Very Faint Object(s)', 'Faint Object(s)', 'Medium
+  Object', 'Bright Object(s)', 'Very Bright Object(s)', 'Low Background',
+  'Medium Background', 'High Background' or 'Invalid') of the observation
+
+``read_noise``
+
+- the estimated readout noise (in electrons) of the observation
+
+``read_speed_setting``
+
+- the read speed setting (either 'fast' or 'slow') of the observation
+
+``saturation_level``
+
+- the saturation level in the raw images (in ADU) of the observation
+
+``slit``
+
+- the slit used for the observation
+
+``telescope``
+
+- the telescope used for the observation
+
+``ut_date``
+
+- the UT date at the start of the observation
+
+``ut_datetime``
+
+- the UT date and time at the start of the observation
+
+``ut_time``
+
+- the UT time at the start of the observation
+
+``wavefront_sensor``
+
+- the wavefront sensor (either 'AOWFS', 'OIWFS', 'PWFS1', 'PWFS2', some
+  combination in alphebetic order separated with an ampersand or None) used for
+  the observation 
+
+``wavelength_reference_pixel``
+
+- the reference pixel of the central wavelength of the observation
+
+``well_depth_setting``
+
+- the well depth setting (either 'Shallow', 'Deep' or 'Invalid') of the
+  observation 
+
+``x_offset``
+
+- the x offset of the observation
+
+``y_offset``
+
+- the y offset of the observation
 
 .. _Appendix_mkCI:
 
