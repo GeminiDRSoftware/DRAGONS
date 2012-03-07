@@ -227,7 +227,8 @@ if __name__=='__main__':
 
         reduce_cmd = ["reduce", 
                       "--context",context,
-                      "--logLevel","stdinfo",
+                      "--loglevel","stdinfo",
+                      "--logfile","gemini.log",
                       "-p", "clobber=True",
                       imgpath]
             

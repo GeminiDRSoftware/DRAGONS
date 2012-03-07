@@ -6,7 +6,7 @@ import numpy as np
 import tempfile
 import astrodata
 from astrodata import Lookups
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from astrodata.ConfigSpace import lookup_path
 from astrodata.AstroData import AstroData
 from astrodata import Errors
@@ -42,7 +42,7 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None):
     
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
     
     # The validate_input function ensures that adinput is not None and returns
     # a list containing one or more AstroData objects
@@ -126,7 +126,7 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None):
 def array_information(adinput=None):
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
     
     # The validate_input function ensures that adinput is not None and returns
     # a list containing one or more AstroData objects
@@ -232,7 +232,7 @@ def check_inputs_match(ad1=None, ad2=None, check_filter=True):
                   Note: inputs 1 and 2 must be matching length lists or single 
                   objects
     """
-    log = gemLog.getGeminiLog() 
+    log = logutils.get_logger(__name__) 
     
     # Check inputs are both matching length lists or single objects
     if (ad1 is None) or (ad2 is None):
@@ -306,7 +306,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
     """
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
     
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
@@ -787,7 +787,7 @@ def convert_to_cal_header(adinput=None, caltype=None):
 
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
     
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
@@ -967,7 +967,7 @@ def filename_updater(adinput=None, infilename='', suffix='', prefix='',
      result: 'testversion_N20020214S022.fits'
     
     """
-    log = gemLog.getGeminiLog() 
+    log = logutils.get_logger(__name__) 
 
     # Check there is a name to update
     if infilename=='':
@@ -1090,7 +1090,7 @@ def mark_history(adinput=None, keyword=None):
                           If None, then only 'GEM-TLM' is added/updated.
     """
     # Instantiate the log
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
     # If adinput is a single AstroData object, put it in a list
     if not isinstance(adinput, list):
         adinput = [adinput]
@@ -1103,10 +1103,9 @@ def mark_history(adinput=None, keyword=None):
         if keyword is not None:
             log.fullinfo("PHU keyword %s = %s added to %s" \
                          % (keyword, ad.phu_get_key_value(keyword),
-                            ad.filename), category='header')
+                            ad.filename))
         log.fullinfo("PHU keyword GEM-TLM = %s added to %s" \
-                     % (ad.phu_get_key_value("GEM-TLM"), ad.filename),
-                     category='header')
+                     % (ad.phu_get_key_value("GEM-TLM"), ad.filename))
 
 def parse_sextractor_param():
 
@@ -1143,7 +1142,7 @@ def trim_to_data_section(adinput=None):
     """
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
     
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more AstroData objects
@@ -1289,7 +1288,7 @@ def update_key_from_descriptor(adinput=None, descriptor=None,
                     
     :type extname: string
     """
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
     historyComment = None
 
     # Make sure a valid extname is specified

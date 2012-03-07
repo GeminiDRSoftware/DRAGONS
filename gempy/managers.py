@@ -933,8 +933,7 @@ def logDictParams(indict):
     """
     log = gemLog.getGeminiLog()
     for key in indict:
-        log.fullinfo(repr(key)+' = '+repr(indict[key]), 
-                     category='parameters')
+        log.fullinfo(repr(key)+' = '+repr(indict[key]))
 
 def pyrafBoolean(pythonBool):
     """
