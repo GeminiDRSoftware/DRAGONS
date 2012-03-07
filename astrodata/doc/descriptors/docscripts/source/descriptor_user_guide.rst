@@ -183,10 +183,11 @@ following files:
   - ``StandardGenericKeyDict.py``
   - ``StandardGEMINIKeyDict.py``
   - ``Standard<INSTRUMENT>KeyDict.py``
+  - ``descriptorDescriptionDict.py``
+  - ``calculatorIndex.Gemini.py``
   - ``Generic_Descriptor.py``
   - ``GEMINI_Descriptor.py``
   - ``<INSTRUMENT>_Descriptor.py``
-  - ``calculatorIndex.Gemini.py``
 
 Overview of the Gemini Descriptor Code
 --------------------------------------
@@ -233,14 +234,12 @@ will return the value of the descriptor.
 A descriptor function is used if a descriptor requires access to multiple
 keywords, requires access to keywords in the pixel data extensions (a
 dictionary must be created) and / or requires some validation. If no
-appropriate descriptor function is found, an exception is raised (:ref:`Section
-4.5 <Descriptor_Exceptions>`). If a descriptor value is returned, either
-directly from the header of the data or from a descriptor function, the 
-:ref:`CalculatorInterface <Calculator_Interface>` class instantiates the
-``DV`` object (which contains the descriptor value) and returns this to the
-user. 
-
-.. _Calculator_Interface:
+appropriate descriptor function is found, an exception is raised
+(see the :ref:`Descriptor Exceptions <Descriptor_Exceptions>` section). If a
+descriptor value is returned, either directly from the header of the data or
+from a descriptor function, the ``CalculatorInterface.py`` file instantiates
+the ``DV`` object (which contains the descriptor value) and returns this to the
+user.
 
 ``CalculatorInterface.py``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -300,6 +299,17 @@ used to define variables for any keywords that need to be accessed in the
 instrument specific descriptor file ``<INSTRUMENT>_Descriptor.py``. These
 instrument specific files are located in the corresponding ``<INSTRUMENT>``
 directory in the ``astrodata_Gemini/ADCONFIG_Gemini/descriptors`` directory.
+
+``descriptorDescriptionDict.py``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``descriptorDescriptionDict.py`` file contains four Python dictionaries
+named ``descriptorDescDict``, ``detailedNameDict``, ``asDictArgDict`` and
+``stripIDArgDict``, which are used by the ``mkCalculatorInterface.py`` file to
+automatically generate the docstrings for the descriptor functions located in
+the ``CalculatorInterface.py`` file. It is likely that the information in the
+``descriptorDescriptionDict.py`` file will be stored in the
+``mkCalculatorInterface.py`` file in the future.
 
 .. _calculatorIndex.Gemini.py:
 
@@ -380,7 +390,7 @@ The following instructions describe how to add a new descriptor to the system.
   1. First, check to see whether a descriptor already exists that has the same 
      concept as the new descriptor to be added (:ref:`Appendix A 
      <Appendix_typewalk>`). If a new descriptor is required, edit the
-     ``mkCalculatorInterface.py`` file and add the new descriptor to the DD
+     ``mkCalculatorInterface.py`` file and add the new descriptor to the ``DD``
      constructor in the descriptors list in alphabetical order. Ensure that the
      default Python type for the descriptor is defined:: 
        
@@ -429,21 +439,23 @@ The following instructions describe how to add a new descriptor to the system.
      The ``<INSTRUMENT>_Descriptor.py`` descriptor file is located in the
      ``<INSTRUMENT>`` directory. If the new descriptor is for a new
      ``<INSTRUMENT>``, create an ``<INSTRUMENT>`` directory and edit the
-     ``calculatorIndex.Gemini.py file`` appropriately (:ref:`Section 4.2.7 
-     <calculatorIndex.Gemini.py>`). An example descriptor function
-     (``detector_x_bin``) from ``GMOS_Descriptor.py`` can be found in
+     ``calculatorIndex.Gemini.py`` appropriately. An example descriptor
+     function (``detector_x_bin``) from ``GMOS_Descriptor.py`` can be found in
      :ref:`Appendix E <Appendix_descriptor>`. If the descriptor should return
      more than one value, i.e., one value for each pixel data extension, a
      dictionary should be returned by the descriptor function, where the key is
-     the ("``EXTNAME``", ``EXTVER``) tuple. If access to a particular keyword 
-     is required, first check the appropriate keyword files 
-     (``StandardDescriptorKeyDict.py``, ``StandardGenericKeyDict.py``, 
-     ``StandardGEMINIKeyDict.py`` and ``Standard<INSTRUMENT>KeyDict.py``) to 
+     the ("``EXTNAME``", ``EXTVER``) tuple. If access to a particular keyword
+     is required, first check the appropriate keyword files
+     (``StandardDescriptorKeyDict.py``, ``StandardGenericKeyDict.py``,
+     ``StandardGEMINIKeyDict.py`` and ``Standard<INSTRUMENT>KeyDict.py``) to
      see if it has already been defined. If required, the
      ``Standard<INSTRUMENT>KeyDict.py`` file should be edited to contain any
      new keywords required for this new descriptor function.
-  
-  7. Test the descriptor::
+ 
+  7. Update the Python dictionaries in ``descriptorDescriptionDict.py`` so that
+     a docstring can be automatically generated for the new descriptor.
+
+  8. Test the descriptor::
        
        >>> from astrodata import AstroData
        >>> ad = AstroData("N20091027S0137.fits")
@@ -467,7 +479,7 @@ When creating descriptor functions, the guidelines below should be followed:
   2. Return value Python type
 
      - The descriptors will always return a ``DV`` object to the user.
-     - The ``DV`` object is instantiated in the ``CI`` for descriptors that
+     - The ``DV`` object is instantiated by the ``CI`` for descriptors that
        obtain their values directly from the headers of the AstroData object.
        For descriptors that obtain their values from the descriptor functions
        (i.e., those functions located in the :ref:`descriptor files
@@ -556,12 +568,3 @@ and the exception information will be available in
 ``exception_info``. Available astrodata exceptions can be found in
 ``astrodata/Errors.py``. Additional required exceptions can be added to this
 file, if necessary. 
-
-Descriptor Docstrings
----------------------
-
-The current descriptor docstrings can be found in the member functions in the
-``CI``. These docstrings are generated by the ``mkCalculatorInterface.py``
-file using the information located in the descriptorDescriptionDict.py file. It
-is likely that the information in the descriptorDescriptionDict.py file will be
-stored in the DD constructor in the future.
