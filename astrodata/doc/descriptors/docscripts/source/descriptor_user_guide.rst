@@ -224,6 +224,8 @@ is not found in the header of the data, the descriptor files are then searched
 in the order below to attempt to find an appropriate descriptor function, which
 will return the value of the descriptor.
 
+.. _Descriptor_Files:
+
   - ``<INSTRUMENT>_Descriptor.py``
   - ``GEMINI_Descriptor.py``
   - ``Generic_Descriptor.py``
@@ -233,9 +235,12 @@ keywords, requires access to keywords in the pixel data extensions (a
 dictionary must be created) and / or requires some validation. If no
 appropriate descriptor function is found, an exception is raised (:ref:`Section
 4.5 <Descriptor_Exceptions>`). If a descriptor value is returned, either
-directly from the header of the data or from a descriptor function, the ``CI``
-instantiates the ``DV`` object (which contains the descriptor value) and
-returns this to the user.
+directly from the header of the data or from a descriptor function, the 
+:ref:`CalculatorInterface <Calculator_Interface>` class instantiates the
+``DV`` object (which contains the descriptor value) and returns this to the
+user. 
+
+.. _Calculator_Interface:
 
 ``CalculatorInterface.py``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -449,17 +454,75 @@ Descriptor Coding Guidelines
 
 When creating descriptor functions, the guidelines below should be followed:
 
-  - The descriptors determine the correct keyword value for data at any point
-    during processing
-  - The descriptors will not write keywords to the headers of the data; the 
-    descriptors only obtain information
-  - The descriptor functions themselves do not log any messages
-  - The descriptor values are not cached, since it is no effort to use the
-    descriptors to obtain the correct value as and when it is required
-  - The descriptor values can be written to the history, for information only
-  - The ``phu_get_key_value`` and ``get_key_value`` AstroData member functions
-    are used in the descriptor functions to access keywords in the headers of
-    the AstroData objects 
+  1. Return value
+
+     - The descriptors will return the correct value, regardless of the data
+       processing status of the AstroData object.
+     - The descriptors will not write keywords to the headers of the AstroData
+       object or cache any information, since it is no effort to use the
+       descriptors to obtain the correct value as and when it is required.
+     - The descriptor values can be written to the history, for information
+       only. 
+
+  2. Return value Python type
+
+     - The descriptors will always return a ``DV`` object to the user.
+     - The ``DV`` object is instantiated in the ``CI`` for descriptors that
+       obtain their values directly from the headers of the AstroData object.
+       For descriptors that obtain their values from the descriptor functions
+       (i.e., those functions located in the :ref:`descriptor files
+       <Descriptor_Files>`), the descriptor functions should be coded to return
+       a ``DV`` object. The ``DV`` object contains information related to the
+       descriptor, including the descriptor value, the default Python type for
+       that descriptor and the units of the descriptor.
+
+  3. Keyword access
+
+     - The ``phu_get_key_value`` and ``get_key_value`` AstroData member 
+       functions should be used in the descriptor functions to access keywords
+       in the header of an AstroData object.
+
+  4. Logging
+
+     - Descriptors will not log any messages.
+
+  5. Raising exceptions
+
+     - If a descriptor value can not be determined for whatever reason, the
+       descriptor function should raise an exception.
+     - The descriptor functions should never be coded to return None. Instead,
+       a descriptor function should throw an exception with a message
+       explaining why a value could not be returned (e.g., if the concept does
+       not directly apply to the data). An exception thrown from a descriptor
+       function will be caught by the ``CI``.
+
+  6. Exception rule
+
+     - Descriptors should throw exceptions on fatal errors.
+     - Exceptions thrown on fatal errors (e.g., if a descriptor function is not
+       found in a loaded calculator) should never be caught by the ``CI``. The
+       high level code, such as script or primitive, should catch any relevant
+       exceptions. 
+
+  7. Descriptor names
+
+     - Descriptor names will be:
+
+       - all lower case
+       - terms separated with "_"
+       - not instrument specific
+       - not mode specific, mostly
+
+     - A descriptor should describe a particular concept and apply for all
+       instrument modes.
+
+  8. Standard arguments
+
+     - Descriptors accept arguments, some with general purposes are 
+       standardized.
+     - It is especially important for descriptor arguments to follow the
+       Standard Parameter Names as they are front-facing to the user and should
+       therefore be consistent.
 
 For example, for raw GMOS data, the ``gain`` descriptor uses the raw keywords
 in the header and a look up table to determine the gain value. During the first
