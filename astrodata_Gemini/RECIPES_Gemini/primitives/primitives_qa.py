@@ -209,17 +209,19 @@ class QAPrimitives(GENERALPrimitives):
 
                     # Now get that in (instrumental) magnitudes...
                     if bg_e<=0:
-                        raise Errors.ScienceError(
+                        log.warning(
                             "Background in electrons is "\
                             "less than or equal to 0 for "\
                             "%s[SCI,%d]" % (ad.filename,extver))
-                    bg_im = -2.5 * math.log10(bg_e)
-                    log.fullinfo("BG inst mag = %f" % bg_im)
+                        bg_am = None
+                    else:
+                        bg_im = -2.5 * math.log10(bg_e)
+                        log.fullinfo("BG inst mag = %f" % bg_im)
 
-                    # And convert to apparent magnitude using the
-                    # nominal zeropoint
-                    bg_am = bg_im + npz
-                    log.fullinfo("BG mag = %f" % bg_am)
+                        # And convert to apparent magnitude using the
+                        # nominal zeropoint
+                        bg_am = bg_im + npz
+                        log.fullinfo("BG mag = %f" % bg_am)
                 else:
                     bg_am = None
 
