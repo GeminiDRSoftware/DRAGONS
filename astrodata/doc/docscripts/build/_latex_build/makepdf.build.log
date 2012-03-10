@@ -1,0 +1,746 @@
+pdflatex  'ADtypereference.tex'
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian)
+entering extended mode
+(./ADtypereference.tex
+LaTeX2e <2009/09/24>
+Babel <v3.8l> and hyphenation patterns for english, usenglishmax, dumylang, noh
+yphenation, farsi, arabic, croatian, bulgarian, ukrainian, russian, czech, slov
+ak, danish, dutch, finnish, french, basque, ngerman, german, german-x-2009-06-1
+9, ngerman-x-2009-06-19, ibycus, monogreek, greek, ancientgreek, hungarian, san
+skrit, italian, latin, latvian, lithuanian, mongolian2a, mongolian, bokmal, nyn
+orsk, romanian, irish, coptic, serbian, turkish, welsh, esperanto, uppersorbian
+, estonian, indonesian, interlingua, icelandic, kurmanji, slovenian, polish, po
+rtuguese, spanish, galician, catalan, swedish, ukenglish, pinyin, loaded.
+(./sphinxmanual.cls
+Document Class: sphinxmanual 2009/06/02 Document class (Sphinx manual)
+(/usr/share/texmf-texlive/tex/latex/base/report.cls
+Document Class: report 2007/10/19 v1.4h Standard LaTeX document class
+(/usr/share/texmf-texlive/tex/latex/base/size10.clo)))
+(/usr/share/texmf-texlive/tex/latex/base/inputenc.sty
+(/usr/share/texmf-texlive/tex/latex/base/utf8.def
+(/usr/share/texmf-texlive/tex/latex/base/t1enc.dfu)
+(/usr/share/texmf-texlive/tex/latex/base/ot1enc.dfu)
+(/usr/share/texmf-texlive/tex/latex/base/omsenc.dfu)))
+(/usr/share/texmf-texlive/tex/latex/base/fontenc.sty
+(/usr/share/texmf-texlive/tex/latex/base/t1enc.def))
+(/var/lib/texmf/tex/generic/babel/babel.sty
+(/usr/share/texmf-texlive/tex/generic/babel/english.ldf
+(/usr/share/texmf-texlive/tex/generic/babel/babel.def)))
+(/usr/share/texmf-texlive/tex/latex/psnfss/times.sty) (./fncychap.sty)
+(/usr/share/texmf-texlive/tex/latex/tools/longtable.sty) (./sphinx.sty
+(/usr/share/texmf-texlive/tex/latex/base/textcomp.sty
+(/usr/share/texmf-texlive/tex/latex/base/ts1enc.def
+(/usr/share/texmf-texlive/tex/latex/base/ts1enc.dfu)))
+(/usr/share/texmf-texlive/tex/latex/fancyhdr/fancyhdr.sty)
+(/usr/share/texmf-texlive/tex/latex/fancybox/fancybox.sty
+Style option: `fancybox' v1.3 <2000/09/19> (tvz)
+) (/usr/share/texmf-texlive/tex/latex/titlesec/titlesec.sty) (./tabulary.sty
+(/usr/share/texmf-texlive/tex/latex/tools/array.sty))
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?' option.
+(/usr/share/texmf-texlive/tex/latex/amsmath/amstext.sty
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsgen.sty))
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsbsy.sty)
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsopn.sty))
+(/usr/share/texmf-texlive/tex/latex/base/makeidx.sty)
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/framed.sty)
+(/usr/share/texmf-texlive/tex/latex/base/ifthen.sty)
+(/usr/share/texmf-texlive/tex/latex/graphics/color.sty
+(/etc/texmf/tex/latex/config/color.cfg)
+(/usr/share/texmf-texlive/tex/latex/pdftex-def/pdftex.def))
+(/usr/share/texmf-texlive/tex/latex/fancyvrb/fancyvrb.sty
+Style option: `fancyvrb' v2.7a, with DG/SPQR fixes, and firstline=lastline fix 
+<2008/02/07> (tvz) (/usr/share/texmf-texlive/tex/latex/graphics/keyval.sty))
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/threeparttable.sty)
+(/usr/share/texmf-texlive/tex/latex/mdwtools/footnote.sty)
+(/usr/share/texmf-texlive/tex/latex/wrapfig/wrapfig.sty)
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/parskip.sty)
+(/usr/share/texmf-texlive/tex/latex/graphics/graphicx.sty
+(/usr/share/texmf-texlive/tex/latex/graphics/graphics.sty
+(/usr/share/texmf-texlive/tex/latex/graphics/trig.sty)
+(/etc/texmf/tex/latex/config/graphics.cfg)))
+(/usr/share/texmf-texlive/tex/plain/misc/pdfcolor.tex)
+(/usr/share/texmf-texlive/tex/latex/hyperref/hyperref.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifpdf.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifvtex.sty)
+(/usr/share/texmf-texlive/tex/generic/ifxetex/ifxetex.sty)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/hycolor.sty
+(/usr/share/texmf-texlive/tex/latex/oberdiek/xcolor-patch.sty))
+(/usr/share/texmf-texlive/tex/latex/hyperref/pd1enc.def)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/etexcmds.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/infwarerr.sty))
+(/usr/share/texmf-texlive/tex/latex/latexconfig/hyperref.cfg)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/kvoptions.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/kvsetkeys.sty))
+Implicit mode ON; LaTeX internals redefined
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/url.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/bitset.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/intcalc.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/bigintcalc.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/pdftexcmds.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifluatex.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ltxcmds.sty))))
+(/usr/share/texmf-texlive/tex/generic/oberdiek/atbegshi.sty))
+*hyperref using default driver hpdftex*
+(/usr/share/texmf-texlive/tex/latex/hyperref/hpdftex.def)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/hypcap.sty))
+Writing index file ADtypereference.idx
+No file ADtypereference.aux.
+(/usr/share/texmf-texlive/tex/latex/base/ts1cmr.fd)
+(/usr/share/texmf-texlive/tex/latex/psnfss/t1ptm.fd)
+(/usr/share/texmf-texlive/tex/context/base/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+) (/usr/share/texmf-texlive/tex/latex/hyperref/nameref.sty
+(/usr/share/texmf-texlive/tex/latex/oberdiek/refcount.sty))
+Underfull \hbox (badness 10000) in paragraph at lines 112--112
+
+(/usr/share/texmf-texlive/tex/latex/psnfss/t1phv.fd) [1{/var/lib/texmf/fonts/ma
+p/pdftex/updmap/pdftex.map}] [2]
+Adding blank page after the table of contents.
+pdfTeX warning (ext4): destination with the same identifier (name{page.i}) has 
+been already used, duplicate ignored
+<to be read again> 
+                   \relax 
+l.113 \tableofcontents
+                       [1]pdfTeX warning (ext4): destination with the same iden
+tifier (name{page.ii}) has been already used, duplicate ignored
+<to be read again> 
+                   \relax 
+l.113 \tableofcontents
+                       [2]
+Chapter 1.
+(/usr/share/texmf-texlive/tex/latex/psnfss/ts1ptm.fd) [1] [2]
+Chapter 2.
+<GENERIC-tree-pd.png, id=39, 1036.87375pt x 292.09125pt>
+<use GENERIC-tree-pd.png>
+<GEMINI-tree-pd.png, id=40, 9677.15375pt x 663.47874pt>
+<use GEMINI-tree-pd.png> [3 <./GENERIC-tree-pd.png (PNG copy)>]
+<GMOS-tree-pd.png, id=49, 4716.62125pt x 663.47874pt> <use GMOS-tree-pd.png>
+<GNIRS-tree-pd.png, id=50, 904.37875pt x 438.63875pt> <use GNIRS-tree-pd.png>
+<NICI-tree-pd.png, id=51, 1392.20125pt x 658.46pt> <use NICI-tree-pd.png>
+<NIFS-tree-pd.png, id=52, 803.0pt x 438.63875pt> <use NIFS-tree-pd.png>
+[4 <./GEMINI-tree-pd.png (PNG copy)> <./GMOS-tree-pd.png (PNG copy)> <./GNIRS-t
+ree-pd.png (PNG copy)>] <NIRI-tree-pd.png, id=64, 497.86pt x 438.63875pt>
+<use NIRI-tree-pd.png>
+<MICHELLE-tree-pd.png, id=65, 695.59875pt x 438.63875pt>
+<use MICHELLE-tree-pd.png> [5 <./NICI-tree-pd.png (PNG copy)> <./NIFS-tree-pd.p
+ng (PNG copy)> <./NIRI-tree-pd.png (PNG copy)>]
+<RAW-tree-pd.png, id=75, 2084.78876pt x 292.09125pt> <use RAW-tree-pd.png>
+<TRECS-tree-pd.png, id=76, 578.16pt x 438.63875pt> <use TRECS-tree-pd.png>
+[6 <./MICHELLE-tree-pd.png (PNG copy)> <./RAW-tree-pd.png (PNG copy)> <./TRECS-
+tree-pd.png (PNG copy)>]
+Chapter 3.
+(/usr/share/texmf-texlive/tex/latex/psnfss/t1pcr.fd) [7] [8] [9] [10] [11]
+[12] [13] [14] [15] [16] [17] [18] [19] [20] [21] [22] [23] [24] [25] [26]
+[27] [28] [29] [30] [31] [32] [33] [34] [35] [36] [37] [38]
+No file ADtypereference.ind.
+[39] (./ADtypereference.aux)
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+ )
+(see the transcript file for additional information){/usr/share/texmf-texlive/f
+onts/enc/dvips/base/8r.enc}</usr/share/texmf-texlive/fonts/type1/urw/courier/uc
+rb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/courier/ucrr8a.pfb></usr/sha
+re/texmf-texlive/fonts/type1/urw/courier/ucrro8a.pfb></usr/share/texmf-texlive/
+fonts/type1/urw/helvetic/uhvb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/h
+elvetic/uhvbo8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/times/utmb8a.pfb>
+</usr/share/texmf-texlive/fonts/type1/urw/times/utmr8a.pfb>
+Output written on ADtypereference.pdf (43 pages, 884227 bytes).
+Transcript written on ADtypereference.log.
+pdflatex  'ADtypereference.tex'
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian)
+entering extended mode
+(./ADtypereference.tex
+LaTeX2e <2009/09/24>
+Babel <v3.8l> and hyphenation patterns for english, usenglishmax, dumylang, noh
+yphenation, farsi, arabic, croatian, bulgarian, ukrainian, russian, czech, slov
+ak, danish, dutch, finnish, french, basque, ngerman, german, german-x-2009-06-1
+9, ngerman-x-2009-06-19, ibycus, monogreek, greek, ancientgreek, hungarian, san
+skrit, italian, latin, latvian, lithuanian, mongolian2a, mongolian, bokmal, nyn
+orsk, romanian, irish, coptic, serbian, turkish, welsh, esperanto, uppersorbian
+, estonian, indonesian, interlingua, icelandic, kurmanji, slovenian, polish, po
+rtuguese, spanish, galician, catalan, swedish, ukenglish, pinyin, loaded.
+(./sphinxmanual.cls
+Document Class: sphinxmanual 2009/06/02 Document class (Sphinx manual)
+(/usr/share/texmf-texlive/tex/latex/base/report.cls
+Document Class: report 2007/10/19 v1.4h Standard LaTeX document class
+(/usr/share/texmf-texlive/tex/latex/base/size10.clo)))
+(/usr/share/texmf-texlive/tex/latex/base/inputenc.sty
+(/usr/share/texmf-texlive/tex/latex/base/utf8.def
+(/usr/share/texmf-texlive/tex/latex/base/t1enc.dfu)
+(/usr/share/texmf-texlive/tex/latex/base/ot1enc.dfu)
+(/usr/share/texmf-texlive/tex/latex/base/omsenc.dfu)))
+(/usr/share/texmf-texlive/tex/latex/base/fontenc.sty
+(/usr/share/texmf-texlive/tex/latex/base/t1enc.def))
+(/var/lib/texmf/tex/generic/babel/babel.sty
+(/usr/share/texmf-texlive/tex/generic/babel/english.ldf
+(/usr/share/texmf-texlive/tex/generic/babel/babel.def)))
+(/usr/share/texmf-texlive/tex/latex/psnfss/times.sty) (./fncychap.sty)
+(/usr/share/texmf-texlive/tex/latex/tools/longtable.sty) (./sphinx.sty
+(/usr/share/texmf-texlive/tex/latex/base/textcomp.sty
+(/usr/share/texmf-texlive/tex/latex/base/ts1enc.def
+(/usr/share/texmf-texlive/tex/latex/base/ts1enc.dfu)))
+(/usr/share/texmf-texlive/tex/latex/fancyhdr/fancyhdr.sty)
+(/usr/share/texmf-texlive/tex/latex/fancybox/fancybox.sty
+Style option: `fancybox' v1.3 <2000/09/19> (tvz)
+) (/usr/share/texmf-texlive/tex/latex/titlesec/titlesec.sty) (./tabulary.sty
+(/usr/share/texmf-texlive/tex/latex/tools/array.sty))
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?' option.
+(/usr/share/texmf-texlive/tex/latex/amsmath/amstext.sty
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsgen.sty))
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsbsy.sty)
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsopn.sty))
+(/usr/share/texmf-texlive/tex/latex/base/makeidx.sty)
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/framed.sty)
+(/usr/share/texmf-texlive/tex/latex/base/ifthen.sty)
+(/usr/share/texmf-texlive/tex/latex/graphics/color.sty
+(/etc/texmf/tex/latex/config/color.cfg)
+(/usr/share/texmf-texlive/tex/latex/pdftex-def/pdftex.def))
+(/usr/share/texmf-texlive/tex/latex/fancyvrb/fancyvrb.sty
+Style option: `fancyvrb' v2.7a, with DG/SPQR fixes, and firstline=lastline fix 
+<2008/02/07> (tvz) (/usr/share/texmf-texlive/tex/latex/graphics/keyval.sty))
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/threeparttable.sty)
+(/usr/share/texmf-texlive/tex/latex/mdwtools/footnote.sty)
+(/usr/share/texmf-texlive/tex/latex/wrapfig/wrapfig.sty)
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/parskip.sty)
+(/usr/share/texmf-texlive/tex/latex/graphics/graphicx.sty
+(/usr/share/texmf-texlive/tex/latex/graphics/graphics.sty
+(/usr/share/texmf-texlive/tex/latex/graphics/trig.sty)
+(/etc/texmf/tex/latex/config/graphics.cfg)))
+(/usr/share/texmf-texlive/tex/plain/misc/pdfcolor.tex)
+(/usr/share/texmf-texlive/tex/latex/hyperref/hyperref.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifpdf.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifvtex.sty)
+(/usr/share/texmf-texlive/tex/generic/ifxetex/ifxetex.sty)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/hycolor.sty
+(/usr/share/texmf-texlive/tex/latex/oberdiek/xcolor-patch.sty))
+(/usr/share/texmf-texlive/tex/latex/hyperref/pd1enc.def)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/etexcmds.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/infwarerr.sty))
+(/usr/share/texmf-texlive/tex/latex/latexconfig/hyperref.cfg)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/kvoptions.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/kvsetkeys.sty))
+Implicit mode ON; LaTeX internals redefined
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/url.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/bitset.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/intcalc.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/bigintcalc.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/pdftexcmds.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifluatex.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ltxcmds.sty))))
+(/usr/share/texmf-texlive/tex/generic/oberdiek/atbegshi.sty))
+*hyperref using default driver hpdftex*
+(/usr/share/texmf-texlive/tex/latex/hyperref/hpdftex.def)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/hypcap.sty))
+Writing index file ADtypereference.idx
+(./ADtypereference.aux) (/usr/share/texmf-texlive/tex/latex/base/ts1cmr.fd)
+(/usr/share/texmf-texlive/tex/latex/psnfss/t1ptm.fd)
+(/usr/share/texmf-texlive/tex/context/base/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+) (/usr/share/texmf-texlive/tex/latex/hyperref/nameref.sty
+(/usr/share/texmf-texlive/tex/latex/oberdiek/refcount.sty))
+(./ADtypereference.out) (./ADtypereference.out)
+Underfull \hbox (badness 10000) in paragraph at lines 112--112
+
+(/usr/share/texmf-texlive/tex/latex/psnfss/t1phv.fd) [1{/var/lib/texmf/fonts/ma
+p/pdftex/updmap/pdftex.map}] [2] (./ADtypereference.tocpdfTeX warning (ext4): d
+estination with the same identifier (name{page.i}) has been already used, dupli
+cate ignored
+<to be read again> 
+                   \relax 
+l.40 ...E Classification Source}{14}{section.3.21}
+                                                   [1]pdfTeX warning (ext4): de
+stination with the same identifier (name{page.ii}) has been already used, dupli
+cate ignored
+<to be read again> 
+                   \relax 
+l.94 ...D Classification Source}{32}{section.3.75}
+                                                   [2])
+Adding blank page after the table of contents.
+[3] [4]
+Chapter 1.
+(/usr/share/texmf-texlive/tex/latex/psnfss/ts1ptm.fd) [1] [2]
+Chapter 2.
+<GENERIC-tree-pd.png, id=632, 1036.87375pt x 292.09125pt>
+<use GENERIC-tree-pd.png>
+<GEMINI-tree-pd.png, id=633, 9677.15375pt x 663.47874pt>
+<use GEMINI-tree-pd.png> [3 <./GENERIC-tree-pd.png (PNG copy)>]
+<GMOS-tree-pd.png, id=639, 4716.62125pt x 663.47874pt> <use GMOS-tree-pd.png>
+<GNIRS-tree-pd.png, id=640, 904.37875pt x 438.63875pt> <use GNIRS-tree-pd.png>
+<NICI-tree-pd.png, id=641, 1392.20125pt x 658.46pt> <use NICI-tree-pd.png>
+<NIFS-tree-pd.png, id=642, 803.0pt x 438.63875pt> <use NIFS-tree-pd.png>
+[4 <./GEMINI-tree-pd.png (PNG copy)> <./GMOS-tree-pd.png (PNG copy)> <./GNIRS-t
+ree-pd.png (PNG copy)>] <NIRI-tree-pd.png, id=650, 497.86pt x 438.63875pt>
+<use NIRI-tree-pd.png>
+<MICHELLE-tree-pd.png, id=651, 695.59875pt x 438.63875pt>
+<use MICHELLE-tree-pd.png> [5 <./NICI-tree-pd.png (PNG copy)> <./NIFS-tree-pd.p
+ng (PNG copy)> <./NIRI-tree-pd.png (PNG copy)>]
+<RAW-tree-pd.png, id=659, 2084.78876pt x 292.09125pt> <use RAW-tree-pd.png>
+<TRECS-tree-pd.png, id=660, 578.16pt x 438.63875pt> <use TRECS-tree-pd.png>
+[6 <./MICHELLE-tree-pd.png (PNG copy)> <./RAW-tree-pd.png (PNG copy)> <./TRECS-
+tree-pd.png (PNG copy)>]
+Chapter 3.
+(/usr/share/texmf-texlive/tex/latex/psnfss/t1pcr.fd) [7] [8] [9] [10] [11]
+[12] [13] [14] [15] [16] [17] [18] [19] [20] [21] [22] [23] [24] [25] [26]
+[27] [28] [29] [30] [31] [32] [33] [34] [35] [36] [37] [38]
+No file ADtypereference.ind.
+[39] (./ADtypereference.aux) )
+(see the transcript file for additional information){/usr/share/texmf-texlive/f
+onts/enc/dvips/base/8r.enc}</usr/share/texmf-texlive/fonts/type1/urw/courier/uc
+rb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/courier/ucrr8a.pfb></usr/sha
+re/texmf-texlive/fonts/type1/urw/courier/ucrro8a.pfb></usr/share/texmf-texlive/
+fonts/type1/urw/helvetic/uhvb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/h
+elvetic/uhvbo8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/times/utmb8a.pfb>
+</usr/share/texmf-texlive/fonts/type1/urw/times/utmr8a.pfb>
+Output written on ADtypereference.pdf (45 pages, 940963 bytes).
+Transcript written on ADtypereference.log.
+pdflatex  'ADtypereference.tex'
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian)
+entering extended mode
+(./ADtypereference.tex
+LaTeX2e <2009/09/24>
+Babel <v3.8l> and hyphenation patterns for english, usenglishmax, dumylang, noh
+yphenation, farsi, arabic, croatian, bulgarian, ukrainian, russian, czech, slov
+ak, danish, dutch, finnish, french, basque, ngerman, german, german-x-2009-06-1
+9, ngerman-x-2009-06-19, ibycus, monogreek, greek, ancientgreek, hungarian, san
+skrit, italian, latin, latvian, lithuanian, mongolian2a, mongolian, bokmal, nyn
+orsk, romanian, irish, coptic, serbian, turkish, welsh, esperanto, uppersorbian
+, estonian, indonesian, interlingua, icelandic, kurmanji, slovenian, polish, po
+rtuguese, spanish, galician, catalan, swedish, ukenglish, pinyin, loaded.
+(./sphinxmanual.cls
+Document Class: sphinxmanual 2009/06/02 Document class (Sphinx manual)
+(/usr/share/texmf-texlive/tex/latex/base/report.cls
+Document Class: report 2007/10/19 v1.4h Standard LaTeX document class
+(/usr/share/texmf-texlive/tex/latex/base/size10.clo)))
+(/usr/share/texmf-texlive/tex/latex/base/inputenc.sty
+(/usr/share/texmf-texlive/tex/latex/base/utf8.def
+(/usr/share/texmf-texlive/tex/latex/base/t1enc.dfu)
+(/usr/share/texmf-texlive/tex/latex/base/ot1enc.dfu)
+(/usr/share/texmf-texlive/tex/latex/base/omsenc.dfu)))
+(/usr/share/texmf-texlive/tex/latex/base/fontenc.sty
+(/usr/share/texmf-texlive/tex/latex/base/t1enc.def))
+(/var/lib/texmf/tex/generic/babel/babel.sty
+(/usr/share/texmf-texlive/tex/generic/babel/english.ldf
+(/usr/share/texmf-texlive/tex/generic/babel/babel.def)))
+(/usr/share/texmf-texlive/tex/latex/psnfss/times.sty) (./fncychap.sty)
+(/usr/share/texmf-texlive/tex/latex/tools/longtable.sty) (./sphinx.sty
+(/usr/share/texmf-texlive/tex/latex/base/textcomp.sty
+(/usr/share/texmf-texlive/tex/latex/base/ts1enc.def
+(/usr/share/texmf-texlive/tex/latex/base/ts1enc.dfu)))
+(/usr/share/texmf-texlive/tex/latex/fancyhdr/fancyhdr.sty)
+(/usr/share/texmf-texlive/tex/latex/fancybox/fancybox.sty
+Style option: `fancybox' v1.3 <2000/09/19> (tvz)
+) (/usr/share/texmf-texlive/tex/latex/titlesec/titlesec.sty) (./tabulary.sty
+(/usr/share/texmf-texlive/tex/latex/tools/array.sty))
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?' option.
+(/usr/share/texmf-texlive/tex/latex/amsmath/amstext.sty
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsgen.sty))
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsbsy.sty)
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsopn.sty))
+(/usr/share/texmf-texlive/tex/latex/base/makeidx.sty)
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/framed.sty)
+(/usr/share/texmf-texlive/tex/latex/base/ifthen.sty)
+(/usr/share/texmf-texlive/tex/latex/graphics/color.sty
+(/etc/texmf/tex/latex/config/color.cfg)
+(/usr/share/texmf-texlive/tex/latex/pdftex-def/pdftex.def))
+(/usr/share/texmf-texlive/tex/latex/fancyvrb/fancyvrb.sty
+Style option: `fancyvrb' v2.7a, with DG/SPQR fixes, and firstline=lastline fix 
+<2008/02/07> (tvz) (/usr/share/texmf-texlive/tex/latex/graphics/keyval.sty))
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/threeparttable.sty)
+(/usr/share/texmf-texlive/tex/latex/mdwtools/footnote.sty)
+(/usr/share/texmf-texlive/tex/latex/wrapfig/wrapfig.sty)
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/parskip.sty)
+(/usr/share/texmf-texlive/tex/latex/graphics/graphicx.sty
+(/usr/share/texmf-texlive/tex/latex/graphics/graphics.sty
+(/usr/share/texmf-texlive/tex/latex/graphics/trig.sty)
+(/etc/texmf/tex/latex/config/graphics.cfg)))
+(/usr/share/texmf-texlive/tex/plain/misc/pdfcolor.tex)
+(/usr/share/texmf-texlive/tex/latex/hyperref/hyperref.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifpdf.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifvtex.sty)
+(/usr/share/texmf-texlive/tex/generic/ifxetex/ifxetex.sty)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/hycolor.sty
+(/usr/share/texmf-texlive/tex/latex/oberdiek/xcolor-patch.sty))
+(/usr/share/texmf-texlive/tex/latex/hyperref/pd1enc.def)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/etexcmds.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/infwarerr.sty))
+(/usr/share/texmf-texlive/tex/latex/latexconfig/hyperref.cfg)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/kvoptions.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/kvsetkeys.sty))
+Implicit mode ON; LaTeX internals redefined
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/url.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/bitset.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/intcalc.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/bigintcalc.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/pdftexcmds.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifluatex.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ltxcmds.sty))))
+(/usr/share/texmf-texlive/tex/generic/oberdiek/atbegshi.sty))
+*hyperref using default driver hpdftex*
+(/usr/share/texmf-texlive/tex/latex/hyperref/hpdftex.def)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/hypcap.sty))
+Writing index file ADtypereference.idx
+(./ADtypereference.aux) (/usr/share/texmf-texlive/tex/latex/base/ts1cmr.fd)
+(/usr/share/texmf-texlive/tex/latex/psnfss/t1ptm.fd)
+(/usr/share/texmf-texlive/tex/context/base/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+) (/usr/share/texmf-texlive/tex/latex/hyperref/nameref.sty
+(/usr/share/texmf-texlive/tex/latex/oberdiek/refcount.sty))
+(./ADtypereference.out) (./ADtypereference.out)
+Underfull \hbox (badness 10000) in paragraph at lines 112--112
+
+(/usr/share/texmf-texlive/tex/latex/psnfss/t1phv.fd) [1{/var/lib/texmf/fonts/ma
+p/pdftex/updmap/pdftex.map}] [2] (./ADtypereference.tocpdfTeX warning (ext4): d
+estination with the same identifier (name{page.i}) has been already used, dupli
+cate ignored
+<to be read again> 
+                   \relax 
+l.40 ...E Classification Source}{14}{section.3.21}
+                                                   [1]pdfTeX warning (ext4): de
+stination with the same identifier (name{page.ii}) has been already used, dupli
+cate ignored
+<to be read again> 
+                   \relax 
+l.94 ...D Classification Source}{32}{section.3.75}
+                                                   [2])
+Adding blank page after the table of contents.
+[3] [4]
+Chapter 1.
+(/usr/share/texmf-texlive/tex/latex/psnfss/ts1ptm.fd) [1] [2]
+Chapter 2.
+<GENERIC-tree-pd.png, id=632, 1036.87375pt x 292.09125pt>
+<use GENERIC-tree-pd.png>
+<GEMINI-tree-pd.png, id=633, 9677.15375pt x 663.47874pt>
+<use GEMINI-tree-pd.png> [3 <./GENERIC-tree-pd.png (PNG copy)>]
+<GMOS-tree-pd.png, id=639, 4716.62125pt x 663.47874pt> <use GMOS-tree-pd.png>
+<GNIRS-tree-pd.png, id=640, 904.37875pt x 438.63875pt> <use GNIRS-tree-pd.png>
+<NICI-tree-pd.png, id=641, 1392.20125pt x 658.46pt> <use NICI-tree-pd.png>
+<NIFS-tree-pd.png, id=642, 803.0pt x 438.63875pt> <use NIFS-tree-pd.png>
+[4 <./GEMINI-tree-pd.png (PNG copy)> <./GMOS-tree-pd.png (PNG copy)> <./GNIRS-t
+ree-pd.png (PNG copy)>] <NIRI-tree-pd.png, id=650, 497.86pt x 438.63875pt>
+<use NIRI-tree-pd.png>
+<MICHELLE-tree-pd.png, id=651, 695.59875pt x 438.63875pt>
+<use MICHELLE-tree-pd.png> [5 <./NICI-tree-pd.png (PNG copy)> <./NIFS-tree-pd.p
+ng (PNG copy)> <./NIRI-tree-pd.png (PNG copy)>]
+<RAW-tree-pd.png, id=659, 2084.78876pt x 292.09125pt> <use RAW-tree-pd.png>
+<TRECS-tree-pd.png, id=660, 578.16pt x 438.63875pt> <use TRECS-tree-pd.png>
+[6 <./MICHELLE-tree-pd.png (PNG copy)> <./RAW-tree-pd.png (PNG copy)> <./TRECS-
+tree-pd.png (PNG copy)>]
+Chapter 3.
+(/usr/share/texmf-texlive/tex/latex/psnfss/t1pcr.fd) [7] [8] [9] [10] [11]
+[12] [13] [14] [15] [16] [17] [18] [19] [20] [21] [22] [23] [24] [25] [26]
+[27] [28] [29] [30] [31] [32] [33] [34] [35] [36] [37] [38]
+No file ADtypereference.ind.
+[39] (./ADtypereference.aux) )
+(see the transcript file for additional information){/usr/share/texmf-texlive/f
+onts/enc/dvips/base/8r.enc}</usr/share/texmf-texlive/fonts/type1/urw/courier/uc
+rb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/courier/ucrr8a.pfb></usr/sha
+re/texmf-texlive/fonts/type1/urw/courier/ucrro8a.pfb></usr/share/texmf-texlive/
+fonts/type1/urw/helvetic/uhvb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/h
+elvetic/uhvbo8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/times/utmb8a.pfb>
+</usr/share/texmf-texlive/fonts/type1/urw/times/utmr8a.pfb>
+Output written on ADtypereference.pdf (45 pages, 940963 bytes).
+Transcript written on ADtypereference.log.
+makeindex -s python.ist 'ADtypereference.idx'
+This is makeindex, version 2.15 [TeX Live 2009] (kpathsea + Thai support).
+Scanning style file ./python.ist......done (6 attributes redefined, 0 ignored).
+Scanning input file ADtypereference.idx...done (0 entries accepted, 0 rejected).
+Nothing written in ADtypereference.ind.
+Transcript written in ADtypereference.ilg.
+pdflatex  'ADtypereference.tex'
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian)
+entering extended mode
+(./ADtypereference.tex
+LaTeX2e <2009/09/24>
+Babel <v3.8l> and hyphenation patterns for english, usenglishmax, dumylang, noh
+yphenation, farsi, arabic, croatian, bulgarian, ukrainian, russian, czech, slov
+ak, danish, dutch, finnish, french, basque, ngerman, german, german-x-2009-06-1
+9, ngerman-x-2009-06-19, ibycus, monogreek, greek, ancientgreek, hungarian, san
+skrit, italian, latin, latvian, lithuanian, mongolian2a, mongolian, bokmal, nyn
+orsk, romanian, irish, coptic, serbian, turkish, welsh, esperanto, uppersorbian
+, estonian, indonesian, interlingua, icelandic, kurmanji, slovenian, polish, po
+rtuguese, spanish, galician, catalan, swedish, ukenglish, pinyin, loaded.
+(./sphinxmanual.cls
+Document Class: sphinxmanual 2009/06/02 Document class (Sphinx manual)
+(/usr/share/texmf-texlive/tex/latex/base/report.cls
+Document Class: report 2007/10/19 v1.4h Standard LaTeX document class
+(/usr/share/texmf-texlive/tex/latex/base/size10.clo)))
+(/usr/share/texmf-texlive/tex/latex/base/inputenc.sty
+(/usr/share/texmf-texlive/tex/latex/base/utf8.def
+(/usr/share/texmf-texlive/tex/latex/base/t1enc.dfu)
+(/usr/share/texmf-texlive/tex/latex/base/ot1enc.dfu)
+(/usr/share/texmf-texlive/tex/latex/base/omsenc.dfu)))
+(/usr/share/texmf-texlive/tex/latex/base/fontenc.sty
+(/usr/share/texmf-texlive/tex/latex/base/t1enc.def))
+(/var/lib/texmf/tex/generic/babel/babel.sty
+(/usr/share/texmf-texlive/tex/generic/babel/english.ldf
+(/usr/share/texmf-texlive/tex/generic/babel/babel.def)))
+(/usr/share/texmf-texlive/tex/latex/psnfss/times.sty) (./fncychap.sty)
+(/usr/share/texmf-texlive/tex/latex/tools/longtable.sty) (./sphinx.sty
+(/usr/share/texmf-texlive/tex/latex/base/textcomp.sty
+(/usr/share/texmf-texlive/tex/latex/base/ts1enc.def
+(/usr/share/texmf-texlive/tex/latex/base/ts1enc.dfu)))
+(/usr/share/texmf-texlive/tex/latex/fancyhdr/fancyhdr.sty)
+(/usr/share/texmf-texlive/tex/latex/fancybox/fancybox.sty
+Style option: `fancybox' v1.3 <2000/09/19> (tvz)
+) (/usr/share/texmf-texlive/tex/latex/titlesec/titlesec.sty) (./tabulary.sty
+(/usr/share/texmf-texlive/tex/latex/tools/array.sty))
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?' option.
+(/usr/share/texmf-texlive/tex/latex/amsmath/amstext.sty
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsgen.sty))
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsbsy.sty)
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsopn.sty))
+(/usr/share/texmf-texlive/tex/latex/base/makeidx.sty)
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/framed.sty)
+(/usr/share/texmf-texlive/tex/latex/base/ifthen.sty)
+(/usr/share/texmf-texlive/tex/latex/graphics/color.sty
+(/etc/texmf/tex/latex/config/color.cfg)
+(/usr/share/texmf-texlive/tex/latex/pdftex-def/pdftex.def))
+(/usr/share/texmf-texlive/tex/latex/fancyvrb/fancyvrb.sty
+Style option: `fancyvrb' v2.7a, with DG/SPQR fixes, and firstline=lastline fix 
+<2008/02/07> (tvz) (/usr/share/texmf-texlive/tex/latex/graphics/keyval.sty))
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/threeparttable.sty)
+(/usr/share/texmf-texlive/tex/latex/mdwtools/footnote.sty)
+(/usr/share/texmf-texlive/tex/latex/wrapfig/wrapfig.sty)
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/parskip.sty)
+(/usr/share/texmf-texlive/tex/latex/graphics/graphicx.sty
+(/usr/share/texmf-texlive/tex/latex/graphics/graphics.sty
+(/usr/share/texmf-texlive/tex/latex/graphics/trig.sty)
+(/etc/texmf/tex/latex/config/graphics.cfg)))
+(/usr/share/texmf-texlive/tex/plain/misc/pdfcolor.tex)
+(/usr/share/texmf-texlive/tex/latex/hyperref/hyperref.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifpdf.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifvtex.sty)
+(/usr/share/texmf-texlive/tex/generic/ifxetex/ifxetex.sty)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/hycolor.sty
+(/usr/share/texmf-texlive/tex/latex/oberdiek/xcolor-patch.sty))
+(/usr/share/texmf-texlive/tex/latex/hyperref/pd1enc.def)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/etexcmds.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/infwarerr.sty))
+(/usr/share/texmf-texlive/tex/latex/latexconfig/hyperref.cfg)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/kvoptions.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/kvsetkeys.sty))
+Implicit mode ON; LaTeX internals redefined
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/url.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/bitset.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/intcalc.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/bigintcalc.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/pdftexcmds.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifluatex.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ltxcmds.sty))))
+(/usr/share/texmf-texlive/tex/generic/oberdiek/atbegshi.sty))
+*hyperref using default driver hpdftex*
+(/usr/share/texmf-texlive/tex/latex/hyperref/hpdftex.def)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/hypcap.sty))
+Writing index file ADtypereference.idx
+(./ADtypereference.aux) (/usr/share/texmf-texlive/tex/latex/base/ts1cmr.fd)
+(/usr/share/texmf-texlive/tex/latex/psnfss/t1ptm.fd)
+(/usr/share/texmf-texlive/tex/context/base/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+) (/usr/share/texmf-texlive/tex/latex/hyperref/nameref.sty
+(/usr/share/texmf-texlive/tex/latex/oberdiek/refcount.sty))
+(./ADtypereference.out) (./ADtypereference.out)
+Underfull \hbox (badness 10000) in paragraph at lines 112--112
+
+(/usr/share/texmf-texlive/tex/latex/psnfss/t1phv.fd) [1{/var/lib/texmf/fonts/ma
+p/pdftex/updmap/pdftex.map}] [2] (./ADtypereference.tocpdfTeX warning (ext4): d
+estination with the same identifier (name{page.i}) has been already used, dupli
+cate ignored
+<to be read again> 
+                   \relax 
+l.40 ...E Classification Source}{14}{section.3.21}
+                                                   [1]pdfTeX warning (ext4): de
+stination with the same identifier (name{page.ii}) has been already used, dupli
+cate ignored
+<to be read again> 
+                   \relax 
+l.94 ...D Classification Source}{32}{section.3.75}
+                                                   [2])
+Adding blank page after the table of contents.
+[3] [4]
+Chapter 1.
+(/usr/share/texmf-texlive/tex/latex/psnfss/ts1ptm.fd) [1] [2]
+Chapter 2.
+<GENERIC-tree-pd.png, id=632, 1036.87375pt x 292.09125pt>
+<use GENERIC-tree-pd.png>
+<GEMINI-tree-pd.png, id=633, 9677.15375pt x 663.47874pt>
+<use GEMINI-tree-pd.png> [3 <./GENERIC-tree-pd.png (PNG copy)>]
+<GMOS-tree-pd.png, id=639, 4716.62125pt x 663.47874pt> <use GMOS-tree-pd.png>
+<GNIRS-tree-pd.png, id=640, 904.37875pt x 438.63875pt> <use GNIRS-tree-pd.png>
+<NICI-tree-pd.png, id=641, 1392.20125pt x 658.46pt> <use NICI-tree-pd.png>
+<NIFS-tree-pd.png, id=642, 803.0pt x 438.63875pt> <use NIFS-tree-pd.png>
+[4 <./GEMINI-tree-pd.png (PNG copy)> <./GMOS-tree-pd.png (PNG copy)> <./GNIRS-t
+ree-pd.png (PNG copy)>] <NIRI-tree-pd.png, id=650, 497.86pt x 438.63875pt>
+<use NIRI-tree-pd.png>
+<MICHELLE-tree-pd.png, id=651, 695.59875pt x 438.63875pt>
+<use MICHELLE-tree-pd.png> [5 <./NICI-tree-pd.png (PNG copy)> <./NIFS-tree-pd.p
+ng (PNG copy)> <./NIRI-tree-pd.png (PNG copy)>]
+<RAW-tree-pd.png, id=659, 2084.78876pt x 292.09125pt> <use RAW-tree-pd.png>
+<TRECS-tree-pd.png, id=660, 578.16pt x 438.63875pt> <use TRECS-tree-pd.png>
+[6 <./MICHELLE-tree-pd.png (PNG copy)> <./RAW-tree-pd.png (PNG copy)> <./TRECS-
+tree-pd.png (PNG copy)>]
+Chapter 3.
+(/usr/share/texmf-texlive/tex/latex/psnfss/t1pcr.fd) [7] [8] [9] [10] [11]
+[12] [13] [14] [15] [16] [17] [18] [19] [20] [21] [22] [23] [24] [25] [26]
+[27] [28] [29] [30] [31] [32] [33] [34] [35] [36] [37] [38]
+(./ADtypereference.ind) [39] (./ADtypereference.aux) )
+(see the transcript file for additional information){/usr/share/texmf-texlive/f
+onts/enc/dvips/base/8r.enc}</usr/share/texmf-texlive/fonts/type1/urw/courier/uc
+rb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/courier/ucrr8a.pfb></usr/sha
+re/texmf-texlive/fonts/type1/urw/courier/ucrro8a.pfb></usr/share/texmf-texlive/
+fonts/type1/urw/helvetic/uhvb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/h
+elvetic/uhvbo8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/times/utmb8a.pfb>
+</usr/share/texmf-texlive/fonts/type1/urw/times/utmr8a.pfb>
+Output written on ADtypereference.pdf (45 pages, 940963 bytes).
+Transcript written on ADtypereference.log.
+pdflatex  'ADtypereference.tex'
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian)
+entering extended mode
+(./ADtypereference.tex
+LaTeX2e <2009/09/24>
+Babel <v3.8l> and hyphenation patterns for english, usenglishmax, dumylang, noh
+yphenation, farsi, arabic, croatian, bulgarian, ukrainian, russian, czech, slov
+ak, danish, dutch, finnish, french, basque, ngerman, german, german-x-2009-06-1
+9, ngerman-x-2009-06-19, ibycus, monogreek, greek, ancientgreek, hungarian, san
+skrit, italian, latin, latvian, lithuanian, mongolian2a, mongolian, bokmal, nyn
+orsk, romanian, irish, coptic, serbian, turkish, welsh, esperanto, uppersorbian
+, estonian, indonesian, interlingua, icelandic, kurmanji, slovenian, polish, po
+rtuguese, spanish, galician, catalan, swedish, ukenglish, pinyin, loaded.
+(./sphinxmanual.cls
+Document Class: sphinxmanual 2009/06/02 Document class (Sphinx manual)
+(/usr/share/texmf-texlive/tex/latex/base/report.cls
+Document Class: report 2007/10/19 v1.4h Standard LaTeX document class
+(/usr/share/texmf-texlive/tex/latex/base/size10.clo)))
+(/usr/share/texmf-texlive/tex/latex/base/inputenc.sty
+(/usr/share/texmf-texlive/tex/latex/base/utf8.def
+(/usr/share/texmf-texlive/tex/latex/base/t1enc.dfu)
+(/usr/share/texmf-texlive/tex/latex/base/ot1enc.dfu)
+(/usr/share/texmf-texlive/tex/latex/base/omsenc.dfu)))
+(/usr/share/texmf-texlive/tex/latex/base/fontenc.sty
+(/usr/share/texmf-texlive/tex/latex/base/t1enc.def))
+(/var/lib/texmf/tex/generic/babel/babel.sty
+(/usr/share/texmf-texlive/tex/generic/babel/english.ldf
+(/usr/share/texmf-texlive/tex/generic/babel/babel.def)))
+(/usr/share/texmf-texlive/tex/latex/psnfss/times.sty) (./fncychap.sty)
+(/usr/share/texmf-texlive/tex/latex/tools/longtable.sty) (./sphinx.sty
+(/usr/share/texmf-texlive/tex/latex/base/textcomp.sty
+(/usr/share/texmf-texlive/tex/latex/base/ts1enc.def
+(/usr/share/texmf-texlive/tex/latex/base/ts1enc.dfu)))
+(/usr/share/texmf-texlive/tex/latex/fancyhdr/fancyhdr.sty)
+(/usr/share/texmf-texlive/tex/latex/fancybox/fancybox.sty
+Style option: `fancybox' v1.3 <2000/09/19> (tvz)
+) (/usr/share/texmf-texlive/tex/latex/titlesec/titlesec.sty) (./tabulary.sty
+(/usr/share/texmf-texlive/tex/latex/tools/array.sty))
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?' option.
+(/usr/share/texmf-texlive/tex/latex/amsmath/amstext.sty
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsgen.sty))
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsbsy.sty)
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsopn.sty))
+(/usr/share/texmf-texlive/tex/latex/base/makeidx.sty)
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/framed.sty)
+(/usr/share/texmf-texlive/tex/latex/base/ifthen.sty)
+(/usr/share/texmf-texlive/tex/latex/graphics/color.sty
+(/etc/texmf/tex/latex/config/color.cfg)
+(/usr/share/texmf-texlive/tex/latex/pdftex-def/pdftex.def))
+(/usr/share/texmf-texlive/tex/latex/fancyvrb/fancyvrb.sty
+Style option: `fancyvrb' v2.7a, with DG/SPQR fixes, and firstline=lastline fix 
+<2008/02/07> (tvz) (/usr/share/texmf-texlive/tex/latex/graphics/keyval.sty))
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/threeparttable.sty)
+(/usr/share/texmf-texlive/tex/latex/mdwtools/footnote.sty)
+(/usr/share/texmf-texlive/tex/latex/wrapfig/wrapfig.sty)
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/parskip.sty)
+(/usr/share/texmf-texlive/tex/latex/graphics/graphicx.sty
+(/usr/share/texmf-texlive/tex/latex/graphics/graphics.sty
+(/usr/share/texmf-texlive/tex/latex/graphics/trig.sty)
+(/etc/texmf/tex/latex/config/graphics.cfg)))
+(/usr/share/texmf-texlive/tex/plain/misc/pdfcolor.tex)
+(/usr/share/texmf-texlive/tex/latex/hyperref/hyperref.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifpdf.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifvtex.sty)
+(/usr/share/texmf-texlive/tex/generic/ifxetex/ifxetex.sty)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/hycolor.sty
+(/usr/share/texmf-texlive/tex/latex/oberdiek/xcolor-patch.sty))
+(/usr/share/texmf-texlive/tex/latex/hyperref/pd1enc.def)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/etexcmds.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/infwarerr.sty))
+(/usr/share/texmf-texlive/tex/latex/latexconfig/hyperref.cfg)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/kvoptions.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/kvsetkeys.sty))
+Implicit mode ON; LaTeX internals redefined
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/url.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/bitset.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/intcalc.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/bigintcalc.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/pdftexcmds.sty
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifluatex.sty)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ltxcmds.sty))))
+(/usr/share/texmf-texlive/tex/generic/oberdiek/atbegshi.sty))
+*hyperref using default driver hpdftex*
+(/usr/share/texmf-texlive/tex/latex/hyperref/hpdftex.def)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/hypcap.sty))
+Writing index file ADtypereference.idx
+(./ADtypereference.aux) (/usr/share/texmf-texlive/tex/latex/base/ts1cmr.fd)
+(/usr/share/texmf-texlive/tex/latex/psnfss/t1ptm.fd)
+(/usr/share/texmf-texlive/tex/context/base/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+) (/usr/share/texmf-texlive/tex/latex/hyperref/nameref.sty
+(/usr/share/texmf-texlive/tex/latex/oberdiek/refcount.sty))
+(./ADtypereference.out) (./ADtypereference.out)
+Underfull \hbox (badness 10000) in paragraph at lines 112--112
+
+(/usr/share/texmf-texlive/tex/latex/psnfss/t1phv.fd) [1{/var/lib/texmf/fonts/ma
+p/pdftex/updmap/pdftex.map}] [2] (./ADtypereference.tocpdfTeX warning (ext4): d
+estination with the same identifier (name{page.i}) has been already used, dupli
+cate ignored
+<to be read again> 
+                   \relax 
+l.40 ...E Classification Source}{14}{section.3.21}
+                                                   [1]pdfTeX warning (ext4): de
+stination with the same identifier (name{page.ii}) has been already used, dupli
+cate ignored
+<to be read again> 
+                   \relax 
+l.94 ...D Classification Source}{32}{section.3.75}
+                                                   [2])
+Adding blank page after the table of contents.
+[3] [4]
+Chapter 1.
+(/usr/share/texmf-texlive/tex/latex/psnfss/ts1ptm.fd) [1] [2]
+Chapter 2.
+<GENERIC-tree-pd.png, id=632, 1036.87375pt x 292.09125pt>
+<use GENERIC-tree-pd.png>
+<GEMINI-tree-pd.png, id=633, 9677.15375pt x 663.47874pt>
+<use GEMINI-tree-pd.png> [3 <./GENERIC-tree-pd.png (PNG copy)>]
+<GMOS-tree-pd.png, id=639, 4716.62125pt x 663.47874pt> <use GMOS-tree-pd.png>
+<GNIRS-tree-pd.png, id=640, 904.37875pt x 438.63875pt> <use GNIRS-tree-pd.png>
+<NICI-tree-pd.png, id=641, 1392.20125pt x 658.46pt> <use NICI-tree-pd.png>
+<NIFS-tree-pd.png, id=642, 803.0pt x 438.63875pt> <use NIFS-tree-pd.png>
+[4 <./GEMINI-tree-pd.png (PNG copy)> <./GMOS-tree-pd.png (PNG copy)> <./GNIRS-t
+ree-pd.png (PNG copy)>] <NIRI-tree-pd.png, id=650, 497.86pt x 438.63875pt>
+<use NIRI-tree-pd.png>
+<MICHELLE-tree-pd.png, id=651, 695.59875pt x 438.63875pt>
+<use MICHELLE-tree-pd.png> [5 <./NICI-tree-pd.png (PNG copy)> <./NIFS-tree-pd.p
+ng (PNG copy)> <./NIRI-tree-pd.png (PNG copy)>]
+<RAW-tree-pd.png, id=659, 2084.78876pt x 292.09125pt> <use RAW-tree-pd.png>
+<TRECS-tree-pd.png, id=660, 578.16pt x 438.63875pt> <use TRECS-tree-pd.png>
+[6 <./MICHELLE-tree-pd.png (PNG copy)> <./RAW-tree-pd.png (PNG copy)> <./TRECS-
+tree-pd.png (PNG copy)>]
+Chapter 3.
+(/usr/share/texmf-texlive/tex/latex/psnfss/t1pcr.fd) [7] [8] [9] [10] [11]
+[12] [13] [14] [15] [16] [17] [18] [19] [20] [21] [22] [23] [24] [25] [26]
+[27] [28] [29] [30] [31] [32] [33] [34] [35] [36] [37] [38]
+(./ADtypereference.ind) [39] (./ADtypereference.aux) )
+(see the transcript file for additional information){/usr/share/texmf-texlive/f
+onts/enc/dvips/base/8r.enc}</usr/share/texmf-texlive/fonts/type1/urw/courier/uc
+rb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/courier/ucrr8a.pfb></usr/sha
+re/texmf-texlive/fonts/type1/urw/courier/ucrro8a.pfb></usr/share/texmf-texlive/
+fonts/type1/urw/helvetic/uhvb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/h
+elvetic/uhvbo8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/times/utmb8a.pfb>
+</usr/share/texmf-texlive/fonts/type1/urw/times/utmr8a.pfb>
+Output written on ADtypereference.pdf (45 pages, 940963 bytes).
+Transcript written on ADtypereference.log.

@@ -172,7 +172,7 @@ documentation is generated from in source docstrings. To import the
 <div class="section" id="astrodata-class">
 <h2>2.1. AstroData Class<a class="headerlink" href="#astrodata-class" title="Permalink to this headline">¶</a></h2>
 <blockquote>
-from astrodata import AstroData</blockquote>
+<div>from astrodata import AstroData</div></blockquote>
 <dl class="class">
 <dt id="astrodata.data.AstroData">
 <em class="property">class </em><tt class="descclassname">astrodata.data.</tt><tt class="descname">AstroData</tt><big>(</big><em>dataset=None</em>, <em>mode='readonly'</em>, <em>phu=None</em>, <em>header=None</em>, <em>data=None</em>, <em>store=None</em>, <em>storeClobber=False</em>, <em>exts=None</em>, <em>extInsts=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData" title="Permalink to this definition">¶</a></dt>
@@ -181,7 +181,7 @@ and provides uniform interfaces for working on datasets from different
 instruments and modes.  Configuration packages are used to describe
 the specific data characteristics, layout, and to store type-specific
 implementations.</p>
-<p>MEFs can be generalized as lists of header-data units, with key-value 
+<p>MEFs can dbe generalized as lists of header-data units, with key-value 
 pairs populating headers and pixel data populating data,
 AstroData interprets a MEF as a single complex entity.  The individual
 &#8220;extensions&#8221; with the MEF are available using python list (&#8220;[]&#8221;) syntax and are 
@@ -235,10 +235,10 @@ integrates other functionality.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>dataset</strong> &#8211; the dataset to load, either a filename (string) path
+<li><strong>dataset</strong> (<em>string, AstroData, HDUList</em>) &#8211; the dataset to load, either a filename (string) path
 or URL, an
 AstroData instance, or a pyfits.HDUList</li>
-<li><strong>mode</strong> &#8211; IO access mode, same as pyfits mode (&#8220;readonly&#8221;, &#8220;update&#8221;,
+<li><strong>mode</strong> (<em>string</em>) &#8211; IO access mode, same as pyfits mode (&#8220;readonly&#8221;, &#8220;update&#8221;,
 &#8220;or append&#8221;) with one additional AstroData-specific mode, &#8220;new&#8221;.
 If the mode is &#8220;new&#8221;, and a filename is provided, the constructor
 checks that the named file does not exist on disk,
@@ -246,7 +246,7 @@ and if it does not it creates an empty AstroData of that name
 but does not write it to disk. Such an AstroData 
 instance is ready to have HDUs appended, and to be written to disk
 at the user&#8217;s command with &#8220;ad.write()&#8221;.</li>
-<li><strong>phu</strong> &#8211; primary header unit. This object is propagated to all 
+<li><strong>phu</strong> (<em>pyfits.core.Header</em>) &#8211; primary header unit. This object is propagated to all 
 astrodata sub-data ImageHDUs. Special handling is made for header
 instances that are passed in as this arg., where a phu will be 
 created and the &#8216;.header&#8217; will be assigned (ex. hdulist[0], ad.phu,
@@ -254,15 +254,15 @@ ad[0].hdulist[0], ad[&#8216;SCI&#8217;,1].hdulist[0], ad[0].phu,
 ad[&#8216;SCI&#8217;,1].phu, and all the previous with .header appended)</li>
 <li><strong>header</strong> &#8211; extension header for images (ex. hdulist[1].header,
 ad[0].hdulist[1].header, ad[&#8216;SCI&#8217;,1].hdulist[1].header)</li>
-<li><strong>data</strong> &#8211; the image pixel array (ex. hdulist[1].data,
+<li><strong>data</strong> (<em>numpy.ndarray</em>) &#8211; the image pixel array (ex. hdulist[1].data,
 ad[0].hdulist[1].data, ad[&#8216;SCI&#8217;,1].hdulist[1].data)</li>
-<li><strong>store</strong> &#8211; directory where a copy of the original file will be 
+<li><strong>store</strong> (<em>string</em>) &#8211; directory where a copy of the original file will be 
 stored.  This is used in the special case where the
 filename is an URL to a remote fits file.  Otherwise it has
 no effect.</li>
-<li><strong>storeClobber</strong> &#8211; remote file handling for existing files with the
+<li><strong>storeClobber</strong> (<em>boolean</em>) &#8211; remote file handling for existing files with the
 same name.  If true will save, if not, will delete.</li>
-<li><strong>exts</strong> &#8211; <p>(advanced) a list of extension indexes in the parent
+<li><strong>exts</strong> (<em>list</em>) &#8211; <p>(advanced) a list of extension indexes in the parent
 HDUList that this instance should refer to, given  integer or 
 (EXTNAME, EXTVER) tuples specifying each extention in the &#8220;pyfits&#8221;
 index space where the PHU is at index 0, the first data extension
@@ -273,14 +273,14 @@ that represent a slice, or subset, of some other AstroData instance.</p>
 argument which will be ignored.</p>
 <p>Example of sub-data:</p>
 <blockquote>
-sci_subdata = ad[&#8220;SCI&#8221;]</blockquote>
+<div>sci_subdata = ad[&#8220;SCI&#8221;]</div></blockquote>
 <p>The sub-data is is created by passing &#8220;SCI&#8221; as an argument to the
 constructor. The &#8216;sci_subdata&#8217; object would consist of its own 
 AstroData instance referring to it&#8217;s own HDUList, but the HDUs in
 this list would still be shared (in memory) with the &#8216;ad&#8217; object,
 and appear in its HDUList as well.</p>
 </li>
-<li><strong>extInsts</strong> &#8211; (advanced) a list of extensions this instance should contain,
+<li><strong>extInsts</strong> (<em>list of pyfits.HDU objects</em>) &#8211; (advanced) a list of extensions this instance should contain,
 given as actual pyfits.HDU instances. NOTE: if the &#8220;exts&#8221; argument
 is also set, this argument is ignored.</li>
 </ul>
@@ -309,19 +309,19 @@ data, is left on disk until referenced.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>moredata</strong> &#8211; either an AstroData instance, an HDUList instance, 
+<li><strong>moredata</strong> (<em>pyfits.HDU, pyfits.HDUList, or AstroData</em>) &#8211; either an AstroData instance, an HDUList instance, 
 or an HDU instance to add to this AstroData object.
 When present, data and header arguments will be ignored.</li>
-<li><strong>data</strong> &#8211; if moredata <em>is not</em> specified, data and header should 
+<li><strong>data</strong> (<em>numarray.numaraycore.NumArray</em>) &#8211; if moredata <em>is not</em> specified, data and header should 
 both be set and are used to construct a new HDU which is then 
 added to the  AstroData object. The &#8216;data&#8217; argument should be set
 to a valid numpy array.</li>
-<li><strong>header</strong> &#8211; if moredata <em>is not</em> specified, data and header are used
+<li><strong>header</strong> (<em>pyfits.Header</em>) &#8211; if moredata <em>is not</em> specified, data and header are used
 to make  an HDU which is then added to the HDUList associated with
 this AstroData instance. The &#8216;header&#8217; argument should be set to a
 valid pyfits.Header object.</li>
-<li><strong>auto_number</strong> &#8211; auto-increment extver to fit file convention</li>
-<li><strong>extname</strong> &#8211; extension name (ex, &#8216;SCI&#8217;, &#8216;VAR&#8217;, &#8216;DQ&#8217;)</li>
+<li><strong>auto_number</strong> (<em>boolean</em>) &#8211; auto-increment extver to fit file convention</li>
+<li><strong>extname</strong> (<em>int</em>) &#8211; extension name (ex, &#8216;SCI&#8217;, &#8216;VAR&#8217;, &#8216;DQ&#8217;)</li>
 <li><strong>extver</strong> &#8211; extension&#8217;s &#8220;extver&#8221; value</li>
 </ul>
 </td>
@@ -361,22 +361,22 @@ AstroData instance.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>index</strong> &#8211; the extension index, either an int or (EXTNAME, EXTVER)
+<li><strong>index</strong> (<em>integer or (EXTNAME,EXTVER) tuple</em>) &#8211; the extension index, either an int or (EXTNAME, EXTVER)
 pair before which the extension is to be inserted. Note, the 
 first data extension is [0], you cannot insert before the PHU.
 Index always refers to Astrodata Numbering system, 0 = HDU</li>
-<li><strong>moredata</strong> &#8211; Either an AstroData instance, an HDUList instance, or
+<li><strong>moredata</strong> (<em>pyfits.HDU, pyfits.HDUList, or AstroData</em>) &#8211; Either an AstroData instance, an HDUList instance, or
 an HDU instance. When present, data and header will be ignored.</li>
-<li><strong>data</strong> &#8211; if moredata <em>is not</em> specified, data and header should 
+<li><strong>data</strong> (<em>numarray.numaraycore.NumArray</em>) &#8211; if moredata <em>is not</em> specified, data and header should 
 both be set and are used to construct a new HDU which is then 
 added to the AstroData instance.</li>
-<li><strong>header</strong> &#8211; if moredata <em>is not</em> specified, data and header are 
+<li><strong>header</strong> (<em>pyfits.Header</em>) &#8211; if moredata <em>is not</em> specified, data and header are 
 used to make an HDU which is then added to the HDUList associated
 with this AstroData instance.</li>
-<li><strong>auto_number</strong> &#8211; auto-increment appends to match existing extname - extver 
+<li><strong>auto_number</strong> (<em>boolean</em>) &#8211; auto-increment appends to match existing extname - extver 
 convention.</li>
-<li><strong>extname</strong> &#8211; extension name (ex, &#8216;SCI&#8217;, &#8216;VAR&#8217;, &#8216;DQ&#8217;)</li>
-<li><strong>extver</strong> &#8211; extension version (ex, 1, 2, 3)</li>
+<li><strong>extname</strong> (<em>string</em>) &#8211; extension name (ex, &#8216;SCI&#8217;, &#8216;VAR&#8217;, &#8216;DQ&#8217;)</li>
+<li><strong>extver</strong> (<em>integer</em>) &#8211; extension version (ex, 1, 2, 3)</li>
 </ul>
 </td>
 </tr>
@@ -415,9 +415,9 @@ is maintained for convienience and low level debugging.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>as_html</strong> &#8211; return as HTML formatted string</li>
-<li><strong>oid</strong> &#8211; include object id</li>
-<li><strong>help</strong> &#8211; include sub-data reference information</li>
+<li><strong>as_html</strong> (<em>bool</em>) &#8211; return as HTML formatted string</li>
+<li><strong>oid</strong> (<em>bool</em>) &#8211; include object id</li>
+<li><strong>help</strong> (<em>bool</em>) &#8211; include sub-data reference information</li>
 </ul>
 </td>
 </tr>
@@ -444,12 +444,12 @@ and so uses AstroData relative indexes, descriptors, and so on.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>fname</strong> &#8211; file name to write to, optional if instance already has
+<li><strong>fname</strong> (<em>string</em>) &#8211; file name to write to, optional if instance already has
 name, which might not be the case for new AstroData
 instances created in memory.</li>
-<li><strong>clobber</strong> &#8211; This flag drives if AstroData will overwrite an existing
+<li><strong>clobber</strong> (<em>bool</em>) &#8211; This flag drives if AstroData will overwrite an existing
 file.</li>
-<li><strong>rename</strong> &#8211; This flag allows you to write the AstroData instance to
+<li><strong>rename</strong> (<em>bool</em>) &#8211; This flag allows you to write the AstroData instance to
 a new filename, but leave the &#8220;current&#8221; name in tact in memory.</li>
 </ul>
 </td>
@@ -480,17 +480,12 @@ throws an exception if the file already exists.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>typename</strong> &#8211; specifies the type name to check.</li>
-</ul>
-</td>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>typename</strong> (<em>string</em>) &#8211; specifies the type name to check.</td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">True if the given types all apply to this dataset,
-False otherwise</p>
-</td>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">True if the given types all apply to this dataset,
+False otherwise</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Bool</p>
-</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">Bool</td>
 </tr>
 </tbody>
 </table>
@@ -514,18 +509,13 @@ given type(s) and returns True if so.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>prune</strong> &#8211; flag which controls &#8216;pruning&#8217; the returned type list 
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>prune</strong> (<em>bool</em>) &#8211; flag which controls &#8216;pruning&#8217; the returned type list 
 so that only the leaf node type for a given set of related types
-is returned.</li>
-</ul>
-</td>
+is returned.</td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a list of classification names that apply to this data</p>
-</td>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">a list of classification names that apply to this data</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of strings</p>
-</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">list of strings</td>
 </tr>
 </tbody>
 </table>
@@ -648,16 +638,11 @@ header-data section in the MEF.</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>key</strong> &#8211; name of header value to retrieve</li>
-</ul>
-</td>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> (<em>string</em>) &#8211; name of header value to retrieve</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">string</p>
-</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">string</td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the key&#8217;s value as string or None if not present.</p>
-</td>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">the key&#8217;s value as string or None if not present.</td>
 </tr>
 </tbody>
 </table>
@@ -675,9 +660,9 @@ and must be converted as necessary by the caller.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>key</strong> &#8211; name of PHU header value to set</li>
-<li><strong>value</strong> &#8211; value to apply to PHU header</li>
-<li><strong>comment</strong> &#8211; value to be put in the comment part of the header key</li>
+<li><strong>key</strong> (<em>string</em>) &#8211; name of PHU header value to set</li>
+<li><strong>value</strong> (<em>string (or can be converted to string)</em>) &#8211; value to apply to PHU header</li>
+<li><strong>comment</strong> (<em>string</em>) &#8211; value to be put in the comment part of the header key</li>
 </ul>
 </td>
 </tr>
@@ -704,16 +689,11 @@ in as string.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>key</strong> &#8211; name of header value to set</li>
-</ul>
-</td>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> (<em>string</em>) &#8211; name of header value to set</td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the specified value</p>
-</td>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">the specified value</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">string</p>
-</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">string</td>
 </tr>
 </tbody>
 </table>
@@ -731,13 +711,13 @@ header-data unit besides the PHU.  They may exist if a single
 extension file is loaded, but in general are produced by indexing or
 iteration instructions, i.e.:</p>
 <blockquote>
-<p>sead = ad[(&#8220;SCI&#8221;,1)]</p>
+<div><p>sead = ad[(&#8220;SCI&#8221;,1)]</p>
 <dl class="docutils">
 <dt>for sead in ad[&#8220;SCI&#8221;]:</dt>
 <dd><p class="first last">...</p>
 </dd>
 </dl>
-</blockquote>
+</div></blockquote>
 <p class="last">The variable &#8220;sead&#8221; above is ensured to hold a single extension
 AstroData object, and can be used more convieniently.</p>
 </td>
@@ -754,9 +734,9 @@ AstroData object, and can be used more convieniently.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>key</strong> &#8211; name of data header value to set</li>
-<li><strong>value</strong> &#8211; value to apply to header</li>
-<li><strong>comment</strong> &#8211; value to be put in the comment part of the header key</li>
+<li><strong>key</strong> (<em>string</em>) &#8211; name of data header value to set</li>
+<li><strong>value</strong> (<em>string (or can be converted to string)</em>) &#8211; value to apply to header</li>
+<li><strong>comment</strong> (<em>string</em>) &#8211; value to be put in the comment part of the header key</li>
 </ul>
 </td>
 </tr>
@@ -774,13 +754,13 @@ header-data unit besides the PHU.  They may exist if a single
 extension file is loaded, but in general are produced by indexing or
 iteration instructions, i.e.:</p>
 <blockquote>
-<p>sead = ad[(&#8220;SCI&#8221;,1)]</p>
+<div><p>sead = ad[(&#8220;SCI&#8221;,1)]</p>
 <dl class="docutils">
 <dt>for sead in ad[&#8220;SCI&#8221;]:</dt>
 <dd><p class="first last">...</p>
 </dd>
 </dl>
-</blockquote>
+</div></blockquote>
 <p class="last">The variable &#8220;sead&#8221; above is ensured to hold a single extension
 AstroData object, and can be used more convieniently.</p>
 </td>
@@ -804,9 +784,9 @@ AstroData object, and can be used more convieniently.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>extension</strong> &#8211; identifies which extension, either an integer index 
+<li><strong>extension</strong> (<em>int or (EXTNAME, EXTVER) tuple</em>) &#8211; identifies which extension, either an integer index 
 or (EXTNAME, EXTVER) tuple</li>
-<li><strong>key</strong> &#8211; name of header entry to retrieve</li>
+<li><strong>key</strong> (<em>string</em>) &#8211; name of header entry to retrieve</li>
 </ul>
 </td>
 </tr>
@@ -831,11 +811,11 @@ values from the PHU use phu_get_key_value(..).</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>extension</strong> &#8211; identifies which extension, either an integer index 
+<li><strong>extension</strong> (<em>int or (EXTNAME, EXTVER) tuple</em>) &#8211; identifies which extension, either an integer index 
 or (EXTNAME, EXTVER) tuple</li>
-<li><strong>key</strong> &#8211; name of PHU header value to set</li>
-<li><strong>value</strong> &#8211; value to apply to PHU header</li>
-<li><strong>comment</strong> &#8211; value to be put in the comment part of the header key</li>
+<li><strong>key</strong> (<em>string</em>) &#8211; name of PHU header value to set</li>
+<li><strong>value</strong> (<em>string (or can be converted to string)</em>) &#8211; value to apply to PHU header</li>
+<li><strong>comment</strong> (<em>string</em>) &#8211; value to be put in the comment part of the header key</li>
 </ul>
 </td>
 </tr>
@@ -877,18 +857,13 @@ set values in the PHU use phusetKeyValue(..).</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>extname</strong> &#8211; the name of the extension, equivalent to the
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>extname</strong> (<em>string</em>) &#8211; the name of the extension, equivalent to the
 value associated with the &#8220;EXTNAME&#8221; key in the extension 
-header.</li>
-</ul>
-</td>
+header.</td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">number of extensions of that name</p>
-</td>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">number of extensions of that name</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">int</p>
-</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">int</td>
 </tr>
 </tbody>
 </table>
@@ -910,21 +885,16 @@ header.</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>ext</strong> &#8211; The integeter index, an indexing <tt class="docutils literal"><span class="pre">(EXTNAME,</span> <span class="pre">EXTVER)</span></tt> tuple,
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ext</strong> (<em>string, int, or tuple</em>) &#8211; The integeter index, an indexing <tt class="docutils literal"><span class="pre">(EXTNAME,</span> <span class="pre">EXTVER)</span></tt> tuple,
 or EXTNAME name. If an int or tuple, the single
 extension identified is wrapped with an AstroData instance, and
 &#8220;single-extension&#8221; members of the AstroData object can be used. If
 a string, <tt class="docutils literal"><span class="pre">EXTNAME</span></tt>, is given, then all extensions with the given 
-EXTNAME will be wrapped by the  new AstroData instance.</li>
-</ul>
-</td>
+EXTNAME will be wrapped by the  new AstroData instance.</td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">an AstroData instance associated with the subset of data.</p>
-</td>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">an AstroData instance associated with the subset of data.</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">AstroData</p>
-</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">AstroData</td>
 </tr>
 </tbody>
 </table>
@@ -1033,15 +1003,11 @@ or tuple indexing, e.g.:</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>newdata</strong> &#8211; new data objects</li>
-</ul>
-</td>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>newdata</strong> (<em>numarray.numarraycore.NumArray</em>) &#8211; new data objects</td>
 </tr>
 <tr class="field"><th class="field-name" colspan="2">Raises Errors.SingleHDUMemberExcept:</th></tr>
-<tr><td>&nbsp;</td><td class="field-body"><p class="first last">if AstroData instance has more 
-than one extension (not including PHU).</p>
-</td>
+<tr><td>&nbsp;</td><td class="field-body">if AstroData instance has more 
+than one extension (not including PHU).</td>
 </tr>
 </tbody>
 </table>
@@ -1110,8 +1076,8 @@ AstroData, e.g.:</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>header</strong> &#8211; pyfits Header to set for given extension</li>
-<li><strong>extension</strong> &#8211; Extension index to retrieve header, if None
+<li><strong>header</strong> (<em>pyfits.Header</em>) &#8211; pyfits Header to set for given extension</li>
+<li><strong>extension</strong> (<em>int or tuple, pyfits compatible extension index</em>) &#8211; Extension index to retrieve header, if None
 or not present then this must be a single extension AstroData
 instance, which contains just the PHU and a single data extension,
 and the data extension&#8217;s header is returned.</li>
@@ -1129,11 +1095,11 @@ than one extension exists.</p>
 extension (which are those that have only one extension plus PHU). This
 case  is assured when iterating over extensions using AstroData, e.g.:</p>
 <blockquote>
-<dl class="docutils">
+<div><dl class="docutils">
 <dt>for gd in dataset[SCI]: </dt>
 <dd>...</dd>
 </dl>
-</blockquote>
+</div></blockquote>
 </dd></dl>
 
 </div>
@@ -1151,8 +1117,8 @@ case  is assured when iterating over extensions using AstroData, e.g.:</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> &#8211; New &#8220;EXTNAME&#8221; for the given extension.</li>
-<li><strong>ver</strong> &#8211; New &#8220;EXTVER&#8221; for the given extension</li>
+<li><strong>name</strong> (<em>string</em>) &#8211; New &#8220;EXTNAME&#8221; for the given extension.</li>
+<li><strong>ver</strong> (<em>int</em>) &#8211; New &#8220;EXTVER&#8221; for the given extension</li>
 </ul>
 </td>
 </tr>
@@ -1201,17 +1167,12 @@ call the new pyfits.HDUList(..) function.</td>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>iary</strong> &#8211; A list of AstroData instances for which a correlation dictionary
-will be constructed to produce a correlation dict.</li>
-</ul>
-</td>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>iary</strong> (<em>list of AstroData instance</em>) &#8211; A list of AstroData instances for which a correlation dictionary
+will be constructed to produce a correlation dict.</td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a list of tuples containing correlated extensions from the arguments.</p>
-</td>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">a list of tuples containing correlated extensions from the arguments.</td>
 </tr>
-<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of tuples</p>
-</td>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">list of tuples</td>
 </tr>
 </tbody>
 </table>
@@ -1254,12 +1215,12 @@ with the given (EXTNAME,EXTVER) for that tuple.</td>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>input_ary</strong> &#8211; The input array from which propagated content (such as
+<li><strong>input_ary</strong> (<em>list of AstroData Instances</em>) &#8211; The input array from which propagated content (such as
 the  source PHU) will be taken. Note: the zero-th element in the list
 is  used as the reference dataset, for PHU or other items which require
 a particular reference.</li>
 <li><strong>name</strong> &#8211; File name to use for returned AstroData, optional.</li>
-<li><strong>clobber</strong> &#8211; By default prep_output(..) checks to see if a file of the
+<li><strong>clobber</strong> (<em>bool</em>) &#8211; By default prep_output(..) checks to see if a file of the
 given name already exists, and will raise an exception if found.
 Set <em>clobber</em> to <em>True</em> to override this behavior and potentially
 overwrite the extant file.  The datset on disk will not be overwritten
@@ -1327,8 +1288,8 @@ configuration .</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>rekey</strong> &#8211; a regular expresion to match to keys in header</li>
-<li><strong>header</strong> &#8211; a pyfits.Header object as returned by <em>ad[(&#8220;SCI&#8221;,1)].header</em></li>
+<li><strong>rekey</strong> (<em>string</em>) &#8211; a regular expresion to match to keys in header</li>
+<li><strong>header</strong> (<em>pyfits.Header</em>) &#8211; a pyfits.Header object as returned by <em>ad[(&#8220;SCI&#8221;,1)].header</em></li>
 </ul>
 </td>
 </tr>
@@ -1371,7 +1332,7 @@ the header passed in which match the given regular expression.</p>
     </div>
     <div class="footer">
         &copy; Copyright 2010, Craig Allen.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0b2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
     </div>
   </body>
 </html>

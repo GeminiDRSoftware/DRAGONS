@@ -1,0 +1,119 @@
+\select@language {english}
+\contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}
+\contentsline {section}{\numberline {1.1}Document Brief}{1}{section.1.1}
+\contentsline {subsection}{\numberline {1.1.1}Revision History}{1}{subsection.1.1.1}
+\contentsline {subsection}{\numberline {1.1.2}Document Purpose}{1}{subsection.1.1.2}
+\contentsline {subsection}{\numberline {1.1.3}Intended Audience}{1}{subsection.1.1.3}
+\contentsline {section}{\numberline {1.2}Overview}{1}{section.1.2}
+\contentsline {chapter}{\numberline {2}Gemini Type Graphs}{3}{chapter.2}
+\contentsline {section}{\numberline {2.1}GENERIC}{3}{section.2.1}
+\contentsline {section}{\numberline {2.2}GEMINI}{4}{section.2.2}
+\contentsline {section}{\numberline {2.3}GMOS}{4}{section.2.3}
+\contentsline {section}{\numberline {2.4}GNIRS}{4}{section.2.4}
+\contentsline {section}{\numberline {2.5}NICI}{4}{section.2.5}
+\contentsline {section}{\numberline {2.6}NIFS}{5}{section.2.6}
+\contentsline {section}{\numberline {2.7}NIRI}{5}{section.2.7}
+\contentsline {section}{\numberline {2.8}MICHELLE}{6}{section.2.8}
+\contentsline {section}{\numberline {2.9}RAW}{6}{section.2.9}
+\contentsline {section}{\numberline {2.10}TRECS}{6}{section.2.10}
+\contentsline {chapter}{\numberline {3}Gemini Type Source Reference}{7}{chapter.3}
+\contentsline {section}{\numberline {3.1}ACQUISITION Classification Source}{7}{section.3.1}
+\contentsline {section}{\numberline {3.2}BIAS Classification Source}{7}{section.3.2}
+\contentsline {section}{\numberline {3.3}CAL Classification Source}{7}{section.3.3}
+\contentsline {section}{\numberline {3.4}DARK Classification Source}{8}{section.3.4}
+\contentsline {section}{\numberline {3.5}F2 Classification Source}{8}{section.3.5}
+\contentsline {section}{\numberline {3.6}F2\_CAL Classification Source}{9}{section.3.6}
+\contentsline {section}{\numberline {3.7}F2\_DARK Classification Source}{9}{section.3.7}
+\contentsline {section}{\numberline {3.8}F2\_IMAGE Classification Source}{9}{section.3.8}
+\contentsline {section}{\numberline {3.9}F2\_IMAGE\_FLAT Classification Source}{10}{section.3.9}
+\contentsline {section}{\numberline {3.10}F2\_IMAGE\_TWILIGHT Classification Source}{10}{section.3.10}
+\contentsline {section}{\numberline {3.11}F2\_LS Classification Source}{10}{section.3.11}
+\contentsline {section}{\numberline {3.12}F2\_LS\_ARC Classification Source}{11}{section.3.12}
+\contentsline {section}{\numberline {3.13}F2\_LS\_FLAT Classification Source}{11}{section.3.13}
+\contentsline {section}{\numberline {3.14}F2\_LS\_TWILIGHT Classification Source}{11}{section.3.14}
+\contentsline {section}{\numberline {3.15}F2\_MOS Classification Source}{12}{section.3.15}
+\contentsline {section}{\numberline {3.16}F2\_MOS\_ARC Classification Source}{12}{section.3.16}
+\contentsline {section}{\numberline {3.17}F2\_MOS\_FLAT Classification Source}{13}{section.3.17}
+\contentsline {section}{\numberline {3.18}F2\_MOS\_TWILIGHT Classification Source}{13}{section.3.18}
+\contentsline {section}{\numberline {3.19}F2\_SPECT Classification Source}{13}{section.3.19}
+\contentsline {section}{\numberline {3.20}FLAT Classification Source}{14}{section.3.20}
+\contentsline {section}{\numberline {3.21}FRINGE Classification Source}{14}{section.3.21}
+\contentsline {section}{\numberline {3.22}GEMINI Classification Source}{14}{section.3.22}
+\contentsline {section}{\numberline {3.23}GEMINI\_NORTH Classification Source}{15}{section.3.23}
+\contentsline {section}{\numberline {3.24}GEMINI\_SOUTH Classification Source}{15}{section.3.24}
+\contentsline {section}{\numberline {3.25}GENERIC Classification Source}{15}{section.3.25}
+\contentsline {section}{\numberline {3.26}GMOS Classification Source}{16}{section.3.26}
+\contentsline {section}{\numberline {3.27}GMOS\_BIAS Classification Source}{16}{section.3.27}
+\contentsline {section}{\numberline {3.28}GMOS\_CAL Classification Source}{17}{section.3.28}
+\contentsline {section}{\numberline {3.29}GMOS\_DARK Classification Source}{17}{section.3.29}
+\contentsline {section}{\numberline {3.30}GMOS\_IFU Classification Source}{17}{section.3.30}
+\contentsline {section}{\numberline {3.31}GMOS\_IFU\_ARC Classification Source}{18}{section.3.31}
+\contentsline {section}{\numberline {3.32}GMOS\_IFU\_BLUE Classification Source}{18}{section.3.32}
+\contentsline {section}{\numberline {3.33}GMOS\_IFU\_FLAT Classification Source}{18}{section.3.33}
+\contentsline {section}{\numberline {3.34}GMOS\_IFU\_RED Classification Source}{19}{section.3.34}
+\contentsline {section}{\numberline {3.35}GMOS\_IFU\_TWILIGHT Classification Source}{19}{section.3.35}
+\contentsline {section}{\numberline {3.36}GMOS\_IFU\_TWO Classification Source}{19}{section.3.36}
+\contentsline {section}{\numberline {3.37}GMOS\_IMAGE Classification Source}{19}{section.3.37}
+\contentsline {section}{\numberline {3.38}GMOS\_IMAGE\_FLAT Classification Source}{20}{section.3.38}
+\contentsline {section}{\numberline {3.39}GMOS\_IMAGE\_TWILIGHT Classification Source}{20}{section.3.39}
+\contentsline {section}{\numberline {3.40}GMOS\_LS Classification Source}{21}{section.3.40}
+\contentsline {section}{\numberline {3.41}GMOS\_LS\_ARC Classification Source}{21}{section.3.41}
+\contentsline {section}{\numberline {3.42}GMOS\_LS\_FLAT Classification Source}{21}{section.3.42}
+\contentsline {section}{\numberline {3.43}GMOS\_LS\_TWILIGHT Classification Source}{22}{section.3.43}
+\contentsline {section}{\numberline {3.44}GMOS\_MOS Classification Source}{22}{section.3.44}
+\contentsline {section}{\numberline {3.45}GMOS\_MOS\_ARC Classification Source}{22}{section.3.45}
+\contentsline {section}{\numberline {3.46}GMOS\_MOS\_FLAT Classification Source}{23}{section.3.46}
+\contentsline {section}{\numberline {3.47}GMOS\_MOS\_TWILIGHT Classification Source}{23}{section.3.47}
+\contentsline {section}{\numberline {3.48}GMOS\_N Classification Source}{23}{section.3.48}
+\contentsline {section}{\numberline {3.49}GMOS\_NODANDSHUFFLE Classification Source}{24}{section.3.49}
+\contentsline {section}{\numberline {3.50}GMOS\_RAW Classification Source}{24}{section.3.50}
+\contentsline {section}{\numberline {3.51}GMOS\_S Classification Source}{24}{section.3.51}
+\contentsline {section}{\numberline {3.52}GMOS\_SPECT Classification Source}{24}{section.3.52}
+\contentsline {section}{\numberline {3.53}GNIRS Classification Source}{25}{section.3.53}
+\contentsline {section}{\numberline {3.54}GNIRS\_IMAGE Classification Source}{25}{section.3.54}
+\contentsline {section}{\numberline {3.55}GNIRS\_PINHOLE Classification Source}{25}{section.3.55}
+\contentsline {section}{\numberline {3.56}GNIRS\_SPECT Classification Source}{26}{section.3.56}
+\contentsline {section}{\numberline {3.57}GSAOI Classification Source}{26}{section.3.57}
+\contentsline {section}{\numberline {3.58}HOKUPAAQUIRC Classification Source}{26}{section.3.58}
+\contentsline {section}{\numberline {3.59}HRWFS Classification Source}{27}{section.3.59}
+\contentsline {section}{\numberline {3.60}IFU Classification Source}{27}{section.3.60}
+\contentsline {section}{\numberline {3.61}IMAGE Classification Source}{27}{section.3.61}
+\contentsline {section}{\numberline {3.62}LS Classification Source}{28}{section.3.62}
+\contentsline {section}{\numberline {3.63}MICHELLE Classification Source}{28}{section.3.63}
+\contentsline {section}{\numberline {3.64}MICHELLE\_IMAGE Classification Source}{28}{section.3.64}
+\contentsline {section}{\numberline {3.65}MICHELLE\_SPECT Classification Source}{29}{section.3.65}
+\contentsline {section}{\numberline {3.66}MOS Classification Source}{29}{section.3.66}
+\contentsline {section}{\numberline {3.67}NEEDSFLUXCAL Classification Source}{29}{section.3.67}
+\contentsline {section}{\numberline {3.68}NICI Classification Source}{29}{section.3.68}
+\contentsline {section}{\numberline {3.69}NICI\_ADI\_B Classification Source}{30}{section.3.69}
+\contentsline {section}{\numberline {3.70}NICI\_ADI\_R Classification Source}{30}{section.3.70}
+\contentsline {section}{\numberline {3.71}NICI\_ASDI Classification Source}{30}{section.3.71}
+\contentsline {section}{\numberline {3.72}NICI\_CAL Classification Source}{31}{section.3.72}
+\contentsline {section}{\numberline {3.73}NICI\_DARK Classification Source}{31}{section.3.73}
+\contentsline {section}{\numberline {3.74}NICI\_DARK\_CURRENT Classification Source}{31}{section.3.74}
+\contentsline {section}{\numberline {3.75}NICI\_DARK\_OLD Classification Source}{32}{section.3.75}
+\contentsline {section}{\numberline {3.76}NICI\_FLAT Classification Source}{32}{section.3.76}
+\contentsline {section}{\numberline {3.77}NICI\_IMAGE Classification Source}{32}{section.3.77}
+\contentsline {section}{\numberline {3.78}NICI\_SDI Classification Source}{32}{section.3.78}
+\contentsline {section}{\numberline {3.79}NIFS Classification Source}{33}{section.3.79}
+\contentsline {section}{\numberline {3.80}NIFS\_IMAGE Classification Source}{33}{section.3.80}
+\contentsline {section}{\numberline {3.81}NIFS\_RONCHI Classification Source}{33}{section.3.81}
+\contentsline {section}{\numberline {3.82}NIFS\_SPECT Classification Source}{34}{section.3.82}
+\contentsline {section}{\numberline {3.83}NIRI Classification Source}{34}{section.3.83}
+\contentsline {section}{\numberline {3.84}NIRI\_IMAGE Classification Source}{34}{section.3.84}
+\contentsline {section}{\numberline {3.85}NIRI\_SPECT Classification Source}{34}{section.3.85}
+\contentsline {section}{\numberline {3.86}NODCHOP Classification Source}{35}{section.3.86}
+\contentsline {section}{\numberline {3.87}OSCIR Classification Source}{35}{section.3.87}
+\contentsline {section}{\numberline {3.88}PHOENIX Classification Source}{35}{section.3.88}
+\contentsline {section}{\numberline {3.89}PREPARED Classification Source}{36}{section.3.89}
+\contentsline {section}{\numberline {3.90}PROCESSED\_ARC Classification Source}{36}{section.3.90}
+\contentsline {section}{\numberline {3.91}PROCESSED\_BIAS Classification Source}{36}{section.3.91}
+\contentsline {section}{\numberline {3.92}PROCESSED\_DARK Classification Source}{36}{section.3.92}
+\contentsline {section}{\numberline {3.93}PROCESSED\_FLAT Classification Source}{37}{section.3.93}
+\contentsline {section}{\numberline {3.94}PROCESSED\_FRINGE Classification Source}{37}{section.3.94}
+\contentsline {section}{\numberline {3.95}RAW Classification Source}{37}{section.3.95}
+\contentsline {section}{\numberline {3.96}SPECT Classification Source}{38}{section.3.96}
+\contentsline {section}{\numberline {3.97}TRECS Classification Source}{38}{section.3.97}
+\contentsline {section}{\numberline {3.98}TRECS\_IMAGE Classification Source}{38}{section.3.98}
+\contentsline {section}{\numberline {3.99}TRECS\_SPECT Classification Source}{39}{section.3.99}
+\contentsline {section}{\numberline {3.100}UNPREPARED Classification Source}{39}{section.3.100}

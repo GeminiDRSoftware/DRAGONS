@@ -1,0 +1,100 @@
+\BOOKMARK [0][-]{chapter.1}{Introduction}{}
+\BOOKMARK [1][-]{section.1.1}{Document Brief}{chapter.1}
+\BOOKMARK [2][-]{subsection.1.1.1}{Revision History}{section.1.1}
+\BOOKMARK [2][-]{subsection.1.1.2}{Intended Audience}{section.1.1}
+\BOOKMARK [2][-]{subsection.1.1.3}{Document Stucture}{section.1.1}
+\BOOKMARK [0][-]{chapter.2}{AstroData Class Reference}{}
+\BOOKMARK [1][-]{section.2.1}{AstroData Class}{chapter.2}
+\BOOKMARK [1][-]{section.2.2}{Basic Functions}{chapter.2}
+\BOOKMARK [2][-]{subsection.2.2.1}{AstroData Constructor}{section.2.2}
+\BOOKMARK [2][-]{subsection.2.2.2}{append\(..\)}{section.2.2}
+\BOOKMARK [2][-]{subsection.2.2.3}{close\(..\)}{section.2.2}
+\BOOKMARK [2][-]{subsection.2.2.4}{insert\(..\)}{section.2.2}
+\BOOKMARK [2][-]{subsection.2.2.5}{info\(..\)}{section.2.2}
+\BOOKMARK [2][-]{subsection.2.2.6}{infostr\(..\)}{section.2.2}
+\BOOKMARK [2][-]{subsection.2.2.7}{write\(..\)}{section.2.2}
+\BOOKMARK [1][-]{section.2.3}{Type Information}{chapter.2}
+\BOOKMARK [1][-]{section.2.4}{Header Manipulations}{chapter.2}
+\BOOKMARK [2][-]{subsection.2.4.1}{Set/Get PHU Headers}{section.2.4}
+\BOOKMARK [2][-]{subsection.2.4.2}{Set/Get Single-HDU Headers}{section.2.4}
+\BOOKMARK [2][-]{subsection.2.4.3}{Set/Get Multiple-HDU Headers}{section.2.4}
+\BOOKMARK [1][-]{section.2.5}{Iteration and Subdata}{chapter.2}
+\BOOKMARK [2][-]{subsection.2.5.1}{Overview}{section.2.5}
+\BOOKMARK [3][-]{subsubsection*.21}{Using Slices and ``Subdata''}{subsection.2.5.1}
+\BOOKMARK [2][-]{subsection.2.5.2}{countExts\(..\)}{section.2.5}
+\BOOKMARK [2][-]{subsection.2.5.3}{The [] Operator}{section.2.5}
+\BOOKMARK [1][-]{section.2.6}{Single HDU AstroData Attributes}{chapter.2}
+\BOOKMARK [2][-]{subsection.2.6.1}{data attribute}{section.2.6}
+\BOOKMARK [2][-]{subsection.2.6.2}{header attribute}{section.2.6}
+\BOOKMARK [2][-]{subsection.2.6.3}{Renaming an Extension}{section.2.6}
+\BOOKMARK [1][-]{section.2.7}{Module Level Functions}{chapter.2}
+\BOOKMARK [2][-]{subsection.2.7.1}{correlate\(..\)}{section.2.7}
+\BOOKMARK [2][-]{subsection.2.7.2}{prep\137output\(..\)}{section.2.7}
+\BOOKMARK [2][-]{subsection.2.7.3}{re\137header\137keys\(..\)}{section.2.7}
+\BOOKMARK [0][-]{chapter.3}{ReductionContext Class Reference}{}
+\BOOKMARK [1][-]{section.3.1}{Parameter and Dictionary Features}{chapter.3}
+\BOOKMARK [2][-]{subsection.3.1.1}{The ``in'' operator: contains\(..\)}{section.3.1}
+\BOOKMARK [1][-]{section.3.2}{Dataset Streams: Input and Output Datasets}{chapter.3}
+\BOOKMARK [2][-]{subsection.3.2.1}{get\137inputs\(..\)}{section.3.2}
+\BOOKMARK [2][-]{subsection.3.2.2}{get\137inputs\137as\137astrodata\(..\)}{section.3.2}
+\BOOKMARK [2][-]{subsection.3.2.3}{get\137inputs\137as\137filenames\(..\)}{section.3.2}
+\BOOKMARK [2][-]{subsection.3.2.4}{get\137stream\(..\)}{section.3.2}
+\BOOKMARK [2][-]{subsection.3.2.5}{get\137reference\137image\(..\)}{section.3.2}
+\BOOKMARK [2][-]{subsection.3.2.6}{report\137output\(..\)}{section.3.2}
+\BOOKMARK [2][-]{subsection.3.2.7}{switch\137stream\(..\)}{section.3.2}
+\BOOKMARK [1][-]{section.3.3}{ADCC Services}{chapter.3}
+\BOOKMARK [1][-]{section.3.4}{Calibrations}{chapter.3}
+\BOOKMARK [2][-]{subsection.3.4.1}{get\137cal\(..\)}{section.3.4}
+\BOOKMARK [2][-]{subsection.3.4.2}{rq\137cal\(..\)}{section.3.4}
+\BOOKMARK [1][-]{section.3.5}{Stacking}{chapter.3}
+\BOOKMARK [2][-]{subsection.3.5.1}{rq\137stack\137get\(..\)}{section.3.5}
+\BOOKMARK [2][-]{subsection.3.5.2}{rq\137stack\137update\(..\)}{section.3.5}
+\BOOKMARK [1][-]{section.3.6}{Lists}{chapter.3}
+\BOOKMARK [2][-]{subsection.3.6.1}{list\137append\(..\)}{section.3.6}
+\BOOKMARK [2][-]{subsection.3.6.2}{get\137list\(..\)}{section.3.6}
+\BOOKMARK [1][-]{section.3.7}{Utility}{chapter.3}
+\BOOKMARK [2][-]{subsection.3.7.1}{prepend\137names\(..\)}{section.3.7}
+\BOOKMARK [2][-]{subsection.3.7.2}{run\(..\)}{section.3.7}
+\BOOKMARK [0][-]{chapter.4}{AstroData Configuration Package Development Guide}{}
+\BOOKMARK [1][-]{section.4.1}{Elements}{chapter.4}
+\BOOKMARK [2][-]{subsection.4.1.1}{The General Configuration Creation Process}{section.4.1}
+\BOOKMARK [2][-]{subsection.4.1.2}{Configuration Elements Which Have To Be Developed}{section.4.1}
+\BOOKMARK [1][-]{section.4.2}{Creating A Config Package}{chapter.4}
+\BOOKMARK [2][-]{subsection.4.2.1}{Preparation}{section.4.2}
+\BOOKMARK [2][-]{subsection.4.2.2}{Clone the Sample Package}{section.4.2}
+\BOOKMARK [1][-]{section.4.3}{Creating An AstroDataType}{chapter.4}
+\BOOKMARK [2][-]{subsection.4.3.1}{The Class Definition Line by Line}{section.4.3}
+\BOOKMARK [2][-]{subsection.4.3.2}{The Requirement Classes}{section.4.3}
+\BOOKMARK [3][-]{subsubsection*.50}{Concrete Requirements}{subsection.4.3.2}
+\BOOKMARK [4][-]{paragraph*.51}{ISCLASS\(other\137class\137name\)}{subsubsection*.50}
+\BOOKMARK [4][-]{paragraph*.52}{PHU\(keyname=re\137val, [keyname2=re\137val2 [...]]\)}{subsubsection*.50}
+\BOOKMARK [3][-]{subsubsection*.53}{Logical Requirement Classes}{subsection.4.3.2}
+\BOOKMARK [4][-]{paragraph*.54}{AND\(<requirement>,<requirement> [, <requirement> [, <requirement> ] .. ]\)}{subsubsection*.53}
+\BOOKMARK [4][-]{paragraph*.55}{NOT\(<requirement>\)}{subsubsection*.53}
+\BOOKMARK [4][-]{paragraph*.56}{OR\(<requirement>,<requirement> [, <requirement> [, <requirement> ] .. ]\)}{subsubsection*.53}
+\BOOKMARK [1][-]{section.4.4}{Creating a New Descriptor}{chapter.4}
+\BOOKMARK [2][-]{subsection.4.4.1}{The Calculator Class}{section.4.4}
+\BOOKMARK [2][-]{subsection.4.4.2}{The Calculator Index}{section.4.4}
+\BOOKMARK [2][-]{subsection.4.4.3}{The DescriptorList.py}{section.4.4}
+\BOOKMARK [3][-]{subsubsection*.57}{The DescriptorList.py File}{subsection.4.4.3}
+\BOOKMARK [3][-]{subsubsection*.58}{Adding the Descriptor Function to the CalculatorClass}{subsection.4.4.3}
+\BOOKMARK [1][-]{section.4.5}{Creating Recipes and Primitive}{chapter.4}
+\BOOKMARK [2][-]{subsection.4.5.1}{Understanding Primitives}{section.4.5}
+\BOOKMARK [3][-]{subsubsection*.59}{Primitives Indeces}{subsection.4.5.1}
+\BOOKMARK [2][-]{subsection.4.5.2}{Recipies}{section.4.5}
+\BOOKMARK [0][-]{chapter.5}{Concepts}{}
+\BOOKMARK [1][-]{section.5.1}{Background}{chapter.5}
+\BOOKMARK [2][-]{subsection.5.1.1}{Dataset Abstraction}{section.5.1}
+\BOOKMARK [2][-]{subsection.5.1.2}{Meta Data}{section.5.1}
+\BOOKMARK [1][-]{section.5.2}{=AstroData Types}{chapter.5}
+\BOOKMARK [2][-]{subsection.5.2.1}{Dataset Transformations}{section.5.2}
+\BOOKMARK [3][-]{subsubsection*.60}{Zero Recipe System Overhead for AstroData-only Users}{subsection.5.2.1}
+\BOOKMARK [2][-]{subsection.5.2.2}{The Astrodata Lexicon and Configurations}{section.5.2}
+\BOOKMARK [1][-]{section.5.3}{Astrodata Type}{chapter.5}
+\BOOKMARK [1][-]{section.5.4}{Astrodata Descriptors}{chapter.5}
+\BOOKMARK [1][-]{section.5.5}{Recipe System Primitives}{chapter.5}
+\BOOKMARK [2][-]{subsection.5.5.1}{Some Benefits of the Primitive Concept}{section.5.5}
+\BOOKMARK [3][-]{subsubsection*.61}{Natural Emergence of Reusable Primitives}{subsection.5.5.1}
+\BOOKMARK [2][-]{subsection.5.5.2}{Recipes calling Recipes}{section.5.5}
+\BOOKMARK [1][-]{section.5.6}{AstroData Lexicon}{chapter.5}
+\BOOKMARK [0][-]{section*.62}{Index}{}
