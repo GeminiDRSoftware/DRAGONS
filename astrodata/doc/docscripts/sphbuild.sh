@@ -10,14 +10,13 @@
 # caused segfaults.
 
 
-export
-PYTHONPATH=/home/callen/ad26/trunk:/home/callen/pymodules/lib/python2.6/site-packages
+# export PYTHONPATH=/home/callen/ad26/trunk:/home/callen/pymodules/lib/python2.6/site-packages
 echo "building html, see html.build.log"
-/usr/bin/python /usr/bin/sphinx-build -b html source build &>html.build.log
+sphinx-build -b html source build &>html.build.log
 
 echo "building latex, see latex.build.log"
 
-/usr/bin/python /usr/bin/sphinx-build -b latex source build/_latex_build &>latex.build.log
+sphinx-build -b latex source build/_latex_build &>latex.build.log
 
 echo "making pdf in build/_latex_build, see makepdf.build.log"
 cd build/_latex_build 
@@ -25,6 +24,7 @@ cd build/_latex_build
 # make the astrodatadocumentation
 rm astrodatadocumentation.pdf
 make astrodatadocumentation.pdf &> makepdf.build.log
+cp astrodatadocumentation.pdf ../AstroDataDeveloperManual.pdf
 
 # make AD type reference
 # slow... commented out

@@ -77,19 +77,26 @@ def grab(name, subdir = "" ):
     html2rest(html, outf)
     outf.close()
     print "to", outfname
-    
-# for the introduction
-grab("ADMANUAL_RevisionHistory")
-grab("ADMANUAL_Purpose")
-grab("ADMANUAL_ADConcepts")
-grab("AstroDataPackageOverview")
-grab("AstroDataLexicon")
 
-grab("GATREF-RevisionHistory", subdir = "gatref")
-grab("GATREF-Purpose",subdir = "gatref")
-grab("GATREF-Audience",subdir = "gatref")
+if False:    
+    # for the introduction
+    grab("ADMANUAL_RevisionHistory")
+    grab("ADMANUAL_Purpose")
+    grab("ADMANUAL_ADConcepts")
+    grab("AstroDataPackageOverview")
+    grab("AstroDataLexicon")
 
-# for the AstroData Class Reference
-grab("ADMANUAL_SingleHDUAD")
-grab("ADMANUAL-ADSubdata")
-grab("ADMANUAL-AccessingPyfitsObjects")
+    grab("GATREF-RevisionHistory", subdir = "gatref")
+    grab("GATREF-Purpose",subdir = "gatref")
+    grab("GATREF-Audience",subdir = "gatref")
+
+    # for the AstroData Class Reference
+    grab("ADMANUAL_SingleHDUAD")
+    grab("ADMANUAL-ADSubdata")
+    grab("ADMANUAL-AccessingPyfitsObjects")
+
+print "="*80
+print "-"*80
+print "="*80
+print "GRABBING FROM WIKI TURNED OFF, MODIFY rst SOURCE, will not regenerate"
+print "    from WIKI"
