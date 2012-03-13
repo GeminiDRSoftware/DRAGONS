@@ -50,17 +50,17 @@ def config(mode='standard', console_lvl='', file_lvl='', \
     # Set the console and file logging levels
     if console_lvl and mode != 'debug':
         console_lvl_asint = ll[console_lvl.upper()]
-    elif console_lvl != 'stdinfo' and mode == 'debug':
+    elif console_lvl != 'stdinfo' and mode == 'debug' and \
+         console_lvl != '':
         console_lvl_asint = ll[console_lvl.upper()]
     elif mode == 'debug':
         console_lvl_asint = ll['DEBUG']
     else:
         console_lvl_asint = ll['STDINFO']
     if file_lvl:
-        file_lvl_asint = ll[file_lvl.upper]
+        file_lvl_asint = ll[file_lvl.upper()]
     else:
         file_lvl_asint = ll['DEBUG']
-
     # If rootlog has handlers, flush and delete them
     if len(rootlog.handlers) > 0:
         for hand in rootlog.handlers:
