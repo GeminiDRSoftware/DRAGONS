@@ -254,6 +254,7 @@ class ReductionContext(dict):
         context = context.lower()
         if context not in self._running_contexts:
             self._running_contexts.append(context)
+            
     def setContext(self, context):
         if type(context) == list:
             context = [cstr.lower() for cstr in context]
