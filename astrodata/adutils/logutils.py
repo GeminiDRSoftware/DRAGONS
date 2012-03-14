@@ -26,7 +26,7 @@ def customize_log(log=None):
             if prefix:
                 line = prefix + line
             if len(line) == 0:
-                log.log('')
+                log.log(levelnum, '')
             else:
                 log.log(levelnum, line)
 
@@ -192,4 +192,13 @@ def update_indent(li=0, mode=''):
                 ff = logging.Formatter(STDFMT[:-11] + ' ' * (li * SW) + \
                     STDFMT[-11:],'%Y-%m-%d %H:%M:%S')
             hndl.setFormatter(ff)
-    
+
+def change_level(new_level=''):
+    '''
+    Change the level of the console handler
+    '''
+    log = logging.getLogger('')
+    for hndl in log.handlers:
+        if isinstance(hndl, logging.StreamHandler):
+            if new_level:
+                hndl.setLevel(ll[new_level.upper()])
