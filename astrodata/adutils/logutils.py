@@ -1,7 +1,8 @@
 import logging
+import types
 
 STDFMT = '%(asctime)s %(levelname)-8s - %(message)s' 
-DBGFMT = '%(asctime)s %(name)-40s%(lineno)-5d - %(levelname)-8s - %(message)s'
+DBGFMT = '%(asctime)s %(name)-40s - %(levelname)-8s - %(message)s'
 SW = 3
 
 # Turn off logging exception messages 
@@ -11,20 +12,67 @@ logging.raiseExceptions = 0
 ll = {'CRITICAL':50, 'ERROR':40, 'WARNING':30, 'STATUS':25, 'STDINFO':21,
       'INFO':20, 'FULLINFO':15, 'DEBUG':10}
 
+def customize_log(log=None):
+    '''
+    :param log: A fresh log from logging.getLogger()
+    :type log: logging.Logger
+
+    Sets up custom attributes for logger
+    '''
+    def arghandler(args=None, levelnum=None, prefix=None):
+        largs = list(args)
+        slargs = str(largs[0]).split('\n')
+        for line in slargs:
+            if prefix:
+                line = prefix + line
+            if len(line) == 0:
+                log.log('')
+            else:
+                log.log(levelnum, line)
+
+    def ccritical(*args):
+        arghandler(args, ll['CRITICAL'], 'CRITICAL - ' )
+    def cerror(*args):
+        arghandler(args, ll['ERROR'], 'ERROR - ')
+    def cwarning(*args):
+        arghandler(args, ll['WARNING'], 'WARNING - ')
+    def cstatus(*args):
+        arghandler(args, ll['STATUS'])
+    def cstdinfo(*args):
+        arghandler(args, ll['STDINFO'])
+    def cinfo(*args):
+        arghandler(args, ll['INFO'])
+    def cfullinfo(*args):
+        arghandler(args, ll['FULLINFO'])
+    def cdebug(*args):
+        arghandler(args, ll['DEBUG'], 'DEBUG - ')
+    
+    setattr(log, 'critical', ccritical) 
+    setattr(log, 'error', cerror) 
+    setattr(log, 'warning', cwarning) 
+    setattr(log, 'status', cstatus) 
+    setattr(log, 'stdinfo', cstdinfo) 
+    setattr(log, 'info', cinfo) 
+    setattr(log, 'fullinfo', cfullinfo) 
+    setattr(log, 'debug', cdebug) 
+
+    #return log
+
 def get_logger(name=None):
     '''
-    :param name: name of logger (usually __name__)
+    :param name: Name of logger (usually __name__)
     :type name: string
 
-    Wraps logging.getLogger and sets attributes for new log levels
+    :returns: Logger with new levels and prefixes for some levels
+    :rtype: logging.Logger
+
+    Wraps logging.getLogger and returns a custum logging object
     '''
-    newlog = logging.getLogger(name)
-    setattr(newlog, 'status', lambda *args:newlog.log(ll['STATUS'], *args))
-    setattr(newlog, 'stdinfo', lambda *args:newlog.log(ll['STDINFO'], *args))
-    setattr(newlog, 'fullinfo', lambda *args:newlog.log(ll['FULLINFO'], *args))
-    return newlog 
+    log = logging.getLogger(name)
+    customize_log(log)
+    return log
         
-def config(mode='standard', console_lvl='', file_lvl='', \
+def config(mode='standard', console_lvl=None, file_lvl=None, \
            file_name='ad.log', stomp=False):
     '''
     :param mode: logging mode
@@ -46,21 +94,27 @@ def config(mode='standard', console_lvl='', file_lvl='', \
     '''
     mode = mode.lower()
     rootlog = logging.getLogger('')
-
+    
     # Set the console and file logging levels
-    if console_lvl and mode != 'debug':
-        console_lvl_asint = ll[console_lvl.upper()]
-    elif console_lvl != 'stdinfo' and mode == 'debug' and \
-         console_lvl != '':
-        console_lvl_asint = ll[console_lvl.upper()]
+    if mode == 'standard':
+        if console_lvl:
+            console_lvl_asint = ll[str(console_lvl).upper()]
+        else:   
+            console_lvl_asint = ll['STDINFO']
+        if file_lvl:
+            file_lvl_asint = ll[str(file_lvl).upper()]
+        else:
+            file_lvl_asint = ll['DEBUG']
     elif mode == 'debug':
-        console_lvl_asint = ll['DEBUG']
-    else:
-        console_lvl_asint = ll['STDINFO']
-    if file_lvl:
-        file_lvl_asint = ll[file_lvl.upper()]
-    else:
-        file_lvl_asint = ll['DEBUG']
+        if console_lvl:
+            console_lvl_asint = ll[str(console_lvl).upper()]
+        else:   
+            console_lvl_asint = ll['DEBUG']
+        if file_lvl:
+            file_lvl_asint = ll[str(file_lvl).upper()]
+        else:
+            file_lvl_asint = ll['DEBUG']
+        
     # If rootlog has handlers, flush and delete them
     if len(rootlog.handlers) > 0:
         for hand in rootlog.handlers:
@@ -74,14 +128,17 @@ def config(mode='standard', console_lvl='', file_lvl='', \
     logging.addLevelName(ll['FULLINFO'], 'FULLINFO')
 
     # Assign new attributes to root logger
-    setattr(rootlog, 'stdinfo', 
-            lambda *args: rootlog.log(ll['STDINFO'], *args))
-    setattr(rootlog, 'status', 
-            lambda *args: rootlog.log(ll['STATUS'], *args))
-    setattr(rootlog, 'fullinfo', 
-            lambda *args: rootlog.log(ll['FULLINFO'], *args))
+    #setattr(rootlog, 'stdinfo', 
+    #        lambda *args: rootlog.log(ll['STDINFO'], *args))
+    #setattr(rootlog, 'status', 
+    #        lambda *args: rootlog.log(ll['STATUS'], *args))
+    #setattr(rootlog, 'fullinfo', 
+    #        lambda *args: rootlog.log(ll['FULLINFO'], *args))
 
     # Define rootlog handler(s) through basicConfig() according to mode
+    customize_log(rootlog)
+    
+    
     if mode == 'null':
         pass
     elif mode == 'console':
