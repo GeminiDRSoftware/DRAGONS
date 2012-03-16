@@ -18,31 +18,7 @@ OPSDATAPATH = { GEMINI_NORTH : '/net/archie/staging/perm/',
 OBSPREF = { GEMINI_NORTH : 'N',
             GEMINI_SOUTH : 'S' }
 
-# Borrowed this little function from fitsstore: importing directly
-# caused undesired messages to console.
-numre = re.compile('^\d+$')
-datecre=re.compile('^20\d\d[01]\d[0123]\d$')
-def gemini_date(string):
-    """
-    A utility function for matching dates of the form YYYYMMDD
-    also supports today, yesterday
-    returns the YYYYMMDD string, or '' if not a date
-    May need modification to make today and yesterday work usefully 
-    for Chile
-    """
-    if(datecre.match(string)):
-        return string
-    if(string == 'today'):
-        now=datetime.datetime.utcnow().date()
-        return now.strftime('%Y%m%d')
-    if(string == 'yesterday'):
-        then=datetime.datetime.utcnow() - datetime.timedelta(days=1)
-        return then.date().strftime('%Y%m%d')
-    return ''
-
-
-if __name__=='__main__':
-
+def main():
     # Set usage message
     parser = OptionParser()
     usage = parser.get_usage()[:-1] + " [date] file" + \
@@ -74,6 +50,10 @@ if __name__=='__main__':
                       dest="upload", default=False,
                       help="Upload any generated calibrations to the " + \
                            "calibration service")
+    parser.add_option("-s", "--stack", action="store_true",
+                      dest="stack", default=False,
+                      help="Perform stacking of all previously reduced "+ \
+                           "images associated with the current image")
     (options,args) = parser.parse_args()
 
     # If cleaning desired, call superclean to clear out cache and
@@ -133,44 +113,31 @@ if __name__=='__main__':
         directory = OPSDATAPATH[localsite]
     directory = directory.rstrip("/") + "/"
 
-    # If filenm is a number, use it to construct a name
-    if numre.match(filenm):
-        # Convert argument into valid file name
-        try:
-            imgpath,imgname = gu.imageName(filenm, rawpath=directory,
-                                           prefix=prefix,
-                                           observatory=localsite, 
-                                           verbose=False)
-        except:
-            print "\nFile %s was not found.\n" % filenm
-            sys.exit()
-    else:
+    # Check for stacking option
+    recipe = None
+    if options.stack:
 
-        if prefix!="auto":
-            filenm = prefix + filenm
-
-        # Check argument to see if it is a valid file
-        if os.path.exists(filenm):
-            imgpath = filenm
-        elif os.path.exists(filenm + ".fits"):
-            imgpath = filenm + ".fits"
-        elif os.path.dirname(filenm)=="." and not os.path.exists(filenm):
-            # Check for case that current directory was explicitly
-            # specified and file does not exist -- otherwise, 
-            # it might match directory + ./ + filenm when it should
-            # fail
-            print "\nFile %s was not found.\n" % filenm
-            sys.exit()
-        elif os.path.exists(directory + filenm):
-            imgpath = directory + filenm
-        elif os.path.exists(directory + filenm + ".fits"):
-            imgpath = directory + filenm + ".fits"
+        # Check for _forStack image in local directory
+        imgpath = image_path(filenm, ".", 
+                             prefix=prefix, localsite=localsite,
+                             suffix="_forStack")
+        if imgpath is None:
+            # If not found, check for raw image in specified directory
+            # and use full reduction recipe
+            imgpath = image_path(filenm, directory, 
+                                 prefix=prefix, localsite=localsite)
+            recipe = "qaReduceAndStack"
         else:
-            print "\nFile %s was not found.\n" % filenm
-            sys.exit()
+            # If found, just use stacking recipe
+            recipe = "qaStack"
+    else:
+        imgpath = image_path(filenm, directory, 
+                             prefix=prefix, localsite=localsite)
+    if imgpath is None:
+        print "\nFile %s was not found.\n" % filenm
+        sys.exit()
 
     imgname = os.path.basename(imgpath)
-
     print "Image path: "+imgpath
 
     # Check that file is a GMOS IMAGE; other types are not yet supported
@@ -200,10 +167,10 @@ if __name__=='__main__':
         print "Only GMOS images can be reduced at this time.\n"
         sys.exit()
     elif (("GMOS_IMAGE" in ad.types and
-         fp_mask=="Imaging" and
-         "GMOS_DARK" not in ad.types) or
-        "GMOS_BIAS" in ad.types or 
-        "GMOS_IMAGE_FLAT" in ad.types):
+           fp_mask=="Imaging" and
+           "GMOS_DARK" not in ad.types) or
+          "GMOS_BIAS" in ad.types or 
+          "GMOS_IMAGE_FLAT" in ad.types):
 
         # Test for 3-amp mode with e2vDD CCDs
         # This mode has not been commissioned.
@@ -216,8 +183,7 @@ if __name__=='__main__':
                 print "Please set the GMOS CCD Readout Characteristics " \
                       "to use 6 amplifiers.\n"
                 sys.exit()
-        
-        # Call reduce with auto-selected reduction recipe
+
         print "\nBeginning reduction for file %s, %s\n" % (imgname,
                                                            ad.data_label()) 
         if options.upload:
@@ -225,12 +191,25 @@ if __name__=='__main__':
         else:
             context = "QA"
 
-        reduce_cmd = ["reduce", 
-                      "--context",context,
-                      "--loglevel","stdinfo",
-                      "--logfile","gemini.log",
-                      "-p", "clobber=True",
-                      imgpath]
+        # Check for an alternate recipe for science reductions
+        if ("GMOS_BIAS" not in ad.types and 
+            "GMOS_IMAGE_FLAT" not in ad.types and
+            recipe is not None):
+            reduce_cmd = ["reduce",
+                          "-r", recipe,
+                          "--context",context,
+                          "--loglevel","stdinfo",
+                          "--logfile","gemini.log",
+                          "-p", "clobber=True",
+                          imgpath]
+        else:
+            # Otherwise call reduce with auto-selected reduction recipe
+            reduce_cmd = ["reduce", 
+                          "--context",context,
+                          "--loglevel","stdinfo",
+                          "--logfile","gemini.log",
+                          "-p", "clobber=True",
+                          imgpath]
             
         subprocess.call(reduce_cmd)
 
@@ -241,4 +220,74 @@ if __name__=='__main__':
         print "Only GMOS images can be reduced at this time.\n"
         sys.exit()
 
+
+# Borrowed this little function from fitsstore: importing directly
+# caused undesired messages to console.
+datecre=re.compile('^20\d\d[01]\d[0123]\d$')
+def gemini_date(string):
+    """
+    A utility function for matching dates of the form YYYYMMDD
+    also supports today, yesterday
+    returns the YYYYMMDD string, or '' if not a date
+    May need modification to make today and yesterday work usefully 
+    for Chile
+    """
+    if(datecre.match(string)):
+        return string
+    if(string == 'today'):
+        now=datetime.datetime.utcnow().date()
+        return now.strftime('%Y%m%d')
+    if(string == 'yesterday'):
+        then=datetime.datetime.utcnow() - datetime.timedelta(days=1)
+        return then.date().strftime('%Y%m%d')
+    return ''
+
+
+# This function contains the logic necessary for full flexibility in
+# input specification
+numre = re.compile('^\d+$')
+def image_path(filenm, directory, prefix="auto", localsite=None, suffix=None):
+
+    imgpath = None
+
+    # If filenm is a number, use it to construct a name
+    if numre.match(filenm):
+        # Convert argument into valid file name
+        try:
+            imgpath,imgname = gu.imageName(filenm, rawpath=directory,
+                                           prefix=prefix,
+                                           suffix=suffix,
+                                           observatory=localsite, 
+                                           verbose=False)
+        except:
+            imgpath = None
+    else:
+
+        if prefix!="auto":
+            filenm = prefix + filenm
+        if suffix!=None:
+            (fn,ext) = os.path.splitext(filenm)
+            filenm = fn + suffix + ext
+
+        # Check argument to see if it is a valid file
+        if os.path.exists(filenm):
+            imgpath = filenm
+        elif os.path.exists(filenm + ".fits"):
+            imgpath = filenm + ".fits"
+        elif os.path.dirname(filenm)=="." and not os.path.exists(filenm):
+            # Check for case that current directory was explicitly
+            # specified and file does not exist -- otherwise, 
+            # it might match directory + ./ + filenm when it should
+            # fail
+            imgpath = None
+        elif os.path.exists(directory + filenm):
+            imgpath = directory + filenm
+        elif os.path.exists(directory + filenm + ".fits"):
+            imgpath = directory + filenm + ".fits"
+
+    return imgpath
+
+
+if __name__=='__main__':
+    main()
 
