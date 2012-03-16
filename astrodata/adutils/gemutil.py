@@ -70,7 +70,7 @@ gimverify_hhh = 5               # exists and is an hhh image
 gimverify_other = 6             # exists but is not one of the above types
 #---------------------------------------------------------------------------
 def imageName(image, rawpath='', prefix='auto', observatory='gemini-north',
-               verbose=True):
+               suffix=None, verbose=True):
     """Convert an image number to a filename using UT date. If image is already a string simply
        check image's existence and MEFness.
 
@@ -82,6 +82,9 @@ def imageName(image, rawpath='', prefix='auto', observatory='gemini-north',
 
     @param prefix: if 'auto' then prefix will be formatted as 'N20080801S'
     @type prefix: string
+
+    @param suffix: if not None, then suffix will be appended to the file name
+    @type suffix: string
 
     @param observatory: name of observatory, can be either 'gemini-north' or 'gemini-south'
     @type observatory: string
@@ -131,7 +134,10 @@ def imageName(image, rawpath='', prefix='auto', observatory='gemini-north',
     if iraf.gemisnumber.fl_istype:
         if verbose: print "# IMAGENAME - Constructing image name based on today's UT date..."
         imstring = "%04d"%(int(image))
-        image = prefix + imstring + ".fits"
+        if suffix is None:
+            image = prefix + imstring + ".fits"
+        else:
+            image = prefix + imstring + suffix + ".fits"
 
     imagenorawpath = image
 
