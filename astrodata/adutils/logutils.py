@@ -104,7 +104,7 @@ def config(mode='standard', console_lvl=None, file_lvl=None, \
         if file_lvl:
             file_lvl_asint = ll[str(file_lvl).upper()]
         else:
-            file_lvl_asint = ll['DEBUG']
+            file_lvl_asint = ll['FULLINFO']
     elif mode == 'debug':
         if console_lvl:
             console_lvl_asint = ll[str(console_lvl).upper()]
