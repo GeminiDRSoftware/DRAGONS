@@ -86,10 +86,10 @@ class RegistrationPrimitives(GENERALPrimitives):
         
         :param cull_sources: flag to indicate whether sub-optimal sources 
                              should be rejected before attempting a direct
-                             mapping. If True, sources that are saturated, 
-                             not well-fit by a Gaussian, too broad, or too
-                             elliptical will be eliminated from the
-                             list of reference points.
+                             mapping. If True, sources that are saturated,
+                             or otherwise unlikely to be point sources
+                             will be eliminated from the list of reference
+                             points.
         :type cull_sources: bool
         
         :param rotate: flag to indicate whether the input image WCSs should
@@ -507,135 +507,6 @@ class RegistrationPrimitives(GENERALPrimitives):
 # in these functions
 keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
                                             "keyword_comments")
-
-def _cull_sources(ad, img_obj):
-    """
-    This function takes a list of identified sources in an image, fits
-    a Gaussian to each one, and rejects it from the list if it is not
-    sufficiently star-like. The criteria for good sources are that they
-    must be fittable by a Gaussian, not be too near the edge of the frame,
-    have a peak value below saturation (as defined in the header of
-    the image), have ellipticity less than 0.25, and have FWHM less than
-    2.4 arcsec. The return value is a list of the objects that meet these
-    criteria, with their positions updated to the fit center.
-    
-    :param ad: input image
-    :type ad: AstroData instance
-    
-    :param img_obj: list of [x,y] positions for sources detected in the
-                    input image
-    :type img_obj: list
-    """
-    
-    import scipy.optimize
-    
-    if len(ad["SCI"])!=1:
-        raise Errors.InputError("Reference image must have only " +
-                                  "one SCI extension.")
-    
-    img_data = ad["SCI"].data
-    
-    # first guess at background is mean of whole image
-    default_bg = img_data.mean()
-    
-    # first guess at fwhm is .8 arcsec
-    default_fwhm = .8/float(ad.pixel_scale())
-    
-    # stamp is 2 times this size on a side
-    aperture = default_fwhm
-    
-    # for rejecting saturated sources
-    try:
-        saturation = float(ad.saturation_level())
-    except:
-        saturation = None
-
-    good_source = []
-    for objx,objy in img_obj:
-        
-        # array coords start with 0
-        objx-=1
-        objy-=1
-        
-        xlow, xhigh = int(round(objx-aperture)), int(round(objx+aperture)), 
-        ylow, yhigh = int(round(objy-aperture)), int(round(objy+aperture)),
-        
-        if (xlow>0 and xhigh<img_data.shape[1] and 
-            ylow>0 and yhigh<img_data.shape[0]):
-            stamp_data = img_data[ylow:yhigh,xlow:xhigh]
-        else:
-            # source is too near the edge, skip it
-            continue
-        
-        # starting values for Gaussian fit
-        bg = default_bg
-        peak = stamp_data.max()
-        x_ctr = (stamp_data.shape[1]-1)/2.0
-        y_ctr = (stamp_data.shape[0]-1)/2.0
-        x_width = default_fwhm
-        y_width = default_fwhm
-        theta = 0.
-        
-        if saturation is not None and peak >= saturation:
-            # source is too bright, skip it
-            continue
-        
-        pars = (bg, peak, x_ctr, y_ctr, x_width, y_width, theta)
-        
-        # instantiate fit object
-        gf = at.GaussFit(stamp_data)
-        
-        # least squares fit of model to data
-        try:
-            # for scipy versions < 0.9
-            new_pars, success = scipy.optimize.leastsq(gf.calc_diff, pars,
-                                                       maxfev=1000, 
-                                                       warning=False)
-        except:
-            # for scipy versions >= 0.9
-            import warnings
-            warnings.simplefilter("ignore")
-            new_pars, success = scipy.optimize.leastsq(gf.calc_diff, pars,
-                                                       maxfev=1000)
-        
-        if success>=4:
-            # fit failed, move on
-            continue
-        
-        (bg, peak, x_ctr, y_ctr, x_width, y_width, theta) = new_pars
-        
-        # convert fit parameters to FWHM, ellipticity
-        fwhmx = abs(2*np.sqrt(2*np.log(2))*x_width)
-        fwhmy = abs(2*np.sqrt(2*np.log(2))*y_width)
-        pa = (theta*(180/np.pi))
-        pa = pa%360
-                
-        if fwhmy < fwhmx:
-            ellip = 1 - fwhmy/fwhmx
-            fwhm = fwhmx
-        elif fwhmx < fwhmy:
-            ellip = 1 - fwhmx/fwhmy
-            pa = pa-90 
-            fwhm = fwhmy
-        else: #fwhmx == fwhmy
-            ellip = 0
-            fwhm = fwhmx
-        
-        if ellip>.25:
-            # source not round enough, skip it
-            continue
-        
-        if fwhm>3*default_fwhm: # ie. 2.4 arcsec -- probably not due to seeing
-            # source not pointy enough, skip it
-            continue
-        
-        # update the position from the fit center
-        newx = xlow + x_ctr + 1
-        newy = ylow + y_ctr + 1
-        
-        good_source.append([newx,newy])
-    
-    return good_source
 
 def _correlate_sources(ad1, ad2, delta=None, firstPass=10, cull_sources=False):
     """
