@@ -118,7 +118,11 @@ def main():
     if options.stack:
 
         # Check for _forStack image in local directory
-        imgpath = image_path(filenm, ".", 
+        if os.path.exists(filenm):
+            stack_filenm = os.path.basename(filenm)
+        else:
+            stack_filenm = filenm
+        imgpath = image_path(stack_filenm, ".", 
                              prefix=prefix, localsite=localsite,
                              suffix="_forStack")
         if imgpath is None:
