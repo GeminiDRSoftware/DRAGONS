@@ -705,20 +705,27 @@ def clip_sources(ad):
         dqflag = objcat.data.field("IMAFLAGS_ISO")
         class_star = objcat.data.field("CLASS_STAR")
         area = objcat.data.field("ISOAREA_IMAGE")
+        flux = objcat.data.field("FLUX_AUTO")
+        fluxerr = objcat.data.field("FLUXERR_AUTO")
 
         # Source is good if ellipticity defined and <0.5
         eflag = np.where((ellip>0.5)|(ellip==-999),1,0)
 
-        # Source is good if probability of being a star >0.6
-        sflag = np.where(class_star<0.6,1,0)
+        # Source is good if probability of being a star >0.9
+        sflag = np.where(class_star<0.9,1,0)
 
         flags = sxflag | eflag | sflag
 
-        # Source is good if greater than 10 connected pixels
+        # Source is good if greater than 20 connected pixels
         # Ignore criterion if all undefined (-999)
         if not np.all(area==-999):
-            aflag = np.where(area<100,1,0)
+            aflag = np.where(area<20,1,0)
             flags |= aflag
+
+        # Source is good if signal to noise ratio > 50
+        if not np.all(fluxerr==-999):
+            snflag = np.where(flux < 50*fluxerr, 1, 0)
+            flags |= snflag
 
         # Source is good if not flagged in DQ plane
         # Ignore criterion if all undefined (-999)
@@ -731,37 +738,14 @@ def clip_sources(ad):
             [x[good],y[good],fwhm_pix[good],fwhm_arcsec[good],ellip[good]],
             names=["x","y","fwhm","fwhm_arcsec","ellipticity"])
 
-        # Clip outliers, in FWHM
+        # Clip outliers in FWHM - single 1-sigma clip if more than 3 sources.
         num_total = len(rec)
         if num_total>=3:
 
             data = rec["fwhm_arcsec"]
             mean = data.mean()
             sigma = data.std()
-
-            num = num_total
-            clipped_rec = rec
-            clip = 0
-            while (num>0.5*num_total):
-                clipped_rec = rec[(data<mean+sigma) & (data>mean-3*sigma)]
-                num = len(clipped_rec)
-
-                if num>0:
-                    mean = clipped_rec["fwhm_arcsec"].mean() 
-                    sigma = clipped_rec["fwhm_arcsec"].std()
-                    previous_rec = clipped_rec
-                elif clip==0:
-                    clipped_rec = rec
-                    break
-                else:
-                    clipped_rec = previous_rec
-                    break
-
-                clip+=1
-                if clip>10:
-                    break
-
-            rec = clipped_rec
+            rec = rec[(data<mean+sigma) & (data>mean-sigma)]
 
         # Store data
         good_source[("SCI",extver)] = rec
