@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#
 # This script takes a file with an OBJCAT in it, and displays an FWHM histogram
 # that it useful for asessing the validity of a QAP FWHM measurement.
 # It re-implements the algorithm used in gempy/gemini_tools.py clip_sources()
