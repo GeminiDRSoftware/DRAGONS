@@ -441,4 +441,9 @@ class GENERALPrimitives(PrimitiveSet):
         rc.report_output(adoutput_list)
         
         yield rc
-
+    
+    def ls(self, rc):
+        from astrodata.eti.popentask import LSTask
+        lst = LSTask(rc)
+        lst.run()
+        yield rc
