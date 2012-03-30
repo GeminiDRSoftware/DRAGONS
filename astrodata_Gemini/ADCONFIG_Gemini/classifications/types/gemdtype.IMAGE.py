@@ -9,6 +9,7 @@ class IMAGE(DataClassification):
     requirement = OR([  ISCLASS("F2_IMAGE"),
                         ISCLASS("GMOS_IMAGE"),
                         ISCLASS("GNIRS_IMAGE"),
+                        ISCLASS("GSAOI_IMAGE"),
                         ISCLASS("MICHELLE_IMAGE"),
                         ISCLASS("NICI_IMAGE"),
                         ISCLASS("NIFS_IMAGE"),
