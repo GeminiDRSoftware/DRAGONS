@@ -33,7 +33,7 @@ class QAPrimitives(GENERALPrimitives):
         (*not* measured) Zeropoint values - the point being you want to measure
         the actual background level, not the flux incident on the top of the cloud
         layer necessary to produce that flux level.
-        "a""
+        """
 
         # Instantiate the log
         log = logutils.get_logger(__name__)
