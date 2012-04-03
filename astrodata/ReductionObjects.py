@@ -497,14 +497,25 @@ def command_clause(ro, coi):
                     continue
                 log.info("found calibration (url): " + calurl)
                 #print "RO393:", calurl
+                if calurl.startswith("file://"):
+                    calfile = calurl[7:]
+                    calurl = calfile
+                else:
+                    calfile = None
+                
+                
                 msg += 'A suitable %s found:\n' %(str(typ))
                 
                 useCached = False
                 storenames = {"bias":"retrievedbiases",
                               "flat":"retrievedflats"
                               }
-                              
-                if os.path.exists(calurl):
+                
+                if calfile:
+                    calfname = os.path.basename(calfile)
+                    caldname = os.path.dirname(calfile)
+                    # print "ro517:[%s]\n%s (%s)" % (calfile, calfname, caldname)
+                elif os.path.exists(calurl):
                     calfname = calurl
                     caldname = None
                 else:

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import exceptions
+from astrodata import localfitsstore
 
 from optparse import OptionParser
 import os, sys

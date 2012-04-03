@@ -65,7 +65,7 @@ def upload_calibration(filename):
 
 def calibration_search(rq, fullResult = False):
     import urllib, urllib2
-    print "calibration_search" * 6
+    print "ppu68: calibration_search\n" * 6
     from astrodata.FitsStorageFeatures import FitsStorageSetup
     from xmlrpclib import DateTime 
     fss = FitsStorageSetup() # note: uses current working directory!!!
@@ -74,7 +74,7 @@ def calibration_search(rq, fullResult = False):
     #    rq["ut_datetime"] = str(rq["ut_datetime"])
     #if not fss.is_setup():
     #    return None
-    
+    # print "ppu77:" + repr(rq)
     if "source" not in rq:
         source = "central"
     else:
@@ -96,18 +96,23 @@ def calibration_search(rq, fullResult = False):
                                 } # "tokenstr":tokenstr}
         print "ppu118: LOCAL SEARCH: rqurl is "+ rqurl
 
-    print "prs52:", rqurl
-    
+    if "?" in rqurl:
+        rqurl = rqurl+"&filename=%s"%rq["filename"]
+    else:
+        rqurl = rqurl+"/filename=%s"%rq["filename"]
+    print "prs100:", rqurl
     ### send request
     sequence = [("descriptors", rq["descriptors"]), ("types", rq["types"])]
     postdata = urllib.urlencode(sequence)
     try:
-        print "ppu96: postdata",repr(postdata)
+        # print "ppu96: postdata",repr(postdata)
         calRQ = urllib2.Request(rqurl)
-        u = urllib2.urlopen(calRQ, postdata)
+        u = urllib2.urlopen(calRQ) #, postdata)
         response = u.read()
     except urllib2.HTTPError, error:
-        print "ppu100:HTTPError", error.read()
+        print "ppu110:HTTPError", error.read()
+        import traceback
+        traceback.print_exc()
     #response = urllib.urlopen(rqurl).read()
     print "prs129:", response
     if fullResult:

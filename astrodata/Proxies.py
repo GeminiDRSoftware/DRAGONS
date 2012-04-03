@@ -352,7 +352,7 @@ class PRSProxy(object):
         if self.found == False:
             return None
         else:
-            PDEB = False
+            PDEB = True
             calrqdict = cal_rq.as_dict()
             if (PDEB):
                 print "P165:", repr(calrqdict)

@@ -260,8 +260,10 @@ integrates other functionality.
                     raise Errors.AstroDataError("AstroData could not load via http: %s" % dataset)
             elif store:
                 import shutil
-                shutil.copy(dataset, store)
-                dataset = os.path.join(store,dataset)
+                if (os.path.abspath(os.path.dirname(dataset)) 
+                    != os.path.abspath(store)):
+                    shutil.copy(dataset, store)
+                    dataset = os.path.join(store,dataset)
                 # print "AD235:", dataset
             
         if dataset is None:

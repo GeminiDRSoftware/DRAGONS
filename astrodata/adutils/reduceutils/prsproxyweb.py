@@ -61,6 +61,8 @@ except:
     print "Cannot import GeminiMetadataUtils from FITSSTORE"
   
 def getselection(things):
+  from fitsstore import apachehandler
+  return apachehandler.getselection(things)
   
   # this takes a list of things from the URL, and returns a
   # selection hash that is used by the html generators
@@ -283,11 +285,37 @@ class MyHandler(BaseHTTPRequestHandler):
                     print "psrw196: %s" % repr(parms)
                 
                 buff = searcher.summary(parms)
+                self.send_response(200)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
                 self.wfile.write(buff)
                 return
                 
+            if parms["path"] == "/calsearch.xml":
+                from fitsstore import searcher
+                cparms = {}
+                cparms.update(parms)
+                print "pproxy298:"+repr(cparms)
+                if "datalab" in parms:
+                    cparms.update({"datalab":parms["datalab"][0]})
+                if "filename" in parms:
+                    print "ppw302:", repr(parms["filename"])
+                    cparms.update({"filename":parms["filename"][0]})
+                if "caltype" in parms:
+                    cparms.update({"caltype":parms["caltype"][0]})
+                else:
+                    cparms.update({"caltype":"processed_bias"})
+                    
+                buff = searcher.search(cparms)
+                self.send_response(200)
+                self.send_header('Content-type',	'text/xml')
+                self.end_headers()
+                
+                self.wfile.write(buff)
+                return 
+                
             if parms["path"].startswith("/globalcalsearch.xml"):
-                from prsproxyutil import calibrationSearch
+                from prsproxyutil import calibration_search  as calibrationSearch
                 flattenParms(parms)
                 resultb = None
                 resultf = None
@@ -337,26 +365,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 return
                 
 
-            if parms["path"] == "/calsearch.xml":
-                from fitsstore import searcher
-                cparms = {}
-                cparms.update(parms)
-                if "datalab" in parms:
-                    cparms.update({"datalab":parms["datalab"][0]})
-                if "filename" in parms:
-                    cparms.update({"filename":parms["filename"][0]})
-                if "caltype" in parms:
-                    cparms.update({"caltype":parms["caltype"][0]})
-                else:
-                    cparms.update({"caltype":"processed_bias"})
-                    
-                buff = searcher.search(cparms)
-                self.send_response(200)
-                self.send_header('Content-type',	'text/xml')
-                self.end_headers()
-                
-                self.wfile.write(buff)
-                return 
+            
                 
             if parms["path"] == "/recipecontent":
                 if "recipe" in parms:
@@ -692,13 +701,18 @@ class MyHandler(BaseHTTPRequestHandler):
                         redval = '<span  style="color:red">'+str(alld[dname])+"</span>"
                         dval = redval
                     else:
-                        dval = repr(alld[dname])
+                        # print "ppw7--:",type(alld[dname])
+                        if not alld[dname].collapse_value():
+                            import pprint
+                            dval = """<pre>%s</pre> """ % pprint.pformat(alld[dname].dict_val, indent=4, width=80)
+                        else:
+                            dval = str(alld[dname])
                     self.wfile.write("""
                         <tr>
-                        <td style="text-align:right">
+                        <td style="text-align:right;border-bottom:solid grey 1px">
                         %(dname)s =
                         </td>
-                        <td>
+                        <td style="border-bottom:solid grey 1px">
                         %(value)s
                         </td>
                         </tr>

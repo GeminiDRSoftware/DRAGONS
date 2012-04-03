@@ -52,6 +52,12 @@ class DescriptorValue():
     keyword = None
     pytype = None
     unit = None
+    _dbtype = "unknown"
+    
+    @classmethod
+    def _set_db_type(cls, dbtype):
+        DescriptorValue._dbtype = dbtype
+        
     def __init__(self,  initval, 
                         format = None, 
                         name = "unknown", 
@@ -286,7 +292,10 @@ class DescriptorValue():
         else:
             # print repr(self.pytype)
             try:
-                if self.format == "db" and self.pytype == datetime.datetime:
+                if (self.format == "db" 
+                    and DescriptorValue._dbtype != "local"
+                    and self.pytype == datetime.datetime):
+                    
                     return str(self._val)
                 else:
                     return self.pytype(self._val)
