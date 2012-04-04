@@ -36,4 +36,13 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "ls":{
+    "lsdir":{
+        "default"       : "./",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
 }
