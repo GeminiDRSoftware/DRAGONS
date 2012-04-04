@@ -443,7 +443,11 @@ class GENERALPrimitives(PrimitiveSet):
         yield rc
     
     def ls(self, rc):
-        from astrodata.eti.popentask import LSTask
-        lst = LSTask(rc)
-        lst.run()
+        from astrodata.eti.lseti import LSETI
+        print "PRIMITIVE: instantiate LSPopen(rc) object..."
+        lspopen_external_task = LSETI(rc)
+        print "PRIMITIVE: LSPopen.run()..."
+        lspopen_external_task.run()
+        print "PRIMITIVE: yield rc"
+        
         yield rc
