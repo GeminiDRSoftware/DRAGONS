@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 import exceptions
-from astrodata import localfitsstore
 
+try:
+    from astrodata import localfitsstore
+except:
+    print "WARNING:...can't load local fits store, no local calibration support..."
 from optparse import OptionParser
 import os, sys
 import pickle
