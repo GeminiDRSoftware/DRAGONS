@@ -995,10 +995,12 @@ try:
             
         except:
             import traceback
-            log.error("PROBLEM WITH ONE SET OF FILES:\n\t%s \n%s"
-                    %(",".join([inp.filename for inp in infiles]),
-                         traceback.format_exc()))
-        
+            if infiles:
+                log.error("PROBLEM WITH ONE SET OF FILES:\n\t%s \n%s"
+                        %(",".join([inp.filename for inp in infiles]),
+                             traceback.format_exc()))
+            else:
+                log.warning("No input files %s" % traceback.format_exc())
         if False:
             if useTK and currentReductionNum == numReductions:
                 try:
