@@ -30,10 +30,11 @@ class FitsStorageSetup(object):
     def is_setup(self):
         
         try:
-            from fitsstore import FitsStorageConfig
+            import FitsStorageConfig
         except:
             return False
         
+        print "fsf37 %s" % FitsStorageConfig.fits_lockfile_dir
         if not os.path.exists(self.fitsstoredir):
             return False
         if not os.path.exists(self.fscName):

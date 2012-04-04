@@ -269,7 +269,7 @@ def get_version():
 # begin negotiated startup... we won't run if another adcc owns this directory
 
 # could be done later or in lazy manner, but for now ensure this is present
-if True: # future feature
+if False: # future feature
     try:
         from astrodata.FitsStorageFeatures import FitsStorageSetup
     except:
