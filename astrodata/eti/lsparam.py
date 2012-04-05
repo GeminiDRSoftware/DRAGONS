@@ -14,7 +14,8 @@ class LSPathParam(LSParam):
 
     def prepare(self):
         print("LSPathParam prepare()")
-        self.cmd_frag.append(self.rc["lsdir"])
+        if self.rc["lsdir"] is not None:
+            self.cmd_frag.append(self.rc["lsdir"])
 
 class LSlafParam(LSParam):
     rc = None
@@ -24,6 +25,7 @@ class LSlafParam(LSParam):
 
     def prepare(self):
         print("LSlafParam prepare()")
-        self.cmd_frag.append(self.rc["lslaf"])
+        if self.rc["lslaf"] is not None:
+            self.cmd_frag.append(self.rc["lslaf"])
 
 
