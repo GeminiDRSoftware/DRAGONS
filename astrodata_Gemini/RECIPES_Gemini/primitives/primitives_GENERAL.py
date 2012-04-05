@@ -444,9 +444,9 @@ class GENERALPrimitives(PrimitiveSet):
     
     def ls(self, rc):
         from astrodata.eti.lseti import LSETI
-        print "PRIMITIVE: instantiate LSPopen(rc) object..."
+        print "PRIMITIVE: instantiate LSETI(rc) object..."
         lspopen_external_task = LSETI(rc)
-        print "PRIMITIVE: LSPopen.run()..."
+        print "PRIMITIVE: LSETI.run()..."
         lspopen_external_task.run()
         print "PRIMITIVE: yield rc"
         
