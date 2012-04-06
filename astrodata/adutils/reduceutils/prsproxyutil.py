@@ -65,16 +65,14 @@ def upload_calibration(filename):
 
 def calibration_search(rq, fullResult = False):
     import urllib, urllib2
-    print "ppu68: calibration_search\n" * 6
-    from astrodata.FitsStorageFeatures import FitsStorageSetup
+    print "\nppu68: calibration_search\n"
     from xmlrpclib import DateTime 
-    fss = FitsStorageSetup() # note: uses current working directory!!!
     
     #if "ut_datetime" in rq:
     #    rq["ut_datetime"] = str(rq["ut_datetime"])
     #if not fss.is_setup():
     #    return None
-    # print "ppu77:" + repr(rq)
+    print "ppu77:" + repr(rq)
     if "source" not in rq:
         source = "central"
     else:
@@ -107,7 +105,11 @@ def calibration_search(rq, fullResult = False):
     try:
         # print "ppu96: postdata",repr(postdata)
         calRQ = urllib2.Request(rqurl)
-        u = urllib2.urlopen(calRQ) #, postdata)
+        if source == "local":
+            u = urllib2.urlopen(calRQ) #, postdata)
+        else:
+            u = urllib2.urlopen(calRQ, postdata)
+            
         response = u.read()
     except urllib2.HTTPError, error:
         print "ppu110:HTTPError", error.read()
