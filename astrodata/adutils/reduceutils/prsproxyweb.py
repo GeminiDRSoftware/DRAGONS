@@ -61,7 +61,7 @@ except:
     print "Cannot import GeminiMetadataUtils from FITSSTORE"
   
 def getselection(things):
-  from fitsstore import apachehandler
+  import apachehandler
   return apachehandler.getselection(things)
   
   # this takes a list of things from the URL, and returns a
@@ -263,7 +263,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 return
              
             if parms["path"].startswith("/summary"):
-                from fitsstore import searcher
+                import searcher
                 DEBSUM= False
                 
                 #break down path
@@ -724,7 +724,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 return
                 
             if self.path.startswith("/htmldocs"):
-                from fitsstore import FitsStorage
+                import FitsStorage
                 realpath = self.path.split('/')
                 realpath = realpath[1:]
                 dirname = os.path.dirname(FitsStorage.__file__)
