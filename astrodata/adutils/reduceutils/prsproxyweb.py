@@ -292,7 +292,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 return
                 
             if parms["path"] == "/calsearch.xml":
-                from fitsstore import searcher
+                import searcher
                 cparms = {}
                 cparms.update(parms)
                 print "pproxy298:"+repr(cparms)
