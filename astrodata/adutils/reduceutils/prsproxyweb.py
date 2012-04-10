@@ -802,6 +802,8 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 if  self.path.endswith(".js"):
                     self.send_header('Content-type', 'text/javascript')
+                elif self.path.endswith(".css"):
+                    self.send_header("Content-type", "text/css")
                 else:
                     self.send_header('Content-type', 'text/html')
                 self.end_headers()
