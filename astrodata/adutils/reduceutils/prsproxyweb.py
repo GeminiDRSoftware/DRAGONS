@@ -195,6 +195,21 @@ class MyHandler(BaseHTTPRequestHandler):
                 </html>""" % {"numinsts":rim.numinsts}
                 self.wfile.write(page)
                 return
+                
+            if parms["path"].startswith("/cmdqueue.json"):
+                self.send_response(200)
+                self.send_header('Content-type', "application/json")
+                self.end_headers()
+                import json
+                import datetime
+                tdic = [ 
+                        {"new_stat":{"content":5}},
+                        {"new_reduce_log":{"date":str(datetime.datetime.now())}},
+                        {"new_stat":{"content":3}},
+                       ]
+                self.wfile.write(json.dumps(tdic))
+                return
+            
             if parms["path"].startswith("/cmdqueue.xml"):
                 self.send_response(200)
                 self.send_header('Content-type','text/xml')
@@ -762,11 +777,19 @@ class MyHandler(BaseHTTPRequestHandler):
                 return 
                 
             if self.path.startswith("/qap"):
+                if ".." in self.path:
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/html')
+                    self.end_headers()
+                    data = "<b>bad path error</b>"
+                    self.wfile.write(data)
                 dirname = os.path.dirname(__file__)
-                print repr(os.path.split(self.path))
                 joinlist = [dirname, "../../scripts/adcc_faceplate/"]
-                for elem in os.path.split(self.path)[1:]:
-                    joinlist.append(elem)
+                
+                #append any further directory info.
+                joinlist.append( self.path[5:])
+                
+                print "ppw790:", repr(joinlist), self.path
                 
                 fname = os.path.join(*joinlist)
                 print "trying to open %s" % fname
@@ -777,7 +800,10 @@ class MyHandler(BaseHTTPRequestHandler):
                 except IOError:
                     data = "<b>NO SUCH RESOURCE AVAILABLE</b>"
                 self.send_response(200)
-                self.send_header('Content-type', 'text/html')
+                if  self.path.endswith(".js"):
+                    self.send_header('Content-type', 'text/javascript')
+                else:
+                    self.send_header('Content-type', 'text/html')
                 self.end_headers()
                 self.wfile.write(data)
                 return 
