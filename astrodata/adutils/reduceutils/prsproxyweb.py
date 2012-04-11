@@ -202,10 +202,35 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 import json
                 import datetime
+                import random
+                if not hasattr(self, "_iq"):
+                    self._iq = 70
+                if not hasattr(self, "_zp"):
+                    self._zp = (27, .08)
+                
+                ri  = random.randint(-4,4)
+                if ri == -1 or ri == 1:
+                    self._iq += (ri*10)
+                ri  = random.randint(-1,1)
+                if ri == -1 or ri == 1:
+                    self._zp = (self._zp[0] + random.uniform(-1.5, 1.5), 
+                                self._zp[1] + random.uniform(-.02, .02))
+                
                 tdic = [ 
-                        {"new_stat":{"content":5}},
-                        {"new_reduce_log":{"date":str(datetime.datetime.now())}},
-                        {"new_stat":{"content":3}},
+                        {"msgType":"stat",
+                         "filename":"s45.fits",
+                         "stat_name": "IQ",
+                         "stat_value": "%d%%" % self._iq,
+                         "stat_float": self._iq,
+                         "date": datetime.datetime.now().isoformat()
+                        },
+                        {"msgType":"stat",
+                         "filename":"s45.fits",
+                         "stat_name": "zeropoint",
+                         "stat_value": "%2.2f&plusmn;%1.3f" % self._zp,
+                         "stat_float": self._zp[0],
+                         "date": datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S")
+                         }
                        ]
                 self.wfile.write(json.dumps(tdic))
                 return
