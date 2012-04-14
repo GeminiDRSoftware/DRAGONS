@@ -447,6 +447,12 @@ class QAPrimitives(GENERALPrimitives):
 
                 # Need to correct the mags for the exposure time
                 et = float(ad.exposure_time())
+                # If it's a funky nod-and-shuffle imaging acquistion, then need to scale exposure time
+                if(ad.is_type('GMOS_NODANDSHUFFLE')):
+                    log.warning("Imaging Nod-And-Shuffle. Photometry may be dubious")
+                    # AFAIK the number of nod_cycles isn't actually relevant - there's always
+                    # 2 nod positions, thus the exposure time for any given star is half the total
+                    et /= 2.0
                 magcor = 2.5*math.log10(et)
                 mags = np.where(mags==-999,mags,mags+magcor)
 
