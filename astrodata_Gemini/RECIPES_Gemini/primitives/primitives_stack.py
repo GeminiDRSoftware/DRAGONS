@@ -254,12 +254,18 @@ class StackPrimitives(GENERALPrimitives):
                     comment=self.keyword_comments["RDNOISE"])
 
             # Add suffix to the ORIGNAME header so future filenames
-            # can't strip it out
+            # can't strip it out, and to the datalabel to distinguish
+            # from the reference image
             adout.phu_set_key_value(
                 "ORIGNAME", 
                 gt.filename_updater(adinput=adinput[0],
                                     suffix=suffix,strip=True),
                 comment=self.keyword_comments["ORIGNAME"])
+
+            orig_dl = adout.phu_get_key_value("DATALAB")
+            adout.phu_set_key_value(
+                "DATALAB", orig_dl+suffix,
+                comment=self.keyword_comments["DATALAB"])
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=adstack, keyword=timestamp_key)
