@@ -321,7 +321,10 @@ class QAPrimitives(GENERALPrimitives):
 
                 # Log overall values if desired
                 if not separate_ext:
-                    ind = " " * rc["logindent"]
+                    if "logindent" in rc:
+                        ind = " " * rc["logindent"]
+                    else:
+                        ind = ""
                     log.stdinfo(" ")
                     log.stdinfo(ind + "Filename: %s" % ad.filename)
                     log.stdinfo(ind + "-"*dlen)
@@ -908,7 +911,10 @@ class QAPrimitives(GENERALPrimitives):
                 #           '\n    '+'-'*dlen+'\n'
                 # Log final string
                 #log.stdinfo(finalStr)
-                ind = " " * rc["logindent"]
+                logindent = rc["logindent"]
+                if logindent == None:
+                    logindent = 0
+                ind = " " * logindent
                 log.stdinfo(" ")
                 log.stdinfo(ind + fnStr)
                 log.stdinfo(ind + srcStr)
