@@ -229,7 +229,7 @@ class MyHandler(BaseHTTPRequestHandler):
                          "stat_name": "zeropoint",
                          "stat_value": "%2.2f&plusmn;%1.3f" % self._zp,
                          "stat_float": self._zp[0],
-                         "date": datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S")
+                         "date": datetime.datetime.now().isoformate()
                          }
                        ]
                 self.wfile.write(json.dumps(tdic))

@@ -240,35 +240,41 @@ class ReductionContext(dict):
             return True
         return dict.__contains__(self, thing)
         
-    def getContext(self):
+    def get_context(self):
         # print "RM209:",repr(self._running_contexts)
         return ":".join(self._running_contexts)
+    getContext = get_context
     
     context = property(getContext)
     
-    def inContext(self, context):
+    def in_context(self, context):
         context = context.lower()
         return context in self._running_contexts
-        
-    def addContext(self, context):
+    inContext = in_context
+    
+    def add_context(self, context):
         context = context.lower()
         if context not in self._running_contexts:
             self._running_contexts.append(context)
-            
-    def setContext(self, context):
+    addContext = add_context        
+    
+    def set_context(self, context):
         if type(context) == list:
             context = [cstr.lower() for cstr in context]
             self._running_contexts = context
         else:
             self._running_contexts = [context.lower()]
-    def clearContext(self, context = None):
+    setContext = set_context
+    
+    def clear_context(self, context = None):
         if context == None:
             self._running_contexts = []
         else:
             context = context.lower()
             if context in self._running_contexts:
                 self._running_contexts.remove(context)
-        
+    clearContext = clear_context
+    
     def convert_parm_to_val(self, parmname, value):
         legalvartypes = ["bool", "int", "str", "float", None]
         vartype = self.ro.parameter_prop( parmname, prop="type")
@@ -981,7 +987,6 @@ class ReductionContext(dict):
         ret = self.ro.runstep(name, self)
         self.initialize_inputs()
         return ret
-            
     #------------------ PAUSE ---------------------------------------------------- 
     def is_paused(self, bpaused=None):
         if bpaused == None:
