@@ -150,13 +150,13 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         
         return ret_decker
     
-    def detector_section(self, dataset, pretty=False, **args):
+    def detector_section(self, dataset, pretty=False, extname="SCI", **args):
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always return a dictionary where the key
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_detector_section = {}
         # Loop over the specified extensions in the dataset
-        for ext in dataset:
+        for ext in dataset[extname]:
             # Get the detector section from the header of each pixel data
             # extension
             raw_detector_section = ext.get_key_value(
