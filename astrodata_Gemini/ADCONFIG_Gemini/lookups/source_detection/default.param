@@ -34,6 +34,7 @@ ERRB_WORLD # Variance on B_WORLD
 ERRTHETA_WORLD # Variance on THETA_WORLD
 FWHM_IMAGE # FWHM in pixels
 FWHM_WORLD # FWHM in degrees
+FLUX_RADIUS
 ELLIPTICITY # Ellipticity
 #
 #
