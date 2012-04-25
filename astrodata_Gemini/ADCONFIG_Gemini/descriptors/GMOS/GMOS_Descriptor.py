@@ -283,7 +283,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     def detector_rois_requested(self, dataset, **args):
         # This parses the DETROx GMOS headers and returns a list of ROIs in the form
         # [[x1, x2, y1, y2]]
-        # These are in data pixels - is possibly binned wrt physical pixels
+        # These are in physical pixels - should be irrespective of binning
+        # These are 1-based, and inclusive, 2 pixels, starting at pixel 2 would be [2, 3]
         rois=[]
         # Must be single digit ROI number
         for i in range(1,10):
@@ -294,6 +295,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             if(x1 is not None):
                 # The headers are in the form of a start posiiton and size
                 # so make them into start and end pixels here.
+                xs *= int(dataset.detector_x_bin())
+                ys *= int(dataset.detector_y_bin())
                 rois.append([x1, x1+xs-1, y1, y1+ys-1])
             else:
                 break
@@ -309,11 +312,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
 
         # If we don't recognise it, it's "Custom"
         roi_setting = "Custom"
-
-        # Put into physical rather than binned pixels
-        xb = dataset.detector_x_bin()
-        yb = dataset.detector_y_bin()
-        roi = [((roi[0]-1)*xb)+1, roi[1]*xb, ((roi[2]-1)*yb)+1, roi[3]*yb]
 
         for s in gmosRoiSettings.keys():
             if(roi in gmosRoiSettings[s]):
