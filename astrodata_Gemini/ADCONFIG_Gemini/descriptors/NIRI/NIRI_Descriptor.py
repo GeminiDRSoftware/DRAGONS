@@ -135,6 +135,22 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     detector_section = data_section
     array_section = data_section
     
+    def detector_roi_setting(sefl, dataset, **args):
+        # This descriptor aspires to reconstruct what ROI setting was 
+        # asked for in the OT.
+        roi_setting = "Custom"
+        roi = dataset.data_section().as_list()
+        if(roi==[0, 255, 0, 255]):
+            roi_setting = "Central 256"
+        if(roi==[0, 511, 0, 511]):
+            roi_setting = "Central 512"
+        if(roi==[0, 767, 0, 767]):
+            roi_setting = "Central 768"
+        if(roi==[0, 1023, 0, 1023]):
+            roi_setting = "Full Frame"
+
+        return roi_setting
+
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         if pretty:
             stripID = True
