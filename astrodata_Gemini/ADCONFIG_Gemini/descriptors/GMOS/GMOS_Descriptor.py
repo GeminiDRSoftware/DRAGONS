@@ -308,14 +308,17 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Only considers the first ROI.
         gmosRoiSettings = Lookups.get_lookup_table("Gemini/GMOS/ROItable", "gmosRoiSettings")
 
-        roi = dataset.detector_rois_requested().as_list()[0]
+        roi_setting = "Undefined"
+        rois = dataset.detector_rois_requested().as_list()
+        if(rois):
+            roi = rois[0]
 
-        # If we don't recognise it, it's "Custom"
-        roi_setting = "Custom"
+            # If we don't recognise it, it's "Custom"
+            roi_setting = "Custom"
 
-        for s in gmosRoiSettings.keys():
-            if(roi in gmosRoiSettings[s]):
-                roi_setting = s
+            for s in gmosRoiSettings.keys():
+                if(roi in gmosRoiSettings[s]):
+                    roi_setting = s
 
         return roi_setting
 
