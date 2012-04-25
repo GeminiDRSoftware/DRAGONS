@@ -280,6 +280,47 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
 
         return ret_detector_name
     
+    def detector_rois_requested(self, dataset, **args):
+        # This parses the DETROx GMOS headers and returns a list of ROIs in the form
+        # [[x1, x2, y1, y2]]
+        # These are in data pixels - is possibly binned wrt physical pixels
+        rois=[]
+        # Must be single digit ROI number
+        for i in range(1,10):
+            x1 = dataset.phu_get_key_value('DETRO'+str(i)+'X')
+            xs = dataset.phu_get_key_value('DETRO'+str(i)+'XS')
+            y1 = dataset.phu_get_key_value('DETRO'+str(i)+'Y')
+            ys = dataset.phu_get_key_value('DETRO'+str(i)+'YS')
+            if(x1 is not None):
+                # The headers are in the form of a start posiiton and size
+                # so make them into start and end pixels here.
+                rois.append([x1, x1+xs-1, y1, y1+ys-1])
+            else:
+                break
+        return(rois)
+
+    def detector_roi_setting(self, dataset, **args):
+        # Attempts to deduce the Name of the ROI, more or less as per
+        # the options you can select in the OT.
+        # Only considers the first ROI.
+        gmosRoiSettings = Lookups.get_lookup_table("Gemini/GMOS/ROItable", "gmosRoiSettings")
+
+        roi = dataset.detector_rois_requested().as_list()[0]
+
+        # If we don't recognise it, it's "Custom"
+        roi_setting = "Custom"
+
+        # Put into physical rather than binned pixels
+        xb = dataset.detector_x_bin()
+        yb = dataset.detector_y_bin()
+        roi = [((roi[0]-1)*xb)+1, roi[1]*xb, ((roi[2]-1)*yb)+1, roi[3]*yb]
+
+        for s in gmosRoiSettings.keys():
+            if(roi in gmosRoiSettings[s]):
+                roi_setting = s
+
+        return roi_setting
+
     def detector_x_bin(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always return a dictionary where the key

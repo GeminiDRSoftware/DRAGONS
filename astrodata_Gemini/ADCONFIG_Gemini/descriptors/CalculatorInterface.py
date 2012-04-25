@@ -738,6 +738,112 @@ class CalculatorInterface:
                 self.exception_info = sys.exc_info()[1]
                 return None
     
+    def detector_rois_requested(self, format=None, **args):
+        """
+        Return the detector_rois_requested value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: list as default (i.e., format=None)
+        :return: the detector_rois_requested
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"detector_rois_requested"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
+            #print hasattr(self.descriptor_calculator, "detector_rois_requested")
+            if not hasattr(self.descriptor_calculator, "detector_rois_requested"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for detector_rois_requested"
+                    raise KeyError(msg)
+            else:
+                retval = self.descriptor_calculator.detector_rois_requested(self, **args)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "detector_rois_requested",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = list )
+            return ret
+        except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
+                raise
+            else:
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()[1]
+                return None
+    
+    def detector_roi_setting(self, format=None, **args):
+        """
+        Return the detector_roi_setting value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :return: the detector_roi_setting
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"detector_roi_setting"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
+            #print hasattr(self.descriptor_calculator, "detector_roi_setting")
+            if not hasattr(self.descriptor_calculator, "detector_roi_setting"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for detector_roi_setting"
+                    raise KeyError(msg)
+            else:
+                retval = self.descriptor_calculator.detector_roi_setting(self, **args)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "detector_roi_setting",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = str )
+            return ret
+        except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
+                raise
+            else:
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()[1]
+                return None
+    
     def detector_section(self, format=None, **args):
         """
         Return the detector_section value
@@ -3069,7 +3175,7 @@ class CalculatorInterface:
         :type dataset: AstroData
         :param format: the return format
         :type format: string
-        :rtype: string as default (i.e., format=None)
+        :rtype: integer as default (i.e., format=None)
         :return: the requested_iq
         """
         try:
@@ -3102,7 +3208,7 @@ class CalculatorInterface:
                                    name = "requested_iq",
                                    keyword = keyword,
                                    ad = self,
-                                   pytype = str )
+                                   pytype = int )
             return ret
         except:
             if not hasattr(self, "exception_info"):
@@ -3122,7 +3228,7 @@ class CalculatorInterface:
         :type dataset: AstroData
         :param format: the return format
         :type format: string
-        :rtype: string as default (i.e., format=None)
+        :rtype: integer as default (i.e., format=None)
         :return: the requested_cc
         """
         try:
@@ -3155,7 +3261,7 @@ class CalculatorInterface:
                                    name = "requested_cc",
                                    keyword = keyword,
                                    ad = self,
-                                   pytype = str )
+                                   pytype = int )
             return ret
         except:
             if not hasattr(self, "exception_info"):
@@ -3175,7 +3281,7 @@ class CalculatorInterface:
         :type dataset: AstroData
         :param format: the return format
         :type format: string
-        :rtype: string as default (i.e., format=None)
+        :rtype: integer as default (i.e., format=None)
         :return: the requested_wv
         """
         try:
@@ -3208,7 +3314,7 @@ class CalculatorInterface:
                                    name = "requested_wv",
                                    keyword = keyword,
                                    ad = self,
-                                   pytype = str )
+                                   pytype = int )
             return ret
         except:
             if not hasattr(self, "exception_info"):
@@ -3228,7 +3334,7 @@ class CalculatorInterface:
         :type dataset: AstroData
         :param format: the return format
         :type format: string
-        :rtype: string as default (i.e., format=None)
+        :rtype: integer as default (i.e., format=None)
         :return: the requested_bg
         """
         try:
@@ -3261,7 +3367,7 @@ class CalculatorInterface:
                                    name = "requested_bg",
                                    keyword = keyword,
                                    ad = self,
-                                   pytype = str )
+                                   pytype = int )
             return ret
         except:
             if not hasattr(self, "exception_info"):

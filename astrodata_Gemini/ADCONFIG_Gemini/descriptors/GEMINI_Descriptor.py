@@ -150,6 +150,17 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         
         return ret_decker
     
+    def detector_roi_setting(self, dataset, **args):
+        """
+        This is intended to be a human-readable description of the detector
+        Region of Interest (ROI) Setting. The string value of this descriptor
+        should correspond approximately to the name of this ROI in the OT.
+
+        This is the generic version of the descriptor for instruments that do not
+        support setting the ROI, and reports and ROI setting of "Fixed"
+        """
+        return("Fixed")
+
     def detector_section(self, dataset, pretty=False, extname="SCI", **args):
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always return a dictionary where the key
