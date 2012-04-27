@@ -828,6 +828,10 @@ class QAPrimitives(GENERALPrimitives):
                     log.warning('Only one source found. IQ numbers may ' +
                                 'not be accurate.')
 
+                # Apply the horrible 8% sextractor -> imexam kludge
+                log.warning("Applying scale factor of 1:/1.08 to scale from sextractor value to profile fit (imexam) value")
+                mean_fwhm /= 1.08
+
                 airmass = float(ad.airmass())
                 if airmass is None:
                     log.warning("Airmass not found, not correcting to zenith")
