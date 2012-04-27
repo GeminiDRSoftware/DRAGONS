@@ -124,6 +124,42 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         
         return ret_coadds
     
+    def data_section(self, dataset, pretty=False, extname="SCI", **args):
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always return a dictionary where the key
+        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        ret_data_section = {}
+        # Loop over the science extensions in the dataset
+        for ext in dataset[extname]:
+            # Get the data section from the header of each pixel data extension
+            raw_data_section = ext.get_key_value(
+                self.get_descriptor_key("key_data_section"))
+            if raw_data_section is None:
+                # The get_key_value() function returns None if a value cannot
+                # be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
+                if hasattr(ext, "exception_info"):
+                    raise ext.exception_info
+            if pretty:
+                # Return a dictionary with the data section string that uses
+                # 1-based indexing as the value in the form [x1:x2,y1:y2]
+                ret_data_section.update({
+                    (ext.extname(), ext.extver()):str(raw_data_section)})
+            else:
+                # Return a dictionary with the data section list that uses
+                # 0-based, non-inclusive indexing as the value in the form
+                # [x1, x2, y1, y2]
+                data_section = sectionStrToIntList(raw_data_section)
+                ret_data_section.update({
+                    (ext.extname(), ext.extver()):data_section})
+        if ret_data_section == {}:
+            # If the dictionary is still empty, the AstroData object was not
+            # automatically assigned an "extname" extension and so the above
+            # for loop was not entered
+            raise Errors.CorruptDataError()
+        
+        return ret_data_section
+
    
     def decker(self, dataset, stripID=False, pretty=False, **args):
         """
