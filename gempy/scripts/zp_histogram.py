@@ -106,6 +106,8 @@ plt.ylabel('Number')
 # Now plot in CC extinction space
 zp -= nzp
 zp_trim -= nzp
+zp *=-1
+zp_trim *= -1
 plt.subplot(2,2,4)
 plt.hist(zp, bins=20)
 plt.hist(zp_trim, bins=20, range=(zp.min(), zp.max()))
