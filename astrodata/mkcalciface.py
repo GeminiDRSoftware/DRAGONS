@@ -1,4 +1,8 @@
 from datetime import datetime
+from descriptorDescriptionDict import asDictArgDict
+from descriptorDescriptionDict import descriptorDescDict
+from descriptorDescriptionDict import detailedNameDict
+from descriptorDescriptionDict import stripIDArgDict
 
 from astrodata.ConfigSpace import CALCIFACEMARKER, DDLISTMARKER
 CALCIFACECLASSMARKER = "CalculatorInterface"
@@ -11,6 +15,55 @@ class DescriptorDescriptor:
     unit = None
     
     thunkfuncbuff = """
+    def %(name)s(self, format=None, **args):
+        \"\"\"
+        %(description)s
+        \"\"\"
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"%(name)s"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
+            #print hasattr(self.descriptor_calculator, "%(name)s")
+            if not hasattr(self.descriptor_calculator, "%(name)s"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for %(name)s"
+                    raise KeyError(msg)
+            else:
+                retval = self.descriptor_calculator.%(name)s(self, **args)
+            
+            %(pytypeimport)s
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "%(name)s",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = %(pytype)s )
+            return ret
+        except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
+                raise
+            else:
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()[1]
+                return None
+    """
+    
+    FIRST_thunkfuncbuff = """
     def %(name)s(self, format=None, **args):
         \"\"\"
         %(description)s
@@ -45,6 +98,84 @@ class DescriptorDescriptor:
                 return None
     """
     def __init__(self, name=None, pytype=None):
+        self.name = name
+        if pytype:
+            self.pytype = pytype
+            rtype = pytype.__name__
+        try:
+            desc = descriptorDescDict[name]
+        except:
+            if rtype == 'str':
+                rtype = 'string'
+            if rtype == 'int':
+                rtype = 'integer'
+            try:
+                dname = detailedNameDict[name]
+            except:
+                dname = name
+            try:
+                asDictArg = asDictArgDict[name]
+            except:
+                asDictArg = 'no'
+            try:
+                stripIDArg = stripIDArgDict[name]
+            except:
+                stripIDArg = 'no'
+            
+            if stripIDArg == 'yes':
+                desc = 'Return the %(name)s value\n' % {'name':name} + \
+                       '        :param dataset: the data set\n' + \
+                       '        :type dataset: AstroData\n' + \
+                       '        :param stripID: set to True to remove the ' + \
+                       'component ID from the \n                        ' + \
+                       'returned %(name)s value\n' % {'name':name} + \
+                       '        :type stripID: Python boolean\n' + \
+                       '        :param pretty: set to True to return a ' + \
+                       'human meaningful \n' + \
+                       '                       %(name)s ' % {'name':name} + \
+                       'value\n' + \
+                       '        :type pretty: Python boolean\n' + \
+                       '        :rtype: %(rtype)s ' % {'rtype':rtype} + \
+                       'as default (i.e., format=None)\n' + \
+                       '        :return: the %(dname)s' \
+                       % {'dname':dname}
+            elif asDictArg == 'yes':
+                desc = 'Return the %(name)s value\n' % {'name':name} + \
+                       '        :param dataset: the data set\n' + \
+                       '        :type dataset: AstroData\n' + \
+                       '        :param format: the return format\n' + \
+                       '                       set to as_dict to return a ' + \
+                       'dictionary, where the number ' + \
+                       '\n                       of dictionary elements ' + \
+                       'equals the number of pixel data ' + \
+                       '\n                       extensions in the image. ' + \
+                       'The key of the dictionary is ' + \
+                       '\n                       an (EXTNAME, EXTVER) ' + \
+                       'tuple, if available. Otherwise, ' + \
+                       '\n                       the key is the integer ' + \
+                       'index of the extension.\n' + \
+                       '        :type format: string\n' + \
+                       '        :rtype: %(rtype)s ' % {'rtype':rtype} + \
+                       'as default (i.e., format=None)\n' + \
+                       '        :rtype: dictionary containing one or more ' + \
+                       '%(rtype)s(s) ' % {'rtype':rtype} + \
+                       '(format=as_dict)\n' + \
+                       '        :return: the %(dname)s' \
+                       % {'dname':dname}
+
+            else:
+                desc = 'Return the %(name)s value\n' % {'name':name} + \
+                       '        :param dataset: the data set\n' + \
+                       '        :type dataset: AstroData\n' + \
+                       '        :param format: the return format\n' + \
+                       '        :type format: string\n' + \
+                       '        :rtype: %(rtype)s ' % {'rtype':rtype} + \
+                       'as default (i.e., format=None)\n' + \
+                       '        :return: the %(dname)s' \
+                       % {'dname':dname}
+                
+        self.description = desc
+    def OLD__init__(self, name=None, pytype=None):
         self.name = name
         if pytype:
             self.pytype = pytype
@@ -178,7 +309,8 @@ def get_calculator_interface():
             cibsrc = cib.read()
             cib.close()
             d = {"DescriptorDescriptor":DD, 
-                 "DD":DD
+                 "DD":DD,
+                 "datetime":datetime
                 }
             ddlist = eval(cibsrc, d)
             cisrc = mk_calc_iface_body(ddlist)
