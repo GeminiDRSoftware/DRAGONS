@@ -1,0 +1,149 @@
+body {
+    background: white;
+    color: black;
+    font: normal normal 12px Verdana, Geneva, Arial, Helvetica, sans-serif;
+    margin: 10px;
+    padding: 0;
+}
+
+#table_wrapper {
+    border: 1px solid black;
+    border-collapse: collapse;
+    clear: both;
+    height: 340px;
+    overflow: hidden;
+    width: 1092px;
+}
+
+thead.fixed_header tr {
+    border-bottom: 1px solid black;
+}
+
+thead.fixed_header th {
+    padding: 2px;
+    text-align: center;
+}
+
+tbody.scroll_body {
+    background-color: white;
+}
+
+tbody.scroll_body td {
+    text-align: center;
+    padding: 2px;
+}
+
+tbody.scroll_body td:hover {
+    background-color: #C0C0FF;
+}
+
+#date_wrapper {
+    background-color: #E0E0FF;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    border-top: 1px solid black;
+    border-collapse: collapse;
+    height: 18px;
+    padding: 2px 2px 0px 2px;
+    text-align: center;
+    width: 180px;
+}
+
+.label {
+    font-weight: bold;
+}
+.highlight {
+    background-color: #B0B0FF;
+}
+.even {
+    background-color: #E0E0FF;
+}
+
+#message_wrapper {
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+    border-collapse: collapse;
+    clear: both;
+    height: 40px;
+    padding: 2px 0px 2px 0px;
+    width: 1092px;
+}
+
+#plot_wrapper {
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+    border-collapse: collapse;
+    clear: both;
+    height: 340px;
+    padding: 20px 0px 10px 0px;
+    width: 1092px;
+}
+
+#iqplot {
+    float: left;
+    margin: 10px;
+    width: 340px;
+}
+#ccplot {
+    float: left;
+    margin: 10px;
+    width: 340px;
+}
+#bgplot {
+    float: left;
+    margin: 10px;
+    width: 340px;
+}
+
+.outer {
+    position: relative;
+}
+.problem_icon {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background-image: url(../images/red_triangle.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 5px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 5px;
+}
+.warn_icon {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background-image: url(../images/yellow_triangle.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 5px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 5px;
+}
+.dropdown_icon {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    background-image: url(../images/dropdown.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 4px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 7px;
+}
+
+.jqplot-title {
+    color: black;
+}
+
+.tooltip {
+    background-color: #FFFFD0;
+    border: 1px solid #B0B0B0;
+    padding: 2px;
+    
+}
