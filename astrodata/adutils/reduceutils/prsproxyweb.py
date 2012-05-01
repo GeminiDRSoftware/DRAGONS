@@ -202,6 +202,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 import json
                 import datetime
+                import time
                 import random
                 if not hasattr(self, "_iq"):
                     self._iq = 70
@@ -215,7 +216,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 if ri == -1 or ri == 1:
                     self._zp = (self._zp[0] + random.uniform(-1.5, 1.5), 
                                 self._zp[1] + random.uniform(-.02, .02))
-                
+                """
                 tdic = [ 
                         {"msgType":"stat",
                          "filename":"s45.fits",
@@ -232,6 +233,71 @@ class MyHandler(BaseHTTPRequestHandler):
                          "date": datetime.datetime.now().isoformate()
                          }
                        ]
+                """
+
+                now = datetime.datetime.utcnow()
+                now_lt = datetime.datetime.now()
+                now_lt = now_lt.replace(hour=random.randint(18,23),
+                                        minute=random.randint(0,59))
+                filename = "N%sS0%0.3d.fits" % (now.strftime("%Y%m%d"),
+                                              random.randint(1,999))
+                
+                #datalabel = "GN-2012B-Q-0-000-000"
+                tdic = []
+                for i in range(2):
+                    if i!=0:
+                        tmp_lt = now_lt.replace(day=now_lt.day+1,
+                                                hour=random.randint(0,6),
+                                                minute=random.randint(0,59))
+                    else:
+                        tmp_lt = now_lt
+                    datalabel = "GN-2012B-Q-0-000-%0.3d" % random.randint(1,999)
+                    tdic.append(
+                        {"msgType": "stat",
+                         "timestamp": time.mktime(now.timetuple()),
+                         "metadata": {"filename": filename,
+                                      "datalabel": datalabel,
+                                         "local_time": tmp_lt.strftime("%Y-%m-%d %H:%M:%S"),
+                                      "ut_time": now.strftime("%Y-%m-%d %H:%M:%S"),
+                                      "waveband": "z",
+                                      "airmass": 1.063,
+                                      "instrument": "GMOS-N",
+                                      "object": "M13",
+                                      "types": ["GEMINI_NORTH", "GMOS_N", "GMOS_IMAGE",
+                                                "GEMINI", "IMAGE", "GMOS", "GMOS_RAW",
+                                                "UNPREPARED", "RAW"],
+                                      },
+                         "iq": {"band": "IQ85",
+                                "delivered": 0.983,
+                                "delivered_error": 0.1,
+                                "zenith": 0.7 + random.uniform(-.5,.5),#0.947,
+                                "ellipticity": 0.118,
+                                "ellip_error": 0.067,
+                                "requested": "IQ85",
+                                "comment": ["High ellipticity"],
+                                },
+                         "cc": {"band": "CC70",
+                                "zeropoint": {"e2v 10031-23-05, right":{"value":26.80,
+                                                                        "error":0.05},
+                                              "e2v 10031-01-03, right":{"value":26.86,
+                                                                        "error":0.03},
+                                              "e2v 10031-01-03, left":{"value":26.88,
+                                                                       "error":0.06}},
+                                "extinction": .5 + random.uniform(-.5,.5),#0.02,
+                                "extinction_error": 0.03,
+                                "requested": "CC50",
+                                "comment": ["Requested CC not met"],
+                                },
+                         "bg": {"band": "BGAny",
+                                "brightness": 20 + random.uniform(-.8,.8),#19.17,
+                                "brightness_error": 0,
+                                "requested": "BGAny",
+                                "comment": []
+                                },
+                         }
+                        )
+                
+                #self.wfile.write(json.dumps([]))
                 self.wfile.write(json.dumps(tdic))
                 return
             
@@ -786,6 +852,8 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 if fname.endswith(".css"):
                     self.send_header('Content-type', "text/css")
+                elif fname.endswith(".png"):
+                    self.send_header('Content-type', "image/png")
                 else:
                     self.send_header('Content-type',	'text/html')
                 self.end_headers()
@@ -829,6 +897,8 @@ class MyHandler(BaseHTTPRequestHandler):
                     self.send_header('Content-type', 'text/javascript')
                 elif self.path.endswith(".css"):
                     self.send_header("Content-type", "text/css")
+                elif fname.endswith(".png"):
+                    self.send_header('Content-type', "image/png")
                 else:
                     self.send_header('Content-type', 'text/html')
                 self.end_headers()
