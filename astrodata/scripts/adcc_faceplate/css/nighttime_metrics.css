@@ -124,17 +124,17 @@ tbody.scroll_body td:hover {
     text-indent: -99999px;
     width: 5px;
 }
-.dropdown_icon {
+.swap_icon {
     position: absolute;
     bottom: 0px;
     right: 0px;
-    background-image: url(../images/dropdown.png);
+    background-image: url(../images/swap.png);
     background-repeat: no-repeat;
     display: inline-block;
-    height: 4px;
+    height: 9px;
     overflow: hidden;
     text-indent: -99999px;
-    width: 7px;
+    width:11px;
 }
 
 .jqplot-title {

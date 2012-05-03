@@ -49,6 +49,52 @@ ScrollTable.prototype = st_proto;
 ScrollTable.prototype.constructor = ScrollTable;
 
 // add ScrollTable-specific methods
+ScrollTable.prototype.init = function() {
+
+    // Add an empty div to the element
+    var html_str = this.composeHTML();
+    this.element.html(html_str);
+
+    // Add an event handler to the headers of swappable columns
+    // to do the swap
+    var st = this;
+    this.element.on("click","th.swap",function() {
+        for (var col in st.columns) {
+	    col = st.columns[col];
+	    if ($(this).hasClass(col.id)) {
+		console.log(col.id);
+		    
+		// Swap alt and std fields/names
+		var temp = col.name;
+		col.name = col.alt_name;
+		col.alt_name = temp;
+		temp = col.field;
+		col.field = col.swap;
+		col.swap = temp;
+
+		// Put new name in header
+		$(this).html('<div style="position:relative">'+
+			     '<span class="swap_icon"></span>'+
+			     col.name+'</div>');
+
+		    
+		// Put alternate data in data cells
+		$("#"+st.id+" td."+col.id).each(function(){
+		    var key = $(this).attr("id");
+		    if (key==undefined) {
+			key = $(this).parent().attr("id");
+		    }
+		    var data = st.records[key][col.field];
+		    $(this).text(data);
+		});
+
+		break;
+	    }
+	}
+    }); // end on click
+
+}; // end init
+
 ScrollTable.prototype.composeHTML = function() {
     // Compose table tags with column headers
     var html_str = '<table class="scroll_table" id="'
@@ -57,15 +103,21 @@ ScrollTable.prototype.composeHTML = function() {
     for (i in this.columns) {
 	col = this.columns[i];
 
-	html_str += '<th class='+col.id;
+	// Add classes for column id, as well as hidden and swap properties
+	html_str += '<th  class="'+col.id;
+	var w;
 	if (col.hidden) {
-	    html_str += ' style="display:none"';
+	    html_str += ' hidden';
 	}
+	if (col.swap) {
+	    html_str += ' swap';
+	}
+	html_str += '"';
 
-	var w = col.width; // should convert to pixels
 
-	// Add 16px to the width of the last header element
-	// for the scroll bar
+	// Set column width
+	// Add 16px to the width of the last header element for the scroll bar
+	w = col.width;
 	if (i==this.columns.length-1) {
 	    w+=16;
 	}
@@ -74,9 +126,9 @@ ScrollTable.prototype.composeHTML = function() {
 
 	if (col.swap) {
 	    html_str += '<div style="position:relative">'+
-		        '<span class="dropdown_icon"></span>'+
+		        '<span class="swap_icon"></span>'+
 	                col.name+'</div>';
-	} else { 
+	} else {
 	    html_str += col.name;
 	}
 	
@@ -98,6 +150,7 @@ ScrollTable.prototype.composeHTML = function() {
 }; // end composeHTML
 
 ScrollTable.prototype.addRecord = function(records) {
+    // Make records into an array if it is not already
     if (!(records instanceof Array)) {
 	records = [records];
     }
@@ -108,9 +161,15 @@ ScrollTable.prototype.addRecord = function(records) {
     var tbody = $('#'+this.id+' tbody');
     var all_rows = this.rows;
     tbody.find("tr").each(function(){
-	    var key = $(this).attr('id');
-	    all_rows[key] = $(this).wrap('<div>').parent().html();
-	}); // end find/each tr
+        var key = $(this).attr('id');
+	    
+	// Add the hidden columns back in
+	// Ordering does not matter, because they will
+	// be removed later in this function
+	$(this).append($(all_rows[key]).find(".hidden"));
+
+	all_rows[key] = $(this).wrap('<div>').parent().html();
+    }); // end find/each tr
 
     for (var i in records) {
 
@@ -132,8 +191,8 @@ ScrollTable.prototype.addRecord = function(records) {
 		sort_col = col;
 	    }
 	    if (col.hidden) {
-		table_row += '<td class="'+col.id+
-		             '" width="'+col.width+'px" style="display:none">'+
+		table_row += '<td class="hidden '+col.id+
+		             '" width="0px">'+
 		             record[col.field]+'</td>';
 	    } else {
 		table_row += '<td class="'+col.id+
@@ -171,6 +230,9 @@ ScrollTable.prototype.addRecord = function(records) {
 
     // Replace the tbody with these rows
     tbody.html(rows_str);
+
+    // Remove hidden columns
+    $('#'+this.id+' .hidden').remove();
 
     // Check for overflow: if none, add 16px to all elements
     // in the  last table column 
@@ -384,16 +446,15 @@ TooltipOverlay.prototype.init = function() {
 
     // Add an empty div to the element
     var html_str = this.composeHTML();
-
-    ////here -- should this append or overwrite?
     this.element.append(html_str);
 
     // Add mouseenter/mouseleave event handlers to the selection
-    var hovering = null;
     var delay = 500;
     var messages = this.messages;
     var tooltip = $("#"+this.id);
-    $(document).on("mouseenter",this.selection,function() {
+    var selection = this.selection;
+    $(document).on("mouseenter",selection,function() {
+
 	var trigger = $(this);
 
 	// Calculate position of tooltip
@@ -442,14 +503,17 @@ TooltipOverlay.prototype.init = function() {
 	hovering = setTimeout(function() {
 	    // Show the tooltip
 	    tooltip.show();
+	    
+	    // Throw a custom event, as a hook for the manager
+	    // to do something (eg. hide any other tooltips)
+	    tooltip.trigger("showTooltip");
+
 	}, delay); // end timeout
+	tooltip.data("hovering",hovering);
     }); // end mouseenter
-    $(document).on("mouseleave",this.selection,function() {
-	if (hovering) {
-	    clearTimeout(hovering);
-	    hovering = null;
-	}
-        tooltip.hide();
+    var tto = this;
+    $(document).on("mouseleave",selection,function() {
+        tto.clearRecord();
     }); // end mouseleave
 
 
@@ -469,8 +533,18 @@ TooltipOverlay.prototype.addRecord = function(records) {
 }; // end addRecord
 
 TooltipOverlay.prototype.clearRecord = function() {
-    // Clear any current hovering states
-    $(this.selection).mouseout();
+    var tooltip = $('#'+this.id);
 
-    $('#'+this.id).html("");
+    // Clear any current hovering states
+    if (tooltip.data("hovering")) {
+	clearTimeout(tooltip.data("hovering"));
+	tooltip.data("hovering",null);
+    }
+
+    // Clear out message
+    tooltip.text("");
+
+    // Hide the tooltip
+    tooltip.hide();
+
 };

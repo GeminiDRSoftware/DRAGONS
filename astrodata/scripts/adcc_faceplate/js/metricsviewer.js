@@ -147,6 +147,29 @@ MetricsViewer.prototype = {
 					"#metrics_table td.datalabel");
 	this.tooltips["metadata-obstype"] = obs_tt;
 
+	// Add a handler for the showTooltip event: when a tooltip appears,
+	// all others should hide
+	$(document).on("showTooltip","div.tooltip",function(){
+	    tt_shown = $(this);
+	    for (var tt in mv.tooltips) {
+		tt = mv.tooltips[tt];
+		if (tt.id!=tt_shown.attr("id")) {
+		    tt.clearRecord();
+		}
+	    }
+	    // Stop event from bubbling up
+	    return false;
+	});
+	// Also hide tooltips when mouse leaves table wrapper
+	$(document).on("mouseleave","#table_wrapper",function(){
+	    for (var tt in mv.tooltips) {
+		tt = mv.tooltips[tt];
+		tt.clearRecord();
+	    }
+	    // Stop event from bubbling up
+	    return false;		
+	});
+
 	// Add event handler to link message window to clicks in table rows
 	$("#metrics_table tbody").on("click", "tr", function() {
 	    var selected = $(this).hasClass("highlight");
@@ -188,6 +211,12 @@ MetricsViewer.prototype = {
 
 	// Store next turnover to check against in the update function
 	this.turnover = next_turnover;
+
+	// Set up a mouse-position tracker
+	this.last_pos = {x:0,y:0};
+	$(document).mousemove(function(e) {
+		mv.last_pos = {x:e.pageX,y:e.pageY};
+	});
 
 	// Hook up the adcc command pump to the update function
 	this.gjs = new GJSCommandPipe();
@@ -261,6 +290,19 @@ MetricsViewer.prototype = {
 
 	date_str += year + month + day + "S";
 	return date_str;
+    },
+
+    isHover: function(element) {
+	// Return true if element (a jQuery selection) is moused-over
+
+	var pos = this.last_pos;
+	var offset = element.offset();
+	var width = element.outerWidth();
+	var height = element.outerHeight();
+	var is_hover = offset.left<=pos.x && offset.left+width>pos.x &&
+	               offset.top<=pos.y && offset.top+height>pos.y;
+
+	return is_hover;
     },
 
     reset: function() {
@@ -453,6 +495,7 @@ MetricsViewer.prototype = {
 		}
 	    }); // end each
 
+	    
 	} else {
 	    ////here -- what should happen?
 	    console.log("No metrics table");
@@ -491,6 +534,22 @@ MetricsViewer.prototype = {
 	    tooltip_record = this.formatTooltipRecords(records,tt);
 	    this.tooltips[tt].addRecord(tooltip_record);
 	}
+
+	// Update the message in any currently displayed tooltips
+	// with the message for the hovered-over row: this message
+	// may have changed as the table updated under the mouse
+	var mv = this;
+	$('#metrics_table tr').each(function(){
+	    if (mv.isHover($(this)) && mv.isHover($("#table_wrapper"))) {
+		var dl = $(this).attr("id");
+		for (tt in mv.tooltips) {
+		    tt = mv.tooltips[tt];
+		    var msg = tt.messages[dl];
+		    $("#"+tt.id).text(msg);
+		}
+	    }
+	});
+
 
     }, // end update
 
