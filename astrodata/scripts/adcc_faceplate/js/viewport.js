@@ -62,8 +62,7 @@ ScrollTable.prototype.init = function() {
         for (var col in st.columns) {
 	    col = st.columns[col];
 	    if ($(this).hasClass(col.id)) {
-		console.log(col.id);
-		    
+
 		// Swap alt and std fields/names
 		var temp = col.name;
 		col.name = col.alt_name;
@@ -72,7 +71,7 @@ ScrollTable.prototype.init = function() {
 		col.field = col.swap;
 		col.swap = temp;
 
-		// Put new name in header
+		// Put new name in header (with swap icon)
 		$(this).html('<div style="position:relative">'+
 			     '<span class="swap_icon"></span>'+
 			     col.name+'</div>');
@@ -102,13 +101,14 @@ ScrollTable.prototype.composeHTML = function() {
     html_str += '<tr style="position:relative;display:block">'
     for (i in this.columns) {
 	col = this.columns[i];
+	if (col.hidden) {
+	    continue;
+	}
 
-	// Add classes for column id, as well as hidden and swap properties
+
+	// Add classes for column id, as well swap property
 	html_str += '<th  class="'+col.id;
 	var w;
-	if (col.hidden) {
-	    html_str += ' hidden';
-	}
 	if (col.swap) {
 	    html_str += ' swap';
 	}
@@ -155,22 +155,9 @@ ScrollTable.prototype.addRecord = function(records) {
 	records = [records];
     }
 
-    // Get current rows from table
-    // This allows the table to keep any classes or formatting
-    // added to the row after it was created
+    // Loop through records, making new table rows and
+    // adding them to the tbody
     var tbody = $('#'+this.id+' tbody');
-    var all_rows = this.rows;
-    tbody.find("tr").each(function(){
-        var key = $(this).attr('id');
-	    
-	// Add the hidden columns back in
-	// Ordering does not matter, because they will
-	// be removed later in this function
-	$(this).append($(all_rows[key]).find(".hidden"));
-
-	all_rows[key] = $(this).wrap('<div>').parent().html();
-    }); // end find/each tr
-
     for (var i in records) {
 
 	var record = records[i];
@@ -190,49 +177,47 @@ ScrollTable.prototype.addRecord = function(records) {
 	    if (col.sort && !sort_col) {
 		sort_col = col;
 	    }
-	    if (col.hidden) {
-		table_row += '<td class="hidden '+col.id+
-		             '" width="0px">'+
-		             record[col.field]+'</td>';
-	    } else {
+	    if (!col.hidden) {
 		table_row += '<td class="'+col.id+
-		             '" width="'+col.width+'px">'+record[col.field]+'</td>';
+		             '" width="'+col.width+'px">'+
+		             record[col.field]+'</td>';
 	    }
 	}
 	table_row += '</tr>';
 	
-	// Add the new row to the list of rows
-	all_rows[record['key']] = table_row;
-    }
+	// Add the new row to the database of rows
+	if ($("#"+record['key']).length>0) {
+	    // A row with this key exists already, remove it
+	    console.log("replace",record['key']);
+	    $("#"+record['key']).remove();
+	}
+	if (sort_col) {
+	    var rec = this.records;
+	    placed = false;
 
-    var ordering = [];
-    for (i in this.records) {
-	ordering.push(this.records[i]);
-    }
-    // If desired, sort by the field in the sort column
-    if (sort_col) {
-	ordering.sort(function(a,b){
-	    if (a[sort_col.field] < b[sort_col.field]) {
-		return -1;
+	    // Iterate backward over the rows, assuming that
+	    // data is likely to come in mostly in order
+	    var backward_rows = tbody.find("tr").get().reverse();
+	    for (var k in backward_rows) {
+		var this_row = $(backward_rows[k]);
+	        var this_field = rec[this_row.attr("id")][sort_col.field];
+		if (record[sort_col.field]>this_field) {
+		    $(table_row).insertAfter(this_row);
+		    placed = true;
+		    break;
+		}
 	    }
-	    if (a[sort_col.field] > b[sort_col.field]) {
-		return 1;
+	    if (!placed) {
+		tbody.prepend(table_row);
 	    }
-	    return 0;
-	}); // end sort
+	} else {
+	    // No sorting, just append it to the tbody
+	    tbody.append(table_row);
+	}
+
+	// Update the rows database with this row
+	this.rows[record['key']] = table_row;
     }
-
-    // Compose an html string containing all rows
-    var rows_str = "";
-    for (i in ordering) {
-	rows_str += all_rows[ordering[i]['key']];
-    }
-
-    // Replace the tbody with these rows
-    tbody.html(rows_str);
-
-    // Remove hidden columns
-    $('#'+this.id+' .hidden').remove();
 
     // Check for overflow: if none, add 16px to all elements
     // in the  last table column 

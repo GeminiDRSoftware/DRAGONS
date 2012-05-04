@@ -10,7 +10,13 @@ MetricsDatabase.prototype = {
     constructor: MetricsDatabase,
     
     addRecord: function(key, record) {
-	this.records[key] = record;
+	if (this.records[key]) {
+	    for (var i in record) {
+		this.records[key][i] = record[i];
+	    }
+	} else {
+	    this.records[key] = record;
+	}
     },
 
     getRecord: function(key) {

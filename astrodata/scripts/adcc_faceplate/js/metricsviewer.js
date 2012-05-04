@@ -384,12 +384,12 @@ MetricsViewer.prototype = {
 
 	    // Get the image number from the filename
 	    var imgnum = record["metadata"]["filename"];
-	    var i = imgnum.indexOf(this.date_str);
-	    if (i!=-1) {
-	        var start = i+this.date_str.length;
+	    var str_i = imgnum.indexOf(this.date_str);
+	    if (str_i!=-1) {
+	        var start = str_i+this.date_str.length;
 	        imgnum = parseInt(imgnum.slice(start,start+4),10);
 	    } else {
-	        imgnum = "---";
+	        imgnum = "--";
 	    }
 	    record["metadata"]["image_number"] = imgnum;
 
@@ -403,35 +403,45 @@ MetricsViewer.prototype = {
 	    record["metadata"]["obstype"] = obstype;
 
 	    // Format some metrics into strings including errors
-	    record["iq"]["delivered_str"] = 
-	        record["iq"]["delivered"].toFixed(2) + " \u00B1 " +
-	        record["iq"]["delivered_error"].toFixed(2);
-	    record["iq"]["zenith_str"] = 
-	        record["iq"]["zenith"].toFixed(2) + " \u00B1 " +
-	        record["iq"]["delivered_error"].toFixed(2);
-	    record["cc"]["extinction_str"] = 
-	        record["cc"]["extinction"].toFixed(2) + " \u00B1 " +
-	        record["cc"]["extinction_error"].toFixed(2);
-	    record["bg"]["brightness_str"] = 
-	        record["bg"]["brightness"].toFixed(2) + " \u00B1 " +
-	        record["bg"]["brightness_error"].toFixed(2);
-
-	    // Average the reported zeropoints to get a single number
-	    var zp_dict = record["cc"]["zeropoint"];
-	    var zp=0, zperr=0, count=0;
-	    for (var key in zp_dict) {
-	        zp += zp_dict[key]["value"];
-	        zperr += Math.pow(zp_dict[key]["error"],2);
-	        count++;
+	    if (record["iq"]) {
+		record["iq"]["delivered_str"] = 
+	            record["iq"]["delivered"].toFixed(2) + " \u00B1 " +
+		    record["iq"]["delivered_error"].toFixed(2);
+		record["iq"]["zenith_str"] = 
+		    record["iq"]["zenith"].toFixed(2) + " \u00B1 " +
+		    record["iq"]["delivered_error"].toFixed(2);
 	    }
-	    zp = zp / count;
-	    zperr = Math.sqrt(zperr);
-	    record["cc"]["zeropoint_str"] = zp.toFixed(2) +" \u00B1 " +
-	                                    zperr.toFixed(2);
+	    if (record["cc"]) {
+		record["cc"]["extinction_str"] = 
+	            record["cc"]["extinction"].toFixed(2) + " \u00B1 " +
+		    record["cc"]["extinction_error"].toFixed(2);
+
+		// Average the reported zeropoints to get a single number
+		var zp_dict = record["cc"]["zeropoint"];
+		var zp=0, zperr=0, count=0;
+		for (var key in zp_dict) {
+		    zp += zp_dict[key]["value"];
+		    zperr += Math.pow(zp_dict[key]["error"],2);
+		    count++;
+		}
+		zp = zp / count;
+		zperr = Math.sqrt(zperr);
+		record["cc"]["zeropoint_str"] = zp.toFixed(2) +" \u00B1 " +
+		                                zperr.toFixed(2);
+	    }
+	    if (record["bg"]) {
+		record["bg"]["brightness_str"] = 
+	            record["bg"]["brightness"].toFixed(2) + " \u00B1 " +
+	            record["bg"]["brightness_error"].toFixed(2);
+	    }
 
 	    // Add the record to the database
 	    var datalabel = record["metadata"]["datalabel"];
 	    this.database.addRecord(datalabel, record);
+
+	    // Replace the incoming record with the one from the
+	    // database, in case it contained additional information
+	    records[i] = this.database.getRecord(datalabel);
 	} // end for-loop over records
 
 	// Update table
@@ -458,29 +468,40 @@ MetricsViewer.prototype = {
 	    var element, value;
 	    for (var k in records) {
 		var record = records[k];
-	    	if (record["iq"]["comment"].length>0) {
-		    element = $('#'+record["metadata"]["datalabel"]+' td.iq');
-		    value = element.text();
+		if (record["iq"]) {
+		    if (record["iq"]["comment"].length>0) {
+			element = $('#'+record["metadata"]["datalabel"]+
+				  ' td.iq');
+			value = element.text();
 
-		    if (record["iq"]["comment"].length==1 &&
-			record["iq"]["comment"][0].indexOf("ellipticity")!=-1) {
-			value = '<div class=outer>'+warn+value+'</div>';
-		    } else {
-			value = '<div class=outer>'+problem+value+'</div>';
+			if (record["iq"]["comment"].length==1 &&
+			    record["iq"]["comment"][0].indexOf(
+							"ellipticity")!=-1) 
+			{
+			    value = '<div class=outer>'+warn+value+'</div>';
+			} else {
+			    value = '<div class=outer>'+problem+value+'</div>';
+			}
+			element.html(value);
 		    }
-		    element.html(value);
-	    	}
-	    	if (record["cc"]["comment"].length>0) {
-		    element = $('#'+record["metadata"]["datalabel"]+' td.cc');
-		    value = element.text();
-		    value = '<div class=outer>'+problem+value+'</div>';
-		    element.html(value);
-	    	}
-	    	if (record["bg"]["comment"].length>0) {
-		    element = $('#'+record["metadata"]["datalabel"]+' td.bg');
-		    value = element.text();
-		    value = '<div class=outer>'+problem+value+'</div>';
-		    element.html(value);
+		}
+		if (record["cc"]) {
+		    if (record["cc"]["comment"].length>0) {
+			element = $('#'+record["metadata"]["datalabel"]+
+				  ' td.cc');
+			value = element.text();
+			value = '<div class=outer>'+problem+value+'</div>';
+			element.html(value);
+		    }
+		}
+		if (record["bg"]) {
+		    if (record["bg"]["comment"].length>0) {
+			element = $('#'+record["metadata"]["datalabel"]+
+				  ' td.bg');
+			value = element.text();
+			value = '<div class=outer>'+problem+value+'</div>';
+			element.html(value);
+		    }
 		}
 	    }
 
@@ -554,6 +575,7 @@ MetricsViewer.prototype = {
     }, // end update
 
     formatTableRecords: function(records, key) {
+
 	var return_single = false;
 	if (!(records instanceof Array)) {
 	    records = [records];
@@ -567,7 +589,11 @@ MetricsViewer.prototype = {
 	        var k = key[j].split("-",2);
 	        var subdict = k[0];
 	        var subkey = k[1];
-	        table_record[key[j]] = record[subdict][subkey];
+		if (record[subdict]) {
+		    table_record[key[j]] = record[subdict][subkey];
+		} else {
+		    table_record[key[j]] = "--";
+		}
 	    }
 	    table_record["key"] = record["metadata"]["datalabel"];
 	    
@@ -595,19 +621,21 @@ MetricsViewer.prototype = {
 	    var dk = data_key.split("-",2);
 	    var ek = error_key.split("-",2);
 
-	    var time = record["metadata"]["local_time"];
-	    var value = record[dk[0]][dk[1]];
-	    var error = record[ek[0]][ek[1]];
+	    if (record[dk[0]]) {
+		var time = record["metadata"]["local_time"];
+		var value = record[dk[0]][dk[1]];
+		var error = record[ek[0]][ek[1]];
 
-	    ////here -- series
-	    var series = dk[0];
+		////here -- series
+		var series = dk[0];
 	
-	    plot_record["series"] = series;
-	    plot_record["date"] = time;
-	    plot_record["data"] = value;
-	    plot_record["error"] = error;
+		plot_record["series"] = series;
+		plot_record["date"] = time;
+		plot_record["data"] = value;
+		plot_record["error"] = error;
 	    
-	    plt_records.push(plot_record);
+		plt_records.push(plot_record);
+	    }
 	}
 	if (return_single) {
 	    return plt_records[0];
@@ -629,13 +657,18 @@ MetricsViewer.prototype = {
 	    var k = key.split("-",2);
 	    tooltip_record["key"] = record["metadata"]["datalabel"];
 
-	    if (k[1]=="airmass") {
-		tooltip_record["message"] = "AM " + 
-		                            record[k[0]][k[1]].toFixed(2);
-	    } else if (k[1]=="requested"){
-		tooltip_record["message"] = "Requested " + record[k[0]][k[1]];
+	    if (record[k[0]]) {
+		if (k[1]=="airmass") {
+		    tooltip_record["message"] = "AM " + 
+			                        record[k[0]][k[1]].toFixed(2);
+		} else if (k[1]=="requested"){
+		    tooltip_record["message"] = "Requested " +
+			                        record[k[0]][k[1]];
+		} else {
+		    tooltip_record["message"] = record[k[0]][k[1]];
+		}
 	    } else {
-		tooltip_record["message"] = record[k[0]][k[1]];
+		tooltip_record["message"] = "--";
 	    }
 
 	    tt_records.push(tooltip_record);
@@ -666,13 +699,15 @@ MetricsViewer.prototype = {
 	    var has_msg = false;
 	    var subdicts = ["iq", "cc", "bg"];
 	    for (var j in subdicts) {
-		var msg_array = record[subdicts[j]][key];
-		if (msg_array.length>0) {
-		    if (has_msg) {
-			message += ", ";
+		if (record[subdicts[j]]) {
+		    var msg_array = record[subdicts[j]][key];
+		    if (msg_array.length>0) {
+			if (has_msg) {
+			    message += ", ";
+			}
+			message += msg_array.join(", ");
+			has_msg = true;
 		    }
-		    message += msg_array.join(", ");
-		    has_msg = true;
 		}
 	    }
 	    if (!has_msg) {
