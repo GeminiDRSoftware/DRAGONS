@@ -241,6 +241,7 @@ class MyHandler(BaseHTTPRequestHandler):
                                         minute=random.randint(0,59))
                 filename = "N%sS0%0.3d.fits" % (now.strftime("%Y%m%d"),
                                               random.randint(1,999))
+                wlen = ['g','V','r','V','i','I','z','I','Ha','V','R400:0.650','V','B1200:0.480','V'];
                 
                 #datalabel = "GN-2012B-Q-0-000-000"
                 tdic = []
@@ -252,19 +253,25 @@ class MyHandler(BaseHTTPRequestHandler):
                     else:
                         tmp_lt = now_lt
                     datalabel = "GN-2012B-Q-0-000-%0.3d" % random.randint(1,999)
+                    wlen_ind = 2*random.randint(0,len(wlen)/2-1)
+                    if wlen_ind in [10,12]:
+                        imtype = "SPECT"
+                    else:
+                        imtype = "IMAGE"
                     tdic.append(
                         {"msgType": "stat",
                          "timestamp": time.mktime(now.timetuple()),
                          "metadata": {"filename": filename,
                                       "datalabel": datalabel,
-                                         "local_time": tmp_lt.strftime("%Y-%m-%d %H:%M:%S"),
+                                      "local_time": tmp_lt.strftime("%Y-%m-%d %H:%M:%S"),
                                       "ut_time": now.strftime("%Y-%m-%d %H:%M:%S"),
-                                      "waveband": "z",
+                                      "wavelength": wlen[wlen_ind],
+                                      "waveband": wlen[wlen_ind+1],
                                       "airmass": 1.063,
                                       "instrument": "GMOS-N",
                                       "object": "M13",
                                       "types": ["GEMINI_NORTH", "GMOS_N", "GMOS_IMAGE",
-                                                "GEMINI", "IMAGE", "GMOS", "GMOS_RAW",
+                                                "GEMINI", imtype, "GMOS", "GMOS_RAW",
                                                 "UNPREPARED", "RAW"],
                                       },
                          "iq": {"band": "IQ85",
