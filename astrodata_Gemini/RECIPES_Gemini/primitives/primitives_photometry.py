@@ -1572,11 +1572,11 @@ def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
 
             # flag low ellipticity, reasonable fwhm sources as likely stars
             if ellip<0.1:
-                objcat.data.field("CLASS_STAR")[obji] = 0.9
+                objcat.data.field("CLASS_STAR")[obji] = 0.96
             elif ellip<0.3:
-                objcat.data.field("CLASS_STAR")[obji] = 0.7
+                objcat.data.field("CLASS_STAR")[obji] = 0.91
             elif ellip<0.5:
-                objcat.data.field("CLASS_STAR")[obji] = 0.5
+                objcat.data.field("CLASS_STAR")[obji] = 0.2
             else:
                 objcat.data.field("CLASS_STAR")[obji] = 0.2
 
@@ -1585,7 +1585,7 @@ def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
                 objcat.data.field("CLASS_STAR")[obji] *= 0.2
             elif fwhm<2*default_fwhm:
                 # potential star
-                objcat.data.field("CLASS_STAR")[obji] *= 0.9
+                objcat.data.field("CLASS_STAR")[obji] *= 1.0
             else:
                 # likely extended source or bad fit
                 objcat.data.field("CLASS_STAR")[obji] *= 0.2
