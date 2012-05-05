@@ -56,7 +56,7 @@ MetricsViewer.prototype = {
 		       {id:"datalabel",	name:"Data Label", 
 			field:"metadata-datalabel", width:180},
 		       {id:"wlen", name:"Wlen",
-			field:"metadata-waveband", width:60},
+			field:"metadata-wavelength", width:60},
 		       {id:"iq", name:"IQ",
 			field:"iq-band", width:50},
 		       {id:"cc", name:"CC",
@@ -104,6 +104,7 @@ MetricsViewer.prototype = {
 	var iq_options = $.extend(true,{},options);
 	iq_options.title = "Zenith IQ";
 	iq_options.yaxis_label = "Zenith IQ (arcsec)";
+	iq_options.series_colors = ["red","orange","yellow","green","blue"]
 	this.iq_plot = new TimePlot($("#iq_plot_wrapper"),"iqplot",iq_options);
 
 	// CC Plot
@@ -146,6 +147,19 @@ MetricsViewer.prototype = {
 	var obs_tt = new TooltipOverlay($("#tooltip_wrapper"),"tooltip_obstype",
 					"#metrics_table td.datalabel");
 	this.tooltips["metadata-obstype"] = obs_tt;
+
+	// Waveband, for wavelength column
+	var wb_tt = new TooltipOverlay($("#tooltip_wrapper"),"tooltip_wband",
+					"#metrics_table td.wlen");
+	this.tooltips["metadata-waveband"] = wb_tt;
+
+	// Add a hover class to table cells on mouseenter/mouseleave
+	$("#metrics_table").on("mouseenter","td",function(){
+		$(this).addClass("hover");
+	    });
+	$("#metrics_table").on("mouseleave","td",function(){
+		$(this).removeClass("hover");
+	    });
 
 	// Add a handler for the showTooltip event: when a tooltip appears,
 	// all others should hide
@@ -402,6 +416,15 @@ MetricsViewer.prototype = {
 	    obstype += " "+record["metadata"]["object"];
 	    record["metadata"]["obstype"] = obstype;
 
+	    // Format the wavelength into a more readable string
+	    if (types.indexOf("SPECT")!=-1) {
+		var wlen = record["metadata"]["wavelength"];
+		// Remove grating and convert to nm, eg.
+		// R400:0.650 -> 650nm
+		wlen = parseFloat(wlen.split(":",2)[1])*1000 + "nm";
+		record["metadata"]["wavelength"] = wlen;
+	    }
+
 	    // Format some metrics into strings including errors
 	    if (record["iq"]) {
 		record["iq"]["delivered_str"] = 
@@ -560,7 +583,8 @@ MetricsViewer.prototype = {
 	// with the message for the hovered-over row: this message
 	// may have changed as the table updated under the mouse
 	var mv = this;
-	$('#metrics_table tr').each(function(){
+	$("#metrics_table td").removeClass("hover");
+	$("#metrics_table tr").each(function(){
 	    if (mv.isHover($(this)) && mv.isHover($("#table_wrapper"))) {
 		var dl = $(this).attr("id");
 		for (tt in mv.tooltips) {
@@ -568,9 +592,16 @@ MetricsViewer.prototype = {
 		    var msg = tt.messages[dl];
 		    $("#"+tt.id).text(msg);
 		}
+
+		$(this).find("td").each(function(){
+		    if (mv.isHover($(this))) {
+			$(this).addClass("hover");
+		    }
+		});
+
+		return false;
 	    }
 	});
-
 
     }, // end update
 
@@ -626,9 +657,13 @@ MetricsViewer.prototype = {
 		var value = record[dk[0]][dk[1]];
 		var error = record[ek[0]][ek[1]];
 
-		////here -- series
-		var series = dk[0];
-	
+		var series;
+		if (dk[0]=="iq") {
+		    series = record["metadata"]["waveband"];
+		} else {
+		    series = dk[0];
+		}
+
 		plot_record["series"] = series;
 		plot_record["date"] = time;
 		plot_record["data"] = value;
@@ -661,6 +696,8 @@ MetricsViewer.prototype = {
 		if (k[1]=="airmass") {
 		    tooltip_record["message"] = "AM " + 
 			                        record[k[0]][k[1]].toFixed(2);
+		} else if (k[1]=="waveband") {
+		    tooltip_record["message"] = record[k[0]][k[1]] + "-band";
 		} else if (k[1]=="requested"){
 		    tooltip_record["message"] = "Requested " +
 			                        record[k[0]][k[1]];

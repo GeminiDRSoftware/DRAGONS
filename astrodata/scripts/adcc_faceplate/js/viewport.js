@@ -73,8 +73,9 @@ ScrollTable.prototype.init = function() {
 
 		// Put new name in header (with swap icon)
 		$(this).html('<div style="position:relative">'+
+			     col.name+
 			     '<span class="swap_icon"></span>'+
-			     col.name+'</div>');
+			     '</div>');
 
 		    
 		// Put alternate data in data cells
@@ -126,8 +127,9 @@ ScrollTable.prototype.composeHTML = function() {
 
 	if (col.swap) {
 	    html_str += '<div style="position:relative">'+
+	                col.name+
 		        '<span class="swap_icon"></span>'+
-	                col.name+'</div>';
+		        '</div>';
 	} else {
 	    html_str += col.name;
 	}
@@ -188,7 +190,6 @@ ScrollTable.prototype.addRecord = function(records) {
 	// Add the new row to the database of rows
 	if ($("#"+record['key']).length>0) {
 	    // A row with this key exists already, remove it
-	    console.log("replace",record['key']);
 	    $("#"+record['key']).remove();
 	}
 	if (sort_col) {
@@ -201,7 +202,7 @@ ScrollTable.prototype.addRecord = function(records) {
 	    for (var k in backward_rows) {
 		var this_row = $(backward_rows[k]);
 	        var this_field = rec[this_row.attr("id")][sort_col.field];
-		if (record[sort_col.field]>this_field) {
+		if (record[sort_col.field]>=this_field) {
 		    $(table_row).insertAfter(this_row);
 		    placed = true;
 		    break;

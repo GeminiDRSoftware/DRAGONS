@@ -33,8 +33,8 @@ tbody.scroll_body td {
     padding: 2px;
 }
 
-tbody.scroll_body td:hover {
-    background-color: #C0C0FF;
+tbody.scroll_body td.hover {
+    background-color: #C0C0FF!important;
 }
 
 #date_wrapper {
@@ -127,7 +127,6 @@ tbody.scroll_body td:hover {
 .swap_icon {
     position: absolute;
     bottom: 0px;
-    right: 0px;
     background-image: url(../images/swap.png);
     background-repeat: no-repeat;
     display: inline-block;

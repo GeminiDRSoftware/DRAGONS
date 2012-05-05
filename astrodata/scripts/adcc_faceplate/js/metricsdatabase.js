@@ -29,5 +29,13 @@ MetricsDatabase.prototype = {
 
     clearDatabase: function() {
 	this.records = {};
+    },
+
+    size: function() {
+	count = 0;
+	for (var i in this.records) {
+	    count++;
+	}
+	return count;
     }
 };
