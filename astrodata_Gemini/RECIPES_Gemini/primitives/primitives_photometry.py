@@ -33,10 +33,10 @@ class PhotometryPrimitives(GENERALPrimitives):
     
     def addReferenceCatalog(self, rc):
         """
-        Currently, the only supported source catalog is sdss7.
+        Currently, the only supported source catalog is sdss8.
 
         Query a vizier server hosting an sdss7 catalog to get a
-        catalog of all the SDSS DR7 sources within a given radius
+        catalog of all the SDSS DR8 sources within a given radius
         of the pointing center.
 
         Append the catalog as a FITS table with extenstion name
@@ -169,7 +169,7 @@ class PhotometryPrimitives(GENERALPrimitives):
                 # Did we get anything?
                 if(len(table.array)):
                     # Parse the votable that we got back, into arrays for each column.
-                    sdssname = table.array['SDSS']
+                    sdssname = table.array['SDSS8']
                     umag = table.array['umag']
                     e_umag = table.array['e_umag']
                     gmag = table.array['gmag']

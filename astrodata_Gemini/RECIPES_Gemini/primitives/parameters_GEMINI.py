@@ -49,7 +49,7 @@
         "uiLevel"       : "UIBASIC",
        },
     "source":{
-        "default"       : "sdss7",
+        "default"       : "sdss8",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
