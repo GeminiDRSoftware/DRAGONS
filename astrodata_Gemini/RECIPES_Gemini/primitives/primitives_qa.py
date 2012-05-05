@@ -436,6 +436,10 @@ class QAPrimitives(GENERALPrimitives):
                 # This is a bit of a hack, but it circumvents the big for loop
                 objcats = []
 
+            # all_ accumulate measurements through all the OBJCAT extensions
+            all_cloud = []
+            all_clouderr = []
+
             for objcat in objcats:
                 extver = objcat.extver()
                 mags = objcat.data['MAG_AUTO']
@@ -478,6 +482,7 @@ class QAPrimitives(GENERALPrimitives):
                 # OK, trim out bad values
                 zps = np.where((zps > -500), zps, None)
                 zps = np.where((flags == 0), zps, None)
+                zps = np.where((mags < 90), zps, None)
                 zperrs = np.where((zps > -500), zperrs, None)
                 zperrs = np.where((flags == 0), zperrs, None)
                 ids = np.where((zps > -500), ids, None)
@@ -499,6 +504,7 @@ class QAPrimitives(GENERALPrimitives):
                 zperrs = zperrs[np.flatnonzero(zperrs)]
                 ids = ids[np.flatnonzero(ids)]
 
+                # OK, at this point, zps and zperrs are arrays of all the zeropoints and their errors from this OBJCAT
                 if len(zps)==0:
                     log.warning('No good reference sources found in %s[OBJCAT,%d]'%
                                 (ad.filename,extver))
@@ -517,6 +523,7 @@ class QAPrimitives(GENERALPrimitives):
                 zpv = d.sum() / weights.sum()
                 zpe = math.sqrt(zpv)
 
+                # Now, in addition, we have the weighted mean zeropoint and its error, from this OBJCAT in zp and zpe
                 try:
                     nominal_zeropoint = float(ad['SCI', extver].nominal_photometric_zeropoint())
                 except:
@@ -527,6 +534,11 @@ class QAPrimitives(GENERALPrimitives):
                     continue
 
                 cloud = nominal_zeropoint - zp
+                clouds = nominal_zeropoint - zps
+                for i in clouds:
+                    all_cloud.append(i)
+                for i in zperrs:
+                    all_clouderr.append(i)
                 detzp_means.append(zp)
                 detzp_clouds.append(cloud)
                 detzp_sigmas.append(zpe)
@@ -536,100 +548,86 @@ class QAPrimitives(GENERALPrimitives):
                 ad['SCI', extver].set_key_value(
                     "MEANZP", zp, comment=self.keyword_comments["MEANZP"])
 
-                # Calculate which CC band we're in. 
-                # Initially, I'm going to base this on a 2-sigma result...
-                adj_cloud = cloud - 2.0*zpe
-                # get cc constraints
-                cc50 = ccConstraints['50']
-                cc70 = ccConstraints['70']
-                cc80 = ccConstraints['80']
-                ccband = 'CCAny'
-                ccnum = 100
-                if(adj_cloud < cc80):
-                    ccband = 'CC80'
-                    ccnum = 80
-                if(adj_cloud < cc70):
-                    ccband = 'CC70'
-                    ccnum = 70
-                if(adj_cloud < cc50):
-                    ccband = 'CC50'
-                    ccnum = 50
-
-                # Get requested CC band
-                cc_warn = None
-                try:
-                    req_cc = int(ad.requested_cc())
-                except:
-                    req_cc = None
-                if req_cc is not None:
-                    if req_cc<ccnum:
-                        cc_warn = '    WARNING: CC requirement not met'
-                    if req_cc==100:
-                        req_cc = 'CCAny'
-                    else:
-                        req_cc = 'CC%d' % req_cc
-                
                 ind = " " * rc["logindent"]
-                log.fullinfo(" ")
-                log.fullinfo(ind + "Filename: %s ['OBJCAT', %d]" % 
-                             (ad.filename, extver))
-                log.fullinfo(ind + "%d sources used to measure zeropoint" % 
+                log.fullinfo("\n"+ind+"Filename: %s ['OBJCAT', %d]" % 
+                            (ad.filename, extver))
+                log.fullinfo(ind+"%d sources used to measure zeropoint" % 
                              len(zps))
-                log.fullinfo(ind + "    "+"-"*dlen)
-                log.fullinfo(ind + ("Zeropoint measurement (%s band):" % 
+                log.fullinfo(ind+"-"*dlen)
+                log.fullinfo(ind+
+                             ("Zeropoint measurement (%s band):" % 
                               ad.filter_name(pretty=True)).ljust(llen) +
                              ("%.2f +/- %.2f" % (zp, zpe)).rjust(rlen))
-                log.fullinfo(ind + ("Nominal zeropoint:").ljust(llen) +
+                log.fullinfo(ind+
+                             ("Nominal zeropoint:").ljust(llen) +
                              ("%.2f" % nominal_zeropoint).rjust(rlen))
-                log.fullinfo(ind + "Estimated cloud extinction:".ljust(llen) +
+                log.fullinfo(ind+
+                             "Estimated cloud extinction:".ljust(llen) +
                              ("%.2f +/- %.2f magnitudes" % 
-                              (cloud, zpe)).rjust(rlen))
-                log.fullinfo(ind + "CC band:".ljust(llen) + ccband.rjust(rlen))
-                if req_cc is not None:
-                    log.fullinfo(ind + "Requested CC band:".ljust(llen)+
-                                 req_cc.rjust(rlen))
-                else:
-                    log.fullinfo(ind + "(Requested CC could not be determined)")
-                if cc_warn is not None:
-                    log.fullinfo(ind + cc_warn)
-                log.fullinfo(ind + "-"*dlen)
-                log.fullinfo(" ")
+                             (cloud, zpe)).rjust(rlen))
 
             
-            cloud_sum = 0
-            cloud_esum = 0
             if(len(detzp_means)):
-                zplist = []
                 for i in range(len(detzp_means)):
                     if i==0:
-                        zplist.append("%.2f +/- %.2f" % 
-                                 (detzp_means[i], detzp_sigmas[i]))
+                        zp_str = ("%.2f +/- %.2f" % 
+                                 (detzp_means[i], detzp_sigmas[i])).rjust(rlen)
                     else:
-                        zplist.append("%.2f +/- %.2f" % 
-                                 (detzp_means[i], detzp_sigmas[i]))
-                    cloud_sum += detzp_clouds[i]
-                    cloud_esum += (detzp_sigmas[i] * detzp_sigmas[i])
-                cloud = cloud_sum / len(detzp_means)
-                clouderr = math.sqrt(cloud_esum) / len(detzp_means)
+                        zp_str += "\n    "
+                        zp_str += ("%.2f +/- %.2f" % 
+                                 (detzp_means[i], detzp_sigmas[i])).rjust(dlen)
+
+                cloud = np.mean(all_cloud)
+                clouderr = np.std(all_cloud)
 
                 # Calculate which CC band we're in. 
-                # Initially, I'm going to base this on a 2-sigma result...
-                adj_cloud = cloud - 2.0*clouderr
-                # get cc constraints
-                cc50 = ccConstraints['50']
-                cc70 = ccConstraints['70']
-                cc80 = ccConstraints['80']
-                ccband = 'CCany'
-                ccnum = 100
-                if(adj_cloud < cc80):
-                    ccband = 'CC80'
-                    ccnum = 80
-                if(adj_cloud < cc70):
-                    ccband = 'CC70'
-                    ccnum = 70
-                if(adj_cloud < cc50):
-                    ccband = 'CC50'
-                    ccnum = 50
+                # OK, the philosophy here is to do a hypothesis test for each CC band.
+                # It's mathematically difficult to do a hypothesis test against an arbitrary range of values,
+                # So we will do one-sided tests, then walk up the scale to determine the CC band.
+                # To avoid having t(n-1) distributions, we assume n is large.
+                # We assume that the population sigma is the sample sigma+0.05mag
+                pop_sigma = 0.10
+                # We do a hypothesis test as follows:
+                # Null hypothesis, H0: the sample is drawn from a population with cloud extinction = CC_band_value
+                # Alternate hypothesis, H1: the sample is drawn from a population with cloud extinction > CC_band_value
+                # if mean and sigma and n are those of the sample, and mu is the population mean,
+                # we use the test statistic = (mean - mu)/(sigma/sqrt(n))
+                # Which is distributed as N(0,1) in the case of "large" n.
+                # So the one-tailed critical value at the 5% level is 1.645
+                # We create a dictionary: { CCband: [mean, mu, sigma, n, value of the test statistic, H0 is acceptable]]
+                # Evaluate the test statistic for each CC band boundary, with one sided tests in both directions
+                cc_canbe={50: True, 70: True, 80: True, 100: True}
+                for cc in [50, 70, 80]:
+                  ce = ccConstraints[str(cc)]
+                  #print "Test Statistic: n=%d mu=%.2f sig=%.2f msig = %.2f" % (len(all_cloud), (cloud-ce), (clouderr+pop_sigma), (clouderr+pop_sigma)/math.sqrt(len(all_cloud)))
+                  ts =(cloud-ce) / ((clouderr+pop_sigma)/(math.sqrt(len(all_cloud))))
+                  if(ts>1.645):
+                      #H0 fails - cc is worse than the worst end of this cc band
+                      log.fullinfo("95%% confidence test indicates it is worse than CC%s (normalized test statistic %.3f > 1.645)" % (cc, ts))
+                      for c in cc_canbe.keys():
+                          if(c <= cc):
+                              cc_canbe[c]=False
+                  if(ts<-1.645):
+                      #H0 fails - cc is better than the worst end of the CC band
+                      log.fullinfo("95%% confidence test indicates it is CC%d or better (normalised test statistic %.3f < -1.645)" % (cc, ts))
+                      for c in cc_canbe.keys():
+                          if(c > cc):
+                              cc_canbe[c]=False
+
+                  if((ts<1.645) and (ts>-1.645)):
+                      #H0 passes - it's consistent with the boundary
+                      log.fullinfo("95%% confidence test indicates it is borderline CC%d or one band worse (normalised test statistic -1.645 < %.3f < 1.645)" % (cc, ts))
+
+                ccband =[]
+                l = cc_canbe.keys()
+                l.sort()
+                for c in l:
+                    if(cc_canbe[c]):
+                        if(c==100):
+                            c='Any'
+                        ccband.append('CC%s' % c)
+                        #print "CC%d : %s" % (c, cc_canbe[c])
+                ccband = ', '.join(ccband)
 
                 # Get requested CC band
                 cc_warn = None
@@ -638,45 +636,49 @@ class QAPrimitives(GENERALPrimitives):
                 except:
                     req_cc = None
                 if req_cc is not None:
-                    if req_cc<ccnum:
-                        cc_warn = '    WARNING: CC requirement not met'
+                    # Just do that one hypothesis test here
+                    # Can't test for CCany, always applies
+                    if(req_cc != 100):
+                        ce = ccConstraints[str(req_cc)]
+                        ts = (cloud-ce) / ((clouderr+pop_sigma)/(math.sqrt(len(all_cloud))))
+                        if(ts>1.645):
+                          #H0 fails - cc is worse than the worst end of this cc band
+                          cc_warn = 'WARNING: CC requirement not met at the 95% confidence level'
+
                     if req_cc==100:
                         req_cc = 'CCAny'
                     else:
                         req_cc = 'CC%d' % req_cc
+
                 ind = " " * rc["logindent"]
-                log.stdinfo(" ")
-                log.stdinfo(ind + "Filename: %s" % ad.filename)
-                log.stdinfo(ind + "%d sources used to measure zeropoint" % 
+                log.stdinfo("\n"+ind+"Filename: %s" % ad.filename)
+                log.stdinfo(ind+"%d sources used to measure zeropoint" % 
                              total_sources)
-                log.stdinfo(ind + "-"*dlen)
-                if len(zplist) < 2:
-                    log.stdinfo(ind + ("Zeropoints by detector (%s band):"%
-                            ad.filter_name(pretty=True)).ljust(llen) + \
-                            zplist[0].rjust(rlen))
-                else:
-                    log.stdinfo(ind + ("Zeropoints by detector (%s band):"%
-                            ad.filter_name(pretty=True)).ljust(llen) + \
-                            zplist[0].rjust(rlen))
-                    for zp in zplist[1:]:
-                        log.stdinfo(ind + zp.rjust(dlen))
-                log.stdinfo(ind + "Estimated cloud extinction:".ljust(llen) +
+                log.stdinfo(ind+"-"*dlen)
+                log.stdinfo(ind+
+                            ("Zeropoints by detector (%s band):"%
+                             ad.filter_name(pretty=True)).ljust(llen)+
+                            zp_str)
+                log.stdinfo(ind+
+                             "Estimated cloud extinction:".ljust(llen) +
                             ("%.2f +/- %.2f magnitudes" % 
                              (cloud, clouderr)).rjust(rlen))
-                log.stdinfo(ind + "CC band:".ljust(llen) + ccband.rjust(rlen))
+                log.stdinfo(ind + "CC bands consistent with this:".ljust(llen) + 
+                            ccband.rjust(rlen))
                 if req_cc is not None:
-                    log.stdinfo(ind + "Requested CC band:".ljust(llen) + 
+                    log.stdinfo(ind+
+                                "Requested CC band:".ljust(llen)+
                                 req_cc.rjust(rlen))
                 else:
-                    log.stdinfo(ind + "(Requested CC could not be determined)")
+                    log.stdinfo(ind+"(Requested CC could not be determined)")
                 if cc_warn is not None:
-                    log.stdinfo(cc_warn)
-                log.stdinfo(ind + "-"*dlen)
-                log.stdinfo(" ")
+                    log.stdinfo(ind+cc_warn)
+                log.stdinfo(ind+"-"*dlen)
 
             else:
-                log.stdinfo("    Filename: %s" % ad.filename)
-                log.stdinfo("    Could not measure zeropoint - no catalog sources associated")
+                ind = " " * rc["logindent"]
+                log.stdinfo(ind+"Filename: %s" % ad.filename)
+                log.stdinfo(ind+"Could not measure zeropoint - no catalog sources associated")
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
