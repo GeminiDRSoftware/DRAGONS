@@ -13,10 +13,13 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
     # associated with this descriptor class
     _update_stdkey_dict = stdkeyDictGEMINI
     nominal_extinction_table = None
+    std_wavelength_band = None
 
     def __init__(self):
         # Load the lookup tables
         self.nominal_extinction_table = Lookups.get_lookup_table("Gemini/NominalExtinction", "nominal_extinction")
+        self.std_wavelength_band = Lookups.get_lookup_table("Gemini/WavelengthBand", "wavelength_band")
+
         # Init the superclass
         Generic_DescriptorCalc.__init__(self)
 
@@ -920,6 +923,26 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         
         return ret_wavefront_sensor
     
+    def wavelength_band(self, dataset, **args):
+        if "IMAGE" in dataset.types:
+            # If imaging, raise error
+            # (since there is no Gemini-level lookup table to convert
+            # the filter name to a more standard band)
+            raise Errors.CalcError()
+        else:
+            ctrl_wave = float(dataset.central_wavelength(asMicrometers=True))
+            min_diff = None
+            band = None
+            for (std_band,std_wave) in self.std_wavelength_band.items():
+                diff = abs(std_wave-ctrl_wave)
+                if min_diff is None or diff<min_diff:
+                    min_diff = diff
+                    band = std_band
+            if band is None:
+                raise Errors.CalcError()
+
+        return band
+
     def wavelength_reference_pixel(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always return a dictionary where the key

@@ -403,6 +403,31 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     
     niriSpecDict = None
     
+    def wavelength_band(self, dataset, **args):
+        if "IMAGE" in dataset.types:
+            # If imaging, associate the filter name with a central wavelength
+            filter_table = Lookups.get_lookup_table(
+                "Gemini/NIRI/NIRIFilterWavelength", "filter_wavelength")
+            filter = str(dataset.filter_name(pretty=True))
+            if filter in filter_table:
+                ctrl_wave = filter_table[filter]
+            else:
+                raise Errors.TableKeyError()
+        else:
+            ctrl_wave = float(dataset.central_wavelength(asMicrometers=True))
+
+        min_diff = None
+        band = None
+        for (std_band,std_wave) in self.std_wavelength_band.items():
+            diff = abs(std_wave-ctrl_wave)
+            if min_diff is None or diff<min_diff:
+                min_diff = diff
+                band = std_band
+        if band is None:
+            raise Errors.CalcError()
+
+        return band
+
     def well_depth_setting(self, dataset, **args):
         # Get the VDDUC and VDETCOM detector bias voltage post exposure
         # (avdduc and avdet, respectively) from the header of the PHU. The

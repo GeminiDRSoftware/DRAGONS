@@ -58,6 +58,7 @@ globalStdkeyDict = {
     "key_ut_datetime":"DATETIME",
     "key_ut_time":"UT",
     "key_wavefront_sensor":"WFS",
+    "key_wavelength_band":"WAVEBAND",
     "key_wavelength_reference_pixel":"WREFPIX",
     "key_well_depth_setting":"WELDEPTH",
     "key_x_offset":"XOFFSET",

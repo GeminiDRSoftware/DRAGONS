@@ -1067,22 +1067,22 @@ def _iq_band(adinput=None,fwhm=None):
             except:
                 wfs = None
             try:
-                filter = str(ad.filter_name(pretty=True))
+                waveband = str(ad.wavelength_band())
             except:
-                filter = None
+                waveband = None
 
             # default value for iq band
             iq = None
 
-            # check that ad has valid WFS, filter
-            if wfs is not None and filter is not None:
-                if filter in iqConstraints.keys():
-                    if wfs in iqConstraints[filter].keys():
+            # check that ad has valid WFS, band
+            if wfs is not None and waveband is not None:
+                if waveband in iqConstraints.keys():
+                    if wfs in iqConstraints[waveband].keys():
 
                         # get limits for this observation
-                        iq20 = iqConstraints[filter][wfs]['20']
-                        iq70 = iqConstraints[filter][wfs]['70']
-                        iq85 = iqConstraints[filter][wfs]['85']
+                        iq20 = iqConstraints[waveband][wfs]['20']
+                        iq70 = iqConstraints[waveband][wfs]['70']
+                        iq85 = iqConstraints[waveband][wfs]['85']
 
                         # get iq band
                         if fwhm[count]<iq20:

@@ -3783,6 +3783,59 @@ class CalculatorInterface:
                 self.exception_info = sys.exc_info()[1]
                 return None
     
+    def wavelength_band(self, format=None, **args):
+        """
+        Return the wavelength_band value
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :return: the wavelength_band
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_"+"wavelength_band"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            if key in keydict.keys():
+                keyword = keydict[key]
+            else:
+                keyword = None
+            #print hasattr(self.descriptor_calculator, "wavelength_band")
+            if not hasattr(self.descriptor_calculator, "wavelength_band"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise self.exception_info
+                else:
+                    msg = "Unable to find an appropriate descriptor function "
+                    msg += "or a default keyword for wavelength_band"
+                    raise KeyError(msg)
+            else:
+                retval = self.descriptor_calculator.wavelength_band(self, **args)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "wavelength_band",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = str )
+            return ret
+        except:
+            if not hasattr(self, "exception_info"):
+                setattr(self, "exception_info", sys.exc_info()[1])
+            if (self.descriptor_calculator is None 
+                or self.descriptor_calculator.throwExceptions == True):
+                raise
+            else:
+                #print "NONE BY EXCEPTION"
+                self.exception_info = sys.exc_info()[1]
+                return None
+    
     def wavelength_reference_pixel(self, format=None, **args):
         """
         Return the wavelength_reference_pixel value

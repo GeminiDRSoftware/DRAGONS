@@ -66,6 +66,7 @@
     DD("ut_datetime", pytype=datetime),
     DD("ut_time", pytype=datetime),
     DD("wavefront_sensor", pytype=str),
+    DD("wavelength_band", pytype=str),
     DD("wavelength_reference_pixel", pytype=float),
     DD("well_depth_setting", pytype=str),
     DD("x_offset", pytype=float),
