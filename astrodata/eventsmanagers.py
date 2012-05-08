@@ -16,14 +16,13 @@ class EventsManager:
                   "datalabel": ad.data_label()
                   "local_time": ad.local_time().strftime("%Y-%m-%d %H:%M:%S"),
                   "ut_time": ad.ut_time().strftime("%Y-%m-%d %H:%M:%S"),
-                  "wavelength": wlen[wlen_ind],
-                  "waveband": wlen[wlen_ind+1],
-                  "airmass": 1.063,
-                  "instrument": "GMOS-N",
-                  "object": "M13",
-                  "types": ["GEMINI_NORTH", "GMOS_N", "GMOS_IMAGE",
-                            "GEMINI", imtype, "GMOS", "GMOS_RAW",
-                            "UNPREPARED", "RAW"], 
+                  "wavelength": ad.central_wavelength(asNanometers=True),
+                  "filter": ad.filter(pretty=True),
+                  "waveband": ad.wavelength_band(),
+                  "airmass": ad.airmass(),
+                  "instrument": ad.instrument(),
+                  "object": ad.object(),
+                  "types": ad.types,
                 }
               }
         return mtd
