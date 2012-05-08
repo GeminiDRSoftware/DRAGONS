@@ -241,7 +241,7 @@ class MyHandler(BaseHTTPRequestHandler):
                                         minute=random.randint(0,59))
                 filename = "N%sS0%0.3d.fits" % (now.strftime("%Y%m%d"),
                                               random.randint(1,999))
-                wlen = ['g','V','r','V','i','I','z','I','Ha','V','R400:0.650','V','B1200:0.480','V'];
+                wlen = ['g','V','r','R','i','I','z','I','Ha','R',650,'R',480,'B'];
                 
                 #datalabel = "GN-2012B-Q-0-000-000"
                 tdic = []
@@ -265,6 +265,7 @@ class MyHandler(BaseHTTPRequestHandler):
                                       "datalabel": datalabel,
                                       "local_time": tmp_lt.strftime("%Y-%m-%d %H:%M:%S"),
                                       "ut_time": now.strftime("%Y-%m-%d %H:%M:%S"),
+                                      "filter": wlen[wlen_ind],
                                       "wavelength": wlen[wlen_ind],
                                       "waveband": wlen[wlen_ind+1],
                                       "airmass": 1.063,

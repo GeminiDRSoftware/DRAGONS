@@ -56,7 +56,7 @@ MetricsViewer.prototype = {
 		       {id:"datalabel",	name:"Data Label", 
 			field:"metadata-datalabel", width:180},
 		       {id:"wlen", name:"Wlen",
-			field:"metadata-wavelength", width:60},
+			field:"metadata-wavelength_str", width:60},
 		       {id:"iq", name:"IQ",
 			field:"iq-band", width:50},
 		       {id:"cc", name:"CC",
@@ -95,6 +95,7 @@ MetricsViewer.prototype = {
 		       maxdate: maxdate,
 	               series_colors: ["#A0A0FF"],
 	               bg_color: "white",
+		       series_selectable: false,
 	               title: "",
 		       ////here -- need to fix label
 	               xaxis_label: this.date_str,
@@ -104,7 +105,8 @@ MetricsViewer.prototype = {
 	var iq_options = $.extend(true,{},options);
 	iq_options.title = "Zenith IQ";
 	iq_options.yaxis_label = "Zenith IQ (arcsec)";
-	iq_options.series_colors = ["red","orange","yellow","green","blue"]
+	iq_options.series_selectable = true;
+	iq_options.series_colors = ["red","orange","yellow","blue"];
 	this.iq_plot = new TimePlot($("#iq_plot_wrapper"),"iqplot",iq_options);
 
 	// CC Plot
@@ -419,10 +421,11 @@ MetricsViewer.prototype = {
 	    // Format the wavelength into a more readable string
 	    if (types.indexOf("SPECT")!=-1) {
 		var wlen = record["metadata"]["wavelength"];
-		// Remove grating and convert to nm, eg.
-		// R400:0.650 -> 650nm
-		wlen = parseFloat(wlen.split(":",2)[1])*1000 + "nm";
-		record["metadata"]["wavelength"] = wlen;
+		wlen = parseInt(wlen) + "nm";
+		record["metadata"]["wavelength_str"] = wlen;
+	    } else {
+		record["metadata"]["wavelength_str"] = 
+		    record["metadata"]["filter"];
 	    }
 
 	    // Format some metrics into strings including errors
