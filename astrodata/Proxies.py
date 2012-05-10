@@ -220,106 +220,6 @@ class PRSProxy(object):
         log.info("reduce--><--adcc") 
 
         return newProxy
-
-    @classmethod
-    def _oldget_prsproxy(cls, start = False, proxy = None, reduce_server = None):
-        if  type(cls._class_prs) != type(None):
-            proxy = cls._class_prs
-            start = False
-            print "P101:", repr(dir(proxy)), repr(proxy), repr(reduce_server)
-            return cls._class_prs
-                    
-        newProxy = None
-
-        found = False
-        try:
-            if proxy == None:
-                
-                    
-                newProxy = PRSProxy(reduce_server = reduce_server)
-                newProxy.version = newProxy.get_version()
-            
-                if (PDEB):
-                    print "P102: newProxy id", id(newProxy), newProxy.found
-                    print "P100: checking for proxy up"
-            else:
-                if reduce_server:
-                    proxy.reduce_server = reduce_server
-                
-                newProxy = proxy
-                newProxy.version = newProxy.get_version()
-                
-            # After this version call, we know it's up, we keep this
-            # proxy, and start listening for commands
-            if PDEB:
-                print "P109: setting found equal true"
-            newProxy.found = True
-            if PDEB:
-                print "P111: about to register"
-            if reduce_server:
-                details =  {"port":reduce_server.listenport}
-            else:
-                details = {}
-            newProxy.register(os.getpid(), details)
-            if PDEB:
-                print "P120: Proxy found"
-        except socket.error:
-            newProxy.found = False
-            if PDEB:
-                print "P123: Proxy Not Found"
-            # not running, try starting one...
-            if start == False:
-                raise
-            if start:
-                import time
-                if (PDEB):
-                    print "P132: newProxy id", id(newProxy)
-                    print "P125: starting adcc"
-                prsout = open("adcc-reducelog-%d-%s" % (
-                                                        os.getpid(),
-                                                        str(time.time())
-                                                       )
-                                                        , "w")
-                prsargs = ["adcc",
-                                        "--invoked",
-                                        #"--reduce-port", "%d" % reduce_server.listenport,
-                                        "--reduce-pid", "%d" % os.getpid(),
-                                        
-                                        ]
-                
-                pid = subprocess.Popen( prsargs, 
-                                        stdout = prsout, 
-                                        stderr = subprocess.STDOUT #prserr,
-                                        ).pid
-                                        
-                                    
-                if (PDEB):
-                    print "P147: pid =", pid
-                notfound = True
-                if (PDEB):
-                    print "P150: waiting"
-                # After this version call, we know it's up, we keep this
-                # proxy, and start listening for commands
-                if reduce_server:
-                    # if there was a reduce_server then wait to hear a response
-                    while reduce_server.prsready == False:
-                        if (PDEB):
-                            print "P155: sleeping .1"
-                        sleep(.1)
-
-                newProxy = cls.getPRSProxy(start=False, proxy = newProxy, reduce_server = reduce_server)
-                if (PDEB):
-                    print "P160:", type(newProxy.found)
-                    print "P161:", newProxy.version, newProxy.finished, newProxy.reduce_server
-                
-                if newProxy.found:
-                    notfound = False
-                    return newProxy
-            else:
-                newProxy.found = False
-                
-
-        return newProxy
         
     def unregister(self):
         # print "P262 self.registered=", repr(self.registered)
@@ -346,6 +246,7 @@ class PRSProxy(object):
             self.prs.unregister(os.getpid())
             if (PDEB):
                 print "unregistered from the prs"
+    
         
             
     def calibration_search(self, cal_rq):
@@ -370,4 +271,8 @@ class PRSProxy(object):
         self.prs.display_request(rq)
         return 
             
+    def report_qametrics(self, event_list):
+        # print "P275:"+repr(event_list)
+        self.prs.report_qametrics_2adcc(event_list)
+        
 

@@ -449,7 +449,11 @@ def command_clause(ro, coi):
     if coi.finished:
         return
     
-    #process  requests
+    ml = coi.get_metric_list(clear=True)
+    prs = Proxies.PRSProxy.get_adcc()
+    prs.report_qametrics(ml)
+    
+    #process  reques
     for rq in coi.rorqs:
         rqTyp = type(rq)
         msg = 'REDUCE:\n'

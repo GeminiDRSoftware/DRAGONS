@@ -30,6 +30,8 @@ from ReductionObjectRequests import UpdateStackableRequest, \
 from StackKeeper import StackKeeper, FringeKeeper
 # For xml calibration requests
 from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary
+import eventsmanagers
+import traceback
 
 centralPrimitivesIndex = {}
 centralRecipeIndex = {}
@@ -172,6 +174,7 @@ class ReductionContext(dict):
     cmd_index = None
     # return behavior
     _return_command = None
+    _metricEvents = None
     
     def __init__(self, adcc_mode = "start_early"):
         """The ReductionContext constructor creates empty dictionaries and
@@ -195,6 +198,8 @@ class ReductionContext(dict):
         self.cdl = CalibrationDefinitionLibrary()
         # undeclared
         self.indent = 0 
+        self._metricEvents = eventsmanagers.EventsManager(rc = self)
+        
         
         # Stack Keep is a resource for all RecipeManager functions... 
         # one shared StackKeeper to simulate the shared ObservationService
@@ -390,6 +395,7 @@ class ReductionContext(dict):
     def add_inputs(self, filelist):
         for f in filelist:
             self.add_input(f)
+            
     def addInputs(self, filelist):
         print "called addInputs: deprecated, to be removed !!!!please change to add_inputss!!!!!"
         import traceback
@@ -1566,6 +1572,17 @@ class ReductionContext(dict):
         self._return_command = None
         return rc
         
+    def report_qametric(self, ad=None, name=None, metric_report = None, metadata = None):
+        # print "RM1575:"+repr(metric_report)
+        self._metricEvents.append_event(ad, name, metric_report, metadata = metadata)
+        
+    
+    def get_metric_list(self, clear = False):
+        ml = self._metricEvents.get_list()
+        if clear:
+            self._metricEvents.clear_list()
+        return ml
+    
     def rq_display(self, display_id=None):
         '''
         self, filename = None
@@ -2103,8 +2120,18 @@ class RecipeLibrary(object):
                         else:                    
                             print "PRINTED, not logged:\n"+msg
                     b = datetime.now()
-                    primset = eval (importname + "." + primdef[1] + "()")
-                    # set filename and directory name
+                    try:
+                        primset = eval (importname + "." + primdef[1] + "()")
+                    except:
+                        print
+                        print ("!@"*40)
+                        print "PROBLEM CREATING PRIMITIVE SET"
+                        print (("!@"*40))
+                        traceback.print_exc()
+                        print ("!@"*40)
+                        print
+                        raise
+                        # set filename and directory name
                     # used by other parts of the system for naming convention based retrieval
                     # i.e. of parameters
                     primset.astrotype = astrotype

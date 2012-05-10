@@ -1,4 +1,6 @@
 import time
+from astrodata import AstroData
+import datetime
 
 class EventsManager:
 
@@ -10,23 +12,65 @@ class EventsManager:
         self.event_list = []
         self.event_index = {}
         
-    def getMetadataDict(self, ad):
+    def get_metadict(self, ad):
         mtd = {"metadata":
                 { "filename": ad.filename,
-                  "datalabel": ad.data_label()
-                  "local_time": ad.local_time().strftime("%Y-%m-%d %H:%M:%S"),
-                  "ut_time": ad.ut_time().strftime("%Y-%m-%d %H:%M:%S"),
-                  "wavelength": ad.central_wavelength(asNanometers=True),
-                  "filter": ad.filter(pretty=True),
-                  "waveband": ad.wavelength_band(),
-                  "airmass": ad.airmass(),
-                  "instrument": ad.instrument(),
-                  "object": ad.object(),
-                  "types": ad.types,
+                  "datalabel": ad.data_label().as_pytype(),
+                  "local_time": ad.local_time().as_pytype(),
+                  "ut_time": ad.ut_datetime().as_pytype().strftime("%Y-%m-%d %H:%M:%S"),
+                  "wavelength": ad.central_wavelength(asNanometers=True).as_pytype(),
+                  "filter": ad.filter_name(pretty=True).as_pytype(),
+                  "waveband": ad.wavelength_band().as_pytype(),
+                  "airmass": ad.airmass().as_pytype(),
+                  "instrument": ad.instrument().as_pytype(),
+                  "object": ad.object().as_pytype(),
+                  "types": ad.get_types(),
                 }
               }
         return mtd
         
-    def appendEvent(self, ad, name, mdict):
-        md = self.getMetadataDict(ad)
-        print repr("em23:"+repr(md))        
+    def append_event(self, ad = None, name=None, mdict=None, metadata = None):
+        # print "em32:"+repr(metadata)
+        if isinstance(ad, AstroData):
+            if metadata != None:
+                md = metadata
+            else:
+                md = self.get_metadict(ad)
+            curtime = time.time()
+            wholed = {  
+                        "msgType":"stat",
+                        name : mdict,
+                        "timestamp": curtime
+                     }
+            wholed.update(md)
+        elif type(ad) == list:
+            self.event_list.extend( ad)
+            return
+        elif type(ad) == dict:
+            wholed = ad
+        else:
+            raise "EVENT ARGUMENTS ERROR"
+        import pprint
+        # print "em38:"+pprint.pformat(wholed)
+        self.event_list.append(wholed)
+        self.event_index.update({wholed["timestamp"]:self.event_list.index(wholed)})
+        
+        
+    def get_list(self, fromtime = None):
+        if fromtime == None:
+            print "em61: send whole list"
+            return self.event_list
+        elif fromtime in self.event_index:
+            starti = self.event_index[fromtime] + 1
+            print "em65: index search from item #%d" % starti
+            return self.event_list[starti:]
+        else:
+            starti = 0
+            for i in range(0, len(self.event_list)):
+                if self.event_list[i]["timestamp"] >= fromtime:
+                    # print "em71: slow search from item #%d" % i
+                    return self.event_list[i:]
+            return []
+    def clear_list(self):
+        self.event_list = []
+        self.event_index = {}

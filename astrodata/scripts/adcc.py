@@ -47,6 +47,8 @@ from astrodata.adutils.reduceutils.prsproxyutil import calibration_search, CALMG
 
 from astrodata import AstroData
 
+from astrodata.eventsmanagers import EventsManager
+
 parser = OptionParser()
 
 parser.set_description("This is the proxy to PRS functionality, also invoked locally, e.g. for calibration requests.")
@@ -126,6 +128,7 @@ class ReduceInstanceManager(object):
     displayCmdHistory = None
     cmdNum = 0
     stackKeeper = None
+    events_manager = None
     
     def __init__(self):
         # get my client for the reduce commands
@@ -141,6 +144,7 @@ class ReduceInstanceManager(object):
         #   a display tool
         self.stackKeeper = stackKeeper
         self.displayCmdHistory = TSCmdQueue()
+        self.events_manager = EventsManager()
         
     def register(self, pid, details):
         """This function is exposed to the xmlrpc interface, and is used
@@ -264,6 +268,10 @@ class ReduceInstanceManager(object):
         print "adcc197: about to addcmd"
         self.displayCmdHistory.addCmd(rqcopy)
         
+    def report_qametrics_2adcc(self, qd):
+        # print "adcc272:"+repr(qd)
+        self.events_manager.append_event(qd)
+
 def get_version():
     version = [("PRSProxy","0.1")]
     print "prsproxy version:", repr(version)

@@ -204,109 +204,16 @@ class MyHandler(BaseHTTPRequestHandler):
                 import datetime
                 import time
                 import random
-                if not hasattr(self, "_iq"):
-                    self._iq = 70
-                if not hasattr(self, "_zp"):
-                    self._zp = (27, .08)
-                
-                ri  = random.randint(-4,4)
-                if ri == -1 or ri == 1:
-                    self._iq += (ri*10)
-                ri  = random.randint(-1,1)
-                if ri == -1 or ri == 1:
-                    self._zp = (self._zp[0] + random.uniform(-1.5, 1.5), 
-                                self._zp[1] + random.uniform(-.02, .02))
-                """
-                tdic = [ 
-                        {"msgType":"stat",
-                         "filename":"s45.fits",
-                         "stat_name": "IQ",
-                         "stat_value": "%d%%" % self._iq,
-                         "stat_float": self._iq,
-                         "date": datetime.datetime.now().isoformat()
-                        },
-                        {"msgType":"stat",
-                         "filename":"s45.fits",
-                         "stat_name": "zeropoint",
-                         "stat_value": "%2.2f&plusmn;%1.3f" % self._zp,
-                         "stat_float": self._zp[0],
-                         "date": datetime.datetime.now().isoformate()
-                         }
-                       ]
-                """
-
-                now = datetime.datetime.utcnow()
-                now_lt = datetime.datetime.now()
-                now_lt = now_lt.replace(hour=random.randint(18,23),
-                                        minute=random.randint(0,59))
-                filename = "N%sS0%0.3d.fits" % (now.strftime("%Y%m%d"),
-                                              random.randint(1,999))
-                wlen = ['g','V','r','R','i','I','z','I','Ha','R',650,'R',480,'B'];
-                
-                #datalabel = "GN-2012B-Q-0-000-000"
-                tdic = []
-                for i in range(2):
-                    if i!=0:
-                        tmp_lt = now_lt.replace(day=now_lt.day+1,
-                                                hour=random.randint(0,6),
-                                                minute=random.randint(0,59))
+                import pprint
+                # print "ppw207:"+repr(MyHandler.informers)
+                if "rim" in MyHandler.informers:
+                    rim = MyHandler.informers["rim"]
+                    if "timestamp" in parms:
+                        fromtime = int( float( parms["timestamp"][0]) ) 
                     else:
-                        tmp_lt = now_lt
-                    datalabel = "GN-2012B-Q-0-000-%0.3d" % random.randint(1,999)
-                    wlen_ind = 2*random.randint(0,len(wlen)/2-1)
-                    if wlen_ind in [10,12]:
-                        imtype = "SPECT"
-                    else:
-                        imtype = "IMAGE"
-                    tdic.append(
-                        {"msgType": "stat",
-                         "timestamp": time.mktime(now.timetuple()),
-                         "metadata": {"filename": filename,
-                                      "datalabel": datalabel,
-                                      "local_time": tmp_lt.strftime("%Y-%m-%d %H:%M:%S"),
-                                      "ut_time": now.strftime("%Y-%m-%d %H:%M:%S"),
-                                      "filter": wlen[wlen_ind],
-                                      "wavelength": wlen[wlen_ind],
-                                      "waveband": wlen[wlen_ind+1],
-                                      "airmass": 1.063,
-                                      "instrument": "GMOS-N",
-                                      "object": "M13",
-                                      "types": ["GEMINI_NORTH", "GMOS_N", "GMOS_IMAGE",
-                                                "GEMINI", imtype, "GMOS", "GMOS_RAW",
-                                                "UNPREPARED", "RAW"],
-                                      },
-                         "iq": {"band": "IQ85",
-                                "delivered": 0.983,
-                                "delivered_error": 0.1,
-                                "zenith": 0.7 + random.uniform(-.5,.5),#0.947,
-                                "ellipticity": 0.118,
-                                "ellip_error": 0.067,
-                                "requested": "IQ85",
-                                "comment": ["High ellipticity"],
-                                },
-                         "cc": {"band": "CC70",
-                                "zeropoint": {"e2v 10031-23-05, right":{"value":26.80,
-                                                                        "error":0.05},
-                                              "e2v 10031-01-03, right":{"value":26.86,
-                                                                        "error":0.03},
-                                              "e2v 10031-01-03, left":{"value":26.88,
-                                                                       "error":0.06}},
-                                "extinction": .5 + random.uniform(-.5,.5),#0.02,
-                                "extinction_error": 0.03,
-                                "requested": "CC50",
-                                "comment": ["Requested CC not met"],
-                                },
-                         "bg": {"band": "BGAny",
-                                "brightness": 20 + random.uniform(-.8,.8),#19.17,
-                                "brightness_error": 0,
-                                "requested": "BGAny",
-                                "comment": []
-                                },
-                         }
-                        )
-                
-                #self.wfile.write(json.dumps([]))
-                self.wfile.write(json.dumps(tdic))
+                        fromtime = 0
+                    tdic = rim.events_manager.get_list(fromtime = fromtime)
+                    self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
                 return
             
             if parms["path"].startswith("/cmdqueue.xml"):
@@ -890,10 +797,10 @@ class MyHandler(BaseHTTPRequestHandler):
                 #append any further directory info.
                 joinlist.append( self.path[5:])
                 
-                print "ppw790:", repr(joinlist), self.path
+                # print "ppw790:", repr(joinlist), self.path
                 
                 fname = os.path.join(*joinlist)
-                print "trying to open %s" % fname
+                print "QAP IF: trying to open %s" % fname
                 try:
                     f = open(fname, "r")
                     data = f.read()
@@ -961,10 +868,13 @@ class MTHTTPServer(ThreadingMixIn, HTTPServer):
     """Handles requests using threads"""
 
 def startInterfaceServer(port = 8777, **informers):
+    import pprint
+    # print "ppw864:"+pprint.pformat(informers)
     import socket
     try:
         # important to set prior to any instantiations of MyHandler
         MyHandler.informers = informers
+        
         if "dirdict" in informers:
             ppwstate.dirdict    = informers["dirdict"]
         if "dataSpider" in informers:
