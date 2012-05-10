@@ -82,8 +82,8 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
             import random
             now = datetime.datetime.utcnow()
             #now_lt = datetime.datetime.now()
-            tonight = datetime.datetime.now().replace(hour =18, minute=0)            
-            nexttime = datetime.timedelta(minutes = self.datacounter*15 + random.randint(-30,30))
+            tonight = datetime.datetime.now().replace(hour =19, minute=0)            
+            nexttime = datetime.timedelta(minutes = self.datacounter*15 + random.randint(-60,0))
             self.datacounter += 1            
             now_lt = tonight + nexttime
             #now_lt = now_lt.replace(hour=datacounter, #random.randint(18,23),
