@@ -28,6 +28,7 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
         return rc
     init.pt_hide = True
     
+    datacounter = 0
     def testReportQAMetric(self, rc):
         import random
         import time
@@ -80,9 +81,13 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
                   }
             import random
             now = datetime.datetime.utcnow()
-            now_lt = datetime.datetime.now()
-            now_lt = now_lt.replace(hour=random.randint(18,23),
-                                    minute=random.randint(0,59))
+            #now_lt = datetime.datetime.now()
+            tonight = datetime.datetime.now().replace(hour =18, minute=0)            
+            nexttime = datetime.timedelta(minutes = self.datacounter*15 + random.randint(-30,30))
+            self.datacounter += 1            
+            now_lt = tonight + nexttime
+            #now_lt = now_lt.replace(hour=datacounter, #random.randint(18,23),
+            #                        minute=random.randint(0,59))
             # now_lt = now_lt + datetime.timedelta(minutes=30*numcall)
             filename = "N%sS0%0.3d.fits" % (now.strftime("%Y%m%d"),
                                           random.randint(1,999))
