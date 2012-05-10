@@ -91,7 +91,7 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
                         "datalabel": "GN-2012B-Q-0-000-%0.3d" % random.randint(1,999),
                         "filename": filename})
             delt = (now_lt - now.replace(hour=0,minute=0) )
-            nowsec = delt.days*86400 + delt.seconds 
+            nowsec = float(delt.days*86400 + delt.seconds)
                 
             return (mtd, nowsec)
         from time import sleep
