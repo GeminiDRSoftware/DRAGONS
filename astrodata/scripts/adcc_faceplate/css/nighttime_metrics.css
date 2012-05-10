@@ -9,6 +9,10 @@ body {
 #table_wrapper {
     border: 1px solid black;
     border-collapse: collapse;
+    border-top-right-radius: 6px;
+    -moz-box-shadow: 2px 0px 2px #888;
+    -webkit-box-shadow: 2px 0px 2px #888;
+    box-shadow: 2px 0px 2px #888;
     clear: both;
     height: 340px;
     overflow: hidden;
@@ -34,15 +38,22 @@ tbody.scroll_body td {
 }
 
 tbody.scroll_body td.hover {
-    background-color: #C0C0FF!important;
+    /*background-color: #C0C0FF!important;*/
+    background-color: #B0DBFF;
 }
 
 #date_wrapper {
-    background-color: #E0E0FF;
+    background-color: #D3EBFF;
+    /*background-color: #E0E0FF;*/
     border-left: 1px solid black;
     border-right: 1px solid black;
     border-top: 1px solid black;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
     border-collapse: collapse;
+    -moz-box-shadow: 2px 0px 2px #888;
+    -webkit-box-shadow: 2px 0px 2px #888;
+    box-shadow: 2px 0px 2px #888;
     height: 18px;
     padding: 2px 2px 0px 2px;
     text-align: center;
@@ -53,10 +64,12 @@ tbody.scroll_body td.hover {
     font-weight: bold;
 }
 .highlight {
-    background-color: #B0B0FF;
+    /*background-color: #B0B0FF*/;
+    background-color: #86C7FF;
 }
 .even {
-    background-color: #E0E0FF;
+    /*background-color: #E0E0FF;*/
+    background-color: #D3EBFF;
 }
 
 #message_wrapper {
@@ -64,17 +77,27 @@ tbody.scroll_body td.hover {
     border-right: 1px solid black;
     border-bottom: 1px solid black;
     border-collapse: collapse;
+    -moz-box-shadow: 2px 0px 2px #888;
+    -webkit-box-shadow: 2px 0px 2px #888;
+    box-shadow: 2px 0px 2px #888;
     clear: both;
     height: 40px;
     padding: 2px 0px 2px 0px;
     width: 1092px;
 }
-
+#message_wrapper p {
+    padding-left: 10px;
+}
 #plot_wrapper {
     border-left: 1px solid black;
     border-right: 1px solid black;
     border-bottom: 1px solid black;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
     border-collapse: collapse;
+    -moz-box-shadow: 2px 2px 2px #888;
+    -webkit-box-shadow: 2px 2px 2px #888;
+    box-shadow: 2px 2px 2px #888;
     clear: both;
     height: 340px;
     padding: 20px 0px 10px 0px;
@@ -138,6 +161,20 @@ tbody.scroll_body td.hover {
 
 .jqplot-title {
     color: black;
+}
+
+/* Fix the highlighting on jqplots that happens when double-clicked
+ to zoom out*/
+div.jqplot-target div::selection, div.jqplot-target canvas::selection, div.jqplot-axis jqplot-yaxis canvas::selection, div.jqplot-axis jqplot-xaxis canvas::selection {
+    background: rgba(0, 0, 0, 0);
+} 
+div.jqplot-target div::-moz-selection, div.jqplot-target canvas::-moz-selection, div.jqplot-axis jqplot-yaxis canvas::-moz-selection, div.jqplot-axis jqplot-xaxis canvas::-moz-selection {
+    background: rgba(0, 0, 0, 0);
+}
+
+td.jqplot-series-hidden div.jqplot-table-legend-swatch {
+    opacity: 0.4;
+    filter:alpha(opacity=40);
 }
 
 .tooltip {

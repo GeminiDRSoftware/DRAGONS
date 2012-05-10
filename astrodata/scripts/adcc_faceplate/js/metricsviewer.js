@@ -88,14 +88,14 @@ MetricsViewer.prototype = {
 	mindate.setMinutes(0);
 	mindate.setSeconds(0);
 	var maxdate = new Date();
-	maxdate.setHours(mindate.getHours()+12);
+	maxdate.setHours(mindate.getHours()+13);
 	maxdate.setMinutes(0);
 	maxdate.setSeconds(0);
-	var options = {mindate: mindate,
-		       maxdate: maxdate,
-	               series_colors: ["#A0A0FF"],
+	var options = {mindate: mindate.toString(),
+		       maxdate: maxdate.toString(),
+		       series_labels: [""],
+	               series_colors: [""],
 	               bg_color: "white",
-		       series_selectable: false,
 	               title: "",
 		       ////here -- need to fix label
 	               xaxis_label: this.date_str,
@@ -105,20 +105,26 @@ MetricsViewer.prototype = {
 	var iq_options = $.extend(true,{},options);
 	iq_options.title = "Zenith IQ";
 	iq_options.yaxis_label = "Zenith IQ (arcsec)";
-	iq_options.series_selectable = true;
-	iq_options.series_colors = ["red","orange","yellow","blue"];
+	iq_options.series_labels = ["U","B","V","R","I",
+				    "Y","J","H","K","L","M","N","Q"];
+	iq_options.series_colors = ["#5C84FF","#F7D708","#CE0000",
+				    "#FF9E00","#9CCF31","#0D00BD"],
 	this.iq_plot = new TimePlot($("#iq_plot_wrapper"),"iqplot",iq_options);
 
 	// CC Plot
 	var cc_options = $.extend(true,{},options);
 	cc_options.title = "Cloud Extinction";
 	cc_options.yaxis_label = "Extinction (mag)";
+	cc_options.series_labels = ["cc"];
+	cc_options.series_colors = ["#86C7FF"];
 	this.cc_plot = new TimePlot($("#cc_plot_wrapper"),"ccplot",cc_options);
 
 	// BG Plot
 	var bg_options = $.extend(true,{},options);
 	bg_options.title = "Sky Brightness";
 	bg_options.yaxis_label = "Sky Brightness (mag/arcsec^2)";
+	bg_options.series_labels = ["bg"];
+	bg_options.series_colors = ["#FF9E00"];
 	this.bg_plot = new TimePlot($("#bg_plot_wrapper"),"bgplot",bg_options);
 
 
@@ -205,6 +211,20 @@ MetricsViewer.prototype = {
 	        mv.message_window.addRecord(msg);
 	    }
 	}); // end click
+
+	// Add a handler to link LT/UT column swap to LT/UT plot swap
+	$("#metrics_table").on("swapColumn", "th.time", function() {
+	    var plots = [mv.iq_plot,mv.cc_plot,mv.bg_plot];
+	    for (var this_plot in plots) {
+		this_plot = plots[this_plot];
+		if ($(this).text()=="UT") {
+		    this_plot.options["ut"] = true;
+		} else {
+		    this_plot.options["ut"] = false;
+		}
+		this_plot.addRecord();
+	    }
+	});
 
 	// Set the previous and next turnover times
 	// Turnover is set to 14:00 at both sites
@@ -361,6 +381,7 @@ MetricsViewer.prototype = {
 	this.turnover = next_turnover;
 
 	// Restart the pump
+	////here -- this may result in double pumping
 	this.gjs.startPump(timestamp);
     },
 

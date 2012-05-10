@@ -91,6 +91,10 @@ ScrollTable.prototype.init = function() {
 		break;
 	    }
 	}
+	// Throw a custom event, as a hook for the manager
+	// to do something (eg. modify a plot)
+	$(this).trigger("swapColumn");
+
     }); // end on click
 
 }; // end init
@@ -253,7 +257,10 @@ function TimePlot(element,id,options) {
     this.id = id;
     this.options = options;
     this.plot = null;
-    this.null_plot = true;
+    this.selected = {};
+    this.series_index = {};
+    this.ut = false;
+    this.ut_offset = 0;
     this.init();
 }
 // prototype: inherit from ViewPort
@@ -269,8 +276,134 @@ TimePlot.prototype.init = function(record) {
     this.element.html(html_str);
 
     // Create an empty jqPlot in the element
-    this.addRecord();
+    var data = [];
+    var series_options = [];
+    var series_to_use = this.options.series_labels;
+    for (var i in series_to_use) {
+	var series = series_to_use[i];
 
+	// Keep the series index in a dictionary
+	this.series_index[series] = i;
+
+	// Initialize with all series selected for display
+	this.selected[series_to_use[i]] = true;
+
+	// Make empty data structure for each series
+	data.push([null]);	
+
+	// Set up series labels and band data
+	series_options.push({label:series,
+		             showLabel:false,
+		             rendererOptions: {bandData:[[null],[null]],
+			     highlightMouseOver:false}});
+    }
+
+    // Set up legend options
+    var legend_options = {};
+    if (series_to_use.length>1) {
+	legend_options = {show: true,
+			  renderer: $.jqplot.EnhancedLegendRenderer,
+			  rendererOptions: {seriesToggle:true,
+	                                    numberRows:1},
+			  preDraw: true,
+			  location: "ne",
+			  marginTop:0,
+			  marginRight:0,
+			  placement: "insideGrid"};
+    }
+
+    // Check whether date should be displayed in UT
+    var date = new $.jsDate;
+    this.ut_offset = date.getUtcOffset();
+    var mindate, maxdate;
+    if (this.options.ut && !this.ut) {
+	mindate = new $.jsDate(this.options.mindate);
+	mindate.add(this.ut_offset,"milliseconds");
+	this.options.mindate = mindate.getTime();
+
+	maxdate = new $.jsDate(this.options.maxdate);
+	maxdate.add(this.ut_offset,"milliseconds");
+	this.options.maxdate = maxdate.getTime();
+
+	this.ut = true;
+    } else {
+	mindate = new $.jsDate(this.options.mindate);
+	maxdate = new $.jsDate(this.options.maxdate);
+	this.options.mindate = mindate.getTime();
+	this.options.maxdate = maxdate.getTime();
+    }    
+
+    // Compile all jqPlot configuration options
+    this.config = { "title":this.options.title,
+		   axes: { xaxis: {renderer:$.jqplot.DateAxisRenderer,
+				   tickOptions:{formatString:"%H:%M",
+						angle:-30,
+		                                fontSize:"8pt"},
+				   tickInterval:"1 hour",
+				   tickRenderer:$.jqplot.CanvasAxisTickRenderer,
+				   label: this.options.xaxis_label,
+				   labelOptions: {fontSize:"10pt",
+		                                  textColor:"black"},
+				   labelRenderer:$.jqplot.CanvasAxisLabelRenderer,
+				   min:this.options.mindate,
+				   max:this.options.maxdate},
+			   yaxis: {tickOptions:{formatString:"%0.2f",
+		                                fontSize:"8pt"},
+				   tickRenderer:$.jqplot.CanvasAxisTickRenderer,
+				   label: this.options.yaxis_label,
+				   labelOptions: {fontSize:"10pt",
+		                                  textColor:"black"},
+				   labelRenderer:$.jqplot.CanvasAxisLabelRenderer}
+	                 },
+		   cursor: {show: true,
+			    zoom: true,
+			    constrainZoomTo:'x',
+			    constrainOutsideZoom:false,
+			    looseZoom: false,
+			    showTooltip: false,
+			    useAxesFormatters:false},
+		   grid: {background:this.options.bg_color,
+			  drawBorder:false,
+			  shadow: false},
+		   legend: legend_options,
+		   series: series_options,
+		   seriesColors: this.options.series_colors
+                 };
+
+    // Create the plot
+    this.plot = $.jqplot(this.id, data, this.config);
+
+    // Store a data dictionary in the plot
+    this.plot.data_dict = {};
+
+    if (this.options.series_labels.length>1) {
+	var tp = this;
+
+	// Add click handler, to track selected series if the legend is clicked
+	$("#"+tp.id).on("click","td.jqplot-table-legend",function(){
+	    for (var series_i in tp.plot.series) {
+		var label = tp.plot.series[series_i].label;
+		var hidden = tp.plot.series[series_i]
+		               .canvas._elem.hasClass('jqplot-series-hidden');
+		tp.selected[label] = !hidden;
+	    }
+	});
+
+	// Add hook, to be called after each draw:
+	// If series not selected before the redraw, hide it
+	var postDraw = function() {
+	    $("#"+tp.id+" td.jqplot-table-legend-label").each(function(){
+		var srs = $(this).text();
+	        if (tp.selected[srs]!=undefined && !tp.selected[srs]) {
+		    tp.plot.series[tp.series_index[srs]].toggleDisplay({data:0});
+		    $(this).addClass('jqplot-series-hidden');
+		    $(this).prev('.jqplot-table-legend-swatch')
+		           .addClass('jqplot-series-hidden');
+	        }
+	    }); // end each legend label td
+	};
+	tp.plot.postDrawHooks.add(postDraw);
+    }
 }; // end init
 
 TimePlot.prototype.composeHTML = function() {
@@ -280,20 +413,20 @@ TimePlot.prototype.composeHTML = function() {
 
 TimePlot.prototype.addRecord = function(records) {
 
-    // If there is an existing plot, get its data, then destroy it
+    // If there is an existing plot, get its data and information
+    // about which series are currently selected
     var data_dict = {};
     if (this.plot) {
-	if (!this.null_plot) {
-	    data_dict = this.plot.data_dict;
+	data_dict = this.plot.data_dict;
+	for (var series_i in this.plot.series) {
+	    var label = this.plot.series[series_i].label;
+	    var hidden = this.plot.series[series_i]
+		             .canvas._elem.hasClass('jqplot-series-hidden');
+	    this.selected[label] = !hidden;
 	}
-	this.plot.destroy();
     }
 
-    var mindate = this.options.mindate;
-    var maxdate = this.options.maxdate;
-    var series_colors;
-
-    // record: eg. {series:'v', date:'...', data:0.95, error:0.05}
+    // record: eg. {series:'V', date:'...', data:0.95, error:0.05}
     if (records) {
 	if (!(records instanceof Array)) {
 	    records = [records];
@@ -315,84 +448,130 @@ TimePlot.prototype.addRecord = function(records) {
 	}
     }
 
-    var data = [], band_data = [], series_to_use = [];
+    var data = [], band_data = [];
     var i, j, series, date, 
         value, error, lower, upper, sdata, ldata, udata, dates;
-    ////here -- need to pull out desired series
-    for (series in data_dict) {
-	series_to_use.push(series);
-    }
+    var series_to_use = this.options.series_labels;
     for (j in series_to_use) {
 	series = series_to_use[j];
-	sdata=[], ldata=[], udata=[], dates =[];
 
-	// Pull out dates first and sort them
-	for (date in data_dict[series]) {
-	    dates.push(date);
-	}
-	dates.sort();
+	if (!data_dict[series]) {
+	    data.push([null]);	
+	    band_data.push([[null],[null]]);
+	} else {
 
-	for (i in dates) {
-	    date = dates[i];
-	    value = data_dict[series][date]['data'];
-	    error = data_dict[series][date]['error'];
-	    lower = value - error;
-	    upper = value + error;
-	    sdata.push([date,value]);
-	    ldata.push([date,lower]);
-	    udata.push([date,upper]);
-	}
-	data.push(sdata);
-	if (series_to_use.length==1) {
-	    band_data.push(ldata);
-	    band_data.push(udata);
+	    sdata=[], ldata=[], udata=[], dates =[];
+
+	    // Pull out dates first and sort them
+	    ////here -- better way to do this?
+	    for (date in data_dict[series]) {
+	        dates.push(date);
+	    }
+	    dates.sort();
+
+	    for (i in dates) {
+	        date = dates[i];
+	        value = data_dict[series][date]['data'];
+	        error = data_dict[series][date]['error'];
+	        lower = value - error;
+	        upper = value + error;
+		
+		// convert date to timestamp, and UT, if desired
+		// This uses jqPlot's own date handling methods,
+		// built on top of JavaScript's native Date object
+		// There doesn't seem to be any way to truly
+		// work in a non-local timezone, so hack it by
+		// adding the UTC offset to the reported time
+		date = new $.jsDate(date);
+		if (this.options.ut) {
+		    date = date.add(this.ut_offset,"milliseconds");
+		}
+		date = date.getTime();
+
+	        sdata.push([date,value]);
+	        ldata.push([date,lower]);
+	        udata.push([date,upper]);
+	    }
+	    data.push(sdata);
+	    band_data.push([ldata,udata]);
 	}
     }
 
-    if (data.length>0) {
-	this.null_plot = false;
-	series_colors = this.options.series_colors;
+    // Check to see if min/maxdate should be in UT
+    // and update it in options and config object
+    if (this.options.ut && !this.ut) {
+	this.options.mindate = new $.jsDate(this.options.mindate)
+	                           .add(this.ut_offset,"milliseconds")
+	                           .getTime();
+	this.options.maxdate = new $.jsDate(this.options.maxdate)
+		                   .add(this.ut_offset,"milliseconds")
+		                   .getTime();
+
+    } else if (!this.options.ut && this.ut) {
+	this.options.mindate = new $.jsDate(this.options.mindate)
+		                   .add(-this.ut_offset,"milliseconds")
+		                   .getTime();
+	this.options.maxdate = new $.jsDate(this.options.maxdate)
+		                   .add(-this.ut_offset,"milliseconds")
+		                   .getTime();
+    }
+    this.config.axes.xaxis.min = this.options.mindate;
+    this.config.axes.xaxis.max = this.options.maxdate;
+
+    // Update or create the plot
+    if (this.plot) {
+	this.plot.data = data;
+	for (var series_i in data) {
+	    var this_series = this.plot.series[series_i];
+	    if (data[series_i][0]!=null) {
+		this_series.data = data[series_i];
+
+		var renderer = this_series.renderer;
+		renderer.bands.show = true; 
+		renderer.options.bandData = band_data[series_i];
+		renderer.initBands.call(this_series, 
+					renderer.options, this.plot);
+
+		this.plot.series[series_i].showLabel = true;
+	    } else {
+		this.plot.series[series_i].data = [];
+		this.plot.series[series_i].showLabel = false;
+	    }
+	}	
+
+	// Check whether date should be displayed in UT, and it is not already
+	var mindate, maxdate;
+	if (this.options.ut && !this.ut) {
+	    mindate = new $.jsDate(this.plot.axes.xaxis.min);
+	    mindate.add(this.ut_offset,"milliseconds");
+	    this.plot.axes.xaxis.min = mindate.getTime();
+
+	    maxdate = new $.jsDate(this.plot.axes.xaxis.max);
+	    maxdate.add(this.ut_offset,"milliseconds");
+	    this.plot.axes.xaxis.max = maxdate.getTime();
+
+	    this.plot.axes.xaxis._options.min = this.options.mindate;
+	    this.plot.axes.xaxis._options.max = this.options.maxdate;
+	    this.plot.axes.xaxis.resetScale({min:mindate,max:maxdate});
+	    this.ut = true;
+	} else if (!this.options.ut && this.ut) {
+	    mindate = new $.jsDate(this.plot.axes.xaxis.min);
+	    mindate.add(-this.ut_offset,"milliseconds");
+	    this.plot.axes.xaxis.min = mindate.getTime();
+
+	    maxdate = new $.jsDate(this.plot.axes.xaxis.max);
+	    maxdate.add(-this.ut_offset,"milliseconds");
+	    this.plot.axes.xaxis.max = maxdate.getTime();
+
+	    this.plot.axes.xaxis._options.min = this.options.mindate;
+	    this.plot.axes.xaxis._options.max = this.options.maxdate;
+	    this.plot.axes.xaxis.resetScale({min:mindate,max:maxdate});
+	    this.ut = false;
+	}
+	this.plot.replot({resetAxes:['yaxis']});
     } else {
-	this.null_plot = true;
-	data = [[[mindate,0],[maxdate,0]]];
-	series_colors = [this.options.bg_color];
+	this.plot = $.jqplot(this.id, data, this.config);
     }
-
-    var config = { "title":this.options.title,
-		   axes: { xaxis: {renderer:$.jqplot.DateAxisRenderer,
-				   tickOptions:{formatString:"%H:%M",
-						angle:-30,
-		                                fontSize:"8pt"},
-				   tickInterval:"1 hour",
-				   tickRenderer:$.jqplot.CanvasAxisTickRenderer,
-				   label: this.options.xaxis_label,
-				   labelOptions: {fontSize:"10pt",
-		                                  textColor:"black"},
-				   labelRenderer:$.jqplot.CanvasAxisLabelRenderer,
-				   min:mindate,
-				   max:maxdate},
-			   yaxis: {tickOptions:{formatString:"%0.2f",
-		                                fontSize:"8pt"},
-				   tickRenderer:$.jqplot.CanvasAxisTickRenderer,
-				   label: this.options.yaxis_label,
-				   labelOptions: {fontSize:"10pt",
-		                                  textColor:"black"},
-				   labelRenderer:$.jqplot.CanvasAxisLabelRenderer}
-	                 },
-		   cursor: {show: true,
-			    zoom: true,
-			    looseZoom: false,
-			    showTooltip: false,
-			    useAxesFormatters:false},
-		   grid: {background:this.options.bg_color,
-			  drawBorder:false,
-			  shadow: false},
-		   series: [{rendererOptions: {bandData:band_data,
-					       highlightMouseOver:false}}],
-		   seriesColors: series_colors
-                 };
-
-    this.plot = $.jqplot(this.id, data, config);
 
     // Store the data dictionary in the plot
     this.plot.data_dict = data_dict;
