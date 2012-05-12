@@ -80,7 +80,7 @@ class EventsManager:
             # print "em83: fromtime=%f" % fromtime
             starti = 0
             for i in range(0, len(self.event_list)):
-                if self.event_list[i]["timestamp"] >= fromtime:
+                if self.event_list[i]["timestamp"] > fromtime:
                     # print "em71: slow search from item #%d" % i
                     return self.event_list[i:]
             return []
