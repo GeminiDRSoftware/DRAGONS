@@ -1,48 +1,66 @@
+from astrodata.adutils import logutils
+
+log = logutils.get_logger(__name__)
 
 class ExternalTaskInterface(object):
-
-    param_dict = None
-    file_dict = None
+    """
+    The External Task Interface base class. This is a way for the Recipe 
+    System to interact with ouside software. It prepares, executes, recovers,
+    and cleans all files and parameters pertaining to any external task
+    that interfaces with the recipe system.
+    """
+    param_objs = None
+    file_objs = None
     rc = None
     def __init__(self, rc=None):
-        print ("ExternalTaskInterface __init__")
+        """
+        :param rc: Used to store reduction information
+        :type rc: ReductionContext
+        """
+        log.debug("ExternalTaskInterface __init__")
         self.rc = rc
-        self.param_dict = {}
-        self.file_dict = {}
+        self.param_objs = [] 
+        self.file_objs = []
 
     def run(self):
-        print("ExternalTaskInterface.run()")
+        log.debug("ExternalTaskInterface.run()")
         self.prepare()
         self.execute()
         self.recover()
+        self.clean()
 
     def add_param(self, param):
-        print("ExternalTaskInterface.add_param()")
-        self.param_dict.update({repr(param.__class__):param})
+        log.debug("ExternalTaskInterface.add_param()")
+        self.param_objs.append(param)
 
-    def add_file(self, fil):
-        print("ExternalTaskInterface.add_file()")
-        self.file_dict.update({repr(fil.__class__):fil})
+    def add_file(self, file):
+        log.debug("ExternalTaskInterface.add_file()")
+        self.file_objs.append(file)
         
     def prepare(self):
-        print("ExternalTaskInterface.prepare()")
+        log.debug("ExternalTaskInterface.prepare()")
+        for par in self.param_objs:
+            par.prepare()
+        for fil in self.file_objs:
+            fil.prepare()
 
-        for key in self.param_dict:
-            self.param_dict[key].prepare()
-        for key in self.file_dict:
-            self.file_dict[key].prepare()
-
-    def recover(self):
-        print("ExternalTaskInterface.recover()")
-        for key in self.param_dict:
-            self.param_dict[key].recover()
-        for key in self.file_dict:
-            self.file_dict[key].recover()
-    
     def execute(self):
-        print("ExternalTaskInterface.execute()")
+        log.debug("ExternalTaskInterface.execute()")
         pass 
+    
+    def recover(self):
+        log.debug("ExternalTaskInterface.recover()")
+        for par in self.param_objs:
+            par.recover()
+        for fil in self.file_objs:
+            fil.recover()
+    
+    def clean(self):
+        log.debug("ExternalTaskInterface.clean()")
+        for par in self.param_objs:
+            par.clean()
+        for fil in self.file_objs:
+            fil.clean()
         
         
 
-    

@@ -4,7 +4,7 @@ from lsfile import LSFile
 
 class LSETI(PopenETI):
     def __init__(self, rc):
-        print("LSPopen __init__")
+        print("LSPETI __init__")
         PopenETI.__init__(self, rc)
         self.add_param(LSlafParam(self.rc))
         self.add_param(LSPathParam(self.rc))
