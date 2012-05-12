@@ -51,13 +51,13 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
                               "e2v 10031-01-03, left":{"value":26.88,
                                                        "error":0.06}},
                 "extinction": .5 + random.uniform(-.5,.5),#0.02,
-                "extinction_error": 0.03,
+                "extinction_error": 0.5,
                 "requested": "CC50",
                 "comment": ["Requested CC not met"],
                 },
          "bg": {"band": "BGAny",
                 "brightness": 20 + random.uniform(-.8,.8),#19.17,
-                "brightness_error": 0,
+                "brightness_error": 0.5,
                 "requested": "BGAny",
                 "comment": []
                 },
@@ -91,10 +91,16 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
             # now_lt = now_lt + datetime.timedelta(minutes=30*numcall)
             filename = "N%sS0%0.3d.fits" % (now.strftime("%Y%m%d"),
                                           random.randint(1,999))
+
+            wlen = ['g','V','r','R','i','I','z','I']
+            wlen_ind = 2*random.randint(0,len(wlen)/2-1)
             
             mtd["metadata"].update({"local_time": now_lt.strftime("%Y-%m-%d %H:%M:%S"),
-                        "datalabel": "GN-2012B-Q-0-000-%0.3d" % random.randint(1,999),
-                        "filename": filename})
+                                    "datalabel": "GN-2012B-Q-0-000-%0.3d" % random.randint(1,999),
+                                    "filename": filename,
+                                    "filter": wlen[wlen_ind],
+                                    "wavelength": wlen[wlen_ind],
+                                    "waveband": wlen[wlen_ind+1]})
             delt = (now_lt - now.replace(hour=0,minute=0) )
             nowsec = float(delt.days*86400 + delt.seconds)
                 
@@ -125,14 +131,14 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
                                           "e2v 10031-01-03, left":{"value":26.88,
                                                                    "error":0.06}},
                             "extinction": .5 + num *.5,#0.02,
-                            "extinction_error": 0.03,
+                            "extinction_error": 0.5,
                             "requested": "CC50",
                             "comment": ["Requested CC not met"],
                             }
                 elif ch == "bg":
                     qad =  {"band": "BGAny",
                             "brightness": 20 + num *.8,#19.17,
-                            "brightness_error": 0,
+                            "brightness_error": 0.5,
                             "requested": "BGAny",
                             "comment": []
                             }
@@ -140,4 +146,4 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
 
                 rc.report_qametric(inp, ch, qad, metadata = mtd)
             yield rc
-            sleep (1)
+            #sleep (1)
