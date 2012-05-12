@@ -160,7 +160,13 @@ tbody.scroll_body td.hover {
 }
 
 .jqplot-title {
+    left:57px!important;
+    width:273px!important;
     color: black;
+}
+canvas.jqplot-xaxis-label {
+    left:auto!important;
+    right:0px!important;
 }
 
 /* Fix the highlighting on jqplots that happens when double-clicked
@@ -177,9 +183,9 @@ td.jqplot-series-hidden div.jqplot-table-legend-swatch {
     filter:alpha(opacity=40);
 }
 
-.tooltip {
-    background-color: #FFFFD0;
-    border: 1px solid #B0B0B0;
-    padding: 2px;
-    
+.tooltip,.jqplot-highlighter-tooltip {
+    background-color: #FFFFD0!important;
+    border: 1px solid #B0B0B0!important;
+    padding: 2px!important;
+    z-index: 90;
 }

@@ -97,8 +97,8 @@ MetricsViewer.prototype = {
 	               series_colors: [""],
 	               bg_color: "white",
 	               title: "",
-		       ////here -- need to fix label
-	               xaxis_label: this.date_str,
+		       ut: false,
+	               xaxis_label: this.date_str.slice(1,-1),
 	               yaxis_label: ""};
 	
 	// IQ Plot
@@ -192,7 +192,8 @@ MetricsViewer.prototype = {
 	    return false;		
 	});
 
-	// Add event handler to link message window to clicks in table rows
+	// Add event handler to link message window and plot highlighting
+	// to clicks in table rows
 	$("#metrics_table tbody").on("click", "tr", function() {
 	    var selected = $(this).hasClass("highlight");
 
@@ -200,6 +201,9 @@ MetricsViewer.prototype = {
 	    $("#metrics_table tbody tr").removeClass("highlight");
 	    $("#metrics_table tbody tr:even").addClass("even");
 	    mv.message_window.clearRecord();
+	    mv.iq_plot.highlightPoint();
+	    mv.cc_plot.highlightPoint();
+	    mv.bg_plot.highlightPoint();
 	
 	    // add new selection (if not deselecting)
 	    if (!selected) {
@@ -209,6 +213,10 @@ MetricsViewer.prototype = {
 		var record = mv.database.getRecord(dl);
 		var msg = mv.formatMessageRecords(record,"comment");
 	        mv.message_window.addRecord(msg);
+
+		mv.iq_plot.highlightPoint(dl);
+		mv.cc_plot.highlightPoint(dl);
+		mv.bg_plot.highlightPoint(dl);
 	    }
 	}); // end click
 
@@ -394,7 +402,7 @@ MetricsViewer.prototype = {
 	}
 
 	// Test input; make into an array if needed
-	if (records==undefined) {
+	if (!records) {
 	    return;
 	}
 	if (!(records instanceof Array)) {
@@ -627,6 +635,8 @@ MetricsViewer.prototype = {
 	    }
 	});
 
+	records = null;
+
     }, // end update
 
     formatTableRecords: function(records, key) {
@@ -692,7 +702,9 @@ MetricsViewer.prototype = {
 		plot_record["date"] = time;
 		plot_record["data"] = value;
 		plot_record["error"] = error;
-	    
+		plot_record["key"] = record["metadata"]["datalabel"];
+		plot_record["image_number"] =record["metadata"]["image_number"];
+
 		plt_records.push(plot_record);
 	    }
 	}

@@ -29,6 +29,7 @@
  */
 (function($) {
     $.jqplot.eventListenerHooks.push(['jqplotMouseMove', handleMove]);
+    $.jqplot.eventListenerHooks.push(['jqplotMouseLeave', handleMove]);
     
     /**
      * Class: $.jqplot.Highlighter
@@ -208,13 +209,15 @@
     $.jqplot.preInitHooks.push($.jqplot.Highlighter.init);
     $.jqplot.preParseSeriesOptionsHooks.push($.jqplot.Highlighter.parseOptions);
     $.jqplot.postDrawHooks.push($.jqplot.Highlighter.postPlotDraw);
+
+    $.jqplot.Highlighter.handleMove = handleMove;
     
     function draw(plot, neighbor) {
         var hl = plot.plugins.highlighter;
         var s = plot.series[neighbor.seriesIndex];
         var smr = s.markerRenderer;
         var mr = hl.markerRenderer;
-        mr.style = smr.style;
+        //mr.style = smr.style;
         mr.lineWidth = smr.lineWidth + hl.lineWidthAdjust;
         mr.size = smr.size + hl.sizeAdjust;
         var rgba = $.jqplot.getColorComponents(smr.color);
@@ -242,6 +245,7 @@
             var yfstr = series._yaxis._ticks[0].formatString;
             var str;
             var xstr = xf(xfstr, neighbor.data[0]);
+            var zstr = neighbor.data[opts.yvalues+1];
             var ystrs = [];
             for (var i=1; i<opts.yvalues+1; i++) {
                 ystrs.push(yf(yfstr, neighbor.data[i]));
@@ -265,6 +269,9 @@
                     case 'y':
                         ystrs.unshift(opts.formatString);
                         str = $.jqplot.sprintf.apply($.jqplot.sprintf, ystrs);
+                        break;
+                    case 'z':
+                        str = $.jqplot.sprintf.apply($.jqplot.sprintf, [opts.formatString, zstr]);
                         break;
                     default: // same as xy
                         ystrs.unshift(xstr);
@@ -294,6 +301,9 @@
                         break;
                     case 'y':
                         str = ystrs.join(opts.tooltipSeparator);
+                        break;
+                    case 'z':
+                        str = zstr;
                         break;
                     default: // same as 'xy'
                         str = xstr;
@@ -399,6 +409,16 @@
         var hl = plot.plugins.highlighter;
         var c = plot.plugins.cursor;
         if (hl.show) {
+
+	    var series_show = true;
+	    if (neighbor!=null && 
+		plot.series[neighbor.seriesIndex]
+		    .canvas._elem.hasClass('jqplot-series-hidden')) {
+		series_show = false;
+	    } else if (neighbor!=null) {
+		series_show = plot.series[neighbor.seriesIndex].showHighlight;
+	    }
+
             if (neighbor == null && hl.isHighlighting) {
                 var ctx = hl.highlightCanvas._ctx;
                 ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -415,7 +435,7 @@
                 hl.currentNeighbor = null;
                 ctx = null;
             }
-            else if (neighbor != null && plot.series[neighbor.seriesIndex].showHighlight && !hl.isHighlighting) {
+            else if (neighbor != null && series_show && !hl.isHighlighting) {
                 hl.isHighlighting = true;
                 hl.currentNeighbor = neighbor;
                 if (hl.showMarker) {
@@ -433,7 +453,7 @@
                 // highlighting the wrong point.
 
                 // if new series allows highlighting, highlight new point.
-                if (plot.series[neighbor.seriesIndex].showHighlight) {
+                if (series_show) {
                     var ctx = hl.highlightCanvas._ctx;
                     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
                     hl.isHighlighting = true;
