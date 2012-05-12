@@ -107,7 +107,19 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
             return (mtd, nowsec)
         from time import sleep
         from math import sin
-        for i in range(0,100):    
+        if "test_num" in rc:
+                test_num = int(rc["test_num"])
+        else:
+                test_num = 1
+        if "test_burst" in rc:
+            test_burst = int(rc["test_burst"])
+        else:
+                test_burst = 1
+        if "test_sleep" in rc:
+            test_sleep = float(rc["test_sleep"])
+        else:
+            test_sleep = 1.0
+        for i in range(0,test_num):    
             for inp in rc.get_inputs_as_astrodata():
                 mtd,nowsec = mock_metadata(inp)
                 num =  sin(nowsec/60/60)
@@ -142,8 +154,10 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
                             "requested": "BGAny",
                             "comment": []
                             }
-                print "pG108:"+pprint.pformat(qad)
+                #print "pG108:"+pprint.pformat(qad)
 
                 rc.report_qametric(inp, ch, qad, metadata = mtd)
+            if i%test_burst == 0:
+                yield rc
+                sleep (test_sleep)
             yield rc
-            #sleep (1)
