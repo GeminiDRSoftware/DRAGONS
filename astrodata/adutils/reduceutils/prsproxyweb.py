@@ -208,8 +208,9 @@ class MyHandler(BaseHTTPRequestHandler):
                 # print "ppw207:"+repr(MyHandler.informers)
                 if "rim" in MyHandler.informers:
                     rim = MyHandler.informers["rim"]
+                    # print "ppw211:"+pprint.pformat(parms)
                     if "timestamp" in parms:
-                        fromtime = int( float( parms["timestamp"][0]) ) 
+                        fromtime = float( parms["timestamp"][0]) 
                     else:
                         fromtime = 0
                     tdic = rim.events_manager.get_list(fromtime = fromtime)

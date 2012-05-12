@@ -44,27 +44,40 @@ class EventsManager:
                      }
             wholed.update(md)
         elif type(ad) == list:
+            for msg in ad:
+                if "timestamp" in msg:
+                    msg.update({"reported_timestamp":msg["timestamp"]})
+                msg.update({"timestamp":time.time()})
             self.event_list.extend( ad)
             return
         elif type(ad) == dict:
+            if timestamp in ad:
+                ad.update({"reported_timestamp":ad["timestamp"]})
+            ad.update({"timestamp":time.time()})
             wholed = ad
         else:
             raise "EVENT ARGUMENTS ERROR"
         import pprint
         # print "em38:"+pprint.pformat(wholed)
         self.event_list.append(wholed)
-        self.event_index.update({wholed["timestamp"]:self.event_list.index(wholed)})
+        timestamp = wholed["timestamp"]
+        # print "em38:timestamp %f" % timestamp
+        if timestamp not in self.event_index:
+            self.event_index.update({timestamp:[]})
+        ts_list = self.event_index[timestamp]
+        ts_list.append(self.event_list.index(wholed))
         
         
     def get_list(self, fromtime = None):
         if fromtime == None:
-            print "em61: send whole list"
+            print "em61: send whole events list"
             return self.event_list
-        elif fromtime in self.event_index:
-            starti = self.event_index[fromtime] + 1
-            print "em65: index search from item #%d" % starti
-            return self.event_list[starti:]
+        # elif fromtime in self.event_index:
+        #    starti = self.event_index[fromtime] + 1
+        #    print "em65: index search from item #%d" % starti
+        #    return self.event_list[starti:]
         else:
+            # print "em83: fromtime=%f" % fromtime
             starti = 0
             for i in range(0, len(self.event_list)):
                 if self.event_list[i]["timestamp"] >= fromtime:
