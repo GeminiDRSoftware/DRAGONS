@@ -123,6 +123,7 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
+
 def array_information(adinput=None):
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
@@ -1090,6 +1091,60 @@ def mark_history(adinput=None, keyword=None):
                             ad.filename))
         log.fullinfo("PHU keyword GEM-TLM = %s added to %s" \
                      % (ad.phu_get_key_value("GEM-TLM"), ad.filename))
+
+def obsmode_add(ad):
+    """Add 'OBSMODE' keyword to input phu for IRAF routines in GMOS package
+
+    :param ad: AstroData instance to find mode of
+    :type ad: AstroData instance
+    """
+    types = ad.get_types()
+    if "GMOS" in types:
+        if "PREPARED" in types:
+            gprep = ad.phu_get_key_value("GPREPARE")
+            if gprep is None:
+                prepare_date = ad.phu_get_key_value("PREPARE")
+                ad.phu_set_key_value("GPREPARE", prepare_date,
+                                     "UT Time stamp for GPREPARE")
+            else:
+                ad.phu_set_key_value("PREPARE", gprep,
+                                     "UT Time stamp for GPREPARE")
+        if "PROCESSED_BIAS" in types:
+            ad.history_mark(key="GBIAS",
+                            comment="Temporary key for GIREDUCE")
+        if "GMOS_LS_FLAT" in types:
+            ad.history_mark(key="GSREDUCE",
+                comment="Temporary key for GSFLAT")
+        try:
+            if "GMOS_IMAGE" in types:
+                typeStr = "IMAGE"
+            elif "GMOS_IFU" in types:
+                typeStr = "IFU"
+            elif "GMOS_MOS" in types:
+                typeStr = "MOS"
+            else:
+                typeStr = "LONGSLIT"
+            ad.phu_set_key_value("OBSMODE", typeStr ,
+                    "Observing mode (IMAGE|IFU|MOS|LONGSLIT)")
+        except:
+            raise Errors.ManagersError("Input %s is not of type" +
+                "GMOS_IMAGE/_IFU/_MOS or /LS. " % ad.filename)
+    return ad
+
+def obsmode_del(ad):
+    """This is an internally used function to delete the 'OBSMODE' key from
+       the outputs from IRAF routines in the GMOS package.
+       
+       :param ad: AstroData instance to find mode of
+       :type ad: AstroData instance
+    """
+    if 'GMOS' in ad.get_types():
+        del ad.get_phu().header['OBSMODE']
+        del ad.get_phu().header['GPREPARE']
+        del ad.get_phu().header['GBIAS']
+        del ad.get_phu().header['GSREDUCE']
+    return ad
+    
 
 def parse_sextractor_param():
 
