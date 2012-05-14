@@ -107,8 +107,8 @@ MetricsViewer.prototype = {
 	iq_options.yaxis_label = "Zenith IQ (arcsec)";
 	iq_options.series_labels = ["U","B","V","R","I",
 				    "Y","J","H","K","L","M","N","Q"];
-	iq_options.series_colors = ["#5C84FF","#F7D708","#CE0000",
-				    "#FF9E00","#9CCF31","#0D00BD"],
+	iq_options.series_colors = ["#0D00BD","#5C84FF","#9CCF31",
+				    "#F7D708","#CE0000","#86C7FF"],
 	this.iq_plot = new TimePlot($("#iq_plot_wrapper"),"iqplot",iq_options);
 
 	// CC Plot
@@ -634,8 +634,6 @@ MetricsViewer.prototype = {
 		return false;
 	    }
 	});
-
-	records = null;
 
     }, // end update
 
