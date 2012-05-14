@@ -61,7 +61,7 @@ class InAtList(GemcombineFile):
             fh.writelines(fil + "\n")
         fh.close
         log.fullinfo("Temporary list (%s) on disk for the IRAF task %s" % \
-                      (newname, self.taskname))
+                      (self.atlist, self.taskname))
         self.filedict.update({"input": "@" + self.atlist})
 
     def clean(self):
