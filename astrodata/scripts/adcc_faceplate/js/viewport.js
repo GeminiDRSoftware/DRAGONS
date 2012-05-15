@@ -13,7 +13,7 @@ ViewPort.prototype = {
 	this.element.html(html_str);
     }, // end init
     composeHTML: function() {
-	return '<span id='+this.id+' class="view_port"></span>';
+	return '<div id='+this.id+' class="view_port"></div>';
     }, // end composeHTML
     addRecord: function(records) {
 	if (!(records instanceof Array)) {

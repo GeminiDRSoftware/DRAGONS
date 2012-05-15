@@ -63,6 +63,9 @@ tbody.scroll_body td.hover {
 .label {
     font-weight: bold;
 }
+div.label {
+    float:left;
+}
 .highlight {
     /*background-color: #B0B0FF*/;
     background-color: #86C7FF;
@@ -84,10 +87,19 @@ tbody.scroll_body td.hover {
     height: 40px;
     padding: 2px 0px 2px 0px;
     width: 1092px;
+    position: relative;
 }
-#message_wrapper p {
-    padding-left: 10px;
+#message_box {
+    height: 10px;
+    padding-left: 16px;
+    position: absolute;
+    top: 50%;
+    margin-top: -8px;
 }
+#message_target,#message_window {
+    float:left;
+}
+
 #plot_wrapper {
     border-left: 1px solid black;
     border-right: 1px solid black;
@@ -156,7 +168,20 @@ tbody.scroll_body td.hover {
     height: 9px;
     overflow: hidden;
     text-indent: -99999px;
-    width:11px;
+    width: 11px;
+}
+
+.close_icon {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-image: url(../images/close.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 12px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 12px;
 }
 
 .jqplot-title {
@@ -188,4 +213,39 @@ td.jqplot-series-hidden div.jqplot-table-legend-swatch {
     border: 1px solid #B0B0B0!important;
     padding: 2px!important;
     z-index: 90;
+}
+
+#lightbox_background {
+    background: black;
+    display: none;
+    filter:alpha(opacity=70);
+    opacity: 0.7;
+    position: fixed;
+    left: 0px;
+    top: 0px;
+    min-width: 100%;
+    min-height: 100%;
+    z-index: 99;
+}
+#lightbox_window {
+    display: none;
+    background: white;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    margin-left: -250px;
+    margin-top: -150px;
+    height: 300px;
+    width: 500px;
+    padding: 10px 15px 10px 15px;
+    border: 1px solid black;
+    z-index: 100;
+}
+#lightbox_window h2 {
+    color:#CE0000;
+}
+#lightbox_message {
+    height: 248px;
+    width: 500px;
+    overflow: auto;
 }

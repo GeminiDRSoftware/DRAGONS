@@ -13,6 +13,7 @@ function MetricsViewer(element, id) {
     this.cc_plot = null;
     this.bg_plot = null;
     this.tooltips = null;
+    this.lightbox = null;
 
     // Placeholder for database of records
     this.database = null;
@@ -79,6 +80,11 @@ MetricsViewer.prototype = {
 
 	// Instantiate message window
 	this.message_window = new ViewPort($("#message_target"),"message_window");
+	// Instantiate lightbox for urgent message display
+	this.lightbox = new  ViewPort($("#lightbox_window"),"lightbox_message");
+	$("#lightbox_window").prepend('<span class="close_icon"></span>'+
+				      '<div><h2>WARNING</h2><hr></div>');
+
 
 	// Instantiate plots
 
@@ -161,6 +167,8 @@ MetricsViewer.prototype = {
 					"#metrics_table td.wlen");
 	this.tooltips["metadata-waveband"] = wb_tt;
 
+	
+
 	// Add a hover class to table cells on mouseenter/mouseleave
 	$("#metrics_table").on("mouseenter","td",function(){
 		$(this).addClass("hover");
@@ -234,6 +242,14 @@ MetricsViewer.prototype = {
 	    }
 	});
 
+	// Add a handler to hide the lightbox effect when there is a click
+	// anywhere in the window
+	$(document).click(function(){
+	    mv.lightbox.clearRecord();
+	    $("#lightbox_background,#lightbox_window").hide();
+	});
+
+
 	// Set the previous and next turnover times
 	// Turnover is set to 14:00 at both sites
 	var prev_turnover = new Date();
@@ -283,10 +299,11 @@ MetricsViewer.prototype = {
 	html_str += '<div id="table_wrapper"></div>';
 
 	// Message window wrapper
-	html_str += '<div id="message_wrapper"><p>' +
-	            '<span class="label">Messages</span>' +
-	            '<span id="message_target"></span>' +
-	            '</p></div>';
+	html_str += '<div id="message_wrapper">' +
+	            '<div id="message_box">'+
+	            '<div class="label">Messages&nbsp;</div>' +
+	            '<div id="message_target"></div>' +
+	            '</div></div>';
 	
 	// Plot wrapper
 	html_str += '<div id="plot_wrapper">'+
@@ -297,6 +314,12 @@ MetricsViewer.prototype = {
 
 	// Tooltip wrapper
 	html_str += '<div id="tooltip_wrapper"></div>';
+
+	// Lightbox wrapper
+	html_str += '<div id="lightbox_wrapper">'+
+	            '<div id=lightbox_background></div>'+
+	            '<div id=lightbox_window></div>'+
+	            '</div>';
 
 	// End outer wrapper
 	html_str += '</div>';
@@ -521,8 +544,10 @@ MetricsViewer.prototype = {
 	    var problem = '<span class="problem_icon"></span>';
 	    var warn = '<span class="warn_icon"></span>';
 	    var element, value;
+	    var problem_records = [];
 	    for (var k in records) {
 		var record = records[k];
+		var found_problem = false;
 		if (record["iq"]) {
 		    if (record["iq"]["comment"].length>0) {
 			element = $('#'+record["metadata"]["datalabel"]+
@@ -536,6 +561,7 @@ MetricsViewer.prototype = {
 			    value = '<div class=outer>'+warn+value+'</div>';
 			} else {
 			    value = '<div class=outer>'+problem+value+'</div>';
+			    found_problem = true;
 			}
 			element.html(value);
 		    }
@@ -547,6 +573,7 @@ MetricsViewer.prototype = {
 			value = element.text();
 			value = '<div class=outer>'+problem+value+'</div>';
 			element.html(value);
+			found_problem = true;
 		    }
 		}
 		if (record["bg"]) {
@@ -556,7 +583,12 @@ MetricsViewer.prototype = {
 			value = element.text();
 			value = '<div class=outer>'+problem+value+'</div>';
 			element.html(value);
+			found_problem = true;
 		    }
+		}
+
+		if (found_problem) {
+		    problem_records.push(record);
 		}
 	    }
 
@@ -634,6 +666,14 @@ MetricsViewer.prototype = {
 		return false;
 	    }
 	});
+
+	// If problems were found in the incoming record(s), pull up
+	// a lightbox displaying their messages
+	if (problem_records.length>0) {
+	    var msg = this.formatWarningRecords(problem_records,"comment");
+	    this.lightbox.addRecord(msg);
+	    $("#lightbox_background, #lightbox_window").show();
+	}
 
     }, // end update
 
@@ -793,5 +833,77 @@ MetricsViewer.prototype = {
 	    return msg_records;
 	}
     }, // end formatMessageRecords
+
+    formatWarningRecords: function(records, key) {
+	var return_single = false;
+	if (!(records instanceof Array)) {
+	    records = [records];
+	    return_single = true;
+	}
+
+	var msg_records = [];
+	for (var i in records) {
+	    var record = records[i];
+	    var message = "<h3>Image " + 
+	                  record["metadata"]["image_number"] + ", " +
+	                  record["metadata"]["datalabel"] + 
+	                  ":</h3><p>";
+
+	    var has_msg = false;
+	    var subdicts = ["iq", "cc", "bg"];
+	    for (var j in subdicts) {
+		var metric = subdicts[j];
+		if (record[metric]) {
+		    var msg_array = record[metric][key];
+		    if (msg_array.length>0) {
+
+			for (var mi in msg_array) {
+			    if (metric=="iq") {
+				if (msg_array[mi].indexOf("ellipticity")!=-1) {
+				    continue;
+				} else {
+				    message += "<span class=label>"+
+					       msg_array[mi]+"</span><br>";
+				    message += "Delivered IQ: "+
+					       record["iq"]["band"] + "<br>";
+				    message += "Requested IQ: "+
+					       record["iq"]["requested"]+"<br>";
+				    has_msg = true;
+				}
+			    } else if (metric=="cc") {
+				message += "<span class=label>"+
+				           msg_array[mi]+"</span><br>";
+				message += "Delivered CC: "+
+				           record["cc"]["band"] + "<br>";
+				message += "Requested CC: "+
+				           record["cc"]["requested"] + "<br>";
+				has_msg = true;
+			    } else if (metric=="bg") {
+				message += "<span class=label>"+
+				           msg_array[mi]+"</span><br>";
+				message += "Delivered BG: "+
+				           record["bg"]["band"] + "<br>";
+				message += "Requested BG: "+
+				           record["bg"]["requested"] + "<br>";
+				has_msg = true;
+			    }
+			}
+		    }
+		}
+	    }
+	    if (!has_msg) {
+		message += "(none)";
+	    }
+
+	    message +="</p><hr>";
+
+	    msg_records.push(message);
+	}
+	if (return_single) {
+	    return msg_records[0];
+	} else {
+	    return msg_records;
+	}
+    }, // end formatWarningRecords
 
 }; // end prototype
