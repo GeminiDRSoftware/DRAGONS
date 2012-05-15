@@ -586,8 +586,56 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         # exception if this descriptor is called.
         raise Errors.ExistError()
     
+    def raw_bg(self, dataset, **args):
+        # These descriptors parse the string value in the header to return
+        # an integer percentile value, which is more useful for comparison etc
+        string = dataset.phu_get_key_value(self.get_descriptor_key("key_raw_bg"))
+        if string is None:
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        value = self._parse_percentile(string)
+        if value is None:
+            raise Errors.InvalidValueError
+        return value
+
+    def raw_cc(self, dataset, **args):
+        # These descriptors parse the string value in the header to return
+        # an integer percentile value, which is more useful for comparison etc
+        string = dataset.phu_get_key_value(self.get_descriptor_key("key_raw_cc"))
+        if string is None:
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        value = self._parse_percentile(string)
+        if value is None:
+            raise Errors.InvalidValueError
+        return value
+
+    def raw_iq(self, dataset, **args):
+        # These descriptors parse the string value in the header to return
+        # an integer percentile value, which is more useful for comparison etc
+        string = dataset.phu_get_key_value(self.get_descriptor_key("key_raw_iq"))
+        if string is None:
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        value = self._parse_percentile(string)
+        if value is None:
+            raise Errors.InvalidValueError
+        return value
+
+    def raw_wv(self, dataset, **args):
+        # These descriptors parse the string value in the header to return
+        # an integer percentile value, which is more useful for comparison etc
+        string = dataset.phu_get_key_value(self.get_descriptor_key("key_raw_wv"))
+        if string is None:
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        value = self._parse_percentile(string)
+        if value is None:
+            raise Errors.InvalidValueError
+        return value
+
     def requested_bg(self, dataset, **args):
-        # These descriptors parse the string value in th eheader to return
+        # These descriptors parse the string value in the header to return
         # an integer percentile value, which is more useful for comparison etc
         string = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_bg"))
         if string is None:
@@ -599,7 +647,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         return value
 
     def requested_cc(self, dataset, **args):
-        # These descriptors parse the string value in th eheader to return
+        # These descriptors parse the string value in the header to return
         # an integer percentile value, which is more useful for comparison etc
         string = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_cc"))
         if string is None:
@@ -611,7 +659,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         return value
 
     def requested_iq(self, dataset, **args):
-        # These descriptors parse the string value in th eheader to return
+        # These descriptors parse the string value in the header to return
         # an integer percentile value, which is more useful for comparison etc
         string = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_iq"))
         if string is None:
@@ -623,7 +671,7 @@ class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
         return value
 
     def requested_wv(self, dataset, **args):
-        # These descriptors parse the string value in th eheader to return
+        # These descriptors parse the string value in the header to return
         # an integer percentile value, which is more useful for comparison etc
         string = dataset.phu_get_key_value(self.get_descriptor_key("key_requested_wv"))
         if string is None:
