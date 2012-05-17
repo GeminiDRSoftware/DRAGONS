@@ -21,7 +21,7 @@ ViewPort.prototype = {
 	}
 	var record_str = "";
 	for (var i in records) {
-	    record_str += '<span>'+records[i]+'</span>';
+	    record_str += records[i];
 	}
 	$('#'+this.id).append(record_str);
     },
@@ -51,9 +51,12 @@ ScrollTable.prototype.constructor = ScrollTable;
 // add ScrollTable-specific methods
 ScrollTable.prototype.init = function() {
 
-    // Add an empty div to the element
+    // Add the table html to the element
     var html_str = this.composeHTML();
     this.element.html(html_str);
+
+    // Hide any hidden columns
+    $("#"+this.id+" td.hidden,th.hidden").hide();
 
     // Add an event handler to the headers of swappable columns
     // to do the swap
@@ -95,38 +98,144 @@ ScrollTable.prototype.init = function() {
 	// to do something (eg. modify a plot)
 	$(this).trigger("swapColumn");
 
-    }); // end on click
+    }); // end on click th.swap
+
+    // Add event handlers to the search field to allow row filtering
+    this.element.on("focus","input.filter",function() {
+	if ($(this).hasClass("no_input")) {
+	    $(this).attr("value","");
+	}
+	$(this).removeClass("no_input");
+	return false;
+    }); // end on focus
+    this.element.on("blur","input.filter",function() {
+	if ($(this).hasClass("no_input") || $(this).attr("value")=="") {
+	    $(this).addClass("no_input");
+	    $(this).attr("value","Search");
+	}
+	return false;
+    }); // end on blur
+    this.element.on("keyup","input.filter",function() {
+	$(this).removeClass("no_input");
+	var query = $(this).attr("value");
+	st.filterRecord(query);
+	return false;
+    }); // end on keypress
+
+    // Make the column headers draggable
+    $("#"+this.id+" th").not(".hidden").draggable({
+	    //containment: "parent",
+        cursor: "move",
+	helper: "clone",
+	revert: true,
+	start: function(ev,ui) {
+		var drg_id;
+		for (var col_i=0;col_i<st.columns.length;col_i++) {
+		    var col = st.columns[col_i];
+		    if ($(this).hasClass(col.id)) {
+			drg_id = col.id;
+			break;
+		    }
+		}
+		ui.helper.data("col_id",drg_id);
+		$("#"+st.id+" td."+drg_id).addClass("ui-draggable-dragging");
+	    },
+	stop: function(ev,ui) {
+		var drg_id = ui.helper.data("col_id");
+		$("#"+st.id+" td."+drg_id).removeClass("ui-draggable-dragging");
+	    }
+    }); // end draggable
+
+    // Make them droppable too
+    $("#"+this.id+" th").not(".hidden").droppable({
+        drop: reorderColumns,
+	hoverClass: "hover",
+	tolerance: "pointer"
+    }); // end draggable
+
+    // Callback for drop event
+    function reorderColumns(ev,ui) {
+	var dragged = ui.draggable;
+	var target = $(this);
+	var tgt_i, drg_i;
+	for (var col_i=0;col_i<st.columns.length;col_i++) {
+	    var col = st.columns[col_i];
+	    if (target.hasClass(col.id)) {
+		tgt_i = col_i;
+	    }
+	    if (dragged.hasClass(col.id)) {
+		drg_i = col_i;
+	    }
+	}
+	if (tgt_i!=drg_i) {
+	    // Stop header from reverting to original position
+	    dragged.draggable("option","revert",false);
+
+	    // Change the order in the column model
+	    var drg_col = st.columns[drg_i];
+	    st.columns.splice(drg_i,1);
+	    st.columns.splice(tgt_i,0,drg_col);
+
+	    if (tgt_i<drg_i) {
+
+		// Move the header cell
+		$("#"+st.id+" th."+drg_col.id)
+		    .insertBefore($("#"+st.id+" th").eq(tgt_i));
+	
+		// Move the data cells
+		$("#"+st.id+" tbody td."+drg_col.id).each(function(){
+		    var target = $(this).parent().find("td").eq(tgt_i);
+		    $(this).insertBefore(target);
+		}); // end each cell
+
+	    } else {
+		// Do the same, but insertAfter instead of before
+		$("#"+st.id+" th."+drg_col.id)
+		    .insertAfter($("#"+st.id+" th").eq(tgt_i));
+		$("#"+st.id+" tbody td."+drg_col.id).each(function(){
+		    var target = $(this).parent().find("td").eq(tgt_i);
+		    $(this).insertAfter(target);
+		}); // end each cell
+	    }
+	}
+    }
 
 }; // end init
 
 ScrollTable.prototype.composeHTML = function() {
+    var html_str = "";
+
     // Compose table tags with column headers
-    var html_str = '<table class="scroll_table" id="'
-                   +this.id+'"><thead class="fixed_header">';
+    html_str += '<table class="scroll_table" id="'
+                +this.id+'" style="table-layout:fixed">' +
+                '<thead class="fixed_header">';
     html_str += '<tr style="position:relative;display:block">'
     for (i in this.columns) {
 	col = this.columns[i];
-	if (col.hidden) {
-	    continue;
-	}
 
-
-	// Add classes for column id, as well swap property
+	// Add classes for column id, as well swap, hidden, and searchable
+	// properties
 	html_str += '<th  class="'+col.id;
-	var w;
+	var w = col.width;
 	if (col.swap) {
 	    html_str += ' swap';
+	}
+	if (col.hidden) {
+	    w = 0;
+	    html_str += ' hidden';
+	}
+	if (!col.disable_search) {
+	    html_str += ' searchable';
 	}
 	html_str += '"';
 
 
 	// Set column width
 	// Add 16px to the width of the last header element for the scroll bar
-	w = col.width;
 	if (i==this.columns.length-1) {
 	    w+=16;
 	}
-	html_str += ' width='+w+'px';
+	html_str += ' style="width:'+w+'px"';
 	html_str += '>';
 
 	if (col.swap) {
@@ -143,12 +252,24 @@ ScrollTable.prototype.composeHTML = function() {
     html_str += '</tr></thead>';
 
     // Add table body
-    html_str += '<tbody class="scroll_body" width="100%" '+
-                'height="'+ 
-                (parseInt(this.element.height())-32) +'px"' +
-	        'style="display:block;overflow:auto;position:relative">';
-
+    html_str += '<tbody class="scroll_body"'+
+	        'style="display:block;overflow:auto;' +
+                'position:relative;width:100%;height:'+
+                (parseInt(this.element.height())-32-32) +'px' +
+                '">';
     html_str += '</tbody>';
+
+    // Add table footer
+    html_str += '<tfoot class="fixed_footer">';
+    html_str += '<tr style="display:block;position:relative;">' +
+                '<td class="filter_message">Displaying 0 of 0 rows</td>'+
+                '<td class="filter">' +
+                '<div style="position:relative">' +
+                '<input class="filter no_input" type=text value="Search">' +
+                '<span class="search_icon"></span></div></td>'+
+                '</tr>';
+    html_str += '</tfoot>';
+
 
     html_str += '</table>';
 
@@ -157,6 +278,9 @@ ScrollTable.prototype.composeHTML = function() {
 
 ScrollTable.prototype.addRecord = function(records) {
     // Make records into an array if it is not already
+    if (!records) {
+	records = [];
+    }
     if (!(records instanceof Array)) {
 	records = [records];
     }
@@ -183,11 +307,20 @@ ScrollTable.prototype.addRecord = function(records) {
 	    if (col.sort && !sort_col) {
 		sort_col = col;
 	    }
-	    if (!col.hidden) {
-		table_row += '<td class="'+col.id+
-		             '" width="'+col.width+'px">'+
-		             record[col.field]+'</td>';
+
+	    var w = col.width;
+	    var display_str = "";
+	    table_row += '<td class="'+col.id;
+	    if (col.hidden) {
+		w = 0;
+		display_str = " display:none";
+		table_row += ' hidden';
 	    }
+	    if (!col.disable_search) {
+		table_row += ' searchable';
+	    }
+	    table_row += '" style="width:'+w+'px;'+display_str+'">'+
+		         record[col.field]+'</td>';
 	}
 	table_row += '</tr>';
 	
@@ -224,16 +357,31 @@ ScrollTable.prototype.addRecord = function(records) {
 	this.rows[record['key']] = table_row;
     }
 
+    // Hide any hidden columns
+    $("#"+this.id+" td.hidden,th.hidden").hide();
+
     // Check for overflow: if none, add 16px to all elements
     // in the  last table column 
     var last_col = this.columns[this.columns.length-1];
     if (tbody[0].clientHeight==tbody[0].scrollHeight) {
-	$('#'+this.id+' td.'+last_col.id).attr(
+	$('#'+this.id+' td.'+last_col.id).css(
 	    "width",(last_col.width+16)+"px");
     } else {
-	$('#'+this.id+' td.'+last_col.id).attr(
+	$('#'+this.id+' td.'+last_col.id).css(
 	    "width",last_col.width+"px");
     }
+
+    // Filter records if needed
+    $("#"+this.id+" tbody tr").addClass("visible");
+    var query = "";
+    if (!$("#"+this.id+" input.filter").hasClass("no_input")) {
+	query = $("#"+this.id+" input.filter").attr("value");
+    }
+    this.filterRecord(query);
+
+    // Add even classes to all rows to allow them to be styled
+    $("#"+this.id+" tbody tr").removeClass("even");
+    $("#"+this.id+" tbody tr.visible:even").addClass("even");
 
 }; // end addRecord
 
@@ -246,6 +394,55 @@ ScrollTable.prototype.clearRecord = function() {
     this.rows = {};
 }; // end clearRecord
 
+ScrollTable.prototype.filterRecord = function(query) {
+    // Trim out leading/trailing whitespace
+    query = $.trim(query);
+
+    if (query=="") {
+	$("#"+this.id+" tbody tr")
+	    .removeClass("even")
+	    .addClass("visible")
+	    .show();
+    } else {
+	// Replace any remaining whitespace with OR
+	query = query.replace(/ /gi, '|');
+
+	// Escape any \
+	query = query.replace(/(\\)/gi, '\\\\');
+	
+	// Get non-searchable column names
+	var no_search = [];
+	for (var col in this.columns) {
+	    col = this.columns[col];
+	    if (col.disable_search) {
+		no_search.push(col.id);
+	    }
+	}
+
+	var regex_query = new RegExp(query, "i");
+
+	$("#"+this.id+" tbody tr").each(function(){
+	    if ($(this).find("td.searchable").text().search(regex_query)<0) {
+		$(this).removeClass("visible").hide();
+	    } else {
+		$(this).addClass("visible").show();
+	    }
+	    $(this).removeClass("even");
+	}); // end each tr
+    }
+
+    // Redo even row classes
+    $("#"+this.id+" tbody tr.visible:even").addClass("even");
+    
+    // Display the number of visible rows
+    var display_msg = "Displaying " + 
+                      $("#"+this.id+" tbody tr.visible").length +
+                      " of " +
+                      $("#"+this.id+" tbody tr").length +
+                      " rows";
+    $("#"+this.id+" tfoot td.filter_message").text(display_msg);
+
+}; // end filterRecord
 
 
 // TimePlot child class
@@ -395,7 +592,6 @@ TimePlot.prototype.init = function(record) {
 		    legend: legend_options,
 		    series: series_options,
 		    seriesColors: this.options.series_colors,
-		    seriesDefaults: {pointLabels:{show:false}}
                   };
 
     // Create the plot
@@ -483,8 +679,7 @@ TimePlot.prototype.addRecord = function(records) {
 
 	    sdata=[], ldata=[], udata=[], recs =[];
 
-	    // Pull out dates first and sort them
-	    ////here -- better way to do this?
+	    // Sort the records by date
 	    for (key in data_dict[series]) {
 	        recs.push(data_dict[series][key]);
 	    }

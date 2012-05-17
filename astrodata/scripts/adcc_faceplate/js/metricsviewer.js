@@ -48,14 +48,17 @@ MetricsViewer.prototype = {
 	var columns = [
                        {id:"datetime", name:"Time", 
 			field:"metadata-local_time", width:56,
-			sort:true, hidden:true},
+			sort:true, hidden:true, disable_search:true},
+                       {id:"obstype", name:"Obstype", 
+			field:"metadata-obstype", width:100,
+			hidden:true},
                        {id:"time", name:"LT",
 			field:"metadata-local_time_str", width:56,
 		        swap: "metadata-ut_time_str", alt_name:"UT"},
                        {id:"imgnum", name:"Img#",
 			field:"metadata-image_number", width:54},
 		       {id:"datalabel",	name:"Data Label", 
-			field:"metadata-datalabel", width:180},
+			field:"metadata-datalabel", width:190},
 		       {id:"wlen", name:"Wlen",
 			field:"metadata-wavelength_str", width:60},
 		       {id:"iq", name:"IQ",
@@ -207,7 +210,6 @@ MetricsViewer.prototype = {
 
 	    // clear previous selections 
 	    $("#metrics_table tbody tr").removeClass("highlight");
-	    $("#metrics_table tbody tr:even").addClass("even");
 	    mv.message_window.clearRecord();
 	    mv.iq_plot.highlightPoint();
 	    mv.cc_plot.highlightPoint();
@@ -215,7 +217,6 @@ MetricsViewer.prototype = {
 	
 	    // add new selection (if not deselecting)
 	    if (!selected) {
-		$(this).removeClass("even");
 		$(this).addClass("highlight");
 		var dl = $(this).find("td.datalabel").text();
 		var record = mv.database.getRecord(dl);
@@ -244,7 +245,8 @@ MetricsViewer.prototype = {
 
 	// Add a handler to hide the lightbox effect when there is a click
 	// anywhere in the window
-	$(document).click(function(){
+	$(document).on("click","#lightbox_background,span.close_icon",
+		       function(){
 	    mv.lightbox.clearRecord();
 	    $("#lightbox_background,#lightbox_window").hide();
 	});
@@ -290,7 +292,7 @@ MetricsViewer.prototype = {
 
 	// Outer wrapper
 	html_str += '<div id='+this.id+' class="metrics_viewer">';
-	
+
 	// Date prefix box
 	html_str += '<div id="date_wrapper"><span class="label">'+
 	            'Date prefix: </span><span id="date"></span></div>';
@@ -419,6 +421,7 @@ MetricsViewer.prototype = {
     update: function(records) {
 
 	// Check the time to see if the page needs to be turned over
+	////here -- this will not get called if there is no incoming data
 	var current_time = new Date();
 	if (current_time > this.turnover) {
 	    this.reset();
@@ -592,18 +595,6 @@ MetricsViewer.prototype = {
 		}
 	    }
 
-	    // Add even class to even rows to allow them to be styled
-	    // (unless they are highlighted)
-	    $('#metrics_table tbody tr:odd').each(function(){
-		$(this).removeClass("even");
-	    }); // end each
-	    $('#metrics_table tbody tr:even').each(function(){
-	        if (!$(this).hasClass("highlight")) {
-		    $(this).addClass("even");
-		}
-	    }); // end each
-
-	    
 	} else {
 	    ////here -- what should happen?
 	    console.log("No metrics table");
@@ -647,8 +638,8 @@ MetricsViewer.prototype = {
 	// with the message for the hovered-over row: this message
 	// may have changed as the table updated under the mouse
 	var mv = this;
-	$("#metrics_table td").removeClass("hover");
-	$("#metrics_table tr").each(function(){
+	$("#metrics_table tbody td").removeClass("hover");
+	$("#metrics_table tbody tr").each(function(){
 	    if (mv.isHover($(this)) && mv.isHover($("#table_wrapper"))) {
 		var dl = $(this).attr("id");
 		for (tt in mv.tooltips) {
@@ -657,7 +648,7 @@ MetricsViewer.prototype = {
 		    $("#"+tt.id).text(msg);
 		}
 
-		$(this).find("td").each(function(){
+		$(this).find("td").not(".hidden").each(function(){
 		    if (mv.isHover($(this))) {
 			$(this).addClass("hover");
 		    }

@@ -8,7 +8,6 @@ body {
 
 #table_wrapper {
     border: 1px solid black;
-    border-collapse: collapse;
     border-top-right-radius: 6px;
     -moz-box-shadow: 2px 0px 2px #888;
     -webkit-box-shadow: 2px 0px 2px #888;
@@ -30,6 +29,7 @@ thead.fixed_header th {
 
 tbody.scroll_body {
     background-color: white;
+    border-bottom: 1px solid #B0B0B0;
 }
 
 tbody.scroll_body td {
@@ -38,19 +38,40 @@ tbody.scroll_body td {
 }
 
 tbody.scroll_body td.hover {
-    /*background-color: #C0C0FF!important;*/
     background-color: #B0DBFF;
+}
+
+tfoot.fixed_footer tr {
+    position: relative;
+}
+
+tfoot.fixed_footer td.filter {
+    position: absolute;
+    height: 22px;
+    top: 50%;
+    margin-top: -11px;
+    right: 16px;
+}
+
+tfoot.fixed_footer td.filter_message {
+    padding-left: 14px;
+}
+
+tfoot.fixed_footer input.filter {
+    width: 150px;
+}
+
+.no_input {
+    color: #707070;
 }
 
 #date_wrapper {
     background-color: #D3EBFF;
-    /*background-color: #E0E0FF;*/
     border-left: 1px solid black;
     border-right: 1px solid black;
     border-top: 1px solid black;
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
-    border-collapse: collapse;
     -moz-box-shadow: 2px 0px 2px #888;
     -webkit-box-shadow: 2px 0px 2px #888;
     box-shadow: 2px 0px 2px #888;
@@ -67,19 +88,31 @@ div.label {
     float:left;
 }
 .highlight {
-    /*background-color: #B0B0FF*/;
-    background-color: #86C7FF;
+    background-color: #86C7FF!important;
 }
 .even {
-    /*background-color: #E0E0FF;*/
     background-color: #D3EBFF;
+}
+th.ui-draggable {
+    cursor: move;
+}
+th.ui-draggable-dragging {
+    background-color: #DDD;
+    box-shadow: 2px 2px 2px #888;
+    opacity: 0.7;
+    filter:alpha(opacity=70);
+}
+td.ui-draggable-dragging {
+    background-color: #DDD;
+}
+th.ui-droppable.hover {
+    background-color: #B0DBFF;
 }
 
 #message_wrapper {
     border-left: 1px solid black;
     border-right: 1px solid black;
     border-bottom: 1px solid black;
-    border-collapse: collapse;
     -moz-box-shadow: 2px 0px 2px #888;
     -webkit-box-shadow: 2px 0px 2px #888;
     box-shadow: 2px 0px 2px #888;
@@ -91,7 +124,7 @@ div.label {
 }
 #message_box {
     height: 10px;
-    padding-left: 16px;
+    padding-left: 17px;
     position: absolute;
     top: 50%;
     margin-top: -8px;
@@ -106,13 +139,12 @@ div.label {
     border-bottom: 1px solid black;
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
-    border-collapse: collapse;
     -moz-box-shadow: 2px 2px 2px #888;
     -webkit-box-shadow: 2px 2px 2px #888;
     box-shadow: 2px 2px 2px #888;
     clear: both;
     height: 340px;
-    padding: 20px 0px 10px 0px;
+    padding: 10px 0px 0px 0px;
     width: 1092px;
 }
 
@@ -132,57 +164,6 @@ div.label {
     width: 340px;
 }
 
-.outer {
-    position: relative;
-}
-.problem_icon {
-    position: absolute;
-    top: 0px;
-    right: 0px;
-    background-image: url(../images/red_triangle.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 5px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 5px;
-}
-.warn_icon {
-    position: absolute;
-    top: 0px;
-    right: 0px;
-    background-image: url(../images/yellow_triangle.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 5px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 5px;
-}
-.swap_icon {
-    position: absolute;
-    bottom: 0px;
-    background-image: url(../images/swap.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 9px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 11px;
-}
-
-.close_icon {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    background-image: url(../images/close.png);
-    background-repeat: no-repeat;
-    display: inline-block;
-    height: 12px;
-    overflow: hidden;
-    text-indent: -99999px;
-    width: 12px;
-}
 
 .jqplot-title {
     left:57px!important;
@@ -235,17 +216,87 @@ td.jqplot-series-hidden div.jqplot-table-legend-swatch {
     left: 50%;
     margin-left: -250px;
     margin-top: -150px;
-    height: 300px;
-    width: 500px;
+    height: 190px;
+    width: 360px;
     padding: 10px 15px 10px 15px;
     border: 1px solid black;
     z-index: 100;
+    -moz-box-shadow: 3px 3px 3px black;
+    -webkit-box-shadow: 3px 3px 3px black;
+    box-shadow: 3px 3px 3px black;
+    border-radius: 6px;
 }
 #lightbox_window h2 {
     color:#CE0000;
 }
 #lightbox_message {
-    height: 248px;
-    width: 500px;
+    height: 110px;
+    width: 100%;
     overflow: auto;
+}
+
+.outer {
+    position: relative;
+}
+.problem_icon {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background-image: url(../images/red_triangle.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 5px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 5px;
+}
+.warn_icon {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background-image: url(../images/yellow_triangle.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 5px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 5px;
+}
+.swap_icon {
+    position: absolute;
+    bottom: 0px;
+    background-image: url(../images/swap.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 9px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 11px;
+}
+
+.close_icon {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background-image: url(../images/close.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 12px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 12px;
+}
+
+.search_icon {
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    margin-top: -5px;
+    background-image: url(../images/search.png);
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 9px;
+    overflow: hidden;
+    text-indent: -99999px;
+    width: 10px;
 }
