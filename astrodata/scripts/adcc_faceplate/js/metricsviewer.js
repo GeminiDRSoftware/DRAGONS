@@ -62,11 +62,11 @@ MetricsViewer.prototype = {
 		       {id:"wlen", name:"Wlen",
 			field:"metadata-wavelength_str", width:60},
 		       {id:"iq", name:"IQ",
-			field:"iq-band", width:50},
+			field:"iq-band_str", width:50},
 		       {id:"cc", name:"CC",
-			field:"cc-band", width:50},
+			field:"cc-band_str", width:50},
 		       {id:"bg", name:"BG",
-			field:"bg-band", width:50},
+			field:"bg-band_str", width:50},
 		       {id:"deliq", name:"Delivered IQ",
 			field:"iq-delivered_str", width:100},
 		       {id:"zeniq", name:"Zenith IQ",
@@ -152,7 +152,7 @@ MetricsViewer.prototype = {
 	    met = metrics[i];
 	    tt = new TooltipOverlay($("#tooltip_wrapper"),"tooltip_"+met,
 				    "#metrics_table td."+met);
-	    this.tooltips[met+"-requested"] = tt;
+	    this.tooltips[met+"-requested_str"] = tt;
 	}
 
 	// Full filename, for image number column
@@ -329,6 +329,18 @@ MetricsViewer.prototype = {
 	return html_str;
     }, // end composeHTML
 
+    getBandString: function(metric,band) {
+	var band_str = "";
+	
+	if (band==100) {
+	    band_str = metric.toUpperCase() + "Any";
+	} else {
+	    band_str = metric.toUpperCase() + band;
+	}
+
+	return band_str;
+    }, // end getBandString
+
     getDateString: function() {
 	var date_str = "";
 	var date = new Date();
@@ -442,16 +454,38 @@ MetricsViewer.prototype = {
 
 	    // Add a few more useful fields to the record
 
-	    // Get just the hours and minutes from the local time
-	    // Input format: "YYYY-MM-DD HH:MM:SS"
-	    var time = record["metadata"]["local_time"];
-	    time = time.split(" ")[1].split(":",2).join(":");
-	    record["metadata"]["local_time_str"] = time;
+	    // Replace the local time with a datetime string,
+	    // derived from the ut_time field
+	    // Input format: "YYYY-MM-DD HH:MM:SS.SSS"
+	    var udt = record["metadata"]["ut_time"].split(" ");
+	    var ud = udt[0].split("-");
+	    var ut = udt[1].split(":");
+	    ut[3] = (parseFloat(ut[2])-parseInt(ut[2]))*1000;
+	    ut[2] = parseInt(ut[2]);
 
-	    // Do the same for the ut time
-	    var time = record["metadata"]["ut_time"];
-	    time = time.split(" ")[1].split(":",2).join(":");
-	    record["metadata"]["ut_time_str"] = time;
+	    var ldate = new Date(Date.UTC(ud[0],ud[1]-1,ud[2],
+					  ut[0],ut[1],ut[2], ut[3]));
+
+	    // Pad with zeroes if necessary
+	    var month = ldate.getMonth() + 1;
+	    month = (month <10 ? "0" : "") +  month;
+	    var day = ldate.getDate();
+	    day = (day <10 ? "0" : "") +  day;
+	    var hour = ldate.getHours();
+	    hour = (hour <10 ? "0" : "") +  hour;
+	    var min = ldate.getMinutes();
+	    min = (min <10 ? "0" : "") +  min;
+	    var sec = ldate.getSeconds()+ldate.getMilliseconds()/1000.0;
+	    sec = (sec <10 ? "0" : "") +  sec;
+
+	    var ld = [ldate.getFullYear(),month,day];
+	    var lt = [hour,min,sec];
+	    record["metadata"]["local_time"] = ld.join("-") + " " +
+	                                       lt.join(":");
+
+	    // Get just the hours and minutes from the local/ut time
+	    record["metadata"]["local_time_str"] = lt[0]+":"+lt[1];
+	    record["metadata"]["ut_time_str"] = ut[0]+":"+ut[1];
 
 	    // Get the image number from the filename
 	    var imgnum = record["metadata"]["filename"];
@@ -476,14 +510,16 @@ MetricsViewer.prototype = {
 	    // Format the wavelength into a more readable string
 	    if (types.indexOf("SPECT")!=-1) {
 		var wlen = record["metadata"]["wavelength"];
-		wlen = parseInt(wlen) + "nm";
+		wlen = parseFloat(wlen).toFixed(3) + "\u00B5m";
 		record["metadata"]["wavelength_str"] = wlen;
 	    } else {
 		record["metadata"]["wavelength_str"] = 
 		    record["metadata"]["filter"];
 	    }
-
+	    
 	    // Format some metrics into strings including errors
+	    // and format integer bands into strings
+	    // (eg. 50 -> "CC50")
 	    if (record["iq"]) {
 		record["iq"]["delivered_str"] = 
 	            record["iq"]["delivered"].toFixed(2) + " \u00B1 " +
@@ -491,6 +527,10 @@ MetricsViewer.prototype = {
 		record["iq"]["zenith_str"] = 
 		    record["iq"]["zenith"].toFixed(2) + " \u00B1 " +
 		    record["iq"]["delivered_error"].toFixed(2);
+		record["iq"]["band_str"] = 
+		    this.getBandString("iq",record["iq"]["band"]);
+		record["iq"]["requested_str"] = 
+		    this.getBandString("iq",record["iq"]["requested"]);
 	    }
 	    if (record["cc"]) {
 		record["cc"]["extinction_str"] = 
@@ -509,11 +549,19 @@ MetricsViewer.prototype = {
 		zperr = Math.sqrt(zperr);
 		record["cc"]["zeropoint_str"] = zp.toFixed(2) +" \u00B1 " +
 		                                zperr.toFixed(2);
+		record["cc"]["band_str"] = 
+		    this.getBandString("cc",record["cc"]["band"]);
+		record["cc"]["requested_str"] = 
+		    this.getBandString("cc",record["cc"]["requested"]);
 	    }
 	    if (record["bg"]) {
 		record["bg"]["brightness_str"] = 
 	            record["bg"]["brightness"].toFixed(2) + " \u00B1 " +
 	            record["bg"]["brightness_error"].toFixed(2);
+		record["bg"]["band_str"] = 
+		    this.getBandString("bg",record["bg"]["band"]);
+		record["bg"]["requested_str"] = 
+		    this.getBandString("bg",record["bg"]["requested"]);
 	    }
 
 	    // Add the record to the database
@@ -763,14 +811,14 @@ MetricsViewer.prototype = {
 			                        record[k[0]][k[1]].toFixed(2);
 		} else if (k[1]=="waveband") {
 		    tooltip_record["message"] = record[k[0]][k[1]] + "-band";
-		} else if (k[1]=="requested"){
+		} else if (k[1]=="requested_str"){
 		    tooltip_record["message"] = "Requested " +
 			                        record[k[0]][k[1]];
 		} else {
 		    tooltip_record["message"] = record[k[0]][k[1]];
 		}
 	    } else {
-		tooltip_record["message"] = "--";
+		tooltip_record["message"] = null;
 	    }
 
 	    tt_records.push(tooltip_record);
@@ -856,26 +904,30 @@ MetricsViewer.prototype = {
 				    message += "<span class=label>"+
 					       msg_array[mi]+"</span><br>";
 				    message += "Delivered IQ: "+
-					       record["iq"]["band"] + "<br>";
+					       record["iq"]["band_str"] +
+					       "<br>";
 				    message += "Requested IQ: "+
-					       record["iq"]["requested"]+"<br>";
+					       record["iq"]["requested_str"]+
+					       "<br>";
 				    has_msg = true;
 				}
 			    } else if (metric=="cc") {
 				message += "<span class=label>"+
 				           msg_array[mi]+"</span><br>";
 				message += "Delivered CC: "+
-				           record["cc"]["band"] + "<br>";
+				           record["cc"]["band_str"] + "<br>";
 				message += "Requested CC: "+
-				           record["cc"]["requested"] + "<br>";
+				           record["cc"]["requested_str"] + 
+				           "<br>";
 				has_msg = true;
 			    } else if (metric=="bg") {
 				message += "<span class=label>"+
 				           msg_array[mi]+"</span><br>";
 				message += "Delivered BG: "+
-				           record["bg"]["band"] + "<br>";
+				           record["bg"]["band_str"] + "<br>";
 				message += "Requested BG: "+
-				           record["bg"]["requested"] + "<br>";
+				           record["bg"]["requested_str"] + 
+				           "<br>";
 				has_msg = true;
 			    }
 			}

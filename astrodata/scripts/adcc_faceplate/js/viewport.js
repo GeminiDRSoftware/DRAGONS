@@ -123,11 +123,13 @@ ScrollTable.prototype.init = function() {
     }); // end on keypress
 
     // Make the column headers draggable
-    $("#"+this.id+" th").not(".hidden").draggable({
+    $("#"+this.id+" th").not(".hidden,.pad").draggable({
 	    //containment: "parent",
         cursor: "move",
 	helper: "clone",
 	revert: true,
+	revertDuration: 200,
+	zIndex: 100,
 	start: function(ev,ui) {
 		var drg_id;
 		for (var col_i=0;col_i<st.columns.length;col_i++) {
@@ -147,7 +149,7 @@ ScrollTable.prototype.init = function() {
     }); // end draggable
 
     // Make them droppable too
-    $("#"+this.id+" th").not(".hidden").droppable({
+    $("#"+this.id+" th").not(".hidden,.pad").droppable({
         drop: reorderColumns,
 	hoverClass: "hover",
 	tolerance: "pointer"
@@ -158,6 +160,7 @@ ScrollTable.prototype.init = function() {
 	var dragged = ui.draggable;
 	var target = $(this);
 	var tgt_i, drg_i;
+	var last_col = st.columns[st.columns.length-1];
 	for (var col_i=0;col_i<st.columns.length;col_i++) {
 	    var col = st.columns[col_i];
 	    if (target.hasClass(col.id)) {
@@ -181,7 +184,7 @@ ScrollTable.prototype.init = function() {
 		// Move the header cell
 		$("#"+st.id+" th."+drg_col.id)
 		    .insertBefore($("#"+st.id+" th").eq(tgt_i));
-	
+
 		// Move the data cells
 		$("#"+st.id+" tbody td."+drg_col.id).each(function(){
 		    var target = $(this).parent().find("td").eq(tgt_i);
@@ -229,12 +232,7 @@ ScrollTable.prototype.composeHTML = function() {
 	}
 	html_str += '"';
 
-
 	// Set column width
-	// Add 16px to the width of the last header element for the scroll bar
-	if (i==this.columns.length-1) {
-	    w+=16;
-	}
 	html_str += ' style="width:'+w+'px"';
 	html_str += '>';
 
@@ -360,15 +358,11 @@ ScrollTable.prototype.addRecord = function(records) {
     // Hide any hidden columns
     $("#"+this.id+" td.hidden,th.hidden").hide();
 
-    // Check for overflow: if none, add 16px to all elements
-    // in the  last table column 
-    var last_col = this.columns[this.columns.length-1];
-    if (tbody[0].clientHeight==tbody[0].scrollHeight) {
-	$('#'+this.id+' td.'+last_col.id).css(
-	    "width",(last_col.width+16)+"px");
-    } else {
-	$('#'+this.id+' td.'+last_col.id).css(
-	    "width",last_col.width+"px");
+    // Check for overflow: if present, add a 16px pad to the table header
+    $("#"+this.id+" th.pad").remove();
+    if (tbody[0].clientHeight!=tbody[0].scrollHeight) {
+	$("#"+this.id+" thead tr").append(
+	    '<th class="pad" style="width:16px;padding:0px"></th>');
     }
 
     // Filter records if needed
@@ -861,6 +855,17 @@ TimePlot.prototype.highlightPoint = function(key) {
     // Get the point information from the record
     var point = rec["point"];
 
+    // Check whether point is currently visible
+    if (point.data[0]>this.plot.axes.xaxis.max || 
+	point.data[0]<this.plot.axes.xaxis.min || 
+	point.data[1]>this.plot.axes.yaxis.max || 
+	point.data[1]<this.plot.axes.yaxis.min) {
+
+	// If not, clear existing highlights
+	highlight_fn(this.plot);
+	return;
+    }
+
     // Highlight the point
     highlight_fn(this.plot, point);
 
@@ -911,6 +916,18 @@ TooltipOverlay.prototype.init = function() {
 
 	var trigger = $(this);
 
+	// Add the message
+	var key = trigger.attr("id");
+	if (key==undefined) {
+	    key = trigger.parent().attr("id");
+	}
+	var msg = messages[key];
+	if (msg==undefined) {
+	    // If no message defined, do not display tooltip
+	    return;
+	}
+	tooltip.text(msg);
+
 	// Calculate position of tooltip
 	var tt_left, tt_top;
 	var trg_pos = trigger.offset();
@@ -940,17 +957,6 @@ TooltipOverlay.prototype.init = function() {
 	    top: tt_top,
 	    position: "absolute"
 	});
-
-	// Add the message
-	var key = trigger.attr("id");
-	if (key==undefined) {
-	    key = trigger.parent().attr("id");
-	}
-	var msg = messages[key];
-	if (msg==undefined) {
-	    msg = "No message";
-	}
-	tooltip.text(msg);
 
 	// Set delay so that tooltip does not trigger on 
 	// accidental mouseover
