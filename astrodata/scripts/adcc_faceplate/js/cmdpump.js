@@ -8,6 +8,7 @@ function GJSCommandPipe(url) {
     this.timeout = null;
     this.stop = true;
     this.timestamp = null;
+    this.msgtype = null;
     this.delay = 1000;
 }
 GJSCommandPipe.prototype = {
@@ -23,10 +24,10 @@ GJSCommandPipe.prototype = {
 	var msg_types = {};
         $.each(data, function (ind) {
             var msg = this;
-	    if (msg_types[msg["msgType"]]==undefined) {
-		msg_types[msg["msgType"]] = [];
+	    if (msg_types[msg["msgtype"]]==undefined) {
+		msg_types[msg["msgtype"]] = [];
 	    }
-	    msg_types[msg["msgType"]].push(msg);
+	    msg_types[msg["msgtype"]].push(msg);
 	}); // end each message
 
 	$.each(msg_types, function(thetype) {
@@ -49,9 +50,14 @@ GJSCommandPipe.prototype = {
     }, // end registerCallback
 
     pump: function() {
+	if (this.timeout) {
+	    clearTimeout(this.timeout);
+	    this.timeout = null;
+	}
         var gjs = this;	
 	$.ajax({type: "GET",
-		data: {timestamp: gjs.timestamp},
+		data: {timestamp: gjs.timestamp,
+		       msgtype: gjs.msgtype},
 		url: gjs.cmdq_url,
 	        success: function (data) {
 		    gjs.iteratePump(data);
@@ -71,9 +77,10 @@ GJSCommandPipe.prototype = {
 	}); // end ajax
     }, // end pump
 
-    startPump: function(timestamp) {
+    startPump: function(timestamp,msgtype) {
 	this.stop = false;
 	this.timestamp = timestamp;
+	this.msgtype = msgtype;
 	this.pump();
     },
 

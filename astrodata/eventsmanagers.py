@@ -38,7 +38,7 @@ class EventsManager:
                 md = self.get_metadict(ad)
             curtime = time.time()
             wholed = {  
-                        "msgType":"stat",
+                        "msgtype":"qametric",
                         name : mdict,
                         "timestamp": curtime
                      }

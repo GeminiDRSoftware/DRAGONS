@@ -116,8 +116,10 @@ MetricsViewer.prototype = {
 	iq_options.yaxis_label = "Zenith IQ (arcsec)";
 	iq_options.series_labels = ["U","B","V","R","I",
 				    "Y","J","H","K","L","M","N","Q"];
+	// These colors were tested for distinctiveness under common
+	// color-blindness conditions at http://newmanservices.com/colorblind
 	iq_options.series_colors = ["#0D00BD","#5C84FF","#9CCF31",
-				    "#F7D708","#CE0000","#86C7FF"],
+				    "#F7E908","#CE0000","#86C7FF"],
 	this.iq_plot = new TimePlot($("#iq_plot_wrapper"),"iqplot",iq_options);
 
 	// CC Plot
@@ -261,7 +263,7 @@ MetricsViewer.prototype = {
 	prev_turnover.setHours(14);
 	prev_turnover.setMinutes(0);
 	prev_turnover.setSeconds(0);
-	
+
 	var next_turnover = new Date(prev_turnover.getFullYear(),
 				     prev_turnover.getMonth(),
 				     prev_turnover.getDate() + 1,
@@ -282,8 +284,17 @@ MetricsViewer.prototype = {
 
 	// Hook up the adcc command pump to the update function
 	this.gjs = new GJSCommandPipe();
-	this.gjs.registerCallback("stat",function(msg){mv.update(msg);});
-	this.gjs.startPump(timestamp);
+	this.gjs.registerCallback("qametric",function(msg){mv.update(msg);});
+	this.gjs.startPump(timestamp,"qametric");
+
+	// Set up a timeout to check the time every minute to see if the
+	// page needs to be turned over
+	mv.reset_timeout = setTimeout(function(){
+	    var current_time = new Date();
+	    if (current_time > mv.turnover) {
+		mv.reset();
+	    }
+	},60000);
 
     }, // end init
 
@@ -417,6 +428,7 @@ MetricsViewer.prototype = {
 	prev_turnover.setHours(14);
 	prev_turnover.setMinutes(0);
 	prev_turnover.setSeconds(0);
+	
 	var timestamp = Math.round(prev_turnover.valueOf()/1000);
 	
 	var next_turnover = new Date(prev_turnover.getFullYear(),
@@ -426,18 +438,10 @@ MetricsViewer.prototype = {
 	this.turnover = next_turnover;
 
 	// Restart the pump
-	////here -- this may result in double pumping
-	this.gjs.startPump(timestamp);
+	this.gjs.startPump(timestamp,"qametric");
     },
 
     update: function(records) {
-
-	// Check the time to see if the page needs to be turned over
-	////here -- this will not get called if there is no incoming data
-	var current_time = new Date();
-	if (current_time > this.turnover) {
-	    this.reset();
-	}
 
 	// Test input; make into an array if needed
 	if (!records) {
