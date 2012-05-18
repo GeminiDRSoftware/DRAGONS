@@ -34,16 +34,16 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
         import time
         bigreport = {"msgType": "stat",
          "timestamp": time.time(),
-         "iq": {"band": "IQ85",
+         "iq": {"band": 85,
                 "delivered": 0.983,
                 "delivered_error": 0.1,
                 "zenith": 0.7 + random.uniform(-.5,.5),#0.947,
                 "ellipticity": 0.118,
                 "ellip_error": 0.067,
-                "requested": "IQ85",
+                "requested": 85,
                 "comment": ["High ellipticity"],
                 },
-         "cc": {"band": "CC70",
+         "cc": {"band": 70,
                 "zeropoint": {"e2v 10031-23-05, right":{"value":26.80,
                                                         "error":0.05},
                               "e2v 10031-01-03, right":{"value":26.86,
@@ -52,13 +52,13 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
                                                        "error":0.06}},
                 "extinction": .5 + random.uniform(-.5,.5),#0.02,
                 "extinction_error": 0.5,
-                "requested": "CC50",
+                "requested": 50,
                 "comment": ["Requested CC not met"],
                 },
-         "bg": {"band": "BGAny",
+         "bg": {"band": 100,
                 "brightness": 20 + random.uniform(-.8,.8),#19.17,
                 "brightness_error": 0.5,
-                "requested": "BGAny",
+                "requested": 100,
                 "comment": []
                 },
          }
@@ -69,8 +69,8 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
                     { "filename": ad.filename,
                       "datalabel": ad.data_label().as_pytype(),
                       "local_time": ad.local_time().as_pytype(),
-                      "ut_time": ad.ut_datetime().as_pytype().strftime("%Y-%m-%d %H:%M:%S"),
-                      "wavelength": ad.central_wavelength(asNanometers=True).as_pytype(),
+                      "ut_time": ad.ut_datetime().as_pytype().strftime("%Y-%m-%d %H:%M:%S.%f"),
+                      "wavelength": ad.central_wavelength(asMicrometers=True).as_pytype(),
                       "filter": ad.filter_name(pretty=True).as_pytype(),
                       "waveband": ad.wavelength_band().as_pytype(),
                       "airmass": ad.airmass().as_pytype(),
@@ -81,27 +81,29 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
                   }
             import random
             now = datetime.datetime.utcnow()
-            #now_lt = datetime.datetime.now()
-            tonight = datetime.datetime.now().replace(hour =19, minute=0)            
+            if now.hour>17:
+                tonight = now.replace(hour =5, minute=0)+datetime.timedelta(days=1)
+            else:
+                tonight = now.replace(hour =5, minute=0)
             nexttime = datetime.timedelta(minutes = self.datacounter*15 + random.randint(-60,0))
-            self.datacounter += 1            
-            now_lt = tonight + nexttime
-            #now_lt = now_lt.replace(hour=datacounter, #random.randint(18,23),
-            #                        minute=random.randint(0,59))
-            # now_lt = now_lt + datetime.timedelta(minutes=30*numcall)
-            filename = "N%sS0%0.3d.fits" % (now.strftime("%Y%m%d"),
-                                          random.randint(1,999))
+            self.datacounter += 1
+            now_ut = tonight + nexttime
 
-            wlen = ['g','V','r','R','i','I','z','I']
+            filename = "N%sS0%0.3d.fits" % (now.strftime("%Y%m%d"),
+                                            random.randint(1,999))
+            dl = "GN-2012B-Q-%i-1-001" % random.randint(1,20)
+
+            wlen = ['u','U','b','B','g','V','r','R','i','I','z','I']
+            #wlen = ['g','V']
             wlen_ind = 2*random.randint(0,len(wlen)/2-1)
             
-            mtd["metadata"].update({"local_time": now_lt.strftime("%Y-%m-%d %H:%M:%S"),
-                                    "datalabel": "GN-2012B-Q-0-000-%0.3d" % random.randint(1,999),
+            mtd["metadata"].update({"ut_time": now_ut.strftime("%Y-%m-%d %H:%M:%S.%f"),
+                                    "datalabel": dl,
                                     "filename": filename,
                                     "filter": wlen[wlen_ind],
                                     "wavelength": wlen[wlen_ind],
                                     "waveband": wlen[wlen_ind+1]})
-            delt = (now_lt - now.replace(hour=0,minute=0) )
+            delt = (now_ut - now.replace(hour=0,minute=0) )
             nowsec = float(delt.days*86400 + delt.seconds)
                 
             return (mtd, nowsec)
@@ -122,20 +124,20 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
         for i in range(0,test_num):    
             for inp in rc.get_inputs_as_astrodata():
                 mtd,nowsec = mock_metadata(inp)
-                num =  sin(nowsec/60/60)
+                num =  sin(nowsec/60/60)*.2
                 ch = random.choice(["iq", "cc", "bg"])
                 if ch == "iq":
-                    qad = {"band": "IQ85",
+                    qad = {"band": 85,
                         "delivered": 0.983,
                         "delivered_error": 0.1,
                         "zenith": 0.7 + num*.4 ,#0.947,
                         "ellipticity": 0.118,
                         "ellip_error": 0.067,
-                        "requested": "IQ85",
+                        "requested": 85,
                         "comment": ["High ellipticity"],
                         }
                 elif ch == "cc":
-                    qad = {"band": "CC70",
+                    qad = {"band": 70,
                             "zeropoint": {"e2v 10031-23-05, right":{"value":26.80,
                                                                     "error":0.05},
                                           "e2v 10031-01-03, right":{"value":26.86,
@@ -144,14 +146,14 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
                                                                    "error":0.06}},
                             "extinction": .5 + num *.5,#0.02,
                             "extinction_error": 0.5,
-                            "requested": "CC50",
+                            "requested": 50,
                             "comment": ["Requested CC not met"],
                             }
                 elif ch == "bg":
-                    qad =  {"band": "BGAny",
+                    qad =  {"band": 100,
                             "brightness": 20 + num *.8,#19.17,
                             "brightness_error": 0.5,
-                            "requested": "BGAny",
+                            "requested": 100,
                             "comment": []
                             }
                 #print "pG108:"+pprint.pformat(qad)
