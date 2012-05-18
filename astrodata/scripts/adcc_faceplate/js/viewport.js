@@ -594,9 +594,8 @@ TimePlot.prototype.init = function(record) {
     // Store a data dictionary in the plot
     this.plot.data_dict = {};
 
+    var tp = this;
     if (this.options.series_labels.length>1) {
-	var tp = this;
-
 	// Add click handler, to track selected series if the legend is clicked
 	$("#"+tp.id).on("click","td.jqplot-table-legend",function(){
 	    for (var series_i in tp.plot.series) {
@@ -609,7 +608,7 @@ TimePlot.prototype.init = function(record) {
 
 	// Add hook, to be called after each draw:
 	// If series not selected before the redraw, hide it
-	var postDraw = function() {
+	var hideUnselected = function() {
 	    $("#"+tp.id+" td.jqplot-table-legend-label").each(function(){
 		var srs = $(this).text();
 	        if (tp.selected[srs]!=undefined && !tp.selected[srs]) {
@@ -620,8 +619,24 @@ TimePlot.prototype.init = function(record) {
 	        }
 	    }); // end each legend label td
 	};
-	tp.plot.postDrawHooks.add(postDraw);
+	tp.plot.postDrawHooks.add(hideUnselected);
     }
+
+    // Add hook, to be called after each draw:
+    // Update point information in the data dictionary
+    var updatePoints = function() {
+	for (var i=0; i<tp.options.series_labels.length; i++) {
+	    s = tp.plot.series[i];
+	    for (var j=0; j<s.gridData.length; j++) {
+		p = s.gridData[j];
+		var point = {seriesIndex:i, pointIndex:j, 
+			     gridData:p, data:s.data[j]};
+		tp.plot.data_dict[s.label][s.data[j][2]]["point"] = point;
+	    }
+	}
+    };
+    tp.plot.postDrawHooks.add(updatePoints);
+
 }; // end init
 
 TimePlot.prototype.composeHTML = function() {
@@ -799,17 +814,6 @@ TimePlot.prototype.addRecord = function(records) {
 	this.plot.replot({resetAxes:['yaxis']});
     } else {
 	this.plot = $.jqplot(this.id, data, this.config);
-    }
-
-    // Store information about the plotted points in the data dictionary
-    for (var i=0; i<series_to_use.length; i++) {
-	s = this.plot.series[i];
-	for (var j=0; j<s.gridData.length; j++) {
-	    p = s.gridData[j];
-	    var point = {seriesIndex:i, pointIndex:j, 
-			 gridData:p, data:s.data[j]};
-	    data_dict[s.label][s.data[j][2]]["point"] = point;
-	}
     }
 
     // Store the data dictionary in the plot
