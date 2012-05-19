@@ -434,6 +434,7 @@
                 hl.isHighlighting = false;
                 hl.currentNeighbor = null;
                 ctx = null;
+		plot.target.trigger('jqplotDataPointUnhighlight');
             }
             else if (neighbor != null && series_show && !hl.isHighlighting) {
                 hl.isHighlighting = true;
@@ -447,6 +448,7 @@
                 if (hl.bringSeriesToFront) {
                     plot.moveSeriesToFront(neighbor.seriesIndex);
                 }
+		plot.target.trigger('jqplotDataPointHighlight',neighbor);
             }
             // check to see if we're highlighting the wrong point.
             else if (neighbor != null && hl.isHighlighting && hl.currentNeighbor != neighbor) {
@@ -456,6 +458,9 @@
                 if (series_show) {
                     var ctx = hl.highlightCanvas._ctx;
                     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+		    plot.target.trigger('jqplotDataPointUnhighlight');
+
                     hl.isHighlighting = true;
                     hl.currentNeighbor = neighbor;
                     if (hl.showMarker) {
@@ -467,6 +472,8 @@
                     if (hl.bringSeriesToFront) {
                         plot.moveSeriesToFront(neighbor.seriesIndex);
                     }                    
+
+		    plot.target.trigger('jqplotDataPointHighlight',neighbor);
                 }                
             }
         }

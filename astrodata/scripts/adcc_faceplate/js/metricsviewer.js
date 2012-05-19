@@ -53,30 +53,30 @@ MetricsViewer.prototype = {
 			field:"metadata-obstype", width:100,
 			hidden:true},
                        {id:"time", name:"LT",
-			field:"metadata-local_time_str", width:56,
+			field:"metadata-local_time_str", width:50,
 		        swap: "metadata-ut_time_str", alt_name:"UT"},
                        {id:"imgnum", name:"Img#",
-			field:"metadata-image_number", width:54},
+			field:"metadata-image_number", width:43},
 		       {id:"datalabel",	name:"Data Label", 
 			field:"metadata-datalabel", width:190},
 		       {id:"wlen", name:"Wlen",
 			field:"metadata-wavelength_str", width:60},
 		       {id:"iq", name:"IQ",
-			field:"iq-band_str", width:50},
+			field:"iq-band_str", width:54},
 		       {id:"cc", name:"CC",
-			field:"cc-band_str", width:50},
+			field:"cc-band_str", width:54},
 		       {id:"bg", name:"BG",
-			field:"bg-band_str", width:50},
+			field:"bg-band_str", width:54},
 		       {id:"deliq", name:"Delivered IQ",
-			field:"iq-delivered_str", width:100},
+			field:"iq-delivered_str", width:94},
 		       {id:"zeniq", name:"Zenith IQ",
-			field:"iq-zenith_str",width:100},
+			field:"iq-zenith_str",width:94},
 		       {id:"zeropt", name:"Zeropoint",
-			field:"cc-zeropoint_str",width:100},
+			field:"cc-zeropoint_str",width:94},
 		       {id:"extinc", name:"Extinction", 
-			field:"cc-extinction_str",width:100},
-		       {id:"sky", name:"Sky Brightness", 
-			field:"bg-brightness_str",width:114}
+			field:"cc-extinction_str",width:94},
+		       {id:"sky", name:"Sky Mag", 
+			field:"bg-brightness_str",width:94}
 		       ]; // end columns
 	this.metrics_table = new ScrollTable($("#table_wrapper"),
 					     "metrics_table",columns);
@@ -102,6 +102,7 @@ MetricsViewer.prototype = {
 	maxdate.setSeconds(0);
 	var options = {mindate: mindate.toString(),
 		       maxdate: maxdate.toString(),
+		       overlay: [],
 		       series_labels: [""],
 	               series_colors: [""],
 	               bg_color: "white",
@@ -116,9 +117,62 @@ MetricsViewer.prototype = {
 	iq_options.yaxis_label = "Zenith IQ (arcsec)";
 	iq_options.series_labels = ["U","B","V","R","I",
 				    "Y","J","H","K","L","M","N","Q"];
+	iq_options.overlay = [//U
+			      [{y:0.50,name:"IQ20",color:'#888'},
+	                       {y:0.90,name:"IQ70",color:'#888'},
+	                       {y:1.20,name:"IQ85",color:'#888'}],
+			      //B
+			      [{y:0.45,name:"IQ20",color:'#888'},
+	                       {y:0.85,name:"IQ70",color:'#888'},
+	                       {y:1.15,name:"IQ85",color:'#888'}],
+			      //V
+			      [{y:0.45,name:"IQ20",color:'#888'},
+	                       {y:0.80,name:"IQ70",color:'#888'},
+	                       {y:1.10,name:"IQ85",color:'#888'}],
+			      //R
+			      [{y:0.45,name:"IQ20",color:'#888'},
+	                       {y:0.75,name:"IQ70",color:'#888'},
+	                       {y:1.05,name:"IQ85",color:'#888'}],
+			      //I
+			      [{y:0.40,name:"IQ20",color:'#888'},
+	                       {y:0.75,name:"IQ70",color:'#888'},
+	                       {y:1.05,name:"IQ85",color:'#888'}],
+			      //Y
+			      [{y:0.40,name:"IQ20",color:'#888'},
+	                       {y:0.65,name:"IQ70",color:'#888'},
+	                       {y:0.90,name:"IQ85",color:'#888'}],
+			      //J
+			      [{y:0.35,name:"IQ20",color:'#888'},
+	                       {y:0.55,name:"IQ70",color:'#888'},
+	                       {y:0.80,name:"IQ85",color:'#888'}],
+			      //H
+			      [{y:0.35,name:"IQ20",color:'#888'},
+	                       {y:0.55,name:"IQ70",color:'#888'},
+	                       {y:0.80,name:"IQ85",color:'#888'}],
+			      //K
+			      [{y:0.30,name:"IQ20",color:'#888'},
+	                       {y:0.50,name:"IQ70",color:'#888'},
+	                       {y:0.75,name:"IQ85",color:'#888'}],
+			      //L
+			      [{y:0.30,name:"IQ20",color:'#888'},
+	                       {y:0.45,name:"IQ70",color:'#888'},
+	                       {y:0.70,name:"IQ85",color:'#888'}],
+			      //M
+			      [{y:0.30,name:"IQ20",color:'#888'},
+	                       {y:0.45,name:"IQ70",color:'#888'},
+	                       {y:0.65,name:"IQ85",color:'#888'}],
+			      //N
+			      [{y:0.34,name:"IQ20",color:'#888'},
+	                       {y:0.37,name:"IQ70",color:'#888'},
+	                       {y:0.45,name:"IQ85",color:'#888'}],
+			      //Q
+			      [{y:0.00,name:"IQ20",color:'#888'},
+	                       {y:0.50,name:"IQ70",color:'#888'},
+	                       {y:0.54,name:"IQ85",color:'#888'}]]
+
 	// These colors were tested for distinctiveness under common
 	// color-blindness conditions at http://newmanservices.com/colorblind
-	iq_options.series_colors = ["#0D00BD","#5C84FF","#9CCF31",
+	iq_options.series_colors = ["#3F35EA","#5C84FF","#9CCF31",
 				    "#F7E908","#CE0000","#86C7FF"],
 	this.iq_plot = new TimePlot($("#iq_plot_wrapper"),"iqplot",iq_options);
 
@@ -128,19 +182,50 @@ MetricsViewer.prototype = {
 	cc_options.yaxis_label = "Extinction (mag)";
 	cc_options.series_labels = ["cc"];
 	cc_options.series_colors = ["#86C7FF"];
+	cc_options.overlay = [[{y:0.08,name:"CC50",color:'#888'},
+	                       {y:0.3,name:"CC70",color:'#888'},
+	                       {y:1.0,name:"CC80",color:'#888'}]];
 	this.cc_plot = new TimePlot($("#cc_plot_wrapper"),"ccplot",cc_options);
 
 	// BG Plot
 	var bg_options = $.extend(true,{},options);
 	bg_options.title = "Sky Brightness";
 	bg_options.yaxis_label = "Sky Brightness (mag/arcsec^2)";
-	bg_options.series_labels = ["bg"];
-	bg_options.series_colors = ["#FF9E00"];
+	bg_options.series_labels = ["u","g","r","i","z"];
+	bg_options.series_colors = ["#86C7FF","#5C84FF","#FF9E00",
+				    "#F7E908","#3F35EA"];
+	bg_options.overlay = [ //u
+	                       [{y:21.66,name:"BG20",color:'#888'},
+	                        {y:19.49,name:"BG50",color:'#888'},
+	                        {y:17.48,name:"BG80",color:'#888'}],
+			       //g
+	                       [{y:21.62,name:"BG20",color:'#888'},
+	                        {y:20.68,name:"BG50",color:'#888'},
+	                        {y:19.36,name:"BG80",color:'#888'}],
+			       //r
+	                       [{y:21.33,name:"BG20",color:'#888'},
+	                        {y:20.32,name:"BG50",color:'#888'},
+	                        {y:19.34,name:"BG80",color:'#888'}],
+			       //i
+	                       [{y:20.44,name:"BG20",color:'#888'},
+	                        {y:19.97,name:"BG50",color:'#888'},
+	                        {y:19.30,name:"BG80",color:'#888'}],
+			       //z
+	                       [{y:19.47,name:"BG20",color:'#888'},
+	                        {y:19.42,name:"BG50",color:'#888'},
+	                        {y:19.33,name:"BG80",color:'#888'}],
+			      ];
 	this.bg_plot = new TimePlot($("#bg_plot_wrapper"),"bgplot",bg_options);
 
 
 	// Instantiate tooltips
 	this.tooltips = {};
+
+	// Ellipticity, for delivered IQ table column
+	var el_tt = new TooltipOverlay($("#tooltip_wrapper"),
+				       "tooltip_ellipticity",
+				       "#metrics_table td.deliq");
+	this.tooltips["iq-ellipticity_str"] = el_tt;
 
 	// Airmass, for zenith IQ table column
 	var am_tt = new TooltipOverlay($("#tooltip_wrapper"),"tooltip_airmass",
@@ -289,7 +374,7 @@ MetricsViewer.prototype = {
 
 	// Set up a timeout to check the time every minute to see if the
 	// page needs to be turned over
-	mv.reset_timeout = setTimeout(function(){
+	mv.reset_timeout = setInterval(function(){
 	    var current_time = new Date();
 	    if (current_time > mv.turnover) {
 		mv.reset();
@@ -419,6 +504,8 @@ MetricsViewer.prototype = {
 	for (var tt in this.tooltips) {
 	    this.tooltips[tt].clearRecord();
 	}
+	mv.lightbox.clearRecord();
+	$("#lightbox_background,#lightbox_window").hide();
 
 	// Set the turnover times
 	var prev_turnover = new Date();
@@ -531,6 +618,9 @@ MetricsViewer.prototype = {
 		record["iq"]["zenith_str"] = 
 		    record["iq"]["zenith"].toFixed(2) + " \u00B1 " +
 		    record["iq"]["delivered_error"].toFixed(2);
+		record["iq"]["ellipticity_str"] = 
+		    record["iq"]["ellipticity"].toFixed(2) + " \u00B1 " +
+		    record["iq"]["ellip_error"].toFixed(2);
 		record["iq"]["band_str"] = 
 		    this.getBandString("iq",record["iq"]["band"]);
 		record["iq"]["requested_str"] = 
@@ -775,6 +865,8 @@ MetricsViewer.prototype = {
 		var series;
 		if (dk[0]=="iq") {
 		    series = record["metadata"]["waveband"];
+		} else if (dk[0]=="bg") {
+		    series = record["metadata"]["filter"];
 		} else {
 		    series = dk[0];
 		}
@@ -813,6 +905,8 @@ MetricsViewer.prototype = {
 		if (k[1]=="airmass") {
 		    tooltip_record["message"] = "AM " + 
 			                        record[k[0]][k[1]].toFixed(2);
+		} else if (k[1]=="ellipticity_str") {
+		    tooltip_record["message"] = "Ellip "+record[k[0]][k[1]];
 		} else if (k[1]=="waveband") {
 		    tooltip_record["message"] = record[k[0]][k[1]] + "-band";
 		} else if (k[1]=="requested_str"){

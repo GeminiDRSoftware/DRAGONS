@@ -15,7 +15,7 @@ body {
     clear: both;
     height: 340px;
     overflow: hidden;
-    width: 1092px;
+    width: 1024px;
 }
 
 thead.fixed_header tr {
@@ -23,7 +23,7 @@ thead.fixed_header tr {
 }
 
 thead.fixed_header th {
-    padding: 2px;
+    padding: 2px 1px 2px 1px;
     text-align: center;
 }
 
@@ -34,7 +34,7 @@ tbody.scroll_body {
 
 tbody.scroll_body td {
     text-align: center;
-    padding: 2px;
+    padding: 2px 1px 2px 1px;
 }
 
 tbody.scroll_body td.hover {
@@ -119,7 +119,7 @@ th.ui-droppable.hover {
     clear: both;
     height: 40px;
     padding: 2px 0px 2px 0px;
-    width: 1092px;
+    width: 1024px;
     position: relative;
 }
 #message_box {
@@ -145,23 +145,23 @@ th.ui-droppable.hover {
     clear: both;
     height: 340px;
     padding: 10px 0px 0px 0px;
-    width: 1092px;
+    width: 1024px;
 }
 
 #iqplot {
     float: left;
     margin: 10px;
-    width: 340px;
+    width: 320px;
 }
 #ccplot {
     float: left;
     margin: 10px;
-    width: 340px;
+    width: 320px;
 }
 #bgplot {
     float: left;
     margin: 10px;
-    width: 340px;
+    width: 320px;
 }
 
 
@@ -195,6 +195,13 @@ td.jqplot-series-hidden div.jqplot-table-legend-swatch {
     padding: 2px!important;
     z-index: 90;
 }
+.jqplot-canvasOverlay-tooltip {
+    border: 0px;
+    font-size: 0.75em;
+    background: rgba(256,256,256,0);
+    padding: 0px;
+}
+
 
 #lightbox_background {
     background: black;

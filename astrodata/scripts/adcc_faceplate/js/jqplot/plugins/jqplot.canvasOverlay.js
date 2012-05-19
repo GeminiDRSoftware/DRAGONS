@@ -149,7 +149,16 @@
             // prop: tooltipFormatString
             // Format string passed the x and y values of the cursor on the line.
             // e.g., 'Dogs: %.2f, Cats: %d'.
-            tooltipFormatString: '%d, %d'
+            tooltipFormatString: '%d, %d',
+            // prop: showLabel
+            // Label the line with its name
+            showLabel: false,
+            // prop: tooltipLocation
+            // Where to position tooltip, 'e', 'w'
+            labelLocation: 'e',
+            // prop: labelOffset
+            // Pixel offset of tooltip from the edge of the line
+            labelOffset: 4
         };
     }
 
@@ -340,6 +349,9 @@
     $.jqplot.CanvasOverlay.prototype.removeObject = function(idx) {
         // check if integer, remove by index
         if ($.type(idx) == 'number') {
+	    if (this.objects[idx]._labelElem) {
+		this.objects[idx]._labelElem.remove();
+	    }
             this.objects.splice(idx, 1);
             this.objectNames.splice(idx, 1);
         }
@@ -347,6 +359,9 @@
         else {
             var id = $.inArray(idx, this.objectNames);
             if (id != -1) {
+		if (this.objects[id]._labelElem) {
+		    this.objects[id]._labelElem.remove();
+		}
                 this.objects.splice(id, 1);
                 this.objectNames.splice(id, 1);
             }
@@ -371,6 +386,13 @@
     $.jqplot.CanvasOverlay.prototype.get = $.jqplot.CanvasOverlay.prototype.getObject;
     
     $.jqplot.CanvasOverlay.prototype.clear = function(plot) {
+	for (var i=0;i<this.objects.length;i++) {
+	    var obj = this.objects[i];
+	    if (obj._labelElem) {
+		obj._labelElem.remove();
+		obj._labelElem = null;
+	    }
+	}
         this.canvas._ctx.clearRect(0,0,this.canvas.getWidth(), this.canvas.getHeight());
     };
     
@@ -624,9 +646,51 @@
                         default:
                             break;
                     }
-                }
-            }
-        }
+
+		    if (opts.showLabel) {
+			if (opts.y >= plot.axes.yaxis.min && 
+			    opts.y <= plot.axes.yaxis.max) {
+
+			    if (!obj._labelElem) {
+				obj._labelElem = this._tooltipElem.clone();
+				this._tooltipElem.after(obj._labelElem);
+			    }
+			    var elem = obj._labelElem;
+			    elem.html(opts.name);        
+
+			    var gridpos, x, y;
+			    switch (opts.labelLocation) {
+			        case 'e':
+				    gridpos = obj.gridStop;
+				    x = gridpos[0] + plot._gridPadding.left + 
+					opts.labelOffset;
+				    y = gridpos[1] + plot._gridPadding.top - 
+					elem.outerHeight(true)/2;
+				    break;
+			        case 'w':
+				    gridpos = obj.gridStart;
+				    x = gridpos[0] + plot._gridPadding.left - 
+					elem.outerWidth(true) - opts.tooltipOffset;
+				    y = gridpos[1] + plot._gridPadding.top - 
+					elem.outerHeight(true)/2;
+				    break;
+			        default: // same as 'e'
+				    gridpos = obj.gridStop;
+				    x = gridpos[0] + plot._gridPadding.left + 
+					opts.labelOffset;
+				    y = gridpos[1] + plot._gridPadding.top - 
+					elem.outerHeight(true)/2;
+				    break;
+			    }
+
+			    elem.css('left', x);
+			    elem.css('top', y);
+			    elem.show();
+			}
+		    }
+		}
+	    }
+	}
     };
     
     // called within context of plot

@@ -564,6 +564,7 @@ TimePlot.prototype.init = function(record) {
 						   textColor:"black"},
 				    labelRenderer:$.jqplot.CanvasAxisLabelRenderer}
 	                  },
+		    canvasOverlay: {show:false,objects:[]},
 		    cursor: {show: true,
 			     zoom: true,
 			     constrainZoomTo:'x',
@@ -626,7 +627,7 @@ TimePlot.prototype.init = function(record) {
     // Update point information in the data dictionary
     var updatePoints = function() {
 	for (var i=0; i<tp.options.series_labels.length; i++) {
-	    s = tp.plot.series[i];
+	    var s = tp.plot.series[i];
 	    for (var j=0; j<s.gridData.length; j++) {
 		p = s.gridData[j];
 		var point = {seriesIndex:i, pointIndex:j, 
@@ -637,6 +638,55 @@ TimePlot.prototype.init = function(record) {
     };
     tp.plot.postDrawHooks.add(updatePoints);
 
+    // Add handler for jqplotDataPointHighlight event to pull up
+    // conditions lines
+    tp.element.on("jqplotDataPointHighlight","div.jqplot-target",function(ev,pt){
+        if (tp.options.overlay.length<1) {
+	    return false;
+	}
+	
+	var co = tp.plot.plugins.canvasOverlay;
+	co.options.show=true;
+
+	var series_index = undefined;
+	for (var i=0; i<tp.options.series_labels.length; i++) {
+	    var s = tp.options.series_labels[i];
+	    if (tp.plot.data_dict[s] && 
+		tp.plot.data_dict[s][pt.data[2]]!=undefined) {
+		series_index = i;
+		break;
+	    }
+	}
+	if (series_index==undefined) {
+	    return false;
+	}
+	objects = tp.options.overlay[series_index];
+	for (var line in objects) {
+	    line = objects[line];
+	    var object = {name:line.name,
+			  show:true,
+			  showLabel:true,
+			  labelLocation:'e',
+			  labelOffset:8,
+			  y:line.y,
+			  color:line.color,
+			  shadow:false,
+			  dashPattern:[2,3],
+			  lineWidth:1};
+	    if ($.inArray(object.name,co.objectNames)==-1) {
+		co.addDashedHorizontalLine(object);
+	    }
+	}
+	co.draw(tp.plot);
+	return false;
+    }); // end on highlight
+    tp.element.on("jqplotDataPointUnhighlight","div.jqplot-target",function(ev){
+	var co = tp.plot.plugins.canvasOverlay;
+	co.options.show = false;
+	co.clear();
+	co.objects = [];
+	co.objectNames = [];
+    }); // end on unhighlight
 }; // end init
 
 TimePlot.prototype.composeHTML = function() {
