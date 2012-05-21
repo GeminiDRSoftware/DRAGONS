@@ -32,7 +32,7 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
     def testReportQAMetric(self, rc):
         import random
         import time
-        bigreport = {"msgType": "stat",
+        bigreport = {"msgtype": "qametric",
          "timestamp": time.time(),
          "iq": {"band": 85,
                 "delivered": 0.983,
@@ -93,7 +93,8 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
                                             random.randint(1,999))
             dl = "GN-2012B-Q-%i-1-001" % random.randint(1,20)
 
-            wlen = ['u','U','b','B','g','V','r','R','i','I','z','I']
+            wlen = ['g','V','r','R','i','I','z','I']
+            #wlen = ['u','U','b','B','g','V','r','R','i','I','z','I','Y','Y']
             #wlen = ['g','V']
             wlen_ind = 2*random.randint(0,len(wlen)/2-1)
             
