@@ -70,7 +70,7 @@ class EventsManager:
         
     def get_list(self, fromtime = None):
         if fromtime == None:
-            print "em61: send whole events list"
+            #print "em61: send whole events list"
             return self.event_list
         # elif fromtime in self.event_index:
         #    starti = self.event_index[fromtime] + 1

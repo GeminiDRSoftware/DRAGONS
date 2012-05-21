@@ -100,16 +100,17 @@ MetricsViewer.prototype = {
 	maxdate.setHours(mindate.getHours()+13);
 	maxdate.setMinutes(0);
 	maxdate.setSeconds(0);
-	var options = {mindate: mindate.toString(),
-		       maxdate: maxdate.toString(),
-		       overlay: [],
-		       series_labels: [""],
-	               series_colors: [""],
-	               bg_color: "white",
-	               title: "",
-		       ut: false,
-	               xaxis_label: this.date_str.slice(1,-1),
-	               yaxis_label: ""};
+	var options = {
+	    mindate: mindate.toString(),
+	    maxdate: maxdate.toString(),
+	    overlay: [],
+	    series_labels: [""],
+	    series_colors: [""],
+	    bg_color: "white",
+	    title: "",
+	    ut: false,
+	    xaxis_label: this.date_str.slice(1,-1),
+	    yaxis_label: ""};
 	
 	// IQ Plot
 	var iq_options = $.extend(true,{},options);
@@ -428,7 +429,9 @@ MetricsViewer.prototype = {
     getBandString: function(metric,band) {
 	var band_str = "";
 	
-	if (band==100) {
+	if (!band) {
+	    band_str = null;
+	} else if (band==100) {
 	    band_str = metric.toUpperCase() + "Any";
 	} else {
 	    band_str = metric.toUpperCase() + band;
@@ -826,7 +829,11 @@ MetricsViewer.prototype = {
 	        var subdict = k[0];
 	        var subkey = k[1];
 		if (record[subdict]) {
-		    table_record[key[j]] = record[subdict][subkey];
+		    if (record[subdict][subkey]!=undefined) {
+			table_record[key[j]] = record[subdict][subkey];
+		    } else {
+			table_record[key[j]] = "--";
+		    }
 		} else {
 		    table_record[key[j]] = "--";
 		}
@@ -871,14 +878,17 @@ MetricsViewer.prototype = {
 		    series = dk[0];
 		}
 
-		plot_record["series"] = series;
-		plot_record["date"] = time;
-		plot_record["data"] = value;
-		plot_record["error"] = error;
-		plot_record["key"] = record["metadata"]["datalabel"];
-		plot_record["image_number"] =record["metadata"]["image_number"];
+		if (value!=undefined && error!=undefined) {
+		    plot_record["series"] = series;
+		    plot_record["date"] = time;
+		    plot_record["data"] = value;
+		    plot_record["error"] = error;
+		    plot_record["key"] = record["metadata"]["datalabel"];
+		    plot_record["image_number"] = 
+			record["metadata"]["image_number"];
 
-		plt_records.push(plot_record);
+		    plt_records.push(plot_record);
+		}
 	    }
 	}
 	if (return_single) {
@@ -902,18 +912,23 @@ MetricsViewer.prototype = {
 	    tooltip_record["key"] = record["metadata"]["datalabel"];
 
 	    if (record[k[0]]) {
-		if (k[1]=="airmass") {
-		    tooltip_record["message"] = "AM " + 
-			                        record[k[0]][k[1]].toFixed(2);
-		} else if (k[1]=="ellipticity_str") {
-		    tooltip_record["message"] = "Ellip "+record[k[0]][k[1]];
-		} else if (k[1]=="waveband") {
-		    tooltip_record["message"] = record[k[0]][k[1]] + "-band";
-		} else if (k[1]=="requested_str"){
-		    tooltip_record["message"] = "Requested " +
-			                        record[k[0]][k[1]];
+		if (record[k[0]][k[1]]) {
+		    if (k[1]=="airmass") {
+			tooltip_record["message"] = "AM " + 
+			                       record[k[0]][k[1]].toFixed(2);
+		    } else if (k[1]=="ellipticity_str") {
+			tooltip_record["message"] = "Ellip "+record[k[0]][k[1]];
+		    } else if (k[1]=="waveband") {
+			tooltip_record["message"] = record[k[0]][k[1]] +
+			                            "-band";
+		    } else if (k[1]=="requested_str"){
+			tooltip_record["message"] = "Requested " +
+			                            record[k[0]][k[1]];
+		    } else {
+			tooltip_record["message"] = record[k[0]][k[1]];
+		    }
 		} else {
-		    tooltip_record["message"] = record[k[0]][k[1]];
+		    tooltip_record["message"] = null;
 		}
 	    } else {
 		tooltip_record["message"] = null;
