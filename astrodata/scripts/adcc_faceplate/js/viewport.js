@@ -554,9 +554,11 @@ TimePlot.prototype.init = function(record) {
 				    labelOptions: {fontSize:"10pt",
 						   textColor:"black"},
 				    labelRenderer:$.jqplot.CanvasAxisLabelRenderer,
+				    pad:0,
 				    min:this.options.mindate,
 				    max:this.options.maxdate},
-			    yaxis: {tickOptions:{formatString:"%0.2f",
+			    yaxis: {pad:0,
+		                    tickOptions:{formatString:"%0.2f",
 						 fontSize:"8pt"},
 				    tickRenderer:$.jqplot.CanvasAxisTickRenderer,
 				    label: this.options.yaxis_label,
@@ -567,7 +569,7 @@ TimePlot.prototype.init = function(record) {
 		    canvasOverlay: {show:false,objects:[]},
 		    cursor: {show: true,
 			     zoom: true,
-			     constrainZoomTo:'x',
+			     //constrainZoomTo:'x',
 			     constrainOutsideZoom:false,
 			     looseZoom: false,
 			     showTooltip: false,
@@ -724,7 +726,7 @@ TimePlot.prototype.addRecord = function(records) {
 	}
     }
 
-    var data = [], band_data = [];
+    var data = [], band_data = [], y_values = [];
     var i, j, series, recs, date, key,
         value, error, lower, upper, sdata, ldata, udata, dates;
     var series_to_use = this.options.series_labels;
@@ -776,11 +778,33 @@ TimePlot.prototype.addRecord = function(records) {
 	        sdata.push([date,value,key]);
 	        ldata.push([date,lower]);
 	        udata.push([date,upper]);
+		y_values.push(lower, upper);
 	    }
 	    data.push(sdata);
 	    band_data.push([ldata,udata]);
 	}
     }
+
+    // Get new min/max for y-axis
+    if (y_values.length>0) {
+	var ymin = Math.min.apply(null,y_values);
+	var ymax = Math.max.apply(null,y_values);
+	if (this.plot.axes.yaxis._options.min==undefined ||
+	    this.plot.axes.yaxis._options.max==undefined ||
+	    (this.plot.axes.yaxis._options.min==this.plot.axes.yaxis.min &&
+	     this.plot.axes.yaxis._options.max==this.plot.axes.yaxis.max)) 
+	{
+	    this.plot.axes.yaxis.min = ymin;
+	    this.plot.axes.yaxis.max = ymax;
+	    this.plot.axes.yaxis._options.min = ymin;
+	    this.plot.axes.yaxis._options.max = ymax;
+	    this.plot.axes.yaxis.resetScale({min:ymin,max:ymax});    
+	} else {
+	    this.plot.axes.yaxis._options.min = ymin;
+	    this.plot.axes.yaxis._options.max = ymax;
+	}
+    }
+    
 
     // Check to see if min/maxdate should be in UT
     // and update it in options and config object
@@ -861,7 +885,7 @@ TimePlot.prototype.addRecord = function(records) {
 	    this.plot.axes.xaxis.resetScale({min:mindate,max:maxdate});
 	    this.ut = false;
 	}
-	this.plot.replot({resetAxes:['yaxis']});
+	this.plot.replot({resetAxes:false});
     } else {
 	this.plot = $.jqplot(this.id, data, this.config);
     }

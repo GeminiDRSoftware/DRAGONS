@@ -583,12 +583,11 @@ MetricsViewer.prototype = {
 
 	    // Get the image number from the filename
 	    var imgnum = record["metadata"]["filename"];
-	    var str_i = imgnum.indexOf(this.date_str);
-	    if (str_i!=-1) {
-	        var start = str_i+this.date_str.length;
-	        imgnum = parseInt(imgnum.slice(start,start+4),10);
+	    var fn_regex = /.*(N|S)\d{8}S(\d{4}).*/;
+	    if (imgnum.match(fn_regex)) {
+		imgnum = parseInt(imgnum.replace(fn_regex,'$2'),10);
 	    } else {
-	        imgnum = "--";
+		imgnum = "--";
 	    }
 	    record["metadata"]["image_number"] = imgnum;
 
