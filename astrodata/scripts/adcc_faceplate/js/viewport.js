@@ -554,10 +554,10 @@ TimePlot.prototype.init = function(record) {
 				    labelOptions: {fontSize:"10pt",
 						   textColor:"black"},
 				    labelRenderer:$.jqplot.CanvasAxisLabelRenderer,
-				    pad:0,
-				    min:this.options.mindate,
-				    max:this.options.maxdate},
-			    yaxis: {pad:0,
+				    min: this.options.mindate,
+				    max: this.options.maxdate},
+			    yaxis: {min: this.options.ymin,
+				    max: this.options.ymax,
 		                    tickOptions:{formatString:"%0.2f",
 						 fontSize:"8pt"},
 				    tickRenderer:$.jqplot.CanvasAxisTickRenderer,
@@ -786,9 +786,32 @@ TimePlot.prototype.addRecord = function(records) {
     }
 
     // Get new min/max for y-axis
+    // Invert them if desired
     if (y_values.length>0) {
-	var ymin = Math.min.apply(null,y_values);
-	var ymax = Math.max.apply(null,y_values);
+	var ymin, ymax;
+	if (this.options.invert_yaxis) {
+	    ymin = Math.max.apply(null,y_values);
+	    ymin += 0.1*ymin;
+	    if (this.options.ymax!=undefined && ymin >= this.options.ymax) {
+		ymin = this.options.ymax;
+	    }
+	    ymax = Math.min.apply(null,y_values);
+	    ymax -= 0.1*ymax;
+	    if (this.options.ymin!=undefined && ymax <= this.options.ymin) {
+		ymax = this.options.ymin;
+	    }
+	} else {
+	    ymin = Math.min.apply(null,y_values);
+	    ymin -= 0.1*ymin;
+	    if (this.options.ymin!=undefined && ymin <= this.options.ymin) {
+		ymin = this.options.ymin;
+	    }
+	    ymax = Math.max.apply(null,y_values);
+	    ymax += 0.1*ymax;
+	    if (this.options.ymax!=undefined && ymax >= this.options.ymax) {
+		ymax = this.options.ymax;
+	    }
+	}
 	if (this.plot.axes.yaxis._options.min==undefined ||
 	    this.plot.axes.yaxis._options.max==undefined ||
 	    (this.plot.axes.yaxis._options.min==this.plot.axes.yaxis.min &&
@@ -934,14 +957,26 @@ TimePlot.prototype.highlightPoint = function(key) {
     var point = rec["point"];
 
     // Check whether point is currently visible
-    if (point.data[0]>this.plot.axes.xaxis.max || 
-	point.data[0]<this.plot.axes.xaxis.min || 
-	point.data[1]>this.plot.axes.yaxis.max || 
-	point.data[1]<this.plot.axes.yaxis.min) {
+    if (this.options.invert_yaxis) {
+	if (point.data[0]>this.plot.axes.xaxis.max || 
+	    point.data[0]<this.plot.axes.xaxis.min || 
+	    point.data[1]>this.plot.axes.yaxis.min || 
+	    point.data[1]<this.plot.axes.yaxis.max) {
 
-	// If not, clear existing highlights
-	highlight_fn(this.plot);
-	return;
+	    // If not, clear existing highlights
+	    highlight_fn(this.plot);
+	    return;
+	}
+    } else {
+	if (point.data[0]>this.plot.axes.xaxis.max || 
+	    point.data[0]<this.plot.axes.xaxis.min || 
+	    point.data[1]>this.plot.axes.yaxis.max || 
+	    point.data[1]<this.plot.axes.yaxis.min) {
+
+	    // If not, clear existing highlights
+	    highlight_fn(this.plot);
+	    return;
+	}
     }
 
     // Highlight the point

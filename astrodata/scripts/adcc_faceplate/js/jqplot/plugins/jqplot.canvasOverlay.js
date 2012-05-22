@@ -648,8 +648,14 @@
                     }
 
 		    if (opts.showLabel) {
-			if (opts.y >= plot.axes.yaxis.min && 
-			    opts.y <= plot.axes.yaxis.max) {
+			if ((plot.axes.yaxis.min<=plot.axes.yaxis.max &&
+			     opts.y >= plot.axes.yaxis.min && 
+			     opts.y <= plot.axes.yaxis.max) || 
+			    (plot.axes.yaxis.min>plot.axes.yaxis.max &&
+			     opts.y <= plot.axes.yaxis.min && 
+			     opts.y >= plot.axes.yaxis.max) 
+			    ) 
+			{
 
 			    if (!obj._labelElem) {
 				obj._labelElem = this._tooltipElem.clone();

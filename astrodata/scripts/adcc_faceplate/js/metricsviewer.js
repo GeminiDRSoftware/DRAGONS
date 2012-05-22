@@ -103,6 +103,9 @@ MetricsViewer.prototype = {
 	var options = {
 	    mindate: mindate.toString(),
 	    maxdate: maxdate.toString(),
+	    ymin: 0.0,
+	    ymax: null,
+	    invert_yaxis: false,
 	    overlay: [],
 	    series_labels: [""],
 	    series_colors: [""],
@@ -115,6 +118,7 @@ MetricsViewer.prototype = {
 	// IQ Plot
 	var iq_options = $.extend(true,{},options);
 	iq_options.title = "Zenith IQ";
+	iq_options.ymax = 2.5;
 	iq_options.yaxis_label = "Zenith IQ (arcsec)";
 	iq_options.series_labels = ["U","B","V","R","I",
 				    "Y","J","H","K","L","M","N","Q"];
@@ -180,6 +184,7 @@ MetricsViewer.prototype = {
 	// CC Plot
 	var cc_options = $.extend(true,{},options);
 	cc_options.title = "Cloud Extinction";
+	cc_options.ymax = 3.0;
 	cc_options.yaxis_label = "Extinction (mag)";
 	cc_options.series_labels = ["cc"];
 	cc_options.series_colors = ["#86C7FF"];
@@ -190,7 +195,10 @@ MetricsViewer.prototype = {
 
 	// BG Plot
 	var bg_options = $.extend(true,{},options);
+	bg_options.ymin = 17.0;
+	bg_options.ymax = 23.0;
 	bg_options.title = "Sky Brightness";
+	bg_options.invert_yaxis = true;
 	bg_options.yaxis_label = "Sky Brightness (mag/arcsec^2)";
 	bg_options.series_labels = ["u","g","r","i","z"];
 	bg_options.series_colors = ["#86C7FF","#5C84FF","#FF9E00",

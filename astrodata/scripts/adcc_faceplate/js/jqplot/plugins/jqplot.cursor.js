@@ -375,15 +375,28 @@
                     if ((c.constrainZoomTo == 'none') || (c.constrainZoomTo == 'x' && ax.charAt(0) == 'x') || (c.constrainZoomTo == 'y' && ax.charAt(0) == 'y')) {   
                         dp = datapos[ax];
                         if (dp != null) {           
-                            if (dp > start[ax]) { 
-                                newmin = start[ax];
-                                newmax = dp;
-                            }
-                            else {
-                                span = start[ax] - dp;
-                                newmin = dp;
-                                newmax = start[ax];
-                            }
+
+			    if (axes[ax].max > axes[ax].min) {
+				if (dp > start[ax]) { 
+				    newmin = start[ax];
+				    newmax = dp;
+				}
+				else {
+				    span = start[ax] - dp;
+				    newmin = dp;
+				    newmax = start[ax];
+				}
+			    } else {
+				if (dp < start[ax]) { 
+				    newmin = start[ax];
+				    newmax = dp;
+				}
+				else {
+				    span = start[ax] - dp;
+				    newmin = dp;
+				    newmax = start[ax];
+				}
+			    }
 
                             curax = axes[ax];
 
