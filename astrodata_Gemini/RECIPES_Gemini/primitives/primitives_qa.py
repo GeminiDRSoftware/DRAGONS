@@ -31,8 +31,8 @@ class QAPrimitives(GENERALPrimitives):
 
         The count levels are then converted to a flux using the nominal
         (*not* measured) Zeropoint values - the point being you want to measure
-        the actual background level, not the flux incident on the top of the cloud
-        layer necessary to produce that flux level.
+        the actual background level, not the flux incident on the top of the 
+        cloud layer necessary to produce that flux level.
         """
 
         # Instantiate the log
@@ -245,8 +245,10 @@ class QAPrimitives(GENERALPrimitives):
                 else:
                     all_bg = np.mean([all_bg,sci_bg])
                     all_std = np.sqrt(all_std**2+sci_std**2)
-                    if bg_am is not None:
+                    if (bg_am is not None) and (all_bg_am is not None):
                         all_bg_am = np.mean([all_bg_am,bg_am])
+                    elif bg_am is not None:
+                        all_bg_am = bg_am
 
                 bg_num = None
                 bg_str = "(BG band could not be determined)"
@@ -340,6 +342,20 @@ class QAPrimitives(GENERALPrimitives):
                     log.stdinfo(ind + "-"*dlen)
                     log.stdinfo(" ")
 
+                # Report measurement to the adcc
+                if all_bg_am is not None:
+                    if bg_warn!="":
+                        bg_comment = ["BG requirement not met"]
+                    else:
+                        bg_comment = []
+                    qad =  {"band": bg_num,
+                            "brightness": float(all_bg_am),
+                            "brightness_error": 0.0,
+                            "requested": req_bg,
+                            "comment": bg_comment,
+                            }
+                    rc.report_qametric(ad, "bg", qad)
+
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
@@ -420,6 +436,7 @@ class QAPrimitives(GENERALPrimitives):
             detzp_clouds=[]
             detzp_sigmas=[]
             total_sources=0
+            qad = {}
             # Loop over OBJCATs extensions
             objcats = ad['OBJCAT']
             if objcats is None:
@@ -427,9 +444,10 @@ class QAPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
                 #raise Errors.ScienceError("No OBJCAT found in %s" % ad.filename)
-            # We really want to check for the presence of reference mags in the objcats
-            # at this point, but we can more easily do a quick check for the presence of
-            # reference catalogs, which are a pre-requisite for this and not bother with
+            # We really want to check for the presence of reference mags
+            # in the objcats at this point, but we can more easily do a
+            # quick check for the presence of reference catalogs, which are
+            # a pre-requisite for this and not bother with
             # any of this if there are no reference catalogs
             if ad['REFCAT'] is None:
                 log.warning("No Reference Catalogs Present - not attempting to measure photometric Zeropoints")
@@ -454,11 +472,13 @@ class QAPrimitives(GENERALPrimitives):
 
                 # Need to correct the mags for the exposure time
                 et = float(ad.exposure_time())
-                # If it's a funky nod-and-shuffle imaging acquistion, then need to scale exposure time
+                # If it's a funky nod-and-shuffle imaging acquistion,
+                # then need to scale exposure time
                 if(ad.is_type('GMOS_NODANDSHUFFLE')):
                     log.warning("Imaging Nod-And-Shuffle. Photometry may be dubious")
-                    # AFAIK the number of nod_cycles isn't actually relevant - there's always
-                    # 2 nod positions, thus the exposure time for any given star is half the total
+                    # AFAIK the number of nod_cycles isn't actually relevant -
+                    # there's always 2 nod positions, thus the exposure
+                    # time for any given star is half the total
                     et /= 2.0
                 magcor = 2.5*math.log10(et)
                 mags = np.where(mags==-999,mags,mags+magcor)
@@ -475,7 +495,8 @@ class QAPrimitives(GENERALPrimitives):
 
                 zps = refmags - mags - nom_at_ext
        
-                # Is this mathematically correct? These are logarithmic values... (PH)
+                # Is this mathematically correct? These are logarithmic
+                # values... (PH)
                 # It'll do for now as an estimate at least
                 zperrs = np.sqrt((refmag_errs * refmag_errs) + (mag_errs * mag_errs))
  
@@ -488,8 +509,8 @@ class QAPrimitives(GENERALPrimitives):
                 ids = np.where((zps > -500), ids, None)
                 ids = np.where((flags == 0), ids, None)
                 if not np.all(iflags==-999):
-                    # All DQ flags are -999 if sextractor was run without a DQ plane;
-                    # don't use them in this case
+                    # All DQ flags are -999 if sextractor was run without
+                    # a DQ plane; don't use them in this case
                     zps = np.where((iflags == 0), zps, None)
                     zperrs = np.where((iflags == 0), zperrs, None)
                     ids = np.where((iflags == 0), ids, None)
@@ -504,14 +525,15 @@ class QAPrimitives(GENERALPrimitives):
                 zperrs = zperrs[np.flatnonzero(zperrs)]
                 ids = ids[np.flatnonzero(ids)]
 
-                # OK, at this point, zps and zperrs are arrays of all the zeropoints and their errors from this OBJCAT
+                # OK, at this point, zps and zperrs are arrays of all
+                # the zeropoints and their errors from this OBJCAT
                 if len(zps)==0:
                     log.warning('No good reference sources found in %s[OBJCAT,%d]'%
                                 (ad.filename,extver))
                     continue
 
-                # Because these are magnitude (log) values, we weight directly from the
-                # 1/variance, not signal / variance
+                # Because these are magnitude (log) values, we weight
+                # directly from the 1/variance, not signal / variance
                 weights = 1.0 / (zperrs * zperrs)
 
                 wzps = zps * weights
@@ -523,7 +545,8 @@ class QAPrimitives(GENERALPrimitives):
                 zpv = d.sum() / weights.sum()
                 zpe = math.sqrt(zpv)
 
-                # Now, in addition, we have the weighted mean zeropoint and its error, from this OBJCAT in zp and zpe
+                # Now, in addition, we have the weighted mean zeropoint
+                # and its error, from this OBJCAT in zp and zpe
                 try:
                     nominal_zeropoint = float(ad['SCI', extver].nominal_photometric_zeropoint())
                 except:
@@ -566,6 +589,17 @@ class QAPrimitives(GENERALPrimitives):
                              ("%.2f +/- %.2f magnitudes" % 
                              (cloud, zpe)).rjust(rlen))
 
+                # Store the number in the QA dictionary to report to the RC
+                if not qad.has_key("zeropoint"):
+                    qad["zeropoint"] = {}
+                ampname = ad["SCI", extver].get_key_value("AMPNAME")
+                if ampname:
+                    qad["zeropoint"][ampname] = {"value":zp,"error":zpe}
+                else:
+                    # If no ampname available, just use amp{extver}
+                    # (ie. amp1, amp2...)
+                    qad["zeropoint"]["amp%d" % extver] = {"value":zp,
+                                                          "error":zpe}
             
             if(len(detzp_means)):
                 for i in range(len(detzp_means)):
@@ -581,21 +615,30 @@ class QAPrimitives(GENERALPrimitives):
                 clouderr = np.std(all_cloud)
 
                 # Calculate which CC band we're in. 
-                # OK, the philosophy here is to do a hypothesis test for each CC band.
-                # It's mathematically difficult to do a hypothesis test against an arbitrary range of values,
-                # So we will do one-sided tests, then walk up the scale to determine the CC band.
+                # OK, the philosophy here is to do a hypothesis test for
+                # each CC band. It's mathematically difficult to do a
+                # hypothesis test against an arbitrary range of values,
+                # So we will do one-sided tests, then walk up the scale
+                # to determine the CC band.
                 # To avoid having t(n-1) distributions, we assume n is large.
-                # We assume that the population sigma is the sample sigma+0.05mag
+                # We assume that the population sigma is the sample
+                # sigma+0.05mag
                 pop_sigma = 0.10
                 # We do a hypothesis test as follows:
-                # Null hypothesis, H0: the sample is drawn from a population with cloud extinction = CC_band_value
-                # Alternate hypothesis, H1: the sample is drawn from a population with cloud extinction > CC_band_value
-                # if mean and sigma and n are those of the sample, and mu is the population mean,
+                # Null hypothesis, H0: the sample is drawn from a population
+                # with cloud extinction = CC_band_value
+                # Alternate hypothesis, H1: the sample is drawn from a
+                # population with cloud extinction > CC_band_value
+                # if mean and sigma and n are those of the sample, and mu
+                # is the population mean,
                 # we use the test statistic = (mean - mu)/(sigma/sqrt(n))
                 # Which is distributed as N(0,1) in the case of "large" n.
                 # So the one-tailed critical value at the 5% level is 1.645
-                # We create a dictionary: { CCband: [mean, mu, sigma, n, value of the test statistic, H0 is acceptable]]
-                # Evaluate the test statistic for each CC band boundary, with one sided tests in both directions
+                # We create a dictionary: 
+                #{ CCband: [mean, mu, sigma, n, 
+                #           value of the test statistic, H0 is acceptable]]
+                # Evaluate the test statistic for each CC band boundary,
+                # with one sided tests in both directions
                 cc_canbe={50: True, 70: True, 80: True, 100: True}
                 for cc in [50, 70, 80]:
                   ce = ccConstraints[str(cc)]
@@ -618,11 +661,16 @@ class QAPrimitives(GENERALPrimitives):
                       #H0 passes - it's consistent with the boundary
                       log.fullinfo("95%% confidence test indicates it is borderline CC%d or one band worse (normalised test statistic -1.645 < %.3f < 1.645)" % (cc, ts))
 
+                # For QA dictionary
+                qad["band"] = []
+                qad["comment"] = []
+
                 ccband =[]
                 l = cc_canbe.keys()
                 l.sort()
                 for c in l:
                     if(cc_canbe[c]):
+                        qad["band"].append(c)
                         if(c==100):
                             c='Any'
                         ccband.append('CC%s' % c)
@@ -635,6 +683,8 @@ class QAPrimitives(GENERALPrimitives):
                     req_cc = int(ad.requested_cc())
                 except:
                     req_cc = None
+                qad["requested"] = req_cc
+
                 if req_cc is not None:
                     # Just do that one hypothesis test here
                     # Can't test for CCany, always applies
@@ -644,12 +694,14 @@ class QAPrimitives(GENERALPrimitives):
                         if(ts>1.645):
                           #H0 fails - cc is worse than the worst end of this cc band
                           cc_warn = 'WARNING: CC requirement not met at the 95% confidence level'
+                          qad["comment"].append('CC requirement not met at '\
+                                                'the 95% confidence level')
 
                     if req_cc==100:
                         req_cc = 'CCAny'
                     else:
                         req_cc = 'CC%d' % req_cc
-
+                
                 ind = " " * rc["logindent"]
                 log.stdinfo("\n"+ind+"Filename: %s" % ad.filename)
                 log.stdinfo(ind+"%d sources used to measure zeropoint" % 
@@ -674,6 +726,11 @@ class QAPrimitives(GENERALPrimitives):
                 if cc_warn is not None:
                     log.stdinfo(ind+cc_warn)
                 log.stdinfo(ind+"-"*dlen)
+
+                # Report measurement to the adcc
+                qad["extinction"] = float(cloud)
+                qad["extinction_error"] = float(clouderr)
+                rc.report_qametric(ad, "cc", qad)
 
             else:
                 ind = " " * rc["logindent"]
@@ -831,7 +888,8 @@ class QAPrimitives(GENERALPrimitives):
                                 'not be accurate.')
 
                 # Apply the horrible 8% sextractor -> imexam kludge
-                log.warning("Applying scale factor of 1:/1.08 to scale from sextractor value to profile fit (imexam) value")
+                log.warning("Applying scale factor of 1:/1.08 to scale from "\
+                            "sextractor value to profile fit (imexam) value")
                 mean_fwhm /= 1.08
 
                 airmass = float(ad.airmass())
@@ -931,7 +989,24 @@ class QAPrimitives(GENERALPrimitives):
                 log.stdinfo(ind + iqStr)
                 log.stdinfo(ind + reqStr + ell_warn + iq_warn)
                 log.stdinfo(ind + "-"*dlen)
-                log.stdinfo(" ")
+                log.stdinfo("")
+
+                # Report the measurement to the adcc
+                comment = []
+                if iq_warn:
+                    comment.append("IQ requirement not met")
+                if ell_warn:
+                    comment.append("High ellipticity")
+                qad = {"band": iq_band[0],
+                       "delivered": float(mean_fwhm),
+                       "delivered_error": float(std_fwhm),
+                       "zenith": float(corr),
+                       "ellipticity": float(mean_ellip),
+                       "ellip_error": float(std_ellip),
+                       "requested": req_iq,
+                       "comment": comment,}
+                rc.report_qametric(ad, "iq", qad)
+
                 
                 # Store average FWHM and ellipticity, for writing
                 # to output header
