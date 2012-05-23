@@ -14,7 +14,7 @@ class EventsManager:
         
     def get_metadict(self, ad):
         mtd = {"metadata":
-                { "filename": ad.filename,
+                { "raw_filename": ad.filename,
                   "datalabel": ad.data_label().as_pytype(),
                   "local_time": ad.local_time().as_pytype(),
                   "ut_time": ad.ut_datetime().as_pytype().strftime("%Y-%m-%d %H:%M:%S.%f"),

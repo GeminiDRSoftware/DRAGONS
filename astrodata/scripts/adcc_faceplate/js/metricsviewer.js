@@ -274,7 +274,7 @@ MetricsViewer.prototype = {
 	// Full filename, for image number column
 	var fn_tt = new TooltipOverlay($("#tooltip_wrapper"),"tooltip_filename",
 				       "#metrics_table td.imgnum");
-	this.tooltips["metadata-filename"] = fn_tt;
+	this.tooltips["metadata-raw_filename"] = fn_tt;
 
 	// Obstype, for datalabel column
 	var obs_tt = new TooltipOverlay($("#tooltip_wrapper"),"tooltip_obstype",
@@ -612,11 +612,18 @@ MetricsViewer.prototype = {
 	    record["metadata"]["local_time_str"] = lt[0]+":"+lt[1];
 	    record["metadata"]["ut_time_str"] = ut[0]+":"+ut[1];
 
+	    // Strip any suffixes from the "raw" filename
+	    var fn_regex = /.*((N|S)\d{8}S(\d{4}))(_[a-zA-Z0-9]+)?(\.fits?)?/;
+	    var fn = record["metadata"]["raw_filename"];
+	    if (fn.match(fn_regex)) {
+		record["metadata"]["raw_filename"] = 
+		    fn.replace(fn_regex,'$1$5');
+	    }
+
 	    // Get the image number from the filename
-	    var imgnum = record["metadata"]["filename"];
-	    var fn_regex = /.*(N|S)\d{8}S(\d{4}).*/;
+	    var imgnum = record["metadata"]["raw_filename"];
 	    if (imgnum.match(fn_regex)) {
-		imgnum = parseInt(imgnum.replace(fn_regex,'$2'),10);
+		imgnum = parseInt(imgnum.replace(fn_regex,'$3'),10);
 	    } else {
 		imgnum = "--";
 	    }
@@ -655,7 +662,7 @@ MetricsViewer.prototype = {
 		    record["iq"]["delivered_error"].toFixed(2);
 		record["iq"]["zenith_str"] = 
 		    record["iq"]["zenith"].toFixed(2) + " \u00B1 " +
-		    record["iq"]["delivered_error"].toFixed(2);
+		    record["iq"]["zenith_error"].toFixed(2);
 		record["iq"]["ellipticity_str"] = 
 		    record["iq"]["ellipticity"].toFixed(2) + " \u00B1 " +
 		    record["iq"]["ellip_error"].toFixed(2);
@@ -736,7 +743,8 @@ MetricsViewer.prototype = {
 	    var problem = '<span class="problem_icon"></span>';
 	    var warn = '<span class="warn_icon"></span>';
 	    var element, value;
-	    var problem_records = [];
+	    var problem_records = {};
+	    problem_records["size"] = 0;
 	    for (var k in records) {
 		var record = records[k];
 		var found_problem = false;
@@ -785,7 +793,8 @@ MetricsViewer.prototype = {
 		}
 
 		if (found_problem) {
-		    problem_records.push(record);
+		    problem_records[datalabel] = record;
+		    problem_records.size++;
 		}
 	    }
 
@@ -797,7 +806,7 @@ MetricsViewer.prototype = {
 	var plot_record;
 	if (this.iq_plot) {
 	    var data_key = "iq-zenith";
-	    var error_key = "iq-delivered_error";
+	    var error_key = "iq-zenith_error";
 	    plot_record = this.formatPlotRecords(records,data_key,error_key);
 	    this.iq_plot.addRecord(plot_record);
 	} else {
@@ -853,8 +862,15 @@ MetricsViewer.prototype = {
 
 	// If problems were found in the incoming record(s), pull up
 	// a lightbox displaying their messages
-	if (problem_records.length>0) {
-	    var msg = this.formatWarningRecords(problem_records,"comment");
+	if (problem_records.size>0) {
+	    var pr = [];
+	    for (var r in problem_records) {
+		if (r=="size") {
+		    continue;
+		}
+		pr.push(problem_records[r]);
+	    }
+	    var msg = this.formatWarningRecords(pr,"comment");
 	    this.lightbox.addRecord(msg);
 	    $("#lightbox_background, #lightbox_window").show();
 	}
