@@ -416,31 +416,51 @@
                             if (this.looseZoom && (axes[ax].renderer.constructor === $.jqplot.LinearAxisRenderer || axes[ax].renderer.constructor === $.jqplot.LogAxisRenderer )) { //} || axes[ax].renderer.constructor === $.jqplot.DateAxisRenderer)) {
 
                                 ret = $.jqplot.LinearTickGenerator(newmin, newmax, curax._scalefact, _numberTicks);
+				
+				if (axes[ax].max > axes[ax].min) {
+				    // if new minimum is less than "true" minimum of axis display, adjust it
+				    if (axes[ax].tickInset && ret[0] < axes[ax].min + axes[ax].tickInset * axes[ax].tickInterval) {
+					ret[0] += ret[4];
+					ret[2] -= 1;
+				    }
 
-                                // if new minimum is less than "true" minimum of axis display, adjust it
-                                if (axes[ax].tickInset && ret[0] < axes[ax].min + axes[ax].tickInset * axes[ax].tickInterval) {
-                                    ret[0] += ret[4];
-                                    ret[2] -= 1;
-                                }
+				    // if new maximum is greater than "true" max of axis display, adjust it
+				    if (axes[ax].tickInset && ret[1] > axes[ax].max - axes[ax].tickInset * axes[ax].tickInterval) {
+					ret[1] -= ret[4];
+					ret[2] -= 1;
+				    }
 
-                                // if new maximum is greater than "true" max of axis display, adjust it
-                                if (axes[ax].tickInset && ret[1] > axes[ax].max - axes[ax].tickInset * axes[ax].tickInterval) {
-                                    ret[1] -= ret[4];
-                                    ret[2] -= 1;
-                                }
+				    // for log axes, don't fall below current minimum, this will look bad and can't have 0 in range anyway.
+				    if (axes[ax].renderer.constructor === $.jqplot.LogAxisRenderer && ret[0] < axes[ax].min) {
+					// remove a tick and shift min up
+					ret[0] += ret[4];
+					ret[2] -= 1;
+				    }
 
-                                // for log axes, don't fall below current minimum, this will look bad and can't have 0 in range anyway.
-                                if (axes[ax].renderer.constructor === $.jqplot.LogAxisRenderer && ret[0] < axes[ax].min) {
-                                    // remove a tick and shift min up
-                                    ret[0] += ret[4];
-                                    ret[2] -= 1;
-                                }
+				    axes[ax].min = ret[0];
+				    axes[ax].max = ret[1];
+				    axes[ax].tickInterval = ret[4];
+				} else {
+				    // For inverted axis: tested only on linear axes
 
-                                axes[ax].min = ret[0];
-                                axes[ax].max = ret[1];
+				    // if new minimum is less than "true" minimum of axis display, adjust it
+				    if (axes[ax].tickInset && ret[0] < axes[ax].max + axes[ax].tickInset * axes[ax].tickInterval) {
+					ret[0] += ret[4];
+					ret[2] -= 1;
+				    }
+
+				    // if new maximum is greater than "true" max of axis display, adjust it
+				    if (axes[ax].tickInset && ret[1] > axes[ax].min - axes[ax].tickInset * axes[ax].tickInterval) {
+					ret[1] -= ret[4];
+					ret[2] -= 1;
+				    }
+				    axes[ax].max = ret[0];
+				    axes[ax].min = ret[1];
+				    axes[ax].tickInterval = -ret[4];
+				}				    
+
                                 axes[ax]._autoFormatString = ret[3];
                                 axes[ax].numberTicks = ret[2];
-                                axes[ax].tickInterval = ret[4];
                                 // for date axes...
                                 axes[ax].daTickInterval = [ret[4]/1000, 'seconds'];
                             }

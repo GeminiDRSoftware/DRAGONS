@@ -546,6 +546,16 @@ TimePlot.prototype.init = function(record) {
 	this.options.xaxis_label += " ("+this.timezone+")";
     }
 
+    // Check whether y-axis should be inverted
+    var ymin, ymax;
+    if (this.options.invert_yaxis) {
+	ymin = this.options.ymax;
+	ymax = this.options.ymin;
+    } else {
+	ymin = this.options.ymin;
+	ymax = this.options.ymax;
+    }
+
     // Compile all jqPlot configuration options
     this.config = { "title":this.options.title,
 		    axes: { xaxis: {renderer:$.jqplot.DateAxisRenderer,
@@ -560,8 +570,8 @@ TimePlot.prototype.init = function(record) {
 				    labelRenderer:$.jqplot.CanvasAxisLabelRenderer,
 				    min: this.options.mindate,
 				    max: this.options.maxdate},
-			    yaxis: {min: this.options.ymin,
-				    max: this.options.ymax,
+			    yaxis: {min: ymin,
+				    max: ymax,
 		                    tickOptions:{formatString:"%0.2f",
 						 fontSize:"8pt"},
 				    tickRenderer:$.jqplot.CanvasAxisTickRenderer,
@@ -573,9 +583,8 @@ TimePlot.prototype.init = function(record) {
 		    canvasOverlay: {show:false,objects:[]},
 		    cursor: {show: true,
 			     zoom: true,
-			     //constrainZoomTo:'x',
 			     constrainOutsideZoom:false,
-			     looseZoom: false,
+			     looseZoom: true,
 			     showTooltip: false,
 			     useAxesFormatters:false},
 		    grid: {background:this.options.bg_color,
@@ -792,30 +801,47 @@ TimePlot.prototype.addRecord = function(records) {
     // Get new min/max for y-axis
     // Invert them if desired
     if (y_values.length>0) {
+
+	// Get ymin/ymax values from data
 	var ymin, ymax;
-	if (this.options.invert_yaxis) {
-	    ymin = Math.max.apply(null,y_values);
-	    ymin += 0.1*ymin;
-	    if (this.options.ymax!=undefined && ymin >= this.options.ymax) {
-		ymin = this.options.ymax;
-	    }
-	    ymax = Math.min.apply(null,y_values);
-	    ymax -= 0.1*ymax;
-	    if (this.options.ymin!=undefined && ymax <= this.options.ymin) {
-		ymax = this.options.ymin;
-	    }
-	} else {
+	if (!this.options.invert_yaxis) {
 	    ymin = Math.min.apply(null,y_values);
-	    ymin -= 0.1*ymin;
+	    ymax = Math.max.apply(null,y_values);
+
+	    // Add 10% padding, round to nearest 0.1
+	    var range = Math.abs(ymax-ymin)*1.1;
+	    var ctr = (ymax+ymin)/2;
+	    ymin = Math.floor((ctr - range/2)*10)/10;
+	    ymax = Math.ceil((ctr + range/2)*10)/10;
+
+	    // Check to see if an absolute max/min was defined in options
 	    if (this.options.ymin!=undefined && ymin <= this.options.ymin) {
 		ymin = this.options.ymin;
 	    }
-	    ymax = Math.max.apply(null,y_values);
-	    ymax += 0.1*ymax;
 	    if (this.options.ymax!=undefined && ymax >= this.options.ymax) {
 		ymax = this.options.ymax;
 	    }
+
+	} else {
+
+	    // Invert min and max
+	    ymin = Math.max.apply(null,y_values);
+	    ymax = Math.min.apply(null,y_values);
+
+	    var range = Math.abs(ymax-ymin)*1.1;
+	    var ctr = (ymax+ymin)/2;
+	    ymax = Math.floor((ctr - range/2)*10)/10;
+	    ymin = Math.ceil((ctr + range/2)*10)/10;
+
+	    if (this.options.ymax!=undefined && ymin >= this.options.ymax) {
+		ymin = this.options.ymax;
+	    }
+	    if (this.options.ymin!=undefined && ymax <= this.options.ymin) {
+		ymax = this.options.ymin;
+	    }
 	}
+	
+	// Set min/max in plot
 	if (this.plot.axes.yaxis._options.min==undefined ||
 	    this.plot.axes.yaxis._options.max==undefined ||
 	    (this.plot.axes.yaxis._options.min==this.plot.axes.yaxis.min &&
@@ -825,7 +851,7 @@ TimePlot.prototype.addRecord = function(records) {
 	    this.plot.axes.yaxis.max = ymax;
 	    this.plot.axes.yaxis._options.min = ymin;
 	    this.plot.axes.yaxis._options.max = ymax;
-	    this.plot.axes.yaxis.resetScale({min:ymin,max:ymax});    
+	    this.plot.axes.yaxis.resetScale({min:ymin,max:ymax});
 	} else {
 	    this.plot.axes.yaxis._options.min = ymin;
 	    this.plot.axes.yaxis._options.max = ymax;
@@ -895,7 +921,8 @@ TimePlot.prototype.addRecord = function(records) {
 	    this.plot.axes.xaxis._options.min = this.options.mindate;
 	    this.plot.axes.xaxis._options.max = this.options.maxdate;
 	    this.plot.axes.xaxis.labelOptions.label = this.options.xaxis_label;
-	    this.plot.axes.xaxis.resetScale({min:mindate,max:maxdate});
+	    this.plot.axes.xaxis.resetScale({min:mindate,
+			                     max:maxdate});
 	    this.ut = true;
 	} else if (!this.options.ut && this.ut) {
 	    mindate = new $.jsDate(this.plot.axes.xaxis.min);
@@ -909,7 +936,8 @@ TimePlot.prototype.addRecord = function(records) {
 	    this.plot.axes.xaxis._options.min = this.options.mindate;
 	    this.plot.axes.xaxis._options.max = this.options.maxdate;
 	    this.plot.axes.xaxis.labelOptions.label = this.options.xaxis_label;
-	    this.plot.axes.xaxis.resetScale({min:mindate,max:maxdate});
+	    this.plot.axes.xaxis.resetScale({min:mindate,
+			                     max:maxdate});
 	    this.ut = false;
 	}
 	this.plot.replot({resetAxes:false});
@@ -1029,7 +1057,8 @@ TimePlot.prototype.updateDate = function(mindate,maxdate,xaxis_label) {
 	    this.plot.axes.xaxis.labelOptions.label = xaxis_label;
 	}
 	// Reset the scale
-	this.plot.axes.xaxis.resetScale({min:mindate,max:maxdate});
+	this.plot.axes.xaxis.resetScale({min:mindate,
+					 max:maxdate});
     }
 
     // Update the plot
