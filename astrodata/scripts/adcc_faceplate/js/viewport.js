@@ -383,6 +383,10 @@ ScrollTable.prototype.clearRecord = function() {
     // Clear out the tbody, leaving the thead alone
     $('#'+this.id+' tbody').html("");
 
+    // Clear out the filtering box in tfoot
+    $("#"+this.id+" input.filter").addClass("no_input").attr("value","Search");
+    this.filterRecord();
+
     // Reset records and rows objects
     this.records = {};
     this.rows = {};
@@ -983,7 +987,55 @@ TimePlot.prototype.highlightPoint = function(key) {
     highlight_fn(this.plot, point);
 
     return;
-}
+};
+
+TimePlot.prototype.updateDate = function(mindate,maxdate,xaxis_label) {
+    // Assume incoming dates are LT
+    this.ut = false;
+
+    // Convert to UT milliseconds
+    mindate = new $.jsDate(mindate);
+    maxdate = new $.jsDate(maxdate);
+    mindate = mindate.getTime();
+    maxdate = maxdate.getTime();
+
+    // Keep it in the options
+    this.options.mindate = mindate;
+    this.options.maxdate = maxdate;
+    if (xaxis_label) {
+	xaxis_label += " ("+this.timezone+")";
+	this.options.xaxis_label = xaxis_label;
+    }
+
+    // Keep it in the jqplot config
+    this.config.axes.xaxis.min = mindate;
+    this.config.axes.xaxis.max = maxdate;
+    if (xaxis_label) {
+	this.config.axes.xaxis.label = xaxis_label;
+    }
+
+    // Update it in the plot if it exists
+    if (this.plot) {
+	// Set the unzoomed min/max
+	this.plot.axes.xaxis._options.min = mindate;
+	this.plot.axes.xaxis._options.max = maxdate;
+
+	// Set the actual min/max
+	this.plot.axes.xaxis.min = mindate;
+	this.plot.axes.xaxis.max = maxdate;
+
+	// Reset the label
+	if (xaxis_label) {
+	    this.plot.axes.xaxis.labelOptions.label = xaxis_label;
+	}
+	// Reset the scale
+	this.plot.axes.xaxis.resetScale({min:mindate,max:maxdate});
+    }
+
+    // Update the plot
+    this.addRecord();
+
+}; // end updateDate
 
 TimePlot.prototype.clearRecord = function() {
     // Clear out old plot

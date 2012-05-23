@@ -35,6 +35,25 @@ MetricsViewer.prototype = {
 	// Instantiate the records database
 	this.database = new MetricsDatabase();
 
+	// Set the previous and next turnover times
+	// Turnover is set to 14:00 at both sites
+	var prev_turnover = new Date();
+	if (prev_turnover.getHours()<14) {
+	    prev_turnover.setDate(prev_turnover.getDate()-1);
+	}
+	prev_turnover.setHours(14);
+	prev_turnover.setMinutes(0);
+	prev_turnover.setSeconds(0);
+
+	var next_turnover = new Date(prev_turnover.getFullYear(),
+				     prev_turnover.getMonth(),
+				     prev_turnover.getDate() + 1,
+				     prev_turnover.getHours());
+	// Store previous and next turnover to check against
+	// in the update function
+	this.prev_turnover = prev_turnover;
+	this.turnover = next_turnover;
+
 	// Add the basic structure to the element
 	var html_str = this.composeHTML();
 	this.element.html(html_str);
@@ -92,14 +111,15 @@ MetricsViewer.prototype = {
 	// Instantiate plots
 
 	// Set up necessary for all plots
-	var mindate = new Date();
+	var mindate = new Date(this.prev_turnover);
 	mindate.setHours(18);
 	mindate.setMinutes(0);
 	mindate.setSeconds(0);
-	var maxdate = new Date();
+	var maxdate = new Date(this.prev_turnover);
 	maxdate.setHours(mindate.getHours()+13);
 	maxdate.setMinutes(0);
 	maxdate.setSeconds(0);
+
 	var options = {
 	    mindate: mindate.toString(),
 	    maxdate: maxdate.toString(),
@@ -346,29 +366,10 @@ MetricsViewer.prototype = {
 	    mv.lightbox.clearRecord();
 	    $("#lightbox_background,#lightbox_window").hide();
 	});
-
-
-	// Set the previous and next turnover times
-	// Turnover is set to 14:00 at both sites
-	var prev_turnover = new Date();
-	if (prev_turnover.getHours()<14) {
-	    prev_turnover.setDate(prev_turnover.getDate()-1);
-	}
-	prev_turnover.setHours(14);
-	prev_turnover.setMinutes(0);
-	prev_turnover.setSeconds(0);
-
-	var next_turnover = new Date(prev_turnover.getFullYear(),
-				     prev_turnover.getMonth(),
-				     prev_turnover.getDate() + 1,
-				     prev_turnover.getHours());
 	
 	// Use previous turnover as initial timestamp (in UTC seconds)
 	// for adcc query
 	var timestamp = Math.round(prev_turnover.valueOf()/1000);
-
-	// Store next turnover to check against in the update function
-	this.turnover = next_turnover;
 
 	// Set up a mouse-position tracker
 	this.last_pos = {x:0,y:0};
@@ -450,13 +451,13 @@ MetricsViewer.prototype = {
 
     getDateString: function() {
 	var date_str = "";
-	var date = new Date();
+	var date = new Date(this.prev_turnover);
 	
 	// Timezone offset is in minutes.
 	// 600 is Hawaii; assume anything else is Chile
 	var timezone = date.getTimezoneOffset();
 	if (timezone==600) {
-	    // Hawaii; UT date will be correct at nighttime
+	    // Hawaii; UT date as of 14:00 will be correct at nighttime
 	    date_str += "N";
 	} else {
 	    // Chile
@@ -502,10 +503,6 @@ MetricsViewer.prototype = {
 	// Clear the database
 	this.database.clearDatabase();
 
-	// Update date string
-	this.date_str = this.getDateString();
-	$("#date").html(this.date_str);
-
 	// Clear all ViewPorts
 	this.metrics_table.clearRecord();
 	this.message_window.clearRecord();
@@ -533,7 +530,26 @@ MetricsViewer.prototype = {
 				     prev_turnover.getMonth(),
 				     prev_turnover.getDate() + 1,
 				     prev_turnover.getHours());
+	this.prev_turnover = prev_turnover;
 	this.turnover = next_turnover;
+
+	// Update date string
+	this.date_str = this.getDateString();
+	$("#date").html(this.date_str);
+
+	// Update min/max date on plots
+	var mindate = new Date(this.prev_turnover);
+	mindate.setHours(18);
+	mindate.setMinutes(0);
+	mindate.setSeconds(0);
+	var maxdate = new Date(this.prev_turnover);
+	maxdate.setHours(mindate.getHours()+13);
+	maxdate.setMinutes(0);
+	maxdate.setSeconds(0);
+	var xaxis_label = this.date_str.slice(1,-1);
+	this.iq_plot.updateDate(mindate,maxdate,xaxis_label);
+	this.cc_plot.updateDate(mindate,maxdate,xaxis_label);
+	this.bg_plot.updateDate(mindate,maxdate,xaxis_label);
 
 	// Restart the pump
 	this.gjs.startPump(timestamp,"qametric");
@@ -551,6 +567,8 @@ MetricsViewer.prototype = {
 	    return;
 	}
 
+	var incoming = [];
+	var incoming_metric = {};
 	for (var i in records) {
 	    var record = records[i];
 
@@ -567,6 +585,11 @@ MetricsViewer.prototype = {
 
 	    var ldate = new Date(Date.UTC(ud[0],ud[1]-1,ud[2],
 					  ut[0],ut[1],ut[2], ut[3]));
+
+	    // Skip this record if it is not within the current date
+	    if (ldate<this.prev_turnover || ldate>this.turnover) {
+		continue;
+	    }
 
 	    // Pad with zeroes if necessary
 	    var month = ldate.getMonth() + 1;
@@ -621,7 +644,12 @@ MetricsViewer.prototype = {
 	    // Format some metrics into strings including errors
 	    // and format integer bands into strings
 	    // (eg. 50 -> "CC50")
+	    var datalabel = record["metadata"]["datalabel"];
+	    if (incoming_metric[datalabel]==undefined) {
+		incoming_metric[datalabel] = [];
+	    }
 	    if (record["iq"]) {
+		incoming_metric[datalabel].push("iq");
 		record["iq"]["delivered_str"] = 
 	            record["iq"]["delivered"].toFixed(2) + " \u00B1 " +
 		    record["iq"]["delivered_error"].toFixed(2);
@@ -637,6 +665,7 @@ MetricsViewer.prototype = {
 		    this.getBandString("iq",record["iq"]["requested"]);
 	    }
 	    if (record["cc"]) {
+		incoming_metric[datalabel].push("cc");
 		record["cc"]["extinction_str"] = 
 	            record["cc"]["extinction"].toFixed(2) + " \u00B1 " +
 		    record["cc"]["extinction_error"].toFixed(2);
@@ -659,6 +688,7 @@ MetricsViewer.prototype = {
 		    this.getBandString("cc",record["cc"]["requested"]);
 	    }
 	    if (record["bg"]) {
+		incoming_metric[datalabel].push("bg");
 		record["bg"]["brightness_str"] = 
 	            record["bg"]["brightness"].toFixed(2) + " \u00B1 " +
 	            record["bg"]["brightness_error"].toFixed(2);
@@ -669,13 +699,20 @@ MetricsViewer.prototype = {
 	    }
 
 	    // Add the record to the database
-	    var datalabel = record["metadata"]["datalabel"];
 	    this.database.addRecord(datalabel, record);
 
 	    // Replace the incoming record with the one from the
 	    // database, in case it contained additional information
-	    records[i] = this.database.getRecord(datalabel);
+	    incoming.push(this.database.getRecord(datalabel));
+	    
 	} // end for-loop over records
+
+	// Don't bother continuing if there are no valid records to process
+	if (incoming.length<1) {
+	    return;
+	} else {
+	    records = incoming;
+	}
 
 	// Update table
 	if (this.metrics_table) {
@@ -703,10 +740,10 @@ MetricsViewer.prototype = {
 	    for (var k in records) {
 		var record = records[k];
 		var found_problem = false;
+		var datalabel =  record["metadata"]["datalabel"];
 		if (record["iq"]) {
 		    if (record["iq"]["comment"].length>0) {
-			element = $('#'+record["metadata"]["datalabel"]+
-				  ' td.iq');
+			element = $('#'+datalabel+' td.iq');
 			value = element.text();
 
 			if (record["iq"]["comment"].length==1 &&
@@ -716,29 +753,34 @@ MetricsViewer.prototype = {
 			    value = '<div class=outer>'+warn+value+'</div>';
 			} else {
 			    value = '<div class=outer>'+problem+value+'</div>';
-			    found_problem = true;
+			    
+			    if (incoming_metric[datalabel].indexOf("iq")!=-1) {
+				found_problem = true;
+			    }
 			}
 			element.html(value);
 		    }
 		}
 		if (record["cc"]) {
 		    if (record["cc"]["comment"].length>0) {
-			element = $('#'+record["metadata"]["datalabel"]+
-				  ' td.cc');
+			element = $('#'+datalabel+' td.cc');
 			value = element.text();
 			value = '<div class=outer>'+problem+value+'</div>';
 			element.html(value);
-			found_problem = true;
+			if (incoming_metric[datalabel].indexOf("cc")!=-1) {
+			    found_problem = true;
+			}
 		    }
 		}
 		if (record["bg"]) {
 		    if (record["bg"]["comment"].length>0) {
-			element = $('#'+record["metadata"]["datalabel"]+
-				  ' td.bg');
+			element = $('#'+datalabel+' td.bg');
 			value = element.text();
 			value = '<div class=outer>'+problem+value+'</div>';
 			element.html(value);
-			found_problem = true;
+			if (incoming_metric[datalabel].indexOf("bg")!=-1) {
+			    found_problem = true;
+			}
 		    }
 		}
 
@@ -748,7 +790,6 @@ MetricsViewer.prototype = {
 	    }
 
 	} else {
-	    ////here -- what should happen?
 	    console.log("No metrics table");
 	}
 
