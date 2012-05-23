@@ -81,10 +81,13 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
                   }
             import random
             now = datetime.datetime.utcnow()
-            if now.hour>17:
-                tonight = now.replace(hour =5, minute=0)+datetime.timedelta(days=1)
-            else:
+            import time
+            if time.timezone / 3600 ==10:
                 tonight = now.replace(hour =5, minute=0)
+            else:
+                if now.hour>=18:
+                    now += datetime.timedelta(days=1)
+                    tonight = now.replace(hour =5, minute=0)
             nexttime = datetime.timedelta(minutes = self.datacounter*15 + random.randint(-60,0))
             self.datacounter += 1
             now_ut = tonight + nexttime
