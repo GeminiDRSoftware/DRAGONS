@@ -102,7 +102,9 @@ class QAPrimitives(GENERALPrimitives):
 
             # Loop over SCI extensions
             all_bg = None
+            all_std = None
             all_bg_am = None
+            all_std_am = None
             bunit = None
             for sciext in ad["SCI"]:
                 extver = sciext.extver()
@@ -202,20 +204,24 @@ class QAPrimitives(GENERALPrimitives):
                     if(bunit=='adu'):
                         gain = float(sciext.gain())
                         bg_e = sci_bg * gain
+                        std_e = sci_std * gain
                         if npz is not None:
                             npz = npz + 2.5*math.log10(gain)
                     else:
                         bg_e = sci_bg
+                        std_e = sci_std
                     log.fullinfo("BG electrons = %f" % bg_e)
 
                     # Now divide it by the exposure time
                     bg_e /= float(sciext.exposure_time())
+                    std_e /= float(sciext.exposure_time())
                     log.fullinfo("BG electrons/s = %f" % bg_e)
 
                     # Now, it's in pixels, divide it by the area of a pixel
                     # to get arcsec^2
                     pixscale = float(sciext.pixel_scale())
                     bg_e /= (pixscale*pixscale)
+                    std_e /= (pixscale*pixscale)
                     log.fullinfo("BG electrons/s/as^2 = %f" % bg_e)
 
                     # Now get that in (instrumental) magnitudes...
@@ -233,8 +239,13 @@ class QAPrimitives(GENERALPrimitives):
                         # nominal zeropoint
                         bg_am = bg_im + npz
                         log.fullinfo("BG mag = %f" % bg_am)
+
+                        # Error in magnitude
+                        # dm = df * (2.5/ln(10)) / f 
+                        std_am = std_e * (2.5/math.log(10)) / bg_e;
                 else:
                     bg_am = None
+                    std_am = None
 
                 # Keep a running average value
                 if all_bg is None:
@@ -242,13 +253,16 @@ class QAPrimitives(GENERALPrimitives):
                     all_std = sci_std
                     if bg_am is not None:
                         all_bg_am = bg_am
+                        all_std_am = std_am
                 else:
                     all_bg = np.mean([all_bg,sci_bg])
                     all_std = np.sqrt(all_std**2+sci_std**2)
                     if (bg_am is not None) and (all_bg_am is not None):
                         all_bg_am = np.mean([all_bg_am,bg_am])
+                        all_std_am = np.sqrt(all_std_am**2+std_am**2)
                     elif bg_am is not None:
                         all_bg_am = bg_am
+                        all_std_am = std_am
 
                 bg_num = None
                 bg_str = "(BG band could not be determined)"
@@ -308,7 +322,8 @@ class QAPrimitives(GENERALPrimitives):
                     if bg_am is not None:
                         log.stdinfo(ind + ("Mag / sq arcsec in %s:" % 
                                      filter).ljust(llen) + 
-                                    ("%.2f" % bg_am).rjust(rlen))
+                                    ("%.2f +/- %.2f" % 
+                                     (bg_am,std_am)).rjust(rlen))
                     log.stdinfo(ind + bg_str)
                     log.stdinfo(ind + req_str+bg_warn)
                     log.stdinfo(ind + "-"*dlen)
@@ -336,7 +351,8 @@ class QAPrimitives(GENERALPrimitives):
                     if all_bg_am is not None:
                         log.stdinfo(ind + ("Mag / sq arcsec in %s:"% 
                                      filter).ljust(llen) + 
-                                    ("%.2f" % all_bg_am).rjust(rlen))
+                                    ("%.2f +/- %.2f" % 
+                                     (all_bg_am, all_std_am)).rjust(rlen))
                     log.stdinfo(ind + bg_str)
                     log.stdinfo(ind + req_str+bg_warn)
                     log.stdinfo(ind + "-"*dlen)
@@ -350,7 +366,7 @@ class QAPrimitives(GENERALPrimitives):
                         bg_comment = []
                     qad =  {"band": bg_num,
                             "brightness": float(all_bg_am),
-                            "brightness_error": 0.0,
+                            "brightness_error": float(all_std_am),
                             "requested": req_bg,
                             "comment": bg_comment,
                             }
@@ -896,8 +912,10 @@ class QAPrimitives(GENERALPrimitives):
                 if airmass is None:
                     log.warning("Airmass not found, not correcting to zenith")
                     corr = mean_fwhm
+                    corr_std = std_fwhm
                 else:
                     corr = mean_fwhm * airmass**(-0.6)
+                    corr_std = std_fwhm * airmass**(-0.6)
 
                 # Get IQ constraint band corresponding to
                 # the corrected FWHM number
@@ -920,7 +938,7 @@ class QAPrimitives(GENERALPrimitives):
                                            std_ellip)).rjust(rlen)
                 csStr = (
                     'Zenith-corrected FWHM (AM %.2f):'%airmass).ljust(llen) + \
-                    ('%.3f arcsec' % corr).rjust(rlen)
+                    ('%.3f %s %.3f arcsec' % (corr,pm,corr_std)).rjust(rlen)
 
                 iq_warn = ""
                 if iq_band is not None:
@@ -1001,6 +1019,7 @@ class QAPrimitives(GENERALPrimitives):
                        "delivered": float(mean_fwhm),
                        "delivered_error": float(std_fwhm),
                        "zenith": float(corr),
+                       "zenith_error": float(corr_std),
                        "ellipticity": float(mean_ellip),
                        "ellip_error": float(std_ellip),
                        "requested": req_iq,
