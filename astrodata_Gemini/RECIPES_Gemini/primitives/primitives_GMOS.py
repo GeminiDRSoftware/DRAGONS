@@ -1262,8 +1262,8 @@ class GMOSPrimitives(GEMINIPrimitives):
         or not (e.g., validateData(repair=True)). It currently just checks if
         there are 1, 2, 3, 4, 6, or 12 SCI extensions in the input.
 
-        :param repair: Set to True (the default) to repair the data 
-                       Note: this feature does not work yet.
+        :param repair: Set to True to repair the data. Note: this feature does
+                       not work yet.
         :type repair: Python boolean
         """
         
@@ -1295,15 +1295,21 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Get the repair parameter from the RC
             repair = rc["repair"]
 
+            if repair:
+                # Set repair to False, since it doesn't work at the moment
+                log.warning("Setting repair=False, since this functionality "
+                            "is not yet implemented")
+                repair = False
+
             # Validate the input AstroData object by ensuring that it has
             # 1, 2, 3, 4, 6 or 12 extensions
             valid_num_ext = [1, 2, 3, 4, 6, 12]
             num_ext = ad.count_exts("SCI")
             if num_ext not in valid_num_ext:
                 if repair:
-                    # This would be where we would attempt to repair the data 
-                    raise Errors.Error("The 'repair' functionality is not " +
-                                       "yet implemented")
+                    # This would be where we would attempt to repair the data
+                    # This shouldn't happen while repair = False exists above
+                    pass
                 else:
                     raise Errors.Error("The number of extensions in %s do " +
                                        "match with the number of extensions " +
