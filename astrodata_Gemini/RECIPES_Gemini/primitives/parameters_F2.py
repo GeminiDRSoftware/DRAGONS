@@ -34,7 +34,7 @@
         "uiLevel"       : "UIBASIC",
         },
     "repair":{
-        "default"       : True,
+        "default"       : False,
         "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,
