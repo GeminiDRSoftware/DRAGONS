@@ -189,8 +189,8 @@ class F2Primitives(GEMINIPrimitives):
         """
         This primitive is used to validate FLAMINGOS-2 data, specifically.
 
-        :param repair: Set to True (the default) to repair the data 
-                       Note: this feature does not work yet.
+        :param repair: Set to True to repair the data. Note: this feature does
+                       not work yet. 
         :type repair: Python boolean
         """
         
