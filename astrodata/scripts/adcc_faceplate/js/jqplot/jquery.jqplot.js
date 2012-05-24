@@ -5458,8 +5458,14 @@
                             }
                             this._areaPoints = bdat;
                             bopts.closePath = true;
-                            bopts.fill = true;
-                            bopts.fillStyle = this.renderer.bands.fillColor;
+
+			    if (bdat.length==2) {
+				bopts.fill = false;
+				bopts.strokeStyle = this.renderer.bands.fillColor;
+			    } else {
+				bopts.fill = true;
+				bopts.fillStyle = this.renderer.bands.fillColor;
+			    }
                             this.renderer.shapeRenderer.draw(ctx, bdat, bopts);
                         }
                     }
