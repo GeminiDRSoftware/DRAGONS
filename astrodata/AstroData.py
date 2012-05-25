@@ -1468,7 +1468,7 @@ help      False     show help information    """
                     after="EXTNAME")
         return header
         
-    def write(self, filename=None, clobber=False, rename=True):
+    def write(self, filename=None, clobber=False, rename=None):
         """
         :param fname: file name to write to, optional if instance already has
                       name, which might not be the case for new AstroData
@@ -1491,7 +1491,7 @@ help      False     show help information    """
 
         """
         
-        if (filename and rename == True):
+        if (filename and rename == None):
             self.filename = filename
         if (self.mode == "readonly" and not clobber):
             if rename == True  or rename == None:
