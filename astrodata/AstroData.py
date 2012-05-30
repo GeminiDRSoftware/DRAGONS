@@ -35,6 +35,28 @@ verbose = False
 verboseLoadTypes = True
 verbt = False
 
+def ad_obsolete(msg):
+    print "DEPRECATED:--------------\n"*5
+    print "OBSOLETE:"+msg
+    print
+    import traceback
+    st = traceback.extract_stack()
+    print "--- custom traceback follows:"
+    st = st[0:-2]
+    st.reverse()
+    
+    first = True
+    for frame in st:
+        if first:
+            print "CALLED FROM:"
+        else:
+            print " ... called by ...",
+        print "Module(%s) line #%d, function='%s' [%s]" % (frame[0],frame[1],frame[2], frame[3])
+        first = False
+    print
+    print "DEPRECATED:--------------\n"*5
+    print
+    
 def re_header_keys(rekey, header):
     """
     :param rekey: a regular expresion to match to keys in header
@@ -1543,7 +1565,10 @@ help      False     show help information    """
         """
         self.hdurefcount = self.hdurefcount + 1
         return self.hdulist
-    gethdul = get_hdulist # function alias
+        
+    def gethdul(self):
+        ad_obsolete("gethdul is an obsolete name for get_hdulist, please change your source code")
+        return self.get_hdulist() # function alias
     
     def release_hdulist(self):
         """
@@ -1553,7 +1578,9 @@ help      False     show help information    """
         """
         self.hdurefcount = self.hdurefcount - 1
         return
-    relhdul = release_hdulist # function alias
+    def relhdul(self):
+        ad_obsolete('relhdul obsolete, call "release_hdulist" instead')
+        return self.release_hdulist() # function alias
             
     def get_classification_library(self):
         """
@@ -1759,7 +1786,9 @@ help      False     show help information    """
             else:
                 return False
         return True
-    check_type = is_type
+    def check_type(self):
+        ad_obsolete("check_type is obsolete, call is_type instead")
+        return self.is_type()
 
     def re_phukeys(self, rekey):
         """
@@ -1801,8 +1830,14 @@ help      False     show help information    """
         except:
             setattr(self, "exception_info", sys.exc_info()[1])
             return None
-    phuValue = phu_get_key_value
-    phuHeader = phuValue
+            
+    def phuHeader(self, key):
+        ad_obsolete("phuHeader is obsolete, use phu_get_key_value")
+        return self.phu_get_key_value(key)
+        
+    def phuValue(self, key):
+        ad_obsolete("phuValue is obsolete, use phu_get_key_value")
+        return self.phu_get_key_value(key)
     
     def phu_set_key_value(self, key, value, comment = None):
         """
@@ -1926,7 +1961,9 @@ help      False     show help information    """
         else:
             mes = "getHeaderValue must be called on single extension instance"
             raise Errors.AstroDataError(mes)
-    getHeaderValue = get_key_value
+    def getHeaderValue(self,key):
+        ad_obsolete("getHeaderValue is obsolete, use get_key_value")
+        return self.get_key_value(key)
 
     def set_key_value(self, key, value, comment=None):
         """
