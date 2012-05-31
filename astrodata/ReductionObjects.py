@@ -148,8 +148,10 @@ class ReductionObject(object):
         
         prevprimname = self.curPrimName
         self.curPrimName = primname
+        
         # check to see current primitive set type is correct
         correctPrimType = self.recipeLib.discover_correct_prim_type(context)
+        
         # will be NONE if there are no current inputs, maintain current
         # curPrimType
         if correctPrimType and correctPrimType != self.curPrimType:
@@ -158,7 +160,7 @@ class ReductionObject(object):
             self.add_prim_set(newprimset)
             self.curPrimType = correctPrimType
         self.recipeLib.check_and_bind(self, primname, context=context) 
-        # print "substeps(%s,%s)" % (primname, str(cfgobj))
+        
         primset = self.get_prim_set(primname)
         if hasattr(primset, primname):
             prim = eval("primset.%s" % primname)

@@ -390,13 +390,13 @@ integrates other functionality.
             The PHU can be accessed via the ``phu`` AstroData member of using
             the PHU related member functions.
         """
-        hdul = self.gethdul()
+        hdul = self.hdulist # gethdul()
         # ext can be tuple, an int, or string ("EXTNAME")
         exs = []
         if (type(ext) == str):
             # str needs to be EXTNAME, so we go over the extensions
             # to collect those with the correct extname
-            hdul = self.gethdul()
+            hdul = self.hdulist #gethdul()
             maxl = len(hdul)
             count = 0
             extname = ext
@@ -414,7 +414,7 @@ integrates other functionality.
                 except KeyError:
                     #print " gd84: keyerror:[%s]" % extname
                     pass
-            self.relhdul()
+            # self.relhdul()
             
             if len(exs):
                 return AstroData(self, exts=exs)
@@ -435,11 +435,11 @@ integrates other functionality.
             except KeyError:
                 # print 'Extension "%s" does not exist' % str(ext)
                 # selector not valid
-                self.relhdul()
+                # self.relhdul()
                 #print "AD426: keyerror"
                 return None
             gdpart = AstroData(self, exts=[ext])
-            self.relhdul()
+            # self.relhdul()
             # print "gd132: %s" % str(gdpart)
             return gdpart
         else:
@@ -1269,7 +1269,7 @@ help      False     show help information    """
             # this may not remain the case... left for now.
             if (source.types != None) and (len(source.types) != 0):
                 self.types = source.types
-            chdu = source.gethdul()
+            chdu = source.hdulist #gethdul()
             # include the phu no matter what
             sublist = [chdu[0]]
             if self.extensions != None:
@@ -1729,7 +1729,7 @@ help      False     show help information    """
             self.typesStatus = cl.discover_status(self)
         return self.typesStatus
 
-    def get_typology(self):
+    def get_typology(self, prune = False):
         """
         This function returns the set of type names (strings) which apply to
         this dataset and which come from the typology section of the AstroData
@@ -1825,7 +1825,7 @@ help      False     show help information    """
                 raise Errors.UndefinedKeyError()
             if retval == "" or retval == " ":
                 raise Errors.EmptyKeyError()
-            self.relhdul()
+            # self.relhdul()
             return retval
         except:
             setattr(self, "exception_info", sys.exc_info()[1])

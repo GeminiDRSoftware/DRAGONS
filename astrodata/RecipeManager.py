@@ -2106,15 +2106,14 @@ class RecipeLibrary(object):
                     importname = os.path.splitext(rfilename)[0]
                     a = datetime.now()
                     try:
-                        #print "RM1282: about to import", importname, primdef[1]
+                        print "RM1282: about to import", importname, primdef[1]
                         exec ("import " + importname)
                         # print ("RM1285: after import")
                     except:
                         log = gemLog.getGeminiLog()
-                        msg =  "##### PRIMITIVE SET IMPORT ERROR: SKIPPING %(impname)s\n" * 3
-                        msg += traceback.format_exc() 
-                        msg += "##### PRIMITIVE SET IMPORT ERROR: SKIPPED %(impname)s\n" * 3
-                        msg = msg % {"impname": importname}
+                        blmsg =  "##### PRIMITIVE SET IMPORT ERROR: SKIPPING %(impname)s\n" * 3
+                        blmsg = blmsg % {"impname": importname}
+                        msg = blmsg + traceback.format_exc() + blmsg
                         if log:
                             log.error(msg)
                         else:                    
