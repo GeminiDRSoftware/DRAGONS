@@ -2106,7 +2106,7 @@ class RecipeLibrary(object):
                     importname = os.path.splitext(rfilename)[0]
                     a = datetime.now()
                     try:
-                        print "RM1282: about to import", importname, primdef[1]
+                        # print "RM1282: about to import", importname, primdef[1]
                         exec ("import " + importname)
                         # print ("RM1285: after import")
                     except:
