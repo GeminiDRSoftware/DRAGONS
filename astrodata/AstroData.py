@@ -48,10 +48,12 @@ def ad_obsolete(msg):
     first = True
     for frame in st:
         if first:
-            print "CALLED FROM:"
+            print "CALLED FROM:\n"
         else:
             print " ... called by ...",
         print "Module(%s) line #%d, function='%s' [%s]" % (frame[0],frame[1],frame[2], frame[3])
+        if first:
+            print ""
         first = False
     print
     print "DEPRECATED:--------------\n"*5
