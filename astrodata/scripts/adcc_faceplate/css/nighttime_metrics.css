@@ -341,6 +341,12 @@ td.jqplot-series-hidden div.jqplot-table-legend-swatch {
     position: relative;
 }
 
+span.warning {
+    color: #FF9E00;
+}
+span.problem {
+    color: #CE0000;
+}
 .outer {
     position: relative;
 }

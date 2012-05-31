@@ -621,7 +621,7 @@ MetricsViewer.prototype = {
              new row appear in the table, displaying its measured QA metrics.\
              A new point will also appear in the at least one of the plots.</p>\
              <p>If there is a problem with an observation, a \
-             <span style="color:#CE0000">WARNING</span> message\
+             <span class="problem">WARNING</span> message\
              will pop up; click to clear it. The observation that generated\
              the warning will be highlighted, and the warning message will\
              appear in the message window in the middle of the page.</p>\
@@ -1315,12 +1315,18 @@ MetricsViewer.prototype = {
 			}
 			if (msg_array[m].indexOf("ellipticity")!=-1) {
 			    message += '<span class="outer">'+
-				       warning+"&nbsp;&nbsp;"+msg_array[m]+
+				       warning+"&nbsp;&nbsp;"+
+				       '<span class="warning">'+
+				       subdicts[j].toUpperCase()+":</span> "+
+				       msg_array[m]+
 				       '</span>';
 			} else {
 			    message += '<span class="outer">'+
-				      problem+"&nbsp;&nbsp;"+msg_array[m]+
-				      '</span>';
+				       problem+"&nbsp;&nbsp;"+
+				       '<span class="problem">'+
+				       subdicts[j].toUpperCase()+":</span> "+
+				       msg_array[m]+
+				       '</span>';
 			}
 			has_msg = true;
 		    }
