@@ -2135,7 +2135,7 @@ help      False     show help information    """
         return IDFactory.generate_stackable_id(self)
     
     # MID LEVEL MEF INFORMATION
-    def count_exts(self, extname):
+    def count_exts(self, extname=None):
         """
         :param extname: the name of the extension, equivalent to the
                        value associated with the "EXTNAME" key in the extension 
@@ -2147,8 +2147,11 @@ help      False     show help information    """
         The count_exts(..) function counts the extensions of a given name
         (as stored in the HDUs "EXTVER" header). 
         """
-        hdul = self.gethdul()
+        hdul = self.get_hdulist()
         maxl = len(hdul)
+        if extname is None:
+            # subtract 1 because astrodata does not count phu as an ext.
+            return maxl - 1
         count = 0
         for i in range(1,maxl):
             try:
@@ -2159,7 +2162,7 @@ help      False     show help information    """
                 if extname == None:
                     count += 1  # in this case we are counting when there is no
                                 # EXTNAME in the header
-        self.relhdul()
+        self.release_hdulist()
         return count
         
     def get_hdu(self, extid):
