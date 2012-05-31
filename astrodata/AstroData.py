@@ -681,7 +681,7 @@ integrates other functionality.
             both be set and are used to construct a new HDU which is then 
             added to the  AstroData object. The 'data' argument should be set
             to a valid numpy array.
-        :type data: numarray.numaraycore.NumArray
+        :type data: numpy.ndarray
         
         :param header: if moredata *is not* specified, data and header are used
             to make  an HDU which is then added to the HDUList associated with
@@ -762,7 +762,7 @@ integrates other functionality.
         :param data: if moredata *is not* specified, data and header should 
             both be set and are used to construct a new HDU which is then 
             added to the AstroData instance.
-        :type data: numarray.numaraycore.NumArray
+        :type data: numpy.ndarray
 
         :param header: if moredata *is not* specified, data and header are 
             used to make an HDU which is then added to the HDUList associated
@@ -1063,7 +1063,7 @@ help      False     show help information    """
     def set_data(self, newdata):
         """
         :param newdata: new data objects
-        :type newdata: numarray.numarraycore.NumArray
+        :type newdata: numpy.ndarray
 
         :raise Errors.SingleHDUMemberExcept: if AstroData instance has more 
             than one extension (not including PHU).
@@ -1427,7 +1427,7 @@ help      False     show help information    """
         
         :param data: data and header should both be set and are used to 
             construct a new HDU which is then added to the AstroData instance.
-        :type data: numarray.numaraycore.NumArray
+        :type data: numpy.ndarray
 
         :param header: data and header should both be set and are used to 
             construct a new HDU which is then added to the AstroData instance.
