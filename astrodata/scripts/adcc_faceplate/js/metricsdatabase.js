@@ -23,6 +23,14 @@ MetricsDatabase.prototype = {
 	return this.records[key];
     },
 
+    getRecordList: function(key) {
+	var record_list = [];
+	for (var i in this.records) {
+	    record_list.push(this.records[i]);
+	}
+	return record_list;
+    },
+
     removeRecord: function(key) {
 	delete this.records[key];
     },

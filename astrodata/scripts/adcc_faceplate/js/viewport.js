@@ -15,15 +15,23 @@ ViewPort.prototype = {
     composeHTML: function() {
 	return '<div id='+this.id+' class="view_port"></div>';
     }, // end composeHTML
-    addRecord: function(records) {
+    addRecord: function(records,prepend) {
 	if (!(records instanceof Array)) {
 	    records = [records];
 	}
 	var record_str = "";
-	for (var i in records) {
-	    record_str += records[i];
+	for (var i=0;i<records.length;i++) {
+	    if (prepend) {
+		record_str += records[records.length-i-1];
+	    } else {
+		record_str += records[i];
+	    }
 	}
-	$('#'+this.id).append(record_str);
+	if (prepend) {
+	    $('#'+this.id).prepend(record_str);
+	} else {
+	    $('#'+this.id).append(record_str);
+	}
     },
     clearRecord: function() {
 	$('#'+this.id).html("");
@@ -57,6 +65,13 @@ ScrollTable.prototype.init = function() {
 
     // Hide any hidden columns
     $("#"+this.id+" td.hidden,th.hidden").hide();
+
+    // Keep a deep copy of the initial columns to revert to on clearRecord
+    this._columns = [];
+    for (var i=0;i<this.columns.length;i++) {
+	var c = $.extend(true,{},this.columns[i]);
+	this._columns.push(c);
+    }
 
     // Add an event handler to the headers of swappable columns
     // to do the swap
@@ -124,7 +139,6 @@ ScrollTable.prototype.init = function() {
 
     // Make the column headers draggable
     $("#"+this.id+" th").not(".hidden,.pad").draggable({
-	    //containment: "parent",
         cursor: "move",
 	helper: "clone",
 	revert: true,
@@ -150,6 +164,7 @@ ScrollTable.prototype.init = function() {
 
     // Make them droppable too
     $("#"+this.id+" th").not(".hidden,.pad").droppable({
+	accept: "#"+this.id+" th",
         drop: reorderColumns,
 	hoverClass: "hover",
 	tolerance: "pointer"
@@ -380,7 +395,26 @@ ScrollTable.prototype.addRecord = function(records) {
 }; // end addRecord
 
 ScrollTable.prototype.clearRecord = function() {
-    // Clear out the tbody, leaving the thead alone
+
+    // Restore initial column configuration
+    this.columns = this._columns;
+
+    // Make a new deep copy of the original configuration
+    // and reset the thead
+    this._columns = [];
+    var thead_tr = $('#'+this.id+' thead tr');
+    var thead_th = $('#'+this.id+' thead th').detach();
+    thead_tr.html("");
+    for (var i=0;i<this.columns.length;i++) {
+	var col = this.columns[i];
+	var c = $.extend(true,{},col);
+	this._columns.push(c);
+
+	thead_tr.append(thead_th.filter("."+col.id));
+    }
+    thead_tr.append(thead_th.filter(".pad"));
+
+    // Clear out the tbody
     $('#'+this.id+' tbody').html("");
 
     // Clear out the filtering box in tfoot
@@ -657,7 +691,7 @@ TimePlot.prototype.init = function(record) {
     // conditions lines
     tp.element.on("jqplotDataPointHighlight","div.jqplot-target",function(ev,pt){
         if (tp.options.overlay.length<1) {
-	    return false;
+	    return;
 	}
 	
 	var co = tp.plot.plugins.canvasOverlay;
@@ -673,7 +707,7 @@ TimePlot.prototype.init = function(record) {
 	    }
 	}
 	if (series_index==undefined) {
-	    return false;
+	    return;
 	}
 	objects = tp.options.overlay[series_index];
 	for (var line in objects) {
@@ -693,7 +727,7 @@ TimePlot.prototype.init = function(record) {
 	    }
 	}
 	co.draw(tp.plot);
-	return false;
+	return;
     }); // end on highlight
     tp.element.on("jqplotDataPointUnhighlight","div.jqplot-target",function(ev){
 	var co = tp.plot.plugins.canvasOverlay;
@@ -808,8 +842,8 @@ TimePlot.prototype.addRecord = function(records) {
 	    ymin = Math.min.apply(null,y_values);
 	    ymax = Math.max.apply(null,y_values);
 
-	    // Add 10% padding, round to nearest 0.1
-	    var range = Math.abs(ymax-ymin)*1.1;
+	    // Add 20% padding, round to nearest 0.1
+	    var range = Math.abs(ymax-ymin)*1.2;
 	    var ctr = (ymax+ymin)/2;
 	    ymin = Math.floor((ctr - range/2)*10)/10;
 	    ymax = Math.ceil((ctr + range/2)*10)/10;
@@ -943,6 +977,40 @@ TimePlot.prototype.addRecord = function(records) {
 	this.plot.replot({resetAxes:false});
     } else {
 	this.plot = $.jqplot(this.id, data, this.config);
+
+	// Add hooks, to be called after each draw:
+	// (The rest of the event handlers established in init
+	// will still work because they are jQuery 'on' handlers
+	var tp = this;
+
+	// If series not selected before the redraw, hide it
+	if (this.options.series_labels.length>1) {
+	    var hideUnselected = function() {
+		$("#"+tp.id+" td.jqplot-table-legend-label").each(function(){
+		    var srs = $(this).text();
+	            if (tp.selected[srs]!=undefined && !tp.selected[srs]) {
+		        tp.plot.series[tp.series_index[srs]].toggleDisplay({data:0});
+		        $(this).addClass('jqplot-series-hidden');
+		        $(this).prev('.jqplot-table-legend-swatch')
+		               .addClass('jqplot-series-hidden');
+	            }
+	        }); // end each legend label td
+	    };
+	    tp.plot.postDrawHooks.add(hideUnselected);
+	}
+	// Update point information in the data dictionary
+	var updatePoints = function() {
+	    for (var i=0; i<tp.options.series_labels.length; i++) {
+		var s = tp.plot.series[i];
+		for (var j=0; j<s.gridData.length; j++) {
+		    p = s.gridData[j];
+		    var point = {seriesIndex:i, pointIndex:j, 
+				 gridData:p, data:s.data[j]};
+		    tp.plot.data_dict[s.label][s.data[j][2]]["point"] = point;
+		}
+	    }
+	};
+	tp.plot.postDrawHooks.add(updatePoints);
     }
 
     // Store the data dictionary in the plot

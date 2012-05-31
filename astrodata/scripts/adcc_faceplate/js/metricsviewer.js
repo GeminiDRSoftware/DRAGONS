@@ -78,7 +78,7 @@ MetricsViewer.prototype = {
 			field:"metadata-image_number", width:43},
 		       {id:"datalabel",	name:"Data Label", 
 			field:"metadata-datalabel", width:190},
-		       {id:"wlen", name:"Wlen",
+		       {id:"wlen", name:"Wvlen",
 			field:"metadata-wavelength_str", width:60},
 		       {id:"iq", name:"IQ",
 			field:"iq-band_str", width:54},
@@ -103,11 +103,10 @@ MetricsViewer.prototype = {
 	// Instantiate message window
 	this.message_window = new ViewPort($("#message_target"),"message_window");
 	// Instantiate lightbox for urgent message display
-	this.lightbox = new  ViewPort($("#lightbox_window"),"lightbox_message");
+	this.lightbox = new ViewPort($("#lightbox_window"),"lightbox_message");
 	$("#lightbox_window").prepend('<span class="close_icon"></span>'+
 				      '<div><h2>WARNING</h2><hr></div>');
-
-
+	
 	// Instantiate plots
 
 	// Set up necessary for all plots
@@ -120,7 +119,12 @@ MetricsViewer.prototype = {
 	maxdate.setMinutes(0);
 	maxdate.setSeconds(0);
 
-	var options = {
+	var xlab = [this.date_str.slice(1,5),
+		    this.date_str.slice(5,7),
+		    this.date_str.slice(7,9)];
+	xlab = xlab.join("-");
+
+	options = {
 	    mindate: mindate.toString(),
 	    maxdate: maxdate.toString(),
 	    ymin: 0.0,
@@ -132,7 +136,7 @@ MetricsViewer.prototype = {
 	    bg_color: "white",
 	    title: "",
 	    ut: false,
-	    xaxis_label: this.date_str.slice(1,-1),
+	    xaxis_label: xlab,
 	    yaxis_label: ""};
 	
 	// IQ Plot
@@ -204,6 +208,7 @@ MetricsViewer.prototype = {
 	// CC Plot
 	var cc_options = $.extend(true,{},options);
 	cc_options.title = "Cloud Extinction";
+	cc_options.ymin = -0.1;
 	cc_options.ymax = 3.0;
 	cc_options.yaxis_label = "Extinction (mag)";
 	cc_options.series_labels = ["cc"];
@@ -286,7 +291,6 @@ MetricsViewer.prototype = {
 					"#metrics_table td.wlen");
 	this.tooltips["metadata-waveband"] = wb_tt;
 
-	
 
 	// Add a hover class to table cells on mouseenter/mouseleave
 	$("#metrics_table").on("mouseenter","td",function(){
@@ -321,29 +325,98 @@ MetricsViewer.prototype = {
 
 	// Add event handler to link message window and plot highlighting
 	// to clicks in table rows
-	$("#metrics_table tbody").on("click", "tr", function() {
+	$("#metrics_table tbody").on("click", "tr", function(ev,from_plot) {
 	    var selected = $(this).hasClass("highlight");
 
-	    // clear previous selections 
-	    $("#metrics_table tbody tr").removeClass("highlight");
-	    mv.message_window.clearRecord();
-	    mv.iq_plot.highlightPoint();
-	    mv.cc_plot.highlightPoint();
-	    mv.bg_plot.highlightPoint();
-	
-	    // add new selection (if not deselecting)
-	    if (!selected) {
-		$(this).addClass("highlight");
-		var dl = $(this).find("td.datalabel").text();
-		var record = mv.database.getRecord(dl);
-		var msg = mv.formatMessageRecords(record,"comment");
-	        mv.message_window.addRecord(msg);
+	    // Get some position information so we can scroll to the
+	    // row clicked if not visible
+	    var dl = $(this).find("td.datalabel").text();
+	    var tbody = $("#metrics_table tbody");
+	    var row = $(this);
+	    var view_top = tbody.offset().top;
+	    var view_btm = view_top + tbody.height();
+	    var row_top = row.offset().top;
+	    var row_btm = row_top + row.height();
+	    var in_scroll = row_btm<view_btm && row_top>view_top;
+	    var visible = row.hasClass("visible");
 
-		mv.iq_plot.highlightPoint(dl);
-		mv.cc_plot.highlightPoint(dl);
-		mv.bg_plot.highlightPoint(dl);
+	    if (selected && from_plot) {
+		// If already selected, but click is from plot,
+		// scroll row into view, leave everything else as is
+		if (visible && !in_scroll) {
+		    tbody.stop().animate({
+		        scrollTop: row_top-view_top+tbody.scrollTop()
+		    },500);
+		}
+	    } else {
+
+		// clear previous selections 
+		$("#metrics_table tbody tr").removeClass("highlight");
+		mv.message_window.clearRecord();
+		$("#problem_overlay").hide();
+		$("#warning_overlay").hide();
+		if (!from_plot) {
+		    mv.iq_plot.highlightPoint();
+		    mv.cc_plot.highlightPoint();
+		    mv.bg_plot.highlightPoint();
+		}
+
+		if (!selected) {
+		    // add new selection (if not deselecting)
+
+		    $(this).addClass("highlight");
+		    var record = mv.database.getRecord(dl);
+		    var msg = mv.formatMessageRecords(record,"comment");
+	            mv.message_window.addRecord(msg);
+
+		    // Define a couple effects to perform
+		    // if the event was not triggered by one of the plots
+		    // (ie. a direct click or a lightbox-clear action)
+		    function highlight_effects() {
+			if (!from_plot) {
+			    // Flash a red or yellow border around the message
+			    // box if there is a problem or warning
+			    if (row.find(".problem_icon").length>0) {
+				$("#warning_overlay").hide();
+				$("#problem_overlay").stop()
+				    .fadeIn().fadeOut("slow");
+			    } else if (row.find(".warn_icon").length>0) {
+				$("#problem_overlay").hide();
+				$("#warning_overlay").stop()
+				    .fadeIn().fadeOut("slow");
+			    }
+
+			    // Highlight the associated point in the plot
+			    mv.iq_plot.highlightPoint(dl);
+			    mv.cc_plot.highlightPoint(dl);
+			    mv.bg_plot.highlightPoint(dl);
+			}
+		    }
+
+		    // If the row is not within view, scroll to it,
+		    // then call the highlight effects
+		    if (visible && !in_scroll) {
+		        tbody.stop().animate({
+			    scrollTop: row_top-view_top+tbody.scrollTop()
+		        }, 500, highlight_effects);
+		    } else {
+			// Otherwise just call the highlight effects
+			highlight_effects();
+		    }
+		}
 	    }
 	}); // end click
+
+	// Add a handler to do the same when a point is highlighted
+	// in the plot (ie. moused-over)
+	$("#plot_wrapper").on("jqplotDataPointHighlight","div.jqplot-target", 
+	    function(ev,pt) {
+	        var dl = pt.data[2];
+		var row = $("#"+dl);
+		var from_plot = true;
+		row.trigger("click",from_plot);
+	    }
+        );
 
 	// Add a handler to link LT/UT column swap to LT/UT plot swap
 	$("#metrics_table").on("swapColumn", "th.time", function() {
@@ -360,13 +433,50 @@ MetricsViewer.prototype = {
 	});
 
 	// Add a handler to hide the lightbox effect when there is a click
-	// anywhere in the window
-	$(document).on("click","#lightbox_background,span.close_icon",
+	// anywhere else in the window
+	$(document).on("click",
+		       "#lightbox_background,#lightbox_window span.close_icon",
 		       function(){
+
+	    // Get the datalabel for the top warning message
+	    var dl = $("#lightbox_message span.datalabel:first").text();
+
 	    mv.lightbox.clearRecord();
 	    $("#lightbox_background,#lightbox_window").hide();
+
+	    // Wait a bit, then highlight the row associated with the
+	    // top warning message
+	    var timeout = setTimeout(function() {
+	        $("#"+dl).click();
+	    }, 100);
+
 	});
 	
+	// Add handler to change appearance of buttons in control panel
+	// when selected
+	$("#controls_wrapper").on("mousedown","li",function(){
+	    $(this).addClass("selected");
+	});
+	$("#controls_wrapper").on("mouseup","li",function(){
+	    $(this).removeClass("selected");
+	});
+
+	// Add handler to restore viewer to defaults when reset
+	// button is clicked
+	$("#controls_wrapper").on("click","#reset",function(){
+	    mv.restore();
+	});
+
+	// Add handler to show help message when help button is clicked
+	// and to hide it when either help button is clicked again or
+	// window is closed
+	$("#controls_wrapper").on("click","#help",function(){
+	    mv.help();
+        });
+	$("#"+this.id).on("click", "#help_window span.close_icon", function(){
+	    mv.help();
+        });
+
 	// Use previous turnover as initial timestamp (in UTC seconds)
 	// for adcc query
 	var timestamp = Math.round(prev_turnover.valueOf()/1000);
@@ -408,17 +518,27 @@ MetricsViewer.prototype = {
 
 	// Message window wrapper
 	html_str += '<div id="message_wrapper">' +
+	            '<div id="problem_overlay"></div>' +
+	            '<div id="warning_overlay"></div>' +
 	            '<div id="message_box">'+
 	            '<div class="label">Messages&nbsp;</div>' +
 	            '<div id="message_target"></div>' +
 	            '</div></div>';
-	
+
 	// Plot wrapper
 	html_str += '<div id="plot_wrapper">'+
 	            '<div id="iq_plot_wrapper"></div>'+
 	            '<div id="cc_plot_wrapper"></div>'+
 	            '<div id="bg_plot_wrapper"></div>'+
 	            '</div>';
+
+	// Control bar
+	html_str += '<div id="controls_wrapper">'+
+	            '<ul id="controls">'+
+	            '<li id="reset" class="control">Reset</li>'+
+	            '<li id="help" class="control">Help</li>'+
+	            '</ul>'+
+                    '</div>';
 
 	// Tooltip wrapper
 	html_str += '<div id="tooltip_wrapper"></div>';
@@ -481,6 +601,119 @@ MetricsViewer.prototype = {
 	return date_str;
     },
 
+    help: function() {
+	var help_window = $("#help_window");
+	if (help_window.length>0) {
+	    help_window.remove();
+	} else {
+	    var help_msg = 
+	    '<div id="accordion_wrapper">\
+             <h2>Nighttime QA Metrics Help</h2><hr>\
+             <div id=accordion>\
+             <h3><span class="icon expand_icon"></span>What to Expect</h3>\
+             <div class="text">\
+             <p>As the Quality Assurance Pipeline (QAP) reduces incoming data\
+             it generates quality assurance metrics: image quality, cloud\
+             cover, and sky background measurements.  It reports these \
+             numbers to a server, which in turn, automatically feeds them to\
+             this interface.</p>\
+             <p>When a frame has been reduced by the QAP, you should see a \
+             new row appear in the table, displaying its measured QA metrics.\
+             A new point will also appear in the at least one of the plots.</p>\
+             <p>If there is a problem with an observation, a \
+             <span style="color:#CE0000">WARNING</span> message\
+             will pop up; click to clear it. The observation that generated\
+             the warning will be highlighted, and the warning message will\
+             appear in the message window in the middle of the page.</p>\
+             <p>In the IQ plot, the zenith-corrected FWHM measurements are\
+             sorted into photometric bands (like U, B, V, R, I, etc.), since\
+             each band has a different definition of the acceptable percentile\
+             bands.  Likewise, the sky brightness is sorted by filter.\
+             No sorting is necessary for cloud extinction.</p>\
+             </div>\
+             <h3><span class="icon expand_icon"></span>Interactions to Try</h3>\
+             <div class="text">\
+             <p>In the table:</p>\
+             <ul>\
+             <li>Click on a row to see associated warnings and messages.\
+                 This will also highlight the associated data point(s) in\
+                 the plots.</li>\
+             <li>Mouse-over the entries to see more information about the\
+                 observation and/or the QAP measurements.</li>\
+             <li>Filter the table entries by entering any string into the\
+                 search box below the table.  Any text visible in the table\
+                 is searchable, as is the observation information in the\
+                 pop-up over the Data Label field.  For example, you can\
+                 enter &quot;gmos&quot; to show only gmos observations,\
+                 or &quot;q-13&quot; to show only observations with Q-13\
+                 in the data label.</li>\
+             <li>Rearrange the columns by dragging and dropping the \
+                 column headers.</li>\
+             <li>Switch from LT to UT by clicking on the LT column header.\
+                 This will also switch the time format on the plots.</li>\
+             </ul>\
+             <p>In the plots:</p>\
+             <ul>\
+             <li>Mouse-over data points to get the associated data label\
+                 and pull up the conditions limits (eg. lines indicating\
+                 where IQ20, IQ70, and IQ85 end).  This will also \
+                 highlight the associated row in the table, and\
+                 show its warnings in the message window.</li>\
+             <li>Zoom in to a box by clicking and dragging; double-click\
+                 to zoom out.</li>\
+             <li>Select series to hide or unhide by clicking on the \
+                 legend.</li>\
+             </ul>\
+             <p>In the control panel:</p>\
+             <ul>\
+             <li>Click reset to restore the table and the plots to\
+                 the default configuration.</li>\
+             <li>Click help to display or hide this message.</li>\
+             </ul>\
+             </div>\
+             <h3><span class="icon expand_icon"></span>Troubleshooting</h3>\
+             <div class="text">\
+             <p>If you are experiencing difficulties with this interface,\
+                try these steps to recover normal behavior:</p>\
+             <ul>\
+             <li>If new observations are not appearing, check the health\
+                 of the QAP or its server.</li>\
+             <li>If you are seeing strange behavior, try reloading the page.\
+                 Nothing will be lost: all data will be immediately \
+                 recovered from the server.</li>\
+             <li>File a fault report against the QAP.</li>\
+             </ul>\
+             </div>\
+             </div></div>\
+            ';
+	    
+	    $("#"+this.id).append('<div id="help_window"></div>');
+	    $("#help_window").html(help_msg)
+	                     .prepend('<span class="close_icon"></span>')
+	                     .draggable()
+	                     .resizable({handles: 'se',
+                                         minWidth: 180,
+			                 minHeight: 180,
+					 start: function(){
+					     $(this).data("resized",true)
+				         }});
+	    $("#accordion div.text").hide();
+	    $("#accordion span.icon").click(function() {
+		$(this).parent().next().toggle();
+		$(this).toggleClass("expand_icon")
+		       .toggleClass("unexpand_icon");
+		if (!$("#help_window").data("resized")) {
+		    if ($("#accordion span.unexpand_icon").length==0) {
+			$("#help_window").css("height","200px");
+		    } else {
+			$("#help_window").css("height","400px");
+		    }
+		}
+		return false;
+            });
+	}
+    },
+
     isHover: function(element) {
 	// Return true if element (a jQuery selection) is moused-over
 
@@ -514,6 +747,7 @@ MetricsViewer.prototype = {
 	}
 	mv.lightbox.clearRecord();
 	$("#lightbox_background,#lightbox_window").hide();
+	$("#help_window").remove();
 
 	// Set the turnover times
 	var prev_turnover = new Date();
@@ -546,16 +780,44 @@ MetricsViewer.prototype = {
 	maxdate.setHours(mindate.getHours()+13);
 	maxdate.setMinutes(0);
 	maxdate.setSeconds(0);
-	var xaxis_label = this.date_str.slice(1,-1);
-	this.iq_plot.updateDate(mindate,maxdate,xaxis_label);
-	this.cc_plot.updateDate(mindate,maxdate,xaxis_label);
-	this.bg_plot.updateDate(mindate,maxdate,xaxis_label);
+	var xlab = [this.date_str.slice(1,5),
+		    this.date_str.slice(5,7),
+		    this.date_str.slice(7,9)];
+	xlab = xlab.join("-");
+
+	this.iq_plot.updateDate(mindate,maxdate,xlab);
+	this.cc_plot.updateDate(mindate,maxdate,xlab);
+	this.bg_plot.updateDate(mindate,maxdate,xlab);
 
 	// Restart the pump
 	this.gjs.startPump(timestamp,"qametric");
+
     },
 
-    update: function(records) {
+    restore: function() {
+	// Restore all ViewPorts to default state, with current data
+
+	var records = this.database.getRecordList();
+
+	// Clear all ViewPorts
+	this.metrics_table.clearRecord();
+	this.message_window.clearRecord();
+	this.iq_plot.clearRecord();
+	this.cc_plot.clearRecord();
+	this.bg_plot.clearRecord();
+	for (var tt in this.tooltips) {
+	    this.tooltips[tt].clearRecord();
+	}
+	mv.lightbox.clearRecord();
+	$("#lightbox_background,#lightbox_window").hide();
+	$("#help_window").remove();
+
+	var disable_warning = true;
+	this.update(records,disable_warning);
+
+    },
+
+    update: function(records, disable_warning) {
 
 	// Test input; make into an array if needed
 	if (!records) {
@@ -745,7 +1007,8 @@ MetricsViewer.prototype = {
 	    var element, value;
 	    var problem_records = {};
 	    problem_records["size"] = 0;
-	    for (var k in records) {
+	    problem_records["index"] = {};
+	    for (var k=0;k<records.length;k++) {
 		var record = records[k];
 		var found_problem = false;
 		var datalabel =  record["metadata"]["datalabel"];
@@ -794,6 +1057,7 @@ MetricsViewer.prototype = {
 
 		if (found_problem) {
 		    problem_records[datalabel] = record;
+		    problem_records.index[datalabel] = k;
 		    problem_records.size++;
 		}
 	    }
@@ -862,16 +1126,31 @@ MetricsViewer.prototype = {
 
 	// If problems were found in the incoming record(s), pull up
 	// a lightbox displaying their messages
-	if (problem_records.size>0) {
+	if (!disable_warning && problem_records.size>0) {
 	    var pr = [];
 	    for (var r in problem_records) {
-		if (r=="size") {
+		if (r=="size" || r=="index") {
 		    continue;
 		}
 		pr.push(problem_records[r]);
 	    }
+	    // Sort the problem records by their index (ie. the order
+	    // they came in. If a later record comes in with the same
+	    // datalabel as an earlier one, the second index is used).
+	    pr.sort(function(a,b) {
+		var a_ind = problem_records.index[a["metadata"]["datalabel"]];
+		var b_ind = problem_records.index[b["metadata"]["datalabel"]];
+	        if (a_ind<b_ind) {
+		    return -1;
+		}
+		if (a_ind>b_ind) {
+		    return 1;
+		}
+		return 0;
+	    });
 	    var msg = this.formatWarningRecords(pr,"comment");
-	    this.lightbox.addRecord(msg);
+	    var prepend = true;
+	    this.lightbox.addRecord(msg,prepend);
 	    $("#lightbox_background, #lightbox_window").show();
 	}
 
@@ -995,7 +1274,7 @@ MetricsViewer.prototype = {
 		    tooltip_record["message"] = null;
 		}
 	    } else {
-		tooltip_record["message"] = null;
+		tooltip_record["message"] = "No data";
 	    }
 
 	    tt_records.push(tooltip_record);
@@ -1025,14 +1304,24 @@ MetricsViewer.prototype = {
 
 	    var has_msg = false;
 	    var subdicts = ["iq", "cc", "bg"];
+	    var problem = '<span class="msg_problem_icon"></span>';
+	    var warning = '<span class="msg_warn_icon"></span>';
 	    for (var j in subdicts) {
 		if (record[subdicts[j]]) {
 		    var msg_array = record[subdicts[j]][key];
-		    if (msg_array.length>0) {
+		    for (var m in msg_array) {
 			if (has_msg) {
 			    message += ", ";
 			}
-			message += msg_array.join(", ");
+			if (msg_array[m].indexOf("ellipticity")!=-1) {
+			    message += '<span class="outer">'+
+				       warning+"&nbsp;&nbsp;"+msg_array[m]+
+				       '</span>';
+			} else {
+			    message += '<span class="outer">'+
+				      problem+"&nbsp;&nbsp;"+msg_array[m]+
+				      '</span>';
+			}
 			has_msg = true;
 		    }
 		}
@@ -1062,8 +1351,9 @@ MetricsViewer.prototype = {
 	    var record = records[i];
 	    var message = "<h3>Image " + 
 	                  record["metadata"]["image_number"] + ", " +
+		          '<span class="datalabel">' +
 	                  record["metadata"]["datalabel"] + 
-	                  ":</h3><p>";
+	                  "</span>:</h3><p>";
 
 	    var has_msg = false;
 	    var subdicts = ["iq", "cc", "bg"];
