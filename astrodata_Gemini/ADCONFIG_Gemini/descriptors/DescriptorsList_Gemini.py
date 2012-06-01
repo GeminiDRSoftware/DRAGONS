@@ -29,7 +29,7 @@
     DD("group_id", pytype=str),
     DD("gain_setting", pytype=str),
     DD("instrument", pytype=str),
-    DD("local_time", pytype=str),
+    DD("local_time", pytype=datetime),
     DD("mdf_row_id", pytype=int),
     DD("nod_count", pytype=int),
     DD("nod_pixels", pytype=int),

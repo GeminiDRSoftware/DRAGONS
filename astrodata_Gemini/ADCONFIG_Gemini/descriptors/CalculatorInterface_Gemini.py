@@ -1765,7 +1765,7 @@ class CalculatorInterface:
         :type dataset: AstroData
         :param format: the return format
         :type format: string
-        :rtype: string as default (i.e., format=None)
+        :rtype: datetime as default (i.e., format=None)
         :return: the local time (in HH:MM:SS.S) at the start of the observation
         """
         try:
@@ -1792,13 +1792,13 @@ class CalculatorInterface:
             else:
                 retval = self.descriptor_calculator.local_time(self, **args)
             
-            
+            from datetime import datetime
             ret = DescriptorValue( retval, 
                                    format = format, 
                                    name = "local_time",
                                    keyword = keyword,
                                    ad = self,
-                                   pytype = str )
+                                   pytype = datetime )
             return ret
         except:
             if not hasattr(self, "exception_info"):
@@ -2789,7 +2789,7 @@ class CalculatorInterface:
         :type dataset: AstroData
         :param format: the return format
         :type format: string
-        :rtype: string as default (i.e., format=None)
+        :rtype: integer as default (i.e., format=None)
         :return: the raw background (either '20-percentile', '50-percentile', 
                  '80-percentile' or 'Any') of the observation
         """
@@ -2823,7 +2823,7 @@ class CalculatorInterface:
                                    name = "raw_bg",
                                    keyword = keyword,
                                    ad = self,
-                                   pytype = str )
+                                   pytype = int )
             return ret
         except:
             if not hasattr(self, "exception_info"):
@@ -2843,7 +2843,7 @@ class CalculatorInterface:
         :type dataset: AstroData
         :param format: the return format
         :type format: string
-        :rtype: string as default (i.e., format=None)
+        :rtype: integer as default (i.e., format=None)
         :return: the raw cloud cover (either '50-percentile', '70-percentile', 
                  '80-percentile', '90-percentile' or 'Any') of the observation
         """
@@ -2877,7 +2877,7 @@ class CalculatorInterface:
                                    name = "raw_cc",
                                    keyword = keyword,
                                    ad = self,
-                                   pytype = str )
+                                   pytype = int )
             return ret
         except:
             if not hasattr(self, "exception_info"):
@@ -2897,7 +2897,7 @@ class CalculatorInterface:
         :type dataset: AstroData
         :param format: the return format
         :type format: string
-        :rtype: string as default (i.e., format=None)
+        :rtype: integer as default (i.e., format=None)
         :return: the raw image quality (either '20-percentile', 
                  '70-percentile', '85-percentile' or 'Any') of the observation
         """
@@ -2931,7 +2931,7 @@ class CalculatorInterface:
                                    name = "raw_iq",
                                    keyword = keyword,
                                    ad = self,
-                                   pytype = str )
+                                   pytype = int )
             return ret
         except:
             if not hasattr(self, "exception_info"):
@@ -2951,7 +2951,7 @@ class CalculatorInterface:
         :type dataset: AstroData
         :param format: the return format
         :type format: string
-        :rtype: string as default (i.e., format=None)
+        :rtype: integer as default (i.e., format=None)
         :return: the raw water vapour (either '20-percentile', 
                  '50-percentile', '80-percentile' or 'Any') of the observation
         """
@@ -2985,7 +2985,7 @@ class CalculatorInterface:
                                    name = "raw_wv",
                                    keyword = keyword,
                                    ad = self,
-                                   pytype = str )
+                                   pytype = int )
             return ret
         except:
             if not hasattr(self, "exception_info"):
