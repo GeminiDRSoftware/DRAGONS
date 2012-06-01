@@ -1,13 +1,16 @@
 
 from astrodata import AstroData
 from astrodata.usercalibrationservice import user_cal_service
+from astrodata import Lookups
 
 from xml.dom import minidom
 import exceptions
 
-CALMGR = "http://fits/calmgr"
+calurldict = Lookups.get_lookup_table("Gemini/calurl_dict","calurl_dict")
+
+CALMGR = calurldict["CALMGR"]
 #CALMGR = "http://hbffits3.hi.gemini.edu/calmgr"
-LOCALCALMGR = "http://localhost:%(httpport)d/calsearch.xml?caltype=%(caltype)s"
+LOCALCALMGR = calurldict["LOCALCALMGR"] 
 
 #LOCALCALMGR = "http://localhost:%(httpport)d/calsearch.xml?caltype=%(caltype)s&%(tokenstr)s"
 #"None # needs to have adcc http port in
