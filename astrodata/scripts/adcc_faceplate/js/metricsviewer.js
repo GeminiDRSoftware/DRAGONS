@@ -615,11 +615,11 @@ MetricsViewer.prototype = {
              <p>As the Quality Assurance Pipeline (QAP) reduces incoming data\
              it generates quality assurance metrics: image quality, cloud\
              cover, and sky background measurements.  It reports these \
-             numbers to a server, which in turn, automatically feeds them to\
+             numbers to a server, which automatically feeds them to\
              this interface.</p>\
              <p>When a frame has been reduced by the QAP, you should see a \
              new row appear in the table, displaying its measured QA metrics.\
-             A new point will also appear in the at least one of the plots.</p>\
+             A new point will also appear in at least one of the plots.</p>\
              <p>If there is a problem with an observation, a \
              <span class="problem">WARNING</span> message\
              will pop up; click to clear it. The observation that generated\
@@ -661,7 +661,7 @@ MetricsViewer.prototype = {
                  show its warnings in the message window.</li>\
              <li>Zoom in to a box by clicking and dragging; double-click\
                  to zoom out.</li>\
-             <li>Select series to hide or unhide by clicking on the \
+             <li>Select a series to hide or unhide by clicking on the \
                  legend.</li>\
              </ul>\
              <p>In the control panel:</p>\
