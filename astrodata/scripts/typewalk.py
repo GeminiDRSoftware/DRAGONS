@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-import sys,os
+import sys
+import os
 # remove current working directory from PYTHONPATH to speed up import in
 # gigantic data directories
 # print repr(sys.path)
@@ -89,6 +90,12 @@ parser.add_option("-r", "--recipe", "--reduce", dest="recipe", default = None,
 parser.add_option("-c", "--color", dest = "usecolor", action = "store_true", 
         help="Colorizes the display")
 (options, args) = parser.parse_args()
+
+# allow paths to be given as arguments
+if len(args) > 0:
+    for path in args:
+        if os.path.exists(path):
+            os.chdir(path)
 
 if options.usecolor == False or options.usecolor == None:
     import os
