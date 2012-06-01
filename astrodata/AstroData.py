@@ -392,13 +392,13 @@ integrates other functionality.
             The PHU can be accessed via the ``phu`` AstroData member of using
             the PHU related member functions.
         """
-        hdul = self.hdulist # gethdul()
+        hdul = self.hdulist # get_hdulist()
         # ext can be tuple, an int, or string ("EXTNAME")
         exs = []
         if (type(ext) == str):
             # str needs to be EXTNAME, so we go over the extensions
             # to collect those with the correct extname
-            hdul = self.hdulist #gethdul()
+            hdul = self.hdulist #get_hdulist()
             maxl = len(hdul)
             count = 0
             extname = ext
@@ -416,7 +416,7 @@ integrates other functionality.
                 except KeyError:
                     #print " gd84: keyerror:[%s]" % extname
                     pass
-            # self.relhdul()
+            # self.release_hdulist()
             
             if len(exs):
                 return AstroData(self, exts=exs)
@@ -437,11 +437,11 @@ integrates other functionality.
             except KeyError:
                 # print 'Extension "%s" does not exist' % str(ext)
                 # selector not valid
-                # self.relhdul()
+                # self.release_hdulist()
                 #print "AD426: keyerror"
                 return None
             gdpart = AstroData(self, exts=[ext])
-            # self.relhdul()
+            # self.release_hdulist()
             # print "gd132: %s" % str(gdpart)
             return gdpart
         else:
@@ -716,7 +716,7 @@ integrates other functionality.
         """The close(..) function will close the HDUList associated with this
         AstroData instance."""
         if self.borrowed_hdulist:
-            self.container.relhdul()
+            self.container.release_hdulist()
             self.hdulist = None
         else:
             if self.hdulist != None:
@@ -1052,12 +1052,12 @@ help      False     show help information    """
             # sd will be a single-HDU AstroData
             sd = dataset[("SCI",1)]
         """
-        hdl = self.gethdul()
+        hdl = self.get_hdulist()
         if len(hdl) == 2:
             retv = hdl[1].data
         else:
             raise Errors.SingleHDUMemberExcept()
-        self.relhdul()
+        self.release_hdulist()
         return retv
 
     def set_data(self, newdata):
@@ -1076,13 +1076,13 @@ help      False     show help information    """
             for gd in dataset[SCI]:
                 ...
         """
-        hdl = self.gethdul()
+        hdl = self.get_hdulist()
         if len(hdl) == 2:
             # note: should we check type of newdata?
             hdl[1].data = newdata
         else:
             raise Errors.SingleHDUMemberExcept()
-        self.relhdul()
+        self.release_hdulist()
         return 
     
     data = property(get_data, set_data, None, """
@@ -1112,18 +1112,18 @@ help      False     show help information    """
                 ...
         """
         if extension == None:
-            hdl = self.gethdul()
+            hdl = self.get_hdulist()
             if len(hdl) == 2:
                 retv = hdl[1].header
             else:
                 #print "numexts = %d" % len(hdl)
                 raise Errors.SingleHDUMemberExcept()
-            self.relhdul()
+            self.release_hdulist()
             return retv
         else: 
-            hdl = self.gethdul()
+            hdl = self.get_hdulist()
             retv = hdl[extension].header
-            self.relhdul()
+            self.release_hdulist()
             return retv
             
     def set_header(self, header, extension=None):
@@ -1150,12 +1150,12 @@ help      False     show help information    """
                 ...
         """
         if extension == None:
-            hdl = self.gethdul()
+            hdl = self.get_hdulist()
             if len(hdl) == 2:
                 hdl[1].header = header
             else:
                 raise Errors.SingleHDUMemberExcept()
-            self.relhdul()
+            self.release_hdulist()
         else:
             self.hdulist[extension].header = header
                     
@@ -1176,11 +1176,11 @@ help      False     show help information    """
         :return: list of pyfits.Header instances
         :rtype: pyfits.Header
         """
-        hdl = self.gethdul()
+        hdl = self.get_hdulist()
         retary = []
         for hdu in hdl:
             retary.append(hdu.header)
-        self.relhdul()
+        self.release_hdulist()
         return retary
 
     def has_single_hdu(self):
@@ -1271,7 +1271,7 @@ help      False     show help information    """
             # this may not remain the case... left for now.
             if (source.types != None) and (len(source.types) != 0):
                 self.types = source.types
-            chdu = source.hdulist #gethdul()
+            chdu = source.hdulist #get_hdulist()
             # include the phu no matter what
             sublist = [chdu[0]]
             if self.extensions != None:
@@ -1436,7 +1436,7 @@ help      False     show help information    """
         :param phu: primary header unit  
         :type phu: pyfits.core.PrimaryHDU, pyfits.core.Header 
         """
-        hdul = self.gethdul()
+        hdul = self.get_hdulist()
         hdulist = None
         hdu_index = None
         if type(index) == tuple:
@@ -1534,7 +1534,7 @@ help      False     show help information    """
             else:
                 rename = True
         fname = filename
-        hdul = self.gethdul()
+        hdul = self.get_hdulist()
         if fname == None:
             if rename == True:
                 mes = ("Option rename=True but filename is None")
@@ -1560,7 +1560,7 @@ help      False     show help information    """
         """
         This function retrieves the HDUList. NOTE: The HDUList should also be
         "released" by calling L{release_hdulist}, as access is reference
-        counted. This function is also aliased to L{gethdul(..)<gethdul>}.
+        counted. This function is also aliased to L{get_hdulist(..)<get_hdulist>}.
         
         :return: The AstroData's HDUList as returned by pyfits.open()
         :rtype: pyfits.HDUList
@@ -1827,7 +1827,7 @@ help      False     show help information    """
                 raise Errors.UndefinedKeyError()
             if retval == "" or retval == " ":
                 raise Errors.EmptyKeyError()
-            # self.relhdul()
+            # self.release_hdulist()
             return retval
         except:
             setattr(self, "exception_info", sys.exc_info()[1])
@@ -2024,7 +2024,7 @@ help      False     show help information    """
         
         # if (self.extensions != None) and (not extension in self.extensions):
         #    return None
-        hdul = self.gethdul()
+        hdul = self.get_hdulist()
         try:
             exthd = hdul[extension]
         except KeyError:
@@ -2078,7 +2078,7 @@ help      False     show help information    """
                 str(origextension)
             raise Errors.AstroDataError(mes)
 
-        hdul = self.gethdul()
+        hdul = self.get_hdulist()
         ext = hdul[extension]
         extname = ext.header.get("EXTNAME")
         extver = ext.header.get("EXTVER")
@@ -2121,7 +2121,7 @@ help      False     show help information    """
         if history_comment is not None:
             self.get_phuheader().add_history(history_comment)
 
-        self.relhdul()
+        self.release_hdulist()
         return 
    
     def info(self, oid=False, table=False, help=False):
@@ -2388,7 +2388,7 @@ def prep_output(input_ary=None, name=None, clobber=False):
         iary = input_ary
     
     #get PHU from input_ary[0].hdulist
-    hdl = iary[0].gethdul()
+    hdl = iary[0].get_hdulist()
     outphu = copy(hdl[0])
     outphu.header = outphu.header.copy()
         
