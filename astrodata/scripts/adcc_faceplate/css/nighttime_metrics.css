@@ -470,15 +470,15 @@ span.problem {
 }
 
 /*Force visible scrollbar for Lion*/
-::-webkit-scrollbar {
+#main ::-webkit-scrollbar {
     -webkit-appearance: none;
     width: 16px;
 }
-::-webkit-scrollbar-track {
+#main ::-webkit-scrollbar-track {
     border-radius: 7px;
     -webkit-box-shadow: inset 0 0 8px rgba(0,0,0,.3);
 }
-::-webkit-scrollbar-thumb {
+#main ::-webkit-scrollbar-thumb {
     border-radius: 7px;
     -webkit-box-shadow: inset 0 0 8px rgba(0,0,0,.5);
 }
