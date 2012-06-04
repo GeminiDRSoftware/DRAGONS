@@ -1576,7 +1576,7 @@ help      False     show help information    """
         """
         This function will release a reference to the HDUList... don't call 
         unless you have called L{get_hdulist} at some prior point. 
-        (Note, release_hdulist is aliased to L{relhdul(..)<relhdul>})
+        (Note, release_hdulist is aliased to L{release_hdulist(..)<release_hdulist>})
         """
         self.hdurefcount = self.hdurefcount - 1
         return
