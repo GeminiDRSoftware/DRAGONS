@@ -10,42 +10,51 @@ def profile_numpy(data,xc,yc,bg,stamp_size=10):
     sz = stamp_size
     if (int(yc)-sz<0 or int(xc)-sz<0 or
         int(yc)+sz>=data.shape[0] or int(xc)+sz>=data.shape[1]):
-        return (np.nan,np.nan)
+        return (None,None)
 
     # Get image stamp around center point
     stamp=data[int(yc)-sz:int(yc)+sz,int(xc)-sz:int(xc)+sz]
 
-    # Build the radial profile
-    ctr_coord = np.mgrid[int(yc)-sz:int(yc)+sz,int(xc)-sz:int(xc)+sz] + 0.5
-    dist = np.array([ctr_coord[0]-yc,ctr_coord[1]-xc])
+    # Get an array of the coordinates of the centers of all the pixels 
+    # in the stamp
+    dist = np.mgrid[int(yc)-sz:int(yc)+sz,int(xc)-sz:int(xc)+sz] + 0.5
+
+    # Subtract the center coordinates
+    dist[0] -= yc
+    dist[1] -= xc
+    
+    # Square root of the sum of the squares of the distances
     dist = np.sqrt(np.sum(dist**2,axis=0))
+
+    # Radius and flux arrays for the radial profile
     rpr = dist.flatten()
     rpv = stamp.flatten() - bg
     
     # Sort by the radius
-    sort_order = np.argsort(rpr)
-    radial_profile = np.rec.fromarrays([rpr[sort_order],rpv[sort_order]],
-                                       names=["radius","flux"])
+    sort_order = np.argsort(rpr) 
+    radius = rpr[sort_order]
+    flux = rpv[sort_order]
 
     # Find the first point where the flux falls below half
-    maxflux = np.max(radial_profile["flux"])
+    maxflux = np.max(flux)
     halfflux = maxflux/2.0
-    first_halfflux = np.where(radial_profile["flux"]<=halfflux)[0]
+    first_halfflux = np.where(flux<=halfflux)[0]
     if first_halfflux.size<=0:
         # Half flux not found, return the last radius
-        hwhm = radial_profile["radius"][-1]
+        hwhm = radius[-1]
     else:
-        hwhm = radial_profile["radius"][first_halfflux[0]]
+        hwhm = radius[first_halfflux[0]]
+
 
     # Find the first radius that encircles half the total flux
-    sumflux = np.cumsum(radial_profile["flux"])
+    sumflux = np.cumsum(flux)
     totalflux = sumflux[-1]
     halfflux = totalflux / 2.0
     first_50pflux = np.where(sumflux>=halfflux)[0]
     if first_50pflux.size<=0:
-        ee50r = radial_profile["radius"][-1]
+        ee50r = radius[-1]
     else:
-        ee50r = radial_profile["radius"][first_50pflux[0]]
+        ee50r = radius[first_50pflux[0]]
 
     return (hwhm, ee50r)
 
@@ -130,13 +139,13 @@ for i in range(0,len(objcat.data)):
 
     hwhm,e50r = profile_numpy(data,xc,yc,bg)
     #print i,hwhm,e50r
-    hwhm_list.append(hwhm)
-    e50r_list.append(e50r)
+    if (hwhm is not None and e50r is not None):
+        hwhm_list.append(hwhm)
+        e50r_list.append(e50r)
 print "  mean HWHM %.2f" % np.mean(hwhm_list)
 print "  mean E50R %.2f" % np.mean(e50r_list)
 elap = datetime.datetime.now() - now
 print "  %.2f s" % ((elap.seconds*10**6 + elap.microseconds)/10.**6)
-
 
 # the loopy way
 print 'loopy'
