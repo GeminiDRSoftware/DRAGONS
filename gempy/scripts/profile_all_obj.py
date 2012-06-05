@@ -112,6 +112,9 @@ catfwhm = objcat.data.field("FWHM_IMAGE")
 catbg = objcat.data.field("BACKGROUND")
 data = sci.data
 
+nobj = len(catx)
+print "%d objects" % nobj
+
 # the numpy way
 print 'numpy'
 now = datetime.datetime.now()
