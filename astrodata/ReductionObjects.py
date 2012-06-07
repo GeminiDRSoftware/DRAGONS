@@ -452,8 +452,9 @@ def command_clause(ro, coi):
         return
     
     ml = coi.get_metric_list(clear=True)
-    prs = Proxies.PRSProxy.get_adcc()
-    prs.report_qametrics(ml)
+    prs = Proxies.PRSProxy.get_adcc(check_once=True)
+    if prs is not None:
+        prs.report_qametrics(ml)
     
     #process  reques
     for rq in coi.rorqs:
