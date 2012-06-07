@@ -476,6 +476,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "normalize":{
+    "suffix":{
+        "default"       : "_normalized",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "showList":{
     "purpose":{
         "default"       : None,
