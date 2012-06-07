@@ -4,7 +4,9 @@ import numdisplay as nd
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
+from astrodata.adutils.gemutil import pyrafLoader
 from gempy import gemini_tools as gt
+from gempy import managers as mgr
 from primitives_GENERAL import GENERALPrimitives
 
 class DisplayPrimitives(GENERALPrimitives):
@@ -176,6 +178,33 @@ class DisplayPrimitives(GENERALPrimitives):
             # Squeeze the data to get rid of any empty dimensions
             # (eg. in raw F2 data)
             data = np.squeeze(dispext.data)
+
+            # Check for 1-D data (ie. extracted spectra)
+            if len(data.shape)==1:
+                
+                # Use splot to display instead of numdisplay
+                log.fullinfo("Calling IRAF task splot to display data")
+
+                # Load PyRAF
+                pyraf, gemini, yes, no = pyrafLoader()
+
+                # Write temporary files to disk 
+                clm=mgr.CLManager(imageIns=ad, suffix="_display",
+                                  funcName="display", log=log)
+                
+                str_ext = "[%s]" % extname
+                cl_params = {
+                    "images" : clm.imageInsFiles(type="string")+str_ext,
+                    "Stdout": mgr.IrafStdout(),
+                    "Stderr": mgr.IrafStdout()
+                    }
+                mgr.logDictParams(cl_params)
+                pyraf.iraf.splot(**cl_params)
+
+                # Clean up temporary files
+                clm.finishCL()
+
+                continue
 
             # Make threshold mask if desired
             masks = []

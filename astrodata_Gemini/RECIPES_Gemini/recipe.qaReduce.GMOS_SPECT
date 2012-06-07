@@ -1,0 +1,22 @@
+# This recipe performs the standardization and corrections needed to
+# convert the raw input science images into a single stacked science
+# image.
+
+prepare
+addDQ
+addVAR(read_noise=True)
+display
+overscanCorrect
+biasCorrect
+aduToElectrons
+addVAR(poisson_noise=True)
+rejectCosmicRays
+flatCorrect
+mosaicDetectors
+getProcessedArc
+attachWavelengthSolution
+resampleToLinearCoords
+skyCorrectFromSlit
+display
+extract1DSpectra
+display

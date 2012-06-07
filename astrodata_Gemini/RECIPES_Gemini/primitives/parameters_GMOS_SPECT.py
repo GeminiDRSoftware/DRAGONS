@@ -1,4 +1,31 @@
-{"makeFlat":{
+{"determineWavelengthSolution":{
+    "suffix":{
+        "default"       : "_wavelengthSolution",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "attachWavelengthSolution":{
+    "suffix":{
+        "default"       : "_wavelengthSolution",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "extract1DSpectra":{
+    "suffix":{
+        "default"       : "_extracted",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "makeFlat":{
     "suffix":{
         "default"       : "_flat",
         "type"          : "str",
@@ -31,6 +58,33 @@
         },
     "interpolator":{
         "default"       : "linear",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "rejectCosmicRays":{
+    "suffix":{
+        "default"       : "_crRejected",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "resampleToLinearCoords":{
+    "suffix":{
+        "default"       : "_linearCoords",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "skyCorrectFromSlit":{
+    "suffix":{
+        "default"       : "_skyCorrected",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
