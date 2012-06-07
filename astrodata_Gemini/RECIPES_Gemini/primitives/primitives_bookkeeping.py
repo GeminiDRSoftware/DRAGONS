@@ -146,7 +146,7 @@ class BookkeepingPrimitives(GENERALPrimitives):
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
         log.stdinfo("Inputs:")
-        print "pG977:", id(rc), repr(rc.inputs)
+        #print "pG977:", id(rc), repr(rc.inputs)
         #if "stream" in rc:
         #    stream = rc["stream"]
         #else:
