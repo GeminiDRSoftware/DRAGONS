@@ -745,7 +745,7 @@ MetricsViewer.prototype = {
 	for (var tt in this.tooltips) {
 	    this.tooltips[tt].clearRecord();
 	}
-	mv.lightbox.clearRecord();
+	this.lightbox.clearRecord();
 	$("#lightbox_background,#lightbox_window").hide();
 	$("#help_window").remove();
 
@@ -808,7 +808,7 @@ MetricsViewer.prototype = {
 	for (var tt in this.tooltips) {
 	    this.tooltips[tt].clearRecord();
 	}
-	mv.lightbox.clearRecord();
+	this.lightbox.clearRecord();
 	$("#lightbox_background,#lightbox_window").hide();
 	$("#help_window").remove();
 
