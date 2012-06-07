@@ -69,7 +69,7 @@ class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
             mtd = {"metadata":
                     { "raw_filename": ad.filename,
                       "datalabel": ad.data_label().as_pytype(),
-                      "local_time": ad.local_time().as_pytype(),
+                      "local_time": ad.local_time().as_pytype().strftime("%H:%M:%S.%f"),
                       "ut_time": ad.ut_datetime().as_pytype().strftime("%Y-%m-%d %H:%M:%S.%f"),
                       "wavelength": ad.central_wavelength(asMicrometers=True).as_pytype(),
                       "filter": ad.filter_name(pretty=True).as_pytype(),
