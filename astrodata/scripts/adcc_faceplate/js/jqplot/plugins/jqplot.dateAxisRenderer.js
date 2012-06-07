@@ -447,6 +447,10 @@
 
                 min = Math.floor(min/tempti) * tempti;
                 min = new $.jsDate(min);
+
+		////FIX
+		// Fix added by M. Clarke 5/1/12 to improve performance
+		// when time range is small (less than a day)
                 min = min.getTime();// + min.getUtcOffset();
 
                 nttarget = Math.ceil((max - min) / tempti) + 1;

@@ -5458,7 +5458,10 @@
                             }
                             this._areaPoints = bdat;
                             bopts.closePath = true;
-
+			    
+			    ////FIX
+			    // Fix added by M. Clarke 5/23/12 to show error
+			    // bands for a single data point
 			    if (bdat.length==2) {
 				bopts.fill = false;
 				bopts.strokeStyle = this.renderer.bands.fillColor;

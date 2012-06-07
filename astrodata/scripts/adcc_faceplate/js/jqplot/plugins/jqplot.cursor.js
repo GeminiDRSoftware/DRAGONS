@@ -376,6 +376,11 @@
                         dp = datapos[ax];
                         if (dp != null) {           
 
+			    ////FIX
+			    // Fix added by M. Clarke 5/22/12 to allow
+			    // zooming with inverted y-axis
+			    // (this whole block is affected)
+
 			    if (axes[ax].max > axes[ax].min) {
 				if (dp > start[ax]) { 
 				    newmin = start[ax];

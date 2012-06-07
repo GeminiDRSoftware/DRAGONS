@@ -29,6 +29,9 @@
  */
 (function($) {
     $.jqplot.eventListenerHooks.push(['jqplotMouseMove', handleMove]);
+    ////FIX
+    // Fix added by M. Clarke 5/11/12 to hide tooltip when mouse leaves
+    // the plot
     $.jqplot.eventListenerHooks.push(['jqplotMouseLeave', handleMove]);
     
     /**
@@ -210,13 +213,19 @@
     $.jqplot.preParseSeriesOptionsHooks.push($.jqplot.Highlighter.parseOptions);
     $.jqplot.postDrawHooks.push($.jqplot.Highlighter.postPlotDraw);
 
+    ////FIX
+    // Fix added by M. Clarke 5/11/12 to give external caller access to 
+    // the handleMove function (ie. to trigger data point highlighting with
+    // some external event)
     $.jqplot.Highlighter.handleMove = handleMove;
     
     function draw(plot, neighbor) {
         var hl = plot.plugins.highlighter;
         var s = plot.series[neighbor.seriesIndex];
         var smr = s.markerRenderer;
-        var mr = hl.markerRenderer;
+        var mr = hl.markerRenderer;	
+	////FIX 
+	// Fix added by M. Clarke 5/11/12 to allow a style to be passed in options
         //mr.style = smr.style;
         mr.lineWidth = smr.lineWidth + hl.lineWidthAdjust;
         mr.size = smr.size + hl.sizeAdjust;
@@ -245,7 +254,12 @@
             var yfstr = series._yaxis._ticks[0].formatString;
             var str;
             var xstr = xf(xfstr, neighbor.data[0]);
+
+	    ////FIX
+	    // Fix added by M. Clarke 5/11/12 to allow a label to be taken
+	    // from a third field in the data point
             var zstr = neighbor.data[opts.yvalues+1];
+
             var ystrs = [];
             for (var i=1; i<opts.yvalues+1; i++) {
                 ystrs.push(yf(yfstr, neighbor.data[i]));
@@ -270,6 +284,9 @@
                         ystrs.unshift(opts.formatString);
                         str = $.jqplot.sprintf.apply($.jqplot.sprintf, ystrs);
                         break;
+	            ////FIX
+		    // Fix added by M. Clarke 5/11/12 to allow a label to be taken
+	            // from a third field in the data point
                     case 'z':
                         str = $.jqplot.sprintf.apply($.jqplot.sprintf, [opts.formatString, zstr]);
                         break;
@@ -302,6 +319,9 @@
                     case 'y':
                         str = ystrs.join(opts.tooltipSeparator);
                         break;
+	            ////FIX
+		    // Fix added by M. Clarke 5/11/12 to allow a label to be taken
+	            // from a third field in the data point
                     case 'z':
                         str = zstr;
                         break;
@@ -410,6 +430,9 @@
         var c = plot.plugins.cursor;
         if (hl.show) {
 
+	    ////FIX
+	    // Fix added by M. Clarke 5/11/12 so that data points from
+	    // hidden series are not highlighted
 	    var series_show = true;
 	    if (neighbor!=null && 
 		plot.series[neighbor.seriesIndex]
@@ -434,6 +457,9 @@
                 hl.isHighlighting = false;
                 hl.currentNeighbor = null;
                 ctx = null;
+		////FIX
+		// Fix added by M. Clarke 5/18/12 to throw an event when
+		// data point highlights are removed
 		plot.target.trigger('jqplotDataPointUnhighlight');
             }
             else if (neighbor != null && series_show && !hl.isHighlighting) {
@@ -448,6 +474,9 @@
                 if (hl.bringSeriesToFront) {
                     plot.moveSeriesToFront(neighbor.seriesIndex);
                 }
+		////FIX
+		// Fix added by M. Clarke 5/18/12 to throw an event when
+		// a new data point is highlighted
 		plot.target.trigger('jqplotDataPointHighlight',neighbor);
             }
             // check to see if we're highlighting the wrong point.
@@ -473,6 +502,9 @@
                         plot.moveSeriesToFront(neighbor.seriesIndex);
                     }                    
 
+		    ////FIX
+		    // Fix added by M. Clarke 5/18/12 to throw an event when
+		    // a new data point is highlighted
 		    plot.target.trigger('jqplotDataPointHighlight',neighbor);
                 }                
             }

@@ -7,6 +7,9 @@
 <link href="/qap/js/jquery-ui/css/ui-lightness/jquery-ui-1.8.20.custom.css" rel="stylesheet">
 <link href="/qap/css/nighttime_metrics.css" rel="stylesheet">
 <script type="text/javascript" src="/qap/jquery.js"></script>
+<!-- Many of the jqplot scripts were modified to better support desired features.  
+     Update jqplot with extreme caution.  See ////FIX comments in code for locations
+     and explanations of changes made. -->
 <script type="text/javascript" src="/qap/js/jqplot/jquery.jqplot.js"></script>
 <script type="text/javascript" src="/qap/js/jqplot/plugins/jqplot.canvasTextRenderer.min.js"></script>
 <script type="text/javascript" src="/qap/js/jqplot/plugins/jqplot.canvasAxisLabelRenderer.min.js"></script>
@@ -22,15 +25,12 @@
 <script type="text/javascript" src="/qap/js/metricsdatabase.js"></script>
 <script type="text/javascript" src="/qap/js/metricsviewer.js"></script>
 <script type="text/javascript" id="start_viewer">
-////here - fix this
-var mv;
 $(document).ready(function() {
 
     // Instantiate the metrics viewer
     var element = $("#main");
     var id = "nighttime_metrics";
-    //var mv = new MetricsViewer(element, id);
-    mv = new MetricsViewer(element, id);
+    var mv = new MetricsViewer(element, id);
 
 }); // end document ready
 </script>

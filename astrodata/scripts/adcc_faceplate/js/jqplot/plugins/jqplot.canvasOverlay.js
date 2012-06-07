@@ -150,6 +150,9 @@
             // Format string passed the x and y values of the cursor on the line.
             // e.g., 'Dogs: %.2f, Cats: %d'.
             tooltipFormatString: '%d, %d',
+
+	    ////FIX
+	    // Fix added by M. Clarke 5/18/12 to label an overlay line
             // prop: showLabel
             // Label the line with its name
             showLabel: false,
@@ -349,6 +352,8 @@
     $.jqplot.CanvasOverlay.prototype.removeObject = function(idx) {
         // check if integer, remove by index
         if ($.type(idx) == 'number') {
+	    ////FIX
+	    // Fix added by M. Clarke 5/18/12 to label an overlay line
 	    if (this.objects[idx]._labelElem) {
 		this.objects[idx]._labelElem.remove();
 	    }
@@ -359,6 +364,8 @@
         else {
             var id = $.inArray(idx, this.objectNames);
             if (id != -1) {
+		////FIX
+		// Fix added by M. Clarke 5/18/12 to label an overlay line
 		if (this.objects[id]._labelElem) {
 		    this.objects[id]._labelElem.remove();
 		}
@@ -386,6 +393,8 @@
     $.jqplot.CanvasOverlay.prototype.get = $.jqplot.CanvasOverlay.prototype.getObject;
     
     $.jqplot.CanvasOverlay.prototype.clear = function(plot) {
+	////FIX
+	// Fix added by M. Clarke 5/18/12 to label an overlay line
 	for (var i=0;i<this.objects.length;i++) {
 	    var obj = this.objects[i];
 	    if (obj._labelElem) {
@@ -647,7 +656,13 @@
                             break;
                     }
 
+		    ////FIX
+		    // Fix added by M. Clarke 5/18/12 to label an overlay line
 		    if (opts.showLabel) {
+
+			////FIX
+			// Fix added by M. Clarke 5/22/12 to do overlay line
+			// labels properly on inverted y axes
 			if ((plot.axes.yaxis.min<=plot.axes.yaxis.max &&
 			     opts.y >= plot.axes.yaxis.min && 
 			     opts.y <= plot.axes.yaxis.max) || 
