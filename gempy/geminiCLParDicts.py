@@ -30,7 +30,12 @@ def CLDefaultParamsDict(CLscript):
         (CLscript != 'gmosaic') and
         (CLscript != 'gdisplay') and 
         (CLscript != 'gifringe') and 
-        (CLscript != 'gsflat')):
+        (CLscript != 'gscrrej') and 
+        (CLscript != 'gsextract') and
+        (CLscript != 'gsflat') and
+        (CLscript != 'gsskysub') and 
+        (CLscript != 'gstransform') and 
+        (CLscript != 'gswavelength')):
         log.critical('The CLscript '+CLscript+' does not have a default'+
                      ' dictionary')
         raise ToolboxError('The CLscript '+CLscript+
@@ -318,6 +323,67 @@ def CLDefaultParamsDict(CLscript):
             'Stderr'    :man.IrafStdout()
                        }
 
+    if CLscript == 'gscrrej':
+        defaultParams = {
+            'inimage' : '',            # Input image
+            'outimage': '',            # Output image with cosmic rays removed
+            'datares' : 4.0,           # Instrumental FWHM in x-direction
+            'fnsigma' : 8.0,           # Sigma clipping threshold for fitting
+            'niter'   : 5,             # Number of fitting iterations
+            'tnsigma' : 10.0,          # Sigma clipping threshold for mask
+            'fl_inter': no,            # Examine spline fit interactively?
+            'logfile' : '',            # Logfile
+            'verbose' : yes,           # Verbose?
+            'status'  : 0,             # Exit status (0=good)
+            'Stdout'    :man.IrafStdout(),
+            'Stderr'    :man.IrafStdout()
+            }
+
+    if CLscript == 'gsextract':
+        defaultParams = {
+            'inimages' : '',            # Input image
+            'outimages': '',            # Output image with cosmic rays removed
+            'outprefix' : "e",          # Output prefix
+            'refimages' : "",           # Reference images for tracing apertures
+            'apwidth' : 1.0,            # Extraction aperture in arcsec (diameter)
+            'fl_inter' : no,            # Run interactively?
+            'database' : "database",    # Directory for calibration files
+            'find' : yes,               # Define apertures automatically?
+            'recenter' : yes,           # Recenter apertures?
+            'trace' : yes,              # Trace apertures?
+            'tfunction' : "chebyshev",  # Trace fitting function
+            'torder' : 5,               # Trace fitting function order
+            'tnsum' : 20,               # Number of dispersion lines to sum for trace
+            'tstep' : 50,               # Tracing step
+            'weights' : "none",         # Extraction weights (none|variance)\n
+            'clean' : no,               # Detect and replace bad pixels?
+            'lsigma' : 3.0,             # Lower rejection threshold for cleaning
+            'usigma' : 3.0,             # Upper rejection threshold for cleaning\n
+            'background' : "none",      # Background subtraction method
+            'bfunction' : "chebyshev",  # Background function
+            'border' : 1,               # Order of background fit
+            'long_bsample' : "*",       # LONGSLIT: backgr sample regions, WRT aperture
+            'mos_bsample' : 0.9,        # MOS: fraction of slit length to use (bkg+obj)
+            'bnaverage' : 1,            # Number of samples to average over
+            'bniterate' : 2,            # Number of rejection iterations
+            'blow_reject' : 2.5,        # Background lower rejection sigma
+            'bhigh_reject' : 2.5,       # Background upper rejection sigma
+            'bgrow' : 0.0,              # Background rejection growing radius (pix)\n
+            'fl_vardq' : no,            # Propagate VAR/DQ planes? (if yes, must use variance weighting)
+            'sci_ext' : "SCI",          # Name of science extension
+            'var_ext' : "VAR",          # Name of variance extension
+            'dq_ext' : "DQ",            # Name of data quality extension
+            'key_ron' : "RDNOISE",      # Keyword for readout noise in e-
+            'key_gain' : "GAIN",        # Keyword for gain in electrons/ADU
+            'ron' : 3.5,                # Default readout noise rms in electrons
+            'gain' : 2.2,               # Default gain in e-/ADU
+            'logfile' : '',             # Logfile
+            'verbose' : yes,            # Verbose?
+            'status'  : 0,              # Exit status (0=good)
+            'Stdout'    :man.IrafStdout(),
+            'Stderr'    :man.IrafStdout()
+            }
+
     if CLscript == 'gsflat':
         defaultParams = {
             'inflats': '',            # Input flatfields
@@ -360,7 +426,7 @@ def CLDefaultParamsDict(CLscript):
             'biasrows': "default",    # Rows to use for overscan region
             'fl_inter': no,           # Fit response interactively?
             'fl_answer': yes,         # Continue interactive fitting?
-            'fl_detec': no,           # Fit response detector by detector rather than slit by slit?
+            'fl_detec': yes,           # Fit response detector by detector rather than slit by slit?
             'function': "spline3",    # Fitting function for response
             'order': "15",            # Order of fitting function, minimum value=1
             'low_reject': 3.0,        # Low rejection in sigma of response fit
@@ -405,5 +471,117 @@ def CLDefaultParamsDict(CLscript):
             'Stdout'    :man.IrafStdout(),
             'Stderr'    :man.IrafStdout()
                        }
+
+    if CLscript == 'gsskysub':
+        defaultParams = {
+            'input'       : '',            # Input GMOS spectra
+            'fl_answer'   : '',            # Continue with interactive fitting
+            'output'      : '',            # Output spectra
+            'outpref'     : "s",           # Output prefix
+            'sci_ext'     : "SCI",         # Name of science extension
+            'var_ext'     : "VAR",         # Name of variance extension
+            'dq_ext'      : "DQ",          # Name of data quality extension
+            'fl_vardq'    : no,            # Propagate VAR/DQ planes
+            'long_sample' : "*",           # Sky sample for LONGSLIT
+            'mos_sample'  : 0.9,           # MOS: Maximum fraction of slit length to use as sky sample
+            'mosobjsize'  : 1.0,           # MOS: Size of object aperture in arcsec
+            'naverage'    : 1,             # Number of points in sample averaging
+            'function'    : "chebyshev",   # Function to fit
+            'order'       : 1,             # Order for fit
+            'low_reject'  : 2.5,           # Low rejection in sigma of fit
+            'high_reject' : 2.5,           # High rejection in sigma of fit
+            'niterate'    : 2,             # Number of rejection iterations
+            'grow'        : 0.0,           # Rejection growing radius in pixels
+            'fl_inter'    : no,            # Fit interactively
+            'logfile'     : "",            # Logfile name
+            'verbose'     : yes,           # Verbose?
+            'status'      : 0,             # Exit status (0=good)
+            'Stdout'      :man.IrafStdout(),
+            'Stderr'      :man.IrafStdout()
+            }
+
+    if CLscript == 'gstransform':
+        defaultParams = {
+            'inimages' :  "",              # Input GMOS spectra
+            'outimages' : "",              # Output spectra
+            'outprefix' : "t",             # Prefix for output spectra
+            'fl_stran' : no,               # Apply S-distortion correction
+            'sdistname' : "",              # Names of S-distortions calibrations
+            'fl_wavtran' : yes,            # Apply wavelength calibration from arc spectrum
+            'wavtraname' : "",             # Names of wavelength calibrations
+            'database' : "database",       # Directory for calibration files
+            'fl_vardq' : no,               # Transform variance and data quality planes
+            'interptype' : "linear",       # Interpolation type for transform
+            'lambda1' : 'INDEF',             # First output wavelength for transform (Ang)
+            'lambda2' : 'INDEF',             # Last output wavelength for transform (Ang)
+            'dx' : 'INDEF',                  # Output wavelength to pixel conversion ratio for transform (Ang/pix)
+            'nx' : 'INDEF',                  # Number of output pixels for transform (pix)
+            'lambdalog' : no,              # Logarithmic wavelength coordinate for transform
+            'ylog' : no,                   # Logarithmic y coordinate for transform
+            'fl_flux' : yes,               # Conserve flux per pixel in the transform
+            'gratingdb' : "gmos$data/GMOSgratings.dat", # Gratings database file
+            'filterdb' : "gmos$data/GMOSfilters.dat", # Filters database file
+            'key_dispaxis' : "DISPAXIS",   # Keyword for dispersion axis
+            'dispaxis' : 1,                # Dispersion axis
+            'sci_ext' : "SCI",             # Name of science extension
+            'var_ext' : "VAR",             # Name of variance extension
+            'dq_ext' : "DQ",               # Name of data quality extension
+            'logfile'     : "",            # Logfile name
+            'verbose'     : yes,           # Verbose?
+            'status'      : 0,             # Exit status (0=good)
+            'Stdout'      :man.IrafStdout(),
+            'Stderr'      :man.IrafStdout()
+            }
+
+    if CLscript == 'gswavelength':
+        defaultParams = {
+            'inimages' : "",             # Input images
+            'crval' : "CRVAL1",          # Approximate wavelength at coordinate reference pixel
+            'cdelt' : "CD1_1",           # Approximate dispersion
+            'crpix' : "CRPIX1",          # Coordinate reference pixel
+            'key_dispaxis' : "DISPAXIS", # Header keyword for dispersion axis
+            'dispaxis' : 1,              # Dispersion axis
+            'database' : "database",     # Directory for files containing feature data
+            'coordlist' : "gmos$data/CuAr_GMOS.dat", # User coordinate list, line list
+            'gratingdb' : "gmos$data/GMOSgratings.dat", # Gratings database file
+            'filterdb' : "gmos$data/GMOSfilters.dat", # Filters database file
+            'fl_inter' : no,             # Examine identifications interactively
+            'section' : "default",       # Image section for running identify
+            'nsum' : 10,                 # Number of lines or columns to sum
+            'ftype' : "emission",        # Feature type
+            'fwidth' : 10.0,             # Feature width in pixels
+            'gsigma' : 1.5,              # Gaussian sigma for smoothing
+            'cradius' : 12.0,            # Centering radius in pixels
+            'threshold' : 0.0,           # Feature threshold for centering
+            'minsep' : 5.0,              # Minimum pixel separation for features
+            'match' : -6.0,              # Coordinate list matching limit, <0 pixels, >0 user
+            'function' : "chebyshev",    # Coordinate fitting function
+            'order' : 4,                 # Order of coordinate fitting function
+            'sample' : "*",              # Coordinate sample regions
+            'niterate' : 10,             # Rejection iterations
+            'low_reject' : 3.0,          # Lower rejection sigma
+            'high_reject' : 3.0,         # Upper rejection sigma
+            'grow' : 0.0,                # Rejection growing radius
+            'refit' : yes,               # Refit coordinate function when running reidentify
+            'step' : 10,                 # Steps in lines or columns for reidentification
+            'trace' : yes,               # Use fit from previous step rather than central aperture
+            'nlost' : 15,                # Maximum number of lost features
+            'maxfeatures' : 150,         # Maximum number of features
+            'ntarget' : 30,              # Number of features used for autoidentify
+            'npattern' : 5,              # Number of features used for pattern matching (autoidentify)
+            'fl_addfeat' : yes,          # Allow features to be added by reidentify
+            'aiddebug' : "",             # Debug parameter for aidpars
+            'fl_dbwrite' : "YES",        # Write results to database?
+            'fl_overwrite' : yes,        # Overwrite existing database entries?
+            'fl_gsappwave' : no,         # Run GSAPPWAVE on all images?
+            'fitcfunc' : "chebyshev",    # Function for fitting coordinates
+            'fitcxord' : 4,              # Order of fitting function in X-axis
+            'fitcyord' : 4,              # Order of fitting function in Y-axis
+            'logfile'     : "",          # Logfile name
+            'verbose'     : yes,         # Verbose?
+            'status'      : 0,           # Exit status (0=good)
+            'Stdout'      :man.IrafStdout(),
+            'Stderr'      :man.IrafStdout()
+            }
 
     return defaultParams

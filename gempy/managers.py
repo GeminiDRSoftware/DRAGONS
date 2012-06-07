@@ -1,10 +1,12 @@
 import os
-
+import re
+from copy import deepcopy
 import tempfile
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from astrodata import Errors
 from gempy import gemini_tools as gt
+from gempy import astrotools as at
 from gempy.gemini_metadata_utils import sectionStrToIntList
 
 class CLManager(object):
@@ -40,17 +42,20 @@ class CLManager(object):
     imageOutsListName = None
     refOutsListName = None
     arrayOutsListName = None
+    databaseName = None
     # Others
     suffix = None
     funcName = None
     status = None
     combinedImages = None
+    needDatabase = None
     templog = None
     log = None
      
     def __init__(self, imageIns=None, refIns=None, arrayIns=None, suffix=None,  
-                  imageOutsNames=None, refOutsNames=None, numArrayOuts=None,
-                 combinedImages=False, funcName=None, log=None):
+                 imageOutsNames=None, refOutsNames=None, numArrayOuts=None,
+                 databaseName=None, needDatabase=False, combinedImages=False,
+                 funcName=None, log=None):
         """
         This instantiates all the globally accessible variables (within the 
         CLManager class) and prepares the inputs for use in CL scripts by 
@@ -191,6 +196,7 @@ class CLManager(object):
                 self.log = gemLog.getGeminiLog()
             else:
                 self.log = log
+
             # load these to global early as they are needed below
             self.suffix = suffix
             # start up global lists
@@ -202,15 +208,26 @@ class CLManager(object):
                 self.refInsCLdiskNames = []
             if arrayIns!=None:
                 self.arrayInsCLdiskNames = []
+
             # load up the rest of the inputs to being global
             self.imageOutsNames = imageOutsNames
             self.refOutsNames = refOutsNames
+            self.needDatabase = needDatabase
             self.combinedImages = combinedImages
             self.funcName = funcName
             self.arrayIns = arrayIns
             self.numArrayOuts = numArrayOuts
+
             # now that everything is loaded to global make the uniquePrefix
             self.prefix = 'tmp'+ str(os.getpid())+self.funcName
+
+            # use the prefix to make a database name
+            # if one was not specified
+            if databaseName is None:    
+                self.databaseName = self.prefix+'database'
+            else:
+                self.databaseName = databaseName
+
             # now the preCLwrites can load up the input lists and write 
             # the temp files to disk
             self.preCLwrites()
@@ -577,22 +594,66 @@ class CLManager(object):
                               ' removing temporary files from disk.')
             for name in self.imageOutsNames:
                 tmpname = self.prefix+name
+
                 # Loading the file into an astrodata object
                 ad = AstroData(tmpname, mode='update')
                 ad.filename = name
+
                 # Removing the 'OBSMODE' phu key if it is in there
                 ad = self.obsmodeDel(ad)
+
                 # appending the astrodata object to the imageOuts list to be
                 # returned
                 self.imageOuts.append(ad)
+
                 # Deleting the file from disk
                 os.remove(tmpname)
                 self.log.fullinfo(tmpname+' was loaded into memory')
                 self.log.fullinfo(tmpname+' was deleted from disk')
+
             if self.imageOutsListName!=None:
                 os.remove(self.imageOutsListName)
                 self.log.fullinfo('Temporary list '+self.imageOutsListName+
                                   ' was deleted from disk')
+
+        # If needed, read in an IRAF database and store the information
+        # in a WAVECAL binary table extension
+        if self.needDatabase:
+
+            # Make a set of AD objects to return
+            adoutput_list = []
+            if self.imageOuts:
+                # If images were read in above, use those as a start
+                adoutput_list = self.imageOuts
+            else:
+                # If not, copy the input files to use as output
+                
+                # Load the output file names into imageOutsNames
+                # and make a dictionary to associate them with the input
+                # images
+                self.imageOutsFiles(type='list')
+                out_names = gt.make_dict(self.imageIns,self.imageOutsNames)
+
+                for ad in self.imageIns:
+                    adout = deepcopy(ad)
+                    adout.filename = out_names[ad]
+                    adoutput_list.append(adout)
+
+            self.imageOuts = []
+            input_names = gt.make_dict(adoutput_list,
+                                       self.imageInsFiles(type='list'))
+            for ad in adoutput_list:
+                # Read the database from disk and append the information
+                # to the output ad as a WAVECAL extension
+                ad = self.readDatabase(ad, inputName=input_names[ad],
+                                   outputName=ad.phu_get_key_value("ORIGNAME"))
+                self.imageOuts.append(ad)
+
+                # Remove the database
+                import shutil
+                if os.path.exists(self.databaseName):
+                    shutil.rmtree(self.databaseName)
+
         # Loading any output ref images into refOuts and 
         # killing off any disk files caused by them
         if self.refOutsNames!=None:
@@ -651,6 +712,7 @@ class CLManager(object):
                 os.remove(self.imageInsListName)
                 self.log.fullinfo('Temporary list '+self.imageInsListName+
                                   ' was deleted from disk') 
+
         # Killing off any disk files associated with refIns
         if self.refIns!=None:
             self.log.fullinfo('Removing temporary files associated with '+
@@ -697,23 +759,35 @@ class CLManager(object):
         # IRAF if needed along with saving the original astrodata filenames    
         if self.imageIns!=None:
             for ad in self.imageIns:            
+
                 # Adding the 'OBSMODE' phu key if needed
                 ad = self.obsmodeAdd(ad)
+
                 # Load up the _preCLimageNames list with the input's filename
                 self._preCLimageNames.append(ad.filename)
-                # Strip off all postfixes and prefix filename with a unique 
+
+                # Strip off all suffixes and prefix filename with a unique 
                 # prefix
                 name = gt.filename_updater(adinput=ad, prefix=self.prefix, 
                                            strip=True)
+
                 # store the unique name in imageInsCLdiskNames for later 
                 # reference
                 self.imageInsCLdiskNames.append(name)
+
                 # Log the name of this temporary file being written to disk
                 self.log.fullinfo('Temporary image file on disk for input to '+
                                   'CL: '+name)
+
                 # Write this file to disk with its unique filename 
                 ad.write(name, rename=False, clobber=True)
-        # preparing the input filenames for temperary input ref image files to 
+
+                # If desired, and if the image contains a WAVECAL extension,
+                # write it to disk as an IRAF database
+                if self.needDatabase and ad["WAVECAL"] is not None:
+                    self.writeDatabase(ad,inputName=name)
+
+        # preparing the input filenames for temporary input ref image files to 
         # IRAF if needed along with saving the original astrodata filenames
         if self.refIns!=None:
             for ad in self.refIns:            
@@ -731,7 +805,7 @@ class CLManager(object):
                                   +name)
                 # Write this file to disk with its unique filename 
                 ad.write(name, rename=False, clobber=True)
-        # preparing the input filenames for temperary input array files to 
+        # preparing the input filenames for temporary input array files to 
         # IRAF if needed and writing them to disk.   
         if self.arrayIns!=None:
             count=1
@@ -751,7 +825,7 @@ class CLManager(object):
                 fout.close()
                 
                 count=count+1
-        # preparing the output filenames for temperary output array files from 
+        # preparing the output filenames for temporary output array files from 
         # IRAF if needed, no writing here that is done by IRAF.
         if (self.numArrayOuts!=None) and (self.numArrayOuts!=0):
             # create empty list of array file names to be loaded in loop below
@@ -857,6 +931,59 @@ class CLManager(object):
         else:
             raise Errors.ManagersError('Parameter "type" must not be an empty string'+
                            '; choose either "string","list" or "listFile"')             
+    def readDatabase(self, ad, inputName=None, outputName=None):
+        database = self.databaseName
+        if database is None:
+            raise Errors.ManagersError('No database name specified')
+        if not os.path.isdir(database):
+            raise Errors.ManagersError('Database directory %s does not exist' %
+                                       database)
+        if inputName is None:
+            inputName = ad.filename
+        if outputName is None:
+            outputName = ad.filename
+
+        basename = os.path.basename(inputName)
+        basename,filetype = os.path.splitext(basename)
+        out_basename = os.path.basename(outputName)
+        out_basename,filetype = os.path.splitext(out_basename)
+
+        for sciext in ad["SCI"]:
+            extver = sciext.extver()
+
+            record_name = basename + "_%0.3d" % extver
+            db = at.SpectralDatabase(database,record_name)
+
+            out_record_name = out_basename + "_%0.3d" % extver
+            table = db.as_binary_table(record_name=out_record_name)
+
+            table_ad = AstroData(table)
+            table_ad.rename_ext("WAVECAL",extver)
+
+            if ad["WAVECAL",extver] is not None:
+                ad.remove(("WAVECAL",extver))
+            ad.append(table_ad)
+
+        return ad
+
+    def writeDatabase(self, ad, inputName=None):
+
+        if inputName is None:
+            inputName = ad.filename
+
+        basename = os.path.basename(inputName)
+        basename,filetype = os.path.splitext(basename)
+
+        for sciext in ad["SCI"]:
+            record_name = basename + "_%0.3d" % sciext.extver()
+            wavecal_table = ad["WAVECAL",sciext.extver()]
+            if wavecal_table is None:
+                raise Errors.ManagersError('WAVECAL extension must exist '\
+                                           'to write spectroscopic database')
+            db = at.SpectralDatabase(binary_table=wavecal_table,
+                                     record_name=record_name)
+            db.write_to_disk(database_name=self.databaseName)
+        
 
 class IrafStdout():
     """ This is a class to act as the standard output for the IRAF 
@@ -945,9 +1072,7 @@ def pyrafBoolean(pythonBool):
     # If a boolean was passed in, convert it
     if pythonBool:
         return pyraf.iraf.yes
-    elif  not pythonBool:
-        return pyraf.iraf.no
     else:
-        raise Errors.ToolBoxError('DANGER DANGER Will Robinson, pythonBool ' \
-                                  ' passed in was not True or False, and ' \
-                                  ' thats just crazy talk :P')
+        return pyraf.iraf.no
+
+
