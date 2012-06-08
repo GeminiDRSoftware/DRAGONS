@@ -45,13 +45,14 @@ def whocalledme():
 
 firstrun = True
 
-class DescriptorValue():
+class DescriptorValue(object):
     dict_val = None
     _val = None
     name = None
     keyword = None
     pytype = None
     unit = None
+    _primary_extname = None
     
     def __init__(self,  initval, 
                         format = None, 
@@ -59,8 +60,12 @@ class DescriptorValue():
                         keyword = None,
                         ad = None, 
                         pytype = None,
-                        unit = None):
+                        unit = None,
+                        primary_extname = "SCI"):
+                        
+        self._primary_extname=primary_extname
         # print "DV82:", repr(unit)
+        
         if pytype == None and self.pytype == None:
             self.pytype = pytype = type(initval)
         self.originalinitval = initval
@@ -176,6 +181,18 @@ class DescriptorValue():
         elif format == "value":
             val = self.collapse_value()
         return retstr
+    
+    def _get_primary_extname(self):
+        print "get primary extname"
+        return self._primary_extname
+        
+    def _set_primary_extname(self, val):
+        print "setprimnam"
+        self._val = None
+        self._primary_extname = val
+        
+    collapse_extname = property(_get_primary_extname, _set_primary_extname)
+    primary_extname = None
     
     def collapse_dict_val(self):
         value = self.collapse_value()
@@ -338,7 +355,17 @@ class DescriptorValue():
     
     def collapse_value(self):
         oldvalue = None
+        primext = self.primary_extname
+        # print "primest = " ,primext
+        if primext not in self.ext_names():
+            primext = None
+        # print "ennames " ,self.ext_names()    
         for key in self.dict_val:
+            extname,extver = key
+            # print primext, extname,extver
+            if primext and extname != primext:
+                print "skipping "+extname
+                continue
             value = self.dict_val[key]
             if oldvalue == None:
                 oldvalue = value
@@ -349,6 +376,13 @@ class DescriptorValue():
         # got here then all values were identical
         self._val = value
         return value
+    
+    def ext_names(self):
+        enames = []
+        for extname,extver in self.dict_val.keys():
+            if extname not in enames:
+                enames.append(extname)
+        return enames
     
     def overloaded(self, other):
         val = self.collapse_value()
@@ -384,7 +418,7 @@ class DescriptorValue():
         else:
             raise Errors.DescriptorValueTypeError("Unsupported operand, %s, for types %s and %s"
                         % (myfuncname, str(self.pytype), str(type(other))))
-        print "DISASTERDISASTERDISASTERDISASTERDISASTERDISASTERDISASTER"
+        print "IMPOSSIBLE_ERROR_PROVED_POSSIBLE: please report"
 #        mytype = self.pytype
 #        if isinstance(other, DescriptorValue):
 #            other = other.as_pytype()
