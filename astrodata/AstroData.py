@@ -36,27 +36,31 @@ verboseLoadTypes = True
 verbt = False
 
 def ad_obsolete(msg):
-    print "DEPRECATED:--------------\n"*5
+    print "DEPRECATED:--------------\n"*1
     print "OBSOLETE:"+msg
     print
     import traceback
     st = traceback.extract_stack()
-    print "--- custom traceback follows:"
     st = st[0:-2]
     st.reverse()
     
-    first = True
-    for frame in st:
-        if first:
-            print "CALLED FROM:\n"
-        else:
-            print " ... called by ...",
-        print "Module(%s) line #%d, function='%s' [%s]" % (frame[0],frame[1],frame[2], frame[3])
-        if first:
-            print ""
-        first = False
+    frame = st[0]
+    
+    print "CALLED FROM:\n"
+    print "Module(%s) line #%d, function='%s' [%s]" % (frame[0],frame[1],frame[2], frame[3])
+    
+    #first = True
+    #for frame in st:
+    #    if first:
+    #        print "CALLED FROM:\n"
+    #    else:
+    #        print " ... called by ...",
+    #    print "Module(%s) line #%d, function='%s' [%s]" % (frame[0],frame[1],frame[2], frame[3])
+    #    if first:
+    #        print ""
+    #    first = False
     print
-    print "DEPRECATED:--------------\n"*5
+    print "DEPRECATED:--------------\n"*1
     print
     
 def re_header_keys(rekey, header):
