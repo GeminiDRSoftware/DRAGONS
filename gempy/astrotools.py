@@ -921,11 +921,16 @@ class SpectralDatabase(object):
         if not os.path.exists(database_name):
             os.mkdir(database_name)
 
+        # Timestamp
+        import datetime
+        timestamp = str(datetime.datetime.now())
+
         # Write identify files
         id_db = self.identify_database
         if id_db is not None:
             db_filename = "%s/id%s" % (database_name,record_name)
             db_file = open(db_filename,"w")
+            db_file.write("# "+timestamp+"\n")
             for record in id_db.records:
                 db_file.write("begin")
                 db_file.write(record.recstr)
@@ -936,6 +941,7 @@ class SpectralDatabase(object):
         if fc_db is not None:
             db_filename = "%s/fc%s" % (database_name,record_name)
             db_file = open(db_filename,"w")
+            db_file.write("# "+timestamp+"\n")
             db_file.write(fc_db.recstr)
             db_file.close()
 
