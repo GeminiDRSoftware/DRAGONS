@@ -561,9 +561,30 @@ class GMOSPrimitives(GEMINIPrimitives):
 
         # Initialize the list of output AstroData objects
         adoutput_list = []
+
+        # Check for a user-supplied bias
+        adinput = rc.get_inputs_as_astrodata()
+        bias_param = rc["bias"]
+        bias_dict = None
+        if bias_param is not None:
+            # The user supplied an input to the bias parameter
+            if not isinstance(bias_param, list):
+                bias_list = [bias_param]
+            else:
+                bias_list = bias_param
+
+            # Convert filenames to AD instances if necessary
+            tmp_list = []
+            for bias in bias_list:
+                if type(bias) is not AstroData:
+                    bias = AstroData(bias)
+                tmp_list.append(bias)
+            bias_list = tmp_list
+            
+            bias_dict = gt.make_dict(key_list=adinput, value_list=bias_list)
         
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
+        for ad in adinput:
             
             # Check whether the subtractBias primitive has been run previously
             if ad.phu_get_key_value(timestamp_key):
@@ -576,25 +597,28 @@ class GMOSPrimitives(GEMINIPrimitives):
                 continue
             
             # Retrieve the appropriate bias
-            bias = rc.get_cal(ad, "processed_bias")
-            
-            # If no appropriate bias is found, it is ok not to subtract the
-            # bias in QA context; otherwise, raise error
-            if bias is None:
-                if "qa" in rc.context:
-                    log.warning("No changes will be made to %s, since no " \
-                                "appropriate bias could be retrieved" \
-                                % (ad.filename))
-                
-                    # Append the input AstroData object to the list of output
-                    # AstroData objects without further processing
-                    adoutput_list.append(ad)
-                    continue
-                else:
-                    raise Errors.PrimitiveError("No processed bias found "\
-                                                "for %s" % ad.filename)
+            if bias_dict is not None:
+                bias = bias_dict[ad]
             else:
-                bias = AstroData(bias)
+                bias = rc.get_cal(ad, "processed_bias")
+
+                # If no appropriate bias is found, it is ok not to subtract the
+                # bias in QA context; otherwise, raise error
+                if bias is None:
+                    if "qa" in rc.context:
+                        log.warning("No changes will be made to %s, since no " \
+                                    "appropriate bias could be retrieved" \
+                                    % (ad.filename))
+                
+                        # Append the input AstroData object to the list of output
+                        # AstroData objects without further processing
+                        adoutput_list.append(ad)
+                        continue
+                    else:
+                        raise Errors.PrimitiveError("No processed bias found "\
+                                                    "for %s" % ad.filename)
+                else:
+                    bias = AstroData(bias)
 
             # Check the inputs have matching binning and SCI shapes.
             try:

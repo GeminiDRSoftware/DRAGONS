@@ -291,8 +291,29 @@ class PreprocessingPrimitives(GENERALPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
+        # Check for a user-supplied flat
+        adinput = rc.get_inputs_as_astrodata()
+        flat_param = rc["flat"]
+        flat_dict = None
+        if flat_param is not None:
+            # The user supplied an input to the flat parameter
+            if not isinstance(flat_param, list):
+                flat_list = [flat_param]
+            else:
+                flat_list = flat_param
+
+            # Convert filenames to AD instances if necessary
+            tmp_list = []
+            for flat in flat_list:
+                if type(flat) is not AstroData:
+                    flat = AstroData(flat)
+                tmp_list.append(flat)
+            flat_list = tmp_list
+            
+            flat_dict = gt.make_dict(key_list=adinput, value_list=flat_list)
+
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
+        for ad in adinput:
             
             # Check whether the divideByFlat primitive has been run previously
             if ad.phu_get_key_value(timestamp_key):
@@ -304,25 +325,28 @@ class PreprocessingPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Retrieve the appropriate flat from the reduction context
-            flat = rc.get_cal(ad, "processed_flat")
-            
-            # If there is no appropriate flat, there is no need to divide by
-            # the flat in QA context; in SQ context, raise an error
-            if flat is None:
-                if "qa" in rc.context:
-                    log.warning("No changes will be made to %s, since no " \
-                                "appropriate flat could be retrieved" \
-                                % (ad.filename))
-                    # Append the input AstroData object to the list of output
-                    # AstroData objects without further processing
-                    adoutput_list.append(ad)
-                    continue
-                else:
-                    raise Errors.PrimitiveError("No processed flat found "\
-                                                "for %s" % ad.filename)
+            # Retrieve the appropriate flat
+            if flat_dict is not None:
+                flat = flat_dict[ad]
             else:
-                flat = AstroData(flat)
+                flat = rc.get_cal(ad, "processed_flat")
+            
+                # If there is no appropriate flat, there is no need to divide by
+                # the flat in QA context; in SQ context, raise an error
+                if flat is None:
+                    if "qa" in rc.context:
+                        log.warning("No changes will be made to %s, since no " \
+                                    "appropriate flat could be retrieved" \
+                                    % (ad.filename))
+                        # Append the input AstroData object to the list of output
+                        # AstroData objects without further processing
+                        adoutput_list.append(ad)
+                        continue
+                    else:
+                        raise Errors.PrimitiveError("No processed flat found "\
+                                                    "for %s" % ad.filename)
+                else:
+                    flat = AstroData(flat)
             
             # Check the inputs have matching filters, binning, and SCI shapes.
             try:
@@ -998,8 +1022,29 @@ class PreprocessingPrimitives(GENERALPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
+        # Check for a user-supplied dark
+        adinput = rc.get_inputs_as_astrodata()
+        dark_param = rc["dark"]
+        dark_dict = None
+        if dark_param is not None:
+            # The user supplied an input to the dark parameter
+            if not isinstance(dark_param, list):
+                dark_list = [dark_param]
+            else:
+                dark_list = dark_param
+
+            # Convert filenames to AD instances if necessary
+            tmp_list = []
+            for dark in dark_list:
+                if type(dark) is not AstroData:
+                    dark = AstroData(dark)
+                tmp_list.append(dark)
+            dark_list = tmp_list
+            
+            dark_dict = gt.make_dict(key_list=adinput, value_list=dark_list)
+
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
+        for ad in adinput:
             
             # Check whether the subtractDark primitive has been run previously
             if ad.phu_get_key_value(timestamp_key):
@@ -1011,21 +1056,24 @@ class PreprocessingPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Retrieve the appropriate dark from the reduction context
-            dark = rc.get_cal(ad, "processed_dark")
-
-            # If there is no appropriate dark, there is no need to
-            # subtract the dark
-            if dark is None:
-                log.warning("No changes will be made to %s, since no " \
-                            "appropriate dark could be retrieved" \
-                            % (ad.filename))
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
-                continue
+            # Retrieve the appropriate dark
+            if dark_dict is not None:
+                dark = dark_dict[ad]
             else:
-                dark = AstroData(dark)
+                dark = rc.get_cal(ad, "processed_dark")
+
+                # If there is no appropriate dark, there is no need to
+                # subtract the dark
+                if dark is None:
+                    log.warning("No changes will be made to %s, since no " \
+                                "appropriate dark could be retrieved" \
+                                % (ad.filename))
+                    # Append the input AstroData object to the list of output
+                    # AstroData objects without further processing
+                    adoutput_list.append(ad)
+                    continue
+                else:
+                    dark = AstroData(dark)
 
             # Subtract the dark from the input AstroData object
             log.fullinfo("Subtracting the dark (%s) from the input " \

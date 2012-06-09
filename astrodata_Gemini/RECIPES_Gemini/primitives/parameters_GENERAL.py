@@ -8,11 +8,27 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    "value":{
+        # No type defined here so that user can pass
+        # a number, an AD instance, or a dictionary
+        "default"       : None,
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     },
  "divideInputBy":{
     "suffix":{
         "default"       : "_valueSubtracted",
         "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "value":{
+        # No type defined here so that user can pass
+        # a number, an AD instance, or a dictionary
+        "default"       : None,
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
@@ -26,11 +42,27 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    "value":{
+        # No type defined here so that user can pass
+        # a number, an AD instance, or a dictionary
+        "default"       : None,
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     },
  "subtractFromInput":{
     "suffix":{
         "default"       : "_valueSubtracted",
         "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "value":{
+        # No type defined here so that user can pass
+        # a number, an AD instance, or a dictionary
+        "default"       : None,
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",

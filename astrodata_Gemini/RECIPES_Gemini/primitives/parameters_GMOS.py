@@ -138,8 +138,10 @@
         "uiLevel"       : "UIBASIC",
         },
     "bias":{
+        # No type defined here so that user can pass
+        # a string (eg. from command line) or an astrodata
+        # instance (eg. from a script)
         "default"       : None,
-        "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",

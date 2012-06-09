@@ -56,6 +56,15 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    "fringe":{
+        # No type defined here so that user can pass
+        # a string (eg. from command line) or an astrodata
+        # instance (eg. from a script)
+        "default"       : None,
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     "stats_scale":{
         "default"       : False,
         "type"          : "bool",

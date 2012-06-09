@@ -354,6 +354,15 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    "flat":{
+        # No type defined here so that user can pass
+        # a string (eg. from command line) or an astrodata
+        # instance (eg. from a script)
+        "default"       : None,
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     },
  "getCalibration":{
     "source":{
@@ -667,6 +676,15 @@
     "suffix":{
         "default"       : "_darkCorrected",
         "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "dark":{
+        # No type defined here so that user can pass
+        # a string (eg. from command line) or an astrodata
+        # instance (eg. from a script)
+        "default"       : None,
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",

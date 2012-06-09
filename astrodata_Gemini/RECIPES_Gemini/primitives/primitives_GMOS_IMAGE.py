@@ -650,8 +650,30 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
+        # Check for a user-supplied fringe
+        adinput = rc.get_inputs_as_astrodata()
+        fringe_param = rc["fringe"]
+        fringe_dict = None
+        if fringe_param is not None:
+            # The user supplied an input to the fringe parameter
+            if not isinstance(fringe_param, list):
+                fringe_list = [fringe_param]
+            else:
+                fringe_list = fringe_param
+
+            # Convert filenames to AD instances if necessary
+            tmp_list = []
+            for fringe in fringe_list:
+                if type(fringe) is not AstroData:
+                    fringe = AstroData(fringe)
+                tmp_list.append(fringe)
+            fringe_list = tmp_list
+            
+            fringe_dict = gt.make_dict(key_list=adinput, value_list=fringe_list)
+        
+
         # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
+        for ad in adinput:
             
             # Check whether the removeFringe primitive has been run
             # previously
@@ -664,18 +686,21 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Get the appropriate fringe frame
-            fringe = rc.get_cal(ad, "processed_fringe")
-            
-            # Take care of the case where there was no fringe 
-            if fringe is None:
-                log.warning("Could not find an appropriate fringe for %s" \
-                            % (ad.filename))
-                # Append the input to the output without further processing
-                adoutput_list.append(ad)
-                continue
+            # Retrieve the appropriate fringe
+            if fringe_dict is not None:
+                fringe = fringe_dict[ad]
             else:
-                fringe = AstroData(fringe)
+                fringe = rc.get_cal(ad, "processed_fringe")
+            
+                # Take care of the case where there was no fringe 
+                if fringe is None:
+                    log.warning("Could not find an appropriate fringe for %s" \
+                                % (ad.filename))
+                    # Append the input to the output without further processing
+                    adoutput_list.append(ad)
+                    continue
+                else:
+                    fringe = AstroData(fringe)
 
             # Check the inputs have matching filters, binning and SCI shapes.
             try:
