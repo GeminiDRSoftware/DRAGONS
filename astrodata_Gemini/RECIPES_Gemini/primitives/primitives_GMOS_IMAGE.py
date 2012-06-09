@@ -292,10 +292,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         if len(adinput)<3:
             log.stdinfo('Fewer than 3 frames provided as input. ' +
                         'Not making fringe frame.')
-            adoutput_list = adinput
 
-            # Report the list of output AstroData objects to the reduction
-            # context
+            # Report the empty list to the reduction context
             rc.report_output(adoutput_list)
         
         else:
