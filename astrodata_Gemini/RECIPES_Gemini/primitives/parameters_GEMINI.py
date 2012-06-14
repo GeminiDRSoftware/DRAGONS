@@ -530,7 +530,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "stackFramesETI":{
+ "stackFramesDEPRACATED":{
     "suffix":{
         "default"       : "_stack",
         "type"          : "str",
