@@ -53,7 +53,10 @@ for root, dirs, files in os.walk('doc-local'):
 
 
 # SCRIPTS
-GEMPY_SCRIPTS = [ os.path.join('scripts','redux')
+GEMPY_SCRIPTS = [ os.path.join('scripts','redux'),
+                  os.path.join('scripts','fwhm_histogram'),
+                  os.path.join('scripts','psf_plot'),
+                  os.path.join('scripts','zp_histogram')
 #                 os.path.join('iqtool','iqtool'),
                  ]
 ##SCRIPTS = [os.path.join('scripts','cleanir.py')]
