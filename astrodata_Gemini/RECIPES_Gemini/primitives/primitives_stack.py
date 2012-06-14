@@ -66,15 +66,15 @@ class StackPrimitives(GENERALPrimitives):
             recipe_list.append("correctBackgroundToReferenceImage")
 
             # Stack all frames
-            recipe_list.append("stackFrames") #110 lines of code
-            #recipe_list.append("stackFramesETI") #197 lines of code
+            #recipe_list.append("stackFrames") 
+            recipe_list.append("stackFramesDEPRACATED") 
             
             # Run all the needed primitives
             rc.run("\n".join(recipe_list))
         
         yield rc
     
-    def stackFramesETI(self, rc):
+    def stackFrames(self, rc):
         """
         This primitive will stack each science extension in the input dataset.
         New variance extensions are created from the stacked science extensions
@@ -186,11 +186,11 @@ class StackPrimitives(GENERALPrimitives):
 
         # Report the output list to the reduction context
         rc.report_output(adoutput_list)
-        print("ETI TIME: %s sec" % str(time.time()-t1))
+        #print("ETI TIME: %s sec" % str(time.time()-t1))
         yield rc
 
     
-    def stackFrames(self, rc):
+    def stackFramesDEPRACATED(self, rc):
         """
         This primitive will stack each science extension in the input dataset.
         New variance extensions are created from the stacked science extensions
