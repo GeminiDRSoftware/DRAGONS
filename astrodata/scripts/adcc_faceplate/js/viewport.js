@@ -849,13 +849,16 @@ TimePlot.prototype.addRecord = function(records) {
 	    ymax = Math.ceil((ctr + range/2)*10)/10;
 
 	    // Check to see if an absolute max/min was defined in options
-	    if (this.options.ymin!=undefined && ymin <= this.options.ymin) {
+	    if ((this.options.ymin!=undefined && ymin<=this.options.ymin) ||
+		(this.options.ymax!=undefined && ymin>=this.options.ymax))
+	    {
 		ymin = this.options.ymin;
 	    }
-	    if (this.options.ymax!=undefined && ymax >= this.options.ymax) {
+	    if ((this.options.ymax!=undefined && ymax>=this.options.ymax) ||
+		(this.options.ymin!=undefined && ymax<=this.options.ymin))
+	    {
 		ymax = this.options.ymax;
 	    }
-
 	} else {
 
 	    // Invert min and max
@@ -867,11 +870,15 @@ TimePlot.prototype.addRecord = function(records) {
 	    ymax = Math.floor((ctr - range/2)*10)/10;
 	    ymin = Math.ceil((ctr + range/2)*10)/10;
 
-	    if (this.options.ymax!=undefined && ymin >= this.options.ymax) {
-		ymin = this.options.ymax;
-	    }
-	    if (this.options.ymin!=undefined && ymax <= this.options.ymin) {
+	    if ((this.options.ymin!=undefined && ymax<=this.options.ymin) ||
+		(this.options.ymax!=undefined && ymax>=this.options.ymax))
+            {
 		ymax = this.options.ymin;
+	    }
+	    if ((this.options.ymax!=undefined && ymin>=this.options.ymax) ||
+		(this.options.ymin!=undefined && ymin<=this.options.ymin))
+	    {
+		ymin = this.options.ymax;
 	    }
 	}
 	
