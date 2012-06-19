@@ -55,8 +55,9 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None):
         # Parse sextractor parameters for the list of expected columns
         expected_columns = parse_sextractor_param()
 
-        # Append a few more that don't come from directly from detectSources
-        expected_columns.extend(["REF_NUMBER","REF_MAG","REF_MAG_ERR"])
+        # Append a few more that don't come from directly from sextractor
+        expected_columns.extend(["REF_NUMBER","REF_MAG","REF_MAG_ERR",
+                                 "PROFILE_FWHM","PROFILE_EE50"])
         
         # Loop over each input AstroData object in the input list
         for ad in adinput:
