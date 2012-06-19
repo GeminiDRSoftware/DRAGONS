@@ -401,6 +401,13 @@ class PhotometryPrimitives(GENERALPrimitives):
                     centroid_function=centroid_function,
                     seeing_estimate=seeing_est)
 
+
+            # Run some profiling code on the best sources to produce
+            # a more IRAF-like FWHM number
+            # This will fill in a couple more columns in the OBJCAT
+            # (PROFILE_FWHM, PROFILE_EE50)
+            ad = _profile_sources(ad)
+            
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
@@ -1220,18 +1227,30 @@ def _sextractor(ad=None,seeing_estimate=None):
                 dqflag = tdata["IMAFLAGS_ISO"]
             else:
                 dqflag = np.zeros_like(sxflag)
-            aflag = np.where(tdata["ISOAREA_IMAGE"]<100,1,0)
+            aflag = np.where(tdata["ISOAREA_IMAGE"]<20,1,0)
             eflag = np.where(tdata["ELLIPTICITY"]>0.5,1,0)
-            sflag = np.where(tdata["CLASS_STAR"]<0.6,1,0)
+            sflag = np.where(tdata["CLASS_STAR"]<0.9,1,0)
+            snflag = np.where(tdata["FLUX_AUTO"] < 
+                              50*tdata["FLUXERR_AUTO"], 1, 0)
 
             # Bitwise-or all the flags
-            flags = sxflag | dqflag | aflag | eflag | sflag
+            flags = sxflag | dqflag | aflag | eflag | sflag | snflag
             good_fwhm = fwhm[flags==0]
-            if len(good_fwhm)>2:
-                seeing_estimate,sigma = at.clipped_mean(good_fwhm)
+
+            if len(good_fwhm)>3:
+                # Clip outliers in FWHM - single 1-sigma clip if 
+                # more than 3 sources.
+                mean = good_fwhm.mean()
+                sigma = good_fwhm.std()
+                good_fwhm = good_fwhm[(good_fwhm<mean+sigma) & 
+                                      (good_fwhm>mean-sigma)]
+                seeing_estimate = good_fwhm.mean()
+
                 if np.isnan(seeing_estimate) or seeing_estimate==0:
                     seeing_estimate = None
                     break
+            elif len(good_fwhm)>=1:
+                seeing_estimate = good_fwhm.mean()
             else:
                 seeing_estimate = None
                 break
@@ -1320,6 +1339,101 @@ def _test_sextractor_version():
                     right_version = True
 
     return right_version
+
+def _profile_sources(ad):
+    import datetime
+    
+    #print 'profiling'
+    now = datetime.datetime.now()
+    for sciext in ad["SCI"]:
+        extver = sciext.extver()
+        objcat = ad["OBJCAT",extver]
+        if objcat is None:
+            continue
+
+        catx = objcat.data.field("X_IMAGE")
+        caty = objcat.data.field("Y_IMAGE")
+        catfwhm = objcat.data.field("FWHM_IMAGE")
+        catbg = objcat.data.field("BACKGROUND")
+        data = sciext.data
+        stamp_size = 10
+
+        fwhm_list = []
+        e50d_list = []
+        for i in range(0,len(objcat.data)):
+            xc = catx[i]
+            yc = caty[i]
+            bg = catbg[i]
+            
+            xc -= 0.5
+            yc -= 0.5
+
+            # Check that there's enough room for a stamp
+            sz = stamp_size
+            if (int(yc)-sz<0 or int(xc)-sz<0 or
+                int(yc)+sz>=data.shape[0] or int(xc)+sz>=data.shape[1]):
+                fwhm_list.append(-999)
+                e50d_list.append(-999)
+                continue
+
+            # Get image stamp around center point
+            stamp=data[int(yc)-sz:int(yc)+sz,int(xc)-sz:int(xc)+sz]
+
+            # Get an array of the coordinates of the centers of all the pixels 
+            # in the stamp
+            dist = np.mgrid[int(yc)-sz:int(yc)+sz,int(xc)-sz:int(xc)+sz] + 0.5
+
+            # Subtract the center coordinates
+            dist[0] -= yc
+            dist[1] -= xc
+    
+            # Square root of the sum of the squares of the distances
+            dist = np.sqrt(np.sum(dist**2,axis=0))
+
+            # Radius and flux arrays for the radial profile
+            rpr = dist.flatten()
+            rpv = stamp.flatten() - bg
+    
+            # Sort by the radius
+            sort_order = np.argsort(rpr) 
+            radius = rpr[sort_order]
+            flux = rpv[sort_order]
+
+            # Find the first point where the flux falls below half
+            maxflux = np.max(flux)
+            halfflux = maxflux/2.0
+            first_halfflux = np.where(flux<=halfflux)[0]
+            if first_halfflux.size<=0:
+                # Half flux not found, return the last radius
+                hwhm = radius[-1]
+            else:
+                hwhm = radius[first_halfflux[0]]
+
+            # Find the first radius that encircles half the total flux
+            sumflux = np.cumsum(flux)
+            totalflux = sumflux[-1]
+            halfflux = totalflux / 2.0
+            first_50pflux = np.where(sumflux>=halfflux)[0]
+            if first_50pflux.size<=0:
+                e50r = radius[-1]
+            else:
+                e50r = radius[first_50pflux[0]]
+
+            fwhm_list.append(hwhm*2.0)
+            e50d_list.append(e50r*2.0)
+
+        fwhm_array = np.array(fwhm_list)
+        e50d_array = np.array(e50d_list)
+        objcat.data.field("PROFILE_FWHM")[:] = fwhm_array
+        objcat.data.field("PROFILE_EE50")[:] = e50d_array
+
+        #print "  mean FWHM %.2f" % np.mean(fwhm_array[fwhm_array!=-999])
+        #print "  mean E50D %.2f" % np.mean(e50d_array[e50d_array!=-999])
+
+    elap = datetime.datetime.now() - now
+    #print "time  %.2f s" % ((elap.seconds*10**6 + elap.microseconds)/10.**6)
+
+    return ad
 
 
 def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
