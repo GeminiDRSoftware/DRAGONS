@@ -15,7 +15,16 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    },
+     "arc":{
+        # No type defined here so that user can pass
+        # a string (eg. from command line) or an astrodata
+        # instance (eg. from a script)
+        "default"       : None,
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+   },
  "extract1DSpectra":{
     "suffix":{
         "default"       : "_extracted",

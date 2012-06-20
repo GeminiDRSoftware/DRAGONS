@@ -36,17 +36,41 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
 
-        for ad in rc.get_inputs_as_astrodata():
-            arc = rc.get_cal(ad, "processed_arc")
-            
-            # Take care of the case where there was no arc 
-            if arc is None:
-                log.warning("Could not find an appropriate arc for %s" \
-                            % (ad.filename))
-                adoutput_list.append(ad)
-                continue
+        # Check for a user-supplied arc
+        adinput = rc.get_inputs_as_astrodata()
+        arc_param = rc["arc"]
+        arc_dict = None
+        if arc_param is not None:
+            # The user supplied an input to the arc parameter
+            if not isinstance(arc_param, list):
+                arc_list = [arc_param]
             else:
-                arc = AstroData(arc)
+                arc_list = arc_param
+
+            # Convert filenames to AD instances if necessary
+            tmp_list = []
+            for arc in arc_list:
+                if type(arc) is not AstroData:
+                    arc = AstroData(arc)
+                tmp_list.append(arc)
+            arc_list = tmp_list
+            
+            arc_dict = gt.make_dict(key_list=adinput, value_list=arc_list)
+
+        for ad in adinput:
+            if arc_dict is not None:
+                arc = arc_dict[ad]
+            else:
+                arc = rc.get_cal(ad, "processed_arc")
+            
+                # Take care of the case where there was no arc 
+                if arc is None:
+                    log.warning("Could not find an appropriate arc for %s" \
+                                % (ad.filename))
+                    adoutput_list.append(ad)
+                    continue
+                else:
+                    arc = AstroData(arc)
 
             wavecal = arc["WAVECAL"]
             if wavecal is not None:
