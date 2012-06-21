@@ -557,12 +557,15 @@ MetricsViewer.prototype = {
 
     getBandString: function(metric,band) {
 	var band_str = "";
-	
+
 	if (!band) {
 	    band_str = null;
-	} else if (band==100) {
-	    band_str = metric.toUpperCase() + "Any";
 	} else {
+	    if (band instanceof Array && band.indexOf(100)!=-1) {
+		band[band.indexOf(100)] = "Any";
+	    } else if (band==100) {
+		band = "Any";
+	    }
 	    band_str = metric.toUpperCase() + band;
 	}
 
