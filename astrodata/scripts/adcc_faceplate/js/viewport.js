@@ -865,7 +865,7 @@ TimePlot.prototype.addRecord = function(records) {
 	    ymin = Math.max.apply(null,y_values);
 	    ymax = Math.min.apply(null,y_values);
 
-	    var range = Math.abs(ymax-ymin)*1.1;
+	    var range = Math.abs(ymax-ymin)*1.2;
 	    var ctr = (ymax+ymin)/2;
 	    ymax = Math.floor((ctr - range/2)*10)/10;
 	    ymin = Math.ceil((ctr + range/2)*10)/10;

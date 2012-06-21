@@ -4680,11 +4680,15 @@
                 }
                 for (var i = 0, l = bd[1].length; i<l; i++) {
                     p = bd[1][i];
-                    if ((p[1] != null && p[1] > bands._max) || bands._max == null) {
+
+		    ////FIX
+		    // Fix added by M. Clarke 6/21/12 to allow bands in the case
+		    // where there is zero error in one point
+                    if ((p[1] != null && p[1] >= bands._max) || bands._max == null) {
                         bands._max = p[1];
                         bdmaxidx = 1;
                     }
-                    if ((p[1] != null && p[1] < bands._min) || bands._min == null) {
+                    if ((p[1] != null && p[1] <= bands._min) || bands._min == null) {
                         bands._min = p[1];
                         bdminidx = 1;
                     }
