@@ -1200,7 +1200,14 @@ def _sextractor(ad=None,seeing_estimate=None):
             # it away for now
             stdoutdata = pipe_out.communicate()[0]
 
-            hdulist = pf.open(outtmpfn)
+            try:
+                hdulist = pf.open(outtmpfn)
+            except IOError:
+                problem = True
+                log.stdinfo("No sources found in %s[SCI,%d]" %
+                            (ad.filename,extver))
+                break
+
             tdata = hdulist[1].data
             tcols = hdulist[1].columns
 
@@ -1255,7 +1262,10 @@ def _sextractor(ad=None,seeing_estimate=None):
                 seeing_estimate = None
                 break
             
-        os.remove(outtmpfn)
+        try:
+            os.remove(outtmpfn)
+        except:
+            pass
         if not problem:
             columns = {}
             for col in tcols:
