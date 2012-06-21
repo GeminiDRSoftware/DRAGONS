@@ -175,11 +175,18 @@ class StackPrimitives(GENERALPrimitives):
                     comment=self.keyword_comments["RDNOISE"])
 
             # Add suffix to the ORIGNAME to prevent future stripping 
+            # and to the datalabel to distinguish from the reference
+            # frame
             suffix = rc["suffix"]
             adout.phu_set_key_value("ORIGNAME", 
                 gt.filename_updater(adinput=adinput[0],
                                     suffix=suffix,strip=True),
                 comment=self.keyword_comments["ORIGNAME"])
+
+            orig_dl = adout.phu_get_key_value("DATALAB")
+            adout.phu_set_key_value(
+                "DATALAB", orig_dl+suffix,
+                comment=self.keyword_comments["DATALAB"])
 
             gt.mark_history(adinput=adout, keyword=timestamp_key)
             adoutput_list.append(adout)
