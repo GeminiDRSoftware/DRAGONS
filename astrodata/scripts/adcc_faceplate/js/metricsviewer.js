@@ -208,7 +208,7 @@ MetricsViewer.prototype = {
 	// CC Plot
 	var cc_options = $.extend(true,{},options);
 	cc_options.title = "Cloud Extinction";
-	cc_options.ymin = -0.1;
+	cc_options.ymin = -0.2;
 	cc_options.ymax = 3.0;
 	cc_options.yaxis_label = "Extinction (mag)";
 	cc_options.series_labels = ["cc"];
@@ -221,7 +221,7 @@ MetricsViewer.prototype = {
 	// BG Plot
 	var bg_options = $.extend(true,{},options);
 	bg_options.ymin = 17.0;
-	bg_options.ymax = 23.0;
+	bg_options.ymax = 24.0;
 	bg_options.title = "Sky Brightness";
 	bg_options.invert_yaxis = true;
 	bg_options.yaxis_label = "Sky Brightness (mag/arcsec^2)";
