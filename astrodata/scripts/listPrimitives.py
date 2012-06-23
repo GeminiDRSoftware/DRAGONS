@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 import os
+import sys
 
 from optparse import OptionParser
 
-from astrodata.PrimInspect import PrimInspect
+from astrodata.priminspect import PrimInspect
 
 # set up commandline args and options
 parser = OptionParser()
@@ -12,13 +13,10 @@ parser.set_description( "Gemini Observatory Primitive Inspection Tool "
 parser.add_option("-c", "--use-color", action="store_true", dest="use_color",
                   default=False, help="apply color output scheme")
 parser.add_option("-e", "--engineering", action="store_true", dest="engineering",
-                  default=False, help="include engineering recipes")
-parser.add_option("-f", "--copy-tofile", action="store_true", 
-                  dest="copy_tofile", default=False,
-                  help="write to file (adtool_output.txt).")
+                  default=False, help="show engineering recipes")
 parser.add_option("-i", "--info", action="store_true", dest="info",
                   default=False,
-                  help="show primitive set information")
+                  help="show more information")
 parser.add_option("-p", "--parameters", action="store_true", dest="parameters",
                   default=False,
                   help="show parameters")
@@ -26,51 +24,52 @@ parser.add_option("-r", "--recipes", action="store_true", dest="recipes",
                   default=False, help="list top recipes")
 parser.add_option("-s", "--primitive-set", action="store_true", 
                   dest="primitive_set", default=False,
-                  help="show primitive by set")
+                  help="show primitive sets (Astrodata types)")
 parser.add_option("-u", "--usage", action="store_true", dest="usage",
                   default=False, help="show usage")
 parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
                   default=False, help="set verbose mode")
-parser.add_option("-x", "--xml", action="store_true", dest="xml",
-                  default=False, help="create xml output file "
-                  "(adtool_output.xml)")
-parser.add_option("--primitives", action="store_true", dest="primitives",
-                  default=False, help="show all primitives for set")
 parser.add_option("--view-recipe", dest="view_recipe", 
                   default=None, help="display the recipe")
-
 (options,  args) = parser.parse_args()
-optc = options.use_color
 opte = options.engineering
-optf = options.copy_tofile
 opti = options.info
 optp = options.parameters
 optu = options.usage
-optv = options.verbose
-optx = options.xml
 oview = options.view_recipe
-options.primitives = True
+oset = options.primitive_set
+if options.verbose:
+    optp = True
+    opti = True
 
-# distinguish between data and astrotype in args
+# parse arguments
 datasets = []
-astrotypes = []
+adtypes = []
+for arg in args:
+    if os.path.exists(arg) and not os.path.isdir(arg):
+        datasets.append(arg)
+    else:
+        adtypes.append(arg.upper())
+pin = PrimInspect(use_color=options.use_color)
 
+# show recipes
 if options.recipes or oview:
-    pin = PrimInspect(use_color=optc, make_file=optf, make_xmlfile=optx)
     pin.list_recipes(pkg="Gemini",eng=opte, view=oview)
-else:
-    for arg in args:
-        if os.path.exists(arg) and not os.path.isdir(arg):
-            datasets.append(arg)
+# or show primitives
+else: 
+    if datasets:
+        for data in datasets:
+            if oset:
+                pin.list_primsets(data=data, info=opti)
+                sys.exit()
+            else:
+                pin.list_primitives(data=data, info=opti, params=optp)
+    else:
+        if len(adtypes) == 0:
+            adtypes = None
+            pin.list_primitves(adtype=adtype, info=opti, params=optp)
         else:
-            astrotypes.append(arg)
-    pin = PrimInspect(use_color=optc, show_param=optp, show_usage=optu,
-                      show_info=opti, make_file=optf, verbose=optv,
-                      datasets=datasets, astrotypes=astrotypes,
-                      make_xmlfile=optx)
+            for adt in adtypes:
+                pin.list_primitves(adtype=adt, info=opti, params=optp)
 
-    # execution
-    if options.primitive_set:
-        pin.show_primitive_sets()
-    elif options.primitives:
-        pin.show_primitive_sets(prims=True)
+
