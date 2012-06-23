@@ -1519,7 +1519,7 @@ help      False     show help information    """
 
         """
         
-        if (filename and rename == None):
+        if (filename and (rename==True or rename == None)):
             self.filename = filename
         if (self.mode == "readonly" and not clobber):
             if rename == True  or rename == None:
