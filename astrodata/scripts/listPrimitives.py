@@ -60,14 +60,16 @@ else:
     if datasets:
         for data in datasets:
             if oset:
-                pin.list_primsets(data=data, info=opti)
-                sys.exit()
+                #pin.list_primsets(data=data, info=opti)
+                print "NOT YET"
             else:
-                pin.list_primitives(data=data, info=opti, params=optp)
+                #pin.list_primitives(data=data, info=opti, params=optp)
+                print "NOT YET"
     else:
         if len(adtypes) == 0:
             adtypes = None
-            pin.list_primitves(adtype=adtype, info=opti, params=optp)
+            print "NOT YET"
+            #pin.list_primitves(adtype=adtype, info=opti, params=optp)
         else:
             for adt in adtypes:
                 pin.list_primitves(adtype=adt, info=opti, params=optp)
