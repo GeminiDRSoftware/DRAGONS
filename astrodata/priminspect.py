@@ -42,6 +42,7 @@ class PrimInspect():
     primsets = None
     master_dict = None
     allmodules = None
+    overrides = None
     
     def __init__(self, use_color=False):
         self.primsdict = {}
@@ -49,6 +50,7 @@ class PrimInspect():
         self.primsdict_kbn = {}
         self.class2instance = {}
         self.master_dict = {}
+        self.overrides = {}
         self.allmodules = []
         self.use_color = use_color
         if self.use_color:
@@ -158,9 +160,21 @@ class PrimInspect():
                                     ['instance'].param_dict[prim]})
 
             mdict[adtype]['inheritance'].update({'order':order})
+
+        overrides = {}
+        overridden = {}
+        for adtype in mdict:
+            # This will find the overrides for the local prims
+            for pkey in mdict[adtype]['primitives'].keys():
+                for primset in mdict[adtype]['inheritance']['order']:
+                    primdict = mdict[adtype]['inheritance'][primset]['primitives']
+                    adpdict = mdict[adtype]['primitives']
+                    if pkey in  primdict.keys():
+                        print primset + ":" +  pkey + " overridden by "  + adtype + ":" + pkey
+                        overrides.update({(adtype, pkey):primset})
+        
         #pprint(mdict['GENERAL'])
-        #pprint(mdict['GEMINI']['inheritance']['order'])
-        #pprint(mdict['GMOS_IMAGE']['inheritance']['order'])
+        self.overrides = overrides
         return mdict
     
     def hides(self, primsetname, prim, instance=None):
@@ -259,8 +273,7 @@ class PrimInspect():
                 sdir = os.path.dirname(sfull)
                 sfil = os.path.basename(sfull)
                 rstr.append("\n${YELLOW}%-13s:%s${NORMAL}" % ("Class",clas.__name__)) 
-                rstr.append("\n${YELLOW}%-13s:%s${NORMAL}" % ("Source",sfil))
-                rstr.append("\n${YELLOW}%-13s:%s${NORMAL}" % ("Path" ,sdir))
+                rstr.append("\n${YELLOW}%-13s:%s${NORMAL}" % ("Source",sfull))
                 if len(self.master_dict[adtype]["inheritance"]["order"]) == 0:
                     rstr.append("\n${YELLOW}%-13s:%s${NORMAL}" % ("Inheritance","None"))
                 else:
@@ -270,21 +283,56 @@ class PrimInspect():
             primkeys = self.master_dict[adtype]['primitives'].keys()
             count = 0
             primkeys.sort()
+
             for prim in primkeys:
                 count += 1
                 rstr.append("\n" + str(count) + ". " + prim)
+                if (adtype, prim) in self.overrides.keys():
+                    rstr.append("${BLUE} (OVERRIDES " + self.overrides[(adtype, prim)] + ")${NORMAL}")
+                primdict = self.master_dict[adtype]['primitives'][prim]
+                if params:
+                    rstr.extend(self.add_params(primdict, rstr, info, 8))
 
             # inheritance
             TW = 4
             sav = ""
             if len(self.master_dict[adtype]['inheritance']['order']) > 0:
+                rstr.append("\n\n${RED}        -------- Inheritance by Method Resolution Order --------")
                 for primset in self.master_dict[adtype]['inheritance']['order']:
-                    rstr.append("\n" + " "*TW + "${BLUE}(Inherited from " + primset + ")${NORMAL}")
+                    rstr.append("\n\n" + " "*TW + "${BLUE}(" + primset + ")${NORMAL}")
                     primsort = self.master_dict[adtype]['inheritance'][primset]['primitives'].keys()
                     primsort.sort()
                     for prim in primsort:
                         count += 1
                         rstr.append("\n" + " "*TW + str(count) + ". " + prim)
+                        if (primset, prim) in self.overrides.keys():
+                            rstr.append("${BLUE} (OVERRIDES " + self.overrides[(primset, prim)] + ")${NORMAL}")
+                        for key in self.overrides.keys():
+                            if self.overrides[key] == primset and prim == key[1] and (key[0] in self.master_dict[adtype]['inheritance']['order'] or key[0] == adtype):
+                                rstr.append("${RED} (OVERRIDDEN BY " + key[0] + ")${NORMAL}")
+                                
+                        primdict = self.master_dict[adtype]['inheritance'][primset]['primitives'][prim]
+                        if params:
+                            rstr.extend(self.add_params(primdict, rstr, info, 12))
 
         rstr.append("\n" + "="*SW)
         print("".join(rstr))
+
+    def add_params(self, primdict=None, rstr=None, info=None, indent=None):
+        rstr = []
+        if len(primdict) > 0:
+            for param in primdict:
+                if "default" in primdict[param].keys():
+                    rstr.append("\n" + " "*indent + "${YELLOW}" + param + \
+                                ": " + repr(primdict[param]["default"]) + "${NORMAL}")
+                else:
+                    rstr.append("\n" + " "*indent + "${YELLOW}" + param + \
+                                ": (No default)${NORMAL}")
+                         
+                if info:
+                    for meta in primdict[param]:
+                        rstr.append("\n%s%-16s%s" % (" "*(indent + 4), meta, ":" + \
+                                    repr(primdict[param][meta])))
+        else:
+            rstr.append("\n" + " "*indent + "${YELLOW}(No Parameters)${NORMAL}")
+        return rstr
