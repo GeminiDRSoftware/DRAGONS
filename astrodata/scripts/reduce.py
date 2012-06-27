@@ -339,7 +339,7 @@ try:
             co = ReductionContext()
             co.restore_cal_index(calindfile)
             co.calibrations = {}
-            co.persist_cal_index( calindfile )
+            #co.persist_cal_index( calindfile )
             log.status("Calibration cache index cleared")
             import shutil
 
@@ -407,7 +407,7 @@ try:
             for arg in infile:
                 co.add_cal(AstroData(arg), options.cal_type, os.path.abspath(options.add_cal))
 
-            co.persist_cal_index(calindfile)
+            #co.persist_cal_index(calindfile)
             print "'" + options.add_cal + "' was successfully added for '" + str(input_files) + "'."
             if options.recipename == None:
                 sys.exit(1)
@@ -429,7 +429,7 @@ try:
                 except:
                     print arg + ' had no ' + options.cal_type
             print "'" + options.cal_type + "' was removed from '" + str(input_files) + "'."
-            co.persist_cal_index(calindfile)
+            #co.persist_cal_index(calindfile)
             sys.exit(0)
 
         # parameters from command line and/or parameter file
@@ -891,7 +891,7 @@ try:
                         co.is_finished(True)
                         if (useTK):
                             cw.quit()
-                        co.persist_cal_index(calindfile)
+                        #co.persist_cal_index(calindfile)
                         print "Ctrl-C Exit"
                         prs.unregister()
                         raise
@@ -916,7 +916,7 @@ try:
                         if reduceServer:
                             #print "r855:", str(id(Proxies.reduceServer)), repr(Proxies.reduceServer.finished)
                             Proxies.reduceServer.finished=True
-                        if co: co.persist_cal_index(calindfile)
+                        #if co: co.persist_cal_index(calindfile)
                         if (bReportHistory):
                             if co: co.report_history()
                             rl.report_history()
