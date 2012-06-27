@@ -4,7 +4,7 @@ import sys
 import re
 
 from inspect import getsourcefile
-
+from astrodata import AstroData
 from pprint import pprint
 #get color printing started
 from astrodata.adutils import terminal
@@ -116,6 +116,9 @@ class PrimInspect():
         return plist
     
     def make_master(self, primset_objects=None):
+        """Create master dictionary of adtypes, primitives and parameters.
+        Will use this for the future development of rsexplorer
+        """
         mdict = {}
         
         # Start with only the AD types
@@ -170,7 +173,8 @@ class PrimInspect():
                     primdict = mdict[adtype]['inheritance'][primset]['primitives']
                     adpdict = mdict[adtype]['primitives']
                     if pkey in  primdict.keys():
-                        print primset + ":" +  pkey + " overridden by "  + adtype + ":" + pkey
+                        #print primset + ":" +  pkey + " overridden by " \
+                        #+ adtype + ":" + pkey
                         overrides.update({(adtype, pkey):primset})
         
         #pprint(mdict['GENERAL'])
@@ -222,11 +226,14 @@ class PrimInspect():
         return None
     
     def list_recipes(self, pkg="", eng=False, view=None):
+        """
+        List recipes and sub-recipes or open the recipe to view it.
+        """
         retstr = "\n"
         if isinstance(view, str):
-            retstr += "="*SW + "\n${BOLD}RECIPE: %s${NORMAL}\n" % view + "="*SW 
+            retstr += "="*SW + "\n${RED}RECIPE: %s${NORMAL}\n" % view + "="*SW 
         else:
-            retstr += "="*SW + "\n${RED}RECIPE REPORT${NORMAL}\n" + "="*SW 
+            retstr += "="*SW  
         cri = RecipeManager.centralRecipeIndex
         if isinstance(view, str):
             for key in cri.keys():
@@ -251,33 +258,50 @@ class PrimInspect():
             retstr += self.list_recipes_str("Subrecipes", subkeys)
             if eng:
                 retstr += self.list_recipes_str("Engineering", engkeys) 
-        retstr += "\n" + "="*SW
+        retstr += "\n\n" + "="*SW
         print(retstr)
     
     def list_recipes_str(self, topdir="", rlist=[]):
         rstr = ""
-        rstr += "\n\n${BOLD}%s${NORMAL}\n" % topdir + "-"*SW
+        rstr += "\n\n${YELLOW}%s${NORMAL}\n" % topdir + "-"*SW
         count = 1
         for r in rlist:
             rstr += "\n    %s. %s" % (count, r)
             count +=1
         return rstr
     
-    def list_primitves(self, adtype=None, info=None, params=None):
+    def list_primitives(self, data=None, adtype=None, info=None, params=None):
+        """List primitives and associated parameters
+        """
         rstr = ['\n']
-        if adtype:
-            rstr.append("="*SW + "\n${RED}" + adtype + " ${NORMAL}\n" + "="*SW)
+        
+        adlist = []
+        if adtype is None and data is None:
+            adlist =  self.master_dict.keys()
+            adlist.sort()
+        else:
+            if data:
+                ad = AstroData(data)
+                ps = rl.retrieve_primitive_set(dataset=ad)
+                adtype = ps[0].astrotype
+            adlist.append(adtype)
+        for adtype in adlist:
+            rstr.append("\n\n" + "="*SW + "\n${RED}" + adtype + " ${NORMAL}\n"\
+                        + "="*SW)
             if info:
                 clas = self.master_dict[adtype]['class']
                 sfull = getsourcefile(clas)
                 sdir = os.path.dirname(sfull)
                 sfil = os.path.basename(sfull)
-                rstr.append("\n${YELLOW}%-13s:%s${NORMAL}" % ("Class",clas.__name__)) 
+                rstr.append("\n${YELLOW}%-13s:%s${NORMAL}" % \
+                            ("Class",clas.__name__)) 
                 rstr.append("\n${YELLOW}%-13s:%s${NORMAL}" % ("Source",sfull))
                 if len(self.master_dict[adtype]["inheritance"]["order"]) == 0:
-                    rstr.append("\n${YELLOW}%-13s:%s${NORMAL}" % ("Inheritance","None"))
+                    rstr.append("\n${YELLOW}%-13s:%s${NORMAL}" % \
+                                ("Inheritance","None"))
                 else:
-                    rstr.append("\n${YELLOW}%-13s:%s${NORMAL}" % ("Inheritance","Yes"))
+                    rstr.append("\n${YELLOW}%-13s:%s${NORMAL}" % \
+                                ("Inheritance","Yes"))
                 rstr.append("\n" + "-"*SW)
 
             primkeys = self.master_dict[adtype]['primitives'].keys()
@@ -288,7 +312,8 @@ class PrimInspect():
                 count += 1
                 rstr.append("\n" + str(count) + ". " + prim)
                 if (adtype, prim) in self.overrides.keys():
-                    rstr.append("${BLUE} (OVERRIDES " + self.overrides[(adtype, prim)] + ")${NORMAL}")
+                    rstr.append("${BLUE} (OVERRIDES " + self.overrides[\
+                                (adtype, prim)] + ")${NORMAL}")
                 primdict = self.master_dict[adtype]['primitives'][prim]
                 if params:
                     rstr.extend(self.add_params(primdict, rstr, info, 8))
@@ -299,19 +324,27 @@ class PrimInspect():
             if len(self.master_dict[adtype]['inheritance']['order']) > 0:
                 rstr.append("\n\n${RED}        -------- Inheritance by Method Resolution Order --------")
                 for primset in self.master_dict[adtype]['inheritance']['order']:
-                    rstr.append("\n\n" + " "*TW + "${BLUE}(" + primset + ")${NORMAL}")
-                    primsort = self.master_dict[adtype]['inheritance'][primset]['primitives'].keys()
+                    rstr.append("\n\n" + " "*TW + "${BLUE}(" + primset + \
+                                ")${NORMAL}")
+                    primsort = self.master_dict[adtype]['inheritance']\
+                                                  [primset]['primitives'].keys()
                     primsort.sort()
                     for prim in primsort:
                         count += 1
                         rstr.append("\n" + " "*TW + str(count) + ". " + prim)
                         if (primset, prim) in self.overrides.keys():
-                            rstr.append("${BLUE} (OVERRIDES " + self.overrides[(primset, prim)] + ")${NORMAL}")
+                            rstr.append("${BLUE} (OVERRIDES " + self.overrides\
+                                       [(primset, prim)] + ")${NORMAL}")
                         for key in self.overrides.keys():
-                            if self.overrides[key] == primset and prim == key[1] and (key[0] in self.master_dict[adtype]['inheritance']['order'] or key[0] == adtype):
-                                rstr.append("${RED} (OVERRIDDEN BY " + key[0] + ")${NORMAL}")
+                            if self.overrides[key] == primset and \
+                                prim == key[1] and (key[0] in self.master_dict\
+                                [adtype]['inheritance']['order'] or key[0] == \
+                                adtype):
+                                rstr.append("${RED} (OVERRIDDEN BY " + key[0]\
+                                          + ")${NORMAL}")
                                 
-                        primdict = self.master_dict[adtype]['inheritance'][primset]['primitives'][prim]
+                        primdict = self.master_dict[adtype]['inheritance']\
+                                       [primset]['primitives'][prim]
                         if params:
                             rstr.extend(self.add_params(primdict, rstr, info, 12))
 
@@ -323,16 +356,55 @@ class PrimInspect():
         if len(primdict) > 0:
             for param in primdict:
                 if "default" in primdict[param].keys():
-                    rstr.append("\n" + " "*indent + "${YELLOW}" + param + \
-                                ": " + repr(primdict[param]["default"]) + "${NORMAL}")
+                    rstr.append("\n" + " "*indent + "${YELLOW}" + param + ": "\
+                                + repr(primdict[param]["default"]) + "${NORMAL}")
                 else:
                     rstr.append("\n" + " "*indent + "${YELLOW}" + param + \
                                 ": (No default)${NORMAL}")
                          
                 if info:
                     for meta in primdict[param]:
-                        rstr.append("\n%s%-16s%s" % (" "*(indent + 4), meta, ":" + \
-                                    repr(primdict[param][meta])))
+                        rstr.append("\n%s%-16s%s" % (" "*(indent + 4), meta,\
+                                    ":" + repr(primdict[param][meta])))
         else:
             rstr.append("\n" + " "*indent + "${YELLOW}(No Parameters)${NORMAL}")
         return rstr
+
+    def list_primsets(self, info=None):
+        """List the primitive sets (astrodata types), includes inheritance
+        and source file.
+        """
+        rstr = []
+        rstr.append("="*SW + "\n")
+        count = 1
+        for adtype in self.master_dict.keys():
+            rstr.append("\n${RED}" + str(count) + ". " + adtype + \
+                        " ${NORMAL}\n")
+            count += 1
+            if info:
+                clas = self.master_dict[adtype]['class']
+                sfull = getsourcefile(clas)
+                sdir = os.path.dirname(sfull)
+                sfil = os.path.basename(sfull)
+                rstr.append("\n${YELLOW}%-13s:%s${NORMAL}" % \
+                           ("Class",clas.__name__)) 
+                rstr.append("\n${YELLOW}%-13s:%s${NORMAL}" % ("Source",sfull))
+                olist = self.master_dict[adtype]["inheritance"]["order"]
+                if len(olist) == 0:
+                    rstr.append("\n${YELLOW}%-13s:%s${NORMAL}" % \
+                           ("Inheritance","None"))
+                elif olist[0] not in self.master_dict.keys():
+                    rstr.append("\n${YELLOW}%-13s: %s${NORMAL}" % \
+                                ("Inheritance", "Multiple"))
+                else:
+                    rstr.append("\n${YELLOW}%-13s: %s${NORMAL}" % \
+                                ("Inheritance", olist[0]))
+                rstr.append("\n${YELLOW}%-13s: %s${NORMAL}" % \
+                            ("Local Primitives", str(len(\
+                            self.master_dict[adtype]['primitives'].keys()))))
+                
+                rstr.append("\n" + "-"*SW)
+        rstr.append("\n" + "="*SW)
+        print("".join(rstr))
+
+        
