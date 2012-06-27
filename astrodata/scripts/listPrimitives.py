@@ -56,22 +56,18 @@ pin = PrimInspect(use_color=options.use_color)
 if options.recipes or oview:
     pin.list_recipes(pkg="Gemini",eng=opte, view=oview)
 # or show primitives
+elif oset:
+    pin.list_primsets(info=opti)
 else: 
     if datasets:
         for data in datasets:
-            if oset:
-                #pin.list_primsets(data=data, info=opti)
-                print "NOT YET"
-            else:
-                #pin.list_primitives(data=data, info=opti, params=optp)
-                print "NOT YET"
+            pin.list_primitives(data=data, info=opti, params=optp)
     else:
         if len(adtypes) == 0:
-            adtypes = None
-            print "NOT YET"
-            #pin.list_primitves(adtype=adtype, info=opti, params=optp)
+            adtype = None
+            pin.list_primitives(adtype=adtype, info=opti, params=optp)
         else:
             for adt in adtypes:
-                pin.list_primitves(adtype=adt, info=opti, params=optp)
+                pin.list_primitives(adtype=adt, info=opti, params=optp)
 
 
