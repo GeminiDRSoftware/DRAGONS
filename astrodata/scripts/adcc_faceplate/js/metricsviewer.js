@@ -21,12 +21,56 @@ function MetricsViewer(element, id) {
     // Placeholder for adcc command pump
     this.gjs = null;
 
-    // Initialize the viewer
-    this.init();
+    // Load the site/time information from the adcc
+    // and initialize the viewer
+    this.load();
 }
 // Add methods to prototype
 MetricsViewer.prototype = {
     constructor: MetricsViewer,
+    load: function() {
+	// Make an AJAX request to the server for the current 
+	// time and the server site information
+	// The callback for this request will call the init function
+	var mv = this;
+	$.ajax({type: "GET",
+		url: "/rqsite.json",
+	        success: function (data) {
+		    mv.site = data.local_site;
+		    mv.tzname = data.tzname;
+		    mv.utc_offset = data.utc_offset;
+
+		    // Translate utc_now into a JS date
+		    var udt = data.utc_now.split(" ");
+		    var ud = udt[0].split("-");
+		    var ut = udt[1].split(":");
+		    ut[3] = (parseFloat(ut[2])-parseInt(ut[2]))*1000;
+		    ut[2] = parseInt(ut[2]);
+
+		    var ldate = new Date(Date.UTC(ud[0],ud[1]-1,ud[2],
+						  ut[0],ut[1],ut[2], ut[3]));
+		    // Add in the UT offset
+		    ldate.setHours(ldate.getHours()+mv.utc_offset);
+		    mv.server_now = ldate;
+
+		    // Keep track of the difference between local
+		    // time and server time
+		    var ltz = ldate.getTimezoneOffset() / 60;
+		    mv.tz_offset = mv.utc_offset - ltz;
+		    mv.init();
+
+                }, // end success
+		error: function() {
+		    mv.site = undefined;
+		    mv.tzname = "LT";
+		    mv.server_now = new Date();
+		    mv.utc_offset = mv.server_now.getTimezoneOffset() / 60;
+		    mv.tz_offset = 0;
+		    mv.init();
+		} // end error
+	}); // end ajax
+
+    }, // end load
     init: function() {
 
 	// Reference to self, to use in functions inside init
@@ -35,13 +79,46 @@ MetricsViewer.prototype = {
 	// Instantiate the records database
 	this.database = new MetricsDatabase();
 
+	// Check for a date parameter in the URL
+	var datepar_regex = /^(.*)[?&]date=(\d{8})/;
+	var url = $(location).attr('href');
+	var datepar;
+	if (url.match(datepar_regex)) {
+	    datepar = url.replace(datepar_regex,'$2');
+	} else {
+	    datepar = undefined;
+	}
+
+	// If there is a date parameter, use it instead of the current time
+	var prev_turnover;
+	if (datepar) {
+	    // This sets the previous turnover to UT 0, which is 
+	    // 14:00 HST or 20:00 (+/- an hour) Chile time.  Either
+	    // way the following code to set it to 14:00 will
+	    // get the right times for the fake UT used at
+	    // either site.
+	    var y = parseInt(datepar.slice(0,4))
+	    var m = parseInt(datepar.slice(4,6))-1
+	    var d = parseInt(datepar.slice(6,8))
+	    prev_turnover = new Date(Date.UTC(y,m,d));
+
+	    // Set a variable indicating that we are in demo-mode
+	    // and should not attempt to reset the viewer at 14:00
+	    this.demo_mode = true;
+
+	} else {
+	    // Use the UT time passed by the adcc
+	    prev_turnover = this.server_now;
+	    this.demo_mode = false;
+	}
+
 	// Set the previous and next turnover times
-	// Turnover is set to 14:00 at both sites
-	var prev_turnover = new Date();
-	if (prev_turnover.getHours()<14) {
+	// Turnover is set to 14:00 at the server location
+	var turntime = 14+this.tz_offset;
+	if (prev_turnover.getHours()<turntime) {
 	    prev_turnover.setDate(prev_turnover.getDate()-1);
 	}
-	prev_turnover.setHours(14);
+	prev_turnover.setHours(turntime);
 	prev_turnover.setMinutes(0);
 	prev_turnover.setSeconds(0);
 
@@ -136,6 +213,8 @@ MetricsViewer.prototype = {
 	    bg_color: "white",
 	    title: "",
 	    ut: false,
+	    ut_offset: this.utc_offset,
+	    timezone: this.tzname,
 	    xaxis_label: xlab,
 	    yaxis_label: ""};
 	
@@ -492,15 +571,18 @@ MetricsViewer.prototype = {
 	this.gjs.registerCallback("qametric",function(msg){mv.update(msg);});
 	this.gjs.startPump(timestamp,"qametric");
 
-	// Set up a timeout to check the time every minute to see if the
-	// page needs to be turned over
-	mv.reset_timeout = setInterval(function(){
-	    var current_time = new Date();
-	    if (current_time > mv.turnover) {
-		mv.reset();
-	    }
-	},60000);
-
+	// If not in demo mode, set up a timeout to check the time
+	// every minute to see if the page needs to be turned over
+	if (mv.demo_mode) {
+	    mv.reset_timeout = null;
+	} else {
+	    mv.reset_timeout = setInterval(function(){
+	        var current_time = new Date();
+		if (current_time > mv.turnover) {
+		    mv.reset();
+		}
+	    },60000);
+	}
     }, // end init
 
     composeHTML: function() {
@@ -574,20 +656,23 @@ MetricsViewer.prototype = {
 
     getDateString: function() {
 	var date_str = "";
+	
+	// Get prefix from server site information
+	// If not GN or GS, don't use a prefix
+	if (this.site=="gemini-north") {
+	    date_str += "N";
+	} else if (this.site=="gemini-south") {
+	    date_str += "S";
+	} 
+
 	var date = new Date(this.prev_turnover);
 	
-	// Timezone offset is in minutes.
-	// 600 is Hawaii; assume anything else is Chile
-	var timezone = date.getTimezoneOffset();
-	if (timezone==600) {
-	    // Hawaii; UT date as of 14:00 will be correct at nighttime
-	    date_str += "N";
-	} else {
-	    // Chile
-	    date_str += "S";
-
+	// Timezone offset is in hours; 10 is Hawaii.
+	var timezone = this.utc_offset;
+	if (timezone<10) {
 	    // Add one day, since the UT date we use at night is 
-	    // actually the UT date for the next day
+	    // actually the UT date for the next day for any
+	    // place east of Hawaii
 	    date = new Date(date.getFullYear(),
 			    date.getMonth(),date.getDate()+1);
 	}
@@ -600,7 +685,10 @@ MetricsViewer.prototype = {
 	var day = date.getUTCDate();
 	day = (day <10 ? "0" : "") +  day;
 
-	date_str += year + month + day + "S";
+	date_str += year + month + day;
+	if (this.site=="gemini-north" || this.site=="gemini-south") {
+	    date_str += "S";
+	} 
 	return date_str;
     },
 
@@ -753,6 +841,7 @@ MetricsViewer.prototype = {
 	$("#help_window").remove();
 
 	// Set the turnover times
+////here
 	var prev_turnover = new Date();
 	if (prev_turnover.getHours()<14) {
 	    prev_turnover.setDate(prev_turnover.getDate()-1);

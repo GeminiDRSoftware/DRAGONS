@@ -542,37 +542,32 @@ TimePlot.prototype.init = function(record) {
 			  placement: "insideGrid"};
     }
 
-    // Check whether date should be displayed in UT
+    // Check whether date should be displayed in UT or LT
     var date = new $.jsDate;
-    this.ut_offset = date.getUtcOffset();
-    this.timezone = date.getTimezoneAbbr();
+    if (this.options.ut_offset) {
+	this.ut_offset = this.options.ut_offset * 3600000;
+    } else {
+	this.ut_offset = date.getUtcOffset();
+    }
+    if (this.options.timezone) {
+	this.timezone = this.options.timezone;
+    } else {
+	this.timezone = date.getTimezoneAbbr();
+    }
     var mindate, maxdate;
+    var mindate = new $.jsDate(this.options.mindate);
+    var maxdate = new $.jsDate(this.options.maxdate);
     if (this.options.ut && !this.ut) {
-	mindate = new $.jsDate(this.options.mindate);
 	mindate.add(this.ut_offset,"milliseconds");
-	this.options.mindate = mindate.getTime();
-
-	maxdate = new $.jsDate(this.options.maxdate);
 	maxdate.add(this.ut_offset,"milliseconds");
-	this.options.maxdate = maxdate.getTime();
-
 	this.ut = true;
     } else if (!this.options.ut && this.ut) {
-	mindate = new $.jsDate(this.options.mindate);
 	mindate.add(-this.ut_offset,"milliseconds");
-	this.options.mindate = mindate.getTime();
-
-	maxdate = new $.jsDate(this.options.maxdate);
 	maxdate.add(-this.ut_offset,"milliseconds");
-	this.options.maxdate = maxdate.getTime();
-
 	this.ut = false;
-    } else {
-	mindate = new $.jsDate(this.options.mindate);
-	maxdate = new $.jsDate(this.options.maxdate);
-	this.options.mindate = mindate.getTime();
-	this.options.maxdate = maxdate.getTime();
-    }    
+    }
+    this.options.mindate = mindate.getTime();
+    this.options.maxdate = maxdate.getTime();
 
     if (this.ut) {
 	this.options.xaxis_label += " (UT)";
