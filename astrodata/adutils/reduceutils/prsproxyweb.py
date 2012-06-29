@@ -196,6 +196,40 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.wfile.write(page)
                 return
                 
+            if parms["path"].startswith("/rqsite.json"):
+                self.send_response(200)
+                self.send_header('Content-type', "application/json")
+                self.end_headers()
+                import json
+                import datetime
+                import time
+
+                lt_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+                utc_now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
+                utc_offset = datetime.datetime.utcnow()-datetime.datetime.now()
+                if utc_offset.days!=0:
+                    utc_offset = -utc_offset
+                    utc_offset = -int(round(utc_offset.seconds/3600.))
+                else:
+                    utc_offset = int(round(utc_offset.seconds/3600.))
+
+                timezone = time.timezone / 3600
+                if timezone==10:
+                    local_site = 'gemini-north'
+                elif timezone==4:
+                    local_site = 'gemini-south'
+                else:
+                    local_site = 'remote'
+                    
+                tdic = {"local_site": local_site,
+                        "tzname": time.tzname[0],
+                        "lt_now": lt_now,
+                        "utc_now": utc_now,
+                        "utc_offset": utc_offset}
+
+                self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
+                return
+            
             if parms["path"].startswith("/cmdqueue.json"):
                 self.send_response(200)
                 self.send_header('Content-type', "application/json")
@@ -795,6 +829,9 @@ class MyHandler(BaseHTTPRequestHandler):
                 dirname = os.path.dirname(__file__)
                 joinlist = [dirname, "../../scripts/adcc_faceplate/"]
                 
+                # Split out any parameters in the URL
+                self.path = self.path.split("?")[0]
+
                 #append any further directory info.
                 joinlist.append( self.path[5:])
                 

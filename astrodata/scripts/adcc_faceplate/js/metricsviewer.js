@@ -841,15 +841,7 @@ MetricsViewer.prototype = {
 	$("#help_window").remove();
 
 	// Set the turnover times
-////here
-	var prev_turnover = new Date();
-	if (prev_turnover.getHours()<14) {
-	    prev_turnover.setDate(prev_turnover.getDate()-1);
-	}
-	prev_turnover.setHours(14);
-	prev_turnover.setMinutes(0);
-	prev_turnover.setSeconds(0);
-	
+	var prev_turnover = this.turnover;
 	var timestamp = Math.round(prev_turnover.valueOf()/1000);
 	
 	var next_turnover = new Date(prev_turnover.getFullYear(),
