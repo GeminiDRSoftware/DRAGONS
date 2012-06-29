@@ -13,7 +13,7 @@ from astrodata.adutils import gemutil as gu
 # Some global variables
 GEMINI_NORTH = 'gemini-north'
 GEMINI_SOUTH = 'gemini-south'
-OPSDATAPATH = { GEMINI_NORTH : '/net/archie/staging/perm/',
+OPSDATAPATH = { GEMINI_NORTH : '/net/wikiwiki/vol/dhs_perm/',
                 GEMINI_SOUTH : '/net/petrohue/tier1/gem/dhs/perm/' }
 OBSPREF = { GEMINI_NORTH : 'N',
             GEMINI_SOUTH : 'S' }
