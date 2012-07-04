@@ -1,1 +1,1 @@
-scripts/rsifaces/ulf2prim/mkro.py
+scripts/rsifaces/pif2prim/mkro.py
