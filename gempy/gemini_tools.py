@@ -700,8 +700,12 @@ def clip_sources(ad):
 
         x = objcat.data.field("X_IMAGE")
         y = objcat.data.field("Y_IMAGE")
+
         fwhm_pix = objcat.data.field("FWHM_IMAGE")
         fwhm_arcsec = objcat.data.field("FWHM_WORLD")
+        #fwhm_pix = objcat.data.field("PROFILE_FWHM")
+        #fwhm_arcsec = fwhm_pix * sciext.pixel_scale().as_pytype()
+
         ellip = objcat.data.field("ELLIPTICITY")
         sxflag = objcat.data.field("FLAGS")
         dqflag = objcat.data.field("IMAFLAGS_ISO")
@@ -710,13 +714,16 @@ def clip_sources(ad):
         flux = objcat.data.field("FLUX_AUTO")
         fluxerr = objcat.data.field("FLUXERR_AUTO")
 
+        # Source is good if fwhm is defined
+        fwflag = np.where(fwhm_pix==-999,1,0)
+
         # Source is good if ellipticity defined and <0.5
         eflag = np.where((ellip>0.5)|(ellip==-999),1,0)
 
         # Source is good if probability of being a star >0.9
         sflag = np.where(class_star<0.9,1,0)
 
-        flags = sxflag | eflag | sflag
+        flags = sxflag | fwflag | eflag | sflag
 
         # Source is good if greater than 20 connected pixels
         # Ignore criterion if all undefined (-999)
