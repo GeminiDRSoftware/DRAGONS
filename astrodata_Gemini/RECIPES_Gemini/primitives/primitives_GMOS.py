@@ -1335,8 +1335,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                     # This shouldn't happen while repair = False exists above
                     pass
                 else:
-                    raise Errors.Error("The number of extensions in %s do " +
-                                       "match with the number of extensions " +
+                    raise Errors.Error("The number of extensions in %s do " \
+                                       "match with the number of extensions " \
                                        "expected in raw GMOS data." \
                                            % (ad.filename))
                     

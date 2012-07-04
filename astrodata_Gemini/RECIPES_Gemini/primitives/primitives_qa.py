@@ -1015,7 +1015,11 @@ class QAPrimitives(GENERALPrimitives):
                     comment.append("IQ requirement not met")
                 if ell_warn:
                     comment.append("High ellipticity")
-                qad = {"band": iq_band[0],
+                if iq_band is not None:
+                    band = iq_band[0]
+                else: 
+                    band = None
+                qad = {"band": band,
                        "delivered": float(mean_fwhm),
                        "delivered_error": float(std_fwhm),
                        "zenith": float(corr),
