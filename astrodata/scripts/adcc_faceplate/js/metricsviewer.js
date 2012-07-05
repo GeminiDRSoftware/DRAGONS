@@ -50,8 +50,8 @@ MetricsViewer.prototype = {
 		    var ldate = new Date(Date.UTC(ud[0],ud[1]-1,ud[2],
 						  ut[0],ut[1],ut[2], ut[3]));
 		    // Add in the UT offset
-		    ldate.setHours(ldate.getHours()+mv.utc_offset);
-		    mv.server_now = ldate;
+		    mv.server_now = 
+			Date(ldate.setHours(ldate.getHours()+mv.utc_offset));
 
 		    // Keep track of the difference between local
 		    // time and server time
@@ -108,7 +108,7 @@ MetricsViewer.prototype = {
 
 	} else {
 	    // Use the UT time passed by the adcc
-	    prev_turnover = this.server_now;
+	    prev_turnover = new Date(this.server_now);
 	    this.demo_mode = false;
 	}
 
