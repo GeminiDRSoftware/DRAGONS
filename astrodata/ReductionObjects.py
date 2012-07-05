@@ -174,7 +174,6 @@ class ReductionObject(object):
         btype = primset.btype
         logstring = "%s: %s" % (btype,primname)
         if context['index'] == None:
-            # top-level recipe, add some extra demarcation
             # top-level recipe, set indent=0, add some extra demarcation
             logutils.update_indent(0, context['logmode'])
             context.update({'index':0})
@@ -340,16 +339,41 @@ class ReductionObject(object):
         self.join_param_dicts(primset, primsetary)
         primsetary.append (primset)
     
-    def get_prim_set(self, primname, astrotype = None):
-        #print "RO279:", astrotype, self.curPrimType
-        primsetary = self.primDict[self.curPrimType]
-        #print "RO281:" , primsetary
-        for primset in primsetary:
-            #print "RO283:", repr(dir(primset))
-            if hasattr(primset, primname):
-                return primset
+    def get_prim_set(self, primname):
+
+        # Get all possible types the primitive could be inherited from,
+        # starting from the leaf node and working up the tree
+        from AstroDataType import get_classification_library
+        cl = get_classification_library()
+        type_obj = cl.get_type_obj(self.curPrimType)
+        if type_obj is None:
+            return None
+        possible_types = type_obj.get_super_types(append_to=[type_obj])
+        possible_types = [t.name for t in possible_types]
+
+        # Loop through the types, stopping if the primitive was found
+        for atype in possible_types:
+
+            # If the primitive set has not been loaded, load it
+            if atype not in self.primDict.keys():
+                newprimset = self.recipeLib.retrieve_primitive_set(
+                    astrotype=atype)
+                self.add_prim_set(newprimset)
+
+                # If it's still not there, raise an error
+                if atype not in self.primDict.keys():
+                    raise ReductionExcept("Could not add primitive set "\
+                                          "for astrotype %s" % atype)
+
+            # Get all the primitive sets for this type
+            primsetary = self.primDict[atype]
+            for primset in primsetary:
+                # Check for the primitive
+                if hasattr(primset, primname):
+                    # Stop if found
+                    return primset
+
         return None
-        # draise ReductionExcept("No valid primset for type %s, primitive name: %s" % (self.curPrimType, primname)) 
         
         
 class PrimitiveSet(object):

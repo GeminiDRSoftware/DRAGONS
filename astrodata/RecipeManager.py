@@ -1886,7 +1886,7 @@ class RecipeLibrary(object):
             # print "RM1113:", name, rec, astrotype
             try:
                 # print "RM1115: before"
-                ps = ro.get_prim_set(name, astrotype=astrotype)
+                ps = ro.get_prim_set(name)
                 # print "RM1117: after"
                 if ps:
                     if rec == None:
