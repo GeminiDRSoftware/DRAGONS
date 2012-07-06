@@ -7,7 +7,7 @@ from astrodata.adutils import gemLog
 from gempy import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
-class PreprocessingPrimitives(GENERALPrimitives):
+class PreprocessPrimitives(GENERALPrimitives):
     """
     This is the class containing all of the preprocessing primitives
     for the GEMINI level of the type hierarchy tree. It inherits all

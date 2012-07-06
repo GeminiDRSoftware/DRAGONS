@@ -8,11 +8,11 @@ from gempy import gemini_tools as gt
 from gempy import managers as mgr
 from primitives_GENERAL import GENERALPrimitives
 
-class RegistrationPrimitives(GENERALPrimitives):
+class RegisterPrimitives(GENERALPrimitives):
     """
-    This is the class containing all of the primitives for the GEMINI level of
-    the type hierarchy tree. It inherits all the primitives from the level
-    above, 'GENERALPrimitives'.
+    This is the class containing all of the registration primitives for the
+    GEMINI level of the type hierarchy tree. It inherits all the primitives
+    from the level above, 'GENERALPrimitives'.
     """
     astrotype = "GEMINI"
     

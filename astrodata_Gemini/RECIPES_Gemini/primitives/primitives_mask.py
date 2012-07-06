@@ -7,7 +7,7 @@ from primitives_GENERAL import GENERALPrimitives
 
 class MaskPrimitives(GENERALPrimitives):
     """
-    This is the class containing all of the preprocessing primitives
+    This is the class containing all of the mask-related primitives
     for the GEMINI level of the type hierarchy tree. It inherits all
     the primitives from the level above, 'GENERALPrimitives'.
     """

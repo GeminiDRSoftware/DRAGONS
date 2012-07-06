@@ -9,7 +9,7 @@ from astrodata.ConfigSpace import lookup_path
 from gempy import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
-class StandardizationPrimitives(GENERALPrimitives):
+class StandardizePrimitives(GENERALPrimitives):
     """
     This is the class containing all of the primitives for the GEMINI level of
     the type hierarchy tree. It inherits all the primitives from the level
