@@ -301,14 +301,14 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     median_ad.append(ext)
 
                 # Subtract the median image
-                rc["value"] = median_ad
-                rc.run("subtractFromInput")
+                rc["operand"] = median_ad
+                rc.run("subtract")
 
                 # Redetect to get a good object mask
                 rc.run("detectSources")
 
                 # Add the median image back in to the input
-                rc.run("addToInput")
+                rc.run("add")
 
             # Add the object mask into the DQ plane
             rc.run("addObjectMaskToDQ")
@@ -458,7 +458,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         
         yield rc
     
-    def normalize(self, rc):
+    def normalizeFlat(self, rc):
         """
         This primitive will calculate a normalization factor from statistics
         on CCD2, then divide by this factor and propagate variance accordingly.
@@ -472,10 +472,10 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                   logLevel=rc["logLevel"])
         
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "normalize", "starting"))
+        log.debug(gt.log_message("primitive", "normalizeFlat", "starting"))
         
         # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["normalize"]
+        timestamp_key = self.timestamp_keys["normalizeFlat"]
 
         # Initialize the list of output AstroData objects
         adoutput_list = []

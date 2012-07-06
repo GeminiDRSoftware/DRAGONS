@@ -507,7 +507,7 @@ class PreprocessingPrimitives(GENERALPrimitives):
         
         yield rc
     
-    def normalize(self, rc):
+    def normalizeFlat(self, rc):
         """
         This primitive normalizes each science extension of the input
         AstroData object by its mean
@@ -518,10 +518,10 @@ class PreprocessingPrimitives(GENERALPrimitives):
                                   logLevel=rc["logLevel"])
         
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "normalize", "starting"))
+        log.debug(gt.log_message("primitive", "normalizeFlat", "starting"))
         
         # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["normalize"]
+        timestamp_key = self.timestamp_keys["normalizeFlat"]
 
         # Initialize the list of output AstroData objects
         adoutput_list = []
@@ -529,10 +529,10 @@ class PreprocessingPrimitives(GENERALPrimitives):
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
-            # Check whether the normalize primitive has been run previously
+            # Check whether the normalizeFlat primitive has been run previously
             if ad.phu_get_key_value(timestamp_key):
                 log.warning("No changes will be made to %s, since it has " \
-                            "already been processed by normalize" \
+                            "already been processed by normalizeFlat" \
                             % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing

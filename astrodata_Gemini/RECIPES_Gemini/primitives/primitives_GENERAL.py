@@ -222,43 +222,43 @@ class GENERALPrimitives(PrimitiveSet):
         
         yield rc
 
-    def addToInput(self,rc):
+    def add(self,rc):
         # This is a bare-bones primitive interface to the ad add
         # function from the arith module.  The number, dictionary,
         # or AD instance to be added to the input is stored in
-        # rc["value"]
+        # rc["operand"]
 
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
 
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "addToInput", "starting"))
+        log.debug(gt.log_message("primitive", "add", "starting"))
 
         # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["addToInput"]
+        timestamp_key = self.timestamp_keys["add"]
 
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
         # Get data to be added from the RC
-        value = rc["value"]
-        if value is None:
-            log.stdinfo("No value to add; no changes will be "\
+        operand = rc["operand"]
+        if operand is None:
+            log.stdinfo("No operand to add; no changes will be "\
                         "made to input")
-        elif type(value)==AstroData:
+        elif type(operand)==AstroData:
             log.stdinfo("Adding %s to input" % 
-                        (value.filename))
+                        (operand.filename))
         else:
             log.stdinfo("Adding %s to input" % 
-                        (repr(value)))
+                        (repr(operand)))
   
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
 
-            if value is not None:
-                # Add value to data
-                ad.add(value)
+            if operand is not None:
+                # Add operand to data
+                ad.add(operand)
 
                 # Add the appropriate time stamps to the PHU
                 gt.mark_history(adinput=ad, keyword=timestamp_key)
@@ -277,43 +277,43 @@ class GENERALPrimitives(PrimitiveSet):
         
         yield rc
 
-    def divideInputBy(self,rc):
+    def divide(self,rc):
         # This is a bare-bones primitive interface to the ad div
         # function from the arith module.  The value, dictionary,
         # or AD instance to be divided into the input is stored in
-        # rc["value"]
+        # rc["operand"]
 
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
 
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "divideInputBy", "starting"))
+        log.debug(gt.log_message("primitive", "divide", "starting"))
 
         # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["divideInputBy"]
+        timestamp_key = self.timestamp_keys["divide"]
 
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
         # Get data to be divided from the RC
-        value = rc["value"]
-        if value is None:
-            log.stdinfo("No value to divide; no changes will be "\
+        operand = rc["operand"]
+        if operand is None:
+            log.stdinfo("No operand to divide; no changes will be "\
                         "made to input")
-        elif type(value)==AstroData:
+        elif type(operand)==AstroData:
             log.stdinfo("Dividing input by %s" % 
-                        (value.filename))
+                        (operand.filename))
         else:
             log.stdinfo("Dividing input by %s" % 
-                        (repr(value)))
+                        (repr(operand)))
 
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
 
-            if value is not None:
-                # Divide ad by value
-                ad.div(value)
+            if operand is not None:
+                # Divide ad by operand
+                ad.div(operand)
 
                 # Add the appropriate time stamps to the PHU
                 gt.mark_history(adinput=ad, keyword=timestamp_key)
@@ -332,43 +332,43 @@ class GENERALPrimitives(PrimitiveSet):
         
         yield rc
 
-    def multiplyInputBy(self,rc):
+    def multiply(self,rc):
         # This is a bare-bones primitive interface to the ad mult
         # function from the arith module.  The value, dictionary,
         # or AD instance to be multiplied into the input is stored in
-        # rc["value"]
+        # rc["operand"]
 
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
 
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "multiplyInputBy", "starting"))
+        log.debug(gt.log_message("primitive", "multiply", "starting"))
 
         # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["multiplyInputBy"]
+        timestamp_key = self.timestamp_keys["multiply"]
 
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
         # Get data to be multiplied from the RC
-        value = rc["value"]
-        if value is None:
-            log.stdinfo("No value to multiply; no changes will be "\
+        operand = rc["operand"]
+        if operand is None:
+            log.stdinfo("No operand to multiply; no changes will be "\
                             "made to input")
-        elif type(value)==AstroData:
+        elif type(operand)==AstroData:
             log.stdinfo("Multiplying input by %s" % 
-                        (value.filename))
+                        (operand.filename))
         else:
             log.stdinfo("Multiplying input by %s" % 
-                        (repr(value)))
+                        (repr(operand)))
 
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
 
-            if value is not None:
-                # Multiply ad by value
-                ad.mult(value)
+            if operand is not None:
+                # Multiply ad by operand
+                ad.mult(operand)
 
                 # Add the appropriate time stamps to the PHU
                 gt.mark_history(adinput=ad, keyword=timestamp_key)
@@ -387,43 +387,43 @@ class GENERALPrimitives(PrimitiveSet):
         
         yield rc
 
-    def subtractFromInput(self,rc):
+    def subtract(self,rc):
         # This is a bare-bones primitive interface to the ad sub
         # function from the arith module.  The value, dictionary,
         # or AD instance to be subtracted from the input is stored in
-        # rc["value"]
+        # rc["operand"]
 
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
 
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "subtractFromInput", "starting"))
+        log.debug(gt.log_message("primitive", "subtract", "starting"))
 
         # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["subtractFromInput"]
+        timestamp_key = self.timestamp_keys["subtract"]
 
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
         # Get data to be subtracted from the RC
-        value = rc["value"]
-        if value is None:
-            log.stdinfo("No value to subtract; no changes will be "\
+        operand = rc["operand"]
+        if operand is None:
+            log.stdinfo("No operand to subtract; no changes will be "\
                             "made to input")
-        elif type(value)==AstroData:
+        elif type(operand)==AstroData:
             log.stdinfo("Subtracting %s from input" % 
-                        (value.filename))
+                        (operand.filename))
         else:
             log.stdinfo("Subtracting %s from input" % 
-                        (repr(value)))
+                        (repr(operand)))
             
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
 
-            if value is not None:
-                # Subtract value from data
-                ad.sub(value)
+            if operand is not None:
+                # Subtract operand from data
+                ad.sub(operand)
 
                 # Add the appropriate time stamps to the PHU
                 gt.mark_history(adinput=ad, keyword=timestamp_key)

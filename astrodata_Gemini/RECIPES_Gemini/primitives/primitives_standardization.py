@@ -369,18 +369,18 @@ class StandardizationPrimitives(GENERALPrimitives):
            
 
 
-    def standardizeCommonHeaders(self, rc):
+    def standardizeGeminiHeaders(self, rc):
 
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
 
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "standardizeCommonHeaders",
+        log.debug(gt.log_message("primitive", "standardizeGeminiHeaders",
                                  "starting"))
 
         # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["standardizeCommonHeaders"]
+        timestamp_key = self.timestamp_keys["standardizeGeminiHeaders"]
 
         # Initialize the list of output AstroData objects
         adoutput_list = []
@@ -388,12 +388,12 @@ class StandardizationPrimitives(GENERALPrimitives):
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
 
-            # Check whether the standardizeCommonHeaders primitive
+            # Check whether the standardizeGeminiHeaders primitive
             # has been run previously
             if ad.phu_get_key_value(timestamp_key):
                 log.warning("No changes will be made to %s, since it has " \
                             "already been processed by " \
-                            "standardizeCommonHeaders" % (ad.filename))
+                            "standardizeGeminiHeaders" % (ad.filename))
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)

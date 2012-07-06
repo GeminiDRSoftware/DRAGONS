@@ -485,7 +485,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "normalize":{
+ "normalizeFlat":{
     "suffix":{
         "default"       : "_normalized",
         "type"          : "str",
@@ -618,7 +618,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "standardizeCommonHeaders":{
+ "standardizeGeminiHeaders":{
     "suffix":{
         "default"       : "_headersStandardized",
         "type"          : "str",

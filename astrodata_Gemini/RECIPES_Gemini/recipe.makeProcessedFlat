@@ -11,5 +11,5 @@ addVAR(read_noise=True)
 aduToElectrons
 addVAR(poisson_noise=True)
 thermalEmissionCorrect
-normalize
+normalizeFlat
 storeProcessedFlat

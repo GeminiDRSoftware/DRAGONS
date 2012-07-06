@@ -39,7 +39,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "normalize":{
+ "normalizeFlat":{
     "suffix":{
         "default"       : "_normalized",
         "type"          : "str",

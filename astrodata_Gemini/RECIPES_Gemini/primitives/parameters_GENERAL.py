@@ -1,14 +1,14 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_GEMINI.py file, in alphabetical order.
-{"addToInput":{
+{"add":{
     "suffix":{
-        "default"       : "_valueAdded",
+        "default"       : "_added",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    "value":{
+    "operand":{
         # No type defined here so that user can pass
         # a number, an AD instance, or a dictionary
         "default"       : None,
@@ -17,15 +17,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "divideInputBy":{
+ "divide":{
     "suffix":{
-        "default"       : "_valueSubtracted",
+        "default"       : "_divided",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    "value":{
+    "operand":{
         # No type defined here so that user can pass
         # a number, an AD instance, or a dictionary
         "default"       : None,
@@ -34,15 +34,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "multiplyInputBy":{
+ "multiply":{
     "suffix":{
-        "default"       : "_valueSubtracted",
+        "default"       : "_multiplied",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    "value":{
+    "operand":{
         # No type defined here so that user can pass
         # a number, an AD instance, or a dictionary
         "default"       : None,
@@ -51,15 +51,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "subtractFromInput":{
+ "subtract":{
     "suffix":{
-        "default"       : "_valueSubtracted",
+        "default"       : "_subtracted",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    "value":{
+    "operand":{
         # No type defined here so that user can pass
         # a number, an AD instance, or a dictionary
         "default"       : None,
