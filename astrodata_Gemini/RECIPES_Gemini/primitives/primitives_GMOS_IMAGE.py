@@ -92,35 +92,6 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         
         yield rc
     
-    def getProcessedFringe(self, rc):
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        
-        caltype = "processed_fringe"
-        source = rc["source"]
-        if source == None:
-            rc.run("getCalibration(caltype=%s)" % caltype)
-        else:
-            rc.run("getCalibration(caltype=%s, source=%s)" % (caltype,source))
-            
-        # List calibrations found
-        # Fringe correction is always optional, so don't raise errors if fringe
-        # not found
-        first = True
-        for ad in rc.get_inputs_as_astrodata():
-            calurl = rc.get_cal(ad, caltype) #get from cache
-            if calurl:
-                cal = AstroData(calurl)
-                if cal.filename is not None:
-                    if first:
-                        log.stdinfo("getCalibration: Results")
-                        first = False
-                    log.stdinfo("   %s\n      for %s" % (cal.filename,
-                                                     ad.filename))
-        
-        yield rc
-    
     def makeFringe(self, rc):
 
         # Instantiate the log
@@ -1055,44 +1026,3 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         
         yield rc
 
-    def storeProcessedFringe(self, rc):
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "storeProcessedFringe",
-                                 "starting"))
-
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-
-        # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
-            
-            # Updating the file name with the suffix for this primitive and
-            # then report the new file to the reduction context
-            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
-                                              strip=True)
-            
-            # Sanitize the headers of the file so that it looks like
-            # a public calibration file rather than a science file
-            ad = gt.convert_to_cal_header(adinput=ad, caltype="fringe")[0]
-
-            # Adding a PROCFRNG time stamp to the PHU
-            gt.mark_history(adinput=ad, keyword="PROCFRNG")
-            
-            # Refresh the AD types to reflect new processed status
-            ad.refresh_types()
-            
-            adoutput_list.append(ad)
-        
-        # Upload to cal system
-        rc.run("storeCalibration")
-        
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
-
-        yield rc
-    

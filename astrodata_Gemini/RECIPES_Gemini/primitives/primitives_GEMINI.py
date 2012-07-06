@@ -1,5 +1,6 @@
 from primitives_GENERAL import GENERALPrimitives
 from primitives_bookkeeping import BookkeepingPrimitives
+from primitives_calibration import CalibrationPrimitives
 from primitives_display import DisplayPrimitives
 from primitives_photometry import PhotometryPrimitives
 from primitives_preprocessing import PreprocessingPrimitives
@@ -11,7 +12,8 @@ from primitives_standardization import StandardizationPrimitives
 import datetime
 import time
 
-class GEMINIPrimitives(BookkeepingPrimitives,DisplayPrimitives,
+class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
+                       DisplayPrimitives,
                        PhotometryPrimitives,PreprocessingPrimitives,
                        QAPrimitives,RegistrationPrimitives,
                        ResamplePrimitives,StackPrimitives,
