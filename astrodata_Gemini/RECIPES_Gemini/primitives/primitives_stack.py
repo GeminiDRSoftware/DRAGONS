@@ -57,10 +57,10 @@ class StackPrimitives(GENERALPrimitives):
                 recipe_list.append("detectSources")
             
             # Register all images to the first one
-            recipe_list.append("correctWCSToReferenceImage")
+            recipe_list.append("correctWCSToReferenceFrame")
             
             # Align all images to the first one
-            recipe_list.append("alignToReferenceImage")
+            recipe_list.append("alignToReferenceFrame")
             
             # Correct background level in all images to the first one
             recipe_list.append("correctBackgroundToReferenceImage")

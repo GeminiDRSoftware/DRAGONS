@@ -1,6 +1,6 @@
 getList(purpose=forStack)
-correctWCSToReferenceImage
-alignToReferenceImage
+correctWCSToReferenceFrame
+alignToReferenceFrame
 correctBackgroundToReferenceImage
 stackFrames
 detectSources

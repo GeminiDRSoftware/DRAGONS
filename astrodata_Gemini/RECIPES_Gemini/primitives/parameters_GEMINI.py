@@ -106,7 +106,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "alignToReferenceImage":{
+ "alignToReferenceFrame":{
     "suffix":{
         "default"       : "_align",
         "type"          : "str",
@@ -207,7 +207,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "correctWCSToReferenceImage":{
+ "correctWCSToReferenceFrame":{
     "suffix":{
         "default"       : "_wcsCorrected",
         "type"          : "str",

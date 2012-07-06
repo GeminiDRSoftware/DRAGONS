@@ -19,7 +19,7 @@ class ResamplePrimitives(GENERALPrimitives):
         return rc
     init.pt_hide = True
     
-    def alignToReferenceImage(self, rc):
+    def alignToReferenceFrame(self, rc):
         """
         This primitive applies the transformation encoded in the input images
         WCSs to align them with a reference image, in reference image pixel
@@ -68,11 +68,11 @@ class ResamplePrimitives(GENERALPrimitives):
                                   logLevel=rc["logLevel"])
         
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "alignToReferenceImage",
+        log.debug(gt.log_message("primitive", "alignToReferenceFrame",
                                  "starting"))
         
         # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["alignToReferenceImage"]
+        timestamp_key = self.timestamp_keys["alignToReferenceFrame"]
 
         # Initialize the list of output AstroData objects
         adoutput_list = []
@@ -82,7 +82,7 @@ class ResamplePrimitives(GENERALPrimitives):
         if len(adinput) <= 1:
             log.warning("No alignment will be performed, since at least two " \
                         "input AstroData objects are required for " \
-                        "alignToReferenceImage")
+                        "alignToReferenceFrame")
             # Set the input AstroData object list equal to the output AstroData
             # objects list without further processing
             adoutput_list = adinput

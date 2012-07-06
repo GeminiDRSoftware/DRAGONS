@@ -21,7 +21,7 @@ class RegistrationPrimitives(GENERALPrimitives):
         return rc
     init.pt_hide = True
     
-    def correctWCSToReferenceImage(self, rc):
+    def correctWCSToReferenceFrame(self, rc):
         """ 
         This primitive registers images to a reference image by correcting
         the relative error in their world coordinate systems. The function
@@ -108,11 +108,11 @@ class RegistrationPrimitives(GENERALPrimitives):
                                   logLevel=rc["logLevel"])
         
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "correctWCSToReferenceImage",
+        log.debug(gt.log_message("primitive", "correctWCSToReferenceFrame",
                                  "starting"))
         
         # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["correctWCSToReferenceImage"]
+        timestamp_key = self.timestamp_keys["correctWCSToReferenceFrame"]
 
         # Initialize the list of output AstroData objects
         adoutput_list = []
@@ -123,7 +123,7 @@ class RegistrationPrimitives(GENERALPrimitives):
         if len(adinput) <= 1:
             log.warning("No correction will be performed, since at least " \
                         "two input AstroData objects are required for " \
-                        "correctWCSToReferenceImage")
+                        "correctWCSToReferenceFrame")
             # Set the input AstroData object list equal to the output AstroData
             # objects list without further processing
             adoutput_list = adinput
