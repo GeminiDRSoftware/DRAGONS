@@ -32,6 +32,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "addObjectMaskToDQ":{
+    "suffix":{
+        "default"       : "_objectMaskAdded",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "addReferenceCatalog":{
     "suffix":{
         "default"       : "_refcatAdded",
@@ -115,15 +124,6 @@
     "trim_data":{
         "default"       : False,
         "type"          : "bool",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    },
- "applyObjectMask":{
-    "suffix":{
-        "default"       : "_objectMaskApplied",
-        "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",

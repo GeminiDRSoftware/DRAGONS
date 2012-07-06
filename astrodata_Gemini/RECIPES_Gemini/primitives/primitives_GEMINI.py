@@ -2,6 +2,7 @@ from primitives_GENERAL import GENERALPrimitives
 from primitives_bookkeeping import BookkeepingPrimitives
 from primitives_calibration import CalibrationPrimitives
 from primitives_display import DisplayPrimitives
+from primitives_mask import MaskPrimitives
 from primitives_photometry import PhotometryPrimitives
 from primitives_preprocessing import PreprocessingPrimitives
 from primitives_qa import QAPrimitives
@@ -13,7 +14,7 @@ import datetime
 import time
 
 class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
-                       DisplayPrimitives,
+                       DisplayPrimitives, MaskPrimitives,
                        PhotometryPrimitives,PreprocessingPrimitives,
                        QAPrimitives,RegistrationPrimitives,
                        ResamplePrimitives,StackPrimitives,

@@ -94,59 +94,6 @@ class PreprocessingPrimitives(GENERALPrimitives):
         
         yield rc
     
-    def applyObjectMask(self, rc):
-        """
-        This primitive combines the object mask in a OBJMASK extension
-        into the DQ plane
-        """
-        
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "applyObjectMask", "starting"))
-        
-        # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["applyObjectMask"]
-
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-        
-        # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
-            
-            for sciext in ad["SCI"]:
-                extver = sciext.extver()
-                dqext = ad["DQ",extver]
-                mask = ad["OBJMASK",extver]
-                if mask is None:
-                    log.warning("No object mask present for "\
-                                    "%s[SCI,%d]; "\
-                                    "cannot apply object mask" %
-                                (ad.filename,extver))
-                else:
-                    if dqext is not None:
-                        ad["DQ",extver].data = dqext.data | mask.data
-                    else:
-                        dqext = deepcopy(mask)
-                        dqext.rename_ext("DQ",extver)
-                        ad.append(dqext)
-
-            # Change the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
-                                              strip=True)
-            
-            # Append the output AstroData object to the list 
-            # of output AstroData objects
-            adoutput_list.append(ad)
-        
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
-        
-        yield rc
-    
     def correctBackgroundToReferenceImage(self, rc):
         """
         This primitive does an additive correction to a set

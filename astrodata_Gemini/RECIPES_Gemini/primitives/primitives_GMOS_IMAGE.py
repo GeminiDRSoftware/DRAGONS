@@ -311,7 +311,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 rc.run("addToInput")
 
             # Add the object mask into the DQ plane
-            rc.run("applyObjectMask")
+            rc.run("addObjectMaskToDQ")
             
             # Stack frames with masking from DQ plane
             rc.run("stackFrames(operation=%s)" % rc["operation"])

@@ -6,12 +6,12 @@ timestamp_keys = {
     # has completed
     "addDQ": "ADDDQ",
     "addMDF": "ADDMDF",
+    "addObjectMaskToDQ": "ADOBJMSK",
     "addReferenceCatalog": "ADDRECAT",
     "addVAR": "ADDVAR",
     "addToInput": "ADDTOINP",
     "aduToElectrons": "ADUTOELE",
     "alignToReferenceImage": "ALIGN",
-    "applyObjectMask": "APOBJMSK",
     "attachWavelengthSolution": "ATTWVSOL",
     "correctBackgroundToReferenceImage": "CORRBG",
     "correctWCSToReferenceImage": "CORWCSIM",
