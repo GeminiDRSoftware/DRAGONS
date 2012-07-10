@@ -748,6 +748,12 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             else:
                 science_list = science_param
 
+            # If there is one fringe and multiple science frames,
+            # the fringe must be deepcopied to allow it to be
+            # scaled separately for each frame
+            if len(fringe)==1 and len(science_list)>1:
+                fringe = [deepcopy(fringe[0]) for img in science_list]
+
             # Convert filenames to AD instances if necessary
             tmp_list = []
             for science in science_list:
@@ -758,14 +764,17 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             
             fringe_dict = gt.make_dict(key_list=science_list, 
                                        value_list=fringe)
+            fringe_output = []
+        else:
+            log.warning("No science frames specified; no scaling will be done")
+            science_list = []
+            fringe_output = fringe
 
         # Loop over each AstroData object in the science list
-        fringe_output = []
         for ad in science_list:
             
             # Retrieve the appropriate fringe
-            if fringe_dict is not None:
-                fringe = fringe_dict[ad]
+            fringe = fringe_dict[ad]
 
             # Check the inputs have matching filters, binning and SCI shapes.
             try:
