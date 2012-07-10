@@ -8,6 +8,11 @@ from gempy import gemini_tools as gt
 from gempy import managers as mgr
 from primitives_GENERAL import GENERALPrimitives
 
+# Load the standard comments for header keywords that will be updated
+# in these functions
+keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
+                                            "keyword_comments")
+
 class RegisterPrimitives(GENERALPrimitives):
     """
     This is the class containing all of the registration primitives for the
@@ -21,6 +26,137 @@ class RegisterPrimitives(GENERALPrimitives):
         return rc
     init.pt_hide = True
     
+    def updateWCS(self, rc):
+        """
+        This primitive applies a previously calculated WCS correction.
+        The solution should be stored in the RC as a dictionary, with
+        astrodata instances as the keys and pywcs.WCS objects as the
+        values.
+        """
+
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "updateWCS",
+                                 "starting"))
+
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["updateWCS"]
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Get the necessary parameters from the RC
+        wcs = rc["wcs"]
+        if wcs is None:
+            log.warning("No new WCS supplied; no correction will be "\
+                        "performed.")
+        else:
+
+            # Loop over each input AstroData object in the input list
+            for ad in rc.get_inputs_as_astrodata():
+
+                ad_wcs = None
+                if isinstance(wcs,dict):
+                    try:
+                        ad_wcs = wcs[ad]
+                    except KeyError:
+                        ad_wcs = wcs
+                elif isinstance(wcs,pywcs.WCS):
+                    ad_wcs = wcs
+
+                if ad_wcs is None:
+                    log.warning("No new WCS supplied for %s; "\
+                                "no correction will be performed" %
+                                ad.filename)
+                    adoutput_list.append(ad)
+                    continue
+
+                for ext in ad:
+                    extname = ext.extname()
+                    extver = ext.extver()
+                    
+                    ext_wcs = None
+                    if isinstance(ad_wcs,dict):
+                        try:
+                            ext_wcs = ad_wcs[extver]
+                        except KeyError:
+                            pass
+                    elif isinstance(ad_wcs,pywcs.WCS):
+                        ext_wcs = wcs
+
+                    if ext_wcs is None:
+                        log.warning("No new WCS supplied for %s[%s,%d]; "\
+                                    "no correction will be performed" %
+                                    (ad.filename,extname,extver))
+                        continue
+                    elif not isinstance(ext_wcs, pywcs.WCS):
+                        raise Errors.InputError("Parameter wcs must be "\
+                                                "either a pywcs.WCS object "\
+                                                "or a dictionary of pywcs.WCS "\
+                                                "objects")
+                  
+                    # If image extension, correct the header values
+                    if extname in ["SCI","VAR","DQ"]:
+                        log.fullinfo("Correcting CRVAL, CRPIX, and CD in "\
+                                     "image extension headers for %s[%s,%d]" %
+                                     (ad.filename,extname,extver))
+                        log.fullinfo("CRVAL: "+repr(ext_wcs.wcs.crval))
+                        log.fullinfo("CRPIX: "+repr(ext_wcs.wcs.crpix))
+                        log.fullinfo("CD: "+repr(ext_wcs.wcs.cd))
+
+                        ext.set_key_value("CRVAL1", ext_wcs.wcs.crval[0],
+                                          comment=keyword_comments["CRVAL1"])
+                        ext.set_key_value("CRVAL2", ext_wcs.wcs.crval[1],
+                                          comment=keyword_comments["CRVAL2"])
+                        ext.set_key_value("CRPIX1", ext_wcs.wcs.crpix[0],
+                                          comment=keyword_comments["CRPIX1"])
+                        ext.set_key_value("CRPIX2", ext_wcs.wcs.crpix[1],
+                                          comment=keyword_comments["CRPIX2"])
+                        ext.set_key_value("CD1_1", ext_wcs.wcs.cd[0,0],
+                                          comment=keyword_comments["CD1_1"])
+                        ext.set_key_value("CD1_2", ext_wcs.wcs.cd[0,1],
+                                          comment=keyword_comments["CD1_2"])
+                        ext.set_key_value("CD2_1", ext_wcs.wcs.cd[1,0],
+                                          comment=keyword_comments["CD2_1"])
+                        ext.set_key_value("CD2_2", ext_wcs.wcs.cd[1,1],
+                                          comment=keyword_comments["CD2_2"])
+
+                    # If objcat, fix the RA/Dec columns
+                    elif extname=="OBJCAT":
+                        log.fullinfo("Correcting RA, Dec columns in OBJCAT "\
+                                     "extension for %s[%s,%d]" %
+                                     (ad.filename,extname,extver))
+                        for row in ext.data:
+                            xy = np.array([row['X_IMAGE'], row['Y_IMAGE']])
+                            radec = ext_wcs.wcs_pix2sky([xy], 1)[0]
+                            # FIXME - is it correct to set oring to 1 here?
+                            # Also we should be setting ra_dec_order=True, but
+                            # that breaks with the wcs missing the lattype
+                            # property
+                            row['X_WORLD'] = radec[0]
+                            row['Y_WORLD'] = radec[1]
+
+            
+
+                # Add the appropriate time stamps to the PHU
+                gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+                # Change the filename
+                ad.filename = gt.filename_updater(adinput=ad, 
+                                                  suffix=rc["suffix"],
+                                                  strip=True)
+
+                adoutput_list.append(ad)
+        
+            # Report the list of output AstroData objects to the reduction
+            # context
+            rc.report_output(adoutput_list)
+
+        yield rc
+
     def correctWCSToReferenceFrame(self, rc):
         """ 
         This primitive registers images to a reference image by correcting
@@ -333,9 +469,9 @@ class RegisterPrimitives(GENERALPrimitives):
         It then reports the astrometric correction vector.
         For now, this is limited to a translational offset only.
         
-        If the 'correct_wcs' parameter == True, it then applies that
-        correction to the WCS of the image and also applies the same
-        correction to the RA, DEC columns of the object catalog.
+        The solution is stored in a WCS object in the RC.  It can
+        be applied to the image headers by calling the updateWCS
+        primitive.
         """
 
         # Instantiate the log
@@ -353,10 +489,9 @@ class RegisterPrimitives(GENERALPrimitives):
         adoutput_list = []
 
         # Loop over each input AstroData object in the input list
+        wcs_dict = {}
         for ad in rc.get_inputs_as_astrodata():
-
-            # Get the necessary parameters from the RC
-            correctWCS = rc["correct_wcs"]
+            wcs_dict[ad] = {}
 
             # Objcats to process
             objcats = ad['OBJCAT']
@@ -435,38 +570,14 @@ class RegisterPrimitives(GENERALPrimitives):
                     log.fullinfo("Dec_mean +- Dec_sigma: %.2f +- %.2f arcsec" % (dec_mean, dec_sigma))
                     log.fullinfo("Median Offset is: %.2f, %.2f arcsec" % (ra_median, dec_median))
 
+                    # Store the changes in a pywcs.WCS object so they
+                    # can be applied by the updateWCS primitive if desired
+                    sci = ad["SCI",extver]
+                    wcs = pywcs.WCS(sci.header)
+                    wcs.wcs.crval = np.array([wcs.wcs.crval[0]+ra_median_degs,
+                                              wcs.wcs.crval[1]+dec_median_degs])
+                    wcs_dict[ad][extver] = wcs
 
-                    # Once we've done the great ULF - primitive refactor of late 2011, we agreed we should
-                    # split this out into a separate primitive - this primitive should store the WCS solution
-                    # in the rc (preferably as James' fancy WCS object that doesn't actually exist yet)
-                    # then the other primitive should apply that to the WCS in the astrodata instance.
-                    if(correctWCS):
-
-                        # Handle the image extensions first
-                        for thing in ['SCI', 'VAR', 'DQ']:
-                            image = ad[thing, extver]
-                            if(image):
-                                image.header['CRVAL1'] += ra_median_degs
-                                image.header['CRVAL2'] += dec_median_degs
-                                if(thing == 'SCI'):
-                                    log.stdinfo("Correcting WCS in [%s, %d] by (%.3f, %.3f) arcsec" % (thing, extver, ra_median, dec_median))
-                                else:
-                                    log.fullinfo("Correcting WCS in [%s, %d] by (%.3f, %.3f) arcsec" % (thing, extver, ra_median, dec_median))
-
-                        # Now fix the objcat, according to the SCI wcs
-                        sci = ad['SCI', extver]
-                        wcs = pywcs.WCS(sci.header)
-                        log.stdinfo("Correcting RA, Dec columns in ['OBJCAT', %d]" % extver)
-                        for row in objcat.data:
-                            xy = np.array([row['X_IMAGE'], row['Y_IMAGE']])
-                            radec = wcs.wcs_pix2sky([xy], 1)[0]
-                            # FIXME - is it correct to set oring to 1 here?
-                            # Also we should be setting ra_dec_order=True, but that 
-                            # breaks with the wcs missing the lattype property
-                            row['X_WORLD'] = radec[0]
-                            row['Y_WORLD'] = radec[1]
-
-            
             if(objcats and all_delta_ra and all_delta_dec):
                 # Report the mean and standard deviation of all the offsets over all the sci extensions:
                 ra_mean = np.mean(all_delta_ra) * 3600.0
@@ -477,21 +588,14 @@ class RegisterPrimitives(GENERALPrimitives):
                 log.stdinfo("Mean Astrometric Offset between OBJCAT and REFCAT for %s:" % ad.filename)
                 log.stdinfo("     RA: %.2f +- %.2f    Dec: %.2f +- %.2f   arcsec" % (ra_mean, ra_sigma, dec_mean, dec_sigma))
 
-                # Only change the name and set the timestamp if the
-                # correct_wcs parameter was set
-                if(correctWCS):
-                    # Add the appropriate time stamps to the PHU
-                    gt.mark_history(adinput=ad, keyword=timestamp_key)
-
-                    # Change the filename
-                    ad.filename = gt.filename_updater(adinput=ad, 
-                                                      suffix=rc["suffix"],
-                                                      strip=True)
             else:
                 log.stdinfo("Could not determine astrometric offset for %s" %
                             ad.filename)
 
             adoutput_list.append(ad)
+
+        # Store the WCS solution in the RC
+        rc["wcs"] = wcs_dict
 
         # Report the list of output AstroData objects to the reduction
         # context
@@ -502,11 +606,6 @@ class RegisterPrimitives(GENERALPrimitives):
 ##############################################################################
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
-
-# Load the standard comments for header keywords that will be updated
-# in these functions
-keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
-                                            "keyword_comments")
 
 def _correlate_sources(ad1, ad2, delta=None, firstPass=10, cull_sources=False):
     """

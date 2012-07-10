@@ -8,6 +8,8 @@ from astrodata.adutils.gemutil import pyrafLoader
 from gempy import gemini_tools as gt
 from gempy import managers as mgr
 from primitives_GENERAL import GENERALPrimitives
+import pifgemini.standardize as sdz
+import pifgemini.gmos as gm
 
 class DisplayPrimitives(GENERALPrimitives):
     """
@@ -61,11 +63,13 @@ class DisplayPrimitives(GENERALPrimitives):
                 if not np.any(mosaic):
                     # This is the first possible modification to the data;
                     # always deepcopy before proceeding
-                    orig_input = [deepcopy(ad) for ad in adinput]
+                    adinput = [deepcopy(ad) for ad in orig_input]
                     deepcopied = True
 
-                    rc.run("addDQ(bpm=None)")
-                    adinput = rc.get_inputs_as_astrodata()
+                    adinput = sdz.add_dq(adinput, bpm=None,
+                                         copy_input=False, index=rc["index"])
+                    if not isinstance(adinput,list):
+                        adinput = [adinput]
                 else:
                     log.warning("Cannot add DQ plane to mosaicked data; " \
                                 "no threshold mask will be displayed")
@@ -73,6 +77,12 @@ class DisplayPrimitives(GENERALPrimitives):
 
         # Check whether approximate bias level should be removed
         if remove_bias:
+            # Copy the original input if necessary, before
+            # modifying it
+            if not deepcopied:
+                adinput = [deepcopy(ad) for ad in orig_input]
+                deepcopied = True
+
             new_adinput = []
             for ad in adinput:
                 # Check whether data has been bias- or dark-subtracted
@@ -95,13 +105,6 @@ class DisplayPrimitives(GENERALPrimitives):
                                     "approximate bias will not be removed" % 
                                     ad.filename)
                     else:
-
-                        # Copy the original input if necessary, before
-                        # modifying it
-                        if not deepcopied:
-                            orig_input = [deepcopy(ad) for ad in adinput]
-                            deepcopied = True
-
                         # Subtract the bias level from each science extension
                         log.stdinfo("\nSubtracting approximate bias level "\
                                      "from %s for display\n" \
@@ -120,10 +123,13 @@ class DisplayPrimitives(GENERALPrimitives):
             if np.any(next>1):
                 log.fullinfo("Tiling extensions together before displaying")
                 if not deepcopied:
-                    orig_input = [deepcopy(ad) for ad in adinput]
+                    adinput = [deepcopy(ad) for ad in orig_input]
                     deepcopied = True
-                rc.run("tileArrays(tile_all=True)")
-                adinput = rc.get_inputs_as_astrodata()
+
+                adinput = gm.tile_arrays(adinput, tile_all=True,
+                                         copy_input=False, index=rc["index"])
+                if not isinstance(adinput,list):
+                    adinput = [adinput]
         else:
             extinput = []
             for ad in adinput:

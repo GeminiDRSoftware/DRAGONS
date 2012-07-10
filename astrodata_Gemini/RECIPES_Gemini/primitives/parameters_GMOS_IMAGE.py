@@ -48,15 +48,24 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "removeFringe":{
+ "scaleByIntensity":{
     "suffix":{
-        "default"       : "_fringeCorrected",
+        "default"       : "_scaled",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    "fringe":{
+    },
+ "scaleFringeToScience":{
+    "suffix":{
+        "default"       : "_fringeScaled",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "science":{
         # No type defined here so that user can pass
         # a string (eg. from command line) or an astrodata
         # instance (eg. from a script)
@@ -68,15 +77,6 @@
     "stats_scale":{
         "default"       : False,
         "type"          : "bool",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    },
- "scaleByIntensity":{
-    "suffix":{
-        "default"       : "_scaled",
-        "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
@@ -140,4 +140,22 @@
         "uiLevel"       : "UIBASIC",
         },
     }, 
+ "subtractFringe":{
+    "suffix":{
+        "default"       : "_fringeSubtracted",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "fringe":{
+        # No type defined here so that user can pass
+        # a string (eg. from command line) or an astrodata
+        # instance (eg. from a script)
+        "default"       : None,
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
 }

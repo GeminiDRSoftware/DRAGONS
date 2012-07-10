@@ -199,13 +199,6 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    "correct_wcs": {
-        "default"       : False,
-        "type"          : "bool",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
     },
  "correctWCSToReferenceFrame":{
     "suffix":{
@@ -689,6 +682,15 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    },
+ "updateWCS":{
+    "suffix":{
+        "default"       : "_wcsUpdated",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },        
     },
  "writeOutputs":{
     "suffix":{

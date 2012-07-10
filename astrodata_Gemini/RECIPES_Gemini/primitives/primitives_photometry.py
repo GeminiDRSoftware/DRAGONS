@@ -484,14 +484,13 @@ class PhotometryPrimitives(GENERALPrimitives):
                             "will be performed")
                 rc.report_output(adinput)
             else:
-                # Get the necessary parameter from the RC
-                # This must be passed explicitly because it is sometimes
-                # passed in the recipe itself
-                correct_wcs = rc["correct_wcs"]
+                rc.run("measureCC")
+                rc.run("determineAstrometricSolution")
 
-                rc.run("measureCC\n"\
-                       "determineAstrometricSolution(correct_wcs=%s)" % 
-                       correct_wcs)
+                # Check to see whether we should update the WCS
+                correct_wcs = rc["correct_wcs"]
+                if correct_wcs:
+                    rc.run("updateWCS")
         
         yield rc
 

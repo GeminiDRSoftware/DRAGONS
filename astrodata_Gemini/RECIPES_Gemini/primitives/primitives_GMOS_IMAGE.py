@@ -10,6 +10,7 @@ from gempy import gemini_tools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from primitives_GMOS import GMOSPrimitives
+import pifgemini.gmos_image as gmi
 
 class GMOS_IMAGEPrimitives(GMOSPrimitives):
     """
@@ -68,27 +69,46 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         if rm_fringe:
             # Retrieve processed fringes for the input
             
+            # Initialize output list
+            adoutput_list = []
+
             # Check for a fringe in the "fringe" stream first; the makeFringe
             # primitive, if it was called, would have added it there;
             # this avoids the latency involved in storing and retrieving
             # a calibration in the central system
-            fringes = rc.get_stream("fringe",empty=True)
+            fringes = rc.get_stream("fringe",empty=True,style="AD")
+            adinput = rc.get_inputs_as_astrodata()
             if fringes is None or len(fringes)!=1:
                 rc.run("getProcessedFringe")
+                for ad in adinput:
+                    fringe = rc.get_cal(ad, "processed_fringe")
+                    if fringe is None:
+                        log.warning("Could not find an appropriate fringe "\
+                                    "for %s" % (ad.filename))
+                        adoutput_list.append(ad)
+                        continue
 
-                # If using generic fringe, scale by calculated statistics
-                stats_scale=True
+                    # For generic fringes, scale by statistics
+                    fringe = gmi.scale_fringe_to_science(
+                        fringe, science=ad, stats_scale=True,
+                        copy_input=False,index=rc["index"])
+
+                    # Subtract the fringe
+                    ad = gmi.subtract_fringe(
+                        ad, fringe=fringe, copy_input=False, index=rc["index"])
+                    
+                    adoutput_list.append(ad)
 
             else:
                 log.stdinfo("Using fringe: %s" % fringes[0].filename)
-                for ad in rc.get_inputs_as_astrodata():
-                    rc.add_cal(ad,"processed_fringe",
-                               os.path.abspath(fringes[0].filename))
 
-                # If fringe was created from science, scale by exposure time
-                stats_scale=False
-            
-            rc.run("removeFringe(stats_scale=%s)" % stats_scale)
+                # If fringe was created from science, don't scale it,
+                # just subtract
+                adoutput_list = gmi.subtract_fringe(
+                        adinput, fringe=fringes[0], 
+                        copy_input=False, index=rc["index"])
+
+            rc.report_output(adoutput_list)            
         
         yield rc
     
@@ -578,12 +598,113 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         
         yield rc
     
-    def removeFringe(self, rc):
+    def scaleByIntensity(self, rc):
+        """
+        This primitive scales input images to the mean value of the first
+        image.  It is intended to be used to scale flats to the same
+        level before stacking.
+        """
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "scaleByIntensity", "starting"))
+
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["scaleByIntensity"]
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Check whether inputs need to be tiled to get CCD2 data
+        adinput = rc.get_inputs_as_astrodata()
+        orig_input = adinput
+        next = np.array([ad.count_exts("SCI") for ad in adinput])
+        if np.any(next>1):
+            # Keep a deep copy of the original, untiled input to
+            # report back to RC
+            orig_input = [deepcopy(ad) for ad in adinput]
+            log.fullinfo("Tiling extensions together to get statistics "\
+                         "from CCD2")
+            rc.run("tileArrays")
+
+        # Loop over each tiled AstroData object
+        first = True
+        reference_mean = 1.0
+        count = 0
+        for ad in rc.get_inputs_as_astrodata():
+
+            # Check the number of science extensions; if more than
+            # one, use CCD2 data only
+            if ad.count_exts("SCI")==1:
+                # Only one CCD present; use it
+                central_data = ad["SCI"].data
+            else:
+                # Otherwise, take the second science extension
+                # from the tiled data
+               central_data = ad["SCI",2].data
+
+            # Take off 5% of the width as a border
+            xborder = int(0.05 * central_data.shape[1])
+            yborder = int(0.05 * central_data.shape[0])
+            if xborder<20:
+                xborder = 20
+            if yborder<20:
+                yborder = 20
+            log.fullinfo("Using data section [%i:%i,%i:%i] from CCD2 "\
+                             "for statistics" %
+                         (xborder,central_data.shape[1]-xborder,
+                          yborder,central_data.shape[0]-yborder))
+            stat_region = central_data[yborder:-yborder,xborder:-xborder]
+            
+            # Get mean value
+            this_mean = np.mean(stat_region)
+
+            # Get relative intensity
+            if first:
+                reference_mean = this_mean
+                scale = 1.0
+                first = False
+            else:
+                scale = reference_mean / this_mean
+
+            # Get the original, untiled input to apply the scale to
+            ad = orig_input[count]
+            count +=1
+
+            # Log and save the scale factor
+            log.fullinfo("Relative intensity for %s: %.3f" % (ad.filename,
+                                                              scale))
+            ad.phu_set_key_value("RELINT", scale,
+                                 comment=self.keyword_comments["RELINT"])
+
+            # Multiply by the scaling factor
+            ad.mult(scale)
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+            # Change the filename
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+        
+        yield rc
+
+    def scaleFringeToScience(self, rc):
         """
         This primitive will scale the fringes to their matching science data
-        in the inputs, then subtract them.
-        The primitive getProcessedFringe must have been run prior to this in 
-        order to find and load the matching fringes into memory.
+        The fringes should be in the stream this primitive is called on,
+        and the reference science frames should be loaded into the RC,
+        as, eg. rc["science"] = adinput.
         
         There are two ways to find the value to scale fringes by:
         1. If stats_scale is set to True, the equation:
@@ -610,66 +731,41 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                   logLevel=rc["logLevel"])
         
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "removeFringe",
+        log.debug(gt.log_message("primitive", "scaleFringeToScience",
                                  "starting"))
         
         # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["removeFringe"]
+        timestamp_key = self.timestamp_keys["scaleFringeToScience"]
 
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-        
-        # Check for a user-supplied fringe
-        adinput = rc.get_inputs_as_astrodata()
-        fringe_param = rc["fringe"]
+        # Check for user-supplied science frames
+        fringe = rc.get_inputs_as_astrodata()
+        science_param = rc["science"]
         fringe_dict = None
-        if fringe_param is not None:
-            # The user supplied an input to the fringe parameter
-            if not isinstance(fringe_param, list):
-                fringe_list = [fringe_param]
+        if science_param is not None:
+            # The user supplied an input to the science parameter
+            if not isinstance(science_param, list):
+                science_list = [science_param]
             else:
-                fringe_list = fringe_param
+                science_list = science_param
 
             # Convert filenames to AD instances if necessary
             tmp_list = []
-            for fringe in fringe_list:
-                if type(fringe) is not AstroData:
-                    fringe = AstroData(fringe)
-                tmp_list.append(fringe)
-            fringe_list = tmp_list
+            for science in science_list:
+                if type(science) is not AstroData:
+                    science = AstroData(science)
+                tmp_list.append(science)
+            science_list = tmp_list
             
-            fringe_dict = gt.make_dict(key_list=adinput, value_list=fringe_list)
-        
+            fringe_dict = gt.make_dict(key_list=science_list, 
+                                       value_list=fringe)
 
-        # Loop over each input AstroData object in the input list
-        for ad in adinput:
-            
-            # Check whether the removeFringe primitive has been run
-            # previously
-            if ad.phu_get_key_value(timestamp_key):
-                log.warning("No changes will be made to %s, since it has " \
-                            "already been processed by removeFringe" \
-                            % (ad.filename))
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
-                continue
+        # Loop over each AstroData object in the science list
+        fringe_output = []
+        for ad in science_list:
             
             # Retrieve the appropriate fringe
             if fringe_dict is not None:
                 fringe = fringe_dict[ad]
-            else:
-                fringe = rc.get_cal(ad, "processed_fringe")
-            
-                # Take care of the case where there was no fringe 
-                if fringe is None:
-                    log.warning("Could not find an appropriate fringe for %s" \
-                                % (ad.filename))
-                    # Append the input to the output without further processing
-                    adoutput_list.append(ad)
-                    continue
-                else:
-                    fringe = AstroData(fringe)
 
             # Check the inputs have matching filters, binning and SCI shapes.
             try:
@@ -844,130 +940,19 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             # the fringe frame
             scaled_fringe = fringe.mult(scale)
             
-            # Subtract the scaled fringe from the science
-            ad = ad.sub(scaled_fringe)
-            
-            # Record the fringe file used
-            ad.phu_set_key_value("FRINGEIM", 
-                                 os.path.basename(fringe.filename),
-                                 comment=self.keyword_comments["FRINGEIM"])
-
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=scaled_fringe, keyword=timestamp_key)
 
             # Change the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
-                                              strip=True)
+            scaled_fringe.filename = gt.filename_updater(
+                adinput=ad, suffix=rc["suffix"], strip=True)
             
-            # Append the output AstroData object to the list 
-            # of output AstroData objects
-            adoutput_list.append(ad)
+            fringe_output.append(scaled_fringe)
             
         # Report the list of output AstroData objects to the reduction context
-        rc.report_output(adoutput_list)
+        rc.report_output(fringe_output)
         yield rc
     
-    def scaleByIntensity(self, rc):
-        """
-        This primitive scales input images to the mean value of the first
-        image.  It is intended to be used to scale flats to the same
-        level before stacking.
-        """
-        # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "scaleByIntensity", "starting"))
-
-        # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["scaleByIntensity"]
-
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-
-        # Check whether inputs need to be tiled to get CCD2 data
-        adinput = rc.get_inputs_as_astrodata()
-        orig_input = adinput
-        next = np.array([ad.count_exts("SCI") for ad in adinput])
-        if np.any(next>1):
-            # Keep a deep copy of the original, untiled input to
-            # report back to RC
-            orig_input = [deepcopy(ad) for ad in adinput]
-            log.fullinfo("Tiling extensions together to get statistics "\
-                         "from CCD2")
-            rc.run("tileArrays")
-
-        # Loop over each tiled AstroData object
-        first = True
-        reference_mean = 1.0
-        count = 0
-        for ad in rc.get_inputs_as_astrodata():
-
-            # Check the number of science extensions; if more than
-            # one, use CCD2 data only
-            if ad.count_exts("SCI")==1:
-                # Only one CCD present; use it
-                central_data = ad["SCI"].data
-            else:
-                # Otherwise, take the second science extension
-                # from the tiled data
-               central_data = ad["SCI",2].data
-
-            # Take off 5% of the width as a border
-            xborder = int(0.05 * central_data.shape[1])
-            yborder = int(0.05 * central_data.shape[0])
-            if xborder<20:
-                xborder = 20
-            if yborder<20:
-                yborder = 20
-            log.fullinfo("Using data section [%i:%i,%i:%i] from CCD2 "\
-                             "for statistics" %
-                         (xborder,central_data.shape[1]-xborder,
-                          yborder,central_data.shape[0]-yborder))
-            stat_region = central_data[yborder:-yborder,xborder:-xborder]
-            
-            # Get mean value
-            this_mean = np.mean(stat_region)
-
-            # Get relative intensity
-            if first:
-                reference_mean = this_mean
-                scale = 1.0
-                first = False
-            else:
-                scale = reference_mean / this_mean
-
-            # Get the original, untiled input to apply the scale to
-            ad = orig_input[count]
-            count +=1
-
-            # Log and save the scale factor
-            log.fullinfo("Relative intensity for %s: %.3f" % (ad.filename,
-                                                              scale))
-            ad.phu_set_key_value("RELINT", scale,
-                                 comment=self.keyword_comments["RELINT"])
-
-            # Multiply by the scaling factor
-            ad.mult(scale)
-
-            # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
-
-            # Change the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
-                                              strip=True)
-
-            # Append the output AstroData object to the list
-            # of output AstroData objects
-            adoutput_list.append(ad)
-
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
-        
-        yield rc
-
     def stackFlats(self, rc):
         """
         This primitive will combine the input flats with rejection
@@ -1026,3 +1011,109 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         
         yield rc
 
+    def subtractFringe(self, rc):
+        
+        # Instantiate the log
+        log = gemLog.getGeminiLog(logType=rc["logType"],
+                                  logLevel=rc["logLevel"])
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "subtractFringe",
+                                 "starting"))
+        
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["subtractFringe"]
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+        
+        # Check for a user-supplied fringe
+        adinput = rc.get_inputs_as_astrodata()
+        fringe_param = rc["fringe"]
+        fringe_dict = None
+        if fringe_param is not None:
+            # The user supplied an input to the fringe parameter
+            if not isinstance(fringe_param, list):
+                fringe_list = [fringe_param]
+            else:
+                fringe_list = fringe_param
+
+            # Convert filenames to AD instances if necessary
+            tmp_list = []
+            for fringe in fringe_list:
+                if type(fringe) is not AstroData:
+                    fringe = AstroData(fringe)
+                tmp_list.append(fringe)
+            fringe_list = tmp_list
+            
+            fringe_dict = gt.make_dict(key_list=adinput, value_list=fringe_list)
+        
+
+        # Loop over each input AstroData object in the input list
+        for ad in adinput:
+            
+            # Check whether the subtractFringe primitive has been run
+            # previously
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by subtractFringe" \
+                            % (ad.filename))
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
+            
+            # Retrieve the appropriate fringe
+            if fringe_dict is not None:
+                fringe = fringe_dict[ad]
+            else:
+                fringe = rc.get_cal(ad, "processed_fringe")
+            
+                # Take care of the case where there was no fringe 
+                if fringe is None:
+                    log.warning("Could not find an appropriate fringe for %s" \
+                                % (ad.filename))
+                    # Append the input to the output without further processing
+                    adoutput_list.append(ad)
+                    continue
+                else:
+                    fringe = AstroData(fringe)
+
+            # Check the inputs have matching filters, binning and SCI shapes.
+            try:
+                gt.check_inputs_match(ad1=ad, ad2=fringe)
+            except Errors.ToolboxError:
+                # If not, try to clip the fringe frame to the size of the
+                # science data
+                # For a GMOS example, this allows a full frame fringe to
+                # be used for a CCD2-only science frame. 
+                fringe = gt.clip_auxiliary_data(
+                    adinput=ad, aux=fringe, aux_type="cal")[0]
+
+                # Check again, but allow it to fail if they still don't match
+                gt.check_inputs_match(ad1=ad, ad2=fringe)
+
+
+            # Subtract the fringe from the science
+            ad = ad.sub(fringe)
+            
+            # Record the fringe file used
+            ad.phu_set_key_value("FRINGEIM", 
+                                 os.path.basename(fringe.filename),
+                                 comment=self.keyword_comments["FRINGEIM"])
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+            # Change the filename
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
+            
+            # Append the output AstroData object to the list 
+            # of output AstroData objects
+            adoutput_list.append(ad)
+            
+        # Report the list of output AstroData objects to the reduction context
+        rc.report_output(adoutput_list)
+        yield rc
+    
