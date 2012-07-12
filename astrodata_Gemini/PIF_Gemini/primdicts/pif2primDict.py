@@ -53,6 +53,8 @@
 "measureIQ"                        : {"module": "qa"},
 
 # register
+"correctWCSToReferenceCatalog"     : {"module": "register",
+                                      "pep8name": "correct_wcs_to_reference_catalog"},
 "correctWCSToReferenceFrame"       : {"module": "register",
                                       "pep8name": "correct_wcs_to_reference_frame"},
 "determineAstrometricSolution"     : {"module": "register"},
