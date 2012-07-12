@@ -1,7 +1,4 @@
-
-
 #Copyright Jon Berg , turtlemeat.com
-
 import string,cgi,time
 from os import curdir, sep
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
@@ -17,6 +14,22 @@ from astrodata import AstroData
 from SocketServer import ThreadingMixIn
 from xml.dom import minidom
 
+class PRec():
+    _buff = ""
+    uri = "localhost:8777"
+    method = "GET"
+    def __init__(self, pdict = None, method="GET"):
+        self._pdict = pdict
+        self.method = method
+        
+    def write(self, string):
+                self._buff+=string
+    def read(self):
+        return self._pdict
+        
+    def log_error(self, msg):
+        print "PRec:log_error:", msg
+                 
 def flattenParms(parms):
     for parmkey in parms:
         if (        hasattr(parms[parmkey],"__getitem__") 
@@ -59,78 +72,6 @@ try:
     from fitsstore.GeminiMetadataUtils import *
 except:
     print "Cannot import GeminiMetadataUtils from FITSSTORE"
-  
-def getselection(things):
-  import apachehandler
-  return apachehandler.getselection(things)
-  
-  # this takes a list of things from the URL, and returns a
-  # selection hash that is used by the html generators
-  selection = {}
-  while(len(things)):
-    thing = things.pop(0)
-    recognised=False
-    if(gemini_date(thing)):
-      selection['date']=gemini_date(thing)
-      recognised=True
-    if(gemini_daterange(thing)):
-      selection['daterange']=gemini_daterange(thing)
-      recognised=True
-    gp=GeminiProject(thing)
-    if(gp.progid):
-      selection['progid']=thing
-      recognised=True
-    go=GeminiObservation(thing)
-    if(go.obsid):
-      selection['obsid']=thing
-      recognised=True
-    gdl=GeminiDataLabel(thing)
-    if(gdl.datalabel):
-      selection['datalab']=thing
-      recognised=True
-    if(gemini_instrument(thing, gmos=True)):
-      selection['inst']=gemini_instrument(thing, gmos=True)
-      recognised=True
-    if(gemini_fitsfilename(thing)):
-      selection['filename'] = gemini_fitsfilename(thing)
-      recognised=True
-    if(gemini_obstype(thing)):
-      selection['obstype']=gemini_obstype(thing)
-      recognised=True
-    if(gemini_obsclass(thing)):
-      selection['obsclass']=gemini_obsclass(thing)
-      recognised=True
-    if(gemini_caltype(thing)):
-      selection['caltype']=gemini_caltype(thing)
-      recognised=True
-    if(gmos_gratingname(thing)):
-      selection['gmos_grating']=gmos_gratingname(thing)
-      recognised=True
-    if(gmos_fpmask(thing)):
-      selection['gmos_fpmask']=gmos_fpmask(thing)
-      recognised=True
-    if(thing=='warnings' or thing=='missing' or thing=='requires' or thing=='takenow'):
-      selection['caloption']=thing
-      recognised=True
-    if(thing=='imaging' or thing=='Imaging'):
-      selection['spectroscopy']=False
-      recognised=True
-    if(thing=='spectroscopy' or thing=='Spectroscopy'):
-      selection['spectroscopy']=True
-      recognised=True
-    if(thing=='Pass' or thing=='Usable' or thing=='Fail' or thing=='Win'):
-      selection['qastate']=thing
-      recognised=True
-    if(thing=='AO' or thing=='NOTAO'):
-      selection['ao']=thing
-      recognised=True
-
-    if(not recognised):
-      if('notrecognised' in selection):
-        selection['notrecognised'] += " "+thing
-      else:
-        selection['notrecognised'] = thing
-  return selection
 
 class PPWState(object):
     dataSpider = None
@@ -319,33 +260,39 @@ class MyHandler(BaseHTTPRequestHandler):
                 return
              
             if parms["path"].startswith("/summary"):
-                import searcher
-                DEBSUM= False
+                from fitsstore.FitsStorageWebSummary.Summary import summary
+                from fitsstore.FitsStorageWebSummary.Selection import getselection
                 
-                #break down path
-                things = parms["path"].split("/")
-                if DEBSUM:
-                    print "prsq185:", repr(things)
-                things = things[2:]
-                if DEBSUM:
-                    print "prsq187:",repr(things)
-                selection = getselection(things)
-                if DEBSUM:
-                    print "psrw188: %s\n" % repr(selection)*20
-               
-                flattenParms(parms)
-                if DEBSUM:
-                    print "psrw194: %s" % repr(parms)
-                parms.update(selection)
-                if DEBSUM:
-                    print "psrw196: %s" % repr(parms)
+                selection = getselection({})
                 
-                buff = searcher.summary(parms)
+                rec =  PRec()
+                summary(rec, "summary", selection, [], links=False)
+                buff = rec._buff
                 self.send_response(200)
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
                 self.wfile.write(buff)
                 return
+                
+            if parms["path"].startswith("/calmgr"):
+                from FitsStorageWebSummary.Selection import getselection
+                from FitsStorageWebSummary.CalMGR import calmgr
+                things = parms["path"].split("/")[2:]
+                # print "ppw311:"+ repr(things)
+                self.send_response(200)
+                self.send_header('Content-type',	'text/xml')
+                self.end_headers()
+                
+                # Parse the rest of the URL.
+                selection=getselection(things)
+            
+                # If we want other arguments like order by
+                # we should parse them here
+                req = PRec()
+                retval = calmgr(req, selection)
+                print "-------\n"*3,"ppw259:", req._buff
+                self.wfile.write(req._buff)
+                return 
                 
             if parms["path"] == "/calsearch.xml":
                 import searcher
@@ -886,6 +833,34 @@ class MyHandler(BaseHTTPRequestHandler):
      
 
     def do_POST(self):
+        global webserverdone
+        parms = parsepath(self.path)
+        vlen = int(self.headers["Content-Length"])
+        head = self.rfile.read(vlen)
+        pdict = head
+        
+        # print("PPW300:"+head)
+
+        if parms["path"].startswith("/calmgr"):
+                from FitsStorageWebSummary.Selection import getselection
+                from FitsStorageWebSummary.CalMGR import calmgr
+                things = parms["path"].split("/")[2:-1]
+                print "ppwDOPOST:"+ repr(things)
+                self.send_response(200)
+                self.send_header('Content-type',	'text/xml')
+                self.end_headers()
+                
+                # Parse the rest of the URL.
+                selection=getselection(things)
+            
+                # If we want other arguments like order by
+                # we should parse them here
+                # print "PPW820:"+repr(pdict)
+                req = PRec(pdict=pdict, method="POST")
+                retval = calmgr(req, selection)
+                print "ppw824::::"*3, req._buff                
+                self.wfile.write(req._buff)
+                return 
         global rootnode
         try:
             ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))

@@ -7,6 +7,7 @@ from astrodata.adutils import logutils
 import inspect
 import urllib2 #(to get httperror)
 from usercalibrationservice import user_cal_service
+import pprint
 
 log = logutils.get_logger(__name__)
 
@@ -506,17 +507,20 @@ def command_clause(ro, coi):
                     prs = Proxies.PRSProxy.get_adcc()
                     
                 if usePRS:
-                    #print "RO404:", repr(rq.as_dict())
+                    # print "RO484:", pprint.pformat(rq.as_dict()), user_cal_service
                     try:
                         if user_cal_service:
                             calurl = user_cal_service.get_calibration(caltype = rq.caltype)
+                            # print "488: calurl", repr(calurl)
                             #if calname:
                             #    return calname
                         if calurl == None:
+                            # print "RO492", repr(rq)
                             calurl,calmd5 = prs.calibration_search( rq )
                             # print "RO475:", calurl, calmd5
                     except:
                         calurl = None
+                        raise
                         
                 if calurl == None:
                     log.warning('No '+str(typ)+' calibration file found for '+\
@@ -527,12 +531,13 @@ def command_clause(ro, coi):
                     #break
                     continue
                 log.info("found calibration (url): " + calurl)
-                #print "RO393:", calurl
                 if calurl.startswith("file://"):
                     calfile = calurl[7:]
                     calurl = calfile
                 else:
                     calfile = None
+                
+                print "RO393:", calurl, calfile
                 
                 
                 msg += 'A suitable %s found:\n' %(str(typ))

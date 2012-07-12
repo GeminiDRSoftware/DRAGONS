@@ -5,6 +5,7 @@ from astrodata import Lookups
 
 from xml.dom import minidom
 import exceptions
+import pprint
 
 calurldict = Lookups.get_lookup_table("Gemini/calurl_dict","calurl_dict")
 
@@ -69,13 +70,21 @@ def upload_calibration(filename):
 def calibration_search(rq, fullResult = False):
     import urllib, urllib2
     print "\nppu68: calibration_search\n"
-    from xmlrpclib import DateTime 
+    from xmlrpclib import DateTime
+    import datetime
     
     #if "ut_datetime" in rq:
     #    rq["ut_datetime"] = str(rq["ut_datetime"])
     #if not fss.is_setup():
     #    return None
-    print "ppu77:" + repr(rq)
+    if "descriptors" in rq and "ut_datetime" in rq["descriptors"]:
+        utc = rq["descriptors"]["ut_datetime"]
+        pyutc = datetime.datetime.strptime(utc.value, "%Y%m%dT%H:%M:%S")
+        print "ppu83",pyutc
+        rq["descriptors"].update({"ut_datetime":pyutc} )
+    
+    
+    
     if "source" not in rq:
         source = "central"
     else:
@@ -93,23 +102,22 @@ def calibration_search(rq, fullResult = False):
     print "ppu112:", source
     if source == 'local' or (rqurl == None and source=="all"):
         rqurl = LOCALCALMGR % { "httpport": 8777,
-                                "caltype":CALTYPEDICT[rq['caltype']],
+                                "caltype":  CALTYPEDICT[rq['caltype']],
                                 } # "tokenstr":tokenstr}
         print "ppu118: LOCAL SEARCH: rqurl is "+ rqurl
 
-    if "?" in rqurl:
-        rqurl = rqurl+"&filename=%s"%rq["filename"]
-    else:
-        rqurl = rqurl+"/filename=%s"%rq["filename"]
-    print "prs100:", rqurl
+    rqurl = rqurl+"/%s"%rq["filename"]
+    # print "prs100:", rqurl
     ### send request
     sequence = [("descriptors", rq["descriptors"]), ("types", rq["types"])]
     postdata = urllib.urlencode(sequence)
     try:
-        # print "ppu96: postdata",repr(postdata)
+        # print "ppu106:", repr(sequence)
+        # print "ppu107:", pprint.pformat(rq["descriptors"])
+        # print "ppu107: postdata",repr(postdata)
         calRQ = urllib2.Request(rqurl)
         if source == "local":
-            u = urllib2.urlopen(calRQ) #, postdata)
+            u = urllib2.urlopen(calRQ, postdata)
         else:
             u = urllib2.urlopen(calRQ, postdata)
             
@@ -119,7 +127,7 @@ def calibration_search(rq, fullResult = False):
         import traceback
         traceback.print_exc()
     #response = urllib.urlopen(rqurl).read()
-    print "prs129:", response
+    # print "prs129:", response
     if fullResult:
         return response
     dom = minidom.parseString(response)

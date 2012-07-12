@@ -19,6 +19,7 @@ spaces = {  "descriptors":"descriptors",
             }
 RECIPEMARKER = "RECIPES_"
 LOOKUPDIRNAME = "lookups"
+PIFMARKER = "PIF_"
 CALCIFACEMARKER = "CalculatorInterface(.*).py$"
 DDLISTMARKER    = "DescriptorsList(.*).py"
 cs = None
@@ -179,6 +180,13 @@ class ConfigSpace(object):
                                             if os.path.isdir(fullpath):
                                                 # then this is one of the config space directories
                                                 adconfdirs.append(fullpath)
+                                        elif subsubpath.startswith(PIFMARKER):
+                                            pifdir = os.path.join(path, subpath, subsubpath)
+                                            # @@note: THIS IS ENTERED TWICE... DESCRIP AND TYPES?  SHOULDN'T BE                                            
+                                            # print "cs185:", pifdir
+                                            if pifdir not in sys.path:
+                                                sys.path.append(pifdir)
+                                            
                             else:
                                 pass # print ""
                             

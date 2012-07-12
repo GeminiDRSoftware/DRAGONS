@@ -7,7 +7,7 @@ from ConfigSpace import config_walk
 # some common defines mainly for Structure Definition Modules
 # these are standard strings, these variable save typing quotes
 
-arrayBy = "arrayBy"
+array_by = "array_by"
 optional = "optional"
 retain = "retain"
 structure = "structure"
@@ -58,15 +58,20 @@ class Part(object):
     #: AstroData instance 
     #: into which it is projected.
     struct_name = None
+    
     #: The instance of the Structure or ExtID instance at this point in 
     #: the hierarchy.
     struct_inst = None   
+    
     #: The string name of the struct_class at this point in the structure.
     struct_class = None
+    
     #: A string name of the header variable use to array this part.
     array_by = None
+    
     #: A boolean indicating if this part is required or not
     required = True
+    
     #: Either None or a dictionary of header requirements inherited from 
     #: up the hierarchy
     other_reqs = None # requirements given by superstructure
