@@ -35,6 +35,7 @@ dqflag = objcat.data.field("IMAFLAGS_ISO")
 
 # set mag to None where we don't want to use the object
 mag = np.where((mag==-999), None, mag)
+mag = np.where((mag==99), None, mag)
 mag = np.where((refmag==-999), None, mag)
 mag = np.where((np.isnan(refmag)), None, mag)
 mag = np.where((sxflag==0), mag, None)
@@ -97,8 +98,8 @@ plt.ylabel('Zeropoint')
 
 # Plot the zp histogram
 plt.subplot(2,2,3)
-plt.hist(zp, bins=20)
-plt.hist(zp_trim, bins=20, range=(zp.min(), zp.max()))
+plt.hist(zp, bins=40)
+plt.hist(zp_trim, bins=40, range=(zp.min(), zp.max()))
 plt.axvline(x=nzp)
 plt.xlabel('Zeropoint')
 plt.ylabel('Number')
@@ -109,8 +110,8 @@ zp_trim -= nzp
 zp *=-1
 zp_trim *= -1
 plt.subplot(2,2,4)
-plt.hist(zp, bins=20)
-plt.hist(zp_trim, bins=20, range=(zp.min(), zp.max()))
+plt.hist(zp, bins=40)
+plt.hist(zp_trim, bins=40, range=(zp.min(), zp.max()))
 plt.xlabel('Cloud Extinction')
 plt.ylabel('Number')
 

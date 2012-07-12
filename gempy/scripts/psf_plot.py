@@ -69,28 +69,38 @@ for y in range(int(yc)-size, int(yc)+size):
     dy = (float(y)+0.5) - yc
     d = math.sqrt(dx*dx + dy*dy)
     rpr.append(d)
-    rpv.append(sci.data[y, x])
+    # And record the flux above the background
+    rpv.append(sci.data[y, x] - bg)
 
-maxflux = np.max(rpv) - bg
+maxflux = np.max(rpv)
 halfflux = maxflux/2.0
 
-sort = np.argsort(rpr)
+# Sort into flux value order
+sort = np.argsort(rpv)
 
-i=0
-flux=maxflux
-hwhm=0
-while (flux > halfflux):
-  flux=rpv[sort[i]]-bg
-  hwhm = rpr[sort[i]]
-  i+=1
+# Walk through the flux values and find the index in the sort array of the point closest to half flux.
+halfindex = None
+best_d = maxflux
+for i in range(len(rpv)):
+  d = abs(rpv[sort[i]] - halfflux)
+  if(d<best_d):
+    best_d = d
+    halfindex = i
+
+# Find the average radius of the num_either_side=3 points either side of that in flux.
+num_either_side=5
+sum = 0
+for i in range(halfindex-num_either_side, halfindex+num_either_side+1):
+  sum += rpr[sort[i]]
+hwhm = sum / float(num_either_side*2+1)
 
 print "HWHM: %.2f   FWHM: %.2f" % (hwhm, hwhm*2.0)
 
 plt.subplot(1,3,2)
 plt.scatter(rpr, rpv)
-plt.axhline(y=maxflux+bg)
-plt.axhline(y=halfflux+bg)
-plt.axhline(y=bg)
+plt.axhline(y=maxflux)
+plt.axhline(y=halfflux)
+plt.axhline(y=0)
 plt.axvline(x=hwhm)
 plt.grid(True)
 plt.xlim(0,15)
@@ -114,7 +124,7 @@ flux=0
 i=0
 while (flux < halfflux):
   #print "adding in r=%.2f v=%.1f" % (rp[0][sort[i]], rp[1][sort[i]]-bg)
-  flux+= rp[1][sort[i]]-bg
+  flux+= rp[1][sort[i]]
   i+=1
 
 ee50r = rp[0][sort[i]]
@@ -127,7 +137,7 @@ eev=[]
 flux=0
 for i in range(len(sort)):
   eer.append(rp[0][sort[i]])
-  flux += rp[1][sort[i]]-bg
+  flux += rp[1][sort[i]]
   eev.append(flux)
 
 # plot encircled energy
