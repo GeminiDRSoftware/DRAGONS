@@ -537,7 +537,7 @@ def command_clause(ro, coi):
                 else:
                     calfile = None
                 
-                print "RO393:", calurl, calfile
+                #print "RO393:", calurl, calfile
                 
                 
                 msg += 'A suitable %s found:\n' %(str(typ))
