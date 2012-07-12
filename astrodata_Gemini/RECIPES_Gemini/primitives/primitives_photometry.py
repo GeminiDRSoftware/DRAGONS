@@ -1350,10 +1350,10 @@ def _test_sextractor_version():
     return right_version
 
 def _profile_sources(ad):
-    import datetime
     
     #print 'profiling'
-    now = datetime.datetime.now()
+    #import datetime
+    #now = datetime.datetime.now()
     for sciext in ad["SCI"]:
         extver = sciext.extver()
         objcat = ad["OBJCAT",extver]
@@ -1403,20 +1403,36 @@ def _profile_sources(ad):
             rpr = dist.flatten()
             rpv = stamp.flatten() - bg
     
-            # Sort by the radius
-            sort_order = np.argsort(rpr) 
+            # Sort by the flux
+            sort_order = np.argsort(rpv) 
             radius = rpr[sort_order]
             flux = rpv[sort_order]
 
-            # Find the first point where the flux falls below half
-            maxflux = np.max(flux)
+            # Find the distance (in flux) of each point from the half-flux
+            maxflux = flux[-1]
             halfflux = maxflux/2.0
-            first_halfflux = np.where(flux<=halfflux)[0]
-            if first_halfflux.size<=0:
-                # Half flux not found, return the last radius
-                hwhm = radius[-1]
-            else:
-                hwhm = radius[first_halfflux[0]]
+            flux_dist = np.abs(flux - halfflux)
+
+            # Find the point that is closest to the half-flux
+            closest_ind = np.argmin(flux_dist)
+
+            # Average the radius of this point with the five points higher
+            # and lower in flux
+            num_either_side = 5
+            min_pt = closest_ind-num_either_side
+            max_pt = closest_ind+num_either_side+1
+            if min_pt<0:
+                min_pt = 0
+            if max_pt>radius.size:
+                max_pt = radius.size
+            nearest_pts = radius[min_pt:max_pt]
+            hwhm = np.mean(nearest_pts)
+
+
+            # Resort by radius
+            sort_order = np.argsort(rpr) 
+            radius = rpr[sort_order]
+            flux = rpv[sort_order]
 
             # Find the first radius that encircles half the total flux
             sumflux = np.cumsum(flux)
@@ -1439,7 +1455,7 @@ def _profile_sources(ad):
         #print "  mean FWHM %.2f" % np.mean(fwhm_array[fwhm_array!=-999])
         #print "  mean E50D %.2f" % np.mean(e50d_array[e50d_array!=-999])
 
-    elap = datetime.datetime.now() - now
+    #elap = datetime.datetime.now() - now
     #print "time  %.2f s" % ((elap.seconds*10**6 + elap.microseconds)/10.**6)
 
     return ad
