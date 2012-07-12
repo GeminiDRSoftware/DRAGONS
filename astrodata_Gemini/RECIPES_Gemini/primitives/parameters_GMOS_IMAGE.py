@@ -82,6 +82,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "showParameters":{
+    "suffix":{
+        "default"       : "_scafaasled",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "stackFlats":{
     "suffix":{
         "default"       : "_stack",

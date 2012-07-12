@@ -1,5 +1,5 @@
 # Structure Definitions, imported elsewhere.
-from Structures import *
+from astrodata.Structures import *
 
 class ExtMDF(ExtID):
     headReqs= { "EXTNAME":"MDF"}
