@@ -12,6 +12,8 @@ from gempy import gemini_tools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from primitives_GEMINI import GEMINIPrimitives
+from gempy.eti.gireduceeti import GireduceETI
+import time
 
 class GMOSPrimitives(GEMINIPrimitives):
     """
@@ -666,6 +668,74 @@ class GMOSPrimitives(GEMINIPrimitives):
     
     def subtractOverscan(self,rc):
         """
+        This primitive uses External Task Interface to gireduce to subtract 
+        the overscan from the input images.
+        
+        Variance and DQ planes, if they exist, will be saved and restored
+        after gireduce has been run.
+        
+        NOTE:
+        The inputs to this function MUST be prepared.
+        
+        FOR FUTURE
+        This function has many GMOS dependencies that would be great to work out
+        so that this could be made a more general function (say at the Gemini
+        level). In the future the parameters can be looked into and the CL 
+        script can be upgraded to handle things like row based overscan
+        calculations/fitting/modeling... vs the column based used right now, 
+        add the model, nbiascontam,... params to the functions inputs so the 
+        user can choose them for themselves.
+        
+        :param overscan_section: overscan_section parameter of format 
+                   '[x1:x2,y1:y2],[x1:x2,y1:y2],[x1:x2,y1:y2]'
+        :type overscan_section: string. 
+                   eg: '[2:25,1:2304],[2:25,1:2304],[1032:1055,1:2304]' 
+                   is ideal for 2x2 GMOS data. Default is None, which
+                   causes default nbiascontam=4 columns to be used.
+        """
+        log = logutils.get_logger(__name__)
+        log.debug(gt.log_message("primitive", "subtractOverscan", "starting"))
+        adinput = rc.get_inputs_as_astrodata()
+        adoutput_list = []
+        timestamp_key = self.timestamp_keys["subtractOverscan"]
+        
+        for ad in adinput:
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by subtractOverscan" \
+                            % (ad.filename))
+                adoutput_list.append(ad)
+                continue
+
+            var_ext = ad["VAR"]
+            dq_ext = ad["DQ"]
+            objcat = ad["OBJCAT"]
+            refcat = ad["REFCAT"]
+            objmask = ad["OBJMASK"]
+            
+            # Instantiate ETI and then run the task
+            gireduce_task = GireduceETI(rc,ad)
+            adout = gireduce_task.run()
+            
+            if dq_ext is not None:
+                adout.append(dq_ext)
+            if var_ext is not None:
+                adout.append(var_ext)
+            if objcat is not None:
+                adout.append(objcat)
+            if refcat is not None:
+                adout.append(refcat)
+            if objmask is not None:
+                adout.append(objmask)
+            
+            gt.mark_history(adinput=adout, keyword=timestamp_key)
+            adoutput_list.append(adout)
+        
+        rc.report_output(adoutput_list)
+        yield rc
+   
+    def subtractOverscanDEPRACATED(self,rc):
+        """
         This primitive uses the CL script gireduce to subtract the overscan 
         from the input images.
         
@@ -783,6 +853,8 @@ class GMOSPrimitives(GEMINIPrimitives):
             log.debug("Calling the gireduce CL script for inputs "+
                       clm.imageInsFiles(type="string"))
             
+            #from pprint import pprint
+            #pprint(clParamsDict)
             gemini.gmos.gireduce(**clParamsDict)
             
             if gemini.gmos.gireduce.status:
@@ -826,7 +898,10 @@ class GMOSPrimitives(GEMINIPrimitives):
         rc.report_output(adoutput_list)
         
         yield rc
-    
+   
+
+
+
     def tileArrays(self,rc):
         
         # Instantiate the log
