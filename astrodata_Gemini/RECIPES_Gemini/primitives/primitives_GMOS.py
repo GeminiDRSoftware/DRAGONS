@@ -13,6 +13,7 @@ from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from primitives_GEMINI import GEMINIPrimitives
 from gempy.eti.gireduceeti import GireduceETI
+from gempy.eti.gmosaiceti import GmosaicETI
 import time
 
 class GMOSPrimitives(GEMINIPrimitives):
@@ -28,6 +29,166 @@ class GMOSPrimitives(GEMINIPrimitives):
         return rc
     
     def mosaicDetectors(self,rc):
+        """
+        This primitive will mosaic the SCI frames of the input images, along
+        with the VAR and DQ frames if they exist. It uses the the ETI and pyraf
+        to call gmosaic from the gemini IRAF package.
+        
+        :param tile: tile images instead of mosaic
+        :type tile: Python boolean (True/False), default is False
+        
+        :param interpolate_gaps: Interpolate across gaps?
+        :type interpolate_gaps: Python boolean (True/False)
+
+        :param interpolator: Type of interpolation function to use accross
+                             the chip gaps. Options: 'linear', 'nearest',
+                             'poly3', 'poly5', 'spine3', 'sinc'
+        :type interpolator: string
+        """
+        log = logutils.get_logger(__name__)
+        log.debug(gt.log_message("primitive", "mosaicDetectors", "starting"))
+        timestamp_key = self.timestamp_keys["mosaicDetectors"]
+        adoutput_list = []
+        
+        for ad in rc.get_inputs_as_astrodata():
+            
+            # Validate Data
+            if (ad.phu_get_key_value('GPREPARE')==None) and \
+                (ad.phu_get_key_value('PREPARE')==None):
+                raise Errors.InputError("%s must be prepared" % ad.filename)
+
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by mosaicDetectors" \
+                            % (ad.filename))
+                adoutput_list.append(ad)
+                continue
+            if ad.count_exts("SCI") == 1:
+                log.stdinfo("No changes will be made to %s, since it " \
+                            "contains only one extension" % (ad.filename))
+                adoutput_list.append(ad)
+                continue
+            
+            # Save keywords for restoration after gmosaic
+            bunit = None
+            overscan = []
+            ampname = []
+            for ext in ad["SCI"]:
+                ext_bunit = ext.get_key_value("BUNIT")
+                if bunit is None:
+                    bunit = ext_bunit
+                else:
+                    if ext_bunit!=bunit:
+                        raise Errors.ScienceError("BUNIT needs to be the" +
+                                                  "same for all extensions")
+                ext_overscan = ext.get_key_value("OVERSCAN")
+                if ext_overscan is not None:
+                    overscan.append(ext_overscan)
+
+                ext_ampname = ext.get_key_value("AMPNAME")
+                if ext_ampname is not None:
+                    ampname.append(ext_ampname)
+
+            if len(ampname)>0:
+                all_ampname = ",".join(ampname)
+            else:
+                all_ampname = None
+
+            if len(overscan)>0:
+                avg_overscan = np.mean(overscan)
+            else:
+                avg_overscan = None
+
+            # FIXME - this assumes extensions are in order
+            old_detsec = ad["SCI",1].detector_section().as_list()
+
+            # Instantiate ETI and then run the task
+            gmosaic_task = GmosaicETI(rc,ad)
+            ad_out = gmosaic_task.run()
+
+            # Get new DATASEC keyword, using the full shape
+            data_shape = ad_out["SCI",1].data.shape
+            new_datasec = "[1:%i,1:%i]" % (data_shape[1], data_shape[0])
+
+            # Get new DETSEC keyword
+            xbin = ad_out.detector_x_bin()
+            if xbin is not None:
+                unbin_width = data_shape[1] * xbin
+            else:
+                unbin_width = data_shape[1]
+            if old_detsec is not None:
+                new_detsec = "[%i:%i,%i:%i]" % (old_detsec[0]+1,
+                                                old_detsec[0]+unbin_width,
+                                                old_detsec[2]+1,old_detsec[3])
+            else:
+                new_detsec = ""
+
+            # To avoid pyfits error truncate long comments
+            if all_ampname is not None:
+                ampcomment = self.keyword_comments["AMPNAME"]
+                if len(all_ampname)>=65:
+                    ampcomment = ""
+                else:
+                    ampcomment = ampcomment[0:65-len(all_ampname)]
+            else:
+                ampcomment = ""
+
+            # Restore keywords to science extension header
+            for ext in ad_out["SCI"]:
+                if bunit is not None:
+                    ext.set_key_value("BUNIT",bunit,
+                                      comment=self.keyword_comments["BUNIT"])
+                if avg_overscan is not None:
+                    ext.set_key_value("OVERSCAN",avg_overscan,
+                                      comment=self.keyword_comments["OVERSCAN"])
+
+                if all_ampname is not None:
+                    ext.set_key_value("AMPNAME",all_ampname,
+                                      comment=ampcomment)
+
+                ext.set_key_value("DETSEC",new_detsec,
+                                  comment=self.keyword_comments["DETSEC"])
+
+                ext.set_key_value("CCDSEC",new_detsec,
+                                  comment=self.keyword_comments["CCDSEC"])
+
+                ext.set_key_value("DATASEC",new_datasec,
+                                  comment=self.keyword_comments["DATASEC"])
+            if ad_out["VAR"] is not None:
+                for ext in ad_out["VAR"]:
+                    if bunit is not None:
+                        ext.set_key_value("BUNIT","%s*%s" % (bunit,bunit),
+                                        comment=self.keyword_comments["BUNIT"])
+                    if all_ampname is not None:
+                        ext.set_key_value("AMPNAME",all_ampname,
+                                          comment=ampcomment)
+                    ext.set_key_value("DETSEC",new_detsec,
+                                      comment=self.keyword_comments["DETSEC"])
+                    ext.set_key_value("CCDSEC",new_detsec,
+                                      comment=self.keyword_comments["CCDSEC"])
+                    ext.set_key_value("DATASEC",new_datasec,
+                                      comment=self.keyword_comments["DATASEC"])
+
+            # Change type of DQ plane back to int16 (gmosaic sets float32)
+            # , restore DETSEC, DATASEC, CCDSEC, and replace any -1 values with 1 
+            # (gmosaic marks chip gaps with -1 if fixpix=no and clean=no)
+            if ad_out["DQ"] is not None:
+                for ext in ad_out["DQ"]:
+                    ext.data = ext.data.astype(np.int16)
+                    ext.data = np.where(ext.data<0,1,ext.data)
+                    ext.set_key_value("DETSEC",new_detsec,
+                                      comment=self.keyword_comments["DETSEC"])
+                    ext.set_key_value("CCDSEC",new_detsec,
+                                      comment=self.keyword_comments["CCDSEC"])
+                    ext.set_key_value("DATASEC",new_datasec,
+                                      comment=self.keyword_comments["DATASEC"])
+
+            gt.mark_history(adinput=ad_out, keyword=timestamp_key)
+            adoutput_list.append(ad_out)
+        rc.report_output(adoutput_list)
+        yield rc
+    
+    def mosaicDetectorsDEPRECATED(self,rc):
         """
         This primitive will mosaic the SCI frames of the input images, along
         with the VAR and DQ frames if they exist.
@@ -700,6 +861,11 @@ class GMOSPrimitives(GEMINIPrimitives):
         timestamp_key = self.timestamp_keys["subtractOverscan"]
         
         for ad in adinput:
+            
+            # Validate Data
+            if (ad.phu_get_key_value('GPREPARE')==None) and \
+                (ad.phu_get_key_value('PREPARE')==None):
+                raise Errors.InputError("%s must be prepared" % ad.filename)
             if ad.phu_get_key_value(timestamp_key):
                 log.warning("No changes will be made to %s, since it has " \
                             "already been processed by subtractOverscan" \
@@ -734,7 +900,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         rc.report_output(adoutput_list)
         yield rc
    
-    def subtractOverscanDEPRACATED(self,rc):
+    def subtractOverscanDEPRECATED(self,rc):
         """
         This primitive uses the CL script gireduce to subtract the overscan 
         from the input images.
