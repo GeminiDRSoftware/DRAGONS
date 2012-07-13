@@ -17,6 +17,8 @@ catx = objcat.data.field("X_IMAGE")
 caty = objcat.data.field("Y_IMAGE")
 catfwhm = objcat.data.field("FWHM_IMAGE")
 catbg = objcat.data.field("BACKGROUND")
+cattotalflux = objcat.data.field("FLUX_AUTO")
+catmaxflux = objcat.data.field("FLUX_MAX")
 
 sci = ad['SCI']
 
@@ -25,6 +27,8 @@ i -= 1
 xc = catx[i]
 yc = caty[i]
 bg = catbg[i]
+totalflux = cattotalflux[i]
+maxflux = catmaxflux[i]
 
 print "X, Y:  %.2f, %.2f" % (xc, yc)
 
@@ -72,27 +76,29 @@ for y in range(int(yc)-size, int(yc)+size):
     # And record the flux above the background
     rpv.append(sci.data[y, x] - bg)
 
-maxflux = np.max(rpv)
 halfflux = maxflux/2.0
 
-# Sort into flux value order
-sort = np.argsort(rpv)
+# Sort into radius value order
+sort = np.argsort(rpr)
 
-# Walk through the flux values and find the index in the sort array of the point closest to half flux.
-halfindex = None
-best_d = maxflux
-for i in range(len(rpv)):
-  d = abs(rpv[sort[i]] - halfflux)
-  if(d<best_d):
-    best_d = d
-    halfindex = i
+# Walk through the values and find the first point below the half flux and 
+# the last point above the half flux preceeding 10 points below it...
+inner = None
+outer = None
+below = 0
+for i in range(len(rpr)):
+  if((rpv[sort[i]] < halfflux) and inner is None):
+    inner = rpr[sort[i]]
+    print "inner: %.2f" % rpr[sort[i]]
+  if(inner is not None and outer is None and (rpv[sort[i]] > halfflux)):
+    outer = rpr[sort[i]]
+    print "outer: %.2f" % rpr[sort[i]]
+  if(outer is not None and (rpv[sort[i]] < halfflux)):
+    below += 1
+  if(below ==10):
+    break
 
-# Find the average radius of the num_either_side=3 points either side of that in flux.
-num_either_side=5
-sum = 0
-for i in range(halfindex-num_either_side, halfindex+num_either_side+1):
-  sum += rpr[sort[i]]
-hwhm = sum / float(num_either_side*2+1)
+hwhm = (inner + outer) / 2.0
 
 print "HWHM: %.2f   FWHM: %.2f" % (hwhm, hwhm*2.0)
 
@@ -109,7 +115,6 @@ plt.ylabel('counts')
 
 # OK, now calculate the total flux
 bgsub = stamp - bg
-totalflux = np.sum(bgsub)
 
 # Now make the radial profile into a 2d numpy array
 rp = np.array([rpr, rpv], dtype=np.float32)
