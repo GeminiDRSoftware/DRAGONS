@@ -163,6 +163,22 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "subtractOverscanDEPRACATED":{
+    "suffix":{
+        "default"       : "_overscanSubtracted",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "overscan_section":{
+        "default"       : None,
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "tileArrays":{
     "suffix":{
         "default"       : "_tiled",
