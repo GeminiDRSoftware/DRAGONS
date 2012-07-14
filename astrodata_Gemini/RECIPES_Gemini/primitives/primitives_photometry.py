@@ -1364,6 +1364,8 @@ def _profile_sources(ad):
         caty = objcat.data.field("Y_IMAGE")
         catfwhm = objcat.data.field("FWHM_IMAGE")
         catbg = objcat.data.field("BACKGROUND")
+        cattotalflux = objcat.data.field("FLUX_AUTO")
+        catmaxflux = objcat.data.field("FLUX_MAX")
         data = sciext.data
         stamp_size = 10
 
@@ -1373,6 +1375,8 @@ def _profile_sources(ad):
             xc = catx[i]
             yc = caty[i]
             bg = catbg[i]
+            tf = cattotalflux[i]
+            mf = catmaxflux[i]
             
             xc -= 0.5
             yc -= 0.5
@@ -1403,31 +1407,34 @@ def _profile_sources(ad):
             rpr = dist.flatten()
             rpv = stamp.flatten() - bg
     
-            # Sort by the flux
-            sort_order = np.argsort(rpv) 
+            # Sort by the radius
+            sort_order = np.argsort(rpr) 
             radius = rpr[sort_order]
             flux = rpv[sort_order]
 
-            # Find the distance (in flux) of each point from the half-flux
-            maxflux = flux[-1]
-            halfflux = maxflux/2.0
-            flux_dist = np.abs(flux - halfflux)
-
-            # Find the point that is closest to the half-flux
-            closest_ind = np.argmin(flux_dist)
-
-            # Average the radius of this point with the five points higher
-            # and lower in flux
-            num_either_side = 5
-            min_pt = closest_ind-num_either_side
-            max_pt = closest_ind+num_either_side+1
-            if min_pt<0:
-                min_pt = 0
-            if max_pt>radius.size:
-                max_pt = radius.size
-            nearest_pts = radius[min_pt:max_pt]
-            hwhm = np.mean(nearest_pts)
-
+            # Find the first 10 points below the half-flux
+            halfflux = mf / 2.0
+            below = np.where(flux<=halfflux)[0]
+            if below.size>0:
+                if len(below)>=10:
+                    first_below = below[0:10]
+                else:
+                    first_below = below
+                inner = radius[first_below[0]]
+                if first_below[0]>0:
+                    min = first_below[0]-1
+                else:
+                    min = first_below[0]
+                nearest_r = radius[min:first_below[-1]]
+                nearest_f = flux[min:first_below[-1]]
+                possible_outer = nearest_r[nearest_f>=halfflux]
+                if possible_outer.size>0:
+                    outer = np.max(possible_outer)
+                    hwhm = (inner + outer) / 2.0
+                else:
+                    hwhm = None
+            else:
+                hwhm = None
 
             # Resort by radius
             sort_order = np.argsort(rpr) 
@@ -1436,16 +1443,21 @@ def _profile_sources(ad):
 
             # Find the first radius that encircles half the total flux
             sumflux = np.cumsum(flux)
-            totalflux = sumflux[-1]
-            halfflux = totalflux / 2.0
+            halfflux = tf / 2.0
             first_50pflux = np.where(sumflux>=halfflux)[0]
-            if first_50pflux.size<=0:
-                e50r = radius[-1]
-            else:
+            if first_50pflux.size>0:
                 e50r = radius[first_50pflux[0]]
+            else:
+                e50r = None
 
-            fwhm_list.append(hwhm*2.0)
-            e50d_list.append(e50r*2.0)
+            if hwhm is not None:
+                fwhm_list.append(hwhm*2.0)
+            else:
+                fwhm_list.append(-999)
+            if e50r is not None:
+                e50d_list.append(e50r*2.0)
+            else:
+                e50d_list.append(-999)
 
         fwhm_array = np.array(fwhm_list)
         e50d_array = np.array(e50d_list)
