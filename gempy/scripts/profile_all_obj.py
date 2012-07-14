@@ -4,7 +4,7 @@ import math
 import numpy as np
 from astrodata import AstroData
 
-def profile_numpy(data,xc,yc,bg,stamp_size=10):
+def profile_numpy(data,xc,yc,bg,tf,mf,stamp_size=10):
     
     # Check that there's enough room for a stamp
     sz = stamp_size
@@ -30,50 +30,48 @@ def profile_numpy(data,xc,yc,bg,stamp_size=10):
     rpr = dist.flatten()
     rpv = stamp.flatten() - bg
     
-    # Sort by the flux
-    sort_order = np.argsort(rpv) 
-    radius = rpr[sort_order]
-    flux = rpv[sort_order]
-
-    # Find the distance (in flux) of each point from the half-flux
-    maxflux = flux[-1]
-    halfflux = maxflux/2.0
-    flux_dist = np.abs(flux - halfflux)
-
-    # Find the point that is closest to the half-flux
-    closest_ind = np.argmin(flux_dist)
-
-    # Average the radius of this point with the five points higher and lower
-    # in flux
-    num_either_side = 5
-    min_pt = closest_ind-num_either_side
-    max_pt = closest_ind+num_either_side+1
-    if min_pt<0:
-        min_pt = 0
-    if max_pt>radius.size:
-        max_pt = radius.size
-    nearest_pts = radius[min_pt:max_pt]
-    hwhm = np.mean(nearest_pts)
-
-
-    # Resort by radius
+    # Sort by the radius
     sort_order = np.argsort(rpr) 
     radius = rpr[sort_order]
     flux = rpv[sort_order]
 
+    # Find the first 10 points below the half-flux
+    halfflux = mf / 2.0
+    below = np.where(flux<=halfflux)[0]
+    if below.size>0:
+        if len(below)>=10:
+            first_below = below[0:10]
+        else:
+            first_below = below
+        inner = radius[first_below[0]]
+        if first_below[0]>0:
+            min = first_below[0]-1
+        else:
+            min = first_below[0]
+        nearest_r = radius[min:first_below[-1]]
+        nearest_f = flux[min:first_below[-1]]
+        possible_outer = nearest_r[nearest_f>=halfflux]
+        if possible_outer.size>0:
+            outer = np.max(possible_outer)
+            hwhm = (inner + outer) / 2.0
+            print inner, outer
+        else:
+            hwhm = None
+    else:
+        hwhm = None
+
     # Find the first radius that encircles half the total flux
     sumflux = np.cumsum(flux)
-    totalflux = sumflux[-1]
-    halfflux = totalflux / 2.0
+    halfflux = tf / 2.0
     first_50pflux = np.where(sumflux>=halfflux)[0]
-    if first_50pflux.size<=0:
-        ee50r = radius[-1]
-    else:
+    if first_50pflux.size>0:
         ee50r = radius[first_50pflux[0]]
+    else:
+        ee50r = None
 
     return (hwhm, ee50r)
 
-def profile_loop(data,xc,yc,bg,sz):
+def profile_loop(data,xc,yc,bg,tf,mf,sz):
 
     # Check that there's enough room for a stamp
     if (int(yc)-sz<0 or int(xc)-sz<0 or
@@ -95,50 +93,45 @@ def profile_loop(data,xc,yc,bg,sz):
             rpr.append(d)
             rpv.append(data[y, x] - bg)
 
-    maxflux = np.max(rpv)
-    halfflux = maxflux/2.0
+    halfflux = mf/2.0
 
-    # Sort into flux value order
-    sort = np.argsort(rpv)
+    # Sort into radius value order
+    sort = np.argsort(rpr)
 
-    # Walk through the flux values and find the index in the
-    # sort array of the point closest to half flux.
-    halfindex = None
-    best_d = maxflux
-    for i in range(len(rpv)):
-        d = abs(rpv[sort[i]] - halfflux)
-        if(d<best_d):
-            best_d = d
-            halfindex = i
+    # Walk through the values and find the first point below the half flux and 
+    # the last point above the half flux preceeding 10 points below it...
+    inner = None
+    outer = None
+    below = 0
+    for i in range(len(rpr)):
+        if((rpv[sort[i]] <= halfflux) and inner is None):
+            inner = rpr[sort[i]]
+            #print "inner: %.2f" % rpr[sort[i]], i
 
-    # Find the average radius of the num_either_side=3 points
-    # either side of that in flux.
-    num_either_side=5
-    sum = 0
-    num = 0
-    nearest_pts = []
-    for i in range(halfindex-num_either_side, halfindex+num_either_side+1):
-        if i<0 or i>=len(sort):
-            continue
-        sum += rpr[sort[i]]
-        num += 1
-        nearest_pts.append(rpr[sort[i]])
-    hwhm = sum / num
+        if((below<10) and (rpv[sort[i]] >= halfflux)):
+            outer = rpr[sort[i]]
+            #print "outer: %.2f" % rpr[sort[i]]
+        if(rpv[sort[i]] < halfflux):
+            below += 1
+        if below>10:
+            break
 
-    # OK, now calculate the total flux
-    bgsub = stamp - bg
-    totalflux = np.sum(bgsub)
+    if inner is None or outer is None:
+        hwhm = None
+    else:
+        print inner, outer
+        hwhm = (inner + outer) / 2.0
 
     # Now make the radial profile into a 2d numpy array
     rp = np.array([rpr, rpv], dtype=np.float32)
     sort = np.argsort(rp[0])
 
-    halfflux = totalflux / 2.0
+    halfflux = tf / 2.0
 
     # Now step out through the rp until we get half the flux
     flux=0
     i=0
-    while (flux < halfflux):
+    while (flux < halfflux and i<len(rpr)):
       #print "adding in r=%.2f v=%.1f" % (rp[0][sort[i]], rp[1][sort[i]]-bg)
       flux+= rp[1][sort[i]]
       i+=1
@@ -158,6 +151,8 @@ catx = objcat.data.field("X_IMAGE")
 caty = objcat.data.field("Y_IMAGE")
 catfwhm = objcat.data.field("FWHM_IMAGE")
 catbg = objcat.data.field("BACKGROUND")
+cattotalflux = objcat.data.field("FLUX_AUTO")
+catmaxflux = objcat.data.field("FLUX_MAX")
 data = sci.data
 
 nobj = len(catx)
@@ -169,14 +164,18 @@ now = datetime.datetime.now()
 hwhm_list = []
 e50r_list = []
 for i in range(0,len(objcat.data)):
+    if i>20:
+        break
     xc = catx[i]
     yc = caty[i]
     bg = catbg[i]
+    tf = cattotalflux[i]
+    mf = catmaxflux[i]
 
     xc -= 0.5
     yc -= 0.5
 
-    hwhm,e50r = profile_numpy(data,xc,yc,bg)
+    hwhm,e50r = profile_numpy(data,xc,yc,bg,tf,mf)
     #print i,hwhm,e50r
     if (hwhm is not None and e50r is not None):
         hwhm_list.append(hwhm)
@@ -192,20 +191,25 @@ now = datetime.datetime.now()
 hwhm_list = []
 e50r_list = []
 for i in range(0,len(objcat.data)):
+    if i>20:
+        break
     xc = catx[i]
     yc = caty[i]
     bg = catbg[i]
+    tf = cattotalflux[i]
+    mf = catmaxflux[i]
 
     xc -= 0.5
     yc -= 0.5
 
     sz=10
 
-    hwhm,e50r = profile_loop(data,xc,yc,bg,sz)
+    hwhm,e50r = profile_loop(data,xc,yc,bg,tf,mf,sz)
     #print i,hwhm,e50r
     if (hwhm is not None and e50r is not None):
         hwhm_list.append(hwhm)
         e50r_list.append(e50r)
+
 print "  mean HWHM %.2f" % np.mean(hwhm_list)
 print "  mean E50R %.2f" % np.mean(e50r_list)
 elap = datetime.datetime.now() - now
