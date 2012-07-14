@@ -90,13 +90,11 @@ for i in range(len(rpr)):
   if((rpv[sort[i]] < halfflux) and inner is None):
     inner = rpr[sort[i]]
     print "inner: %.2f" % rpr[sort[i]]
-  if(inner is not None and outer is None and (rpv[sort[i]] > halfflux)):
+  if((below<10) and (rpv[sort[i]] > halfflux)):
     outer = rpr[sort[i]]
     print "outer: %.2f" % rpr[sort[i]]
-  if(outer is not None and (rpv[sort[i]] < halfflux)):
+  if(rpv[sort[i]] < halfflux):
     below += 1
-  if(below ==10):
-    break
 
 hwhm = (inner + outer) / 2.0
 
