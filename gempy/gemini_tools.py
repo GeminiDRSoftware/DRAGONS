@@ -800,10 +800,10 @@ def clip_sources(ad):
         x = objcat.data.field("X_IMAGE")
         y = objcat.data.field("Y_IMAGE")
 
-        fwhm_pix = objcat.data.field("FWHM_IMAGE")
-        fwhm_arcsec = objcat.data.field("FWHM_WORLD")
-        #fwhm_pix = objcat.data.field("PROFILE_FWHM")
-        #fwhm_arcsec = fwhm_pix * sciext.pixel_scale().as_pytype()
+        #fwhm_pix = objcat.data.field("FWHM_IMAGE")
+        #fwhm_arcsec = objcat.data.field("FWHM_WORLD")
+        fwhm_pix = objcat.data.field("PROFILE_FWHM")
+        fwhm_arcsec = fwhm_pix * sciext.pixel_scale().as_pytype()
 
         ellip = objcat.data.field("ELLIPTICITY")
         sxflag = objcat.data.field("FLAGS")
