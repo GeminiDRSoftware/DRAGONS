@@ -1413,6 +1413,8 @@ def _profile_sources(ad):
             flux = rpv[sort_order]
 
             # Find the first 10 points below the half-flux
+            # Average the radius of the first point below and
+            # the last point above the half-flux
             halfflux = mf / 2.0
             below = np.where(flux<=halfflux)[0]
             if below.size>0:
