@@ -99,7 +99,6 @@ def main():
 
         # Wait 1 second before looping again if working on the last file
         if last_index==len(today)-1:
-            print "(sleep)"
             time.sleep(1)
 
 
@@ -131,7 +130,6 @@ def verify_file(filepath):
                   fv[3]
             
         if not ok:
-            print "(sleep)"
             time.sleep(1)
 
     return ok
