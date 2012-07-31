@@ -546,6 +546,20 @@ MetricsViewer.prototype = {
 	    mv.restore();
 	});
 
+	// Add handler to pop up window showing reduction status
+	$("#controls_wrapper").on("click","#status",function(){
+	    var props = "height=400,width=600,resizable=yes,scrollbars=yes";
+	    var new_win;
+	    if (datepar) {
+		new_win = open("/qap/reduce_status.html?date="+datepar,
+			       "Reduction Status",props);
+	    } else {
+		new_win = open("/qap/reduce_status.html",
+			       "Reduction Status",props);
+	    }
+	    return false;
+	});
+
 	// Add handler to show help message when help button is clicked
 	// and to hide it when either help button is clicked again or
 	// window is closed
@@ -617,6 +631,7 @@ MetricsViewer.prototype = {
 	// Control bar
 	html_str += '<div id="controls_wrapper">'+
 	            '<ul id="controls">'+
+	            '<li id="status" class="control">Reduce Status</li>'+
 	            '<li id="reset" class="control">Reset</li>'+
 	            '<li id="help" class="control">Help</li>'+
 	            '</ul>'+
@@ -757,9 +772,12 @@ MetricsViewer.prototype = {
              </ul>\
              <p>In the control panel:</p>\
              <ul>\
-             <li>Click reset to restore the table and the plots to\
+             <li>Click Reduce Status to open a window showing the \
+                 status of recently reduced files, and to view \
+                 more detailed logs from these reductions.</li> \
+             <li>Click Reset to restore the table and the plots to\
                  the default configuration.</li>\
-             <li>Click help to display or hide this message.</li>\
+             <li>Click Help to display or hide this message.</li>\
              </ul>\
              </div>\
              <h3><span class="icon expand_icon"></span>Troubleshooting</h3>\

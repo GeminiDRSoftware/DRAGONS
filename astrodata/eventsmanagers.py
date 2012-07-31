@@ -29,7 +29,8 @@ class EventsManager:
               }
         return mtd
         
-    def append_event(self, ad = None, name=None, mdict=None, metadata = None):
+    def append_event(self, ad = None, name=None, mdict=None, 
+                     metadata = None, msgtype="qametric"):
         # print "em32:"+repr(metadata)
         if isinstance(ad, AstroData):
             if metadata != None:
@@ -38,7 +39,7 @@ class EventsManager:
                 md = self.get_metadict(ad)
             curtime = time.time()
             wholed = {  
-                        "msgtype":"qametric",
+                        "msgtype":msgtype,
                         name : mdict,
                         "timestamp": curtime
                      }

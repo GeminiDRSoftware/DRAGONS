@@ -137,6 +137,30 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.wfile.write(page)
                 return
                 
+            if parms["path"].startswith("/rqlog.json"):
+                self.send_response(200)
+                self.send_header('Content-type', "application/json")
+                self.end_headers()
+                import json
+                
+                if "file" in parms:
+                    logfile = parms["file"][0]
+                    print logfile
+                        
+                    if not os.path.exists(logfile):
+                        msg = "Log file not available"
+                    else:
+                        f = open(logfile, "r")      
+                        msg = f.read()
+                        f.close()
+                else:
+                    msg = "No log file available"
+
+                tdic = {"log":msg}
+
+                self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
+                return
+            
             if parms["path"].startswith("/rqsite.json"):
                 self.send_response(200)
                 self.send_header('Content-type', "application/json")
@@ -839,28 +863,122 @@ class MyHandler(BaseHTTPRequestHandler):
         head = self.rfile.read(vlen)
         pdict = head
         
-        # print("PPW300:"+head)
+        #print("PPW300:"+head)
+
+        if parms["path"].startswith("/runreduce"):
+                
+            import time
+            import json
+
+            # Get events manager
+            evman = None
+            if "rim" in MyHandler.informers:
+                rim = MyHandler.informers["rim"]
+                evman = rim.events_manager
+
+            self.send_response(200)
+            self.send_header('Content-type',	'text/plain')
+            self.end_headers()
+            
+            reduce_params = json.loads(pdict)
+            if reduce_params.has_key("filepath"):
+                fp = reduce_params["filepath"]
+            else:
+                fp = None
+            if reduce_params.has_key("options"):
+                opt = reduce_params["options"]
+            else:
+                opt = None
+            if reduce_params.has_key("parameters"):
+                prm = reduce_params["parameters"]
+            else:
+                prm = None
+
+            cmdlist = ["reduce", "--invoked"]
+            if opt is not None:
+                for key in opt:
+                    cmdlist.extend(["--"+str(key),str(opt[key])])
+            if prm is not None:
+                prm_str = ""
+                for key in prm:
+                    prm_str += str(key)+"="+str(prm[key])+","
+                if prm_str!="":
+                    prm_str = prm_str.rstrip(",")
+                cmdlist.extend(["-p",prm_str])
+            if fp is not None:
+                cmdlist.append(str(fp))
+
+                # Check that file can be opened
+                try:
+                    ad = AstroData(fp)
+                except:
+                    self.wfile.write("Can't use AstroData to open %s"% fp)
+                    return
+
+                # Report reduction status
+                self.wfile.write("Reducing %s\n" % fp)
+                self.wfile.write("Command: %s\n" % " ".join(cmdlist))
+                evman.append_event(ad,"status",{"current":"reducing",
+                                                "logfile":None},
+                                   msgtype="reduce_status")
+
+            # Send reduce log to hidden directory
+            logdir = ".autologs"
+            if not os.path.exists(logdir):
+                os.mkdir(logdir)
+            reducelog = os.path.join(
+                logdir, "reduce-addcinvokedlog-%d%s" % (
+                    os.getpid(), str(time.time())))
+            f = open(reducelog, "w")
+            loglink = "reducelog-latest"
+            if os.path.exists(loglink):
+                os.remove(loglink)
+            os.symlink(reducelog, loglink)
+
+            # Call reduce
+            pid = subprocess.call( cmdlist,
+                                   stdout = f,
+                                   stderr = f)
+            f.close()
+
+            # Report finished status
+            if fp is not None:
+                evman.append_event(ad,"status",
+                                   {"current":"reduction finished",
+                                    "logfile":reducelog},
+                                   msgtype="reduce_status")
+
+            # Get text from log
+            f = open(reducelog, "r")      
+            txt = f.read()
+            f.close()
+
+            self.wfile.write(txt)
+            self.wfile.flush()
+            
+            return
 
         if parms["path"].startswith("/calmgr"):
-                from FitsStorageWebSummary.Selection import getselection
-                from FitsStorageWebSummary.CalMGR import calmgr
-                things = parms["path"].split("/")[2:-1]
-                print "ppwDOPOST:"+ repr(things)
-                self.send_response(200)
-                self.send_header('Content-type',	'text/xml')
-                self.end_headers()
+            from FitsStorageWebSummary.Selection import getselection
+            from FitsStorageWebSummary.CalMGR import calmgr
+            things = parms["path"].split("/")[2:-1]
+            print "ppwDOPOST:"+ repr(things)
+            self.send_response(200)
+            self.send_header('Content-type',	'text/xml')
+            self.end_headers()
                 
-                # Parse the rest of the URL.
-                selection=getselection(things)
+            # Parse the rest of the URL.
+            selection=getselection(things)
             
-                # If we want other arguments like order by
-                # we should parse them here
-                # print "PPW820:"+repr(pdict)
-                req = PRec(pdict=pdict, method="POST")
-                retval = calmgr(req, selection)
-                print "ppw824::::"*3, req._buff                
-                self.wfile.write(req._buff)
-                return 
+            # If we want other arguments like order by
+            # we should parse them here
+            # print "PPW820:"+repr(pdict)
+            req = PRec(pdict=pdict, method="POST")
+            retval = calmgr(req, selection)
+            print "ppw824::::"*3, req._buff                
+            self.wfile.write(req._buff)
+            return 
+
         global rootnode
         try:
             ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))

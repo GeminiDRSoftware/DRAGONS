@@ -39,6 +39,110 @@ ViewPort.prototype = {
 };
 
 
+// SimpleTable child class
+// constructor
+// element should be a jQuery selection of an empty DOM element (ie. div),
+// id is a string, and columns is an object containing column model information
+function SimpleTable(element,id,columns) {
+    this.element = element;
+    this.id = id;
+    this.columns = columns;
+    this.rows = {};
+    this.records = {};
+    this.init();
+}
+// prototype: inherit from ViewPort
+var st_proto = new ViewPort();
+SimpleTable.prototype = st_proto;
+SimpleTable.prototype.constructor = SimpleTable;
+
+// add SimpleTable-specific methods
+SimpleTable.prototype.composeHTML = function() {
+    var html_str = "";
+
+    // Compose table tags with column headers
+    html_str += '<table class="simple_table" id="'+this.id+'"><thead><tr>';
+    for (i in this.columns) {
+	col = this.columns[i];
+
+	// Add classes for column id, as well swap, hidden, and searchable
+	// properties
+	html_str += '<th  class="'+col.id+'">'+col.name+'</th>';
+    }
+    html_str += '</tr></thead>';
+
+    // Add table body
+    html_str += '<tbody></tbody>';
+
+    // Add table footer
+    html_str += '<tfoot></tfoot>';
+
+    html_str += '</table>';
+
+    return html_str;
+}; // end composeHTML
+
+SimpleTable.prototype.addRecord = function(records) {
+    // Make records into an array if it is not already
+    if (!records) {
+	records = [];
+    }
+    if (!(records instanceof Array)) {
+	records = [records];
+    }
+
+    // Loop through records, making new table rows and
+    // adding them to the tbody
+    var tbody = $('#'+this.id+' tbody');
+    for (var i in records) {
+
+	var record = records[i];
+
+	// Add the record to the stored records object
+	this.records[record['key']] = record;
+
+	// Generate a table row from input data
+	var table_row = "";
+
+	// Give it an id corresponding to the key specified in the record
+	table_row += '<tr id="'+record['key']+'">';
+
+	for (var j in this.columns) {
+	    col = this.columns[j];
+	    table_row += '<td class="'+col.id+'">'+record[col.field]+'</td>';
+	}
+	table_row += '</tr>';
+	
+	// Add the new row to the database of rows
+	if ($("#"+record['key']).length>0) {
+	    // A row with this key exists already, remove it
+	    $("#"+record['key']).remove();
+	}
+
+	// Append the row to the table body
+	tbody.append(table_row);
+
+	// Update the rows database with this row
+	this.rows[record['key']] = table_row;
+    }
+
+    // Add even classes to all rows to allow them to be styled
+    $("#"+this.id+" tbody tr").removeClass("even");
+    $("#"+this.id+" tbody tr:even").addClass("even");
+
+}; // end addRecord
+
+SimpleTable.prototype.clearRecord = function() {
+
+    // Clear out the tbody
+    $('#'+this.id+' tbody').html("");
+
+    // Reset records and rows objects
+    this.records = {};
+    this.rows = {};
+}; // end clearRecord
+
+
 // ScrollTable child class
 // constructor
 // element should be a jQuery selection of an empty DOM element (ie. div),

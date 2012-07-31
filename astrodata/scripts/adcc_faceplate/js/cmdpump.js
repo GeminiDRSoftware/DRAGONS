@@ -15,7 +15,7 @@ GJSCommandPipe.prototype = {
     constructor: GJSCommandPipe,
 
     iteratePump: function(data) {
-	if (data.length==0) {
+	if (!data || data.length==0) {
 	    return;
 	}
 
@@ -33,9 +33,11 @@ GJSCommandPipe.prototype = {
 	$.each(msg_types, function(thetype) {
 	    var msg_list = this;
 	    var callbacks = gjs.callbacks[thetype];
-	    $.each(callbacks, function () {
-	        this(msg_list);
-	    }); // end each callback
+	    if (callbacks) {
+		$.each(callbacks, function () {
+		    this(msg_list);
+	        }); // end each callback
+	    }
         }); // end each message type
 
 	gjs.timestamp = data[data.length-1]['timestamp'];

@@ -1,4 +1,6 @@
 // Class for a database of metrics records returned by the adcc
+// (can actually be used for other types of records too; should probably 
+// change the name)
 
 // Constructor
 function MetricsDatabase(key) {

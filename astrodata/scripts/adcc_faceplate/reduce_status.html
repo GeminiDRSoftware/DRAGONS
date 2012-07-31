@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Reduce Status</title>
+<link href="/qap/js/jquery-ui/css/ui-lightness/jquery-ui-1.8.20.custom.css" rel="stylesheet">
+<link href="/qap/css/reduce_status.css" rel="stylesheet">
+<script type="text/javascript" src="/qap/jquery.js"></script>
+<script type="text/javascript" src="/qap/js/jquery-ui/js/jquery-ui-1.8.20.custom.min.js"></script>
+<script type="text/javascript" src="/qap/js/cmdpump.js"></script>
+<script type="text/javascript" src="/qap/js/viewport.js"></script>
+<script type="text/javascript" src="/qap/js/metricsdatabase.js"></script>
+<script type="text/javascript" src="/qap/js/statusviewer.js"></script>
+<script type="text/javascript" id="start_viewer">
+var sv;
+$(document).ready(function() {
+
+    var element = $("#main");
+    var id = "reduce_status";
+    //var sv = new StatusViewer(element,id);
+    sv = new StatusViewer(element,id);
+    
+}); // end document ready
+</script>
+</head>
+<body>
+<div class="wrapper">
+  <div class="header"></div>
+  <div id="content">
+    <div id="main"></div>
+  </div>
+  <div class="footer"></div>
+</div>
+</body>
+</html>

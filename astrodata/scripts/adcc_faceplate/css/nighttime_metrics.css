@@ -257,12 +257,11 @@ td.jqplot-series-hidden div.jqplot-table-legend-swatch {
     margin: 4px;
     padding: 3px;
     text-align: center;
-    width: 50px;
 }
 #controls li.selected {
     background-color: #B0DBFF;
 }
-#reset {
+#reset, #status {
     cursor: pointer;
 }
 #help {

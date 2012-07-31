@@ -98,8 +98,8 @@ try:
     # Configure logging, then instantiate the log
     if options.recipename == "USER":
         options.loglevel = "fullinfo"
-    if options.invoked:
-        options.loglevel = "fullinfo"
+    #if options.invoked:
+    #    options.loglevel = "fullinfo"
     logutils.config(mode=options.logmode, console_lvl=options.loglevel, \
                      file_name=options.logfile)
     log = logutils.get_logger(__name__)
@@ -219,9 +219,9 @@ try:
 
     if options.invoked:
         opener = "reduce started in adcc mode (--invoked)"
-        log.status("."*len(opener))
-        log.status(opener)
-        log.status("."*len(opener))
+        log.fullinfo("."*len(opener))
+        log.fullinfo(opener)
+        log.fullinfo("."*len(opener))
         sys.stdout.flush()
 
 
