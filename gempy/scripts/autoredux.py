@@ -42,7 +42,6 @@ def main():
     pyraf, gemini, yes, no = gu.pyrafLoader()
     pyraf.iraf.getfakeUT()
     fakedate = pyraf.iraf.getfakeUT.fakeUT
-    fakedate = '20120730'
 
     prefix = prefix + fakedate + "S"
 
