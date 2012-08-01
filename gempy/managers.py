@@ -645,8 +645,11 @@ class CLManager(object):
             for ad in adoutput_list:
                 # Read the database from disk and append the information
                 # to the output ad as a WAVECAL extension
-                ad = self.readDatabase(ad, inputName=input_names[ad],
+                try:
+                    ad = self.readDatabase(ad, inputName=input_names[ad],
                                    outputName=ad.phu_get_key_value("ORIGNAME"))
+                except Errors.ManagersError:
+                    pass
                 self.imageOuts.append(ad)
 
                 # Remove the database
@@ -706,8 +709,11 @@ class CLManager(object):
                               'imageIns from disk')
             for name in self.imageInsCLdiskNames:
                 # Deleting the file from disk
-                os.remove(name)
-                self.log.fullinfo(name+' was deleted from disk')
+                try:
+                    os.remove(name)
+                    self.log.fullinfo(name+' was deleted from disk')
+                except OSError:
+                    pass
             if self.imageInsListName!=None:
                 os.remove(self.imageInsListName)
                 self.log.fullinfo('Temporary list '+self.imageInsListName+

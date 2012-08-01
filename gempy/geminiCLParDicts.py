@@ -30,6 +30,7 @@ def CLDefaultParamsDict(CLscript):
         (CLscript != 'gmosaic') and
         (CLscript != 'gdisplay') and 
         (CLscript != 'gifringe') and 
+        (CLscript != 'gsappwave') and 
         (CLscript != 'gscrrej') and 
         (CLscript != 'gsextract') and
         (CLscript != 'gsflat') and
@@ -322,6 +323,20 @@ def CLDefaultParamsDict(CLscript):
             'Stdout'    :man.IrafStdout(),
             'Stderr'    :man.IrafStdout()
                        }
+
+    if CLscript == 'gsappwave':
+        defaultParams = {
+            'inimages': '',            # Input images
+            'gratingdb': "gmos$data/GMOSgratings.dat", # Gratings database file
+            'filterdb': "gmos$data/GMOSfilters.dat",   # Filters database file
+            'key_dispaxis': "DISPAXIS",# Keyword for dispersion axis
+            'dispaxis': 1 ,            # Dispersion axis
+            'logfile' : '',            # Logfile
+            'verbose' : yes,           # Verbose?
+            'status'  : 0,             # Exit status (0=good)
+            'Stdout'    :man.IrafStdout(),
+            'Stderr'    :man.IrafStdout()
+            }
 
     if CLscript == 'gscrrej':
         defaultParams = {
