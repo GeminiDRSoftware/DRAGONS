@@ -1,0 +1,6 @@
+prepare
+addDQ
+detectSources
+measureIQ(display=True)
+measureBG
+measureCCAndAstrometry
