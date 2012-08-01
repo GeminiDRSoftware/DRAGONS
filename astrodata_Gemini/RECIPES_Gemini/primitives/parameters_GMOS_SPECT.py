@@ -1,13 +1,4 @@
-{"determineWavelengthSolution":{
-    "suffix":{
-        "default"       : "_wavelengthSolution",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    },
- "attachWavelengthSolution":{
+{ "attachWavelengthSolution":{
     "suffix":{
         "default"       : "_wavelengthSolution",
         "type"          : "str",
@@ -25,6 +16,22 @@
         "uiLevel"       : "UIBASIC",
         },
    },
+ "determineWavelengthSolution":{
+    "suffix":{
+        "default"       : "_wavelengthSolution",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "interactive":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "extract1DSpectra":{
     "suffix":{
         "default"       : "_extracted",
