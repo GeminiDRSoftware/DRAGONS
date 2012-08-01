@@ -8,8 +8,9 @@ import subprocess
 import datetime
 import json
 import urllib,urllib2
+from optparse import OptionParser
 from astrodata import AstroData
-from astrodata.adutils import gemutil as gu
+from gempy import gemini_metadata_utils as gmu
 import FitsVerify
 
 
@@ -23,6 +24,68 @@ OBSPREF = { GEMINI_NORTH : 'N',
 
 def main():
 
+    parser = OptionParser()
+    usage = parser.get_usage()[:-1] + \
+        " [YYYYMMDD] [filenumbers]\n\n"\
+        "With no arguments, this will reduce all files in the ops\n"\
+        "directory matching the current date. If a date is given\n"\
+        "it will reduce all files from the selected date. If a single file\n"\
+        "number is given, it will start reducing at that file. If multiple\n"\
+        "file numbers are given as a range or a comma separated list,\n"\
+        "(eg. 1-10,42-46) only those files will be reduced."
+    parser.set_usage(usage)
+
+    # Get options
+    parser.add_option("-r", "--recipe", action="store",
+                      dest="recipe", default=None,
+                      help="Specify an alternate processing recipe")
+    parser.add_option("-d", "--directory", action="store",
+                      dest="directory", default=None,
+                      help="Specify a data directory. Default is ops "\
+                           "directory.")
+    parser.add_option("-c", "--calibrations", action="store_true",
+                      dest="calibrations", default=False,
+                      help="Reduce calibration files (eg. biases and flats).")
+    parser.add_option("-u", "--upload", action="store_true",
+                      dest="upload", default=False,
+                      help="Upload any generated calibrations to the " + \
+                           "calibration service")
+    (options, args) = parser.parse_args()
+
+    # Check for a date or file number argument
+    if len(args)==0:
+        fakedate = None
+        filenum = None
+    elif len(args)==1:
+        date_or_num = args[0]
+        if re.match("^\d{8}$",date_or_num):
+            fakedate = date_or_num
+            filenum = None
+        elif re.match("^[0-9]+([-,][0-9]+)*$",date_or_num):
+            filenum = date_or_num
+            fakedate = None
+        else:
+            print "Bad date or file number:",date_or_num
+            print usage
+            sys.exit()
+    elif len(args)==2:
+        fakedate = args[0]
+        filenum = args[1]
+        if not re.match("^\d{8}$",fakedate):
+            print "Bad date:",fakedate
+            print usage
+            sys.exit()
+        if not re.match("^[0-9]+([-,][0-9]+)*$",filenum):
+            print "Bad file number:",filenum
+            print usage
+            sys.exit()
+    else:
+        print usage
+        sys.exit()
+
+    if fakedate is None:
+        fakedate = gmu.gemini_date()
+
     # Get local site
     if time.timezone / 3600 == 10:        # HST = UTC+10
         localsite = GEMINI_NORTH
@@ -35,27 +98,46 @@ def main():
               "be determined"
         sys.exit()
 
-    # Use ops directory
-    directory = OPSDATAPATH[localsite]
-
-    # Get current date file prefix
-    pyraf, gemini, yes, no = gu.pyrafLoader()
-    pyraf.iraf.getfakeUT()
-    fakedate = pyraf.iraf.getfakeUT.fakeUT
-
+    # Construct the file prefix
     prefix = prefix + fakedate + "S"
 
     # Regular expression for filenames
     file_cre = re.compile('^'+prefix+'\d{4}.fits$')
 
-    # Enter while-loop to check for files
+    # Construct the file name to start from, if desired
+    files = None
+    if filenum is not None:
+        if re.match("^\d{1,4}$",filenum):
+            filenum = "%s%.4d.fits"% (prefix,filenum)
+        else:
+            nums = file_list(filenum)
+            files = ["%s%.4d.fits"% (prefix,num) for num in nums]
+
+    # Get directory
+    if options.directory:
+        directory = options.directory
+    else:
+        directory = OPSDATAPATH[localsite]
+    directory = directory.rstrip("/") + "/"
+
+    # If files were specified explicitly, loop through them, then exit
+    if files is not None:
+        for new_file in files:
+            filepath = directory + new_file
+            check_and_run(filepath,options)
+        print "..."
+        sys.exit()
+
+    # Otherwise, enter while-loop to check for new files
     last_index = None
+    printed_none = False
+    printed_wait = False
     while(True):
 
         # Get a directory listing
         list = os.listdir(directory)
 
-        # filter down to fits files matching the prefix and sort
+        # Filter down to fits files matching the prefix and sort
         today = []
         for i in list:
             if file_cre.match(i):
@@ -68,39 +150,91 @@ def main():
             # Did we just start up?
             new_file = None
             if last_index is None:
-                last_index = 0
+                if filenum is not None:
+                    try:
+                        last_index = today.index(filenum)
+                    except ValueError:
+                        print "File %s not found" % filenum
+                        sys.exit()
+                else:
+                    last_index = 0
                 new_file = today[last_index]
                 print "Starting from file: %s" % new_file
             else:
+                # Did we find something new?
                 if len(today)>last_index+1:
                     last_index +=1
                     new_file = today[last_index]
+                    printed_wait = False
 
             if new_file is not None:
-                
                 filepath = directory + new_file
-
-                ok = verify_file(filepath)
-                if(ok):
-                    print "Checking %s" % new_file
-
-                    gmi = check_gmos_image(filepath)
-                    if gmi:
-                        print "Reducing %s" % new_file
-                        launch_reduce(filepath)
-                    else:
-                        print "Ignoring %s, not a GMOS image" % new_file
-
-                else:
-                    print "Ignoring %s, not a valid fits file" % new_file
+                check_and_run(filepath,options)
 
         else:
-            print "No files with the prefix: %s" % prefix
+            if not printed_none:
+                print "No files with the prefix: %s" % prefix
+                printed_none = True
 
         # Wait 1 second before looping again if working on the last file
-        if last_index==len(today)-1:
-            time.sleep(1)
+        if last_index is None or last_index==len(today)-1:
+            # Check the date, if it is not the current one, exit -- there
+            # will be no more files to process
+            check_date = gmu.gemini_date()
+            if check_date!=fakedate:
+                print "...\nNo more files to check from %s\n..." % fakedate 
+                sys.exit()
+            else:
+                if not printed_wait:
+                    print "...\nWaiting for more files"
+                    printed_wait = True
+                time.sleep(1)
 
+
+def file_list(str_list):
+    # Parse a string with comma-separated ranges of file numbers 
+    # into a list of file numbers
+    nums = []
+    comma_sep = str_list.split(',')
+    for item in comma_sep:
+        if re.match('^[0-9]+-[0-9]+$', item):
+            endpt = item.split('-')
+            itemlist = range(int(endpt[0]),int(endpt[1])+1)
+            nums += itemlist
+        else:
+            nums.append(int(item))
+
+    # Eliminate duplicates and sort
+    nums = list(set(nums))
+    nums.sort()
+    return nums
+
+def check_and_run(filepath,options=None):
+    new_file = os.path.basename(filepath)
+    if options is not None:
+        cal = options.calibrations
+        upl = options.upload
+        rec = options.recipe
+
+    print "..."
+    
+    if os.path.exists(filepath):
+        ok = verify_file(filepath)
+        if(ok):
+            print "Checking %s" % new_file
+        
+            gmi,reason = check_gmos_image(filepath,
+                                          calibrations=cal)
+            if gmi:
+                print "Reducing %s" % new_file
+                launch_reduce(filepath,upload=upl,recipe=rec)
+            else:
+                print "Ignoring %s, %s" % (new_file, reason)
+
+        else:
+            print "Ignoring %s, not a valid fits file" % new_file
+    else:
+        print "Ignoring %s, does not exist" % new_file
 
 def verify_file(filepath):
 
@@ -135,12 +269,14 @@ def verify_file(filepath):
     return ok
 
 
-def check_gmos_image(filepath):
+def check_gmos_image(filepath, calibrations=False):
+
+    reason = "is GMOS image"
 
     try:
         ad = AstroData(filepath)
     except:
-        return False
+        return False,reason
     
     try:
         fp_mask = ad.focal_plane_mask().as_pytype()
@@ -148,12 +284,21 @@ def check_gmos_image(filepath):
         fp_mask = None
 
     if "GMOS" not in ad.types:
-        return False
+        reason = "not GMOS"
+        return False,reason
     elif "GMOS_DARK" in ad.types:
-        return False
+        reason = "GMOS dark"
+        return False,reason
+    elif "GMOS_BIAS" in ad.types and not calibrations:
+        reason = "GMOS bias"
+        return False,reason
+    elif "GMOS_IMAGE_FLAT" in ad.types and not calibrations:
+        reason = "GMOS flat"
+        return False,reason
     elif ("GMOS_IMAGE" in ad.types and
           fp_mask!="Imaging"):
-        return False
+        reason = "GMOS slit image"
+        return False,reason
     elif (("GMOS_IMAGE" in ad.types and
            fp_mask=="Imaging" and
            "GMOS_DARK" not in ad.types) or
@@ -166,20 +311,33 @@ def check_gmos_image(filepath):
         if dettype=="SDSU II e2v DD CCD42-90":
             namps = ad.phu_get_key_value("NAMPS")
             if namps is not None and int(namps)==1:
-                return False
+                reason = "uncommissioned 3-amp mode"
+                return False,reason
             else:
-                return True
+                return True,reason
         else:
-            return True
+            return True,reason
     else:
-        return False
+        reason = "not GMOS image"
+        return False,reason
 
-def launch_reduce(filepath):
+def launch_reduce(filepath, upload=False, recipe=None):
+
+    if upload:
+        context = "QA,upload"
+    else:
+        context = "QA"
+    if recipe is not None:
+        options = {"context":context,
+                   "loglevel":"stdinfo",
+                   "recipe": recipe}
+    else:
+        options = {"context":context,
+                   "loglevel":"stdinfo"}
 
     param_dict = {"filepath":filepath,
                   "parameters":{"clobber":True},
-                  "options":{"context":"QA",
-                             "loglevel":"stdinfo"},
+                  "options":options,
               }
 
     postdata = json.dumps(param_dict)
@@ -193,6 +351,7 @@ def launch_reduce(filepath):
         print contens
         sys.exit()
     
+    u.read()
     u.close()
 
 
