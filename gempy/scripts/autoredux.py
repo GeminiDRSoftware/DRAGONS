@@ -108,7 +108,7 @@ def main():
     files = None
     if filenum is not None:
         if re.match("^\d{1,4}$",filenum):
-            filenum = "%s%.4d.fits"% (prefix,filenum)
+            filenum = "%s%.4d.fits"% (prefix,int(filenum))
         else:
             nums = file_list(filenum)
             files = ["%s%.4d.fits"% (prefix,num) for num in nums]
