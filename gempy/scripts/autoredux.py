@@ -11,8 +11,7 @@ import urllib,urllib2
 from optparse import OptionParser
 from astrodata import AstroData
 from gempy import gemini_metadata_utils as gmu
-import FitsVerify
-
+from gempy import fitsverify as fv
 
 # Some global variables
 GEMINI_NORTH = 'gemini-north'
@@ -32,7 +31,10 @@ def main():
         "it will reduce all files from the selected date. If a single file\n"\
         "number is given, it will start reducing at that file. If multiple\n"\
         "file numbers are given as a range or a comma separated list,\n"\
-        "(eg. 1-10,42-46) only those files will be reduced."
+        "(eg. 1-10,42-46) only those files will be reduced.\n\n"\
+        "PLEASE NOTE: the adcc must be started in the desired output\n"\
+        "directory before launching autoredux.  To start the adcc, type\n"\
+        "'adcc'.\n"
     parser.set_usage(usage)
 
     # Get options
@@ -65,23 +67,21 @@ def main():
             filenum = date_or_num
             fakedate = None
         else:
-            print "Bad date or file number:",date_or_num
-            print usage
-            sys.exit()
+            parser.error("Bad date or file number: "+date_or_num)
     elif len(args)==2:
         fakedate = args[0]
         filenum = args[1]
         if not re.match("^\d{8}$",fakedate):
-            print "Bad date:",fakedate
-            print usage
-            sys.exit()
+            parser.error("Bad date: "+fakedate)
         if not re.match("^[0-9]+([-,][0-9]+)*$",filenum):
-            print "Bad file number:",filenum
-            print usage
-            sys.exit()
+            parser.error("Bad file number: "+filenum)
     else:
-        print usage
-        sys.exit()
+        parser.error("Wrong number of arguments")
+
+    # Before doing anything else, check for an adcc
+    is_adcc = ping_adcc()
+    if not is_adcc:
+        parser.error("No adcc found at port 8777")
 
     if fakedate is None:
         fakedate = gmu.gemini_date()
@@ -191,6 +191,24 @@ def main():
                 time.sleep(1)
 
 
+def ping_adcc():
+    # Check that there is an adcc running by requesting its site
+    # information
+    is_adcc = False
+    url = "http://localhost:8777/rqsite.json"
+    try:
+        rq = urllib2.Request(url)
+        u = urllib2.urlopen(rq)
+        site = u.read()
+        u.close()
+    except (urllib2.HTTPError, urllib2.URLError):
+        site = None
+    
+    if site:
+        is_adcc = True
+
+    return is_adcc
+
 def file_list(str_list):
     # Parse a string with comma-separated ranges of file numbers 
     # into a list of file numbers
@@ -251,17 +269,17 @@ def verify_file(filepath):
         # [2]: number of fitsverify errors
         # [3]: full text of fitsverify report
 
-        fv=FitsVerify.fitsverify(filepath)
-        if(fv[0] == False):
+        fv_check = fv.fitsverify(filepath)
+        if(fv_check[0] == False):
             ok = False
-        elif(int(fv[2]) > 0):
+        elif(int(fv_check[2]) > 0):
             ok = False
         else:
             ok = True
 
         if(tries==0):
             print "ERROR: File %s never did pass fitsverify:\n%s" % \
-                  fv[3]
+                  fv_check[3]
             
         if not ok:
             time.sleep(1)
