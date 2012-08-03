@@ -39,8 +39,8 @@ StatusViewer.prototype = {
 		    var udt = data.utc_now.split(" ");
 		    var ud = udt[0].split("-");
 		    var ut = udt[1].split(":");
-		    ut[3] = (parseFloat(ut[2])-parseInt(ut[2]))*1000;
-		    ut[2] = parseInt(ut[2]);
+		    ut[3] = (parseFloat(ut[2])-parseInt(ut[2],10))*1000;
+		    ut[2] = parseInt(ut[2],10);
 
 		    var ldate = new Date(Date.UTC(ud[0],ud[1]-1,ud[2],
 						  ut[0],ut[1],ut[2], ut[3]));
@@ -92,9 +92,9 @@ StatusViewer.prototype = {
 	    // way the following code to set it to 14:00 will
 	    // get the right times for the fake UT used at
 	    // either site.
-	    var y = parseInt(datepar.slice(0,4))
-	    var m = parseInt(datepar.slice(4,6))-1
-	    var d = parseInt(datepar.slice(6,8))
+	    var y = parseInt(datepar.slice(0,4),10);
+	    var m = parseInt(datepar.slice(4,6),10)-1;
+	    var d = parseInt(datepar.slice(6,8),10);
 	    prev_turnover = new Date(Date.UTC(y,m,d));
 
 	    // Set a variable indicating that we are in demo-mode
@@ -352,8 +352,8 @@ StatusViewer.prototype = {
 	    var udt = record["metadata"]["ut_time"].split(" ");
 	    var ud = udt[0].split("-");
 	    var ut = udt[1].split(":");
-	    ut[3] = (parseFloat(ut[2])-parseInt(ut[2]))*1000;
-	    ut[2] = parseInt(ut[2]);
+	    ut[3] = (parseFloat(ut[2])-parseInt(ut[2],10))*1000;
+	    ut[2] = parseInt(ut[2],10);
 
 	    var ldate = new Date(Date.UTC(ud[0],ud[1]-1,ud[2],
 					  ut[0],ut[1],ut[2], ut[3]));

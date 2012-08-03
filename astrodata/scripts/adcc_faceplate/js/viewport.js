@@ -372,7 +372,7 @@ ScrollTable.prototype.composeHTML = function() {
     html_str += '<tbody class="scroll_body"'+
 	        'style="display:block;overflow:auto;' +
                 'position:relative;width:100%;height:'+
-                (parseInt(this.element.height())-32-32) +'px' +
+                (parseInt(this.element.height(),10)-32-32) +'px' +
                 '">';
     html_str += '</tbody>';
 
