@@ -9,15 +9,14 @@ from astrodata import Errors
 from astrodata.adutils import logutils
 from astrodata.adutils.gemutil import pyrafLoader 
 from astrodata.eti.pyrafeti import PyrafETI
-from gempy.eti.gemcombinefile import InAtList, OutFile, LogFile
-from gempy.eti.gemcombineparam import FlVardq, FlDqprop, Combine, \
-    Masktype, Nlow, Nhigh, Reject, hardcoded_params, GemcombineParam
-    
+from gsflatfile import InAtList, OutFile, LogFile
+from gsflatparam import FlVardq, hardcoded_params, GsflatParam
+
 log = logutils.get_logger(__name__)
 
-class GemcombineETI(PyrafETI):
+class GsflatETI(PyrafETI):
     """This class coordinates the external task interface as it relates
-    directly to the IRAF task: gemcombine
+    directly to the IRAF task: gsflat
     """
     clparam_dict = None
     def __init__(self, rc):
@@ -27,25 +26,19 @@ class GemcombineETI(PyrafETI):
         :param rc: Used to store reduction information
         :type rc: ReductionContext
         """
-        log.debug("GemcombineETI __init__")
+        log.debug("GsflatETI __init__")
         PyrafETI.__init__(self, rc)
         self.clparam_dict = {}
         self.add_file(InAtList(rc))
         self.add_file(OutFile(rc))
         self.add_file(LogFile(rc))
         self.add_param(FlVardq(rc))
-        self.add_param(FlDqprop(rc))
-        self.add_param(Combine(rc))
-        self.add_param(Masktype(rc))
-        self.add_param(Nlow(rc))
-        self.add_param(Nhigh(rc))
-        self.add_param(Reject(rc))
         for param in hardcoded_params:
-            self.add_param(GemcombineParam(rc, param, hardcoded_params[param]))
+            self.add_param(GsflatParam(rc, param, hardcoded_params[param]))
 
     def execute(self):
-        """Execute pyraf task: gemcombine"""
-        log.debug("GemcombineETI.execute()")
+        """Execute pyraf task: gsflat"""
+        log.debug("GsflatETI.execute()")
 
         # Populate object lists
         xcldict = copy(self.clparam_dict)
@@ -53,28 +46,28 @@ class GemcombineETI(PyrafETI):
             xcldict.update(fil.get_parameter())
         for par in self.param_objs:
             xcldict.update(par.get_parameter())
-        iraf.unlearn(iraf.gemcombine)
+        iraf.unlearn(iraf.gsflat)
 
         # Use setParam to list the parameters in the logfile 
         for par in xcldict:
             #Stderr and Stdout are not recognized by setParam
             if par != "Stderr" and par !="Stdout":
-                gemini.gemcombine.setParam(par,xcldict[par])
-        log.fullinfo("\nGEMCOMBINE PARAMETERS:\n")
-        iraf.lpar(iraf.gemcombine, Stderr=xcldict["Stderr"], \
+                gemini.gsflat.setParam(par,xcldict[par])
+        log.fullinfo("\nGSFLAT PARAMETERS:\n")
+        iraf.lpar(iraf.gsflat, Stderr=xcldict["Stderr"], \
             Stdout=xcldict["Stdout"])
 
         # Execute the task using the same dict as setParam
         # (but this time with Stderr and Stdout) 
-        gemini.gemcombine(**xcldict)
-        if gemini.gemcombine.status:
-            raise Errors.OutputError("The IRAF task gemcombine failed")
+        gemini.gsflat(**xcldict)
+        if gemini.gsflat.status:
+            raise Errors.OutputError("The IRAF task gsflat failed")
         else:
-            log.fullinfo("The IRAF task gemcombine completed successfully")
+            log.fullinfo("The IRAF task gsflat completed successfully")
 
     def run(self):
         """Convenience function that runs all the needed operations."""
-        log.debug("GemcombineETI.run()")
+        log.debug("GsflatETI.run()")
         self.prepare()
         self.execute()
         ad = self.recover()
@@ -83,7 +76,7 @@ class GemcombineETI(PyrafETI):
 
     def recover(self):
         """Recovers reduction information into memory"""
-        log.debug("GemcombineETI.recover()")
+        log.debug("GsflatETI.recover()")
         ad = None
         for par in self.param_objs:
             par.recover()

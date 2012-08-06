@@ -5,9 +5,9 @@ import tempfile
 from astrodata.adutils import gemLog
 from astrodata.AstroData import AstroData
 from astrodata import Errors
-from gempy import gemini_tools as gt
-from gempy import astrotools as at
-from gempy.gemini_metadata_utils import sectionStrToIntList
+from gempy.gemini import gemini_tools as gt
+from gempy.library import astrotools as at
+from gempy.gemini import gemini_metadata_utils as gmu
 
 class CLManager(object):
     """
@@ -445,7 +445,7 @@ class CLManager(object):
                     # each string version of the list into actual integer tuple 
                     # and load it into the lists of lists
                     # of form [y1, y2, x1, x2] 0-based and non-inclusive
-                    biassecIntList.append(sectionStrToIntList(biassecStr))
+                    biassecIntList.append(gmu.sectionStrToIntList(biassecStr))
                 
                 # Setting the return value to be updated in the loop below    
                 retvalue=0
@@ -454,7 +454,7 @@ class CLManager(object):
                     BIASSEC = ext.get_key_value('BIASSEC')                      #  bias_section()
                     # Converting the retrieved string into a integer list     #  descriptor
                     # of form [y1, y2, x1, x2] 0-based and non-inclusive      #  would be used!!!!
-                    BIASSEClist = sectionStrToIntList(BIASSEC)     #
+                    BIASSEClist = gmu.sectionStrToIntList(BIASSEC)     #
                     # Setting the lower case biassec list to the appropriate 
                     # list in the lists of lists created above the loop
                     biasseclist = biassecIntList[ext.extver()-1]

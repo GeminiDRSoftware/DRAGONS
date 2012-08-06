@@ -3,48 +3,49 @@ from copy import copy
 
 from pyraf import iraf
 from iraf import gemini
-from iraf import gmos
 from iraf import gemtools
 
 from astrodata import Errors
 from astrodata.adutils import logutils
 from astrodata.adutils.gemutil import pyrafLoader 
 from astrodata.eti.pyrafeti import PyrafETI
-from gempy.eti.gireducefile import InAtList, OutAtList, LogFile
-from gempy.eti.gireduceparam import Nbiascontam, \
-                        subtract_overscan_hardcoded_params, GireduceParam
+from gemcombinefile import InAtList, OutFile, LogFile
+from gemcombineparam import FlVardq, FlDqprop, Combine, \
+    Masktype, Nlow, Nhigh, Reject, hardcoded_params, GemcombineParam
     
 log = logutils.get_logger(__name__)
 
-class GireduceETI(PyrafETI):
+class GemcombineETI(PyrafETI):
     """This class coordinates the external task interface as it relates
-    directly to the IRAF task: gireduce
+    directly to the IRAF task: gemcombine
     """
     clparam_dict = None
-    ad = None
-    def __init__(self, rc, ad):
+    def __init__(self, rc):
         """
         Adds the file and parameter objects to a list
 
         :param rc: Used to store reduction information
         :type rc: ReductionContext
         """
-        log.debug("GireduceETI __init__")
+        log.debug("GemcombineETI __init__")
         PyrafETI.__init__(self, rc)
         self.clparam_dict = {}
-
-        # if ad then it will only process the ad
-        self.add_file(InAtList(rc, ad))
-        self.add_file(OutAtList(rc, ad))
+        self.add_file(InAtList(rc))
+        self.add_file(OutFile(rc))
         self.add_file(LogFile(rc))
-        self.add_param(Nbiascontam(rc, ad))
-        for param in subtract_overscan_hardcoded_params:
-            self.add_param(GireduceParam(rc, param, \
-                           subtract_overscan_hardcoded_params[param]))
+        self.add_param(FlVardq(rc))
+        self.add_param(FlDqprop(rc))
+        self.add_param(Combine(rc))
+        self.add_param(Masktype(rc))
+        self.add_param(Nlow(rc))
+        self.add_param(Nhigh(rc))
+        self.add_param(Reject(rc))
+        for param in hardcoded_params:
+            self.add_param(GemcombineParam(rc, param, hardcoded_params[param]))
 
     def execute(self):
-        """Execute pyraf task: gireduce"""
-        log.debug("GireduceETI.execute()")
+        """Execute pyraf task: gemcombine"""
+        log.debug("GemcombineETI.execute()")
 
         # Populate object lists
         xcldict = copy(self.clparam_dict)
@@ -52,51 +53,45 @@ class GireduceETI(PyrafETI):
             xcldict.update(fil.get_parameter())
         for par in self.param_objs:
             xcldict.update(par.get_parameter())
-        iraf.unlearn(iraf.gmos.gireduce)
+        iraf.unlearn(iraf.gemcombine)
 
         # Use setParam to list the parameters in the logfile 
         for par in xcldict:
             #Stderr and Stdout are not recognized by setParam
             if par != "Stderr" and par !="Stdout":
-                gemini.gmos.gireduce.setParam(par,xcldict[par])
-        log.fullinfo("\nGIREDUCE PARAMETERS:\n")
-        iraf.lpar(iraf.gmos.gireduce, Stderr=xcldict["Stderr"], \
+                gemini.gemcombine.setParam(par,xcldict[par])
+        log.fullinfo("\nGEMCOMBINE PARAMETERS:\n")
+        iraf.lpar(iraf.gemcombine, Stderr=xcldict["Stderr"], \
             Stdout=xcldict["Stdout"])
 
         # Execute the task using the same dict as setParam
         # (but this time with Stderr and Stdout) 
-        #from pprint import pprint
-        #pprint(xcldict)
-        gemini.gmos.gireduce(**xcldict)
-        if gemini.gmos.gireduce.status:
-            raise Errors.OutputError("The IRAF task gmos.gireduce failed")
+        gemini.gemcombine(**xcldict)
+        if gemini.gemcombine.status:
+            raise Errors.OutputError("The IRAF task gemcombine failed")
         else:
-            log.fullinfo("The IRAF task gmos.gireduce completed successfully")
+            log.fullinfo("The IRAF task gemcombine completed successfully")
 
     def run(self):
         """Convenience function that runs all the needed operations."""
-        log.debug("GireduceETI.run()")
-        adlist = []
+        log.debug("GemcombineETI.run()")
         self.prepare()
         self.execute()
-        adlist = self.recover()
+        ad = self.recover()
         self.clean()
-        return adlist
+        return ad
 
     def recover(self):
         """Recovers reduction information into memory"""
-        log.debug("GireduceETI.recover()")
-        adlist = []
+        log.debug("GemcombineETI.recover()")
+        ad = None
         for par in self.param_objs:
             par.recover()
         for fil in self.file_objs:
-            if isinstance(fil, OutAtList):
-                adlist.extend(fil.recover())
+            if isinstance(fil, OutFile):
+                ad = fil.recover()
             else:
                 fil.recover()
-        if len(adlist) == 1:
-            return adlist[0]
-        else:
-            return adlist
+        return ad
         
         

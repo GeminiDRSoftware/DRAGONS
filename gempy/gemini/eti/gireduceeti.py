@@ -3,42 +3,48 @@ from copy import copy
 
 from pyraf import iraf
 from iraf import gemini
+from iraf import gmos
 from iraf import gemtools
 
 from astrodata import Errors
 from astrodata.adutils import logutils
 from astrodata.adutils.gemutil import pyrafLoader 
 from astrodata.eti.pyrafeti import PyrafETI
-from gempy.eti.gsflatfile import InAtList, OutFile, LogFile
-from gempy.eti.gsflatparam import FlVardq, hardcoded_params, GsflatParam
-
+from gireducefile import InAtList, OutAtList, LogFile
+from gireduceparam import Nbiascontam, \
+                        subtract_overscan_hardcoded_params, GireduceParam
+    
 log = logutils.get_logger(__name__)
 
-class GsflatETI(PyrafETI):
+class GireduceETI(PyrafETI):
     """This class coordinates the external task interface as it relates
-    directly to the IRAF task: gsflat
+    directly to the IRAF task: gireduce
     """
     clparam_dict = None
-    def __init__(self, rc):
+    ad = None
+    def __init__(self, rc, ad):
         """
         Adds the file and parameter objects to a list
 
         :param rc: Used to store reduction information
         :type rc: ReductionContext
         """
-        log.debug("GsflatETI __init__")
+        log.debug("GireduceETI __init__")
         PyrafETI.__init__(self, rc)
         self.clparam_dict = {}
-        self.add_file(InAtList(rc))
-        self.add_file(OutFile(rc))
+
+        # if ad then it will only process the ad
+        self.add_file(InAtList(rc, ad))
+        self.add_file(OutAtList(rc, ad))
         self.add_file(LogFile(rc))
-        self.add_param(FlVardq(rc))
-        for param in hardcoded_params:
-            self.add_param(GsflatParam(rc, param, hardcoded_params[param]))
+        self.add_param(Nbiascontam(rc, ad))
+        for param in subtract_overscan_hardcoded_params:
+            self.add_param(GireduceParam(rc, param, \
+                           subtract_overscan_hardcoded_params[param]))
 
     def execute(self):
-        """Execute pyraf task: gsflat"""
-        log.debug("GsflatETI.execute()")
+        """Execute pyraf task: gireduce"""
+        log.debug("GireduceETI.execute()")
 
         # Populate object lists
         xcldict = copy(self.clparam_dict)
@@ -46,45 +52,51 @@ class GsflatETI(PyrafETI):
             xcldict.update(fil.get_parameter())
         for par in self.param_objs:
             xcldict.update(par.get_parameter())
-        iraf.unlearn(iraf.gsflat)
+        iraf.unlearn(iraf.gmos.gireduce)
 
         # Use setParam to list the parameters in the logfile 
         for par in xcldict:
             #Stderr and Stdout are not recognized by setParam
             if par != "Stderr" and par !="Stdout":
-                gemini.gsflat.setParam(par,xcldict[par])
-        log.fullinfo("\nGSFLAT PARAMETERS:\n")
-        iraf.lpar(iraf.gsflat, Stderr=xcldict["Stderr"], \
+                gemini.gmos.gireduce.setParam(par,xcldict[par])
+        log.fullinfo("\nGIREDUCE PARAMETERS:\n")
+        iraf.lpar(iraf.gmos.gireduce, Stderr=xcldict["Stderr"], \
             Stdout=xcldict["Stdout"])
 
         # Execute the task using the same dict as setParam
         # (but this time with Stderr and Stdout) 
-        gemini.gsflat(**xcldict)
-        if gemini.gsflat.status:
-            raise Errors.OutputError("The IRAF task gsflat failed")
+        #from pprint import pprint
+        #pprint(xcldict)
+        gemini.gmos.gireduce(**xcldict)
+        if gemini.gmos.gireduce.status:
+            raise Errors.OutputError("The IRAF task gmos.gireduce failed")
         else:
-            log.fullinfo("The IRAF task gsflat completed successfully")
+            log.fullinfo("The IRAF task gmos.gireduce completed successfully")
 
     def run(self):
         """Convenience function that runs all the needed operations."""
-        log.debug("GsflatETI.run()")
+        log.debug("GireduceETI.run()")
+        adlist = []
         self.prepare()
         self.execute()
-        ad = self.recover()
+        adlist = self.recover()
         self.clean()
-        return ad
+        return adlist
 
     def recover(self):
         """Recovers reduction information into memory"""
-        log.debug("GsflatETI.recover()")
-        ad = None
+        log.debug("GireduceETI.recover()")
+        adlist = []
         for par in self.param_objs:
             par.recover()
         for fil in self.file_objs:
-            if isinstance(fil, OutFile):
-                ad = fil.recover()
+            if isinstance(fil, OutAtList):
+                adlist.extend(fil.recover())
             else:
                 fil.recover()
-        return ad
+        if len(adlist) == 1:
+            return adlist[0]
+        else:
+            return adlist
         
         

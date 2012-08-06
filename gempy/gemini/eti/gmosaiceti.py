@@ -10,8 +10,8 @@ from astrodata import Errors
 from astrodata.adutils import logutils
 from astrodata.adutils.gemutil import pyrafLoader 
 from astrodata.eti.pyrafeti import PyrafETI
-from gempy.eti.gmosaicfile import InAtList, OutAtList, LogFile
-from gempy.eti.gmosaicparam import FlPaste, FlFixpix, Geointer, FlVardq, FlClean, mosaic_detectors_hardcoded_params, GmosaicParam
+from gmosaicfile import InAtList, OutAtList, LogFile
+from gmosaicparam import FlPaste, FlFixpix, Geointer, FlVardq, FlClean, mosaic_detectors_hardcoded_params, GmosaicParam
     
 log = logutils.get_logger(__name__)
 
