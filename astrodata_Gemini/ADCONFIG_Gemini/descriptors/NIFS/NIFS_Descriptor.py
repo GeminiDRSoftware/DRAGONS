@@ -4,7 +4,7 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
-from gempy.gemini_metadata_utils import removeComponentID
+from gempy import gemini_metadata_utils as gmu
 
 from StandardNIFSKeyDict import stdkeyDictNIFS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
@@ -41,7 +41,7 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
                 raise dataset.exception_info
         if stripID:
             # Return the stripped disperser string
-            ret_disperser = removeComponentID(disperser)
+            ret_disperser = gmu.removeComponentID(disperser)
         else:
             # Return the disperser string
             ret_disperser = str(disperser)
@@ -65,7 +65,7 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
             stripID = True
         if stripID:
             # Return the stripped filter name string
-            ret_filter_name = removeComponentID(filter_name)
+            ret_filter_name = gmu.removeComponentID(filter_name)
         else:
             # Return the filter name string
             ret_filter_name = str(filter_name)

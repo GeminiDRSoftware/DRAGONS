@@ -4,7 +4,7 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
-from gempy.gemini_metadata_utils import removeComponentID
+from gempy import gmu
 
 from StandardGNIRSKeyDict import stdkeyDictGNIRS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
@@ -41,11 +41,11 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             if pretty and prism.startswith("MIR"):
                 # Return the stripped and pretty disperser string. If the
                 # prism is a mirror, don't list it in the pretty disperser. 
-                disperser = removeComponentID(grating)
+                disperser = gmu.removeComponentID(grating)
             else:
                 # Return the stripped disperser string
-                disperser = "%s&%s" % (removeComponentID(grating),
-                                       removeComponentID(prism))
+                disperser = "%s&%s" % (gmu.removeComponentID(grating),
+                                       gmu.removeComponentID(prism))
         else:
             # Return the disperser string
             disperser = "%s&%s" % (grating, prism)
@@ -142,7 +142,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             # If the regex didn't match, just pass through the raw value
             ret_grating = grating
         if stripID or pretty:
-            ret_grating = removeComponentID(ret_grating)
+            ret_grating = gmu.removeComponentID(ret_grating)
         
         return ret_grating
     
@@ -263,7 +263,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             parts = m.groups()
             ret_prism = "%s%s%s" % (parts[1], parts[2], parts[3])
             if stripID or pretty:
-                ret_prism = removeComponentID(ret_prism)
+                ret_prism = gmu.removeComponentID(ret_prism)
         
         else:
             ret_prism = prism
@@ -398,7 +398,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if stripID or pretty:
-            ret_slit = removeComponentID(slit)
+            ret_slit = gmu.removeComponentID(slit)
         else:
             ret_slit = str(slit)
         

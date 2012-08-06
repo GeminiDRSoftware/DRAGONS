@@ -5,7 +5,7 @@ import numpy as np
 
 from astrodata import Errors
 from astrodata import Lookups
-from gempy.gemini_metadata_utils import removeComponentID, sectionStrToIntList
+from gempy import gemini_metadata_utils as gmu
 import GemCalcUtil
 from StandardGMOSKeyDict import stdkeyDictGMOS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
@@ -85,7 +85,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # Return a dictionary with the array section list that uses
                 # 0-based, non-inclusive indexing as the value in the form
                 # [x1, x2, y1, y2]
-                array_section = sectionStrToIntList(raw_array_section)
+                array_section = gmu.sectionStrToIntList(raw_array_section)
                 ret_array_section.update({
                     (ext.extname(), ext.extver()):array_section})
         if ret_array_section == {}:
@@ -404,10 +404,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if stripID:
             if pretty:
                 # Return the stripped and pretty disperser string
-                ret_disperser = removeComponentID(disperser).strip("+")
+                ret_disperser = gmu.removeComponentID(disperser).strip("+")
             else:
                 # Return the stripped disperser string
-                ret_disperser = removeComponentID(disperser)
+                ret_disperser = gmu.removeComponentID(disperser)
         else:
             # Return the disperser string
             ret_disperser = str(disperser)
@@ -851,7 +851,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # Return a dictionary with the overscan section list that 
                 # uses 0-based, non-inclusive indexing as the value in the form
                 # [x1, x2, y1, y2]
-                overscan_section = sectionStrToIntList(raw_overscan_section)
+                overscan_section = gmu.sectionStrToIntList(raw_overscan_section)
                 ret_overscan_section.update({
                     (ext.extname(), ext.extver()):overscan_section})
         if ret_overscan_section == {}:

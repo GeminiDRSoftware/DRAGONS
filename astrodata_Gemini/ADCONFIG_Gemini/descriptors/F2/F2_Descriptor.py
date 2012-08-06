@@ -5,7 +5,7 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
-from gempy.gemini_metadata_utils import removeComponentID, sectionStrToIntList
+from gempy import gemini_metadata_utils as gmu
 
 from StandardF2KeyDict import stdkeyDictF2
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
@@ -39,7 +39,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
                 # Return the data section list that used 0-based, non-inclusive
                 # indexing as the value in the form [x1, x2, y1, y2]
                 ret_data_section.update(
-                    {(ext.extname(), ext.extver()): sectionStrToIntList(
+                    {(ext.extname(), ext.extver()): gmu.sectionStrToIntList(
                                                                 data_section)})
         return ret_data_section
         
@@ -95,8 +95,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             
         if stripID or pretty:
             # Strip the component ID from the two filter name values
-            filter1 = removeComponentID(filter1)
-            filter2 = removeComponentID(filter2)
+            filter1 = gmu.removeComponentID(filter1)
+            filter2 = gmu.removeComponentID(filter2)
         filter = []
         if pretty:
             # Remove any filters that have the value "open" or "Open"

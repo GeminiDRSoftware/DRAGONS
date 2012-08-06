@@ -4,7 +4,7 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
-from gempy.gemini_metadata_utils import removeComponentID
+from gempy import gemini_metadata_utils as gmu
 import GemCalcUtil 
 
 from StandardNIRIKeyDict import stdkeyDictNIRI
@@ -177,7 +177,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             disperser = "MIRROR"
         if stripID and disperser is not "MIRROR":
             # Return the disperser string with the component ID stripped
-            ret_disperser = removeComponentID(disperser)
+            ret_disperser = gmu.removeComponentID(disperser)
         else:
             # Return the disperser string
             ret_disperser = str(disperser)
@@ -206,9 +206,9 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         if stripID:
-            filter1 = removeComponentID(filter1)
-            filter2 = removeComponentID(filter2)
-            filter3 = removeComponentID(filter3)
+            filter1 = gmu.removeComponentID(filter1)
+            filter2 = gmu.removeComponentID(filter2)
+            filter3 = gmu.removeComponentID(filter3)
         # Create list of filter values
         filters = [filter1, filter2, filter3]
         if pretty:
@@ -309,7 +309,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             pupil_mask = "MIRROR"
         if stripID and pupil_mask is not "MIRROR":
             # Return the pupil mask string with the component ID stripped
-            ret_pupil_mask = removeComponentID(pupil_mask)
+            ret_pupil_mask = gmu.removeComponentID(pupil_mask)
         else:
             # Return the pupil_mask string
             ret_pupil_mask = str(pupil_mask)

@@ -7,7 +7,7 @@ from primitives_GMOS import GMOSPrimitives
 from gempy import gemini_tools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
-from gempy.eti.gsflateti import GsflatETI
+from gempy import eti
 
 class GMOS_SPECTPrimitives(GMOSPrimitives):
     """
@@ -315,7 +315,7 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                 raise Errors.InputError("%s must be prepared" % ad.filename)
 
         # Instantiate ETI and then run the task 
-        gsflat_task = GsflatETI(rc)
+        gsflat_task = eti.gsflateti.GsflatETI(rc)
         adout = gsflat_task.run()
 
         # Set any zero-values to 1 (to avoid dividing by zero)

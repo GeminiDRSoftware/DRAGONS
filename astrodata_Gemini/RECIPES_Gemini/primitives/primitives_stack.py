@@ -8,7 +8,7 @@ from gempy import gemini_tools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from primitives_GENERAL import GENERALPrimitives
-from gempy.eti.gemcombineeti import GemcombineETI
+from gempy import eti
 import time
 
 class StackPrimitives(GENERALPrimitives):
@@ -132,7 +132,7 @@ class StackPrimitives(GENERALPrimitives):
                 ron[key] = math.sqrt(ron[key])
         
             # Instantiate ETI and then run the task 
-            gemcombine_task = GemcombineETI(rc)
+            gemcombine_task = eti.gemcombineeti.GemcombineETI(rc)
             adout = gemcombine_task.run()
             
             # Change type of DQ plane back to int16 (gemcombine sets

@@ -1,5 +1,5 @@
 from astrodata import Errors
-from gempy.gemini_metadata_utils import sectionStrToIntList
+from gempy import gemini_metadata_utils as gmu
 from StandardGSAOIKeyDict import stdkeyDictGSAOI
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 
@@ -39,7 +39,7 @@ class GSAOI_DescriptorCalc(GEMINI_DescriptorCalc):
                 # Return a dictionary with the array section list that uses
                 # 0-based, non-inclusive indexing as the value in the form
                 # [x1, x2, y1, y2]
-                array_section = sectionStrToIntList(raw_array_section)
+                array_section = gmu.sectionStrToIntList(raw_array_section)
                 ret_array_section.update({
                     (ext.extname(), ext.extver()):array_section})
 

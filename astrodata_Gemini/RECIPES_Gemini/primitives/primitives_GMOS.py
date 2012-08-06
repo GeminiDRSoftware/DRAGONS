@@ -12,8 +12,7 @@ from gempy import gemini_tools as gt
 from gempy import managers as mgr
 from gempy.geminiCLParDicts import CLDefaultParamsDict
 from primitives_GEMINI import GEMINIPrimitives
-from gempy.eti.gireduceeti import GireduceETI
-from gempy.eti.gmosaiceti import GmosaicETI
+from gempy import eti
 import time
 
 class GMOSPrimitives(GEMINIPrimitives):
@@ -103,7 +102,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             old_detsec = ad["SCI",1].detector_section().as_list()
 
             # Instantiate ETI and then run the task
-            gmosaic_task = GmosaicETI(rc,ad)
+            gmosaic_task = eti.gmosaiceti.GmosaicETI(rc,ad)
             ad_out = gmosaic_task.run()
 
             # Get new DATASEC keyword, using the full shape
@@ -880,7 +879,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             objmask = ad["OBJMASK"]
             
             # Instantiate ETI and then run the task
-            gireduce_task = GireduceETI(rc,ad)
+            gireduce_task = eti.gireduceeti.GireduceETI(rc,ad)
             adout = gireduce_task.run()
             
             if dq_ext is not None:
