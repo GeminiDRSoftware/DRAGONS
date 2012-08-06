@@ -954,7 +954,6 @@ try:
                     co.is_finished(True)
 
                     # write outputs
-                    from gempy.gemini_tools import filename_updater
                     outputs = co.get_stream("main")
                     clobber = co["clobber"]
                     if clobber:
