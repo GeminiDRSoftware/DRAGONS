@@ -1134,6 +1134,9 @@ TimePlot.prototype.highlightPoint = function(key) {
     // The highlight function is the mouseover event handler from
     // the Highlighter plugin
     var highlight_fn = function(plot, point) {
+	if (!point) {
+	    point = null
+        }
 	$.jqplot.Highlighter.handleMove(null,null,null,point,plot);
     }
 

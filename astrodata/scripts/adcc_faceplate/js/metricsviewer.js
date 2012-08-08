@@ -1195,6 +1195,17 @@ MetricsViewer.prototype = {
 	    console.log("No BG plot");
 	}
 
+	// If there is a table row highlighted, re-highlight its
+	// associated point in the plots
+	var dl = $("#metrics_table tr.highlight").attr("id");
+	if (dl) {
+            if (!this.isHover($(".time_plot"))) {
+                this.iq_plot.highlightPoint(dl);
+                this.cc_plot.highlightPoint(dl);
+	        this.bg_plot.highlightPoint(dl);
+            }
+	}
+
 	// Update tooltips
 	var tt, tooltip_record;
 	for (tt in this.tooltips) {
