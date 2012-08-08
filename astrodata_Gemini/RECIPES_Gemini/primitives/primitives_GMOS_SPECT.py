@@ -114,87 +114,37 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
 
-        # Load PyRAF
-        pyraf, gemini, yes, no = pyrafLoader()
-
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
-            
-            # Check whether to use interactive mode
-            if rc["interactive"]:
-                fl_inter = yes
-            else:
-                fl_inter = no
 
-            # Prepare input files, lists, parameters... for input to
-            # the CL script
-            clm=mgr.CLManager(imageIns=ad, suffix="_out",
-                              funcName="dws", needDatabase=True, log=log)
-            
-            # Check the status of the CLManager object, 
-            # True=continue, False= issue warning
-            if not clm.status:
-                raise Errors.InputError("Inputs must be prepared")
-            
-            # Parameters set by the mgr.CLManager or the definition 
-            # of the primitive 
-            clPrimParams = {
-              "inimages": clm.imageInsFiles(type="string"),
-              "database": clm.databaseName,
-              "fl_inter": fl_inter,
-              # This returns a unique/temp log file for IRAF
-              "logfile"     :clm.templog.name,
-                          }
-            
-            # Grab the default params dict and update it with 
-            # the above dict
-            clParamsDict = CLDefaultParamsDict("gswavelength")
-            clParamsDict.update(clPrimParams)
-            
-            # Log the parameters
-            mgr.logDictParams(clParamsDict)
-            
-            log.debug("Calling the gswavelength CL script for inputs "+
-                      clm.imageInsFiles(type="string"))
-            
+            # Instantiate ETI and then run the task 
+            # Run in a try/except because gswavelength sometimes fails
+            # badly, and we want to be able to continue without
+            # wavelength calibration in the QA case
+            gswavelength_task = eti.gswavelengtheti.GswavelengthETI(rc,ad)
             try:
-                gemini.gmos.gswavelength(**clParamsDict)
-            except:
-                gemini.gmos.gswavelength.status = 1
-
-            if gemini.gmos.gswavelength.status:
-####here - clean up tmp files
+                adout = gswavelength_task.run()
+            except Errors.OutputError:
+                gswavelength_task.clean()
                 if "qa" in rc.context:
                     log.warning("gswavelength failed for input " + ad.filename)
-
-                    # Remove CL manager temp files
-                    clm.finishCL()
-                    # Continue with unmodified input
                     adoutput_list.append(ad)
                     continue
                 else:
-                    raise Errors.ScienceError("gswavelength failed for inputs "+
+                    raise Errors.ScienceError("gswavelength failed for input "+
                                               ad.filename + ". Try interactive"+
                                               "=True")
-            else:
-                log.fullinfo("Exited the gswavelength CL script successfully")
-            
-            # Clean up the intermediate tmp files written to disk
-            # and read in the database as a WAVECAL extension, attached
-            # to the output AD
-            imageOuts, refOuts, arrayOuts = clm.finishCL() 
-            ad = imageOuts[0]
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=adout, keyword=timestamp_key)
 
             # Change the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
-                                              strip=True)
+            adout.filename = gt.filename_updater(
+                adinput=adout, suffix=rc["suffix"], strip=True)
             
             # Append the output AstroData object to the list
             # of output AstroData objects
-            adoutput_list.append(ad)
+            adoutput_list.append(adout)
         
         # Report the list of output AstroData objects to the reduction
         # context
