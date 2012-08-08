@@ -10,6 +10,7 @@ from astrodata.adutils import logutils
 from astrodata.ConfigSpace import lookup_path
 from astrodata.AstroData import AstroData
 from astrodata import Errors
+from gempy.library import astrotools as at
 
 # Load the standard comments for header keywords that will be updated
 # in these functions
@@ -1276,6 +1277,40 @@ def parse_sextractor_param():
         columns.append(name)
 
     return columns
+
+def read_database(ad, database_name=None, input_name=None, output_name=None):
+    if database_name is None:
+        raise Errors.InputError('No database name specified')
+    if not os.path.isdir(database_name):
+        raise Errors.InputError('Database directory %s does not exist' %
+                                database_name)
+    if input_name is None:
+        input_name = ad.filename
+    if output_name is None:
+        output_name = ad.filename
+
+    basename = os.path.basename(input_name)
+    basename,filetype = os.path.splitext(basename)
+    out_basename = os.path.basename(output_name)
+    out_basename,filetype = os.path.splitext(out_basename)
+
+    for sciext in ad["SCI"]:
+        extver = sciext.extver()
+
+        record_name = basename + "_%0.3d" % extver
+        db = at.SpectralDatabase(database_name,record_name)
+
+        out_record_name = out_basename + "_%0.3d" % extver
+        table = db.as_binary_table(record_name=out_record_name)
+
+        table_ad = AstroData(table)
+        table_ad.rename_ext("WAVECAL",extver)
+
+        if ad["WAVECAL",extver] is not None:
+            ad.remove(("WAVECAL",extver))
+        ad.append(table_ad)
+
+    return ad
 
 def trim_to_data_section(adinput=None):
     """
