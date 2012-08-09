@@ -1529,3 +1529,21 @@ def validate_input(adinput=None):
         raise Errors.InputError("The adinput cannot be an empty list")
     # Now, adinput is a list that contains one or more AstroData objects
     return adinput
+
+def write_database(ad, database_name=None, input_name=None):
+    if input_name is None:
+        input_name = ad.filename
+
+    basename = os.path.basename(input_name)
+    basename,filetype = os.path.splitext(basename)
+
+    for sciext in ad["SCI"]:
+        record_name = basename + "_%0.3d" % sciext.extver()
+        wavecal_table = ad["WAVECAL",sciext.extver()]
+        if wavecal_table is None:
+            raise Errors.ManagersError('WAVECAL extension must exist '\
+                                       'to write spectroscopic database')
+        db = at.SpectralDatabase(binary_table=wavecal_table,
+                                 record_name=record_name)
+        db.write_to_disk(database_name=database_name)
+
