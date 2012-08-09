@@ -7,6 +7,7 @@ import gireduceeti
 import gmosaiceti
 import gsappwaveeti
 import gscrrejeti
+import gsextracteti
 import gsflateti
 import gsskysubeti
 import gstransformeti
