@@ -167,76 +167,23 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
 
-        # Load PyRAF
-        pyraf, gemini, yes, no = pyrafLoader()
-
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
-            # Test whether to propagate VAR/DQ planes
-            fl_vardq = no
-            weights = "none"
-            if ad["DQ"]:
-                if ad["VAR"]:
-                    fl_vardq = yes
-                    weights = "variance"
-
-            # Prepare input files, lists, parameters... for input to
-            # the CL script
-            clm=mgr.CLManager(imageIns=ad, suffix=rc["suffix"],
-                              funcName="extract1DSpectra", log=log)
-            
-            # Check the status of the CLManager object, 
-            # True=continue, False= issue warning
-            if not clm.status:
-                raise Errors.InputError("Inputs must be prepared")
-            
-            # Parameters set by the mgr.CLManager or the definition 
-            # of the primitive 
-            clPrimParams = {
-              "inimages": clm.imageInsFiles(type="string"),
-              "outimages": clm.imageOutsFiles(type="string"),
-              "fl_vardq": fl_vardq,
-              "weights": weights,
-              # This returns a unique/temp log file for IRAF
-              "logfile"     :clm.templog.name,
-                          }
-            
-            # Grab the default params dict and update it with 
-            # the above dict
-            clParamsDict = CLDefaultParamsDict("gsextract")
-            clParamsDict.update(clPrimParams)
-            
-            # Log the parameters
-            mgr.logDictParams(clParamsDict)
-            
-            log.debug("Calling the gsextract CL script for inputs "+
-                      clm.imageInsFiles(type="string"))
-            
-            gemini.gmos.gsextract(**clParamsDict)
-            
-            if gemini.gmos.gsextract.status:
-                raise Errors.ScienceError("gsextract failed for inputs "+
-                             clm.imageInsFiles(type="string"))
-            else:
-                log.fullinfo("Exited the gsextract CL script successfully")
-            
-            # Rename CL outputs and load them back into memory, and 
-            # clean up the intermediate tmp files written to disk
-            # refOuts and arrayOuts are None here
-            imageOuts, refOuts, arrayOuts = clm.finishCL() 
-            ad = imageOuts[0]
+            # Instantiate ETI and then run the task 
+            gsextract_task = eti.gsextracteti.GsextractETI(rc,ad)
+            adout = gsextract_task.run()
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=adout, keyword=timestamp_key)
 
             # Change the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
-                                              strip=True)
+            adout.filename = gt.filename_updater(
+                adinput=adout, suffix=rc["suffix"], strip=True)
             
             # Append the output AstroData object to the list
             # of output AstroData objects
-            adoutput_list.append(ad)
+            adoutput_list.append(adout)
         
         # Report the list of output AstroData objects to the reduction
         # context
