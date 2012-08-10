@@ -1235,7 +1235,7 @@ def obsmode_add(ad):
             ad.phu_set_key_value("OBSMODE", typeStr ,
                     "Observing mode (IMAGE|IFU|MOS|LONGSLIT)")
         except:
-            raise Errors.ManagersError("Input %s is not of type" +
+            raise Errors.InputError("Input %s is not of type" +
                 "GMOS_IMAGE/_IFU/_MOS or /LS. " % ad.filename)
     return ad
 
@@ -1541,7 +1541,7 @@ def write_database(ad, database_name=None, input_name=None):
         record_name = basename + "_%0.3d" % sciext.extver()
         wavecal_table = ad["WAVECAL",sciext.extver()]
         if wavecal_table is None:
-            raise Errors.ManagersError('WAVECAL extension must exist '\
+            raise Errors.InputError('WAVECAL extension must exist '\
                                        'to write spectroscopic database')
         db = at.SpectralDatabase(binary_table=wavecal_table,
                                  record_name=record_name)

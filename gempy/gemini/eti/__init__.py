@@ -12,3 +12,4 @@ import gsflateti
 import gsskysubeti
 import gstransformeti
 import gswavelengtheti
+import sploteti
