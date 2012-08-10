@@ -1,4 +1,6 @@
 include ReleaseNote
 include INSTALL
 include Copyright
-recursive-include doc *
+include README
+#recursive-include doc *
+recursive-include doc-local *

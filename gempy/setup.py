@@ -21,7 +21,10 @@ from distutils.core import setup
 MODULENAME = 'gempy'
 
 # PACKAGES and PACKAGE_DIRS
-SUBMODULES = []
+SUBMODULES = ['adlibrary',
+              'gemini',
+              'gemini.eti',
+              'library']
 PACKAGES = [MODULENAME]
 for m in SUBMODULES:
     PACKAGES.append('.'.join([MODULENAME,m]))
@@ -40,11 +43,12 @@ for p in PACKAGES:
 DATA_FILES = []
 DOC_DIR = os.path.join('share','gempy')
 svndir = re.compile('.svn')
-for root, dirs, files in os.walk('doc'):
-    if not svndir.search(root) and len(files) > 0:
-        dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
-        DOC_FILES = map((lambda f: os.path.join(root,f)), files)      
-        DATA_FILES.append( (os.path.join(DOC_DIR,dest), DOC_FILES) )
+# the 'doc' directory is completely out dated, don't install or distribute until fixed
+#for root, dirs, files in os.walk('doc'):
+#    if not svndir.search(root) and len(files) > 0:
+#        dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
+#        DOC_FILES = map((lambda f: os.path.join(root,f)), files)      
+#        DATA_FILES.append( (os.path.join(DOC_DIR,dest), DOC_FILES) )
 for root, dirs, files in os.walk('doc-local'):
     if not svndir.search(root) and len(files) > 0:
         dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
@@ -53,13 +57,14 @@ for root, dirs, files in os.walk('doc-local'):
 
 
 # SCRIPTS
-GEMPY_SCRIPTS = [ os.path.join('scripts','redux'),
+GEMPY_SCRIPTS = [ os.path.join('scripts','autoredux'),
+                  #os.path.join('scritps','cleanir.py'),  #needs to be standardized first
                   os.path.join('scripts','fwhm_histogram'),
+                  os.path.join('scripts','profile_all_obj'),
                   os.path.join('scripts','psf_plot'),
+                  os.path.join('scripts','redux'),
                   os.path.join('scripts','zp_histogram')
-#                 os.path.join('iqtool','iqtool'),
                  ]
-##SCRIPTS = [os.path.join('scripts','cleanir.py')]
 SCRIPTS = []
 SCRIPTS.extend(GEMPY_SCRIPTS)
 
