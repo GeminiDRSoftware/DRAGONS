@@ -18,5 +18,3 @@ attachWavelengthSolution
 resampleToLinearCoords
 skyCorrectFromSlit
 display
-extract1DSpectra
-display

@@ -298,6 +298,22 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                     log.stdinfo("Applying rough wavelength calibration")
                     gsappwave_task = eti.gsappwaveeti.GsappwaveETI(rc,ad)
                     adout = gsappwave_task.run()
+
+                    # Flip the data left-to-right to put longer wavelengths
+                    # on the right
+                    for ext in adout:
+                        if ext.extname() in ["SCI","VAR","DQ"]:
+                            # Reverse the data in the rows
+                            ext.data = ext.data[:,::-1]
+                            # Change the WCS to match 
+                            cd11 = ext.get_key_value("CD1_1")
+                            crpix1 = ext.get_key_value("CRPIX1")
+                            if cd11 and crpix1:
+                                # Flip the sign on the first matrix element
+                                ext.set_key_value("CD1_1",-cd11)
+                                # Add one to the reference point
+                                # (because the origin is 1, not 0)
+                                ext.set_key_value("CRPIX1",crpix1+1)
                 else:
                     raise Errors.InputError("No wavelength solution found "\
                                             "for %s" % ad.filename)
