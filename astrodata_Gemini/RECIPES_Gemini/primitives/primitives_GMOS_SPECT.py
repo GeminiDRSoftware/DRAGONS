@@ -5,8 +5,6 @@ from astrodata.adutils import logutils
 from astrodata.adutils.gemutil import pyrafLoader
 from primitives_GMOS import GMOSPrimitives
 from gempy import gemini_tools as gt
-from gempy import managers as mgr
-from gempy.geminiCLParDicts import CLDefaultParamsDict
 from gempy import eti
 
 class GMOS_SPECTPrimitives(GMOSPrimitives):

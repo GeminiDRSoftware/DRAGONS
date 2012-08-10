@@ -5,7 +5,6 @@ from astrodata import Lookups
 from astrodata.adutils import gemLog
 from gempy import astrotools as at
 from gempy import gemini_tools as gt
-from gempy import managers as mgr
 from primitives_GENERAL import GENERALPrimitives
 
 # Load the standard comments for header keywords that will be updated
@@ -45,12 +44,10 @@ class RegisterPrimitives(GENERALPrimitives):
         field, or when the WCSs are very far off to begin with. As a back-up
         method, the user can try correcting the WCS by the shifts indicated 
         in the POFFSET and QOFFSET header keywords (option fallback='header'), 
-        or by hand-selecting common points of reference in an IRAF display
-        (option fallback='user'). By default, only the direct method is
+        By default, only the direct method is
         attempted, as it is expected that the relative WCS will generally be
         more correct than either indirect method. If the user prefers not to
-        attempt direct mapping at all, they may set method to either 'user'
-        or 'header'.
+        attempt direct mapping at all, they may set method to 'header'.
         
         In order to use the direct mapping method, sources must have been
         detected in the frame and attached to the AstroData instance in an 
@@ -78,16 +75,15 @@ class RegisterPrimitives(GENERALPrimitives):
         
         :param method: method to use to generate reference points. Options
                        are 'sources' to directly map sources from the input
-                       image to the reference image, 'user' to select 
-                       reference points by cursor from an IRAF display, 
+                       image to the reference image,
                        or 'header' to generate reference points from the 
                        POFFSET and QOFFSET keywords in the image headers.
-        :type method: string, either 'sources', 'user', or 'header'
+        :type method: string, either 'sources' or 'header'
         
         :param fallback: back-up method for generating reference points.
                          if the primary method fails. The 'sources' option
                          cannot be used as the fallback.
-        :type fallback: string, either 'user' or 'header'.
+        :type fallback: string, either 'header' or None.
         
         :param cull_sources: flag to indicate whether sub-optimal sources 
                              should be rejected before attempting a direct
@@ -213,9 +209,6 @@ class RegisterPrimitives(GENERALPrimitives):
             if method=="header":
                 reg_ad = _header_align(reference, adinput[1:])
                 adoutput_list.extend(reg_ad)
-            elif method=="user":
-                reg_ad = _user_align(reference, adinput[1:], rotate, scale)
-                adoutput_list.extend(reg_ad)
             elif method!="sources":
                 raise Errors.InputError("Did not recognize method " + method)
             
@@ -235,9 +228,6 @@ class RegisterPrimitives(GENERALPrimitives):
                                 "via " + fallback + " mapping")
                             if fallback=="header":
                                 adoutput = _header_align(reference, ad)
-                            elif fallback=="user":
-                                adoutput = _user_align(reference, ad, 
-                                                       rotate, scale)
                             else:
                                 raise Errors.InputError(
                                     "Did not recognize fallback method " + 
@@ -270,9 +260,6 @@ class RegisterPrimitives(GENERALPrimitives):
                                 
                                 if fallback=="header":
                                     adoutput = _header_align(reference, ad)
-                                elif fallback=="user":
-                                    adoutput = _user_align(reference, ad, 
-                                                           rotate, scale)
                                 else:
                                     raise Errors.InputError(
                                         "Did not recognize " +
@@ -888,113 +875,3 @@ def _header_align(reference, adinput):
     
     return adoutput_list
 
-def _user_align(reference, adinput, rotate, scale):
-    """
-    This function takes user input to get reference points to use in 
-    correcting an input WCS to a reference WCS. The images are 
-    displayed by IRAF and the common points selected by an image cursor.
-    If rotation or scaling degrees of freedom are desired, two 
-    common points must be selected. If only shifts are desired, one
-    common point must be selected.
-    
-    :param reference: reference image to register other images to. Must
-                      have only one SCI extension.
-    :type reference: AstroData object
-    
-    :param adinput: images to register to reference image. Must have
-                  only one SCI extension.
-    :type adinput: AstroData objects, either a single instance or a list
-    
-    :param rotate: flag to indicate whether the input image WCSs should
-                   be allowed to rotate with respect to the reference image
-                   WCS
-    :type rotate: bool
-    
-    :param scale: flag to indicate whether the input image WCSs should
-                  be allowed to scale with respect to the reference image
-                  WCS. The same scale factor is applied to all dimensions.
-    :type scale: bool
-    """
-    
-    log = gemLog.getGeminiLog()
-    
-    # load pyraf modules
-    from astrodata.adutils.gemutil import pyrafLoader
-    pyraf, gemini, yes, no = pyrafLoader()
-    
-    if not isinstance(adinput,list):
-        adinput = [adinput]
-    
-    # start cl manager for iraf display
-    all_input = [reference] + adinput
-    clm = mgr.CLManager(imageIns=all_input, funcName="display", log=log)
-    tmpfiles = clm.imageInsFiles(type="list")
-    
-    # display the reference image
-    print " ==> Reference image: " + reference.filename
-    pyraf.iraf.display(tmpfiles[0]+"[SCI]", 1)
-    
-    if not rotate and not scale:
-        # only one object needed for pure shifts
-        print "Point to one common object in reference image"
-        print "    strike any key"
-        words = pyraf.iraf.cl.imcur.split()
-        x11 = float(words[0])
-        y11 = float(words[1])
-        ref_coord = [[x11,y11]]
-    else:
-        # select two objects for rotation/scaling
-        print "Point to first common object in reference image"
-        print "    strike any key"
-        words = pyraf.iraf.cl.imcur.split()
-        x11 = float(words[0])
-        y11 = float(words[1])
-        print "Point to second common object in reference image"
-        print "    strike any key"
-        words = pyraf.iraf.cl.imcur.split()
-        x12 = float(words[0])
-        y12 = float(words[1])
-        ref_coord = [[x11,y11],[x12,y12]]
-    
-    objIns = []
-    for i in range(len(adinput)):
-        ad = adinput[i]
-        
-        print " ==> Image to be transformed:", ad.filename
-        pyraf.iraf.display(tmpfiles[i+1]+"[SCI]", 1)
-        
-        if not rotate and not scale:
-            print "Point to one common object in image to be transformed"
-            print "    coordinates for last image: %.1f, %.1f" % (x11, y11)
-            print "    strike any key"
-            words = pyraf.iraf.cl.imcur.split()
-            x21 = float(words[0])
-            y21 = float(words[1])
-            img_coord = [[x21, y21]]
-        else:
-            print "Point to first common object in image to be transformed"
-            print "    coordinates for last image: %.1f, %.1f" % (x11, y11)
-            print "    strike any key"
-            words = pyraf.iraf.cl.imcur.split()
-            x21 = float(words[0])
-            y21 = float(words[1])
-            
-            print "Point to second common object in image to be transformed"
-            print "    coordinates for last image: %.1f, %.1f" % (x12, y12)
-            print "    strike any key"
-            words = pyraf.iraf.cl.imcur.split()
-            x22 = float(words[0])
-            y22 = float(words[1])
-            img_coord = [[x21, y21],[x22,y22]]
-        
-        log.fullinfo("Reference coordinates: "+repr(ref_coord))
-        log.fullinfo("Coordinates to transform: "+repr(img_coord))
-        objIns.append([ref_coord,img_coord])
-    
-    # delete temporary files
-    clm.finishCL()
-    
-    adoutput_list = _align_wcs(reference, adinput, objIns, 
-                               rotate=rotate, scale=scale)
-    
-    return adoutput_list

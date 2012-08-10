@@ -6,7 +6,7 @@ from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
 from gempy import gemini_tools as gt
-from gempy import managers as mgr
+from gempy import eti
 from primitives_GENERAL import GENERALPrimitives
 import pifgemini.standardize as sdz
 import pifgemini.gmos as gm
@@ -190,26 +190,8 @@ class DisplayPrimitives(GENERALPrimitives):
                 
                 # Use splot to display instead of numdisplay
                 log.fullinfo("Calling IRAF task splot to display data")
-
-                # Load PyRAF
-                pyraf, gemini, yes, no = pyrafLoader()
-
-                # Write temporary files to disk 
-                clm=mgr.CLManager(imageIns=ad, suffix="_display",
-                                  funcName="display", log=log)
-                
-                str_ext = "[%s]" % extname
-                cl_params = {
-                    "images" : clm.imageInsFiles(type="string")+str_ext,
-                    "Stdout": mgr.IrafStdout(),
-                    "Stderr": mgr.IrafStdout()
-                    }
-                mgr.logDictParams(cl_params)
-                pyraf.iraf.splot(**cl_params)
-
-                # Clean up temporary files
-                clm.finishCL()
-
+                splot_task = eti.sploteti.SplotETI(rc,ad)
+                splot_task.run()
                 continue
 
             # Make threshold mask if desired

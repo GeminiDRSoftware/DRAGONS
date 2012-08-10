@@ -104,36 +104,6 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "mosaicDetectorsDEPRECATED":{
-    "suffix":{
-        "default"       : "_mosaicked",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "tile":{
-        "default"       : False,
-        "type"          : "bool",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "interpolate_gaps":{
-        "default"       : False,
-        "type"          : "bool",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "interpolator":{
-        "default"       : "linear",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    },
  "standardizeInstrumentHeaders":{
     "suffix":{
         "default"       : "_headersStandardized",
@@ -178,22 +148,6 @@
         },
     },
  "subtractOverscan":{
-    "suffix":{
-        "default"       : "_overscanSubtracted",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "overscan_section":{
-        "default"       : None,
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    },
- "subtractOverscanDEPRECATED":{
     "suffix":{
         "default"       : "_overscanSubtracted",
         "type"          : "str",
