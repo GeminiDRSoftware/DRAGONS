@@ -1,8 +1,8 @@
 include ReleaseNote
 include INSTALL
+include README
 include Copyright
 global-include RECIPES_Gemini/recipe.*
-include RECIPES_Gemini/primitives/primitives_List.txt
 recursive-include RECIPES_Gemini/doc *
 prune Engineering
 recursive-include ADCONFIG_Gemini *

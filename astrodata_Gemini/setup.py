@@ -28,11 +28,21 @@ PACKAGENAME = 'astrodata_Gemini'
 VERSION = '0.1.0'
 RECIPENAME = 'RECIPES_Gemini'
 CONFIGNAME = 'ADCONFIG_Gemini'
+PIFNAME = 'PIF_Gemini'
 
 #PACKAGES and PACKAGE_DIRS
 PACKAGES = [PACKAGENAME]
 PACKAGES.append('.'.join([PACKAGENAME,RECIPENAME]))
 PACKAGES.append('.'.join([PACKAGENAME,RECIPENAME,'primitives']))
+PACKAGES.append('.'.join([PACKAGENAME,PIFNAME]))
+PACKAGES.append('.'.join([PACKAGENAME,PIFNAME,'pifgemini']))
+slash = re.compile('/')
+for root, dirs, files in os.walk(os.path.join(PIFNAME,'pifgemini')):
+    if not svndir.search(root) and len(files) > 0:
+        pifmodules = map((lambda d: slash.sub('.','/'.join([PACKAGENAME,root,d]))),\
+                         filter((lambda d: not svndir.search(d)), dirs))
+        PACKAGES.extend( pifmodules )
+        
 #for m in SUBMODULES:
 #    PACKAGES.append('.'.join([MODULENAME,m]))
 PACKAGE_DIRS = {}
@@ -50,8 +60,7 @@ for s in ['.']+[RECIPENAME]:
                                      ])
 PACKAGE_DATA[PACKAGENAME].extend(glob.glob(os.path.join(RECIPENAME,'recipe.*')))
 PACKAGE_DATA[PACKAGENAME].extend(glob.glob(os.path.join(RECIPENAME,'subrecipes','recipe.*')))
-#  What about "recipe_index.TEST.py"?
-PACKAGE_DATA[PACKAGENAME].append(os.path.join(RECIPENAME,'primitives','primitives_List.txt'))
+#PACKAGE_DATA[PACKAGENAME].append(os.path.join(RECIPENAME,'primitives','primitives_List.txt'))
 
 
 PACKAGE_DATA[PACKAGENAME].append(os.path.join(CONFIGNAME,'structures','*.py'))
@@ -65,6 +74,7 @@ for root, dirs, files in os.walk(os.path.join(CONFIGNAME,'descriptors')):
 for root, dirs, files in os.walk(os.path.join(CONFIGNAME,'classifications')):
     if not svndir.search(root) and len(files) > 0:
         PACKAGE_DATA[PACKAGENAME].extend( map((lambda f: os.path.join(root, f)), files) )
+
 
 
 # DATA_DIRS and DATA_FILES
