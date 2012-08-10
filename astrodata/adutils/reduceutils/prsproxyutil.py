@@ -15,9 +15,11 @@ LOCALCALMGR = calurldict["LOCALCALMGR"]
 
 #LOCALCALMGR = "http://localhost:%(httpport)d/calsearch.xml?caltype=%(caltype)s&%(tokenstr)s"
 #"None # needs to have adcc http port in
-CALTYPEDICT = { "bias": "bias",
+CALTYPEDICT = { "arc": "arc",
+                "bias": "bias",
                 "dark": "dark",
                 "flat": "flat",
+                "processed_arc":   "processed_arc",
                 "processed_bias":   "processed_bias",
                 "processed_dark":   "processed_dark",
                 "processed_flat":   "processed_flat",
