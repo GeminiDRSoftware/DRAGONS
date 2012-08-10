@@ -141,12 +141,6 @@ class InvalidValueError(Error):
     """
     message = "Keyword value outside allowed range"
 
-class ManagersError(Error):
-    """
-    For general Exceptions raised within the managers.py toolbox
-    """
-    message = 'Exception Raised in managers toolbox'
-
 class MatchShapeError(Error):
     """
     Exception raised for instances when two arrays do not match in shape
