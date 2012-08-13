@@ -180,7 +180,7 @@ MetricsViewer.prototype = {
 	// Instantiate message window
 	this.message_window = new ViewPort($("#message_target"),"message_window");
 	// Instantiate lightbox for urgent message display
-	this.lightbox = new ViewPort($("#lightbox_window"),"lightbox_message");
+	this.lightbox = new KeyedViewPort($("#lightbox_window"),"lightbox_message");
 	$("#lightbox_window").prepend('<span class="close_icon"></span>'+
 				      '<div><h2>WARNING</h2><hr></div>');
 	
@@ -490,12 +490,33 @@ MetricsViewer.prototype = {
 	// in the plot (ie. moused-over)
 	$("#plot_wrapper").on("jqplotDataPointHighlight","div.jqplot-target", 
 	    function(ev,pt) {
+		// Clear any highlights on other plots if mouse is over plots
+		if (mv.isHover($("#plot_wrapper"))) {
+		    var plotname = $(this).attr("id");
+		    if (plotname=="iqplot") {
+			mv.cc_plot.highlightPoint();
+			mv.bg_plot.highlightPoint(); 
+		    } else if (plotname=="ccplot") {
+			mv.iq_plot.highlightPoint();
+			mv.bg_plot.highlightPoint(); 
+		    } else {
+			mv.iq_plot.highlightPoint();
+			mv.cc_plot.highlightPoint();
+		    }
+		}
 	        var dl = pt.data[2];
 		var row = $("#"+dl);
 		var from_plot = true;
 		row.trigger("click",from_plot);
+		return false;
 	    }
         );
+	$("#plot_wrapper").on("jqplotDataPointUnhighlight","div.jqplot-target", 
+	    function() {
+	        $("#metrics_table tr").removeClass("highlight");
+		return false;
+	    }
+	);      
 
 	// Add a handler to link LT/UT column swap to LT/UT plot swap
 	$("#metrics_table").on("swapColumn", "th.time", function() {
@@ -1199,11 +1220,15 @@ MetricsViewer.prototype = {
 	// associated point in the plots
 	var dl = $("#metrics_table tr.highlight").attr("id");
 	if (dl) {
-            if (!this.isHover($(".time_plot"))) {
+            if (!this.isHover($("#plot_wrapper"))) {
                 this.iq_plot.highlightPoint(dl);
                 this.cc_plot.highlightPoint(dl);
 	        this.bg_plot.highlightPoint(dl);
-            }
+            } else {
+		this.iq_plot.highlightPoint();
+                this.cc_plot.highlightPoint();
+	        this.bg_plot.highlightPoint();
+	    }
 	}
 
 	// Update tooltips
@@ -1526,7 +1551,14 @@ MetricsViewer.prototype = {
 
 	    message +="</p><hr>";
 
-	    msg_records.push(message);
+	    // Form a key for the message, so that it can be
+	    // overwritten when a new message comes in for the
+	    // same observation.  Note that the key cannot
+	    // just be the datalabel because it is used as an id,
+	    // and the datalabel is already the id for the table rows
+	    var msgkey = "warn_"+record["metadata"]["datalabel"];
+	    msg_records.push({"message":message,
+			      "key":msgkey});
 	}
 	if (return_single) {
 	    return msg_records[0];

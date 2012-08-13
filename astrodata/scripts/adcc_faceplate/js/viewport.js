@@ -38,6 +38,46 @@ ViewPort.prototype = {
     }
 };
 
+// KeyedViewPort: this child class just overrides the addRecord method to
+// accept a key, so that there is only one message with the given key
+function KeyedViewPort(element,id,columns) {
+    this.element = element;
+    this.id = id;
+    this.init();
+}
+// prototype: inherit from ViewPort
+var kvp_proto = new ViewPort();
+KeyedViewPort.prototype = kvp_proto;
+KeyedViewPort.prototype.constructor = KeyedViewPort;
+
+// add KeyedViewPort-specific methods
+KeyedViewPort.prototype.addRecord = function(records,prepend) {
+    if (!(records instanceof Array)) {
+	records = [records];
+    }
+    var record_str = "";
+    var record;
+    for (var i=0;i<records.length;i++) {
+	if (prepend) {
+	    record = records[records.length-i-1];
+	} else {
+	    record = records[i];
+	}
+	var key = record["key"];
+	// If a message with this key already exists, remove it
+	if ($("#"+key).length>0) {
+	    $("#"+key).remove();
+	}
+	record_str += '<span id="'+key+'">'+record["message"]+'</span>';
+    }
+    if (prepend) {
+	$('#'+this.id).prepend(record_str);
+    } else {
+	$('#'+this.id).append(record_str);
+    }
+  
+}; // end addRecord
+
 
 // SimpleTable child class
 // constructor
