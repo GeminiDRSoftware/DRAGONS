@@ -484,14 +484,20 @@ MetricsViewer.prototype = {
 		    }
 		}
 	    }
+            if (mv.clear_warning) {
+		mv.clear_warning = false;
+	    }
+	    return false;
 	}); // end click
 
 	// Add a handler to do the same when a point is highlighted
 	// in the plot (ie. moused-over)
 	$("#plot_wrapper").on("jqplotDataPointHighlight","div.jqplot-target", 
 	    function(ev,pt) {
-		// Clear any highlights on other plots if mouse is over plots
-		if (mv.isHover($("#plot_wrapper"))) {
+		// If mouse is over plots (ie. highlight came from mouse-over),
+		// then clear any other highlighted points and highlight
+		// the associated table row
+		if (mv.isHover($("#plot_wrapper")) && !mv.clear_warning) {
 		    var plotname = $(this).attr("id");
 		    if (plotname=="iqplot") {
 			mv.cc_plot.highlightPoint();
@@ -503,11 +509,11 @@ MetricsViewer.prototype = {
 			mv.iq_plot.highlightPoint();
 			mv.cc_plot.highlightPoint();
 		    }
+		    var dl = pt.data[2];
+		    var row = $("#"+dl);
+		    var from_plot = true;
+		    row.trigger("click",from_plot);
 		}
-	        var dl = pt.data[2];
-		var row = $("#"+dl);
-		var from_plot = true;
-		row.trigger("click",from_plot);
 		return false;
 	    }
         );
@@ -549,6 +555,8 @@ MetricsViewer.prototype = {
 	    var timeout = setTimeout(function() {
 	        $("#"+dl).click();
 	    }, 100);
+
+	    mv.clear_warning = true;
 
 	});
 	

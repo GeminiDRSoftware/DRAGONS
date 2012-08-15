@@ -866,7 +866,6 @@ TimePlot.prototype.init = function(record) {
 	    }
 	}
 	co.draw(tp.plot);
-	return;
     }); // end on highlight
     tp.element.on("jqplotDataPointUnhighlight","div.jqplot-target",function(ev){
 	var co = tp.plot.plugins.canvasOverlay;
