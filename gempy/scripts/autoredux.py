@@ -12,14 +12,7 @@ from optparse import OptionParser
 from astrodata import AstroData
 from gempy import gemini_metadata_utils as gmu
 from gempy import fitsverify as fv
-
-# Some global variables
-GEMINI_NORTH = 'gemini-north'
-GEMINI_SOUTH = 'gemini-south'
-OPSDATAPATH = { GEMINI_NORTH : '/gemsoft/dhs/perm/',
-                GEMINI_SOUTH : '/gemsoft/dhs/perm/' }
-OBSPREF = { GEMINI_NORTH : 'N',
-            GEMINI_SOUTH : 'S' }
+from gempy.gemini.opsdefs import GEMINI_NORTH, GEMINI_SOUTH, OPSDATAPATH, OPSDATAPATHBKUP, OBSPREF
 
 def main():
 
@@ -117,7 +110,13 @@ def main():
     if options.directory:
         directory = options.directory
     else:
-        directory = OPSDATAPATH[localsite]
+        if os.path.exists(OPSDATAPATH[localsite]):
+            directory = OPSDATAPATH[localsite]
+        elif os.path.exists(OPSDATAPATHBKUP[localsite]):
+            directory = OPSDATAPATHBKUP[localsite]
+        else:
+            print "Cannot find %s or %s. Please specify a directory." % \
+                  (OPSDATAPATH[localsite], OPSDATAPATHBKUP[localsite])
     directory = directory.rstrip("/") + "/"
 
     # If files were specified explicitly, loop through them, then exit
