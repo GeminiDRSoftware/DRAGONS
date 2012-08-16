@@ -484,9 +484,10 @@ MetricsViewer.prototype = {
 		    }
 		}
 	    }
-            if (mv.clear_warning) {
-		mv.clear_warning = false;
-	    }
+	    // Wait a bit, then clear the clear_warning flag
+	    var timeout = setTimeout(function() {
+		mv.clear_warning = undefined;
+		}, 800);
 	    return false;
 	}); // end click
 
@@ -544,6 +545,9 @@ MetricsViewer.prototype = {
 		       "#lightbox_background,#lightbox_window span.close_icon",
 		       function(){
 
+	    // Set a flag to make row/plot highlighting behave properly 
+	    mv.clear_warning = true;
+
 	    // Get the datalabel for the top warning message
 	    var dl = $("#lightbox_message span.datalabel:first").text();
 
@@ -555,9 +559,6 @@ MetricsViewer.prototype = {
 	    var timeout = setTimeout(function() {
 	        $("#"+dl).click();
 	    }, 100);
-
-	    mv.clear_warning = true;
-
 	});
 	
 	// Add handler to change appearance of buttons in control panel
