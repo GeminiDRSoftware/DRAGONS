@@ -979,9 +979,14 @@ MetricsViewer.prototype = {
 
 	    var ldate = new Date(Date.UTC(ud[0],ud[1]-1,ud[2],
 					  ut[0],ut[1],ut[2], ut[3]));
+	    ldate.setHours(ldate.getHours()-this.tz_offset);
 
 	    // Skip this record if it is not within the current date
-	    if (ldate<this.prev_turnover || ldate>this.turnover) {
+	    var remote_start = new Date(this.prev_turnover);
+	    remote_start.setHours(remote_start.getHours()-this.tz_offset);
+	    var remote_end = new Date(this.turnover);
+	    remote_end.setHours(remote_end.getHours()-this.tz_offset);
+	    if (ldate<remote_start || ldate>remote_end) {
 		continue;
 	    }
 
