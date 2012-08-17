@@ -562,6 +562,10 @@ def _match_objcat_refcat(adinput=None):
 
                         (oi, ri) = at.match_cxy(xx,sx,yy,sy, firstPass=initial, delta=final, log=log)
     
+                        # If too few matches, assume the match was bad
+                        if len(oi)<3:
+                            oi = []
+
                         log.stdinfo("Matched %d objects in ['OBJCAT',%d] against ['REFCAT',%d]" % (len(oi), extver, extver))
 
                         # Loop through the reference list updating the refid in the objcat
