@@ -813,6 +813,7 @@ def clip_sources(ad):
         area = objcat.data.field("ISOAREA_IMAGE")
         flux = objcat.data.field("FLUX_AUTO")
         fluxerr = objcat.data.field("FLUXERR_AUTO")
+        semiminor_axis = objcat.data.field("B_IMAGE")
 
         # Source is good if fwhm is defined
         fwflag = np.where(fwhm_pix==-999,1,0)
@@ -823,7 +824,11 @@ def clip_sources(ad):
         # Source is good if probability of being a star >0.9
         sflag = np.where(class_star<0.9,1,0)
 
-        flags = sxflag | fwflag | eflag | sflag
+        # Source is good if semi-minor axis is greater than 1.1 pixels
+        # (less indicates a cosmic ray)
+        smflag = np.where(semiminor_axis<1.1,1,0)
+
+        flags = sxflag | fwflag | eflag | sflag | smflag
 
         # Source is good if greater than 20 connected pixels
         # Ignore criterion if all undefined (-999)
