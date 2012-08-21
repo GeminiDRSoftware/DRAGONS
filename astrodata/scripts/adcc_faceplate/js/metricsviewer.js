@@ -324,9 +324,9 @@ MetricsViewer.prototype = {
 	                        {y:19.97,name:"BG50",color:'#888'},
 	                        {y:19.30,name:"BG80",color:'#888'}],
 			       //z
-	                       [{y:19.47,name:"BG20",color:'#888'},
-	                        {y:19.42,name:"BG50",color:'#888'},
-	                        {y:19.33,name:"BG80",color:'#888'}],
+	                       [{y:19.51,name:"BG20",color:'#888'},
+	                        {y:19.04,name:"BG50",color:'#888'},
+	                        {y:18.37,name:"BG80",color:'#888'}],
 			      ];
 	this.bg_plot = new TimePlot($("#bg_plot_wrapper"),"bgplot",bg_options);
 
