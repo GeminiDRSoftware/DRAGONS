@@ -337,9 +337,8 @@ MetricsViewer.prototype = {
 
 	// These colors were tested for distinctiveness under common
 	// color-blindness conditions at http://newmanservices.com/colorblind
-	iq_options.series_colors = ["#3F35EA","#3F35EA","#5C84FF","#5C84FF",
-				    "#9CCF31","#9CCF31","#F7E908","#F7E908",
-				    "#CE0000","#CE0000","#86C7FF","#86C7FF"],
+	iq_options.series_colors = ["#3F35EA","#5C84FF","#9CCF31",
+				    "#F7E908","#CE0000","#86C7FF"];
 	this.iq_plot = new TimePlot($("#iq_plot_wrapper"),"iqplot",iq_options);
 
 	// CC Plot
