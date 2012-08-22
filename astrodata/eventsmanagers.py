@@ -24,6 +24,7 @@ class EventsManager:
                   "airmass": ad.airmass().as_pytype(),
                   "instrument": ad.instrument().as_pytype(),
                   "object": ad.object().as_pytype(),
+                  "wfs": ad.wavefront_sensor().as_pytype(),
                   "types": ad.get_types(),
                 }
               }

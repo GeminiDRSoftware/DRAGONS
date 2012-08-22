@@ -223,65 +223,123 @@ MetricsViewer.prototype = {
 	iq_options.title = "Zenith IQ";
 	iq_options.ymax = 2.5;
 	iq_options.yaxis_label = "Zenith IQ (arcsec)";
-	iq_options.series_labels = ["U","B","V","R","I",
-				    "Y","J","H","K","L","M","N","Q"];
-	iq_options.overlay = [//U
+	iq_options.series_labels = ["U","U(p)","B","B(p)","V","V(p)",
+				    "R","R(p)","I","I(p)","Y","Y(p)",
+				    "J(oi)","J","H(oi)","H","K(oi)","K",
+				    "L(oi)","L","M(oi)","M","N(oi)","N",
+				    "Q(oi)","Q"];
+	// This got very long.  It should probably be moved somewhere else.
+	iq_options.overlay = [
+			      //U with OI
 			      [{y:0.50,name:"IQ20",color:'#888'},
 	                       {y:0.90,name:"IQ70",color:'#888'},
 	                       {y:1.20,name:"IQ85",color:'#888'}],
-			      //B
+			      //U with PWFS
+			      [{y:0.50,name:"IQ20",color:'#888'},
+	                       {y:0.90,name:"IQ70",color:'#888'},
+	                       {y:1.30,name:"IQ85",color:'#888'}],
+			      //B with OI
 			      [{y:0.45,name:"IQ20",color:'#888'},
 	                       {y:0.85,name:"IQ70",color:'#888'},
 	                       {y:1.15,name:"IQ85",color:'#888'}],
-			      //V
+			      //B with PWFS
+			      [{y:0.45,name:"IQ20",color:'#888'},
+	                       {y:0.85,name:"IQ70",color:'#888'},
+	                       {y:1.15,name:"IQ85",color:'#888'}],
+			      //V with OI
 			      [{y:0.45,name:"IQ20",color:'#888'},
 	                       {y:0.80,name:"IQ70",color:'#888'},
 	                       {y:1.10,name:"IQ85",color:'#888'}],
-			      //R
+			      //V with PWFS
+			      [{y:0.45,name:"IQ20",color:'#888'},
+	                       {y:0.80,name:"IQ70",color:'#888'},
+	                       {y:1.20,name:"IQ85",color:'#888'}],
+			      //R with OI
 			      [{y:0.45,name:"IQ20",color:'#888'},
 	                       {y:0.75,name:"IQ70",color:'#888'},
 	                       {y:1.05,name:"IQ85",color:'#888'}],
-			      //I
+			      //R with PWFS
+			      [{y:0.45,name:"IQ20",color:'#888'},
+	                       {y:0.80,name:"IQ70",color:'#888'},
+	                       {y:1.15,name:"IQ85",color:'#888'}],
+			      //I with OI
 			      [{y:0.40,name:"IQ20",color:'#888'},
 	                       {y:0.75,name:"IQ70",color:'#888'},
 	                       {y:1.05,name:"IQ85",color:'#888'}],
-			      //Y
+			      //I with PWFS
+			      [{y:0.45,name:"IQ20",color:'#888'},
+	                       {y:0.80,name:"IQ70",color:'#888'},
+	                       {y:1.10,name:"IQ85",color:'#888'}],
+			      //Y with OI
 			      [{y:0.40,name:"IQ20",color:'#888'},
 	                       {y:0.65,name:"IQ70",color:'#888'},
 	                       {y:0.90,name:"IQ85",color:'#888'}],
-			      //J
+			      //Y with PWFS
+			      [{y:0.40,name:"IQ20",color:'#888'},
+	                       {y:0.70,name:"IQ70",color:'#888'},
+	                       {y:1.00,name:"IQ85",color:'#888'}],
+			      //J with OI
 			      [{y:0.35,name:"IQ20",color:'#888'},
 	                       {y:0.55,name:"IQ70",color:'#888'},
 	                       {y:0.80,name:"IQ85",color:'#888'}],
-			      //H
+			      //J with PWFS
+			      [{y:0.40,name:"IQ20",color:'#888'},
+	                       {y:0.60,name:"IQ70",color:'#888'},
+	                       {y:0.85,name:"IQ85",color:'#888'}],
+			      //H with OI
 			      [{y:0.35,name:"IQ20",color:'#888'},
 	                       {y:0.55,name:"IQ70",color:'#888'},
 	                       {y:0.80,name:"IQ85",color:'#888'}],
-			      //K
+			      //H with PWFS
+			      [{y:0.40,name:"IQ20",color:'#888'},
+	                       {y:0.60,name:"IQ70",color:'#888'},
+	                       {y:0.85,name:"IQ85",color:'#888'}],
+			      //K with OI
 			      [{y:0.30,name:"IQ20",color:'#888'},
 	                       {y:0.50,name:"IQ70",color:'#888'},
 	                       {y:0.75,name:"IQ85",color:'#888'}],
-			      //L
+			      //K with PWFS
+			      [{y:0.35,name:"IQ20",color:'#888'},
+	                       {y:0.55,name:"IQ70",color:'#888'},
+	                       {y:0.80,name:"IQ85",color:'#888'}],
+			      //L with OI
 			      [{y:0.30,name:"IQ20",color:'#888'},
 	                       {y:0.45,name:"IQ70",color:'#888'},
 	                       {y:0.70,name:"IQ85",color:'#888'}],
-			      //M
+			      //L with PWFS
+			      [{y:0.35,name:"IQ20",color:'#888'},
+	                       {y:0.50,name:"IQ70",color:'#888'},
+	                       {y:0.75,name:"IQ85",color:'#888'}],
+			      //M with OI
 			      [{y:0.30,name:"IQ20",color:'#888'},
 	                       {y:0.45,name:"IQ70",color:'#888'},
 	                       {y:0.65,name:"IQ85",color:'#888'}],
-			      //N
+			      //M with PWFS
+			      [{y:0.35,name:"IQ20",color:'#888'},
+	                       {y:0.50,name:"IQ70",color:'#888'},
+	                       {y:0.70,name:"IQ85",color:'#888'}],
+			      //N with OI
 			      [{y:0.34,name:"IQ20",color:'#888'},
 	                       {y:0.37,name:"IQ70",color:'#888'},
 	                       {y:0.45,name:"IQ85",color:'#888'}],
-			      //Q
+			      //N with PWFS
+			      [{y:0.34,name:"IQ20",color:'#888'},
+	                       {y:0.37,name:"IQ70",color:'#888'},
+	                       {y:0.45,name:"IQ85",color:'#888'}],
+			      //Q with OI
 			      [{y:0.00,name:"IQ20",color:'#888'},
 	                       {y:0.50,name:"IQ70",color:'#888'},
-	                       {y:0.54,name:"IQ85",color:'#888'}]]
+	                       {y:0.54,name:"IQ85",color:'#888'}],
+			      //Q with PWFS
+			      [{y:0.00,name:"IQ20",color:'#888'},
+	                       {y:0.00,name:"IQ70",color:'#888'},
+                               {y:0.54,name:"IQ85",color:'#888'}]];
 
 	// These colors were tested for distinctiveness under common
 	// color-blindness conditions at http://newmanservices.com/colorblind
-	iq_options.series_colors = ["#3F35EA","#5C84FF","#9CCF31",
-				    "#F7E908","#CE0000","#86C7FF"],
+	iq_options.series_colors = ["#3F35EA","#3F35EA","#5C84FF","#5C84FF",
+				    "#9CCF31","#9CCF31","#F7E908","#F7E908",
+				    "#CE0000","#CE0000","#86C7FF","#86C7FF"],
 	this.iq_plot = new TimePlot($("#iq_plot_wrapper"),"iqplot",iq_options);
 
 	// CC Plot
@@ -1366,7 +1424,25 @@ MetricsViewer.prototype = {
 
 		var series;
 		if (dk[0]=="iq") {
-		    series = record["metadata"]["waveband"];
+		    var wfs = record["metadata"]["wfs"];
+		    var wb = record["metadata"]["waveband"];
+		    var oi_bands = ["U","B","V","R","I","Y"];
+		    var pw_bands = ["J","H","K","L","M","N"];
+		    if (wfs=="OIWFS") {
+			if (oi_bands.indexOf(wb)!=-1) {
+			    series = wb;
+			} else {
+			    series = wb+"(o)";
+			}
+		    } else if (wfs=="PWFS1" || wfs=="PWFS2") {
+			if (pw_bands.indexOf(wb)!=-1) {
+			    series = wb;
+			} else {
+			    series = wb+"(p)";
+			}
+		    } else {
+			series = wb;
+		    }
 		} else if (dk[0]=="bg") {
 		    series = record["metadata"]["filter"];
 		} else {
