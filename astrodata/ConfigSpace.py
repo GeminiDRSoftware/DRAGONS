@@ -21,7 +21,7 @@ RECIPEMARKER = "RECIPES_"
 LOOKUPDIRNAME = "lookups"
 PIFMARKER = "PIF_"
 CALCIFACEMARKER = "CalculatorInterface(.*).py$"
-DDLISTMARKER    = "DescriptorsList(.*).py"
+DDLISTMARKER    = "DescriptorsList(.*).py$"
 cs = None
 class ConfigSpaceExcept:
     """This class is an exception class for the ConfigSpace module"""
