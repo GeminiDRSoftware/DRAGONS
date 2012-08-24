@@ -45,6 +45,9 @@ def main():
                       dest="upload", default=False,
                       help="Upload any generated calibrations to the " + \
                            "calibration service")
+    parser.add_option("-s", "--suffix", action="store",
+                      dest="suffix", default="",
+                      help="Specify a filename suffix")
     (options, args) = parser.parse_args()
 
     # Check for a date or file number argument
@@ -95,7 +98,7 @@ def main():
     prefix = prefix + fakedate + "S"
 
     # Regular expression for filenames
-    file_cre = re.compile('^'+prefix+'\d{4}.fits$')
+    file_cre = re.compile('^'+prefix+'\d{4}'+options.suffix+'.fits$')
 
     # Construct the file name to start from, if desired
     files = None
