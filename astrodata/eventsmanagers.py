@@ -13,6 +13,10 @@ class EventsManager:
         self.event_index = {}
         
     def get_metadict(self, ad):
+        try:
+            wfs = ad.wavefront_sensor().as_pytype()
+        except:
+            wfs = None
         mtd = {"metadata":
                 { "raw_filename": ad.filename,
                   "datalabel": ad.data_label().as_pytype(),
@@ -24,7 +28,7 @@ class EventsManager:
                   "airmass": ad.airmass().as_pytype(),
                   "instrument": ad.instrument().as_pytype(),
                   "object": ad.object().as_pytype(),
-                  "wfs": ad.wavefront_sensor().as_pytype(),
+                  "wfs": wfs,
                   "types": ad.get_types(),
                 }
               }
