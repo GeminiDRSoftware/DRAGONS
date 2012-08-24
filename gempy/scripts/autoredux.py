@@ -77,9 +77,7 @@ def main():
 
     # Now import astrodata and gempy stuff (doing it before this makes
     # it take too long to get to the help/error messages)
-    from astrodata import AstroData
     from gempy import gemini_metadata_utils as gmu
-    from gempy import fitsverify as fv
     from gempy.gemini.opsdefs import GEMINI_NORTH, GEMINI_SOUTH, OPSDATAPATH, OPSDATAPATHBKUP, OBSPREF
 
     if fakedate is None:
@@ -261,6 +259,8 @@ def check_and_run(filepath,options=None):
 
 def verify_file(filepath):
 
+    from gempy import fitsverify as fv
+
     # Repeatedly Fits verify it until it passes
     tries = 10
     ok = False
@@ -293,7 +293,7 @@ def verify_file(filepath):
 
 
 def check_gmos_image(filepath, calibrations=False):
-
+    from astrodata import AstroData
     reason = "is GMOS image"
 
     try:
