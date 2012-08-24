@@ -943,10 +943,16 @@ class MyHandler(BaseHTTPRequestHandler):
 
             # Report finished status
             if fp is not None:
-                evman.append_event(ad,"status",
-                                   {"current":"reduction finished",
-                                    "logfile":reducelog},
-                                   msgtype="reduce_status")
+                if pid==0:
+                    evman.append_event(ad,"status",
+                                       {"current":"reduction finished",
+                                        "logfile":reducelog},
+                                       msgtype="reduce_status")
+                else:
+                    evman.append_event(ad,"status",
+                                       {"current":"reduction ERROR",
+                                        "logfile":reducelog},
+                                       msgtype="reduce_status")
 
             # Get text from log
             f = open(reducelog, "r")      
