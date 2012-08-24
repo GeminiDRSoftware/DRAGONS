@@ -13,25 +13,43 @@ class EventsManager:
         self.event_index = {}
         
     def get_metadict(self, ad):
-        try:
-            wfs = ad.wavefront_sensor().as_pytype()
-        except:
-            wfs = None
-        mtd = {"metadata":
-                { "raw_filename": ad.filename,
-                  "datalabel": ad.data_label().as_pytype(),
-                  "local_time": ad.local_time().as_pytype().strftime("%H:%M:%S.%f"),
-                  "ut_time": ad.ut_datetime().as_pytype().strftime("%Y-%m-%d %H:%M:%S.%f"),
-                  "wavelength": ad.central_wavelength(asMicrometers=True).as_pytype(),
-                  "filter": ad.filter_name(pretty=True).as_pytype(),
-                  "waveband": ad.wavelength_band().as_pytype(),
-                  "airmass": ad.airmass().as_pytype(),
-                  "instrument": ad.instrument().as_pytype(),
-                  "object": ad.object().as_pytype(),
-                  "wfs": wfs,
-                  "types": ad.get_types(),
-                }
-              }
+        # Key: metadata dictionary key, Value: descriptor name
+        descriptor_dict = {"datalabel":"data_label",
+                           "local_time":"local_time",
+                           "ut_time":"ut_datetime",
+                           "wavelength":"central_wavelength",
+                           "filter":"filter_name",
+                           "waveband":"wavelength_band",
+                           "airmass":"airmass",
+                           "instrument":"instrument",
+                           "object":"object",
+                           "wfs":"wavefront_sensor",}
+        options = {"central_wavelength":"asMicrometers=True",
+                   "filter_name":"pretty=True",}
+        postprocess = {"local_time":'.strftime("%H:%M:%S.%f")',
+                       "ut_datetime":'.strftime("%Y-%m-%d %H:%M:%S.%f")',}
+
+        # Make the metadata dictionary.  Start with the items that
+        # do not come from descriptors
+        mtd_dict = {"raw_filename": ad.filename,
+                    "types": ad.get_types(),}
+        for mtd_name,desc_name in descriptor_dict.iteritems():
+            if options.has_key(desc_name):
+                opt = options[desc_name]
+            else:
+                opt = ''
+            if postprocess.has_key(desc_name):
+                pp = postprocess[desc_name]
+            else:
+                pp = ''
+            try:
+                exec('dv = ad.%s(%s).as_pytype()%s' % (desc_name,opt,pp))
+            except:
+                dv = None
+
+            mtd_dict[mtd_name] = dv
+
+        mtd = {"metadata": mtd_dict}
         return mtd
         
     def append_event(self, ad = None, name=None, mdict=None, 
