@@ -9,10 +9,6 @@ import datetime
 import json
 import urllib,urllib2
 from optparse import OptionParser
-from astrodata import AstroData
-from gempy import gemini_metadata_utils as gmu
-from gempy import fitsverify as fv
-from gempy.gemini.opsdefs import GEMINI_NORTH, GEMINI_SOUTH, OPSDATAPATH, OPSDATAPATHBKUP, OBSPREF
 
 def main():
 
@@ -78,6 +74,13 @@ def main():
     is_adcc = ping_adcc()
     if not is_adcc:
         parser.error("No adcc found at port 8777")
+
+    # Now import astrodata and gempy stuff (doing it before this makes
+    # it take too long to get to the help/error messages)
+    from astrodata import AstroData
+    from gempy import gemini_metadata_utils as gmu
+    from gempy import fitsverify as fv
+    from gempy.gemini.opsdefs import GEMINI_NORTH, GEMINI_SOUTH, OPSDATAPATH, OPSDATAPATHBKUP, OBSPREF
 
     if fakedate is None:
         fakedate = gmu.gemini_date()

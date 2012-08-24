@@ -68,6 +68,22 @@ class GaussFit:
         """
         self.stamp = stamp_data
 
+    def model_gauss_1d(self, pars):
+        """
+        This function returns a Gaussian source in an 1D array the
+        same shape as the stamp_data.  The Gaussian is determined by
+        the parameters in pars.
+        
+        :param pars: Gaussian parameters in this order: background, peak,
+                     center, width
+        :type pars: 4-element tuple
+        """
+        bg, peak, c, w = pars
+        
+        model_fn = lambda x: bg + peak*np.exp((-((x-c)/w)**2)/2)
+        gauss_array = np.fromfunction(model_fn, self.stamp.shape)
+        return gauss_array
+
     def model_gauss_2d(self, pars):
         """
         This function returns a Gaussian source in an image array the
@@ -102,7 +118,10 @@ class GaussFit:
                      (in degrees)
         :type pars: 7-element tuple
         """
-        model = self.model_gauss_2d(pars).flatten()
+        if len(self.stamp.shape)==1:
+            model = self.model_gauss_1d(pars).flatten()
+        else:
+            model = self.model_gauss_2d(pars).flatten()
         diff = self.stamp.flatten() - model
         return diff
 
