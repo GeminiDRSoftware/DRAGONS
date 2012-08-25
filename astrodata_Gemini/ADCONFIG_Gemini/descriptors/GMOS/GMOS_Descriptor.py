@@ -5,7 +5,7 @@ import numpy as np
 
 from astrodata import Errors
 from astrodata import Lookups
-from gempy import gemini_metadata_utils as gmu
+from gempy.gemini import gemini_metadata_utils as gmu
 import GemCalcUtil
 from StandardGMOSKeyDict import stdkeyDictGMOS
 from GEMINI_Descriptor import GEMINI_DescriptorCalc

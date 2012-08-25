@@ -10,8 +10,8 @@ from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.ConfigSpace import lookup_path
-from gempy import astrotools as at
-from gempy import gemini_tools as gt
+from gempy.library import astrotools as at
+from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
 # Define the earliest acceptable SExtractor version
@@ -1507,7 +1507,7 @@ def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
     """
     
     import scipy.optimize
-    from gempy import astrotools as at
+    from gempy.library import astrotools as at
 
     if ext is None:
         sciexts = ad["SCI"]

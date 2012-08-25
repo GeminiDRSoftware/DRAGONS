@@ -3,7 +3,7 @@ import dateutil.parser
 
 from astrodata import Errors
 from astrodata import Lookups
-from gempy import gemini_metadata_utils as gmu
+from gempy.gemini import gemini_metadata_utils as gmu
 import GemCalcUtil
 from StandardGEMINIKeyDict import stdkeyDictGEMINI
 from Generic_Descriptor import Generic_DescriptorCalc

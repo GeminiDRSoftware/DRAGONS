@@ -4,9 +4,9 @@ import numpy as np
 from astrodata import Errors
 from astrodata.adutils import logutils
 from astrodata.adutils.gemutil import pyrafLoader
-from gempy import gemini_tools as gt
+from gempy.gemini import gemini_tools as gt
+from gempy.gemini import eti
 from primitives_GENERAL import GENERALPrimitives
-from gempy import eti
 import time
 
 class StackPrimitives(GENERALPrimitives):

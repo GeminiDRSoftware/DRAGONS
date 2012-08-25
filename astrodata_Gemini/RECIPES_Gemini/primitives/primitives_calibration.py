@@ -4,7 +4,7 @@ from astrodata import Errors
 from astrodata import IDFactory
 from astrodata.adutils import gemLog
 from astrodata.adutils.reduceutils.prsproxyutil import upload_calibration
-from gempy import gemini_tools as gt
+from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
 class CalibrationPrimitives(GENERALPrimitives):

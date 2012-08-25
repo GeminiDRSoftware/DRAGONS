@@ -5,7 +5,7 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
-from gempy import gemini_metadata_utils as gmu
+from gempy.gemini import gemini_metadata_utils as gmu
 
 from StandardF2KeyDict import stdkeyDictF2
 from GEMINI_Descriptor import GEMINI_DescriptorCalc

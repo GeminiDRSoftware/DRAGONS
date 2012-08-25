@@ -1,5 +1,5 @@
 from astrodata import Errors
-from gempy import gemini_metadata_utils as gmu
+from gempy.gemini import gemini_metadata_utils as gmu
 from StandardGSAOIKeyDict import stdkeyDictGSAOI
 from GEMINI_Descriptor import GEMINI_DescriptorCalc
 

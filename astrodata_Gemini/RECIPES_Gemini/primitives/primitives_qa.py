@@ -5,7 +5,7 @@ import numpy as np
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import logutils
-from gempy import gemini_tools as gt
+from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
 

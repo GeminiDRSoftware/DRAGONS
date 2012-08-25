@@ -6,7 +6,7 @@ from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
-from gempy import gemini_tools as gt
+from gempy.gemini import gemini_tools as gt
 from primitives_GMOS import GMOSPrimitives
 import pifgemini.gmos_image as gmi
 

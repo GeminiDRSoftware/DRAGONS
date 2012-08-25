@@ -3,7 +3,7 @@ import re
 from astrodata import Descriptors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
-from gempy import astrotools
+from gempy.library import astrotools
 
 from StandardPHOENIXKeyDict import stdkeyDictPHOENIX
 from GEMINI_Descriptor import GEMINI_DescriptorCalc

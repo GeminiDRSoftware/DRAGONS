@@ -5,8 +5,8 @@ from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
-from gempy import gemini_tools as gt
-from gempy import eti
+from gempy.gemini import gemini_tools as gt
+from gempy.gemini import eti
 from primitives_GENERAL import GENERALPrimitives
 import pifgemini.standardize as sdz
 import pifgemini.gmos as gm

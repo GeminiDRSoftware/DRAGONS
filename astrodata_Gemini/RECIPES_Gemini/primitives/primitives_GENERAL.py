@@ -3,7 +3,7 @@ from astrodata import AstroData
 from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.ReductionObjects import PrimitiveSet
-from gempy import gemini_tools as gt
+from gempy.gemini import gemini_tools as gt
 
 class GENERALPrimitives(PrimitiveSet):
     """

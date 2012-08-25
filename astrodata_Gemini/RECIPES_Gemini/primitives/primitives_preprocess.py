@@ -4,7 +4,7 @@ import numpy as np
 from astrodata import AstroData
 from astrodata import Errors
 from astrodata.adutils import gemLog
-from gempy import gemini_tools as gt
+from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
 class PreprocessPrimitives(GENERALPrimitives):

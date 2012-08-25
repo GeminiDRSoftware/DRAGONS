@@ -2,8 +2,8 @@ import numpy as np
 import pywcs
 from astrodata import Errors
 from astrodata.adutils import gemLog
-from gempy import astrotools as at
-from gempy import gemini_tools as gt
+from gempy.library import astrotools as at
+from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
 class ResamplePrimitives(GENERALPrimitives):

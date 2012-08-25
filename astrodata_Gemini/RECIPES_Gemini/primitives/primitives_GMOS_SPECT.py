@@ -4,8 +4,8 @@ from astrodata import Errors
 from astrodata.adutils import logutils
 from astrodata.adutils.gemutil import pyrafLoader
 from primitives_GMOS import GMOSPrimitives
-from gempy import gemini_tools as gt
-from gempy import eti
+from gempy.gemini import gemini_tools as gt
+from gempy.gemini import eti
 
 class GMOS_SPECTPrimitives(GMOSPrimitives):
     """
