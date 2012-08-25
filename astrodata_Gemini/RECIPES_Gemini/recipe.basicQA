@@ -1,4 +1,6 @@
 prepare
 addDQ
 detectSources
-checkQA
+measureIQ(display=True)
+measureCCAndAstrometry
+measureBG

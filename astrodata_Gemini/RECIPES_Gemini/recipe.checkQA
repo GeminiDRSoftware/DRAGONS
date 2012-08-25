@@ -1,3 +1,3 @@
-measureIQ(display=True)
+measureIQ
 measureCCAndAstrometry
 measureBG
