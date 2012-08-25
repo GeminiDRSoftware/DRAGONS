@@ -431,6 +431,7 @@ MetricsViewer.prototype = {
 
 	// Add a hover class to table cells on mouseenter/mouseleave
 	$("#metrics_table").on("mouseenter","td",function(){
+		$("#metrics_table td").removeClass("hover");
 		$(this).addClass("hover");
 	    });
 	$("#metrics_table").on("mouseleave","td",function(){
@@ -1296,6 +1297,7 @@ MetricsViewer.prototype = {
                 this.iq_plot.highlightPoint(dl);
                 this.cc_plot.highlightPoint(dl);
 	        this.bg_plot.highlightPoint(dl);
+		$("#"+dl).addClass("highlight");
             } else {
 		this.iq_plot.highlightPoint();
                 this.cc_plot.highlightPoint();
