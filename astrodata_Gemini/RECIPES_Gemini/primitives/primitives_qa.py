@@ -908,7 +908,10 @@ class QAPrimitives(GENERALPrimitives):
                 #            "sextractor value to profile fit (imexam) value")
                 #mean_fwhm /= 1.08
 
-                airmass = float(ad.airmass())
+                try:
+                    airmass = float(ad.airmass())
+                except:
+                    airmass = None
                 if airmass is None:
                     log.warning("Airmass not found, not correcting to zenith")
                     corr = mean_fwhm
