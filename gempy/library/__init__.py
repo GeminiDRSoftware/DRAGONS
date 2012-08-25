@@ -1,2 +1,0 @@
-import fitsverify
-import astrotools
