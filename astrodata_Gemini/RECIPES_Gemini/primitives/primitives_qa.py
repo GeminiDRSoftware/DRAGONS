@@ -939,9 +939,12 @@ class QAPrimitives(GENERALPrimitives):
                 emStr = ('Ellipticity Mean %s Sigma:' % pm).ljust(llen) + \
                         ('%.3f %s %.3f' % (mean_ellip, pm, 
                                            std_ellip)).rjust(rlen)
-                csStr = (
-                    'Zenith-corrected FWHM (AM %.2f):'%airmass).ljust(llen) + \
-                    ('%.3f %s %.3f arcsec' % (corr,pm,corr_std)).rjust(rlen)
+                if airmass is not None:
+                    csStr = (
+                        'Zenith-corrected FWHM (AM %.2f):'%airmass).ljust(llen) + \
+                        ('%.3f %s %.3f arcsec' % (corr,pm,corr_std)).rjust(rlen)
+                else:
+                    csStr = "(Zenith FWHM could not be determined)"
 
                 iq_warn = ""
                 if iq_band is not None:
