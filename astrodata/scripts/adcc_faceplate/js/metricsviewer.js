@@ -1182,6 +1182,10 @@ MetricsViewer.prototype = {
 	// Update table
 	if (this.metrics_table) {
 
+	    // Get the scroll position before updating, so it can be
+	    // restoredd later (Firefox 3.6 likes to reset it to 0)
+	    var scrolltop = $("#metrics_table tbody").scrollTop();
+
 	    var key = [];
 
 	    // Add in all column fields
@@ -1258,6 +1262,9 @@ MetricsViewer.prototype = {
 		}
 	    }
 
+	    // Restore scroll position
+	    $("#metrics_table tbody").scrollTop(scrolltop);
+	
 	} else {
 	    console.log("No metrics table");
 	}
