@@ -184,7 +184,7 @@ def main():
             # Check the date, if it is not the current one, exit -- there
             # will be no more files to process
             check_date = gmu.gemini_date()
-            if check_date!=fakedate:
+            if check_date!=fakedate or options.suffix!="":
                 print "...\nNo more files to check from %s\n..." % fakedate 
                 sys.exit()
             else:
