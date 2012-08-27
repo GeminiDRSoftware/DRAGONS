@@ -105,10 +105,10 @@ def main():
     files = None
     if filenum is not None:
         if re.match("^\d{1,4}$",filenum):
-            filenum = "%s%.4d.fits"% (prefix,int(filenum))
+            filenum = "%s%.4d%s.fits"% (prefix,int(filenum),options.suffix)
         else:
             nums = file_list(filenum)
-            files = ["%s%.4d.fits"% (prefix,num) for num in nums]
+            files = ["%s%.4d%s.fits"% (prefix,num,options.suffix) for num in nums]
 
     # Get directory
     if options.directory:
