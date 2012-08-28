@@ -5,25 +5,29 @@
 # GMOS instruments (N,S) geometry configuration parameters for 
 # gem_mosaic_function() in gemMosaicFunction.py
 
+gap_dict_bin =   {(0,0):(0,0), (1,0):(36,0), (2,0):(36,0)}
+gap_dict_unbin = {(0,0):(0,0), (1,0):(37,0), (2,0):(37,0)}
 gaps = {   # gaps: (x_gap, y_gap)  One tuple per detector
     # Instr,  dettype,       detector, bin/unbinned
 
-    ('GMOS-S','SDSU II CCD','GMOS + Blue1 + new CCD1','unbinned'): (37,0),
-    ('GMOS-S','SDSU II CCD','GMOS + Blue1',           'unbinned'): (37,0),
-    ('GMOS-N','SDSU II CCD','GMOS + e2v DD CCD42-90', 'unbinned'): (37,0),
-    ('GMOS-N','S10892-01',  'GMOS + S10892-01',       'unbinned'): (37,0),
-    ('GMOS-N','SDSU II e2v DD CCD42-90','GMOS + e2v DD CCD42-90','unbinned'): (37,0),
+    ('GMOS-S','SDSU II CCD','GMOS + Blue1 + new CCD1','unbinned'): gap_dict_unbin,
+    ('GMOS-S','SDSU II CCD','GMOS + Blue1',           'unbinned'): gap_dict_unbin,
+    ('GMOS-N','SDSU II CCD','GMOS + e2v DD CCD42-90', 'unbinned'): gap_dict_unbin,
+    ('GMOS-N','S10892-01',  'GMOS + S10892-01',       'unbinned'): gap_dict_unbin,
+    ('GMOS-N','SDSU II e2v DD CCD42-90','GMOS + e2v DD CCD42-90','unbinned'): gap_dict_unbin,
 
-    ('GMOS-S','SDSU II CCD','GMOS + Blue1 + new CCD1','binned'): (36,0),
-    ('GMOS-S','SDSU II CCD','GMOS + Blue1',           'binned'): (36,0),
-    ('GMOS-N','SDSU II CCD','GMOS + e2v DD CCD42-90', 'binned'): (36,0),
-    ('GMOS-N','SDSU II CCD','GMOS + Red1','unbinned') : (36,0),
-    ('GMOS-N','SDSU II CCD','GMOS + Red1','binned') :   (36,0),
-    ('GMOS-N','S10892-01',  'GMOS + S10892-01',       'binned'): (36,0),    # Hamamatsu
-    ('GMOS-N','SDSU II e2v DD CCD42-90','GMOS + e2v DD CCD42-90','binned'): (36,0),
+    ('GMOS-S','SDSU II CCD','GMOS + Blue1 + new CCD1','binned'): gap_dict_bin,
+    ('GMOS-S','SDSU II CCD','GMOS + Blue1',           'binned'): gap_dict_bin,
+    ('GMOS-N','SDSU II CCD','GMOS + e2v DD CCD42-90', 'binned'): gap_dict_bin,
+    ('GMOS-N','SDSU II CCD','GMOS + Red1','unbinned'):           gap_dict_bin,
+    ('GMOS-N','SDSU II CCD','GMOS + Red1','binned'):             gap_dict_bin,
+    ('GMOS-N','S10892-01',  'GMOS + S10892-01',       'binned'): gap_dict_bin,    # Hamamatsu
+    ('GMOS-N','SDSU II e2v DD CCD42-90','GMOS + e2v DD CCD42-90','binned'): gap_dict_bin,
 
 }
 
+gaps_tile = gaps
+gaps_transform = gaps
 
 shift = {                #  (x_shift, y_shift) for detectors (1,2,3).
     ('GMOS-S','SDSU II CCD','GMOS + Blue1','unbinned'):[(-1.44,5.46),(0.,0.),(7.53,9.57)],  
