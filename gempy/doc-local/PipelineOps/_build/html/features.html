@@ -7,13 +7,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Features and Capabilities Currently Available &mdash; QA Pipeline Operation September 2011 documentation</title>
+    <title>Features and Capabilities Currently Available &mdash; QA Pipeline Operation August 2012 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     'September 2011',
+        VERSION:     'August 2012',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -22,7 +22,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="QA Pipeline Operation September 2011 documentation" href="index.html" />
+    <link rel="top" title="QA Pipeline Operation August 2012 documentation" href="index.html" />
     <link rel="next" title="How to operate the Gemini Quality Assurance Pipeline" href="operate.html" />
     <link rel="prev" title="What is this manual about?" href="intro.html" /> 
   </head>
@@ -39,7 +39,7 @@
         <li class="right" >
           <a href="intro.html" title="What is this manual about?"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">QA Pipeline Operation September 2011 documentation</a> &raquo;</li> 
+        <li><a href="index.html">QA Pipeline Operation August 2012 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -49,10 +49,10 @@
           <div class="body">
             
   <div class="section" id="features-and-capabilities-currently-available">
-<h1>Features and Capabilities Currently Available<a class="headerlink" href="#features-and-capabilities-currently-available" title="Permalink to this headline">¶</a></h1>
+<span id="features"></span><h1>Features and Capabilities Currently Available<a class="headerlink" href="#features-and-capabilities-currently-available" title="Permalink to this headline">¶</a></h1>
 <p>The list available features and capabilities will continuously grow with each
 iterative deployment.  Here we describe the features and capabilities as of
-September 2011.</p>
+August 2012.</p>
 <div class="section" id="core-qap-infrastructure">
 <h2>Core QAP Infrastructure<a class="headerlink" href="#core-qap-infrastructure" title="Permalink to this headline">¶</a></h2>
 <dl class="docutils">
@@ -60,6 +60,10 @@ September 2011.</p>
 <dd>This is the core of the automation.</dd>
 <dt><strong>Calibration Service</strong></dt>
 <dd>This is served by FitsStorage.  The Recipe System makes calibration requests to FitsStorage.</dd>
+<dt><strong>Automatic Polling</strong></dt>
+<dd>The system can poll the DHS directory for new dataset and automatically launch a reduction.</dd>
+<dt><strong>Nighttime QA Metrics Reporting</strong></dt>
+<dd>QA Metrics are being reported in a GUI.  The GUI also provides plots of metrics through the night.</dd>
 </dl>
 </div>
 <div class="section" id="supported-instrument-and-mode">
@@ -109,10 +113,14 @@ September 2011.</p>
 <li><dl class="first docutils">
 <dt>CCDs support</dt>
 <dd><ul class="first last simple">
-<li>Current (Sep 2011) E2V CCDs</li>
+<li>Current (Aug 2012) EEV CCDs and E2V CCDs</li>
 </ul>
 </dd>
 </dl>
+</li>
+<li><p class="first">Note that stacking has been removed from the standard recipe for the time
+being.  The CL task used to stack is too slow.  Stacking will be re-enable
+once a more performant Python or C/C++ version is available.  (No plans yet.)</p>
 </li>
 </ul>
 </div></blockquote>
@@ -122,7 +130,26 @@ September 2011.</p>
 <dl class="docutils">
 <dt><strong>Automatic measurement of image quality metrics to determine IQ band</strong></dt>
 <dd><p class="first">This includes <strong>seeing</strong> and <strong>PSF ellipticity</strong>.</p>
+<p>Available for:</p>
+<ul class="last simple">
+<li>GMOS Imaging</li>
+</ul>
+</dd>
+<dt><strong>Automatic astrometry</strong></dt>
+<dd><p class="first">This is available for:</p>
+<ul class="last simple">
+<li>GMOS Imaging</li>
+</ul>
+</dd>
+<dt><strong>Automatic measurement of cloud cover conditions to determine the CC band</strong></dt>
+<dd><p class="first">This includes <strong>zero-points</strong> and <strong>extinction</strong></p>
 <p>This is available for:</p>
+<ul class="last simple">
+<li>GMOS Imaging</li>
+</ul>
+</dd>
+<dt><strong>Automatic measurement of sky background to determine the BG band</strong></dt>
+<dd><p class="first">This is available for:</p>
 <ul class="last simple">
 <li>GMOS Imaging</li>
 </ul>
@@ -132,12 +159,7 @@ September 2011.</p>
 <div class="section" id="notable-features-not-included-yet">
 <h2>Notable features NOT INCLUDED yet<a class="headerlink" href="#notable-features-not-included-yet" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Automatic polling for new data</li>
-<li>Automatic launching of a reduction upon arrival of new data</li>
-<li>Graphical User Interfaces</li>
-<li>Automatic measurement of zero-points to determine CC</li>
-<li>Automatic measurement of sky background to determine BG</li>
-<li>New GMOS North CCDs, E2Vs or Hamamatsu</li>
+<li>GMOS Hamamatsu CCDs</li>
 </ul>
 </div>
 </div>
@@ -199,11 +221,11 @@ September 2011.</p>
         <li class="right" >
           <a href="intro.html" title="What is this manual about?"
              >previous</a> |</li>
-        <li><a href="index.html">QA Pipeline Operation September 2011 documentation</a> &raquo;</li> 
+        <li><a href="index.html">QA Pipeline Operation August 2012 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2011, Kathleen Labrie.
+        &copy; Copyright 2012, Kathleen Labrie.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
     </div>
   </body>

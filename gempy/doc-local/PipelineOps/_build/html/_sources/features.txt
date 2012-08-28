@@ -1,12 +1,14 @@
 .. features:
 
+.. _features:
+
 *********************************************
 Features and Capabilities Currently Available
 *********************************************
 
 The list available features and capabilities will continuously grow with each
 iterative deployment.  Here we describe the features and capabilities as of
-September 2011.
+August 2012.
 
 Core QAP Infrastructure
 =======================
@@ -15,6 +17,12 @@ Core QAP Infrastructure
 
 **Calibration Service**
    This is served by FitsStorage.  The Recipe System makes calibration requests to FitsStorage.
+
+**Automatic Polling**
+   The system can poll the DHS directory for new dataset and automatically launch a reduction.
+
+**Nighttime QA Metrics Reporting**
+   QA Metrics are being reported in a GUI.  The GUI also provides plots of metrics through the night.
 
 Supported Instrument and Mode
 =============================
@@ -41,23 +49,38 @@ Supported Instrument and Mode
       * Registration and alignment of images from same observation
       * Stacking of images from same observation
    * CCDs support
-      * Current (Sep 2011) E2V CCDs
+      * Current (Aug 2012) EEV CCDs and E2V CCDs
+   * Note that stacking has been removed from the standard recipe for the time
+     being.  The CL task used to stack is too slow.  Stacking will be re-enable
+     once a more performant Python or C/C++ version is available.  (No plans yet.)
 
 
 Supported Metrics Measurements
 ==============================
 **Automatic measurement of image quality metrics to determine IQ band**
    This includes **seeing** and **PSF ellipticity**.
+
+   Available for:   
+
+   * GMOS Imaging
+
+**Automatic astrometry**
+   This is available for:
+
+   * GMOS Imaging
+
+**Automatic measurement of cloud cover conditions to determine the CC band**
+   This includes **zero-points** and **extinction**
    
+   This is available for:
+
+   * GMOS Imaging
+
+**Automatic measurement of sky background to determine the BG band**
    This is available for:
 
    * GMOS Imaging
 
 Notable features NOT INCLUDED yet
 =================================
-* Automatic polling for new data
-* Automatic launching of a reduction upon arrival of new data
-* Graphical User Interfaces
-* Automatic measurement of zero-points to determine CC
-* Automatic measurement of sky background to determine BG
-* New GMOS North CCDs, E2Vs or Hamamatsu
+* GMOS Hamamatsu CCDs

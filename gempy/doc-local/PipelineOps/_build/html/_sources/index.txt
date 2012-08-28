@@ -14,7 +14,10 @@ Contents:
    intro
    features
    operate
+   ui
+   utilities
    faq
+   troubleshoot
    demo
 
 Indices and tables
