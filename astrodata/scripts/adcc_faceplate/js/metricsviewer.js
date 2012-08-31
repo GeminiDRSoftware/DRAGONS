@@ -1093,6 +1093,9 @@ MetricsViewer.prototype = {
 	    if (types.indexOf("ACQUISITION")!=-1) {
 	        obstype += " acq";
 	    }
+	    if (types.indexOf("SPECT")!=-1) {
+	        obstype += " spect";
+	    }
 	    obstype += " "+record["metadata"]["object"];
 	    record["metadata"]["obstype"] = obstype;
 

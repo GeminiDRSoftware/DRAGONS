@@ -518,7 +518,7 @@ def command_clause(ro, coi):
                             # print "RO492", repr(rq)
                             calurl = prs.calibration_search( rq )
                             if calurl is not None:
-                                calurl,calmd5 = result
+                                calurl,calmd5 = calurl
                             # print "RO475:", calurl, calmd5
                     except:
                         calurl = None
