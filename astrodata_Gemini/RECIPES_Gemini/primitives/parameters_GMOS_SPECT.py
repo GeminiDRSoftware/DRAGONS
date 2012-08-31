@@ -1,4 +1,22 @@
-{ "attachWavelengthSolution":{
+{"addDQ":{
+    "suffix":{
+        "default"       : "_dqAdded",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    # Currently (8/29/12) there are no spectroscopic BPMs for GMOS,
+    # so turn off the BPM argument in addDQ for now.
+    "bpm":{
+        "default"       : None,
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "attachWavelengthSolution":{
     "suffix":{
         "default"       : "_wavelengthSolution",
         "type"          : "str",

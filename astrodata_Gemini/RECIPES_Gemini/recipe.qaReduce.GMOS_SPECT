@@ -5,11 +5,11 @@
 prepare
 addDQ
 addVAR(read_noise=True)
-display
 overscanCorrect
 biasCorrect
 aduToElectrons
 addVAR(poisson_noise=True)
+measureIQ(display=True)
 rejectCosmicRays
 flatCorrect
 mosaicDetectors
@@ -17,4 +17,4 @@ getProcessedArc
 attachWavelengthSolution
 resampleToLinearCoords
 skyCorrectFromSlit
-display
+measureIQ(display=True)

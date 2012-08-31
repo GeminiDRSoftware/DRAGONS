@@ -862,8 +862,15 @@ class QAPrimitives(GENERALPrimitives):
         mean_ellips = []
         for ad in rc.get_inputs_as_astrodata():
                 
-            # Clip sources from the OBJCAT
-            good_source = gt.clip_sources(ad)
+            if "IMAGE" in ad.types:
+                # Clip sources from the OBJCAT
+                good_source = gt.clip_sources(ad)
+                is_image=True
+            else:
+                # Fit Gaussians to the brightest continuum
+                good_source = gt.fit_continuum(ad)
+                is_image=False
+
             keys = good_source.keys()
 
             # Check for no sources found
@@ -897,8 +904,12 @@ class QAPrimitives(GENERALPrimitives):
                 # Mean of clipped FWHM and ellipticity
                 mean_fwhm = src["fwhm_arcsec"].mean()
                 std_fwhm = src["fwhm_arcsec"].std()
-                mean_ellip = src["ellipticity"].mean()
-                std_ellip = src["ellipticity"].std()
+                if is_image:
+                    mean_ellip = src["ellipticity"].mean()
+                    std_ellip = src["ellipticity"].std()
+                else:
+                    mean_ellip = None
+                    std_ellip = None
                 if len(src)==1:
                     log.warning('Only one source found. IQ numbers may ' +
                                 'not be accurate.')
@@ -936,9 +947,10 @@ class QAPrimitives(GENERALPrimitives):
                 fmStr = ('FWHM Mean %s Sigma:' % pm).ljust(llen) + \
                         ('%.3f %s %.3f arcsec' % (mean_fwhm, pm,
                                                   std_fwhm)).rjust(rlen)
-                emStr = ('Ellipticity Mean %s Sigma:' % pm).ljust(llen) + \
-                        ('%.3f %s %.3f' % (mean_ellip, pm, 
-                                           std_ellip)).rjust(rlen)
+                if is_image:
+                    emStr = ('Ellipticity Mean %s Sigma:' % pm).ljust(llen) + \
+                            ('%.3f %s %.3f' % (mean_ellip, pm, 
+                                               std_ellip)).rjust(rlen)
                 if airmass is not None:
                     csStr = (
                         'Zenith-corrected FWHM (AM %.2f):'%airmass).ljust(llen) + \
@@ -957,8 +969,8 @@ class QAPrimitives(GENERALPrimitives):
                     else:
                         iq = 'IQ%d (%.2f-%.2f arcsec)' % iq_band
  
-                    filter = ad.filter_name(pretty=True)
-                    iqStr = ('IQ band for %s filter:'%filter).ljust(llen)+\
+                    wvband = ad.wavelength_band()
+                    iqStr = ('IQ range for %s-band:'%wvband).ljust(llen)+\
                             iq.rjust(rlen)
                 else:
                     iqStr = '(IQ band could not be determined)'
@@ -984,21 +996,13 @@ class QAPrimitives(GENERALPrimitives):
                     reqStr = '(Requested IQ could not be determined)'
 
                 # Warn if high ellipticity
-                if mean_ellip>0.1:
+                if is_image and mean_ellip>0.1:
                     ell_warn = "\n    "+\
                         "WARNING: high ellipticity".rjust(dlen)
                 else:
                     ell_warn = ""                    
 
-                # Create final formatted string
-                #finalStr = '\n    '+fnStr+'\n    '+srcStr+\
-                #           '\n    '+'-'*dlen+\
-                #           '\n    '+fmStr+'\n    '+emStr+\
-                #           '\n    '+csStr+'\n    '+iqStr+\
-                #           '\n    '+reqStr+ell_warn+iq_warn+\
-                #           '\n    '+'-'*dlen+'\n'
                 # Log final string
-                #log.stdinfo(finalStr)
                 logindent = rc["logindent"]
                 if logindent == None:
                     logindent = 0
@@ -1008,7 +1012,8 @@ class QAPrimitives(GENERALPrimitives):
                 log.stdinfo(ind + srcStr)
                 log.stdinfo(ind + '-'*dlen)
                 log.stdinfo(ind + fmStr)
-                log.stdinfo(ind + emStr)
+                if is_image:
+                    log.stdinfo(ind + emStr)
                 log.stdinfo(ind + csStr)
                 log.stdinfo(ind + iqStr)
                 log.stdinfo(ind + reqStr + ell_warn + iq_warn)
@@ -1021,6 +1026,14 @@ class QAPrimitives(GENERALPrimitives):
                     comment.append("IQ requirement not met")
                 if ell_warn:
                     comment.append("High ellipticity")
+                if not is_image:
+                    comment.append("IQ measured from spectral cross-cut")
+                    mean_ellip = None
+                    std_ellip = None
+                else:
+                    mean_ellip = float(mean_ellip)
+                    std_ellip = float(std_ellip)
+                    
                 if iq_band is not None:
                     band = iq_band[0]
                 else: 
@@ -1030,8 +1043,8 @@ class QAPrimitives(GENERALPrimitives):
                        "delivered_error": float(std_fwhm),
                        "zenith": float(corr),
                        "zenith_error": float(corr_std),
-                       "ellipticity": float(mean_ellip),
-                       "ellip_error": float(std_ellip),
+                       "ellipticity": mean_ellip,
+                       "ellip_error": std_ellip,
                        "requested": req_iq,
                        "comment": comment,}
                 rc.report_qametric(ad, "iq", qad)
@@ -1045,10 +1058,18 @@ class QAPrimitives(GENERALPrimitives):
                 # If displaying, make a mask to display along with image
                 # that marks which stars were used
                 if display:
-                    data_shape=ad[key].data.shape
-                    iqmask = _iq_overlay(src,data_shape)
-                    iq_overlays.append(iqmask)
-                    overlays_exist = True
+                    if is_image:
+                        data_shape=ad[key].data.shape
+                        iqmask = _iq_overlay(src,data_shape)
+                        iq_overlays.append(iqmask)
+                        overlays_exist = True
+                    else:
+                        data_shape=ad[key].data.shape
+                        iqmask = _iq_overlay([{"x":data_shape[1]/2,
+                                               "y":np.mean(src["y"])}],data_shape)
+                        iq_overlays.append(iqmask)
+                        overlays_exist = True
+
 
         # Display image with stars used circled
         if display:
@@ -1072,18 +1093,19 @@ class QAPrimitives(GENERALPrimitives):
             # Write FWHM and ellipticity to header
             if separate_ext:
                 count = 0
-                for sciext in ad["SCI"]:
-                    mean_fwhm = mean_fwhms[count]
-                    mean_ellip = mean_ellips[count]
-                    if mean_fwhm is not None:
-                        sciext.set_key_value(
-                            "MEANFWHM", mean_fwhm,
-                            comment=self.keyword_comments["MEANFWHM"])
-                    if mean_ellip is not None:
-                        sciext.set_key_value(
-                            "MEANELLP", mean_ellip,
-                            comment=self.keyword_comments["MEANELLP"])
-                    count+=1
+                if len(mean_fwhms)==ad.count_exts("SCI"):
+                    for sciext in ad["SCI"]:
+                        mean_fwhm = mean_fwhms[count]
+                        mean_ellip = mean_ellips[count]
+                        if mean_fwhm is not None:
+                            sciext.set_key_value(
+                                "MEANFWHM", mean_fwhm,
+                                comment=self.keyword_comments["MEANFWHM"])
+                        if mean_ellip is not None:
+                            sciext.set_key_value(
+                                "MEANELLP", mean_ellip,
+                                comment=self.keyword_comments["MEANELLP"])
+                        count+=1
             if ad.count_exts("SCI")==1 or not separate_ext:
                 mean_fwhm = mean_fwhms[0]
                 mean_ellip = mean_ellips[0]

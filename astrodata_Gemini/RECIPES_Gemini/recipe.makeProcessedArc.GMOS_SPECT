@@ -14,5 +14,5 @@ aduToElectrons
 addVAR(poisson_noise=True)
 mosaicDetectors(interpolate_gaps=False)
 determineWavelengthSolution
-resampleToLinearCoords
+#resampleToLinearCoords
 storeProcessedArc
