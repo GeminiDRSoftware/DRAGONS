@@ -244,13 +244,21 @@ def check_and_run(filepath,options=None):
         if(ok):
             print "Checking %s" % new_file
         
-            gmi,reason = check_gmos_image(filepath,
+            gmi,reason1 = check_gmos_image(filepath,
                                           calibrations=cal)
             if gmi:
-                print "Reducing %s" % new_file
+                print "Reducing %s, %s" % (new_file, reason1)
                 launch_reduce(filepath,upload=upl,recipe=rec)
             else:
-                print "Ignoring %s, %s" % (new_file, reason)
+                gmls,reason2 = check_gmos_longslit(filepath)
+                if gmls:
+                    print "Reducing %s, %s" % (new_file, reason2)
+                    launch_reduce(filepath,upload=True,recipe=rec)
+                else:
+                    if reason2==reason1:
+                        print "Ignoring %s, %s" % (new_file, reason1)
+                    else:
+                        print "Ignoring %s, %s, %s" % (new_file, reason1,reason2)
 
         else:
             print "Ignoring %s, not a valid fits file" % new_file
@@ -294,11 +302,12 @@ def verify_file(filepath):
 
 def check_gmos_image(filepath, calibrations=False):
     from astrodata import AstroData
-    reason = "is GMOS image"
+    reason = "GMOS image"
 
     try:
         ad = AstroData(filepath)
     except:
+        reason = "can't load file"
         return False,reason
     
     try:
@@ -344,6 +353,48 @@ def check_gmos_image(filepath, calibrations=False):
         reason = "not GMOS image"
         return False,reason
 
+def check_gmos_longslit(filepath):
+    from astrodata import AstroData
+    reason = "GMOS longslit"
+
+    try:
+        ad = AstroData(filepath)
+    except:
+        reason = "can't load file"
+        return False,reason
+    
+    try:
+        fp_mask = ad.focal_plane_mask().as_pytype()
+    except:
+        fp_mask = None
+
+    if "GMOS" not in ad.types:
+        reason = "not GMOS"
+        return False,reason
+    elif "GMOS_DARK" in ad.types:
+        reason = "GMOS dark"
+        return False,reason
+    elif "GMOS_BIAS" in ad.types:
+        reason = "GMOS bias"
+        return False,reason
+    elif "GMOS_LS" in ad.types:
+
+        # Test for 3-amp mode with e2vDD CCDs
+        # This mode has not been commissioned.
+        dettype = ad.phu_get_key_value("DETTYPE")
+        if dettype=="SDSU II e2v DD CCD42-90":
+            namps = ad.phu_get_key_value("NAMPS")
+            if namps is not None and int(namps)==1:
+                reason = "uncommissioned 3-amp mode"
+                return False,reason
+            else:
+                return True,reason
+        else:
+            return True,reason
+    else:
+        reason = "not GMOS longslit"
+        return False,reason
+
 def launch_reduce(filepath, upload=False, recipe=None):
 
     if upload:
@@ -356,7 +407,7 @@ def launch_reduce(filepath, upload=False, recipe=None):
                    "recipe": recipe}
     else:
         options = {"context":context,
-                   "loglevel":"stdinfo"}
+                   "loglevel":"stdinfo",}
 
     param_dict = {"filepath":filepath,
                   "parameters":{"clobber":True},

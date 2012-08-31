@@ -1099,6 +1099,135 @@ def filename_updater(adinput=None, infilename='', suffix='', prefix='',
     outFileName = prefix+name+suffix+filetype
     return outFileName
     
+def fit_continuum(ad):
+    """
+    This function fits Gaussians to the spectral continuum centered around 
+    the row with the greatest total flux.
+    
+    :param ad: input image
+    :type ad: AstroData instance
+    """
+
+    import scipy.optimize
+
+    good_source = {}
+    
+    # Get the pixel scale
+    pixel_scale = ad.pixel_scale().as_pytype()
+    
+    # Set full aperture to 5 arcsec
+    ybox = int(2.5/pixel_scale)
+
+    # Average 8 unbinned columns together
+    xbox = 4 / int(ad.detector_x_bin())
+
+    # Average 16 unbinned background rows together
+    bgbox = 8 / int(ad.detector_x_bin())
+
+    # Initialize the Gaussian width to FWHM = 1.2 arcsec
+    init_width = 1.2 / (pixel_scale * (2*np.sqrt(2*np.log(2))))
+
+    # Ignore spectrum if not >1.5*background
+    s2n = 1.5
+
+    for sciext in ad["SCI"]:
+        extver = sciext.extver()
+
+        if ad["DQ",extver] is not None:
+            dqdata = ad["DQ",extver].data
+        else:
+            dqdata = None
+
+        data = sciext.data
+
+        ####here - dispersion axis
+        sumdata = np.sum(data,axis=1)
+        center = np.argmax(sumdata)
+
+        #print 'ctr', center
+        #print 'sum ctr',sumdata[center]
+
+        if center+ybox+bgbox>data.shape[0]:
+            #print 'too high'
+            continue
+        if center-ybox-bgbox<0:
+            #print 'too low'
+            continue
+
+        bg_mean = np.mean([data[center-ybox-bgbox:center-ybox],
+                           data[center+ybox:center+ybox+bgbox]])
+
+        ctr_mean = np.mean(data[center])
+        ctr_std = np.std(data[center])
+
+        #print 'mean ctr',ctr_mean,ctr_std
+        #print 'mean bg',bg_mean
+
+        if ctr_mean < s2n*bg_mean:
+            #print 'too faint'
+            continue
+        if ctr_mean < ctr_std:
+            #print 'too noisy'
+            continue
+        
+        fwhm_list = []
+        y_list = []
+        x_list = []
+        for i in range(xbox,data.shape[1]-xbox,xbox):
+
+            dqcol = dqdata[center-ybox:center+ybox,i-xbox:i+xbox]
+            if np.any(dqcol):
+                continue
+
+            col = data[center-ybox:center+ybox,i-xbox:i+xbox]
+            col = np.mean(col,axis=1)
+            maxflux = col[ybox]
+
+            bg = np.mean([data[center-ybox-bgbox:center-ybox,i-xbox:i+xbox],
+                          data[center+ybox:center+ybox+bgbox,i-xbox:i+xbox]])
+
+            pars = (bg, maxflux, ybox, init_width)
+            fit_obj = at.GaussFit(col)
+            # least squares fit of model to data
+            try:
+                # for scipy versions < 0.9
+                new_pars, success = scipy.optimize.leastsq(fit_obj.calc_diff, pars,
+                                                           maxfev=100, 
+                                                           warning=False)
+            except:
+                # for scipy versions >= 0.9
+                import warnings
+                warnings.simplefilter("ignore")
+                new_pars, success = scipy.optimize.leastsq(fit_obj.calc_diff, pars,
+                                                           maxfev=100)
+            if success>3:
+                continue
+            else:
+                width = new_pars[3]
+                fwhm = abs(2*np.sqrt(2*np.log(2))*width)
+                fwhm_list.append(fwhm)
+                y_list.append(center - ybox + new_pars[2])
+                x_list.append(i)
+
+        fwhm_pix = np.array(fwhm_list)
+        fwhm_arcsec = pixel_scale * fwhm_pix
+        rec = np.rec.fromarrays([x_list,y_list,fwhm_pix,fwhm_arcsec],names=["x","y","fwhm","fwhm_arcsec"])
+
+        # Clip outliers in FWHM - single 1-sigma clip if more than 3 sources.
+        num_total = len(rec)
+        if num_total>=3:
+
+            data = rec["fwhm_arcsec"]
+            mean = data.mean()
+            sigma = data.std()
+            rec = rec[(data<mean+sigma) & (data>mean-sigma)]
+
+        #print rec["fwhm"].mean(),rec["fwhm_arcsec"].mean()
+
+        # Store data
+        good_source[("SCI",extver)] = rec
+
+    return good_source
 
 def log_message(function, name, message_type):
     if function == 'ulf':

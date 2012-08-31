@@ -143,8 +143,8 @@ def main():
     imgname = os.path.basename(imgpath)
     print "Image path: "+imgpath
 
-    # Check that file is a GMOS IMAGE; other types are not yet supported
-    # (allow biases and flats, too)
+    # Check that file is GMOS LONGSLIT or IMAGE; other types are not yet supported
+    # (but do allow biases and flats, too)
     try:
         ad = AstroData(imgpath)
     except IOError:
@@ -158,22 +158,23 @@ def main():
 
     if "GMOS" not in ad.types:
         print "\nFile %s is not a GMOS file." % imgname
-        print "Only GMOS images can be reduced at this time.\n"
+        print "Only GMOS longslit and images can be reduced at this time.\n"
         sys.exit()
     elif "GMOS_DARK" in ad.types:
         print "\nFile %s is a GMOS dark." % imgname
-        print "Only GMOS images can be reduced at this time.\n"
+        print "Only GMOS longslit and images can be reduced at this time.\n"
         sys.exit()
     elif ("GMOS_IMAGE" in ad.types and
           fp_mask!="Imaging"):
         print "\nFile %s is a slit image." % imgname
-        print "Only GMOS images can be reduced at this time.\n"
+        print "Only GMOS longslit and images can be reduced at this time.\n"
         sys.exit()
     elif (("GMOS_IMAGE" in ad.types and
            fp_mask=="Imaging" and
            "GMOS_DARK" not in ad.types) or
           "GMOS_BIAS" in ad.types or 
-          "GMOS_IMAGE_FLAT" in ad.types):
+          "GMOS_IMAGE_FLAT" in ad.types or
+          "GMOS_LS" in ad.types):
 
         # Test for 3-amp mode with e2vDD CCDs
         # This mode has not been commissioned.
@@ -195,7 +196,8 @@ def main():
             context = "QA"
 
         # Check for an alternate recipe for science reductions
-        if ("GMOS_BIAS" not in ad.types and 
+        if ("GMOS_IMAGE" in ad.types and
+            "GMOS_BIAS" not in ad.types and 
             "GMOS_IMAGE_FLAT" not in ad.types and
             recipe is not None):
             reduce_cmd = ["reduce",
@@ -220,7 +222,7 @@ def main():
 
     else:
         print "\nFile %s is not a supported type." % imgname
-        print "Only GMOS images can be reduced at this time.\n"
+        print "Only GMOS longslit and images can be reduced at this time.\n"
         sys.exit()
 
 
