@@ -15,6 +15,7 @@ Usage:
 
 import os.path
 import re
+import sys
 
 from distutils.core import setup
 
@@ -54,8 +55,7 @@ for root, dirs, files in os.walk('doc-local'):
         dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
         DOC_FILES = map((lambda f: os.path.join(root,f)), files)      
         DATA_FILES.append( (os.path.join(DOC_DIR,dest), DOC_FILES) )
-
-
+    
 # SCRIPTS
 GEMPY_SCRIPTS = [ os.path.join('scripts','autoredux'),
                   #os.path.join('scritps','cleanir.py'),  #needs to be standardized first
@@ -65,6 +65,19 @@ GEMPY_SCRIPTS = [ os.path.join('scripts','autoredux'),
                   os.path.join('scripts','redux'),
                   os.path.join('scripts','zp_histogram')
                  ]
+
+if "sdist" in sys.argv:
+    #GEMPY_SCRIPTS contains the name of the links which might not be dereferenced during sdist
+    #Therefore, here we package the .py those links point to.  During "install" the links are
+    #dereferenced, always, as far as I can tell, so there's no need for the .py then.
+    PYFILES = []
+    dotpy = re.compile(".py$")
+    for script in GEMPY_SCRIPTS:
+        if not dotpy.match(script):
+            PYFILES.append(''.join([script,'.py']))
+    GEMPY_SCRIPTS.extend(PYFILES)
+
+
 SCRIPTS = []
 SCRIPTS.extend(GEMPY_SCRIPTS)
 
