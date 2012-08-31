@@ -258,7 +258,11 @@ class PRSProxy(object):
             calrqdict = cal_rq.as_dict()
             if (PDEB):
                 print "P165:", repr(calrqdict)
-            cal = self.prs.calibration_search(calrqdict)
+            try:
+                cal = self.prs.calibration_search(calrqdict)
+            except:
+                print "P264: Calibration search fault"
+                cal = None
             if (PDEB):
                 print "P167:", cal
             PDEB = False

@@ -1121,9 +1121,11 @@ MetricsViewer.prototype = {
 		record["iq"]["zenith_str"] = 
 		    record["iq"]["zenith"].toFixed(2) + " \u00B1 " +
 		    record["iq"]["zenith_error"].toFixed(2);
-		record["iq"]["ellipticity_str"] = 
-		    record["iq"]["ellipticity"].toFixed(2) + " \u00B1 " +
-		    record["iq"]["ellip_error"].toFixed(2);
+		if (record["iq"]["ellipticity_str"]) {
+		    record["iq"]["ellipticity_str"] = 
+			record["iq"]["ellipticity"].toFixed(2) + " \u00B1 " +
+			record["iq"]["ellip_error"].toFixed(2);
+		}
 		record["iq"]["band_str"] = 
 		    this.getBandString("iq",record["iq"]["band"]);
 		record["iq"]["requested_str"] = 
@@ -1217,9 +1219,9 @@ MetricsViewer.prototype = {
 			element = $('#'+datalabel+' td.iq');
 			value = element.text();
 
-			if (record["iq"]["comment"].length==1 &&
-			    record["iq"]["comment"][0].indexOf(
-							"ellipticity")!=-1) 
+			if ((record["iq"]["comment"].length==1 &&
+			     record["iq"]["comment"][0].indexOf("ellipticity")!=-1) ||
+			    record["metadata"]["types"].indexOf("SPECT")!=-1 ) 
 			{
 			    value = '<div class=outer>'+warn+value+'</div>';
 			} else {
@@ -1550,7 +1552,8 @@ MetricsViewer.prototype = {
 			if (has_msg) {
 			    message += ", ";
 			}
-			if (msg_array[m].indexOf("ellipticity")!=-1) {
+			if ((msg_array[m].indexOf("ellipticity")!=-1) ||
+			    (record["metadata"]["types"].indexOf("SPECT")!=-1 )) {
 			    message += '<span class="outer">'+
 				       warning+"&nbsp;&nbsp;"+
 				       '<span class="warning">'+
@@ -1608,7 +1611,9 @@ MetricsViewer.prototype = {
 
 			for (var mi in msg_array) {
 			    if (metric=="iq") {
-				if (msg_array[mi].indexOf("ellipticity")!=-1) {
+				if ((msg_array[mi].indexOf("ellipticity")!=-1) ||
+				   (record["metadata"]["types"].indexOf("SPECT")!=-1))
+				{
 				    continue;
 				} else {
 				    message += "<span class=label>"+
