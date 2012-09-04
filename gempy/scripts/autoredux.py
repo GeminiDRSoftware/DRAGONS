@@ -292,7 +292,7 @@ def verify_file(filepath):
 
         if(tries==0):
             print "ERROR: File %s never did pass fitsverify:\n%s" % \
-                  fv_check[3]
+                  (filepath,fv_check[3])
             
         if not ok:
             time.sleep(1)
