@@ -240,10 +240,9 @@ def check_and_run(filepath,options=None):
     print "..."
     
     if os.path.exists(filepath):
+        print "Checking %s" % new_file
         ok = verify_file(filepath)
         if(ok):
-            print "Checking %s" % new_file
-        
             gmi,reason1 = check_gmos_image(filepath,
                                           calibrations=cal)
             if gmi:
@@ -376,6 +375,9 @@ def check_gmos_longslit(filepath):
         return False,reason
     elif "GMOS_BIAS" in ad.types:
         reason = "GMOS bias"
+        return False,reason
+    elif "GMOS_NODANDSHUFFLE" in ad.types:
+        reason = "GMOS nod and shuffle"
         return False,reason
     elif "GMOS_LS" in ad.types:
 

@@ -1128,7 +1128,10 @@ def fit_continuum(ad):
     init_width = 1.2 / (pixel_scale * (2*np.sqrt(2*np.log(2))))
 
     # Ignore spectrum if not >1.5*background
-    s2n = 1.5
+    s2n_bg = 1.5
+
+    # Ignore spectrum if mean not >.9*std
+    s2n_self = 0.9
 
     for sciext in ad["SCI"]:
         extver = sciext.extver()
@@ -1141,7 +1144,7 @@ def fit_continuum(ad):
         data = sciext.data
 
         ####here - dispersion axis
-        sumdata = np.sum(data,axis=1)
+        sumdata = np.sum(np.where(dqdata==0,data,0),axis=1)
         center = np.argmax(sumdata)
 
         #print 'ctr', center
@@ -1163,10 +1166,10 @@ def fit_continuum(ad):
         #print 'mean ctr',ctr_mean,ctr_std
         #print 'mean bg',bg_mean
 
-        if ctr_mean < s2n*bg_mean:
+        if ctr_mean < s2n_bg*bg_mean:
             #print 'too faint'
             continue
-        if ctr_mean < ctr_std:
+        if ctr_mean < s2n_self*ctr_std:
             #print 'too noisy'
             continue
         
