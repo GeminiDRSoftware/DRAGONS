@@ -866,10 +866,16 @@ class QAPrimitives(GENERALPrimitives):
                 # Clip sources from the OBJCAT
                 good_source = gt.clip_sources(ad)
                 is_image=True
-            else:
+            elif "SPECT" in ad.types:
                 # Fit Gaussians to the brightest continuum
                 good_source = gt.fit_continuum(ad)
                 is_image=False
+            else:
+                log.warning("%s is not IMAGE or SPECT; no IQ "\
+                            "measurement will be performed" % ad.filename)
+                mean_fwhms.append(None)
+                mean_ellips.append(None)
+                continue
 
             keys = good_source.keys()
 
@@ -943,14 +949,17 @@ class QAPrimitives(GENERALPrimitives):
                 fnStr = 'Filename: %s' % ad.filename
                 if separate_ext:
                     fnStr += "[%s,%s]" % key
-                srcStr = "%d sources used to measure IQ." % len(src)
                 fmStr = ('FWHM Mean %s Sigma:' % pm).ljust(llen) + \
                         ('%.3f %s %.3f arcsec' % (mean_fwhm, pm,
                                                   std_fwhm)).rjust(rlen)
                 if is_image:
+                    srcStr = "%d sources used to measure IQ." % len(src)
                     emStr = ('Ellipticity Mean %s Sigma:' % pm).ljust(llen) + \
                             ('%.3f %s %.3f' % (mean_ellip, pm, 
                                                std_ellip)).rjust(rlen)
+                else:
+                    srcStr = "Spectrum centered at row %d used to measure IQ." % \
+                             np.mean(src["y"])                             
                 if airmass is not None:
                     csStr = (
                         'Zenith-corrected FWHM (AM %.2f):'%airmass).ljust(llen) + \

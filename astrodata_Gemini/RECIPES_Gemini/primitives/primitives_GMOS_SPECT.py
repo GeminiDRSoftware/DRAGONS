@@ -355,7 +355,22 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
 
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
-            
+
+            try:
+                xbin = ad.detector_x_bin().as_pytype()
+                ybin = ad.detector_y_bin().as_pytype()
+                bin_factor = xbin*ybin
+                roi = ad.detector_roi_setting().as_pytype()
+            except:
+                bin_factor = 1
+                roi = "unknown"
+
+            if bin_factor<=2 and roi=="Full Frame" and "qa" in rc.context:
+                log.warning("Frame is too large to subtract sky efficiently; not "\
+                            "subtracting sky for %s" % ad.filename)
+                adoutput_list.append(ad)
+                continue
+
             # Instantiate ETI and then run the task 
             gsskysub_task = eti.gsskysubeti.GsskysubETI(rc,ad)
             adout = gsskysub_task.run()
