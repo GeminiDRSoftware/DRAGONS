@@ -1124,7 +1124,7 @@ MetricsViewer.prototype = {
 		record["iq"]["zenith_str"] = 
 		    record["iq"]["zenith"].toFixed(2) + " \u00B1 " +
 		    record["iq"]["zenith_error"].toFixed(2);
-		if (record["iq"]["ellipticity_str"]) {
+		if (record["iq"]["ellipticity"]) {
 		    record["iq"]["ellipticity_str"] = 
 			record["iq"]["ellipticity"].toFixed(2) + " \u00B1 " +
 			record["iq"]["ellip_error"].toFixed(2);
