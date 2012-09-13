@@ -547,6 +547,13 @@ class QAPrimitives(GENERALPrimitives):
                     log.warning('No good reference sources found in %s[OBJCAT,%d]'%
                                 (ad.filename,extver))
                     continue
+                elif len(zps)>2:
+                    # 1-sigma clip
+                    m = zps.mean()
+                    s = zps.std()
+                    clip = (zps>m-s)&(zps<m+s)
+                    zps = zps[clip]
+                    zperrs = zperrs[clip]
 
                 # Because these are magnitude (log) values, we weight
                 # directly from the 1/variance, not signal / variance
