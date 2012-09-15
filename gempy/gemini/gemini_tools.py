@@ -801,12 +801,18 @@ def clip_sources(ad):
         x = objcat.data.field("X_IMAGE")
         y = objcat.data.field("Y_IMAGE")
 
-        #fwhm_pix = objcat.data.field("FWHM_IMAGE")
-        #fwhm_arcsec = objcat.data.field("FWHM_WORLD")
         fwhm_pix = objcat.data.field("PROFILE_FWHM")
         fwhm_arcsec = fwhm_pix * sciext.pixel_scale().as_pytype()
 
+        isofwhm_pix = objcat.data.field("FWHM_IMAGE")
+        isofwhm_arcsec = objcat.data.field("FWHM_WORLD")
+
+        ee50d_pix = objcat.data.field("PROFILE_EE50")
+        ee50d_arcsec = ee50d_pix * sciext.pixel_scale().as_pytype()
+
         ellip = objcat.data.field("ELLIPTICITY")
+        pa = objcat.data.field("THETA_WORLD")
+
         sxflag = objcat.data.field("FLAGS")
         dqflag = objcat.data.field("IMAFLAGS_ISO")
         class_star = objcat.data.field("CLASS_STAR")
@@ -849,8 +855,16 @@ def clip_sources(ad):
         # Use flag=0 to find good data
         good = (flags==0)
         rec = np.rec.fromarrays(
-            [x[good],y[good],fwhm_pix[good],fwhm_arcsec[good],ellip[good]],
-            names=["x","y","fwhm","fwhm_arcsec","ellipticity"])
+            [x[good],y[good],
+             fwhm_pix[good],fwhm_arcsec[good],
+             isofwhm_pix[good],isofwhm_arcsec[good],
+             ee50d_pix[good],ee50d_arcsec[good],
+             ellip[good],pa[good]],            
+            names=["x","y",
+                   "fwhm","fwhm_arcsec",
+                   "isofwhm","isofwhm_arcsec",
+                   "ee50d","ee50d_arcsec",
+                   "ellipticity","pa"])
 
         # Clip outliers in FWHM - single 1-sigma clip if more than 3 sources.
         num_total = len(rec)
@@ -1231,6 +1245,140 @@ def fit_continuum(ad):
         good_source[("SCI",extver)] = rec
 
     return good_source
+
+def fitsstore_report(ad, rc, metric, info_dict):
+    if metric not in ["iq","zp","sb","pe"]:
+        raise Errors.InputError("Unknown metric %s" % metric )
+
+    # Empty qareport dictionary to build into
+    qareport = {}
+
+    # Compose metadata
+    import astrodata
+    import os
+    import getpass
+    import socket
+    import sys
+    qareport["hostname"] = socket.gethostname()
+    qareport["userid"] = getpass.getuser()
+    qareport["processid"] = os.getpid()
+    qareport["executable"] = os.path.basename(sys.argv[0])
+
+    # These may need revisiting.  There doesn't seem to be a
+    # way to access a version name or number for the primitive
+    # set generating this metric
+    qareport["software"] = "QAP"
+    qareport["software_version"] = astrodata.__version__
+    qareport["context"] = rc.context
+    
+    qametric_list = []
+
+    if metric=="iq":
+        # Get IQ data from good sources in OBJCAT.
+        # This is done here because the fitsstore record needs
+        # more information than measureIQ accesses
+        source_data = clip_sources(ad)
+
+    for sciext in ad["SCI"]:
+        key = ('SCI',sciext.extver())
+
+        # Empty qametric dictionary to build into
+        qametric = {}
+
+        # Metadata for qametric
+        qametric["filename"] = ad.filename
+        try:
+            qametric["datalabel"] = ad.data_label().as_pytype()
+        except:
+            qametric["datalabel"] = None
+        try:
+            qametric["detector"] = sciext.detector_name().as_pytype()
+        except:
+            qametric["detector"] = None
+
+        if metric=="iq":
+            # Build a dictionary with IQ data
+            iq = {}
+
+            # Check to see if there is any data for this extension
+            if not source_data.has_key(key):
+                continue
+
+            iqdata = source_data[key]
+            if len(iqdata)==0:
+                continue
+            primdata = info_dict[key]
+
+            # Numbers from iqdata
+            iq["fwhm"] = iqdata["fwhm_arcsec"].mean()
+            iq["fwhm_std"] = iqdata["fwhm_arcsec"].std()
+            iq["isofwhm"] = iqdata["isofwhm_arcsec"].mean()
+            iq["isofwhm_std"] = iqdata["isofwhm_arcsec"].std()
+            iq["ee50d"] = iqdata["ee50d_arcsec"].mean()
+            iq["ee50d_std"] = iqdata["ee50d_arcsec"].std()
+            iq["elip"] = iqdata["ellipticity"].mean()
+            iq["elip_std"] = iqdata["ellipticity"].std()
+            iq["pa"] = iqdata["pa"].mean()
+            iq["pa_std"] = iqdata["pa"].std()
+            iq["nsamples"] = iqdata.size
+
+            # Values produced by the measureIQ primitive
+            iq["percentile_band"] = primdata["band"]
+            iq["comment"] = primdata["comment"]
+
+            qametric["iq"] = iq
+            qametric_list.append(qametric)
+
+        elif metric=="zp":
+            # Check to see if there is any data for this extension
+            if not info_dict.has_key(key):
+                continue
+            
+            # Use the info_dict as the zp dict
+            # Check the measureCC primitive to see if the values
+            # compiled here are the right ones for fitsstore
+            zp = info_dict[key]
+
+            # Add catalog information
+            # This is hard coded for now, as there does not seem
+            # to be a way to look it up easily
+            zp["photref"] = "SDSS8"
+
+            qametric["zp"] = zp
+            qametric_list.append(qametric)
+
+        elif metric=="sb":
+            # Check to see if there is any data for this extension
+            if not info_dict.has_key(key):
+                continue
+
+            # Use the info_dict as the sb dict
+            sb = info_dict[key]
+
+            qametric["sb"] = sb
+            qametric_list.append(qametric)
+
+        elif metric=="pe":
+            # Check to see if there is any data for this extension
+            if not info_dict.has_key(key):
+                continue
+
+            # Use the info_dict as the pe dict
+            pe = info_dict[key]
+
+            # Add catalog information
+            # This is hard coded for now, as there does not seem
+            # to be a way to look it up easily
+            pe["photref"] = "SDSS8"
+
+            qametric["pe"] = pe
+            qametric_list.append(qametric)
+
+
+    # Add qametric dictionary into qareport
+    qareport["qametric"] = qametric_list
+    
+    return qareport
 
 def log_message(function, name, message_type):
     if function == 'ulf':
