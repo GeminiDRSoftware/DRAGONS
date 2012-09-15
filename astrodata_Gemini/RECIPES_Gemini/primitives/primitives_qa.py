@@ -106,6 +106,7 @@ class QAPrimitives(GENERALPrimitives):
             all_bg_am = None
             all_std_am = None
             bunit = None
+            info_dict = {}
             for sciext in ad["SCI"]:
                 extver = sciext.extver()
                 objcat = ad["OBJCAT",extver]
@@ -113,6 +114,11 @@ class QAPrimitives(GENERALPrimitives):
                 bunit = sciext.get_key_value("BUNIT")
                 if bunit is None:
                     bunit = "adu"
+
+                # Set nsamples=None as default, meaning median will be taken.
+                # If background from sources in the catalog will be used,
+                # this will be overwritten with the number of sources used
+                nsamples = None
 
                 if objcat is None:
                     log.fullinfo("No OBJCAT found for %s[SCI,%d], taking "\
@@ -157,6 +163,7 @@ class QAPrimitives(GENERALPrimitives):
                             else:
                                 sci_bg = np.mean(good_bg)
                                 sci_std = np.std(good_bg)
+                                nsamples = len(good_bg)
 
                 if bg is None:
                     scidata = sciext.data
@@ -243,6 +250,12 @@ class QAPrimitives(GENERALPrimitives):
                         # Error in magnitude
                         # dm = df * (2.5/ln(10)) / f 
                         std_am = std_e * (2.5/math.log(10)) / bg_e;
+
+                        info_dict[('SCI',extver)] = {"mag": bg_am,
+                                                     "mag_std": std_am,
+                                                     "electrons":bg_e,
+                                                     "electrons_std":std_e,
+                                                     "nsamples":nsamples}
                 else:
                     bg_am = None
                     std_am = None
@@ -263,7 +276,7 @@ class QAPrimitives(GENERALPrimitives):
                     elif bg_am is not None:
                         all_bg_am = bg_am
                         all_std_am = std_am
-
+            
                 bg_num = None
                 bg_str = "(BG band could not be determined)"
                 if bg_am is not None:
@@ -328,6 +341,15 @@ class QAPrimitives(GENERALPrimitives):
                     log.stdinfo(ind + req_str+bg_warn)
                     log.stdinfo(ind + "-"*dlen)
                     log.stdinfo(" ")
+                    
+                # Record the band and comment in the fitsstore infodict
+                if info_dict.has_key(('SCI',extver)):
+                    info_dict[('SCI',extver)]["percentile_band"] = bg_num
+                    if bg_warn!="":
+                        bg_comment = ["BG requirement not met"]
+                    else:
+                        bg_comment = []
+                    info_dict[('SCI',extver)]["comment"] = bg_comment
 
             # Write mean background to PHU if averaging all together
             # (or if there's only one science extension)
@@ -371,6 +393,9 @@ class QAPrimitives(GENERALPrimitives):
                             "comment": bg_comment,
                             }
                     rc.report_qametric(ad, "bg", qad)
+
+            # Report measurement to fitsstore
+            #fitsdict = gt.fitsstore_report(ad,rc,"sb",info_dict)
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
@@ -473,6 +498,9 @@ class QAPrimitives(GENERALPrimitives):
             # all_ accumulate measurements through all the OBJCAT extensions
             all_cloud = []
             all_clouderr = []
+
+            # To pass to fitsstore report function
+            info_dict = {}
 
             for objcat in objcats:
                 extver = objcat.extver()
@@ -623,6 +651,17 @@ class QAPrimitives(GENERALPrimitives):
                     # (ie. amp1, amp2...)
                     qad["zeropoint"]["amp%d" % extver] = {"value":zp,
                                                           "error":zpe}
+
+                # Compose a dictionary in the format the fitsstore record wants
+                # Note that mag should actually be uncorrected, and I'm not
+                # sure that zpe is the right error to report here. It is a
+                # little difficult to separate out the right information
+                # as this primitive is currently organized
+                info_dict[("SCI",extver)] = {"mag":zp,
+                                             "mag_std":zpe,
+                                             "cloud":cloud,
+                                             "cloud_std":zpe,
+                                             "nsamples":len(zps),}
             
             if(len(detzp_means)):
                 for i in range(len(detzp_means)):
@@ -754,6 +793,14 @@ class QAPrimitives(GENERALPrimitives):
                 qad["extinction"] = float(cloud)
                 qad["extinction_error"] = float(clouderr)
                 rc.report_qametric(ad, "cc", qad)
+
+                # Add band and comment to the info_dict
+                for key in info_dict:
+                    info_dict[key]["percentile_band"] = qad["band"]
+                    info_dict[key]["comment"] = qad["comment"]
+
+                # Also report to fitsstore
+                #fitsdict = gt.fitsstore_report(ad,rc,"zp",info_dict)
 
             else:
                 ind = " " * rc["logindent"]
@@ -897,6 +944,7 @@ class QAPrimitives(GENERALPrimitives):
 
             # Go through all extensions
             keys.sort()
+            info_dict = {}
             for key in keys:
                 src = good_source[key]
 
@@ -1063,8 +1111,8 @@ class QAPrimitives(GENERALPrimitives):
                        "ellip_error": std_ellip,
                        "requested": req_iq,
                        "comment": comment,}
+                info_dict[key] = qad
                 rc.report_qametric(ad, "iq", qad)
-
                 
                 # Store average FWHM and ellipticity, for writing
                 # to output header
@@ -1086,6 +1134,8 @@ class QAPrimitives(GENERALPrimitives):
                         iq_overlays.append(iqmask)
                         overlays_exist = True
 
+            # Build a report to send to fitsstore
+            #fitsdict = gt.fitsstore_report(ad,rc,"iq",info_dict)
 
         # Display image with stars used circled
         if display:

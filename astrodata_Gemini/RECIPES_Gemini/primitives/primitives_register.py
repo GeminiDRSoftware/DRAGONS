@@ -361,6 +361,10 @@ class RegisterPrimitives(GENERALPrimitives):
             all_delta_ra = []
             all_delta_dec = []
 
+            # Make an empty dictionary, to be used for reporting values to
+            # the fits store
+            info_dict = {}
+
             # Loop over the OBJCAT extensions
             for objcat in objcats:
                 extver = objcat.extver()
@@ -426,6 +430,13 @@ class RegisterPrimitives(GENERALPrimitives):
                     log.fullinfo("Dec_mean +- Dec_sigma: %.2f +- %.2f arcsec" % (dec_mean, dec_sigma))
                     log.fullinfo("Median Offset is: %.2f, %.2f arcsec" % (ra_median, dec_median))
 
+                    # Store it in the fitsstore info_dict
+                    info_dict[("SCI",extver)] = {"dra":ra_mean,
+                                                 "dra_std":ra_sigma,
+                                                 "ddec":dec_mean,
+                                                 "ddec_std":dec_sigma,
+                                                 "nsamples":len(delta_ra)}
+
                     # Store the changes in a pywcs.WCS object so they
                     # can be applied by the updateWCS primitive if desired
                     sci = ad["SCI",extver]
@@ -447,6 +458,9 @@ class RegisterPrimitives(GENERALPrimitives):
             else:
                 log.stdinfo("Could not determine astrometric offset for %s" %
                             ad.filename)
+                
+            # Report the measurement to the fitsstore
+            #fitsdict = gt.fitsstore_report(ad,rc,"pe",info_dict)
 
             adoutput_list.append(ad)
 

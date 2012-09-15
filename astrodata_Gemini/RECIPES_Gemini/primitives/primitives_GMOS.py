@@ -920,6 +920,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                     extname = ext.extname()
                     extver = ext.extver()
 
+                    # Remove CCDNAME
+                    del ext.header['CCDNAME']
+
                     # Update AMPNAME
                     if extname=="SCI" or extname=="VAR":
                         new_ampname = ",".join(ampname[extver])
