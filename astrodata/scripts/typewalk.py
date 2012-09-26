@@ -122,9 +122,8 @@ cl = dt.get_classification_library()
 showStack = True
 if (options.listdescriptors):
     from astrodata import Descriptors
-    import CalculatorInterface
-    funs = inspect.getmembers(  CalculatorInterface.CalculatorInterface, 
-                                inspect.ismethod)
+    CalculatorInterface = get_calculator_interface()
+    funs = inspect.getmembers(CalculatorInterface, inspect.ismethod)
     descs = []
     print "${UNDERLINE}Available Descriptors${NORMAL}"
 
