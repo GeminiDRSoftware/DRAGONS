@@ -1,4 +1,4 @@
-stdkeyDictTRECS = {
+TRECS_KeyDict = {
     "key_bias":"BIASLEVL",
     "key_camera":"OBSMODE",
     "key_central_wavelength":"HRCENWL",

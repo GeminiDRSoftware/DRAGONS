@@ -7,13 +7,13 @@ from astrodata.Calculator import Calculator
 from gempy.gemini import gemini_metadata_utils as gmu
 import GemCalcUtil 
 
-from StandardNIRIKeyDict import stdkeyDictNIRI
-from GEMINI_Descriptor import GEMINI_DescriptorCalc
+from NIRI_Keywords import NIRI_KeyDict
+from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
 class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
-    _update_stdkey_dict = stdkeyDictNIRI
+    _update_stdkey_dict = NIRI_KeyDict
     
     niriFilternameMapConfig = None
     niriFilternameMap = {}

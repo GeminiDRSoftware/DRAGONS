@@ -1,4 +1,4 @@
-stdkeyDictNICI = {
+NICI_KeyDict = {
     "key_camera":"INSTRUME",
     "key_focal_plane_mask":"FPMW",
     "key_pupil_mask":"PMW",

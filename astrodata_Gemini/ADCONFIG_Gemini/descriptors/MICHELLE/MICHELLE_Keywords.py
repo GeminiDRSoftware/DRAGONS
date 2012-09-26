@@ -1,4 +1,4 @@
-stdkeyDictMICHELLE = {
+MICHELLE_KeyDict = {
     "key_central_wavelength":"GRATPOS",
     "key_coadds":"NUMEXPOS",
     "key_disperser":"GRATNAME",

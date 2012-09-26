@@ -1,4 +1,4 @@
-stdkeyDictNIRI = {
+NIRI_KeyDict = {
     "key_avdduc":"A_VDDUC",
     "key_avdet":"A_VDET",
     "key_cd11":"CD1_1",

@@ -1,4 +1,4 @@
-stdkeyDictNIFS = {
+NIFS_KeyDict = {
     "key_bias":"BIASPWR",
     "key_camera":"INSTRUME",
     "key_central_wavelength":"GRATWAVE",

@@ -4,14 +4,17 @@ from astrodata import Lookups
 from astrodata.Calculator import Calculator
 from gempy.gemini import gemini_metadata_utils as gmu
 
-from StandardNICIKeyDict import stdkeyDictNICI
-from GEMINI_Descriptor import GEMINI_DescriptorCalc
+from NICI_Keywords import NICI_KeyDict
+from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
 class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
-    _update_stdkey_dict = stdkeyDictNICI
+    _update_stdkey_dict = NICI_KeyDict
      
+    def __init__(self):
+        GEMINI_DescriptorCalc.__init__(self)
+    
     def exposure_time(self, dataset, **args):
         # Get the two number of coadds and the two exposure time values from
         # the header of the PHU. The two number of coadds and the two exposure

@@ -7,17 +7,17 @@ from astrodata import Errors
 from astrodata import Lookups
 from gempy.gemini import gemini_metadata_utils as gmu
 import GemCalcUtil
-from StandardGMOSKeyDict import stdkeyDictGMOS
-from GEMINI_Descriptor import GEMINI_DescriptorCalc
+
+from GMOS_Keywords import GMOS_KeyDict
+from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
 class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
-    _update_stdkey_dict = stdkeyDictGMOS
+    _update_stdkey_dict = GMOS_KeyDict
     
     def __init__(self):
         GEMINI_DescriptorCalc.__init__(self)
-    
 
     def amp_read_area(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of

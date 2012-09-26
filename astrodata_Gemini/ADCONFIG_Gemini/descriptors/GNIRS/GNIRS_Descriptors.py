@@ -6,13 +6,13 @@ from astrodata import Lookups
 from astrodata.Calculator import Calculator
 from gempy.gemini import gemini_metadata_utils as gmu
 
-from StandardGNIRSKeyDict import stdkeyDictGNIRS
-from GEMINI_Descriptor import GEMINI_DescriptorCalc
+from GNIRS_Keywords import GNIRS_KeyDict
+from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
 class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
-    _update_stdkey_dict = stdkeyDictGNIRS
+    _update_stdkey_dict = GNIRS_KeyDict
     
     gnirsArrayDict = None
     gnirsConfigDict = None

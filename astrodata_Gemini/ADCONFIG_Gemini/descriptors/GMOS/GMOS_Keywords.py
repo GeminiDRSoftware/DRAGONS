@@ -1,4 +1,4 @@
-stdkeyDictGMOS = {
+GMOS_KeyDict = {
     "key_ampinteg":"AMPINTEG",
     "key_ampname":"AMPNAME",
     "key_array_section":"CCDSEC",

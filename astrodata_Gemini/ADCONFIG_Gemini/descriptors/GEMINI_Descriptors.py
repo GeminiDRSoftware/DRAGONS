@@ -15,16 +15,14 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
     _update_stdkey_dict = GEMINI_KeyDict
     nominal_extinction_table = None
     std_wavelength_band = None
-
+    
     def __init__(self):
-        # Load the lookup tables
         self.nominal_extinction_table = Lookups.get_lookup_table(
             "Gemini/NominalExtinction", "nominal_extinction")
         self.std_wavelength_band = Lookups.get_lookup_table(
             "Gemini/WavelengthBand", "wavelength_band")
-
         FITS_DescriptorCalc.__init__(self)
-
+    
     def airmass(self, dataset, **args):
         # Get the airmass value from the header of the PHU
         airmass = dataset.phu_get_key_value(

@@ -5,13 +5,16 @@ from astrodata import Lookups
 from astrodata.Calculator import Calculator
 from gempy.library import astrotools
 
-from StandardPHOENIXKeyDict import stdkeyDictPHOENIX
-from GEMINI_Descriptor import GEMINI_DescriptorCalc
+from PHOENIX_Keywords import PHOENIX_KeyDict
+from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
 class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
-    _update_stdkey_dict = stdkeyDictPHOENIX
+    _update_stdkey_dict = PHOENIX_KeyDict
+    
+    def __init__(self):
+        GEMINI_DescriptorCalc.__init__(self)
     
     def dec(self, dataset, **args):
         # Get the declination from the header of the PHU

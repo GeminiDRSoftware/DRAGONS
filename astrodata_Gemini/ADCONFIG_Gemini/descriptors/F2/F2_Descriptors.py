@@ -7,13 +7,13 @@ from astrodata import Lookups
 from astrodata.Calculator import Calculator
 from gempy.gemini import gemini_metadata_utils as gmu
 
-from StandardF2KeyDict import stdkeyDictF2
-from GEMINI_Descriptor import GEMINI_DescriptorCalc
+from F2_Keywords import F2_KeyDict
+from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
 class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
-    _update_stdkey_dict = stdkeyDictF2
+    _update_stdkey_dict = F2_KeyDict
     
     f2ArrayDict = None
     f2ConfigDict = None

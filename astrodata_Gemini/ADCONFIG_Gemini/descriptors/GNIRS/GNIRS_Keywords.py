@@ -1,4 +1,4 @@
-stdkeyDictGNIRS = {
+GNIRS_KeyDict = {
     "key_bias":"DETBIAS",
     "key_central_wavelength":"GRATWAVE",
     "key_filter1":"FILTER1",

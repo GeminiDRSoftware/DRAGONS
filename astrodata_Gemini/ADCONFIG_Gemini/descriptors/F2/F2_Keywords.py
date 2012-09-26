@@ -1,4 +1,4 @@
-stdkeyDictF2 = {
+F2_KeyDict = {
     "key_lnrs":"LNRS",
     "key_filter1":"FILTER1",
     "key_filter2":"FILTER2",

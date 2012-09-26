@@ -2,13 +2,16 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata.Calculator import Calculator
 
-from StandardMICHELLEKeyDict import stdkeyDictMICHELLE
-from GEMINI_Descriptor import GEMINI_DescriptorCalc
+from MICHELLE_Keywords import MICHELLE_KeyDict
+from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
 class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
-    _update_stdkey_dict = stdkeyDictMICHELLE
+    _update_stdkey_dict = MICHELLE_KeyDict
+    
+    def __init__(self):
+        GEMINI_DescriptorCalc.__init__(self)
     
     def exposure_time(self, dataset, **args):
         # Get the exposure time and the number of extensions from the header of

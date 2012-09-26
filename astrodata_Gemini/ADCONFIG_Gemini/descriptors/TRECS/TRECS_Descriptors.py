@@ -4,13 +4,16 @@ from astrodata import Lookups
 from astrodata.Calculator import Calculator
 import GemCalcUtil
 
-from StandardTRECSKeyDict import stdkeyDictTRECS
-from GEMINI_Descriptor import GEMINI_DescriptorCalc
+from TRECS_Keywords import TRECS_KeyDict
+from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
 class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
-    _update_stdkey_dict = stdkeyDictTRECS
+    _update_stdkey_dict = TRECS_KeyDict
+    
+    def __init__(self):
+        GEMINI_DescriptorCalc.__init__(self)
     
     def central_wavelength(self, dataset, asMicrometers=False,
                            asNanometers=False, asAngstroms=False, **args):
