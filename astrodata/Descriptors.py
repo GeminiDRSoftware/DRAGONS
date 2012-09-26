@@ -671,7 +671,9 @@ firstrun = False
 
 # this is down here for a good reason... it imports the
 # globalStdkeyDict from StandardDescriptorKeyDict.py, which was moved to the
-# descriptors subdirectory on the command of the Feb 2008 Descriptors Code Review.
+# descriptors subdirectory on the command of the Feb 2008 Descriptors Code
+# Review. As of September 26, 2012, FITS_KeyDict in FITS_Keywords.py is used
+# instead of globalStdkeyDict in StandardDescriptorKeyDict.py.
 from Calculator import Calculator
 
 # Module Level Function(s)

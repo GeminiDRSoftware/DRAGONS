@@ -1,7 +1,7 @@
 try:
-    from StandardDescriptorKeyDict import globalStdkeyDict
+    from FITS_Keywords import FITS_KeyDict
 except ImportError:
-    globalStdkeyDict = {}
+    FITS_KeyDict = {}
     pass
 import inspect  
 from copy import copy
@@ -49,8 +49,8 @@ class Calculator(object):
     
     @note: the base class, besides being a parent class for defining new Calculators
     is also the default Calculator for when none is specifically assigned. 
-    It uses "StandardDescriptorKeyDict.py"
-    to map the standard key names for descriptors to specific header keys, 
+    It uses 'FITS_Keywords.py'
+    to map variables for descriptors to FITS specific header keywords, 
     then does the retrieval from the headers in the dataset, as appropriate.
     Ideally this method should work for all prepared data, at which point we would like
     to have stored the standard values in the data header where it is directly retrieved
@@ -69,7 +69,7 @@ class Calculator(object):
         #print "C69: %s \n%s \n%s" % (repr(self), 
         #                         repr(self._update_stdkey_dict),
         #                         repr(self.stdkey_dict) )
-        stdkeydict = copy(globalStdkeyDict)
+        stdkeydict = copy(FITS_KeyDict)
         
         selfmro = list(inspect.getmro(self.__class__))
         #print "C75:", repr(selfmro)
