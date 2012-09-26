@@ -60,7 +60,6 @@
     DD("requested_bg", pytype=int),
     DD("saturation_level", pytype=int),
     DD("slit", pytype=str),
-    DD("telescope", pytype=str),
     DD("ut_datetime", pytype=datetime),
     DD("ut_time", pytype=datetime),
     DD("wavefront_sensor", pytype=str),

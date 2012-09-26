@@ -67,7 +67,6 @@ GEMINI_KeyDict = {
     "key_requested_bg":"REQBG",
     "key_saturation_level":"SATLEVEL",
     "key_slit":"SLIT",
-    "key_telescope":"TELESCOP",
     "key_ut_datetime":"DATETIME",
     "key_ut_time":"UT",
     "key_wavefront_sensor":"WFS",
