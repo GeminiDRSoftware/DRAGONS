@@ -5,23 +5,25 @@ from astrodata import Errors
 from astrodata import Lookups
 from gempy.gemini import gemini_metadata_utils as gmu
 import GemCalcUtil
-from StandardGEMINIKeyDict import stdkeyDictGEMINI
-from Generic_Descriptor import Generic_DescriptorCalc
 
-class GEMINI_DescriptorCalc(Generic_DescriptorCalc):
+from FITS_Descriptors import FITS_DescriptorCalc
+from GEMINI_Keywords import GEMINI_KeyDict
+
+class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
-    _update_stdkey_dict = stdkeyDictGEMINI
+    _update_stdkey_dict = GEMINI_KeyDict
     nominal_extinction_table = None
     std_wavelength_band = None
 
     def __init__(self):
         # Load the lookup tables
-        self.nominal_extinction_table = Lookups.get_lookup_table("Gemini/NominalExtinction", "nominal_extinction")
-        self.std_wavelength_band = Lookups.get_lookup_table("Gemini/WavelengthBand", "wavelength_band")
+        self.nominal_extinction_table = Lookups.get_lookup_table(
+            "Gemini/NominalExtinction", "nominal_extinction")
+        self.std_wavelength_band = Lookups.get_lookup_table(
+            "Gemini/WavelengthBand", "wavelength_band")
 
-        # Init the superclass
-        Generic_DescriptorCalc.__init__(self)
+        FITS_DescriptorCalc.__init__(self)
 
     def airmass(self, dataset, **args):
         # Get the airmass value from the header of the PHU
