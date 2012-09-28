@@ -10,6 +10,7 @@ class CalculatorInterface:
     def airmass(self, format=None, **args):
         """
         Return the airmass value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -63,6 +64,7 @@ class CalculatorInterface:
     def amp_read_area(self, format=None, **args):
         """
         Return the amp_read_area value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -124,6 +126,7 @@ class CalculatorInterface:
     def array_section(self, format=None, **args):
         """
         Return the array_section value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -177,6 +180,7 @@ class CalculatorInterface:
     def azimuth(self, format=None, **args):
         """
         Return the azimuth value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -230,6 +234,7 @@ class CalculatorInterface:
     def bias_level(self, format=None, **args):
         """
         Return the bias_level value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -283,6 +288,7 @@ class CalculatorInterface:
     def camera(self, format=None, **args):
         """
         Return the camera value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -336,6 +342,7 @@ class CalculatorInterface:
     def cass_rotator_pa(self, format=None, **args):
         """
         Return the cass_rotator_pa value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -390,6 +397,7 @@ class CalculatorInterface:
     def central_wavelength(self, format=None, **args):
         """
         Return the central_wavelength value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param asMicrometers: set to True to return the central_wavelength 
@@ -458,6 +466,7 @@ class CalculatorInterface:
     def coadds(self, format=None, **args):
         """
         Return the coadds value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -511,6 +520,7 @@ class CalculatorInterface:
     def data_label(self, format=None, **args):
         """
         Return the data_label value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -564,6 +574,7 @@ class CalculatorInterface:
     def data_section(self, format=None, **args):
         """
         Return the data_section value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param pretty: set to True to return a human meaningful data_section 
@@ -631,6 +642,7 @@ class CalculatorInterface:
     def dec(self, format=None, **args):
         """
         Return the dec value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -684,8 +696,11 @@ class CalculatorInterface:
     def decker(self, format=None, **args):
         """
         Return the decker value
+        
         :param dataset: the data set
         :type dataset: AstroData
+        :param format: the return format
+        :type format: string
         :param stripID: set to True to remove the component ID from the 
                         returned decker value
         :type stripID: Python boolean
@@ -741,6 +756,7 @@ class CalculatorInterface:
     def detector_rois_requested(self, format=None, **args):
         """
         Return the detector_rois_requested value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -794,6 +810,7 @@ class CalculatorInterface:
     def detector_roi_setting(self, format=None, **args):
         """
         Return the detector_roi_setting value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -847,6 +864,7 @@ class CalculatorInterface:
     def detector_section(self, format=None, **args):
         """
         Return the detector_section value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param pretty: set to True to return a human meaningful 
@@ -914,6 +932,7 @@ class CalculatorInterface:
     def detector_name(self, format=None, **args):
         """
         Return the detector_name value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -967,6 +986,7 @@ class CalculatorInterface:
     def detector_x_bin(self, format=None, **args):
         """
         Return the detector_x_bin value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -1027,6 +1047,7 @@ class CalculatorInterface:
     def detector_y_bin(self, format=None, **args):
         """
         Return the detector_y_bin value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -1087,8 +1108,11 @@ class CalculatorInterface:
     def disperser(self, format=None, **args):
         """
         Return the disperser value
+        
         :param dataset: the data set
         :type dataset: AstroData
+        :param format: the return format
+        :type format: string
         :param stripID: set to True to remove the component ID from the 
                         returned disperser value
         :type stripID: Python boolean
@@ -1144,6 +1168,7 @@ class CalculatorInterface:
     def dispersion(self, format=None, **args):
         """
         Return the dispersion value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param asMicrometers: set to True to return the dispersion 
@@ -1212,6 +1237,7 @@ class CalculatorInterface:
     def dispersion_axis(self, format=None, **args):
         """
         Return the dispersion_axis value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -1265,6 +1291,7 @@ class CalculatorInterface:
     def elevation(self, format=None, **args):
         """
         Return the elevation value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -1318,6 +1345,7 @@ class CalculatorInterface:
     def exposure_time(self, format=None, **args):
         """
         Return the exposure_time value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -1371,8 +1399,11 @@ class CalculatorInterface:
     def filter_name(self, format=None, **args):
         """
         Return the filter_name value
+        
         :param dataset: the data set
         :type dataset: AstroData
+        :param format: the return format
+        :type format: string
         :param stripID: set to True to remove the component ID from the 
                         returned filter_name value
         :type stripID: Python boolean
@@ -1429,8 +1460,11 @@ class CalculatorInterface:
     def focal_plane_mask(self, format=None, **args):
         """
         Return the focal_plane_mask value
+        
         :param dataset: the data set
         :type dataset: AstroData
+        :param format: the return format
+        :type format: string
         :param stripID: set to True to remove the component ID from the 
                         returned focal_plane_mask value
         :type stripID: Python boolean
@@ -1486,6 +1520,7 @@ class CalculatorInterface:
     def gain(self, format=None, **args):
         """
         Return the gain value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -1545,8 +1580,11 @@ class CalculatorInterface:
     def grating(self, format=None, **args):
         """
         Return the grating value
+        
         :param dataset: the data set
         :type dataset: AstroData
+        :param format: the return format
+        :type format: string
         :param stripID: set to True to remove the component ID from the 
                         returned grating value
         :type stripID: Python boolean
@@ -1602,6 +1640,7 @@ class CalculatorInterface:
     def group_id(self, format=None, **args):
         """
         Return the group_id value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -1655,6 +1694,7 @@ class CalculatorInterface:
     def gain_setting(self, format=None, **args):
         """
         Return the gain_setting value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -1708,6 +1748,7 @@ class CalculatorInterface:
     def local_time(self, format=None, **args):
         """
         Return the local_time value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -1761,6 +1802,7 @@ class CalculatorInterface:
     def mdf_row_id(self, format=None, **args):
         """
         Return the mdf_row_id value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -1820,6 +1862,7 @@ class CalculatorInterface:
     def nod_count(self, format=None, **args):
         """
         Return the nod_count value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -1874,6 +1917,7 @@ class CalculatorInterface:
     def nod_pixels(self, format=None, **args):
         """
         Return the nod_pixels value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -1928,6 +1972,7 @@ class CalculatorInterface:
     def nominal_atmospheric_extinction(self, format=None, **args):
         """
         Return the nominal_atmospheric_extinction value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -1981,6 +2026,7 @@ class CalculatorInterface:
     def nominal_photometric_zeropoint(self, format=None, **args):
         """
         Return the nominal_photometric_zeropoint value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2034,6 +2080,7 @@ class CalculatorInterface:
     def non_linear_level(self, format=None, **args):
         """
         Return the non_linear_level value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2088,6 +2135,7 @@ class CalculatorInterface:
     def observation_class(self, format=None, **args):
         """
         Return the observation_class value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2142,6 +2190,7 @@ class CalculatorInterface:
     def observation_epoch(self, format=None, **args):
         """
         Return the observation_epoch value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2195,6 +2244,7 @@ class CalculatorInterface:
     def observation_id(self, format=None, **args):
         """
         Return the observation_id value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2248,6 +2298,7 @@ class CalculatorInterface:
     def observation_type(self, format=None, **args):
         """
         Return the observation_type value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2302,6 +2353,7 @@ class CalculatorInterface:
     def overscan_section(self, format=None, **args):
         """
         Return the overscan_section value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2355,6 +2407,7 @@ class CalculatorInterface:
     def pixel_scale(self, format=None, **args):
         """
         Return the pixel_scale value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2408,8 +2461,11 @@ class CalculatorInterface:
     def prism(self, format=None, **args):
         """
         Return the prism value
+        
         :param dataset: the data set
         :type dataset: AstroData
+        :param format: the return format
+        :type format: string
         :param stripID: set to True to remove the component ID from the 
                         returned prism value
         :type stripID: Python boolean
@@ -2465,6 +2521,7 @@ class CalculatorInterface:
     def program_id(self, format=None, **args):
         """
         Return the program_id value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2519,6 +2576,7 @@ class CalculatorInterface:
     def pupil_mask(self, format=None, **args):
         """
         Return the pupil_mask value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2572,6 +2630,7 @@ class CalculatorInterface:
     def qa_state(self, format=None, **args):
         """
         Return the qa_state value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2626,6 +2685,7 @@ class CalculatorInterface:
     def ra(self, format=None, **args):
         """
         Return the ra value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2679,6 +2739,7 @@ class CalculatorInterface:
     def raw_bg(self, format=None, **args):
         """
         Return the raw_bg value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2733,6 +2794,7 @@ class CalculatorInterface:
     def raw_cc(self, format=None, **args):
         """
         Return the raw_cc value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2787,6 +2849,7 @@ class CalculatorInterface:
     def raw_iq(self, format=None, **args):
         """
         Return the raw_iq value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2841,6 +2904,7 @@ class CalculatorInterface:
     def raw_wv(self, format=None, **args):
         """
         Return the raw_wv value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2895,6 +2959,7 @@ class CalculatorInterface:
     def read_mode(self, format=None, **args):
         """
         Return the read_mode value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -2952,6 +3017,7 @@ class CalculatorInterface:
     def read_noise(self, format=None, **args):
         """
         Return the read_noise value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -3011,6 +3077,7 @@ class CalculatorInterface:
     def read_speed_setting(self, format=None, **args):
         """
         Return the read_speed_setting value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -3065,6 +3132,7 @@ class CalculatorInterface:
     def requested_iq(self, format=None, **args):
         """
         Return the requested_iq value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -3118,6 +3186,7 @@ class CalculatorInterface:
     def requested_cc(self, format=None, **args):
         """
         Return the requested_cc value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -3171,6 +3240,7 @@ class CalculatorInterface:
     def requested_wv(self, format=None, **args):
         """
         Return the requested_wv value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -3224,6 +3294,7 @@ class CalculatorInterface:
     def requested_bg(self, format=None, **args):
         """
         Return the requested_bg value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -3277,6 +3348,7 @@ class CalculatorInterface:
     def saturation_level(self, format=None, **args):
         """
         Return the saturation_level value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -3331,8 +3403,11 @@ class CalculatorInterface:
     def slit(self, format=None, **args):
         """
         Return the slit value
+        
         :param dataset: the data set
         :type dataset: AstroData
+        :param format: the return format
+        :type format: string
         :param stripID: set to True to remove the component ID from the 
                         returned slit value
         :type stripID: Python boolean
@@ -3388,6 +3463,7 @@ class CalculatorInterface:
     def ut_datetime(self, format=None, **args):
         """
         Return the ut_datetime value
+        
         This descriptor attempts to figure out the datetime even when the
         headers are malformed or not present. It tries just about every header
         combination that could allow it to determine an appropriate datetime
@@ -3407,8 +3483,11 @@ class CalculatorInterface:
         None unless the dateonly flag is set, in which case it will return the
         valid date. The dateonly and timeonly flags are intended for use by
         the ut_date and ut_time descriptors.
+        
         :param dataset: the data set
         :type dataset: AstroData
+        :param format: the return format
+        :type format: string
         :param strict: set to True to not try to guess the date or time
         :type strict: Python boolean
         :param dateonly: set to True to return a datetime.date
@@ -3466,6 +3545,7 @@ class CalculatorInterface:
     def ut_time(self, format=None, **args):
         """
         Return the ut_time value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -3519,6 +3599,7 @@ class CalculatorInterface:
     def wavefront_sensor(self, format=None, **args):
         """
         Return the wavefront_sensor value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -3574,6 +3655,7 @@ class CalculatorInterface:
     def wavelength_band(self, format=None, **args):
         """
         Return the wavelength_band value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -3627,6 +3709,7 @@ class CalculatorInterface:
     def wavelength_reference_pixel(self, format=None, **args):
         """
         Return the wavelength_reference_pixel value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -3687,6 +3770,7 @@ class CalculatorInterface:
     def well_depth_setting(self, format=None, **args):
         """
         Return the well_depth_setting value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -3741,6 +3825,7 @@ class CalculatorInterface:
     def x_offset(self, format=None, **args):
         """
         Return the x_offset value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -3794,6 +3879,7 @@ class CalculatorInterface:
     def y_offset(self, format=None, **args):
         """
         Return the y_offset value
+        
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
