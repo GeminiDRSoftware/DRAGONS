@@ -1,8 +1,4 @@
 from datetime import datetime
-from descriptorDescriptionDict import asDictArgDict
-from descriptorDescriptionDict import descriptorDescDict
-from descriptorDescriptionDict import detailedNameDict
-from descriptorDescriptionDict import stripIDArgDict
 
 from astrodata.ConfigSpace import CALCIFACEMARKER, DDLISTMARKER
 CALCIFACECLASSMARKER = "CalculatorInterface"
@@ -10,15 +6,11 @@ CALCIFACECLASSMARKER = "CalculatorInterface"
 import re
 class DescriptorDescriptor:
     name = None
-    description = ""
     pytype = None
-    unit = None
     
     thunkfuncbuff = """
     def %(name)s(self, format=None, **args):
-        \"\"\"
-        %(description)s
-        \"\"\"
+        \"\"\"%(description)s\"\"\"
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
@@ -65,9 +57,7 @@ class DescriptorDescriptor:
     
     FIRST_thunkfuncbuff = """
     def %(name)s(self, format=None, **args):
-        \"\"\"
-        %(description)s
-        \"\"\"
+        \"\"\"%(description)s\"\"\"
         try:
             self._lazyloadCalculator()
             if not hasattr(self.descriptor_calculator, "%(name)s"):
@@ -101,86 +91,7 @@ class DescriptorDescriptor:
         self.name = name
         if pytype:
             self.pytype = pytype
-            rtype = pytype.__name__
-        try:
-            desc = descriptorDescDict[name]
-        except:
-            if rtype == 'str':
-                rtype = 'string'
-            if rtype == 'int':
-                rtype = 'integer'
-            try:
-                dname = detailedNameDict[name]
-            except:
-                dname = name
-            try:
-                asDictArg = asDictArgDict[name]
-            except:
-                asDictArg = 'no'
-            try:
-                stripIDArg = stripIDArgDict[name]
-            except:
-                stripIDArg = 'no'
-            
-            if stripIDArg == 'yes':
-                desc = 'Return the %(name)s value\n' % {'name':name} + \
-                       '        :param dataset: the data set\n' + \
-                       '        :type dataset: AstroData\n' + \
-                       '        :param stripID: set to True to remove the ' + \
-                       'component ID from the \n                        ' + \
-                       'returned %(name)s value\n' % {'name':name} + \
-                       '        :type stripID: Python boolean\n' + \
-                       '        :param pretty: set to True to return a ' + \
-                       'human meaningful \n' + \
-                       '                       %(name)s ' % {'name':name} + \
-                       'value\n' + \
-                       '        :type pretty: Python boolean\n' + \
-                       '        :rtype: %(rtype)s ' % {'rtype':rtype} + \
-                       'as default (i.e., format=None)\n' + \
-                       '        :return: the %(dname)s' \
-                       % {'dname':dname}
-            elif asDictArg == 'yes':
-                desc = 'Return the %(name)s value\n' % {'name':name} + \
-                       '        :param dataset: the data set\n' + \
-                       '        :type dataset: AstroData\n' + \
-                       '        :param format: the return format\n' + \
-                       '                       set to as_dict to return a ' + \
-                       'dictionary, where the number ' + \
-                       '\n                       of dictionary elements ' + \
-                       'equals the number of pixel data ' + \
-                       '\n                       extensions in the image. ' + \
-                       'The key of the dictionary is ' + \
-                       '\n                       an (EXTNAME, EXTVER) ' + \
-                       'tuple, if available. Otherwise, ' + \
-                       '\n                       the key is the integer ' + \
-                       'index of the extension.\n' + \
-                       '        :type format: string\n' + \
-                       '        :rtype: %(rtype)s ' % {'rtype':rtype} + \
-                       'as default (i.e., format=None)\n' + \
-                       '        :rtype: dictionary containing one or more ' + \
-                       '%(rtype)s(s) ' % {'rtype':rtype} + \
-                       '(format=as_dict)\n' + \
-                       '        :return: the %(dname)s' \
-                       % {'dname':dname}
 
-            else:
-                desc = 'Return the %(name)s value\n' % {'name':name} + \
-                       '        :param dataset: the data set\n' + \
-                       '        :type dataset: AstroData\n' + \
-                       '        :param format: the return format\n' + \
-                       '        :type format: string\n' + \
-                       '        :rtype: %(rtype)s ' % {'rtype':rtype} + \
-                       'as default (i.e., format=None)\n' + \
-                       '        :return: the %(dname)s' \
-                       % {'dname':dname}
-                
-        self.description = desc
-    def OLD__init__(self, name=None, pytype=None):
-        self.name = name
-        if pytype:
-            self.pytype = pytype
-            rtype = pytype.__name__
-        
     def funcbody(self):
         if self.pytype:
             pytypestr = self.pytype.__name__
@@ -191,10 +102,42 @@ class DescriptorDescriptor:
         else:
             pti = ""
         #print "mkC150:", pti
+
+        if self.pytype:
+            rtype = self.pytype.__name__
+            if rtype == 'str':
+                rtype = 'string'
+            if rtype == 'int':
+                rtype = 'integer'
+            
+        # Use the docstring defined in the docstrings module, if it exists
+        use_docstrings = False
+        try:
+            from docstrings import docstrings
+            if hasattr(docstrings, self.name):
+                use_docstrings = True
+        except:
+            pass
+        
+        if use_docstrings:
+            doc = "docstrings.%(name)s.__doc__.__str__()" % {'name':self.name}
+            description = eval(doc)
+        else:
+            doc = ("\n"
+                   "        Return the %(name)s value\n\n"
+                   "        :param dataset: the data set\n"
+                   "        :type dataset: AstroData\n"
+                   "        :param format: the return format\n"
+                   "        :type format: string\n"
+                   "        :rtype: %(rtype)s as default (i.e., format=None)\n"
+                   "        :return: the %(name)s value\n"
+                   "        ") % {'name':self.name, 'rtype':rtype}
+            description = doc
+        
         ret = self.thunkfuncbuff % {'name':self.name,
                                     'pytypeimport': pti,
                                     'pytype': pytypestr,
-                                    'description':self.description}
+                                    'description':description}
         return ret
         
 DD = DescriptorDescriptor
