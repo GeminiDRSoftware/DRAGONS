@@ -145,13 +145,12 @@ else:
         osd = options.showdescriptors
         
         if (osd == "all" or osd == "err"):
-            import CalculatorInterface
+            CalculatorInterface = get_calculator_interface()
             descs = []
             if osd == "err":
                 descs.append("err")
             
-            funs = inspect.getmembers(  CalculatorInterface.CalculatorInterface, 
-                                        inspect.ismethod)
+            funs = inspect.getmembers(CalculatorInterface, inspect.ismethod)
 
             for funtuple in funs:
                 funame = funtuple[0]
