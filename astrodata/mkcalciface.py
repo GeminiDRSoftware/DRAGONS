@@ -14,79 +14,48 @@ class DescriptorDescriptor:
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
-            key = "key_"+"%(name)s"
-            #print "mkCI22:",key, repr(keydict)
-            #print "mkCI23:", key in keydict
+            key = \"key_%(name)s\"
+            #print \"mkCI22:\",key, repr(keydict)
+            #print \"mkCI23:\", key in keydict
+            keyword = None
             if key in keydict.keys():
                 keyword = keydict[key]
-            else:
-                keyword = None
-            #print hasattr(self.descriptor_calculator, "%(name)s")
-            if not hasattr(self.descriptor_calculator, "%(name)s"):
+                
+            #print hasattr(self.descriptor_calculator, \"%(name)s\")
+            if not hasattr(self.descriptor_calculator, \"%(name)s\"):
                 if keyword is not None:
                     retval = self.phu_get_key_value(keyword)
                     if retval is None:
-                        if hasattr(self, "exception_info"):
-                            raise self.exception_info
+                        if hasattr(self, \"exception_info\"):
+                            raise Errors.DescriptorError(self.exception_info)
                 else:
-                    msg = "Unable to find an appropriate descriptor function "
-                    msg += "or a default keyword for %(name)s"
-                    raise KeyError(msg)
+                    msg = (\"Unable to find an appropriate descriptor \"
+                           \"function or a default keyword for %(name)s\")
+                    raise Errors.DescriptorError(msg)
             else:
-                retval = self.descriptor_calculator.%(name)s(self, **args)
+                try:
+                    retval = self.descriptor_calculator.%(name)s(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
             
             %(pytypeimport)s
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "%(name)s",
+                                   name = \"%(name)s\",
                                    keyword = keyword,
                                    ad = self,
                                    pytype = %(pytype)s )
             return ret
-        except:
-            if not hasattr(self, "exception_info"):
-                setattr(self, "exception_info", sys.exc_info()[1])
-            if (self.descriptor_calculator is None 
-                or self.descriptor_calculator.throwExceptions == True):
+        
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:
-                #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()[1]
+            else:            
                 return None
+        except:
+            raise
     """
     
-    FIRST_thunkfuncbuff = """
-    def %(name)s(self, format=None, **args):
-        \"\"\"%(description)s\"\"\"
-        try:
-            self._lazyloadCalculator()
-            if not hasattr(self.descriptor_calculator, "%(name)s"):
-                msg = "Unable to find an appropriate descriptor function "
-                msg += "or a default keyword for %(name)s"
-                raise KeyError(msg)
-            else:
-                retval = self.descriptor_calculator.%(name)s(self, **args)
-            
-            %(pytypeimport)s
-            ret = DescriptorValue( retval, 
-                                   format = format, 
-                                   name = "%(name)s",
-                                   ad = self,
-                                   pytype = %(pytype)s )
-            return ret
-        except:
-            if not hasattr(self, "exception_info"):
-                setattr(self, "exception_info", sys.exc_info()[1])
-                import traceback
-                traceback.print_exc()
-            if (self.descriptor_calculator is None 
-                or self.descriptor_calculator.throwExceptions == True):
-                raise
-            else:
-                #print "NONE BY EXCEPTION"
-                self.exception_info = sys.exc_info()[1]
-                return None
-    """
     def __init__(self, name=None, pytype=None):
         self.name = name
         if pytype:
