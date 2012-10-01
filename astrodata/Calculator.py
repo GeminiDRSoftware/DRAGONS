@@ -59,7 +59,7 @@ class Calculator(object):
     @ivar usage: Used to document this Descriptor.    
     """
     usage = ""
-    throwExceptions = True 
+    throwExceptions = False
         
     stdkey_dict = None
     _specifickey_dict = None
