@@ -1268,6 +1268,8 @@ class QAPrimitives(GENERALPrimitives):
                 if now.hour>=18:
                     now += datetime.timedelta(days=1)
                     tonight = now.replace(hour =5, minute=0)
+            if (not hasattr(self, "datacounter")):
+                self.datacounter = 1
             nexttime = datetime.timedelta(minutes = self.datacounter*15 + random.randint(-60,0))
             self.datacounter += 1
             now_ut = tonight + nexttime
