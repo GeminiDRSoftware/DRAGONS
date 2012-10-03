@@ -596,7 +596,6 @@ def command_clause(ro, coi):
 
             #print msg
             #print '-'*30
-
         elif rqTyp == UpdateStackableRequest:
             coi.stack_append(rq.stk_id, rq.stk_list, stkindfile)
             coi.persist_stk_index( stkindfile )

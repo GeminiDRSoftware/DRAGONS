@@ -277,6 +277,8 @@ class PRSProxy(object):
             
     def report_qametrics(self, event_list):
         # print "P275:"+repr(event_list)
+        #if len(event_list) == 0:
+        #    return
         self.prs.report_qametrics_2adcc(event_list)
         
 

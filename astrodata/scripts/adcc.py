@@ -144,7 +144,7 @@ class ReduceInstanceManager(object):
         #   a display tool
         self.stackKeeper = stackKeeper
         self.displayCmdHistory = TSCmdQueue()
-        self.events_manager = EventsManager()
+        self.events_manager = EventsManager(persist = "adcc_events.jsa")
         
     def register(self, pid, details):
         """This function is exposed to the xmlrpc interface, and is used

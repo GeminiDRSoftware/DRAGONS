@@ -119,7 +119,7 @@ class MyHandler(BaseHTTPRequestHandler):
         # print "prsw152: parms=",repr(parms)
 
         try:
-            if False: # old root self.path == "/":
+            if self.path == "/":
                 page = """
                 <html>
                 <head>
@@ -127,13 +127,17 @@ class MyHandler(BaseHTTPRequestHandler):
                 <body>
                 <h4>prsproxy engineering interface</h4>
                 <ul>
-                <li><a href="reducelist">"Stream" prsproxy status</a></li>
+                <li><a href="/engineering">Engeering Interface</a></li>
+                <li><a href="qap/engineering.html">Engeering AJAX App</a></li>
                 <li><a href="datadir">Data Directory View</a></li>
                 <li><a href="killprs">Kill this server</a> (%(numinsts)d copies of reduce registered)</li>
                 
                 </ul>
                 <body>
                 </html>""" % {"numinsts":rim.numinsts}
+                self.send_response(200)
+                self.send_header("content-type", "text-html")
+                self.end_headers()
                 self.wfile.write(page)
                 return
                 
@@ -213,6 +217,8 @@ class MyHandler(BaseHTTPRequestHandler):
                     else:
                         fromtime = 0
                     tdic = rim.events_manager.get_list(fromtime = fromtime)
+                    tdic.insert(0, {"msgtype":"cmdqueue.request",
+                                    "timestamp":time.time()})
                     self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
                 return
             
@@ -657,6 +663,7 @@ class MyHandler(BaseHTTPRequestHandler):
                                     
                 return 
             if self.path == "/killprs":
+                import datetime
                 self.send_response(200)
                 self.send_header('Content-type',	'text/html')
                 self.end_headers()
@@ -789,6 +796,26 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(data)
                 return 
+                
+            if self.path.startswith("/engineering"):
+                from astrodata.eventsmanagers import EventsManager
+
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+                
+                if "rim" in MyHandler.informers:
+                    rim = MyHandler.informers["rim"]
+                    evman = rim.events_manager
+                    import pprint
+                    data = "<u>Events</u><br/><pre>"
+                    data += "num events: %d\n" % len(evman.event_list)
+                    for mevent in evman.event_list:
+                        data += pprint.pformat(mevent)
+                        data += "------------------------------\n"
+                    data += "</pre>"
+                    self.wfile.write(data)
+                return
                 
             if self.path.startswith("/qap"):
                 if ".." in self.path:

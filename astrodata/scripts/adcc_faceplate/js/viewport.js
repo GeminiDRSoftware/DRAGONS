@@ -9,32 +9,32 @@ function ViewPort(element, id) {
 ViewPort.prototype = {
     constructor: ViewPort,
     init: function() {
-	var html_str = this.composeHTML();
-	this.element.html(html_str);
-    }, // end init
+    	var html_str = this.composeHTML();
+    	this.element.html(html_str);
+        }, // end init
     composeHTML: function() {
-	return '<div id='+this.id+' class="view_port"></div>';
-    }, // end composeHTML
+    	return '<div id='+this.id+' class="view_port"></div>';
+        }, // end composeHTML
     addRecord: function(records,prepend) {
-	if (!(records instanceof Array)) {
-	    records = [records];
-	}
-	var record_str = "";
-	for (var i=0;i<records.length;i++) {
-	    if (prepend) {
-		record_str += records[records.length-i-1];
-	    } else {
-		record_str += records[i];
-	    }
-	}
-	if (prepend) {
-	    $('#'+this.id).prepend(record_str);
-	} else {
-	    $('#'+this.id).append(record_str);
-	}
-    },
+    	if (!(records instanceof Array)) {
+    	    records = [records];
+    	}
+    	var record_str = "";
+    	for (var i=0;i<records.length;i++) {
+    	    if (prepend) {
+    		record_str += records[records.length-i-1];
+    	    } else {
+    		record_str += records[i];
+    	    }
+    	}
+    	if (prepend) {
+    	    $('#'+this.id).prepend(record_str);
+    	} else {
+    	    $('#'+this.id).append(record_str);
+    	}
+        },
     clearRecord: function() {
-	$('#'+this.id).html("");
+    	$('#'+this.id).html("");
     }
 };
 

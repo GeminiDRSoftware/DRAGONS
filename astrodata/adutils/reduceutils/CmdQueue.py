@@ -1,4 +1,6 @@
 from threading import RLock
+import cPickle
+import os
 
 class CQExcept:
     """This class is an exception class for the Thread Safe Commands Queue module"""
@@ -28,10 +30,28 @@ class TSCmdQueue:
     def __init__(self):
         self.q = []
         self.lock = RLock()
+        self.load();
+        
+    def dump(self):
+        self.lock.acquire()
+        print "CQ37L: dump"
+        cqfile = open("cqfile.pkl", "w")
+        cPickle.dump(self.q)
+        cqfile.close()
+        self.lock.release()
+        
+    def load(self):
+        self.lock.acquire()
+        print "CQ44L: load"
+        if os.path.exists("cqfile.pkl"):
+            cqfile = open("cqfile.pkl", "r")
+            self.q = cPickle.load(cqfile)
+            cqfile.close()
+        self.lock.release()
         
     def addCmd(self, cmd, **kwargs):
         self.lock.acquire()
-        print "CQ34L:", repr(cmd), repr(kwargs)
+        print "CQ53L:\n"*20, repr(cmd), repr(kwargs)
         if type(cmd) == dict:
             cmddict = cmd
         elif type(cmd) == str:
@@ -40,6 +60,7 @@ class TSCmdQueue:
             lock.release()
             raise CQExcept("cmd argument must be given as string or dict.")
         self.q.append(cmddict)
+        self.dump()
         self.lock.release()  
     
     def clearOld(self, cmdNum = None, date = None):
