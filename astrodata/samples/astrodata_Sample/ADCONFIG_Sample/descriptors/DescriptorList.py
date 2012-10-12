@@ -1,0 +1,5 @@
+[
+    DD("observatory"),
+    DD("telescope")
+]
+    
