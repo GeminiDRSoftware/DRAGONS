@@ -1,7 +1,7 @@
 import os
 
 from datetime import datetime
-from astrodata import Descriptors
+# from astrodata import Descriptors
 
 class ReductionObjectRequest(object):
     '''
@@ -130,6 +130,8 @@ class ImageQualityRequest(ReductionObjectRequest):
     case of stand-alone mode, display overlays, etc. (Demo)
     '''
     def __init__( self, ad, ell_mean, ell_sigma, fwhm_mean, fwhm_sigma ):
+        from astrodata import Descriptors
+        
         super( ImageQualityRequest, self ).__init__()
         #
         self.ad = ad

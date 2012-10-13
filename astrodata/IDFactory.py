@@ -3,7 +3,7 @@ import pyfits as pf
 import re
 #------------------------------------------------------------------------------ 
 import  AstroData
-import Descriptors
+# double import import Descriptors
 #------------------------------------------------------------------------------ 
 version_index = {"stackID":"1_0", "recipeID":"1_0", "display_id":"1_0"}
 

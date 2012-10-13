@@ -1,6 +1,6 @@
 # This module operates like a singleton
 import new
-import os
+import os, sys
 import inspect
 import pickle # for persisting the calibration index
 import socket # to get host name for local statistics
@@ -12,7 +12,7 @@ import traceback
 import astrodata
 import AstroDataType
 import ConfigSpace
-import Descriptors
+# not needed and double import import Descriptors
 import gdpgutil
 from gdpgutil import inherit_index
 import ReductionObjects
@@ -2121,6 +2121,14 @@ class RecipeLibrary(object):
                     b = datetime.now()
                     try:
                         primset = eval (importname + "." + primdef[1] + "()")
+                    except NameError:
+                        traceback.print_exc()
+                        print "NOTE "*15
+                        print "NOTE: if you have had trouble with importing a Gemini primitive set,"
+                        print "      you may need to create login.cl.  This can be done, if IRAF is installed,"
+                        print  "      with the 'mkiraf' command"""
+                        print "NOTE "*15
+                        sys.exit(1)
                     except:
                         print
                         print ("!@"*40)

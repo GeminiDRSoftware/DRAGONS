@@ -13,7 +13,8 @@ class EventsManager:
     event_list = None
     event_index = None
     persist = False
-    lose_duration = float(24*60*60)*2 # reject reloading events older, in secs (2days)
+    # reject reloading events older, in secs (cur 7days)
+    lose_duration = float(24*60*60)*7 
     rc = None
     def __init__(self, rc=None, persist=False):
         self.rc = rc

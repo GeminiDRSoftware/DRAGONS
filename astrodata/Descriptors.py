@@ -636,6 +636,7 @@ if (True):
     # this module operates like a singleton
     
     centralCalculatorIndex = {}
+    calculatorPackageMap = {}
     loadedCalculatorIndex = {}
     # WALK the config space as a directory structure
     for root, dirn, files in config_walk(DESCRIPTORSPACE):
@@ -656,6 +657,12 @@ if (True):
                     # in the central dict
                 
                     for key in calculatorIndex.keys():
+                        if key == "OBSERVED":
+                            from astrodata import Errors
+                            import traceback
+                            #print "D663:"*29
+                            #traceback.print_stack()
+                            #print "D665:"*29
                         if centralCalculatorIndex.has_key(key):
                             # @@log
                             msg = "Descriptor Index CONFLICT\n"
@@ -666,6 +673,7 @@ if (True):
                             raise Errors.DescriptorsError(msg)
                         
                     centralCalculatorIndex.update(calculatorIndex)
+                    #calculatorPackageMap.update("
 
 firstrun = False
 

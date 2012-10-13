@@ -56,11 +56,15 @@ class ConfigSpace(object):
     adconfigpath = None
     wholepath = None
     
+    package_paths = None
+    
     calc_iface_list=[]
     
     def __init__(self):
         self.configdirs = {}
         self.configpacks = []
+        self.package_paths = []
+ 
         # support for ADCONFIGPATH and RECIPEPATH
         # NOTE: due to the way the list is extended, ADCONFIGPATH appearing second
         #       means it has precedence over RECIPEPATH, that is, ADCONFIGPATH
@@ -162,6 +166,10 @@ class ConfigSpace(object):
                                     continue
                                 #print "CS134:", subpath
                                 if PACKAGEMARKER in subpath:
+                                    ppath = os.path.join(path, subpath)
+                                    if ppath not in self.package_paths:
+                                        self.package_paths.append(ppath)
+                                    
                                     #print "CS136: package marker found"
                                     subsubpaths = os.listdir(os.path.join(path,subpath))
                                     for subsubpath in subsubpaths:

@@ -12,7 +12,7 @@ import numpy
 
 import astrodata
 from AstroDataType import *
-import Descriptors
+# not needed, make old import import Descriptors
 # this gets SCI (== "SCI") etc
 from gemconstants import *
 import Calculator

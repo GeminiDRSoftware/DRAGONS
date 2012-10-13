@@ -14,13 +14,15 @@ class OBSERVEDPrimitives(PrimitiveSet):
             if ad.is_type("MARKED"):
                 print "OBSERVEDPrimitives::mark(%s) already marked" % ad.filename
             else:
-                ad.phu_set_key_value("THEMARK", "TRUE")
-        yield rc
+                ad.phu_set_key_value("S_MARKED", "TRUE")
+                rc.report_output(ad)
+        yield rc 
         
     def unmark(self, rc):
         for ad in rc.get_inputs_as_astrodata():
             if ad.is_type("UNMARKED"):
                 print "OBSERVEDPrimitives::unmark(%s) not marked" % ad.filename
             else:
-                ad.phu_set_key_value("THEMARK", None)
+                ad.phu_set_key_value("S_MARKED", None)
+                rc.report_output(ad)
         yield rc

@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 import os
 import sys
-
+from astrodata import jsutil
 from optparse import OptionParser
-
+from astrodata import AstroDataType
 from astrodata.priminspect import PrimInspect
+import pprint
+from astrodata.ConfigSpace import cs
+import json
 
 # set up commandline args and options
 parser = OptionParser()
@@ -38,6 +41,7 @@ optp = options.parameters
 optu = options.usage
 oview = options.view_recipe
 oset = options.primitive_set
+server = options.server
 if options.verbose:
     optp = True
     opti = True
@@ -69,5 +73,4 @@ else:
         else:
             for adt in adtypes:
                 pin.list_primitives(adtype=adt, info=opti, params=optp)
-
 

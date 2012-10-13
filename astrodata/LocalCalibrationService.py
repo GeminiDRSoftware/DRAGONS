@@ -7,7 +7,7 @@ from astrodata.AstroData import AstroData
 
 import ConfigSpace
 
-import Descriptors
+# double import import Descriptors
 
 from ReductionObjectRequests import CalibrationRequest
 #------------------------------------------------------------------------------ 
@@ -70,7 +70,7 @@ class CalibrationService( object ):
         @return: A sorted list of calibration pathnames.
         @rtype: list
         '''
-        
+        from astrodata import Descriptors
         inputfile = cal_rq.filename
         urilist = []     
         

@@ -5,7 +5,7 @@ from xml.dom.minidom import parse
 import astrodata
 from astrodata import AstroData
 import ConfigSpace
-import Descriptors
+# double import import Descriptors
 import gdpgutil
 from ReductionObjectRequests import CalibrationRequest
 #------------------------------------------------------------------------------ 
@@ -185,7 +185,7 @@ class CalibrationDefinitionLibrary(object):
         @return: Returns a Calibration Request Event.
         @rtype: CalibrationRequestEvent
         '''
-       
+        import Descriptors # bad to load on import, import mess
         calReqEvent = CalibrationRequest()
         calReqEvent.caltype = caltype
         query = xml_dom_query_node
