@@ -32,6 +32,7 @@ from StackKeeper import StackKeeper, FringeKeeper
 from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary
 import eventsmanagers
 import traceback
+from primitivescat import PrimitivesCatalog
 
 centralPrimitivesIndex = {}
 centralRecipeIndex = {}
@@ -40,6 +41,7 @@ centralAstroTypeRecipeIndex = {}
 centralParametersIndex = {}
 centralAstroTypeParametersIndex = {}
 
+centralPrimitivesCatalog = PrimitivesCatalog()
 #------------------------------------------------------------------------------ 
 MAINSTREAM = "main"
 class RecipeExcept:
@@ -2365,7 +2367,10 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
         root = os.path.abspath(root)
         # print "RM2193:", root, files
         sys.path.append(root)
+        curdir = root
+        curpack = ConfigSpace.from_which(curdir)
         for sfilename in files:
+            curpath = os.path.join(curdir, sfilename)
             
             m = re.match(recipeREMask, sfilename)
             mpI = re.match(primitivesIndexREMask, sfilename)
@@ -2436,10 +2441,15 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                 for key in lpis:
                     if key not in cpis:
                         centralPrimitivesIndex.update({key:[]})
+                    
                     plist = centralPrimitivesIndex[key]
                     val = lpi[key]
                     if type(val) == tuple:
                         plist.append(localPrimitiveIndex[key])
+                        centralPrimitivesCatalog.add_primitive_set(
+                            package = curpack, 
+                            primsetEntry = val,
+                            primsetPath = curpath)
                     else:
                         plist.extend(val)
                            

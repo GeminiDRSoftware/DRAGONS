@@ -7,8 +7,30 @@ class JSAccord(JSDiv):
         return """
             <div class="gem_accord" style="display:none">
             <script type="text/javascript">
-            function dict2accordian(accord, appTo)
+            function dict2accordian(accord, appTo, startOpen )
             {
+                if (typeof(startOpen) == "undefined")
+                {
+                    var block = "block";
+                    var subblock = "none"; 
+                    var substartopen = false;
+                }
+                else
+                {
+                    if (startOpen)
+                    {
+                        var block = "block";
+                        var subblock = block; 
+                        var substartopen = startOpen
+                    }                        
+                    else
+                    {
+                        var block        = "none";
+                        var subblock     = block; 
+                        var substartopen = startOpen;
+
+                    }
+                }
                 if (typeof(appTo) == "undefined")
                     appTo = null;
                 // turns nested dict into collapsable hierarchical set of divs
@@ -20,12 +42,14 @@ class JSAccord(JSDiv):
                               members: [ {} {} {} ]
                             }
                             */  
-                var ndiv_html = '<div style="border:solid black 1px; padding:2px;margin:1px;margin-left:1em"' 
+                var ndiv_html = '<div style="'
+                                    + 'display:'+block+';'
+                                    + 'border:solid black 1px; padding:2px;margin:1px;margin-left:1em"' 
                                     + 'class="recipies_'
                                     + accord.cat_name
                                     + '">'
                                     + '</div>'
-                var title_ndiv_html = '<div><a href="javascript:void(0)" onclick="'
+                var title_ndiv_html = '<div style="margin-left:1em"><a href="javascript:void(0)" onclick="'
                                 + "$('.recipies_"
                                     +accord.cat_name
                                     +"').toggle()"
@@ -39,19 +63,40 @@ class JSAccord(JSDiv):
                 {
                     appTo.append(title);
                 }                  
-                console.log("js25:"+ndiv_html);
+                //console.log("js25:"+ndiv_html);
                 var ndiv = $(ndiv_html);
-                for (key in accord)
-                {
-                    console.log("js27:"+ key);
-                }
+                //for (key in accord)
+                //{
+                //    console.log("js27:"+ key);
+                //}
                 if ("members" in accord)
                 {
+                    accord.members.sort( function (a,b) {
+                        var aname  = a.name.toLowerCase();
+                        var bname  = b.name.toLowerCase();
+                        if (aname > bname) { return 1;};
+                        if (aname < bname) { return -1;};                        
+                        return 0;                        
+                        });
                     for (var i = 0; i < accord.members.length; i++)
                     {
                         var mem = accord.members[i];
-                        console.log("js26:"+JSON.stringify(mem));
-                        ndiv.append($('<span class-"recipie_'+mem.name+'">'+ mem.name +'</span></br>'));
+                        // console.log("js26:"+JSON.stringify(mem));
+                        var mem_span ='<span title="'
+                                            + mem.path
+                                            + '"'
+                                            + ' class="recipe_'
+                                            + mem.name
+                                            + '">'
+                                            + mem.name 
+                                            + ' (<a href="javascript: void(0)" onclick="editFile('
+                                            + "'"
+                                            + mem.path
+                                            + "')"+ '">'
+                                            + "edit) </a>"
+                                            + '</span></br>'; 
+                        //console.log("js69:"+mem_span);
+                        ndiv.append($(mem_span));
                     }
                 }
                 if ("subcats" in accord)
@@ -59,11 +104,11 @@ class JSAccord(JSDiv):
                     for (var i = 0; i < accord.subcats.length; i++)
                     {
                         var subcat = accord.subcats[i];
-                        var nsdiv = dict2accordian(subcat, ndiv);
+                        var nsdiv = dict2accordian(subcat, ndiv, substartopen);
                         ndiv.append(nsdiv);
                     }
                 }
-                console.log("js28:"+ndiv.html());
+                //console.log("js28:"+ndiv.html());
                 return ndiv;
             }
             </script>
@@ -72,7 +117,7 @@ class JSAccord(JSDiv):
 
 class JSTypes(JSDiv):
     def div(self):
-        return """<div class="lp_types" style="float:left;width:20%">
+        return """<div class="lp_types" style="width:20%;float:left">
                    <script type="text/javascript">
                    function populateTypesDiv(typemap)
                    {
@@ -84,7 +129,7 @@ class JSTypes(JSDiv):
                         for (var i =0 ; i < typl.length; i++)
                         {
                             buff += typl[i]; 
-                            buff += ' (<a href="javascript: void(0)" onclick="editFile(';
+                            buff += ' (<a href="javascript: void(0)" onclick="ajaxLink(';
                             buff += "'"
                             buff += typemap["type_meta"][typl[i]].edit_link;
                             buff += "')"+ '">';
@@ -101,7 +146,7 @@ class JSTypes(JSDiv):
                 """
 class JSDescriptors(JSDiv):
     def div(self):
-         return """<div class="lp_descriptors" style="float:left;width:30%">
+         return """<div class="lp_descriptors" style="float:left;width:38%">
                    <script type="text/javascript">
                    function populateDescriptorsDiv(desmap)
                    {
@@ -132,13 +177,13 @@ class JSDescriptors(JSDiv):
                    }
                    </script>
                    <div class = "lp_descriptors_content" style="border:solid black 1px;padding:2px;margin:3px">
-                   </div>                               
+                   </div>                              
                 </div> 
                 """     
    
 class JSRecipeSystem(JSDiv):
     def div(self):
-         return """<div class="lp_recipesystem" style="float:left;width:30%">
+         return """<div class="lp_recipesystem" style="float:left;width:38%">
                    <script type="text/javascript">
                    function populateRecipeSystemDiv(fullmap)
                    {
@@ -163,11 +208,41 @@ class JSRecipeSystem(JSDiv):
                             }
                             $($(".lp_recipes_content")[0]).html(buff);
                         }
-                        el = $($(".lp_recipes_content")[0]);
+                        var el = $($(".lp_recipes_content")[0]);
                         el.empty();
+                        el.append("<b>Recipes Declared within <tt>"
+                                    +fullmap["package"]
+                                    +"</tt> Package</b><br/>");
                         el.append(
                                 dict2accordian(fullmap["recipe_cat"], el)
                                 );
+                        // console.log("178:"+JSON.stringify(fullmap["recipe_cat"], null, 3));
+                        
+                        
+                        // PRIMITIVE_SET
+                        var prim_cat = fullmap["primitives_cat"];
+                        el = $($(".lp_primitives_content")[0]);
+                        el.empty();                        
+                        var keys = getKeys(prim_cat);
+                        
+                        buff = "<table>";
+                        buff += "<tr><th>Type</th><th>Primitive Set Class</th></tr>"
+                        for (var i = 0; i < keys.length; i++)
+                        {
+                            var key = keys[i];
+                            var ps = prim_cat[key];
+                            line =      "<tr>"
+                                        +"<td>" + key + "</td>"
+                                        +"<td><span title='"
+                                        + ps.path
+                                        + "'>" 
+                                        + ps.class
+                                        + "</span></td></tr>";
+                            //console.log("47:"+line);
+                            buff+=line;
+                        }
+                        buff += "</table>";
+                        el.append($(buff));
                    }
                    </script>
                    <div class = "lp_recipes_content" style="border:solid black 1px;padding:2px;margin:3px">
@@ -176,7 +251,7 @@ class JSRecipeSystem(JSDiv):
                    </div>                               
                 </div> 
                 """      
-class JSSelection(JSDiv):
+class JSPackageSelection(JSDiv):
     options = None
         
     def __init__(self, opts):
@@ -206,13 +281,13 @@ class JSSelection(JSDiv):
         
         for el in self.options:
             ret += """<input type="submit" value="%(name)s" onclick="loadPkgContent('%(url)s', '%(name)s')"></input>
-                      <br/>""" % {
-                            "name" : el["name"], 
-                            "url"  : el['url']
-                            }
+                   """ % {
+                          "name" : el["name"], 
+                          "url"  : el['url']
+                         }
             
-        tret = """  <div style="height:100%%;width:10%%; padding:5px;border:solid black 1px;float:left;">
+        tret = """  <div style="padding:5px;border:solid black 1px;">
                     %s                    
-                    </div>                
+                    </div> <br clear="all"/>                
                 """ % ret
         return tret

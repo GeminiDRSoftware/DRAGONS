@@ -127,7 +127,7 @@ class ConfigSpace(object):
                                             )
                                     )
                                 )
-                            
+                    self.curpack = from_which(elem)        
                     yield elem
             
     def get_config_dirs(self, spacename):
@@ -305,8 +305,32 @@ def config_walk( spacename = None):
         cs = ConfigSpace()
         
     for trip in cs.config_walk(spacename):
-        yield trip\
+        yield trip
+        
+def config_packs( ):
+    global cs
+    if (cs == None):
+        cs = ConfigSpace()
+        
+    return cs.configpacks
 
+def from_which(path):
+    global cs
+    if (cs == None):
+        cs = ConfigSpace()
+    # note this uses the "package name" is in the path only if it's in that package
+    # trick which could be defeated by certain package structures that the 
+    # system otherwise would tolerate
+    pps = cs.package_paths
+    #print "CS324:", repr(pps)
+    
+    for pack in pps:
+        basepack = os.path.basename(pack)
+        if pack in path:
+            return basepack
+    return None
+            
+    
 def general_walk( spacename="", exts=[]):
     global cs
     if (cs == None):
