@@ -1,7 +1,62 @@
 class JSDiv:
+    def __init__(self):
+        pass
     def div(self):
         return "<div>override JSDiv.div()</div>"
+    def page(self):
+        return """<html><head><title>%(title)s</title>
+<link href="/qap/js/jquery-ui/css/ui-lightness/jquery-ui-1.8.20.custom.css" rel=
+"stylesheet">
+<script type="text/javascript" src="/qap/js/jquery-ui/js/jquery.js"></script>
+<script type="text/javascript" src="/qap/js/jquery-ui/js/jquery-ui.js"></script>
+</head>
+<body>
+%(divtent)s
+</body></html>
+""" % {"title":type(self), "divtent":self.div()}
+
+class JSAce(JSDiv):
+    code = None
+    lnum = 0
+    def __init__(self, code= None, lnum = 0):
+        JSDiv.__init__(self)
+        self.code = code
+        self.lnum = lnum
+    def div(self,code = None):
+        code = self.code
+        if code == None:
+            code = """class Foo:
+    prop = None
+    def __init__(self):
+    prop = "name"    
+        """
+
+        return """
+        <div id="ace_div">
+<style type="text/css" media="screen">
+    #editor { 
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+    }
+</style>
+<div id="editor" style="width:600px">%(code)s</div>
+    
+<script src="http://d1n0x3qji82z53.cloudfront.net/src-min-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+<script>
+        var editor = ace.edit("editor");
+        editor.setTheme("ace/theme/monokai");
+        editor.getSession().setMode("ace/mode/python");
+        window.resizeTo(600,500);        
+        window.setTimeout(function ()
+            {
+               editor.scrollToLine(%(lnum)d);
+            }, 100);
         
+</script></div>
+        """  % {"code":code, "lnum":self.lnum-1}
 class JSAccord(JSDiv):
     def div(self):
         return """
@@ -88,12 +143,13 @@ class JSAccord(JSDiv):
                                             + ' class="recipe_'
                                             + mem.name
                                             + '">'
-                                            + mem.name 
                                             + ' (<a href="javascript: void(0)" onclick="editFile('
                                             + "'"
                                             + mem.path
                                             + "')"+ '">'
-                                            + "edit) </a>"
+                                            + "edit</a>) "
+                                            + mem.name 
+                                            
                                             + '</span></br>'; 
                         //console.log("js69:"+mem_span);
                         ndiv.append($(mem_span));
@@ -134,6 +190,12 @@ class JSTypes(JSDiv):
                             buff += typemap["type_meta"][typl[i]].edit_link;
                             buff += "')"+ '">';
                             buff += "edit"
+                            buff += "</a>)";
+                            buff += ' (<a href="javascript: void(0)" onclick="editFile(';
+                            buff += "'"
+                            buff += typemap["type_meta"][typl[i]].fullpath;
+                            buff += "')"+ '">';
+                            buff += "view"
                             buff += "</a>)<br/>";
                         }
                         //console.log("16:"+buff);
@@ -144,6 +206,43 @@ class JSTypes(JSDiv):
                    </div>                               
                 </div> 
                 """
+class BROKENJSDescriptors(JSDiv):
+    def div(self):
+         return """<div class="lp_descriptors" style="float:left;width:38%">
+                   <script type="text/javascript">
+                   function populateDescriptorsDiv(desmap)
+                   {
+                        //alert(JSON.stringify(desmap));
+                        var descmap = desmap["descriptors"]
+                        buff = "<b>Descriptor Calculators within <tt>"
+                                +desmap["package"]
+                                +"</tt> Package</b><br/>";
+                        buff += "<div  style='overflow:hidden;width:38%;border:solid black 1px; margin:2px;padding:1px'>";
+                        buff += "<div style='width:25%'>Type</div>"
+                        buff += "<div style='float:left;'>Calculator Class</div>"
+                        for (var i = 0; i < descmap.length; i++)
+                        {
+                            var desc = descmap[i];
+                            
+                            line =      "<div style='width:25%'>" + desc.type + "</div>"
+                                        +"<div style='float:left;'><span title='"
+                                        + desc.path
+                                        + "'>" 
+                                        + desc.descriptor_class
+                                        + "</span></div>";
+                            //console.log("47:"+line);
+                            buff+=line;
+                        }
+                        buff += "</div>";
+                        $($(".lp_descriptors_content")[0]).html(buff);
+                        
+                   }
+                   </script>
+                   <div class = "lp_descriptors_content" style="border:solid black 1px;padding:2px;margin:3px">
+                   </div>                              
+                </div> 
+                """     
+   
 class JSDescriptors(JSDiv):
     def div(self):
          return """<div class="lp_descriptors" style="float:left;width:38%">
@@ -155,7 +254,7 @@ class JSDescriptors(JSDiv):
                         buff = "<b>Descriptor Calculators within <tt>"
                                 +desmap["package"]
                                 +"</tt> Package</b><br/>";
-                        buff += "<table>";
+                        buff += "<table  width = '38%' border='1px' cellspacing='2px' cellpadding='1px'>";
                         buff += "<tr><th>Type</th><th>Calculator Class</th></tr>"
                         for (var i = 0; i < descmap.length; i++)
                         {
@@ -172,7 +271,9 @@ class JSDescriptors(JSDiv):
                             buff+=line;
                         }
                         buff += "</table>";
-                        $($(".lp_descriptors_content")[0]).html(buff);
+                        var targel = $($(".lp_descriptors_content")[0])
+                        targel.css("overflow", "hidden")                        
+                        targel.html(buff);
                         
                    }
                    </script>
@@ -185,6 +286,65 @@ class JSRecipeSystem(JSDiv):
     def div(self):
          return """<div class="lp_recipesystem" style="float:left;width:38%">
                    <script type="text/javascript">
+                   function showPrimset(module, psclass)
+                   {
+                        var loaded = false;
+                        focus = $($(".pdk_focus")[0])
+                        focus.slideUp(function () {
+                            if (!loaded){
+                                focus.empty();
+                                focus.html("Loading Primset Information: "  + psclass);                            
+                                focus.slideDown();
+                                }                            
+                            });
+                        $.ajax({url: "/primset_info",
+                                data:{ module: module,
+                                        "class":psclass},
+                                type:"get",
+                                dataType:"json",
+                                success: function(data) {
+                                    loaded = true;
+                                    focus.empty();
+                                    focus.hide();
+                                    var html =  "Primitive Set Class <b><i>"
+                                                + data.class
+                                                + "</i></b><br/><u>from <tt>"
+                                                + data.path
+                                                + "</tt><br/>"
+                                                + "</u>";
+                                    var prims = data.prims;
+                                    var pinfo = data.prim_info;
+                                    focus.append($(html));
+                                    if (prims.length == 0)
+                                    {
+                                    focus.append("NO PRIMITIVES DEFINED");
+                                    focus.slideDown();
+                                    }
+                                    else
+                                    {
+                                        //console.log("215:"+JSON.stringify(data.prim_info));
+                                        for (var i =0; i < prims.length; i++)
+                                        {
+                                            var lnum = data.prim_info[prims[i]]["lnum"];
+                                            //console.log("219:"+lnum);
+                                            primml = "<div style='margin-left:5em'>"
+                                                     + " (<a href='javascript:void(0)' "
+                                                     + " onclick='aceditFile("
+                                                     + '"' + data.path + '", '
+                                                     + '"' + lnum + '")'
+                                                     + "'>"
+                                                     + "edit"
+                                                     + "</a>) "
+                                                     + prims[i]
+                                                     + "</div>";
+                                            focus.append($(primml));
+                                        } 
+                                        focus.slideDown(); 
+                                        $("html, body").animate({ scrollTop: 0 }, 1000);               
+                                    }                                    
+                                  }                              
+                                });                     
+                   }
                    function populateRecipeSystemDiv(fullmap)
                    {
                         //alert(JSON.stringify(recmap));
@@ -225,7 +385,7 @@ class JSRecipeSystem(JSDiv):
                         el.empty();                        
                         var keys = getKeys(prim_cat);
                         
-                        buff = "<table>";
+                        buff = "<table border='1px' cellspacing='2px' cellpadding='1px' >";
                         buff += "<tr><th>Type</th><th>Primitive Set Class</th></tr>"
                         for (var i = 0; i < keys.length; i++)
                         {
@@ -234,9 +394,14 @@ class JSRecipeSystem(JSDiv):
                             line =      "<tr>"
                                         +"<td>" + key + "</td>"
                                         +"<td><span title='"
-                                        + ps.path
+                                        + "from index: "  + ps.index_path
                                         + "'>" 
                                         + ps.class
+                        	            + "(<a href='javascript:void(0)'"
+                        	            + " onclick='showPrimset("
+                        	            + '"' + ps.module + '","'
+                        	            + ps.class + '")' + "'>"
+                        	            + "view</a>)"                                      
                                         + "</span></td></tr>";
                             //console.log("47:"+line);
                             buff+=line;
@@ -263,6 +428,7 @@ class JSPackageSelection(JSDiv):
             function loadPkgContent(url, name)
             {
                 //alert("here");
+                $(".pdk_focus").slideUp();
                 $.ajax({ url: url,
                         dataType: "json",
                         success: function(data, ts, jq)
