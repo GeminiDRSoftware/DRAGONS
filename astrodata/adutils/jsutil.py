@@ -143,7 +143,7 @@ class JSAccord(JSDiv):
                                             + ' class="recipe_'
                                             + mem.name
                                             + '">'
-                                            + ' (<a href="javascript: void(0)" onclick="editFile('
+                                            + ' (<a style = "font-size:75%" href="javascript: void(0)" onclick="editFile('
                                             + "'"
                                             + mem.path
                                             + "')"+ '">'
@@ -184,19 +184,22 @@ class JSTypes(JSDiv):
                              + "</tt> Package</b><br/>";
                         for (var i =0 ; i < typl.length; i++)
                         {
+                            buff += '(<a style ="font-size:75%"href="javascript: void(0)" onclick="editFile(';
+                            buff += "'"
+                            buff += typemap["type_meta"][typl[i]].fullpath;
+                            buff += "')"+ '">';
+                            buff += "edit"
+                            buff += "</a>) ";
                             buff += typl[i]; 
+                            /* server editor
                             buff += ' (<a href="javascript: void(0)" onclick="ajaxLink(';
                             buff += "'"
                             buff += typemap["type_meta"][typl[i]].edit_link;
                             buff += "')"+ '">';
                             buff += "edit"
                             buff += "</a>)";
-                            buff += ' (<a href="javascript: void(0)" onclick="editFile(';
-                            buff += "'"
-                            buff += typemap["type_meta"][typl[i]].fullpath;
-                            buff += "')"+ '">';
-                            buff += "view"
-                            buff += "</a>)<br/>";
+                            */
+                            buff += "<br/>";
                         }
                         //console.log("16:"+buff);
                         $($(".lp_types_content")[0]).html(buff);
@@ -328,7 +331,7 @@ class JSRecipeSystem(JSDiv):
                                             var lnum = data.prim_info[prims[i]]["lnum"];
                                             //console.log("219:"+lnum);
                                             primml = "<div style='margin-left:5em'>"
-                                                     + " (<a href='javascript:void(0)' "
+                                                     + " (<a style='font-size:75%' href='javascript:void(0)' "
                                                      + " onclick='aceditFile("
                                                      + '"' + data.path + '", '
                                                      + '"' + lnum + '")'
@@ -396,12 +399,14 @@ class JSRecipeSystem(JSDiv):
                                         +"<td><span title='"
                                         + "from index: "  + ps.index_path
                                         + "'>" 
-                                        + ps.class
-                        	            + "(<a href='javascript:void(0)'"
+                                        + "(<a style='font-size:75%' href='javascript:void(0)'"
                         	            + " onclick='showPrimset("
                         	            + '"' + ps.module + '","'
                         	            + ps.class + '")' + "'>"
-                        	            + "view</a>)"                                      
+                        	            + "view</a>) "
+                        	            
+                        	            + ps.class
+                        	                                                  
                                         + "</span></td></tr>";
                             //console.log("47:"+line);
                             buff+=line;
