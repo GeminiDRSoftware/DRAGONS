@@ -16,7 +16,7 @@ def removeComponentID(instr):
         ret_str = str(instr)
     else:
         ret_str = str(m.group("filt"))
-
+    
     return ret_str
 
 def sectionStrToIntList(section):
@@ -50,21 +50,21 @@ def sectionStrToIntList(section):
 def gemini_date():
 
     import datetime
-
+    
     # Define transit as 14:00
     transit = datetime.time(hour=14)
-
+    
     # Define a one day timedelta
     one_day = datetime.timedelta(days=1)
-
+    
     # Get current time in local and UT
     lt_now = datetime.datetime.now()
     ut_now = datetime.datetime.utcnow()
-
+    
     # Format UT and LT dates into strings
     lt_date = lt_now.date().strftime("%Y%m%d")
     ut_date = ut_now.date().strftime("%Y%m%d")
-
+    
     # If before transit, use the earlier date
     fake_date = None
     if lt_now.time()<transit:
@@ -74,7 +74,7 @@ def gemini_date():
             # UT date changed before transit, use the
             # local date
             fake_date = lt_date
-
+    
     # If before transit, use the later date
     else:
         if lt_date!=ut_date:
@@ -83,5 +83,47 @@ def gemini_date():
             # UT date hasn't changed and it's after transit,
             # so use UT date + 1
             fake_date = (ut_now.date() + one_day).strftime("%Y%m%d")
-
+    
     return fake_date
+
+def parse_percentile(string):
+    # Given the type of string that ought to be present in the site condition
+    # headers, this function returns the integer percentile number
+    #
+    # Is it 'Any' - ie 100th percentile?
+    if(string == "Any"):
+        return 100
+    
+    # Is it a xx-percentile string?
+    m = re.match("^(\d\d)-percentile$", string)
+    if(m):
+        return int(m.group(1))
+    
+    # We didn't recognise it
+    return None
+
+def filternameFrom(filters):
+        
+    # reject "open" "grism" and "pupil"
+    filters2 = []
+    for filt in filters:
+        filtlow = filt.lower()
+        if "open" in filtlow or "grism" in filtlow or "pupil" in filtlow:
+            pass
+        else:
+            filters2.append(filt)
+    
+    filters = filters2
+    
+    # blank means an opaque mask was in place, which of course
+    # blocks any other in place filters
+    
+    if "blank" in filters:
+        filtername = "blank"
+    elif len(filters) == 0:
+        filtername = "open"
+    else:
+        filters.sort()
+        filtername = str("&".join(filters))
+    
+    return filtername
