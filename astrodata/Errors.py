@@ -159,10 +159,10 @@ class CalcError(DescriptorError):
 
 class CorruptDataError(DescriptorError):
     """
-    Exception raised for instances when an AstroData object was not
-    automatically assigned (EXTNAME, EXTVER) data extensions
+    Exception raised for instances when an AstroData object does not contain
+    any pixel data extensions
     """
-    message = "The AstroData object was not assigned a 'SCI' extension"
+    message = "The AstroData object does not contain any pixel data extensions"
 
 class DescriptorTypeError(DescriptorError):
     """
