@@ -62,7 +62,15 @@ class docstrings:
     
     def bias_level(self):
         """
-        Return the bias_level value
+        Return the bias_level value.
+
+        For GMOS, this value is looked up from values in lookup tables distributed
+        with the data reduction package - the values in the header are incorrect.
+
+        The values are referenced by date (to account for hardware and other
+        modifications that affect the values), and from the gain and read speed settings
+        that were configured for this exposure.
+
         
         :param dataset: the data set
         :type dataset: AstroData
@@ -215,7 +223,23 @@ class docstrings:
     
     def detector_rois_requested(self):
         """
-        Return the detector_rois_requested value
+        Return the list of detector ROIs (Region of Interest)s that were
+        requested for this exposure. Not all instrument support ROIs other
+        than the full array, and of those that do, not all support the concept
+        of multiple (separate) ROIs per exposure. Even instruments that do
+        support this concept (eg the GMOSes) cannot necessarily read out completely
+        arbitrary ROI configurations, so the actual regions read may or may not
+        correspond exactly to (though should be a superset of) those requested.
+
+        This descriptor provides a list or ROIs requested, in the form:
+        [[x1, x2, y1, y2], ...]
+
+        - These are physical, unbinned pixel co-ordinates, so will not correspond
+        directly to image pixels if the binning is not 1x1.
+ 
+        - These numbers are 1-based, not 0-based - the corner pixel is [1,1].
+        
+        - The ranges given are inclusive at both ends.
         
         :param dataset: the data set
         :type dataset: AstroData
@@ -228,8 +252,12 @@ class docstrings:
     
     def detector_roi_setting(self):
         """
-        Return the detector_roi_setting value
+        This descriptor attempts to deduce the "Name" of the ROI
+        (Region Of Interest), as defined by the selection in the OT.
         
+        For example, with GMOS, this might be "Full Frame", "Central Spectrum", 
+        "CCD2" etc. The string "Custom" will be returned for custom defined ROIs
+
         :param dataset: the data set
         :type dataset: AstroData
         :param format: the return format
@@ -268,7 +296,16 @@ class docstrings:
     
     def detector_name(self):
         """
-        Return the detector_name value
+        Return the detector name. For GMOS this is generally the CCD name from 
+        the CCDNAME header. 
+
+        This is a bit subtle - if we have a non-mosaiced GMOS image, there
+        will be a CCDNAME keyword in each SCI extension, and that's what we want.
+        If we have a mosaiced image, these won't be present as the SCI is a mosaic of
+        several (usually three) detectors. In this case, we return the DETID keyword
+        from the PHU, which is generally a string concatenation of the individual 
+        ccd names or similar.
+
         
         :param dataset: the data set
         :type dataset: AstroData
@@ -570,7 +607,9 @@ class docstrings:
     
     def nominal_atmospheric_extinction(self):
         """
-        Return the nominal_atmospheric_extinction value
+        Return the nominal atmospheric extinction value. These are determined
+        from lookup tables based on the telescope site (ie Gemini-North or
+        Gemini-South) and the filter name.
         
         :param dataset: the data set
         :type dataset: AstroData
@@ -583,7 +622,8 @@ class docstrings:
     
     def nominal_photometric_zeropoint(self):
         """
-        Return the nominal_photometric_zeropoint value
+        Return the nominal photometric zeropoint value. These are determined
+        from lookup tables keyed on the detector names and filter names
         
         :param dataset: the data set
         :type dataset: AstroData
@@ -664,7 +704,9 @@ class docstrings:
     
     def overscan_section(self):
         """
-        Return the overscan_section value
+        Return the overscan section of the image. These are the image pixel
+        co-ordinates of the area that contain overscan data as opposed to
+        actual pixel data.
         
         :param dataset: the data set
         :type dataset: AstroData
@@ -869,7 +911,11 @@ class docstrings:
     
     def requested_iq(self):
         """
-        Return the requested_iq value
+        Return the requested Image Quality value. This is the Gemini IQ
+        percentile IQ band (eg "20-percentile") parsed to an integer 
+        percentile value - (eg 20). "Any" maps to 100.
+        Note, this is the value requested by the PI as the worst acceptable,
+        not the delivered value. Smaller is better.
         
         :param dataset: the data set
         :type dataset: AstroData
@@ -882,7 +928,11 @@ class docstrings:
     
     def requested_cc(self):
         """
-        Return the requested_cc value
+        Return the requested Cloud Cover value. This is the Gemini CC
+        percentile CC band (eg "50-percentile") parsed to an integer 
+        percentile value - (eg 50). "Any" maps to 100.
+        Note, this is the value requested by the PI as the worst acceptable,
+        not the delivered value. Smaller is better.
         
         :param dataset: the data set
         :type dataset: AstroData
@@ -895,7 +945,11 @@ class docstrings:
     
     def requested_wv(self):
         """
-        Return the requested_wv value
+        Return the requested Water Vapor value. This is the Gemini WV
+        percentile WV band (eg "50-percentile") parsed to an integer 
+        percentile value - (eg 50). "Any" maps to 100.
+        Note, this is the value requested by the PI as the worst acceptable,
+        not the delivered value. Smaller is better.
         
         :param dataset: the data set
         :type dataset: AstroData
@@ -908,7 +962,11 @@ class docstrings:
     
     def requested_bg(self):
         """
-        Return the requested_bg value
+        Return the requested sky Background value. This is the Gemini BG
+        percentile BG band (eg "50-percentile") parsed to an integer 
+        percentile value - (eg 50). "Any" maps to 100.
+        Note, this is the value requested by the PI as the worst acceptable,
+        not the delivered value. Smaller is better.
         
         :param dataset: the data set
         :type dataset: AstroData
@@ -1023,7 +1081,9 @@ class docstrings:
     
     def wavelength_band(self):
         """
-        Return the wavelength_band value
+        Return the wavelength band value. This only applies to spectroscopy
+        data and gives the band (filter) name within which the central wavelength
+        of the spectrum falls. 
         
         :param dataset: the data set
         :type dataset: AstroData
