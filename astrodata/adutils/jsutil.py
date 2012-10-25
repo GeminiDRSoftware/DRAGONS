@@ -18,12 +18,18 @@ class JSDiv:
 class JSAce(JSDiv):
     code = None
     lnum = 0
-    def __init__(self, code= None, lnum = 0):
+    local_client = False
+    def __init__(self, code= None, lnum = 0, local_client = False):
         JSDiv.__init__(self)
         self.code = code
         self.lnum = lnum
+        self.local_client = local_client
     def div(self,code = None):
         code = self.code
+        if self.local_client:
+            local_client_frag = '<input type="submit" value="SAVE"/>'
+        else:
+            local_client_frag = "To be able to save you must be on localhost."
         if code == None:
             code = """class Foo:
     prop = None
@@ -32,16 +38,20 @@ class JSAce(JSDiv):
         """
 
         return """
+
         <div id="ace_div">
 <style type="text/css" media="screen">
     #editor { 
         position: absolute;
-        top: 0;
+        top: 30;
         right: 0;
         bottom: 0;
         left: 0;
     }
 </style>
+<div style="position:absolute; top:0; bottom:30; left:0;right:0">
+%(localClientFrag)s
+</div>
 <div id="editor" style="width:600px">%(code)s</div>
     
 <script src="http://d1n0x3qji82z53.cloudfront.net/src-min-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
@@ -52,11 +62,16 @@ class JSAce(JSDiv):
         window.resizeTo(600,500);        
         window.setTimeout(function ()
             {
-               editor.scrollToLine(%(lnum)d);
+               editor.gotoLine(%(lnum)d,0,true);
+               editor.scrollToLine(%(lnum)d-1);
+               
             }, 100);
         
 </script></div>
-        """  % {"code":code, "lnum":self.lnum-1}
+        """  % {"code":code, 
+                "lnum":self.lnum, 
+                "localClientFrag": local_client_frag,              
+                "localClient":self.local_client}
 class JSAccord(JSDiv):
     def div(self):
         return """
@@ -147,7 +162,7 @@ class JSAccord(JSDiv):
                                             + "'"
                                             + mem.path
                                             + "')"+ '">'
-                                            + "edit</a>) "
+                                            + "visit</a>) "
                                             + mem.name 
                                             
                                             + '</span></br>'; 
@@ -188,7 +203,7 @@ class JSTypes(JSDiv):
                             buff += "'"
                             buff += typemap["type_meta"][typl[i]].fullpath;
                             buff += "')"+ '">';
-                            buff += "edit"
+                            buff += "visit"
                             buff += "</a>) ";
                             buff += typl[i]; 
                             /* server editor
@@ -196,7 +211,7 @@ class JSTypes(JSDiv):
                             buff += "'"
                             buff += typemap["type_meta"][typl[i]].edit_link;
                             buff += "')"+ '">';
-                            buff += "edit"
+                            buff += "visit"
                             buff += "</a>)";
                             */
                             buff += "<br/>";
@@ -336,7 +351,7 @@ class JSRecipeSystem(JSDiv):
                                                      + '"' + data.path + '", '
                                                      + '"' + lnum + '")'
                                                      + "'>"
-                                                     + "edit"
+                                                     + "visit"
                                                      + "</a>) "
                                                      + prims[i]
                                                      + "</div>";
