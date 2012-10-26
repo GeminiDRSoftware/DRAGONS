@@ -395,7 +395,7 @@ class QAPrimitives(GENERALPrimitives):
                     rc.report_qametric(ad, "bg", qad)
 
             # Report measurement to fitsstore
-            #fitsdict = gt.fitsstore_report(ad,rc,"sb",info_dict)
+            fitsdict = gt.fitsstore_report(ad,rc,"sb",info_dict)
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
@@ -800,7 +800,7 @@ class QAPrimitives(GENERALPrimitives):
                     info_dict[key]["comment"] = qad["comment"]
 
                 # Also report to fitsstore
-                #fitsdict = gt.fitsstore_report(ad,rc,"zp",info_dict)
+                fitsdict = gt.fitsstore_report(ad,rc,"zp",info_dict)
 
             else:
                 ind = " " * rc["logindent"]
@@ -1135,7 +1135,7 @@ class QAPrimitives(GENERALPrimitives):
                         overlays_exist = True
 
             # Build a report to send to fitsstore
-            #fitsdict = gt.fitsstore_report(ad,rc,"iq",info_dict)
+            fitsdict = gt.fitsstore_report(ad,rc,"iq",info_dict)
 
         # Display image with stars used circled
         if display:
