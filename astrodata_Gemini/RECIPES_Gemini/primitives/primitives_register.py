@@ -460,7 +460,7 @@ class RegisterPrimitives(GENERALPrimitives):
                             ad.filename)
                 
             # Report the measurement to the fitsstore
-            #fitsdict = gt.fitsstore_report(ad,rc,"pe",info_dict)
+            fitsdict = gt.fitsstore_report(ad,rc,"pe",info_dict)
 
             adoutput_list.append(ad)
 
