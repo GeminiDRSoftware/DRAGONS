@@ -41,7 +41,7 @@ optp = options.parameters
 optu = options.usage
 oview = options.view_recipe
 oset = options.primitive_set
-server = options.server
+# server = options.server
 if options.verbose:
     optp = True
     opti = True
