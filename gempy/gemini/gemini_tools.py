@@ -11,6 +11,7 @@ from astrodata.ConfigSpace import lookup_path
 from astrodata.AstroData import AstroData
 from astrodata import Errors
 from gempy.library import astrotools as at
+import pprint
 
 # Load the standard comments for header keywords that will be updated
 # in these functions
@@ -1378,7 +1379,21 @@ def fitsstore_report(ad, rc, metric, info_dict):
     # Add qametric dictionary into qareport
     qareport["qametric"] = qametric_list
     
+    if (rc["upload_metrics"]):
+        send_fitsstore_report(qareport)
     return qareport
+
+def send_fitsstore_report(qareport):
+    from astrodata import Lookups
+    # from astrodata_Gemini/ADCONFIG_Gemini/lookups/calurl_dict.py    
+    calurl_dict = Lookups.get_lookup_table("Gemini/calurl_dict", "calurl_dict")
+    
+    calmgrurl = calurl_dict["CALMGR"]
+    
+    print "g_t1393 qareport not finished: calurl = "+ calmgrurl
+    print "\tqareport follows:\n" + pprint.pformat(qareport)
+    
+
 
 def log_message(function, name, message_type):
     if function == 'ulf':
