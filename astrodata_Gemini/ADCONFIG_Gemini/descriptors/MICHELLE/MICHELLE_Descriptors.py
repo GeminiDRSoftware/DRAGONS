@@ -51,7 +51,7 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         keyword = self.get_descriptor_key("key_filter_name")
         
         # Get the value of the filter name keyword from the header of the PHU
-        filter_name = dataset.phu_get_key_value(keyword1)
+        filter_name = dataset.phu_get_key_value(keyword)
         
         if filter_name is None:
             # The phu_get_key_value() function returns None if a value cannot
