@@ -25,50 +25,57 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             "Gemini/F2/F2ConfigDict", "f2ConfigDict")
         GEMINI_DescriptorCalc.__init__(self)
     
-    def data_section(self, dataset, pretty=False, extname="SCI", **args):
+    def data_section(self, dataset, pretty=False, **args):
         ret_data_section = {}
-        data_section = "[1:2048,1:2048]"
+        raw_data_section = "[1:2048,1:2048]"
         
-        for ext in dataset[extname]:
+        for ext in dataset:
             if pretty:
-                # Return the data section string that uses 1-based 
-                # indexing as the value in the form [x1:x2,y1:y2]
-                ret_data_section.update(
-                    {(ext.extname(), ext.extver()): data_section})
+                # Use the data section string that uses 1-based indexing as the
+                # value in the form [x1:x2,y1:y2] 
+                data_section = raw_data_section
             else:
-                # Return the data section list that used 0-based, non-inclusive
+                # Use the data section list that used 0-based, non-inclusive
                 # indexing as the value in the form [x1, x2, y1, y2]
-                ret_data_section.update(
-                    {(ext.extname(), ext.extver()): gmu.sectionStrToIntList(
-                                                                data_section)})
-        return ret_data_section
+                data_section = gmu.sectionStrToIntList(raw_data_section)
+            
+            # Update the dictionary with the data section value
+            ret_data_section.update({(
+                ext.extname(), ext.extver()):data_section})
         
+        return ret_data_section
+    
     array_section = data_section
     detector_section = data_section
-
+    
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         # Get the UT date using the appropriate descriptor
         ut_date = str(dataset.ut_date())
+        
         if ut_date is None:
             # The descriptor functions return None if a value cannot be
             # found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
+        
         obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
+        
         # Old commissioning data was taken before March 1, 2010
         old_ut_date = datetime(2010, 3, 1, 0, 0)
-
+        
         if obs_ut_date > old_ut_date:
             
-            # Get the two filter name values from the header of the PHU. The
-            # two filter name keywords may be defined in a local key dictionary
-            # (stdkey_dict<INSTRUMENT>) but are read from the updated global
-            # key dictionary (self.get_descriptor_key())
-            filter1 = dataset.phu_get_key_value(
-                self.get_descriptor_key("key_filter1"))
-            filter2 = dataset.phu_get_key_value(
-                self.get_descriptor_key("key_filter2"))
+            # Determine the two filter name keywords from the global keyword
+            # dictionary
+            keyword1 = self.get_descriptor_key("key_filter1")
+            keyword2 = self.get_descriptor_key("key_filter2")
+            
+            # Get the value of the two filter name keywords from the header of
+            # the PHU
+            filter1 = dataset.phu_get_key_value(keyword1)
+            filter2 = dataset.phu_get_key_value(keyword2)
+            
             if filter1 is None or filter2 is None:
                 # The phu_get_key_value() function returns None if a value
                 # cannot be found and stores the exception info. Re-raise the
@@ -78,25 +85,29 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             # Make sure the filter_name descriptor is backwards compatible with
             # old engineering data
-            # Get the two filter name values from the header of the PHU. The
-            # two filter name keywords may be defined in a local key dictionary
-            # (stdkey_dict<INSTRUMENT>) but are read from the updated global
-            # key dictionary (self.get_descriptor_key())
-            filter1 = dataset.phu_get_key_value(
-                self.get_descriptor_key("key_old_filter1"))
-            filter2 = dataset.phu_get_key_value(
-                self.get_descriptor_key("key_old_filter2"))
+            #
+            # Determine the two filter name keywords from the global keyword
+            # dictionary
+            keyword1 = self.get_descriptor_key("key_old_filter1")
+            keyword2 = self.get_descriptor_key("key_old_filter2")
+            
+            # Get the value of the two filter name keywords from the header of
+            # the PHU
+            filter1 = dataset.phu_get_key_value(keyword1)
+            filter2 = dataset.phu_get_key_value(keyword2)
+            
             if filter1 is None or filter2 is None:
                 # The phu_get_key_value() function returns None if a value
                 # cannot be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
-            
+        
         if stripID or pretty:
             # Strip the component ID from the two filter name values
             filter1 = gmu.removeComponentID(filter1)
             filter2 = gmu.removeComponentID(filter2)
+        
         filter = []
         if pretty:
             # Remove any filters that have the value "open" or "Open"
@@ -114,32 +125,36 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
                 filter.append("dark")
         else:
             filter = [filter1, filter2]
+        
         if len(filter) > 1:
             # Concatenate the filter names with "&"
             filter_name = "%s&%s" % (filter[0], filter[1])
         else:
             filter_name = str(filter[0])
+        
         # Return a dictionary where the key of the dictionary is an (EXTNAME,
         # EXTVER) tuple and the value is the filter name string
         ret_filter_name = {}
-        # Loop over the science extensions of the dataset
-        for ext in dataset["SCI"]:
-            ret_filter_name.update(
-                {(ext.extname(), ext.extver()):filter_name})
+        
+        # Loop over the pixel data extensions of the dataset
+        for ext in dataset:
+            ret_filter_name.update({(ext.extname(), ext.extver()):filter_name})
+        
         if ret_filter_name == {}:
-            # If the dictionary is still empty, the AstroData object was not
-            # automatically assigned a "SCI" extension and so the above for loop
-            # was not entered
+            # If the dictionary is still empty, the AstroData object has no
+            # pixel data extensions
             raise Errors.CorruptDataError()
         
         return ret_filter_name
-
+    
     def gain(self, dataset, **args):
-        # Get the number of non-destructive read pairs (lnrs) from the header
-        # of the PHU. The lnrs keyword is defined in the local key dictionary
-        # (stdkeyDictF2) but are read from the updated global key dictionary
-        # (self.get_descriptor_key)
-        lnrs = dataset.phu_get_key_value(self.get_descriptor_key("key_lnrs"))
+        # Determine the number of non-destructive read pairs keyword (lnrs)
+        # from the global keyword dictionary
+        keyword = self.get_descriptor_key("key_lnrs")
+        
+        # Get the number of non-destructive read pairs from the header of the
+        # PHU
+        lnrs = dataset.phu_get_key_value(keyword)
         
         if lnrs is None:
             # The phu_get_key_value() function returns None if a value cannot
@@ -166,11 +181,13 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_instrument
     
     def non_linear_level(self, dataset, **args):
-        # Get the number of non-destructive read pairs (lnrs) from the header
-        # of the PHU. The lnrs keyword is defined in the local key dictionary
-        # (stdkeyDictF2) but are read from the updated global key dictionary
-        # (self.get_descriptor_key)
-        lnrs = dataset.phu_get_key_value(self.get_descriptor_key("key_lnrs"))
+        # Determine the number of non-destructive read pairs keyword (lnrs)
+        # from the global keyword dictionary
+        keyword = self.get_descriptor_key("key_lnrs")
+        
+        # Get the number of non-destructive read pairs from the header of the
+        # PHU
+        lnrs = dataset.phu_get_key_value(keyword)
         
         if lnrs is None:
             # The phu_get_key_value() function returns None if a value cannot
@@ -202,11 +219,13 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     f2ArrayDict = None
     
     def read_noise(self, dataset, **args):
-        # Get the number of non-destructive read pairs (lnrs) from the header
-        # of the PHU. The lnrs keyword is defined in the local key dictionary
-        # (stdkeyDictF2) but are read from the updated global key dictionary
-        # (self.get_descriptor_key)
-        lnrs = dataset.phu_get_key_value(self.get_descriptor_key("key_lnrs"))
+        # Determine the number of non-destructive read pairs keyword (lnrs)
+        # from the global keyword dictionary
+        keyword = self.get_descriptor_key("key_lnrs")
+        
+        # Get the number of non-destructive read pairs from the header of the
+        # PHU
+        lnrs = dataset.phu_get_key_value(keyword)
         
         if lnrs is None:
             # The phu_get_key_value() function returns None if a value cannot
@@ -228,11 +247,13 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     f2ArrayDict = None
     
     def saturation_level(self, dataset, **args):
-        # Get the number of non-destructive read pairs (lnrs) from the header
-        # of the PHU. The lnrs keyword is defined in the local key dictionary
-        # (stdkeyDictF2) but are read from the updated global key dictionary
-        # (self.get_descriptor_key)
-        lnrs = dataset.phu_get_key_value(self.get_descriptor_key("key_lnrs"))
+        # Determine the number of non-destructive read pairs keyword (lnrs)
+        # from the global keyword dictionary
+        keyword = self.get_descriptor_key("key_lnrs")
+        
+        # Get the number of non-destructive read pairs from the header of the
+        # PHU
+        lnrs = dataset.phu_get_key_value(keyword)
         
         if lnrs is None:
             # The phu_get_key_value() function returns None if a value cannot
@@ -264,24 +285,30 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             else:
                 raise Errors.TableKeyError()
         else:
-            ctrl_wave = float(dataset.central_wavelength(asMicrometers=True))
-
+            ctrl_wave = dataset.central_wavelength(asMicrometers=True)
+        
         min_diff = None
         band = None
-        for (std_band,std_wave) in self.std_wavelength_band.items():
-            diff = abs(std_wave-ctrl_wave)
-            if min_diff is None or diff<min_diff:
+        
+        for std_band, std_wave in self.std_wavelength_band.items():
+            diff = abs(std_wave - ctrl_wave)
+            if min_diff is None or diff < min_diff:
                 min_diff = diff
                 band = std_band
+        
         if band is None:
             raise Errors.CalcError()
-
-        return band
-
+        else:
+            ret_wavelength_band = band
+        
+        return ret_wavelength_band
+    
     def x_offset(self, dataset, **args):
-        # Get the y offset from the header of the PHU.
-        y_offset = dataset.phu_get_key_value(
-            self.get_descriptor_key("key_y_offset"))
+        # Determine the y offset keyword from the global keyword dictionary
+        keyword = self.get_descriptor_key("key_y_offset")
+        
+        # Get the y offset from the header of the PHU
+        y_offset = dataset.phu_get_key_value(keyword)
         
         if y_offset is None:
             # The phu_get_key_value() function returns None if a value cannot
@@ -295,9 +322,11 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_x_offset
     
     def y_offset(self, dataset, **args):
+        # Determine the x offset keyword from the global keyword dictionary
+        keyword = self.get_descriptor_key("key_x_offset")
+        
         # Get the x offset from the header of the PHU.
-        x_offset = dataset.phu_get_key_value(
-            self.get_descriptor_key("key_x_offset"))
+        x_offset = dataset.phu_get_key_value(keyword)
         
         if x_offset is None:
             # The phu_get_key_value() function returns None if a value cannot

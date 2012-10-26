@@ -14,46 +14,52 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         GEMINI_DescriptorCalc.__init__(self)
     
     def exposure_time(self, dataset, **args):
-        # Get the exposure time and the number of extensions from the header of
-        # the PHU. The exposure time and the number of extensions keywords are
-        # defined in the local key dictionary (stdkeyDictMICHELLE) but are read
-        # from the updated global key dictionary (self.get_descriptor_key())
-        exposure_time = dataset.phu_get_key_value(
-            self.get_descriptor_key("key_exposure_time"))
-        extensions = dataset.phu_get_key_value(
-            self.get_descriptor_key("key_numext"))
+        # Determine the exposure time and the number of extensions keywords
+        # from the global keyword dictionary
+        keyword1 = self.get_descriptor_key("key_exposure_time")
+        keyword2 = self.get_descriptor_key("key_numext")
+        
+        # Get the value of the exposure time and the number of extensions
+        # keywords from the header of the PHU
+        exposure_time = dataset.phu_get_key_value(keyword1)
+        extensions = dataset.phu_get_key_value(keyword2)
+        
         if exposure_time is None or extensions is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
+        
         # Get the number of coadds using the appropriate descriptor
         coadds = dataset.coadds()
+        
         if coadds is None:
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
+        
         # Return the exposure time float
         ret_exposure_time = float(exposure_time * coadds * extensions)
         
         return ret_exposure_time
     
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
-        # Get the filter name value from the header of the PHU. The filter name
-        # keyword is defined in the local key dictionary (stdkeyDictMICHELLE)
-        # but is read from the updated global key dictionary
-        # (self.get_descriptor_key())
-        filter_name = dataset.phu_get_key_value(
-            self.get_descriptor_key("key_filter_name"))
+        # Determine the filter name keyword from the global keyword dictionary
+        keyword = self.get_descriptor_key("key_filter_name")
+        
+        # Get the value of the filter name keyword from the header of the PHU
+        filter_name = dataset.phu_get_key_value(keyword1)
+        
         if filter_name is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
+        
         # The MICHELLE filters don't have ID strings, so we just ignore the
         # stripID and pretty options
         if filter_name == "NBlock":
@@ -65,17 +71,19 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_filter_name
     
     def read_mode(self, dataset, **args):
-        # Get the read mode from the header of the PHU. The read mode is
-        # defined in the local key dictionary (stdkeyDictMICHELLE) but is read
-        # from the updated global key dictionary (self.get_descriptor_key())
-        read_mode = dataset.phu_get_key_value(
-            self.get_descriptor_key("key_read_mode"))
+        # Determine the read mode keyword from the global keyword dictionary
+        keyword = self.get_descriptor_key("key_read_mode")
+        
+        # Get the value of the read mode keyword from the header of the PHU
+        read_mode = dataset.phu_get_key_value(keyword)
+        
         if read_mode is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
+        
         # Return the read mode string
         ret_read_mode = str(read_mode)
         
