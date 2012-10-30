@@ -1,6 +1,7 @@
 # The string module contains utilities functions that manipulate strings
 
 import re
+import sys
 
 def removeComponentID(instr):
     """
@@ -127,3 +128,49 @@ def filternameFrom(filters):
         filtername = str("&".join(filters))
     
     return filtername
+
+def get_key_value_dict(dataset, keyword):
+    # Since this helper function accesses keywords in the headers of the pixel
+    # data extensions, always return a dictionary where the key of the
+    # dictionary is an (EXTNAME, EXTVER) tuple
+    ret_keyword_value = {}
+    
+    return_dictionary = False
+        
+    # Loop over the pixel data extensions in the dataset
+    for ext in dataset:
+        # Get the value of the keyword from the header of each pixel data
+        # extension
+        value = ext.get_key_value(keyword)
+        
+        if value is None:
+            # The get_key_value() function returns None if a value cannot be
+            # found and stores the exception info. Store the last occurance of
+            # the exception to the dataset.
+            if hasattr(ext, "exception_info"):
+                setattr(dataset, "exception_info", ext.exception_info)
+        else:
+            # The value of the keyword was found for at least one extension, so
+            # the dictionary can be returned
+            return_dictionary = True
+            
+        # Update the dictionary with the value
+        ret_keyword_value.update({(ext.extname(), ext.extver()):value})
+    
+    try:
+        if ret_keyword_value == {}:
+            # If the dictionary is still empty, the AstroData object has no
+            # pixel data extensions 
+            raise Errors.CorruptDataError()
+        
+        if not return_dictionary:
+            # The value of the keyword was not found for any of the pixel data
+            # extensions
+            raise dataset.exception_info
+        
+        return ret_keyword_value
+    
+    except:
+        setattr(dataset, "exception_info", sys.exc_info()[1])
+        
+        return None
