@@ -59,17 +59,22 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_array_section = {}
         
-        # Loop over the pixel data extensions in the dataset
-        for ext in dataset:
+        # Determine the array section keyword from the global keyword
+        # dictionary
+        keyword = self.get_descriptor_key("key_array_section")
+        
+        # Get the value of the array_section keyword from the header of each
+        # pixel data extension as a dictionary 
+        array_section_dict = gmu.get_key_value_dict(dataset, keyword)
+        
+        if array_section_dict is None:
+            # The get_key_value_dict() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
             
-            # Determine the array section keyword from the global keyword
-            # dictionary 
-            keyword = self.get_descriptor_key("key_array_section")
-            
-            # Get the value of the array section keyword from the header of
-            # each pixel data extension
-            raw_array_section = ext.get_key_value(keyword)
-            
+        for ext_name_ver, raw_array_section in array_section_dict.iteritems():
             if raw_array_section is None:
                 array_section = None
             elif pretty:
@@ -82,13 +87,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                 array_section = gmu.sectionStrToIntList(raw_array_section)
             
             # Update the dictionary with the array section value
-            ret_array_section.update({
-                    (ext.extname(), ext.extver()):array_section})
-        
-        if ret_array_section == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
+            ret_array_section.update({ext_name_ver:array_section})
         
         return ret_array_section
     
@@ -193,17 +192,21 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_data_section = {}
         
-        # Loop over the pixel data extensions in the dataset
-        for ext in dataset:
-            
-            # Determine the data section keyword from the global keyword
-            # dictionary
-            keyword = self.get_descriptor_key("key_data_section")
-            
-            # Get the value of the data section keyword from the header of each
-            # pixel data extension 
-            raw_data_section = ext.get_key_value(keyword)
-            
+        # Determine the data section keyword from the global keyword dictionary
+        keyword = self.get_descriptor_key("key_data_section")
+        
+        # Get the value of the data section keyword from the header of each
+        # pixel data extension as a dictionary 
+        data_section_dict = gmu.get_key_value_dict(dataset, keyword)
+        
+        if data_section_dict is None:
+            # The get_key_value_dict() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
+        for ext_name_ver, raw_data_section in data_section_dict.iteritems():
             if raw_data_section is None:
                 data_section = None
             elif pretty:
@@ -216,13 +219,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                 data_section = gmu.sectionStrToIntList(raw_data_section)
             
             # Update the dictionary with the data section value
-            ret_data_section.update({
-                (ext.extname(), ext.extver()):data_section})
-        
-        if ret_data_section == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
+            ret_data_section.update({ext_name_ver:data_section})
         
         return ret_data_section
     
@@ -269,17 +266,23 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_detector_section = {}
         
-        # Loop over the pixel data extensions in the dataset
-        for ext in dataset:
-            
-            # Determine the detector section keyword from the global keyword
-            # dictionary 
-            keyword = self.get_descriptor_key("key_detector_section")
-            
-            # Get the value of the detector section keyword from the header of
-            # each pixel data extension
-            raw_detector_section = ext.get_key_value(keyword)
-            
+        # Determine the detector section keyword from the global keyword
+        # dictionary
+        keyword = self.get_descriptor_key("key_detector_section")
+        
+        # Get the value of the detector section keyword from the header of each
+        # pixel data extension as a dictionary 
+        detector_section_dict = gmu.get_key_value_dict(dataset, keyword)
+        
+        if detector_section_dict is None:
+            # The get_key_value_dict() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
+        dict = detector_section_dict.iteritems()
+        for ext_name_ver, raw_detector_section in dict:
             if raw_detector_section is None:
                 detector_section = None
             elif pretty:
@@ -294,13 +297,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                     raw_detector_section)
             
             # Update the dictionary with the detector section value
-            ret_detector_section.update({
-                (ext.extname(), ext.extver()):detector_section})
-        
-        if ret_detector_section == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
+            ret_detector_section.update({ext_name_ver:detector_section})
         
         return ret_detector_section
     
@@ -315,8 +312,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             
             # Return a dictionary with the binning of the x-axis integer (set
             # to 1 as default for Gemini data) as the value
-            ret_detector_x_bin.update({
-                (ext.extname(), ext.extver()):int(1)})
+            ret_detector_x_bin.update({(ext.extname(), ext.extver()):int(1)})
         
         if ret_detector_x_bin == {}:
             # If the dictionary is still empty, the AstroData object has no
@@ -336,8 +332,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             
             # Return a dictionary with the binning of the y-axis integer (set
             # to 1 as default for Gemini data) as the value
-            ret_detector_y_bin.update({
-                (ext.extname(), ext.extver()):int(1)})
+            ret_detector_y_bin.update({(ext.extname(), ext.extver()):int(1)})
         
         if ret_detector_y_bin == {}:
             # If the dictionary is still empty, the AstroData object has no
@@ -382,17 +377,23 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # the dispersion axis keyword is written during the prepare step)
         if "IMAGE" not in dataset.types and "PREPARED" in dataset.types:
             
-            # Loop over the pixel data extensions in the dataset
-            for ext in dataset:
-                
-                # Determine the dispersion axis keyword from the global keyword
-                # dictionary
-                keyword = self.get_descriptor_key("key_dispersion_axis")
-                
-                # Get the value of the dispersion axis keyword from the header
-                # of each pixel data extension
-                raw_dispersion_axis = ext.get_key_value(keyword)
-                
+            # Determine the dispersion axis keyword from the global keyword
+            # dictionary
+            keyword = self.get_descriptor_key("key_dispersion_axis")
+            
+            # Get the value of the dispersion axis keyword from the header of
+            # each pixel data extension as a dictionary 
+            dispersion_axis_dict = gmu.get_key_value_dict(dataset, keyword)
+            
+            if dispersion_axis_dict is None:
+                # The get_key_value_dict() function returns None if a value
+                # cannot be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
+            
+            dict = dispersion_axis_dict.iteritems()
+            for ext_name_ver, raw_dispersion_axis in dict:
                 if raw_dispersion_axis is None:
                     dispersion_axis = None
                 else:
@@ -404,11 +405,6 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                     (ext.extname(), ext.extver()):dispersion_axis})
         else:
             raise Errors.DescriptorTypeError()
-        
-        if ret_dispersion_axis == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
         
         return ret_dispersion_axis
     
@@ -599,17 +595,22 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # just check whether the dataset has been prepared.
         if "IMAGE" not in dataset.types and "PREPARED" in dataset.types:
             
-            # Loop over the pixel data extensions in the dataset
-            for ext in dataset:
-                
-                # Determine the MDF row ID keyword from the global keyword
-                # dictionary
-                keyword = self.get_descriptor_key("key_mdf_row_id")
-                
-                # Get the value of the MDF row ID from the header of each pixel
-                # data extension
-                raw_mdf_row_id = ext.get_key_value(keyword)
-                
+            # Determine the MDF row ID keyword from the global keyword
+            # dictionary
+            keyword = self.get_descriptor_key("key_mdf_row_id")
+            
+            # Get the value of the MDF row ID keyword from the header of each
+            # pixel data extension as a dictionary
+            mdf_row_id_dict = gmu.get_key_value_dict(dataset, keyword)
+            
+            if mdf_row_id_dict is None:
+                # The get_key_value_dict() function returns None if a value
+                # cannot be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
+            
+            for ext_name_ver, raw_mdf_row_id in mdf_row_id_dict.iteritems():
                 if raw_mdf_row_id is None:
                     mdf_row_id = None
                 else:
@@ -617,15 +618,9 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                     mdf_row_id = int(raw_mdf_row_id)
                 
                 # Update the dictionary with the MDF row ID value
-                ret_mdf_row_id.update({
-                    (ext.extname(), ext.extver()):mdf_row_id})
+                ret_mdf_row_id.update({ext_name_ver:mdf_row_id})
         else:
             raise Errors.DescriptorTypeError()
-        
-        if ret_mdf_row_id == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
         
         return ret_mdf_row_id
     
@@ -1220,17 +1215,24 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_wavelength_reference_pixel = {}
         
-        # Loop over the pixel data extensions in the dataset
-        for ext in dataset:
-            
-            # Determine the reference pixel of the central wavelength keyword
-            # from the global keyword dictionary
-            keyword = self.get_descriptor_key("key_wavelength_reference_pixel")
-            
-            # Get the reference pixel of the central wavelength from the header
-            # of each pixel data extension
-            raw_wavelength_reference_pixel = ext.get_key_value(keyword)
-            
+        # Determine the reference pixel of the central wavelength keyword from
+        # the global keyword dictionary 
+        keyword = self.get_descriptor_key("key_wavelength_reference_pixel")
+        
+        # Get the value of the reference pixel of the central wavelength
+        # keyword from the header of each pixel data extension as a dictionary
+        wavelength_reference_pixel_dict = gmu.get_key_value_dict(
+            dataset, keyword)
+        
+        if wavelength_reference_pixel_dict is None:
+            # The get_key_value_dict() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
+        dict = wavelength_reference_pixel_dict.iteritems()
+        for ext_name_ver, raw_wavelength_reference_pixel in dict:
             if raw_wavelength_reference_pixel is None:
                 wavelength_reference_pixel = None
             else:
@@ -1240,12 +1242,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                     raw_wavelength_reference_pixel)
             
             ret_wavelength_reference_pixel.update({
-                (ext.extname(), ext.extver()):wavelength_reference_pixel})
-        
-        if ret_wavelength_reference_pixel == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
+                ext_name_ver:wavelength_reference_pixel})
         
         return ret_wavelength_reference_pixel
     
