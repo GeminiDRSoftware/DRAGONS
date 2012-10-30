@@ -31,14 +31,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         # Get the value of the name of the detector amplifier keyword from the
         # header of each pixel data extension as a dictionary
-        ampname_dict, exception = self.get_key_value_dict(dataset, keyword)
+        ampname_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if ampname_dict is None:
             # The get_key_value_dict() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if exception is not None:
-                raise exception
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
         
         # Get the pretty (1-based indexing) readout area of the CCD (detsec)
         # using the appropriate descriptor. Use get_value() to return the
@@ -103,14 +103,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         # Get the value of the name of the detector amplifier keyword from the
         # header of each pixel data extension as a dictionary
-        ampname_dict, exception = self.get_key_value_dict(dataset, keyword)
+        ampname_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if ampname_dict is None:
             # The get_key_value_dict() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if exception is not None:
-                raise exception
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
         
         # Loop over the pixel data extensions in the dataset
         for ext in dataset:
@@ -235,8 +235,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         # Get the value of the name of the detector keyword from the header of
         # each pixel data extension as a dictionary 
-        detector_name_dict, exception = self.get_key_value_dict(
-            dataset, keyword)
+        detector_name_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if detector_name_dict is None:
             # It is possible that the data have been mosaiced, which means that
@@ -326,14 +325,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         # Get the value of the ccdsum keyword from the header of each pixel
         # data extension as a dictionary 
-        ccdsum_dict, exception = self.get_key_value_dict(dataset, keyword)
+        ccdsum_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if ccdsum_dict is None:
             # The get_key_value_dict() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if exception is not None:
-                raise exception
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
         
         for ext_name_ver, ccdsum in ccdsum_dict.iteritems():
             if ccdsum is None:
@@ -358,14 +357,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         # Get the value of the ccdsum keyword from the header of each pixel
         # data extension as a dictionary 
-        ccdsum_dict, exception = self.get_key_value_dict(dataset, keyword)
+        ccdsum_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if ccdsum_dict is None:
             # The get_key_value_dict() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if exception is not None:
-                raise exception
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
         
         for ext_name_ver, ccdsum in ccdsum_dict.iteritems():
             if ccdsum is None:
@@ -444,14 +443,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         # Get the value of the dispersion keyword from the header of each pixel
         # data extension as a dictionary 
-        dispersion_dict, exception = self.get_key_value_dict(dataset, keyword)
+        dispersion_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if dispersion_dict is None:
             # The get_key_value_dict() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if exception is not None:
-                raise exception
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
         
         for ext_name_ver, raw_dispersion in dispersion_dict.iteritems():
             if raw_dispersion is None:
@@ -538,14 +537,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             # Get the value of the gain keyword from the header of each pixel
             # data extension as a dictionary
-            gain_dict, exception = self.get_key_value_dict(dataset, keyword)
+            gain_dict = gmu.get_key_value_dict(dataset, keyword)
             
             if gain_dict is None:
                 # The get_key_value_dict() function returns None if a value
                 # cannot be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
-                if exception is not None:
-                    raise exception
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
             
             ret_gain = gain_dict
         
@@ -597,14 +596,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             # Get the value of the name of the detector amplifier keyword from
             # the header of each pixel data extension as a dictionary
-            ampname_dict, exception = self.get_key_value_dict(dataset, keyword)
+            ampname_dict = gmu.get_key_value_dict(dataset, keyword)
             
             if ampname_dict is None:
                 # The get_key_value_dict() function returns None if a value
                 # cannot be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
-                if exception is not None:
-                    raise exception
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
             
             for ext_name_ver, ampname in ampname_dict.iteritems():
                 gain_setting = gain_setting_dict[ext_name_ver]
@@ -645,14 +644,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             # Get the value of the gain keyword from the header of each pixel
             # data extension as a dictionary 
-            gain_dict, exception = self.get_key_value_dict(dataset, keyword)
+            gain_dict = gmu.get_key_value_dict(dataset, keyword)
             
             if gain_dict is None:
                 # The get_key_value_dict() function returns None if a value
                 # cannot be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
-                if exception is not None:
-                    raise exception
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
             
             for ext_name_ver, gain in gain_dict.iteritems():
                 if gain is None:
@@ -676,15 +675,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             # Get the value of the gain setting keyword from the header of each
             # pixel data extension as a dictionary 
-            gain_setting_dict, exception = self.get_key_value_dict(
-                dataset, keyword)
+            gain_setting_dict = gmu.get_key_value_dict(dataset, keyword)
             
             if gain_setting_dict is None:
                 # The dataset was not processed using gemini_python. Try to get
                 # the gain from the "GAINORIG" keyword in the header of each
                 # pixel data extension.
-                gain_orig_dict, exception = self.get_key_value_dict(
-                    dataset, "GAINORIG")
+                gain_orig_dict = gmu.get_key_value_dict(dataset, "GAINORIG")
                 
                 if gain_orig_dict is None:
                     # Resort to getting the gain using the appropriate
@@ -706,7 +703,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                         # pixel data extensions. Try to get the gain from the
                         # "GAINMULT" keyword in the header of each pixel data
                         # extension.
-                        gain_mult_dict, exception = self.get_key_value_dict(
+                        gain_mult_dict = gmu.get_key_value_dict(
                             dataset, "GAINMULT")
                     else:
                         # Resort to getting the gain using the appropriate
@@ -855,7 +852,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         # Get the value of the BUNIT keyword from the header of each pixel data
         # extension as a dictionary 
-        bunit_dict, exception = self.get_key_value_dict(dataset, "BUNIT")
+        bunit_dict = gmu.get_key_value_dict(dataset, "BUNIT")
         
         for ext_name_ver, detector_name in detector_name_dict.iteritems():
             if detector_name is None:
@@ -913,15 +910,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         # Get the value of the overscan section keyword from the header of each
         # pixel data extension as a dictionary 
-        overscan_section_dict, exception = self.get_key_value_dict(
-            dataset, keyword)
+        overscan_section_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if overscan_section_dict is None:
             # The get_key_value_dict() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
-            if exception is not None:
-                raise exception
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
         
         for ext_name_ver, raw_overscan_section in \
             overscan_section_dict.iteritems():
@@ -1003,15 +999,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             # Get the value of the read noise keyword from the header of each
             # pixel data extension as a dictionary 
-            read_noise_dict, exception = self.get_key_value_dict(
-                dataset, keyword)
+            read_noise_dict = gmu.get_key_value_dict(dataset, keyword)
             
             if read_noise_dict is None:
                 # The get_key_value_dict() function returns None if a value
                 # cannot be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
-                if exception is not None:
-                    raise exception
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
             
             for ext_name_ver, raw_read_noise in read_noise_dict.iteritems():
                 if raw_read_noise is None:
@@ -1053,14 +1048,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             # Get the value of the name of the detector amplifier keyword from
             # the header of each pixel data extension as a dictionary
-            ampname_dict, exception = self.get_key_value_dict(dataset, keyword)
+            ampname_dict = gmu.get_key_value_dict(dataset, keyword)
             
             if ampname_dict is None:
                 # The get_key_value_dict() function returns None if a value
                 # cannot be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
-                if exception is not None:
-                    raise exception
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
             
             for ext_name_ver, ampname in ampname_dict.iteritems():
                 gain_setting = gain_setting_dict[ext_name_ver]
@@ -1345,45 +1340,3 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             ret_wavelength_band = band
         
         return ret_wavelength_band
-    
-    # Must move this function somewhere more sensible ...
-    
-    def get_key_value_dict(self, dataset, keyword):
-        # Since this helper function accesses keywords in the headers of the
-        # pixel data extensions, always return a dictionary where the key of
-        # the dictionary is an (EXTNAME, EXTVER) tuple
-        ret_keyword_value = {}
-        
-        exception = None
-        return_dictionary = False
-        
-        # Loop over the pixel data extensions in the dataset
-        for ext in dataset:
-            # Get the value of the keyword from the header of each pixel data
-            # extension
-            value = ext.get_key_value(keyword)
-            
-            if value is None:
-                # The get_key_value() function returns None if a value cannot
-                # be found and stores the exception info
-                if hasattr(ext, "exception_info"):
-                    exception = ext.exception_info
-            else:
-                # The value of the keyword was found for at least one
-                # extension, so the dictionary can be returned 
-                return_dictionary = True
-            
-            # Update the dictionary with the value
-            ret_keyword_value.update({(ext.extname(), ext.extver()):value})
-        
-        if ret_keyword_value == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
-        
-        if not return_dictionary:
-            # The value of the keyword was not found for any of the pixel data
-            # extensions
-            ret_keyword_value = None
-        
-        return ret_keyword_value, exception
