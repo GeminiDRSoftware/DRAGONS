@@ -148,8 +148,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
                 data_section = [x_start, x_end, y_start, y_end]
             
             # Update the dictionary with the data section value
-            ret_data_section.update(
-                {(ext.extname(), ext.extver()):data_section})
+            ret_data_section.update({ext_name_ver:data_section})
         
         return ret_data_section
     
