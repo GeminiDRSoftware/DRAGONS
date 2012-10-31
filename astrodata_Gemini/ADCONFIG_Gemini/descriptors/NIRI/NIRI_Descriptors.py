@@ -106,22 +106,32 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_data_section = {}
         
-        # Loop over the pixel data extensions in the dataset
-        for ext in dataset:
-            # Determine the region of interest keywords from the global keyword
-            # dictionary
-            keyword1 = self.get_descriptor_key("key_lowrow")
-            keyword2 = self.get_descriptor_key("key_hirow")
-            keyword3 = self.get_descriptor_key("key_lowcol")
-            keyword4 = self.get_descriptor_key("key_hicol")
-            
-            # Get the values of the region of interest keywords from the header
-            # of each pixel data extension. The values from the header use
-            # 0-based indexing.
-            x_start = ext.get_key_value(keyword1)
-            x_end = ext.get_key_value(keyword2)
-            y_start = ext.get_key_value(keyword3)
-            y_end = ext.get_key_value(keyword4)
+        # Determine the region of interest keyword from the global keyword
+        # dictionary 
+        keyword1 = self.get_descriptor_key("key_lowrow")
+        keyword2 = self.get_descriptor_key("key_hirow")
+        keyword3 = self.get_descriptor_key("key_lowcol")
+        keyword4 = self.get_descriptor_key("key_hicol")
+        
+        # Get the value of the region of interest keyword from the header of
+        # each pixel data extension as a dictionary 
+        x_start_dict = gmu.get_key_value_dict(dataset, keyword1)
+        x_end_dict = gmu.get_key_value_dict(dataset, keyword2)
+        y_start_dict = gmu.get_key_value_dict(dataset, keyword3)
+        y_end_dict = gmu.get_key_value_dict(dataset, keyword4)
+        
+        if x_start_dict is None or x_end_dict is None or \
+           y_start_dict is None or y_end_dict is None:
+            # The get_key_value_dict() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
+        for ext_name_ver, x_start in x_start_dict.iteritems():
+            x_end = x_end_dict[ext_name_ver]
+            y_start = y_start_dict[ext_name_ver]
+            y_end = y_end_dict[ext_name_ver]
             
             if x_start is None or x_end is None or y_start is None or \
                 y_end is None:
@@ -140,11 +150,6 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             # Update the dictionary with the data section value
             ret_data_section.update(
                 {(ext.extname(), ext.extver()):data_section})
-        
-        if ret_data_section == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
         
         return ret_data_section
     

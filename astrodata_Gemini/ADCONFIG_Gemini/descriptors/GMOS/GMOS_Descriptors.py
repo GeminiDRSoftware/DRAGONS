@@ -919,9 +919,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
-        for ext_name_ver, raw_overscan_section in \
-            overscan_section_dict.iteritems():
-            
+        dict = overscan_section_dict.iteritems()
+        for ext_name_ver, raw_overscan_section in dict:
             if raw_overscan_section is None:
                 overscan_section = None
             elif pretty:
@@ -1239,7 +1238,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # The phu_get_key_value() function returns None if a value
                 # cannot be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
-                 if hasattr(dataset, "exception_info"):
+                if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
             
             # Check units of data (i.e., ADU vs. electrons)

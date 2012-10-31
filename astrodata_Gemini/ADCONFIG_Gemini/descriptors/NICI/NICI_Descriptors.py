@@ -60,45 +60,49 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_filter_name = {}
         
         # For NICI, the red filter is defined in the first science extension,
-        # while the blue filter is defined in the second science extension. Get
-        # the two filter name values from the header of each pixel data
-        # extension
-        count = 0
-        for ext in dataset:
-            # Assigning a "SCI" extension doesn't work for NICI right now ...
-            if count == 0:
-                filter_r = ext.get_key_value(
-                    self.get_descriptor_key("key_filter_r"))
-                filter_b = None
-                count += 1
-            else:
-                filter_b = ext.get_key_value(
-                    self.get_descriptor_key("key_filter_b"))
+        # while the blue filter is defined in the second science extension.
+        #
+        # Determine the filter name keyword from the global keyword dictionary 
+        keyword1 = self.get_descriptor_key("key_filter_r")
+        keyword2 = self.get_descriptor_key("key_filter_b")
         
-        if (filter_r is None) or (filter_b is None):
-            # The get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Re-raise the exception. It
-            # will be dealt with by the CalculatorInterface.
+        # Get the value of the filter name keyword from the header of each
+        # pixel data extension as a dictionary 
+        filter_r_dict = gmu.get_key_value_dict(dataset, keyword1)
+        filter_b_dict = gmu.get_key_value_dict(dataset, keyword2)
+        
+        if filter_r_dict is None or filter_b_dict is None:
+            # The get_key_value_dict() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
+        
+        for ext_name_ver, filter_r in filter_r_dict.iteritems():
+            filter_b = filter_b_dict[ext_name_ver]
+            
+            if filter_r is None and filter_b is None:
+                raw_filter = None
+            elif filter_r is None and filter_b is not None:
+                raw_filter = filter_b
+            elif filter_r is not None and filter_b is None:
+                raw_filter = filter_r
             else:
-                raise Errors.Error("No second science extension")
-        
-        if pretty:
-            stripID = True
-        if stripID:
-            # Strip the component ID from the two filter name values
-            filter_r = gmu.removeComponentID(filter_r)
-            filter_b = gmu.removeComponentID(filter_b)
-        
-        # Return a dictionary with the dispersion axis integer as the value
-        ret_filter_name.update(
-            {("SCI", 1):str(filter_r), ("SCI", 2):str(filter_b)})
-        
-        if ret_filter_name == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
+                # Both filter_r and filter_b are defined for a single
+                # extension, which is incorrect 
+                raise Errors.CorruptDataError()
+            
+            if pretty:
+                stripID = True
+            if stripID:
+                # Strip the component ID from the filter name value
+                if raw_filter is not None:
+                    filter = gmu.removeComponentID(raw_filter)
+            else:
+                filter = raw_filter
+            
+            # Update the dictionary with the filter name value
+            ret_filter_name.update({ext_name_ver:filter})
         
         return ret_filter_name
     

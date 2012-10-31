@@ -43,6 +43,11 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             ret_data_section.update({(
                 ext.extname(), ext.extver()):data_section})
         
+        if ret_data_section == {}:
+            # If the dictionary is still empty, the AstroData object has no
+            # pixel data extensions
+            raise Errors.CorruptDataError()
+        
         return ret_data_section
     
     array_section = data_section
