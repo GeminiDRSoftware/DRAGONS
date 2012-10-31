@@ -5,10 +5,12 @@ class JSDiv:
         return "<div>override JSDiv.div()</div>"
     def page(self):
         return """<html><head><title>%(title)s</title>
+<!--
 <link href="/qap/js/jquery-ui/css/ui-lightness/jquery-ui-1.8.20.custom.css" rel=
 "stylesheet">
 <script type="text/javascript" src="/qap/js/jquery-ui/js/jquery.js"></script>
 <script type="text/javascript" src="/qap/js/jquery-ui/js/jquery-ui.js"></script>
+-->
 </head>
 <body>
 %(divtent)s
@@ -304,20 +306,20 @@ class JSRecipeSystem(JSDiv):
     def div(self):
          return """<div class="lp_recipesystem" style="float:left;width:38%">
                    <script type="text/javascript">
-                   function showPrimset(module, psclass)
+                   function showPrimset(module, astrotype)
                    {
                         var loaded = false;
                         focus = $($(".pdk_focus")[0])
                         focus.slideUp(function () {
                             if (!loaded){
                                 focus.empty();
-                                focus.html("Loading Primset Information: "  + psclass);                            
+                                focus.html("Loading Primset Information: "  + module);                            
                                 focus.slideDown();
                                 }                            
                             });
-                        $.ajax({url: "/primset_info",
+                        $.ajax({url: "/primset_by_type/"+astrotype,
                                 data:{ module: module,
-                                        "class":psclass},
+                                        "astrotype":astrotype},
                                 type:"get",
                                 dataType:"json",
                                 success: function(data) {
@@ -417,8 +419,8 @@ class JSRecipeSystem(JSDiv):
                                         + "(<a style='font-size:75%' href='javascript:void(0)'"
                         	            + " onclick='showPrimset("
                         	            + '"' + ps.module + '","'
-                        	            + ps.class + '")' + "'>"
-                        	            + "view</a>) "
+                        	            + ps.astrotype + '")' + "'>"
+                        	            + "detail</a>) "
                         	            
                         	            + ps.class
                         	                                                  
