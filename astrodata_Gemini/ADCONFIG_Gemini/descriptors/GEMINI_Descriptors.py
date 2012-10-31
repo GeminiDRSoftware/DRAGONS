@@ -401,8 +401,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                     dispersion_axis = int(raw_dispersion_axis)
                 
                 # Update the dictionary with the dispersion axis value
-                ret_dispersion_axis.update({
-                    (ext.extname(), ext.extver()):dispersion_axis})
+                ret_dispersion_axis.update({ext_name_ver:dispersion_axis})
         else:
             raise Errors.DescriptorTypeError()
         
