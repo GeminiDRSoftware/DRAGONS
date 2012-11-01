@@ -4,7 +4,7 @@ class docstrings:
         """
         Return the airmass value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -17,7 +17,7 @@ class docstrings:
         """
         Return the amp_read_area value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
                        set to as_dict to return a dictionary, where the number 
@@ -28,9 +28,9 @@ class docstrings:
         :type format: string
         :rtype: string as default (i.e., format=None)
         :rtype: dictionary containing one or more string(s) (format=as_dict)
-        :return: the composite string containing the name of the detector
-                 amplifier (ampname) and the readout area of the CCD (detsec) 
-                 used for the observation
+        :return: the composite string containing the name of the array
+                 amplifier and the readout area of the array used for the
+                 observation 
         """
         pass
     
@@ -38,12 +38,28 @@ class docstrings:
         """
         Return the array_section value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
+        :param pretty: set to True to return a human meaningful array_section 
+                       value in the form [x1:x2,y1:y2] that uses 1-based 
+                       indexing
+        :type pretty: Python boolean
         :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
         :type format: string
-        :rtype: list as default (i.e., format=None)
-        :return: the array_section
+        :rtype: list of integers that uses 0-based indexing in the form 
+                [x1 - 1, x2 - 1, y1 - 1, y2 - 1] as default 
+                (i.e., format=None, pretty=False)
+        :rtype: string that uses 1-based indexing in the form [x1:x2,y1:y2]
+                (pretty=True)
+        :rtype: dictionary containing one or more of the above return types 
+                (format=as_dict)
+        :return: the unbinned section of the array that was used to observe the
+                 data
         """
         pass
     
@@ -51,7 +67,7 @@ class docstrings:
         """
         Return the azimuth value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -62,22 +78,14 @@ class docstrings:
     
     def bias_level(self):
         """
-        Return the bias_level value.
-
-        For GMOS, this value is looked up from values in lookup tables distributed
-        with the data reduction package - the values in the header are incorrect.
-
-        The values are referenced by date (to account for hardware and other
-        modifications that affect the values), and from the gain and read speed settings
-        that were configured for this exposure.
-
+        Return the bias_level value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: float as default (i.e., format=None)
-        :return: the bias_level
+        :return: the bias level (in ADU) of the observation
         """
         pass
     
@@ -85,7 +93,7 @@ class docstrings:
         """
         Return the camera value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -98,7 +106,7 @@ class docstrings:
         """
         Return the cass_rotator_pa value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -112,7 +120,7 @@ class docstrings:
         """
         Return the central_wavelength value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param asMicrometers: set to True to return the central_wavelength 
                               value in units of Micrometers
@@ -140,7 +148,7 @@ class docstrings:
         """
         Return the coadds value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -153,12 +161,13 @@ class docstrings:
         """
         Return the data_label value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the data label of the observation
+        :return: the unique identifying name (e.g., GN-2003A-C-2-52-003) of the
+                 observation
         """
         pass
     
@@ -166,7 +175,7 @@ class docstrings:
         """
         Return the data_section value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param pretty: set to True to return a human meaningful data_section 
                        value in the form [x1:x2,y1:y2] that uses 1-based 
@@ -178,27 +187,15 @@ class docstrings:
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
         :type format: string
-        :rtype: tuple of integers that use 0-based indexing in the form 
-                (x1 - 1, x2 - 1, y1 - 1, y2 - 1) as default 
+        :rtype: list of integers that uses 0-based indexing in the form 
+                [x1 - 1, x2 - 1, y1 - 1, y2 - 1] as default 
                 (i.e., format=None, pretty=False)
-        :rtype: string that uses 1-based indexing in the form [x1:x2,y1:y2] 
+        :rtype: string that uses 1-based indexing in the form [x1:x2,y1:y2]
                 (pretty=True)
         :rtype: dictionary containing one or more of the above return types 
                 (format=as_dict)
-        :return: the section of the data of the observation
-        """
-        pass
-    
-    def dec(self):
-        """
-        Return the dec value
-        
-        :param dataset: the data set
-        :type dataset: AstroData
-        :param format: the return format
-        :type format: string
-        :rtype: float as default (i.e., format=None)
-        :return: the declination (in decimal degrees) of the observation
+        :return: the section of the pixel data extensions that contains the
+                 data observed
         """
         pass
     
@@ -206,7 +203,7 @@ class docstrings:
         """
         Return the decker value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -221,49 +218,67 @@ class docstrings:
         """
         pass
     
-    def detector_rois_requested(self):
+    def dec(self):
         """
-        Return the list of detector ROIs (Region of Interest)s that were
-        requested for this exposure. Not all instrument support ROIs other
-        than the full array, and of those that do, not all support the concept
-        of multiple (separate) ROIs per exposure. Even instruments that do
-        support this concept (eg the GMOSes) cannot necessarily read out completely
-        arbitrary ROI configurations, so the actual regions read may or may not
-        correspond exactly to (though should be a superset of) those requested.
-
-        This descriptor provides a list or ROIs requested, in the form:
-        [[x1, x2, y1, y2], ...]
-
-        - These are physical, unbinned pixel co-ordinates, so will not correspond
-        directly to image pixels if the binning is not 1x1.
- 
-        - These numbers are 1-based, not 0-based - the corner pixel is [1,1].
+        Return the dec value
         
-        - The ranges given are inclusive at both ends.
-        
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
-        :rtype: list as default (i.e., format=None)
-        :return: the detector_rois_requested
+        :rtype: float as default (i.e., format=None)
+        :return: the declination (in decimal degrees) of the observation
+        """
+        pass
+    
+    def detector_name(self):
+        """
+        Return the detector_name value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :rtype: dictionary containing one or more string(s) (format=as_dict)
+        :return: the name of each array used for the observation
         """
         pass
     
     def detector_roi_setting(self):
         """
-        This descriptor attempts to deduce the "Name" of the ROI
-        (Region Of Interest), as defined by the selection in the OT.
+        Return the detector_roi_setting value
         
-        For example, with GMOS, this might be "Full Frame", "Central Spectrum", 
-        "CCD2" etc. The string "Custom" will be returned for custom defined ROIs
-
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the detector_roi_setting
+        :return: the human-readable description of the detector Region Of
+                 Interest (ROI) setting (either 'Full Frame', 'CCD2', 'Central
+                 Spectrum', 'Central Stamp', 'Custom', 'Undefined' or 'Fixed'),
+                 which corresponds to the name of the ROI in the OT
+        """
+        pass
+    
+    def detector_rois_requested(self):
+        """
+        Return the detector_rois_requested value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: list containing a list of integers (corresponding to unbinned
+                pixels) that uses 1-bases indexing in the form [x1, x2, y1, y2]
+                as default (i.e., format=None) 
+        :return: the requested detector Region Of Interest (ROI)s of the
+                 observation 
         """
         pass
     
@@ -271,7 +286,7 @@ class docstrings:
         """
         Return the detector_section value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param pretty: set to True to return a human meaningful 
                        detector_section value in the form [x1:x2,y1:y2] that 
@@ -283,36 +298,15 @@ class docstrings:
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
         :type format: string
-        :rtype: tuple of integers that use 0-based indexing in the form 
-                (x1 - 1, x2 - 1, y1 - 1, y2 - 1) as default 
+        :rtype: list of integers that uses 0-based indexing in the form 
+                [x1 - 1, x2 - 1, y1 - 1, y2 - 1] as default 
                 (i.e., format=None, pretty=False)
         :rtype: string that uses 1-based indexing in the form [x1:x2,y1:y2] 
                 (pretty=True)
         :rtype: dictionary containing one or more of the above return types 
                 (format=as_dict)
-        :return: the detector section of the observation
-        """
-        pass
-    
-    def detector_name(self):
-        """
-        Return the detector name. For GMOS this is generally the CCD name from 
-        the CCDNAME header. 
-
-        This is a bit subtle - if we have a non-mosaiced GMOS image, there
-        will be a CCDNAME keyword in each SCI extension, and that's what we want.
-        If we have a mosaiced image, these won't be present as the SCI is a mosaic of
-        several (usually three) detectors. In this case, we return the DETID keyword
-        from the PHU, which is generally a string concatenation of the individual 
-        ccd names or similar.
-
-        
-        :param dataset: the data set
-        :type dataset: AstroData
-        :param format: the return format
-        :type format: string
-        :rtype: string as default (i.e., format=None)
-        :return: the detector_name
+        :return: the unbinned section of the detector that was used to observe
+                 the data
         """
         pass
     
@@ -320,7 +314,7 @@ class docstrings:
         """
         Return the detector_x_bin value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
                        set to as_dict to return a dictionary, where the number 
@@ -340,7 +334,7 @@ class docstrings:
         """
         Return the detector_y_bin value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
                        set to as_dict to return a dictionary, where the number 
@@ -360,7 +354,7 @@ class docstrings:
         """
         Return the disperser value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -375,11 +369,25 @@ class docstrings:
         """
         pass
     
+    def dispersion_axis(self):
+        """
+        Return the dispersion_axis value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: integer as default (i.e., format=None)
+        :return: the dispersion axis (along rows, x = 1; along columns, y = 2;
+                 along planes, z = 3) of the observation
+        """
+        pass
+    
     def dispersion(self):
         """
         Return the dispersion value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param asMicrometers: set to True to return the dispersion 
                               value in units of Micrometers
@@ -403,24 +411,11 @@ class docstrings:
         """
         pass
     
-    def dispersion_axis(self):
-        """
-        Return the dispersion_axis value
-        
-        :param dataset: the data set
-        :type dataset: AstroData
-        :param format: the return format
-        :type format: string
-        :rtype: integer as default (i.e., format=None)
-        :return: the dispersion axis (x = 1; y = 2; z = 3) of the observation
-        """
-        pass
-    
     def elevation(self):
         """
         Return the elevation value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -433,7 +428,7 @@ class docstrings:
         """
         Return the exposure_time value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -446,9 +441,14 @@ class docstrings:
         """
         Return the filter_name value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
         :type format: string
         :param stripID: set to True to remove the component ID from the 
                         returned filter_name value
@@ -457,8 +457,9 @@ class docstrings:
                        filter_name value
         :type pretty: Python boolean
         :rtype: string as default (i.e., format=None)
-        :return: the unique, sorted filter name idenifier string used for the 
-                 observation
+        :return: the unique filter name identifier string used for the 
+                 observation; when multiple filters are used, the filter names
+                 are concatenated with an ampersand
         """
         pass
     
@@ -466,7 +467,7 @@ class docstrings:
         """
         Return the focal_plane_mask value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -485,7 +486,7 @@ class docstrings:
         """
         Return the gain value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
                        set to as_dict to return a dictionary, where the number 
@@ -500,11 +501,24 @@ class docstrings:
         """
         pass
     
+    def gain_setting(self):
+        """
+        Return the gain_setting value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :return: the gain setting (either 'high' or 'low') of the observation
+        """
+        pass
+    
     def grating(self):
         """
         Return the grating value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -523,25 +537,13 @@ class docstrings:
         """
         Return the group_id value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the group_id
-        """
-        pass
-    
-    def gain_setting(self):
-        """
-        Return the gain_setting value
-        
-        :param dataset: the data set
-        :type dataset: AstroData
-        :param format: the return format
-        :type format: string
-        :rtype: string as default (i.e., format=None)
-        :return: the gain setting of the observation
+        :return: the unique string that describes which stack a dataset belongs
+                 to; it is based on the observation_id
         """
         pass
     
@@ -549,7 +551,7 @@ class docstrings:
         """
         Return the local_time value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -562,7 +564,7 @@ class docstrings:
         """
         Return the mdf_row_id value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
                        set to as_dict to return a dictionary, where the number 
@@ -573,7 +575,8 @@ class docstrings:
         :type format: string
         :rtype: integer as default (i.e., format=None)
         :rtype: dictionary containing one or more integer(s) (format=as_dict)
-        :return: the corresponding reference row in the MDF
+        :return: the corresponding reference row in the Mask Definition File
+                 (MDF)
         """
         pass
     
@@ -581,7 +584,7 @@ class docstrings:
         """
         Return the nod_count value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -595,7 +598,7 @@ class docstrings:
         """
         Return the nod_pixels value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -607,30 +610,29 @@ class docstrings:
     
     def nominal_atmospheric_extinction(self):
         """
-        Return the nominal atmospheric extinction value. These are determined
-        from lookup tables based on the telescope site (ie Gemini-North or
-        Gemini-South) and the filter name.
+        Return the nominal_atmospheric_extinction value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
-        :rtype: float as default (i.e., format=None)
-        :return: the nominal_atmospheric_extinction
+        :rtype: float as default (i.e., format=None) 
+        :return: the nominal atmospheric extinction (defined as coeff *
+                 (airmass - 1.0), where coeff is the site and filter specific
+                 nominal atmospheric extinction coefficient) of the observation
         """
         pass
     
     def nominal_photometric_zeropoint(self):
         """
-        Return the nominal photometric zeropoint value. These are determined
-        from lookup tables keyed on the detector names and filter names
+        Return the nominal_photometric_zeropoint value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: float as default (i.e., format=None)
-        :return: the nominal_photometric_zeropoint
+        :return: the nominal photometric zeropoint of the observation
         """
         pass
     
@@ -638,7 +640,7 @@ class docstrings:
         """
         Return the non_linear_level value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -652,7 +654,7 @@ class docstrings:
         """
         Return the observation_class value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -666,7 +668,7 @@ class docstrings:
         """
         Return the observation_epoch value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -679,12 +681,13 @@ class docstrings:
         """
         Return the observation_id value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the ID (e.g., GN-2011A-Q-123-45) of the observation
+        :return: the ID (e.g., GN-2011A-Q-123-45) of the observation; it is
+                 used by group_id
         """
         pass
     
@@ -692,7 +695,7 @@ class docstrings:
         """
         Return the observation_type value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -704,16 +707,30 @@ class docstrings:
     
     def overscan_section(self):
         """
-        Return the overscan section of the image. These are the image pixel
-        co-ordinates of the area that contain overscan data as opposed to
-        actual pixel data.
+        Return the overscan_section value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
+        :param pretty: set to True to return a human meaningful
+                       overscan_section value in the form [x1:x2,y1:y2] that
+                       uses 1-based indexing
+        :type pretty: Python boolean
         :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
         :type format: string
-        :rtype: list as default (i.e., format=None)
-        :return: the overscan_section
+        :rtype: list of integers that uses 0-based indexing in the form 
+                [x1 - 1, x2 - 1, y1 - 1, y2 - 1] as default 
+                (i.e., format=None, pretty=False)
+        :rtype: string that uses 1-based indexing in the form [x1:x2,y1:y2] 
+                (pretty=True)
+        :rtype: dictionary containing one or more of the above return types 
+                (format=as_dict)
+        :return: the section of the pixel data extensions that contains the
+                 overscan data
         """
         pass
     
@@ -721,7 +738,7 @@ class docstrings:
         """
         Return the pixel_scale value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -734,7 +751,7 @@ class docstrings:
         """
         Return the prism value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -753,7 +770,7 @@ class docstrings:
         """
         Return the program_id value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -767,7 +784,7 @@ class docstrings:
         """
         Return the pupil_mask value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -780,7 +797,7 @@ class docstrings:
         """
         Return the qa_state value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -794,7 +811,7 @@ class docstrings:
         """
         Return the ra value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -807,13 +824,13 @@ class docstrings:
         """
         Return the raw_bg value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :return: the raw background (either '20-percentile', '50-percentile', 
-                 '80-percentile' or 'Any') of the observation
+        :return: the raw background (as an integer percentile value) of the
+                 observation
         """
         pass
     
@@ -821,13 +838,13 @@ class docstrings:
         """
         Return the raw_cc value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :return: the raw cloud cover (either '50-percentile', '70-percentile', 
-                 '80-percentile', '90-percentile' or 'Any') of the observation
+        :return: the raw cloud cover (as an integer percentile value) of the
+                 observation
         """
         pass
     
@@ -835,13 +852,13 @@ class docstrings:
         """
         Return the raw_iq value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :return: the raw image quality (either '20-percentile', 
-                 '70-percentile', '85-percentile' or 'Any') of the observation
+        :return: the raw image quality (as an integer percentile value) of the
+                 observation
         """
         pass
     
@@ -849,13 +866,13 @@ class docstrings:
         """
         Return the raw_wv value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :return: the raw water vapour (either '20-percentile', 
-                 '50-percentile', '80-percentile' or 'Any') of the observation
+        :return: the raw water vapour (as an integer percentile value) of the
+                 observation
         """
         pass
     
@@ -863,7 +880,7 @@ class docstrings:
         """
         Return the read_mode value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -880,7 +897,7 @@ class docstrings:
         """
         Return the read_noise value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
                        set to as_dict to return a dictionary, where the number 
@@ -899,7 +916,7 @@ class docstrings:
         """
         Return the read_speed_setting value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -909,71 +926,59 @@ class docstrings:
         """
         pass
     
-    def requested_iq(self):
+    def requested_bg(self):
         """
-        Return the requested Image Quality value. This is the Gemini IQ
-        percentile IQ band (eg "20-percentile") parsed to an integer 
-        percentile value - (eg 20). "Any" maps to 100.
-        Note, this is the value requested by the PI as the worst acceptable,
-        not the delivered value. Smaller is better.
+        Return the requested_bg value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :return: the requested_iq
+        :return: the requested background (as an integer percentile value) of 
+                 the observation
         """
         pass
     
     def requested_cc(self):
         """
-        Return the requested Cloud Cover value. This is the Gemini CC
-        percentile CC band (eg "50-percentile") parsed to an integer 
-        percentile value - (eg 50). "Any" maps to 100.
-        Note, this is the value requested by the PI as the worst acceptable,
-        not the delivered value. Smaller is better.
+        Return the requested_cc value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :return: the requested_cc
+        :return: the requested cloud cover (as an integer percentile value) of
+                 the observation
+        """
+        pass
+    
+    def requested_iq(self):
+        """
+        Return the requested_iq value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: integer as default (i.e., format=None)
+        :return: the requested image quality (as an integer percentile value)
+                 of the observation
         """
         pass
     
     def requested_wv(self):
         """
-        Return the requested Water Vapor value. This is the Gemini WV
-        percentile WV band (eg "50-percentile") parsed to an integer 
-        percentile value - (eg 50). "Any" maps to 100.
-        Note, this is the value requested by the PI as the worst acceptable,
-        not the delivered value. Smaller is better.
+        Return the requested_wv value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :return: the requested_wv
-        """
-        pass
-    
-    def requested_bg(self):
-        """
-        Return the requested sky Background value. This is the Gemini BG
-        percentile BG band (eg "50-percentile") parsed to an integer 
-        percentile value - (eg 50). "Any" maps to 100.
-        Note, this is the value requested by the PI as the worst acceptable,
-        not the delivered value. Smaller is better.
-        
-        :param dataset: the data set
-        :type dataset: AstroData
-        :param format: the return format
-        :type format: string
-        :rtype: integer as default (i.e., format=None)
-        :return: the requested_bg
+        :return: the requested water vapour (as an integer percentile value) of
+                 the observation
         """
         pass
     
@@ -981,13 +986,12 @@ class docstrings:
         """
         Return the saturation_level value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :return: the saturation level in the raw images (in ADU) of the 
-                 observation
+        :return: the saturation level (in ADU) of the observation
         """
         pass
     
@@ -995,7 +999,7 @@ class docstrings:
         """
         Return the slit value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -1006,7 +1010,7 @@ class docstrings:
                        slit value
         :type pretty: Python boolean
         :rtype: string as default (i.e., format=None)
-        :return: the slit used for the observation
+        :return: the name of the slit used for the observation
         """
         pass
     
@@ -1022,7 +1026,7 @@ class docstrings:
         trying to parse their values, are those known to occur in Gemini data.
         Note that some of the early gemini data, and that taken from lower
         level engineering interfaces, lack standard headers. Also the format
-        and occurence of various headers has changed over time, even on the
+        and occurrence of various headers has changed over time, even on the
         same instrument. If strict is set to True, the date or time are
         determined from valid FITS keywords. If it cannot be determined, None
         is returned. If dateonly or timeonly are set to True, then a
@@ -1034,7 +1038,7 @@ class docstrings:
         valid date. The dateonly and timeonly flags are intended for use by
         the ut_date and ut_time descriptors.
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -1055,7 +1059,7 @@ class docstrings:
         """
         Return the ut_time value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -1068,29 +1072,27 @@ class docstrings:
         """
         Return the wavefront_sensor value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
         :return: the wavefront sensor (either 'AOWFS', 'OIWFS', 'PWFS1', 
-                 'PWFS2', some combination in alphebetic order separated with 
+                 'PWFS2', some combination in alphabetic order separated with 
                  an ampersand or None) used for the observation
         """
         pass
     
     def wavelength_band(self):
         """
-        Return the wavelength band value. This only applies to spectroscopy
-        data and gives the band (filter) name within which the central wavelength
-        of the spectrum falls. 
+        Return the wavelength_band value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the wavelength_band
+        :return: the wavelength band name (e.g., J, V, R, N) of the observation
         """
         pass
     
@@ -1098,7 +1100,7 @@ class docstrings:
         """
         Return the wavelength_reference_pixel value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
                        set to as_dict to return a dictionary, where the number 
@@ -1109,7 +1111,7 @@ class docstrings:
         :type format: string
         :rtype: float as default (i.e., format=None)
         :rtype: dictionary containing one or more float(s) (format=as_dict)
-        :return: the reference pixel of the central wavelength of the 
+        :return: the 1-based reference pixel of the central wavelength of the 
                  observation
         """
         pass
@@ -1118,7 +1120,7 @@ class docstrings:
         """
         Return the well_depth_setting value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -1132,12 +1134,12 @@ class docstrings:
         """
         Return the x_offset value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: float as default (i.e., format=None)
-        :return: the x offset of the observation
+        :return: the telescope offset in x (in arcsec) of the observation
         """
         pass
     
@@ -1145,11 +1147,11 @@ class docstrings:
         """
         Return the y_offset value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: float as default (i.e., format=None)
-        :return: the y offset of the observation
+        :return: the telescope offset in y (in arcsec) of the observation
         """
         pass
