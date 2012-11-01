@@ -155,7 +155,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     array_section = data_section
     detector_section = data_section
     
-    def detector_roi_setting(sefl, dataset, **args):
+    def detector_roi_setting(self, dataset, **args):
         roi_setting = "Custom"
         roi = dataset.data_section().as_pytype()
         
