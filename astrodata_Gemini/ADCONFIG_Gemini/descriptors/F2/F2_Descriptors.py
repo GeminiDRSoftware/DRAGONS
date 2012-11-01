@@ -88,7 +88,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # PHU 
         filter1 = dataset.phu_get_key_value(keyword1)
         filter2 = dataset.phu_get_key_value(keyword2)
-            
+        
         if filter1 is None or filter2 is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
