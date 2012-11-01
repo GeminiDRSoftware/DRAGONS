@@ -266,8 +266,14 @@ class CalculatorInterface:
         :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
         :type format: string
         :rtype: float as default (i.e., format=None)
+        :rtype: dictionary containing one or more float(s) (format=as_dict)
         :return: the bias level (in ADU) of the observation
         """
         try:
@@ -446,11 +452,7 @@ class CalculatorInterface:
         :param asAngstroms: set to True to return the central_wavelength 
                             value in units of Angstroms
         :type asAngstroms: Python boolean
-        :param format: set to as_dict to return a dictionary, where the number 
-                       of dictionary elements equals the number of pixel data 
-                       extensions in the image. The key of the dictionary is 
-                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
-                       the key is the integer index of the extension.
+        :param format: the return format
         :type format: string
         :rtype: float as default (i.e., format=None)
         :rtype: dictionary containing one or more float(s)
@@ -628,7 +630,8 @@ class CalculatorInterface:
                        value in the form [x1:x2,y1:y2] that uses 1-based 
                        indexing
         :type pretty: Python boolean
-        :param format: set to as_dict to return a dictionary, where the number 
+        :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
                        of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
@@ -696,14 +699,14 @@ class CalculatorInterface:
         
         :param dataset: the dataset
         :type dataset: AstroData
-        :param format: the return format
-        :type format: string
         :param stripID: set to True to remove the component ID from the 
                         returned decker value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
                        decker value
         :type pretty: Python boolean
+        :param format: the return format
+        :type format: string
         :rtype: string as default (i.e., format=None)
         :return: the decker position used for the observation
         """
@@ -1003,7 +1006,8 @@ class CalculatorInterface:
                        detector_section value in the form [x1:x2,y1:y2] that 
                        uses 1-based indexing
         :type pretty: Python boolean
-        :param format: set to as_dict to return a dictionary, where the number 
+        :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
                        of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
@@ -1199,14 +1203,14 @@ class CalculatorInterface:
         
         :param dataset: the dataset
         :type dataset: AstroData
-        :param format: the return format
-        :type format: string
         :param stripID: set to True to remove the component ID from the 
                         returned disperser value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
                        disperser value
         :type pretty: Python boolean
+        :param format: the return format
+        :type format: string
         :rtype: string as default (i.e., format=None)
         :return: the disperser used for the observation
         """
@@ -1263,8 +1267,14 @@ class CalculatorInterface:
         :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
         :type format: string
         :rtype: integer as default (i.e., format=None)
+        :rtype: dictionary containing one or more integer(s) (format=as_dict)
         :return: the dispersion axis (along rows, x = 1; along columns, y = 2;
                  along planes, z = 3) of the observation
         """
@@ -1329,7 +1339,8 @@ class CalculatorInterface:
         :param asAngstroms: set to True to return the dispersion 
                             value in units of Angstroms
         :type asAngstroms: Python boolean
-        :param format: set to as_dict to return a dictionary, where the number 
+        :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
                        of dictionary elements equals the number of pixel data 
                        extensions in the image. The key of the dictionary is 
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
@@ -1450,8 +1461,14 @@ class CalculatorInterface:
         :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
         :type format: string
         :rtype: float as default (i.e., format=None)
+        :rtype: dictionary containing one or more float(s) (format=as_dict)
         :return: the total exposure time (in seconds) of the observation
         """
         try:
@@ -1506,6 +1523,12 @@ class CalculatorInterface:
         
         :param dataset: the dataset
         :type dataset: AstroData
+        :param stripID: set to True to remove the component ID from the 
+                        returned filter_name value
+        :type stripID: Python boolean
+        :param pretty: set to True to return a human meaningful 
+                       filter_name value
+        :type pretty: Python boolean
         :param format: the return format
                        set to as_dict to return a dictionary, where the number 
                        of dictionary elements equals the number of pixel data 
@@ -1513,13 +1536,8 @@ class CalculatorInterface:
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
         :type format: string
-        :param stripID: set to True to remove the component ID from the 
-                        returned filter_name value
-        :type stripID: Python boolean
-        :param pretty: set to True to return a human meaningful 
-                       filter_name value
-        :type pretty: Python boolean
         :rtype: string as default (i.e., format=None)
+        :rtype: dictionary containing one or more string(s) (format=as_dict)
         :return: the unique filter name identifier string used for the 
                  observation; when multiple filters are used, the filter names
                  are concatenated with an ampersand
@@ -1576,14 +1594,14 @@ class CalculatorInterface:
         
         :param dataset: the dataset
         :type dataset: AstroData
-        :param format: the return format
-        :type format: string
         :param stripID: set to True to remove the component ID from the 
                         returned focal_plane_mask value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
                        focal_plane_mask value
         :type pretty: Python boolean
+        :param format: the return format
+        :type format: string
         :rtype: string as default (i.e., format=None)
         :return: the focal plane mask used for the observation
         """
@@ -1703,8 +1721,14 @@ class CalculatorInterface:
         :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
         :type format: string
         :rtype: string as default (i.e., format=None)
+        :rtype: dictionary containing one or more string(s) (format=as_dict)
         :return: the gain setting (either 'high' or 'low') of the observation
         """
         try:
@@ -1759,14 +1783,14 @@ class CalculatorInterface:
         
         :param dataset: the dataset
         :type dataset: AstroData
-        :param format: the return format
-        :type format: string
         :param stripID: set to True to remove the component ID from the 
                         returned grating value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
                        grating value
         :type pretty: Python boolean
+        :param format: the return format
+        :type format: string
         :rtype: string as default (i.e., format=None)
         :return: the grating used for the observation
         """
@@ -2177,8 +2201,14 @@ class CalculatorInterface:
         :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
         :type format: string
         :rtype: float as default (i.e., format=None)
+        :rtype: dictionary containing one or more float(s) (format=as_dict)
         :return: the nominal photometric zeropoint of the observation
         """
         try:
@@ -2652,14 +2682,14 @@ class CalculatorInterface:
         
         :param dataset: the dataset
         :type dataset: AstroData
-        :param format: the return format
-        :type format: string
         :param stripID: set to True to remove the component ID from the 
                         returned prism value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
                        prism value
         :type pretty: Python boolean
+        :param format: the return format
+        :type format: string
         :rtype: string as default (i.e., format=None)
         :return: the prism used for the observation
         """
@@ -2773,6 +2803,12 @@ class CalculatorInterface:
         
         :param dataset: the dataset
         :type dataset: AstroData
+        :param stripID: set to True to remove the component ID from the 
+                        returned pupil mask value
+        :type stripID: Python boolean
+        :param pretty: set to True to return a human meaningful
+                       pupil mask value
+        :type pretty: Python boolean
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
@@ -3592,8 +3628,14 @@ class CalculatorInterface:
         :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
         :type format: string
         :rtype: integer as default (i.e., format=None)
+        :rtype: dictionary containing one or more integer(s) (format=as_dict)
         :return: the saturation level (in ADU) of the observation
         """
         try:
@@ -3648,14 +3690,14 @@ class CalculatorInterface:
         
         :param dataset: the dataset
         :type dataset: AstroData
-        :param format: the return format
-        :type format: string
         :param stripID: set to True to remove the component ID from the 
                         returned slit value
         :type stripID: Python boolean
         :param pretty: set to True to return a human meaningful 
                        slit value
         :type pretty: Python boolean
+        :param format: the return format
+        :type format: string
         :rtype: string as default (i.e., format=None)
         :return: the name of the slit used for the observation
         """
@@ -3731,14 +3773,14 @@ class CalculatorInterface:
         
         :param dataset: the dataset
         :type dataset: AstroData
-        :param format: the return format
-        :type format: string
         :param strict: set to True to not try to guess the date or time
         :type strict: Python boolean
         :param dateonly: set to True to return a datetime.date
         :type dateonly: Python boolean
         :param timeonly: set to True to return a datetime.time
         :param timeonly: Python boolean
+        :param format: the return format
+        :type format: string
         :rtype: datetime.datetime (dateonly=False and timeonly=False)
         :rtype: datetime.time (timeonly=True)
         :rtype: datetime.date (dateonly=True)
