@@ -57,7 +57,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -112,7 +114,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -167,7 +171,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -222,7 +228,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
