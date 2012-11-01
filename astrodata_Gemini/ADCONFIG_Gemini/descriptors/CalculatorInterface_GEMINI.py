@@ -11,7 +11,7 @@ class CalculatorInterface:
         """
         Return the airmass value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -57,7 +57,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -66,7 +68,7 @@ class CalculatorInterface:
         """
         Return the amp_read_area value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
                        set to as_dict to return a dictionary, where the number 
@@ -77,9 +79,9 @@ class CalculatorInterface:
         :type format: string
         :rtype: string as default (i.e., format=None)
         :rtype: dictionary containing one or more string(s) (format=as_dict)
-        :return: the composite string containing the name of the detector
-                 amplifier (ampname) and the readout area of the CCD (detsec) 
-                 used for the observation
+        :return: the composite string containing the name of the array
+                 amplifier and the readout area of the array used for the
+                 observation 
         """
         try:
             self._lazyloadCalculator()
@@ -120,7 +122,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -129,12 +133,28 @@ class CalculatorInterface:
         """
         Return the array_section value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
+        :param pretty: set to True to return a human meaningful array_section 
+                       value in the form [x1:x2,y1:y2] that uses 1-based 
+                       indexing
+        :type pretty: Python boolean
         :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
         :type format: string
-        :rtype: list as default (i.e., format=None)
-        :return: the array_section
+        :rtype: list of integers that uses 0-based indexing in the form 
+                [x1 - 1, x2 - 1, y1 - 1, y2 - 1] as default 
+                (i.e., format=None, pretty=False)
+        :rtype: string that uses 1-based indexing in the form [x1:x2,y1:y2]
+                (pretty=True)
+        :rtype: dictionary containing one or more of the above return types 
+                (format=as_dict)
+        :return: the unbinned section of the array that was used to observe the
+                 data
         """
         try:
             self._lazyloadCalculator()
@@ -175,7 +195,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -184,7 +206,7 @@ class CalculatorInterface:
         """
         Return the azimuth value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -230,7 +252,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -239,12 +263,12 @@ class CalculatorInterface:
         """
         Return the bias_level value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: float as default (i.e., format=None)
-        :return: the bias_level
+        :return: the bias level (in ADU) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -285,7 +309,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -294,7 +320,7 @@ class CalculatorInterface:
         """
         Return the camera value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -340,7 +366,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -349,7 +377,7 @@ class CalculatorInterface:
         """
         Return the cass_rotator_pa value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -396,7 +424,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -405,7 +435,7 @@ class CalculatorInterface:
         """
         Return the central_wavelength value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param asMicrometers: set to True to return the central_wavelength 
                               value in units of Micrometers
@@ -466,7 +496,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -475,7 +507,7 @@ class CalculatorInterface:
         """
         Return the coadds value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -521,7 +553,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -530,12 +564,13 @@ class CalculatorInterface:
         """
         Return the data_label value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the data label of the observation
+        :return: the unique identifying name (e.g., GN-2003A-C-2-52-003) of the
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -576,7 +611,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -585,7 +622,7 @@ class CalculatorInterface:
         """
         Return the data_section value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param pretty: set to True to return a human meaningful data_section 
                        value in the form [x1:x2,y1:y2] that uses 1-based 
@@ -597,14 +634,15 @@ class CalculatorInterface:
                        an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
                        the key is the integer index of the extension.
         :type format: string
-        :rtype: tuple of integers that use 0-based indexing in the form 
-                (x1 - 1, x2 - 1, y1 - 1, y2 - 1) as default 
+        :rtype: list of integers that uses 0-based indexing in the form 
+                [x1 - 1, x2 - 1, y1 - 1, y2 - 1] as default 
                 (i.e., format=None, pretty=False)
-        :rtype: string that uses 1-based indexing in the form [x1:x2,y1:y2] 
+        :rtype: string that uses 1-based indexing in the form [x1:x2,y1:y2]
                 (pretty=True)
         :rtype: dictionary containing one or more of the above return types 
                 (format=as_dict)
-        :return: the section of the data of the observation
+        :return: the section of the pixel data extensions that contains the
+                 data observed
         """
         try:
             self._lazyloadCalculator()
@@ -645,62 +683,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
-                return None
-        except:
-            raise
-    
-    def dec(self, format=None, **args):
-        """
-        Return the dec value
-        
-        :param dataset: the data set
-        :type dataset: AstroData
-        :param format: the return format
-        :type format: string
-        :rtype: float as default (i.e., format=None)
-        :return: the declination (in decimal degrees) of the observation
-        """
-        try:
-            self._lazyloadCalculator()
-            keydict = self.descriptor_calculator._specifickey_dict
-            key = "key_dec"
-            #print "mkCI22:",key, repr(keydict)
-            #print "mkCI23:", key in keydict
-            keyword = None
-            if key in keydict.keys():
-                keyword = keydict[key]
-                
-            #print hasattr(self.descriptor_calculator, "dec")
-            if not hasattr(self.descriptor_calculator, "dec"):
-                if keyword is not None:
-                    retval = self.phu_get_key_value(keyword)
-                    if retval is None:
-                        if hasattr(self, "exception_info"):
-                            raise Errors.DescriptorError(self.exception_info)
-                else:
-                    msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for dec")
-                    raise Errors.DescriptorError(msg)
             else:
-                try:
-                    retval = self.descriptor_calculator.dec(self, **args)
-                except Exception as e:
-                    raise Errors.DescriptorError(e)
-            
-            
-            ret = DescriptorValue( retval, 
-                                   format = format, 
-                                   name = "dec",
-                                   keyword = keyword,
-                                   ad = self,
-                                   pytype = float )
-            return ret
-        
-        except Errors.DescriptorError:
-            if self.descriptor_calculator.throwExceptions == True:
-                raise
-            else:            
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -709,7 +694,7 @@ class CalculatorInterface:
         """
         Return the decker value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -761,34 +746,36 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
     
-    def detector_rois_requested(self, format=None, **args):
+    def dec(self, format=None, **args):
         """
-        Return the detector_rois_requested value
+        Return the dec value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
-        :rtype: list as default (i.e., format=None)
-        :return: the detector_rois_requested
+        :rtype: float as default (i.e., format=None)
+        :return: the declination (in decimal degrees) of the observation
         """
         try:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
-            key = "key_detector_rois_requested"
+            key = "key_dec"
             #print "mkCI22:",key, repr(keydict)
             #print "mkCI23:", key in keydict
             keyword = None
             if key in keydict.keys():
                 keyword = keydict[key]
                 
-            #print hasattr(self.descriptor_calculator, "detector_rois_requested")
-            if not hasattr(self.descriptor_calculator, "detector_rois_requested"):
+            #print hasattr(self.descriptor_calculator, "dec")
+            if not hasattr(self.descriptor_calculator, "dec"):
                 if keyword is not None:
                     retval = self.phu_get_key_value(keyword)
                     if retval is None:
@@ -796,151 +783,29 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for detector_rois_requested")
+                           "function or a default keyword for dec")
                     raise Errors.DescriptorError(msg)
             else:
                 try:
-                    retval = self.descriptor_calculator.detector_rois_requested(self, **args)
+                    retval = self.descriptor_calculator.dec(self, **args)
                 except Exception as e:
                     raise Errors.DescriptorError(e)
             
             
             ret = DescriptorValue( retval, 
                                    format = format, 
-                                   name = "detector_rois_requested",
+                                   name = "dec",
                                    keyword = keyword,
                                    ad = self,
-                                   pytype = list )
+                                   pytype = float )
             return ret
         
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
-                return None
-        except:
-            raise
-    
-    def detector_roi_setting(self, format=None, **args):
-        """
-        Return the detector_roi_setting value
-        
-        :param dataset: the data set
-        :type dataset: AstroData
-        :param format: the return format
-        :type format: string
-        :rtype: string as default (i.e., format=None)
-        :return: the detector_roi_setting
-        """
-        try:
-            self._lazyloadCalculator()
-            keydict = self.descriptor_calculator._specifickey_dict
-            key = "key_detector_roi_setting"
-            #print "mkCI22:",key, repr(keydict)
-            #print "mkCI23:", key in keydict
-            keyword = None
-            if key in keydict.keys():
-                keyword = keydict[key]
-                
-            #print hasattr(self.descriptor_calculator, "detector_roi_setting")
-            if not hasattr(self.descriptor_calculator, "detector_roi_setting"):
-                if keyword is not None:
-                    retval = self.phu_get_key_value(keyword)
-                    if retval is None:
-                        if hasattr(self, "exception_info"):
-                            raise Errors.DescriptorError(self.exception_info)
-                else:
-                    msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for detector_roi_setting")
-                    raise Errors.DescriptorError(msg)
             else:
-                try:
-                    retval = self.descriptor_calculator.detector_roi_setting(self, **args)
-                except Exception as e:
-                    raise Errors.DescriptorError(e)
-            
-            
-            ret = DescriptorValue( retval, 
-                                   format = format, 
-                                   name = "detector_roi_setting",
-                                   keyword = keyword,
-                                   ad = self,
-                                   pytype = str )
-            return ret
-        
-        except Errors.DescriptorError:
-            if self.descriptor_calculator.throwExceptions == True:
-                raise
-            else:            
-                return None
-        except:
-            raise
-    
-    def detector_section(self, format=None, **args):
-        """
-        Return the detector_section value
-        
-        :param dataset: the data set
-        :type dataset: AstroData
-        :param pretty: set to True to return a human meaningful 
-                       detector_section value in the form [x1:x2,y1:y2] that 
-                       uses 1-based indexing
-        :type pretty: Python boolean
-        :param format: set to as_dict to return a dictionary, where the number 
-                       of dictionary elements equals the number of pixel data 
-                       extensions in the image. The key of the dictionary is 
-                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
-                       the key is the integer index of the extension.
-        :type format: string
-        :rtype: tuple of integers that use 0-based indexing in the form 
-                (x1 - 1, x2 - 1, y1 - 1, y2 - 1) as default 
-                (i.e., format=None, pretty=False)
-        :rtype: string that uses 1-based indexing in the form [x1:x2,y1:y2] 
-                (pretty=True)
-        :rtype: dictionary containing one or more of the above return types 
-                (format=as_dict)
-        :return: the detector section of the observation
-        """
-        try:
-            self._lazyloadCalculator()
-            keydict = self.descriptor_calculator._specifickey_dict
-            key = "key_detector_section"
-            #print "mkCI22:",key, repr(keydict)
-            #print "mkCI23:", key in keydict
-            keyword = None
-            if key in keydict.keys():
-                keyword = keydict[key]
-                
-            #print hasattr(self.descriptor_calculator, "detector_section")
-            if not hasattr(self.descriptor_calculator, "detector_section"):
-                if keyword is not None:
-                    retval = self.phu_get_key_value(keyword)
-                    if retval is None:
-                        if hasattr(self, "exception_info"):
-                            raise Errors.DescriptorError(self.exception_info)
-                else:
-                    msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for detector_section")
-                    raise Errors.DescriptorError(msg)
-            else:
-                try:
-                    retval = self.descriptor_calculator.detector_section(self, **args)
-                except Exception as e:
-                    raise Errors.DescriptorError(e)
-            
-            
-            ret = DescriptorValue( retval, 
-                                   format = format, 
-                                   name = "detector_section",
-                                   keyword = keyword,
-                                   ad = self,
-                                   pytype = list )
-            return ret
-        
-        except Errors.DescriptorError:
-            if self.descriptor_calculator.throwExceptions == True:
-                raise
-            else:            
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -949,12 +814,18 @@ class CalculatorInterface:
         """
         Return the detector_name value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the detector_name
+        :rtype: dictionary containing one or more string(s) (format=as_dict)
+        :return: the name of each array used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -995,7 +866,201 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                return None
+        except:
+            raise
+    
+    def detector_roi_setting(self, format=None, **args):
+        """
+        Return the detector_roi_setting value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :return: the human-readable description of the detector Region Of
+                 Interest (ROI) setting (either 'Full Frame', 'CCD2', 'Central
+                 Spectrum', 'Central Stamp', 'Custom', 'Undefined' or 'Fixed'),
+                 which corresponds to the name of the ROI in the OT
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_detector_roi_setting"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            keyword = None
+            if key in keydict.keys():
+                keyword = keydict[key]
+                
+            #print hasattr(self.descriptor_calculator, "detector_roi_setting")
+            if not hasattr(self.descriptor_calculator, "detector_roi_setting"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for detector_roi_setting")
+                    raise Errors.DescriptorError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.detector_roi_setting(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "detector_roi_setting",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = str )
+            return ret
+        
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                return None
+        except:
+            raise
+    
+    def detector_rois_requested(self, format=None, **args):
+        """
+        Return the detector_rois_requested value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: list containing a list of integers (corresponding to unbinned
+                pixels) that uses 1-bases indexing in the form [x1, x2, y1, y2]
+                as default (i.e., format=None) 
+        :return: the requested detector Region Of Interest (ROI)s of the
+                 observation 
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_detector_rois_requested"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            keyword = None
+            if key in keydict.keys():
+                keyword = keydict[key]
+                
+            #print hasattr(self.descriptor_calculator, "detector_rois_requested")
+            if not hasattr(self.descriptor_calculator, "detector_rois_requested"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for detector_rois_requested")
+                    raise Errors.DescriptorError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.detector_rois_requested(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "detector_rois_requested",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = list )
+            return ret
+        
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                return None
+        except:
+            raise
+    
+    def detector_section(self, format=None, **args):
+        """
+        Return the detector_section value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param pretty: set to True to return a human meaningful 
+                       detector_section value in the form [x1:x2,y1:y2] that 
+                       uses 1-based indexing
+        :type pretty: Python boolean
+        :param format: set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type format: string
+        :rtype: list of integers that uses 0-based indexing in the form 
+                [x1 - 1, x2 - 1, y1 - 1, y2 - 1] as default 
+                (i.e., format=None, pretty=False)
+        :rtype: string that uses 1-based indexing in the form [x1:x2,y1:y2] 
+                (pretty=True)
+        :rtype: dictionary containing one or more of the above return types 
+                (format=as_dict)
+        :return: the unbinned section of the detector that was used to observe
+                 the data
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_detector_section"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            keyword = None
+            if key in keydict.keys():
+                keyword = keydict[key]
+                
+            #print hasattr(self.descriptor_calculator, "detector_section")
+            if not hasattr(self.descriptor_calculator, "detector_section"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for detector_section")
+                    raise Errors.DescriptorError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.detector_section(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "detector_section",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = list )
+            return ret
+        
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -1004,7 +1069,7 @@ class CalculatorInterface:
         """
         Return the detector_x_bin value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
                        set to as_dict to return a dictionary, where the number 
@@ -1057,7 +1122,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -1066,7 +1133,7 @@ class CalculatorInterface:
         """
         Return the detector_y_bin value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
                        set to as_dict to return a dictionary, where the number 
@@ -1119,7 +1186,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -1128,7 +1197,7 @@ class CalculatorInterface:
         """
         Return the disperser value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -1180,7 +1249,67 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                return None
+        except:
+            raise
+    
+    def dispersion_axis(self, format=None, **args):
+        """
+        Return the dispersion_axis value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: integer as default (i.e., format=None)
+        :return: the dispersion axis (along rows, x = 1; along columns, y = 2;
+                 along planes, z = 3) of the observation
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_dispersion_axis"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            keyword = None
+            if key in keydict.keys():
+                keyword = keydict[key]
+                
+            #print hasattr(self.descriptor_calculator, "dispersion_axis")
+            if not hasattr(self.descriptor_calculator, "dispersion_axis"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for dispersion_axis")
+                    raise Errors.DescriptorError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.dispersion_axis(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "dispersion_axis",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = int )
+            return ret
+        
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -1189,7 +1318,7 @@ class CalculatorInterface:
         """
         Return the dispersion value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param asMicrometers: set to True to return the dispersion 
                               value in units of Micrometers
@@ -1250,62 +1379,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
-                return None
-        except:
-            raise
-    
-    def dispersion_axis(self, format=None, **args):
-        """
-        Return the dispersion_axis value
-        
-        :param dataset: the data set
-        :type dataset: AstroData
-        :param format: the return format
-        :type format: string
-        :rtype: integer as default (i.e., format=None)
-        :return: the dispersion axis (x = 1; y = 2; z = 3) of the observation
-        """
-        try:
-            self._lazyloadCalculator()
-            keydict = self.descriptor_calculator._specifickey_dict
-            key = "key_dispersion_axis"
-            #print "mkCI22:",key, repr(keydict)
-            #print "mkCI23:", key in keydict
-            keyword = None
-            if key in keydict.keys():
-                keyword = keydict[key]
-                
-            #print hasattr(self.descriptor_calculator, "dispersion_axis")
-            if not hasattr(self.descriptor_calculator, "dispersion_axis"):
-                if keyword is not None:
-                    retval = self.phu_get_key_value(keyword)
-                    if retval is None:
-                        if hasattr(self, "exception_info"):
-                            raise Errors.DescriptorError(self.exception_info)
-                else:
-                    msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for dispersion_axis")
-                    raise Errors.DescriptorError(msg)
             else:
-                try:
-                    retval = self.descriptor_calculator.dispersion_axis(self, **args)
-                except Exception as e:
-                    raise Errors.DescriptorError(e)
-            
-            
-            ret = DescriptorValue( retval, 
-                                   format = format, 
-                                   name = "dispersion_axis",
-                                   keyword = keyword,
-                                   ad = self,
-                                   pytype = int )
-            return ret
-        
-        except Errors.DescriptorError:
-            if self.descriptor_calculator.throwExceptions == True:
-                raise
-            else:            
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -1314,7 +1390,7 @@ class CalculatorInterface:
         """
         Return the elevation value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -1360,7 +1436,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -1369,7 +1447,7 @@ class CalculatorInterface:
         """
         Return the exposure_time value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -1415,7 +1493,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -1424,9 +1504,14 @@ class CalculatorInterface:
         """
         Return the filter_name value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
         :type format: string
         :param stripID: set to True to remove the component ID from the 
                         returned filter_name value
@@ -1435,8 +1520,9 @@ class CalculatorInterface:
                        filter_name value
         :type pretty: Python boolean
         :rtype: string as default (i.e., format=None)
-        :return: the unique, sorted filter name idenifier string used for the 
-                 observation
+        :return: the unique filter name identifier string used for the 
+                 observation; when multiple filters are used, the filter names
+                 are concatenated with an ampersand
         """
         try:
             self._lazyloadCalculator()
@@ -1477,7 +1563,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -1486,7 +1574,7 @@ class CalculatorInterface:
         """
         Return the focal_plane_mask value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -1538,7 +1626,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -1547,7 +1637,7 @@ class CalculatorInterface:
         """
         Return the gain value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
                        set to as_dict to return a dictionary, where the number 
@@ -1599,7 +1689,66 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                return None
+        except:
+            raise
+    
+    def gain_setting(self, format=None, **args):
+        """
+        Return the gain_setting value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :return: the gain setting (either 'high' or 'low') of the observation
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_gain_setting"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            keyword = None
+            if key in keydict.keys():
+                keyword = keydict[key]
+                
+            #print hasattr(self.descriptor_calculator, "gain_setting")
+            if not hasattr(self.descriptor_calculator, "gain_setting"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for gain_setting")
+                    raise Errors.DescriptorError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.gain_setting(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "gain_setting",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = str )
+            return ret
+        
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -1608,7 +1757,7 @@ class CalculatorInterface:
         """
         Return the grating value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -1660,7 +1809,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -1669,12 +1820,13 @@ class CalculatorInterface:
         """
         Return the group_id value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the group_id
+        :return: the unique string that describes which stack a dataset belongs
+                 to; it is based on the observation_id
         """
         try:
             self._lazyloadCalculator()
@@ -1715,62 +1867,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
-                return None
-        except:
-            raise
-    
-    def gain_setting(self, format=None, **args):
-        """
-        Return the gain_setting value
-        
-        :param dataset: the data set
-        :type dataset: AstroData
-        :param format: the return format
-        :type format: string
-        :rtype: string as default (i.e., format=None)
-        :return: the gain setting of the observation
-        """
-        try:
-            self._lazyloadCalculator()
-            keydict = self.descriptor_calculator._specifickey_dict
-            key = "key_gain_setting"
-            #print "mkCI22:",key, repr(keydict)
-            #print "mkCI23:", key in keydict
-            keyword = None
-            if key in keydict.keys():
-                keyword = keydict[key]
-                
-            #print hasattr(self.descriptor_calculator, "gain_setting")
-            if not hasattr(self.descriptor_calculator, "gain_setting"):
-                if keyword is not None:
-                    retval = self.phu_get_key_value(keyword)
-                    if retval is None:
-                        if hasattr(self, "exception_info"):
-                            raise Errors.DescriptorError(self.exception_info)
-                else:
-                    msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for gain_setting")
-                    raise Errors.DescriptorError(msg)
             else:
-                try:
-                    retval = self.descriptor_calculator.gain_setting(self, **args)
-                except Exception as e:
-                    raise Errors.DescriptorError(e)
-            
-            
-            ret = DescriptorValue( retval, 
-                                   format = format, 
-                                   name = "gain_setting",
-                                   keyword = keyword,
-                                   ad = self,
-                                   pytype = str )
-            return ret
-        
-        except Errors.DescriptorError:
-            if self.descriptor_calculator.throwExceptions == True:
-                raise
-            else:            
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -1779,7 +1878,7 @@ class CalculatorInterface:
         """
         Return the local_time value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -1825,7 +1924,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -1834,7 +1935,7 @@ class CalculatorInterface:
         """
         Return the mdf_row_id value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
                        set to as_dict to return a dictionary, where the number 
@@ -1845,7 +1946,8 @@ class CalculatorInterface:
         :type format: string
         :rtype: integer as default (i.e., format=None)
         :rtype: dictionary containing one or more integer(s) (format=as_dict)
-        :return: the corresponding reference row in the MDF
+        :return: the corresponding reference row in the Mask Definition File
+                 (MDF)
         """
         try:
             self._lazyloadCalculator()
@@ -1886,7 +1988,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -1895,7 +1999,7 @@ class CalculatorInterface:
         """
         Return the nod_count value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -1942,7 +2046,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -1951,7 +2057,7 @@ class CalculatorInterface:
         """
         Return the nod_pixels value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -1998,7 +2104,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2007,12 +2115,14 @@ class CalculatorInterface:
         """
         Return the nominal_atmospheric_extinction value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
-        :rtype: float as default (i.e., format=None)
-        :return: the nominal_atmospheric_extinction
+        :rtype: float as default (i.e., format=None) 
+        :return: the nominal atmospheric extinction (defined as coeff *
+                 (airmass - 1.0), where coeff is the site and filter specific
+                 nominal atmospheric extinction coefficient) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -2053,7 +2163,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2062,12 +2174,12 @@ class CalculatorInterface:
         """
         Return the nominal_photometric_zeropoint value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: float as default (i.e., format=None)
-        :return: the nominal_photometric_zeropoint
+        :return: the nominal photometric zeropoint of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -2108,7 +2220,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2117,7 +2231,7 @@ class CalculatorInterface:
         """
         Return the non_linear_level value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -2164,7 +2278,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2173,7 +2289,7 @@ class CalculatorInterface:
         """
         Return the observation_class value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -2220,7 +2336,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2229,7 +2347,7 @@ class CalculatorInterface:
         """
         Return the observation_epoch value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -2275,7 +2393,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2284,12 +2404,13 @@ class CalculatorInterface:
         """
         Return the observation_id value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the ID (e.g., GN-2011A-Q-123-45) of the observation
+        :return: the ID (e.g., GN-2011A-Q-123-45) of the observation; it is
+                 used by group_id
         """
         try:
             self._lazyloadCalculator()
@@ -2330,7 +2451,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2339,7 +2462,7 @@ class CalculatorInterface:
         """
         Return the observation_type value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -2386,7 +2509,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2395,12 +2520,28 @@ class CalculatorInterface:
         """
         Return the overscan_section value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
+        :param pretty: set to True to return a human meaningful
+                       overscan_section value in the form [x1:x2,y1:y2] that
+                       uses 1-based indexing
+        :type pretty: Python boolean
         :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
         :type format: string
-        :rtype: list as default (i.e., format=None)
-        :return: the overscan_section
+        :rtype: list of integers that uses 0-based indexing in the form 
+                [x1 - 1, x2 - 1, y1 - 1, y2 - 1] as default 
+                (i.e., format=None, pretty=False)
+        :rtype: string that uses 1-based indexing in the form [x1:x2,y1:y2] 
+                (pretty=True)
+        :rtype: dictionary containing one or more of the above return types 
+                (format=as_dict)
+        :return: the section of the pixel data extensions that contains the
+                 overscan data
         """
         try:
             self._lazyloadCalculator()
@@ -2441,7 +2582,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2450,7 +2593,7 @@ class CalculatorInterface:
         """
         Return the pixel_scale value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -2496,7 +2639,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2505,7 +2650,7 @@ class CalculatorInterface:
         """
         Return the prism value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -2557,7 +2702,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2566,7 +2713,7 @@ class CalculatorInterface:
         """
         Return the program_id value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -2613,7 +2760,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2622,7 +2771,7 @@ class CalculatorInterface:
         """
         Return the pupil_mask value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -2668,7 +2817,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2677,7 +2828,7 @@ class CalculatorInterface:
         """
         Return the qa_state value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -2724,7 +2875,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2733,7 +2886,7 @@ class CalculatorInterface:
         """
         Return the ra value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -2779,7 +2932,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2788,13 +2943,13 @@ class CalculatorInterface:
         """
         Return the raw_bg value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :return: the raw background (either '20-percentile', '50-percentile', 
-                 '80-percentile' or 'Any') of the observation
+        :return: the raw background (as an integer percentile value) of the
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -2835,7 +2990,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2844,13 +3001,13 @@ class CalculatorInterface:
         """
         Return the raw_cc value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :return: the raw cloud cover (either '50-percentile', '70-percentile', 
-                 '80-percentile', '90-percentile' or 'Any') of the observation
+        :return: the raw cloud cover (as an integer percentile value) of the
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -2891,7 +3048,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2900,13 +3059,13 @@ class CalculatorInterface:
         """
         Return the raw_iq value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :return: the raw image quality (either '20-percentile', 
-                 '70-percentile', '85-percentile' or 'Any') of the observation
+        :return: the raw image quality (as an integer percentile value) of the
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -2947,7 +3106,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -2956,13 +3117,13 @@ class CalculatorInterface:
         """
         Return the raw_wv value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :return: the raw water vapour (either '20-percentile', 
-                 '50-percentile', '80-percentile' or 'Any') of the observation
+        :return: the raw water vapour (as an integer percentile value) of the
+                 observation
         """
         try:
             self._lazyloadCalculator()
@@ -3003,7 +3164,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -3012,7 +3175,7 @@ class CalculatorInterface:
         """
         Return the read_mode value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -3062,7 +3225,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -3071,7 +3236,7 @@ class CalculatorInterface:
         """
         Return the read_noise value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
                        set to as_dict to return a dictionary, where the number 
@@ -3123,7 +3288,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -3132,7 +3299,7 @@ class CalculatorInterface:
         """
         Return the read_speed_setting value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -3179,172 +3346,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
-                return None
-        except:
-            raise
-    
-    def requested_iq(self, format=None, **args):
-        """
-        Return the requested_iq value
-        
-        :param dataset: the data set
-        :type dataset: AstroData
-        :param format: the return format
-        :type format: string
-        :rtype: integer as default (i.e., format=None)
-        :return: the requested_iq
-        """
-        try:
-            self._lazyloadCalculator()
-            keydict = self.descriptor_calculator._specifickey_dict
-            key = "key_requested_iq"
-            #print "mkCI22:",key, repr(keydict)
-            #print "mkCI23:", key in keydict
-            keyword = None
-            if key in keydict.keys():
-                keyword = keydict[key]
-                
-            #print hasattr(self.descriptor_calculator, "requested_iq")
-            if not hasattr(self.descriptor_calculator, "requested_iq"):
-                if keyword is not None:
-                    retval = self.phu_get_key_value(keyword)
-                    if retval is None:
-                        if hasattr(self, "exception_info"):
-                            raise Errors.DescriptorError(self.exception_info)
-                else:
-                    msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for requested_iq")
-                    raise Errors.DescriptorError(msg)
             else:
-                try:
-                    retval = self.descriptor_calculator.requested_iq(self, **args)
-                except Exception as e:
-                    raise Errors.DescriptorError(e)
-            
-            
-            ret = DescriptorValue( retval, 
-                                   format = format, 
-                                   name = "requested_iq",
-                                   keyword = keyword,
-                                   ad = self,
-                                   pytype = int )
-            return ret
-        
-        except Errors.DescriptorError:
-            if self.descriptor_calculator.throwExceptions == True:
-                raise
-            else:            
-                return None
-        except:
-            raise
-    
-    def requested_cc(self, format=None, **args):
-        """
-        Return the requested_cc value
-        
-        :param dataset: the data set
-        :type dataset: AstroData
-        :param format: the return format
-        :type format: string
-        :rtype: integer as default (i.e., format=None)
-        :return: the requested_cc
-        """
-        try:
-            self._lazyloadCalculator()
-            keydict = self.descriptor_calculator._specifickey_dict
-            key = "key_requested_cc"
-            #print "mkCI22:",key, repr(keydict)
-            #print "mkCI23:", key in keydict
-            keyword = None
-            if key in keydict.keys():
-                keyword = keydict[key]
-                
-            #print hasattr(self.descriptor_calculator, "requested_cc")
-            if not hasattr(self.descriptor_calculator, "requested_cc"):
-                if keyword is not None:
-                    retval = self.phu_get_key_value(keyword)
-                    if retval is None:
-                        if hasattr(self, "exception_info"):
-                            raise Errors.DescriptorError(self.exception_info)
-                else:
-                    msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for requested_cc")
-                    raise Errors.DescriptorError(msg)
-            else:
-                try:
-                    retval = self.descriptor_calculator.requested_cc(self, **args)
-                except Exception as e:
-                    raise Errors.DescriptorError(e)
-            
-            
-            ret = DescriptorValue( retval, 
-                                   format = format, 
-                                   name = "requested_cc",
-                                   keyword = keyword,
-                                   ad = self,
-                                   pytype = int )
-            return ret
-        
-        except Errors.DescriptorError:
-            if self.descriptor_calculator.throwExceptions == True:
-                raise
-            else:            
-                return None
-        except:
-            raise
-    
-    def requested_wv(self, format=None, **args):
-        """
-        Return the requested_wv value
-        
-        :param dataset: the data set
-        :type dataset: AstroData
-        :param format: the return format
-        :type format: string
-        :rtype: integer as default (i.e., format=None)
-        :return: the requested_wv
-        """
-        try:
-            self._lazyloadCalculator()
-            keydict = self.descriptor_calculator._specifickey_dict
-            key = "key_requested_wv"
-            #print "mkCI22:",key, repr(keydict)
-            #print "mkCI23:", key in keydict
-            keyword = None
-            if key in keydict.keys():
-                keyword = keydict[key]
-                
-            #print hasattr(self.descriptor_calculator, "requested_wv")
-            if not hasattr(self.descriptor_calculator, "requested_wv"):
-                if keyword is not None:
-                    retval = self.phu_get_key_value(keyword)
-                    if retval is None:
-                        if hasattr(self, "exception_info"):
-                            raise Errors.DescriptorError(self.exception_info)
-                else:
-                    msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for requested_wv")
-                    raise Errors.DescriptorError(msg)
-            else:
-                try:
-                    retval = self.descriptor_calculator.requested_wv(self, **args)
-                except Exception as e:
-                    raise Errors.DescriptorError(e)
-            
-            
-            ret = DescriptorValue( retval, 
-                                   format = format, 
-                                   name = "requested_wv",
-                                   keyword = keyword,
-                                   ad = self,
-                                   pytype = int )
-            return ret
-        
-        except Errors.DescriptorError:
-            if self.descriptor_calculator.throwExceptions == True:
-                raise
-            else:            
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -3353,12 +3357,13 @@ class CalculatorInterface:
         """
         Return the requested_bg value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :return: the requested_bg
+        :return: the requested background (as an integer percentile value) of 
+                 the observation
         """
         try:
             self._lazyloadCalculator()
@@ -3399,7 +3404,183 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                return None
+        except:
+            raise
+    
+    def requested_cc(self, format=None, **args):
+        """
+        Return the requested_cc value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: integer as default (i.e., format=None)
+        :return: the requested cloud cover (as an integer percentile value) of
+                 the observation
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_requested_cc"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            keyword = None
+            if key in keydict.keys():
+                keyword = keydict[key]
+                
+            #print hasattr(self.descriptor_calculator, "requested_cc")
+            if not hasattr(self.descriptor_calculator, "requested_cc"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for requested_cc")
+                    raise Errors.DescriptorError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.requested_cc(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "requested_cc",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = int )
+            return ret
+        
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                return None
+        except:
+            raise
+    
+    def requested_iq(self, format=None, **args):
+        """
+        Return the requested_iq value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: integer as default (i.e., format=None)
+        :return: the requested image quality (as an integer percentile value)
+                 of the observation
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_requested_iq"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            keyword = None
+            if key in keydict.keys():
+                keyword = keydict[key]
+                
+            #print hasattr(self.descriptor_calculator, "requested_iq")
+            if not hasattr(self.descriptor_calculator, "requested_iq"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for requested_iq")
+                    raise Errors.DescriptorError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.requested_iq(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "requested_iq",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = int )
+            return ret
+        
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                return None
+        except:
+            raise
+    
+    def requested_wv(self, format=None, **args):
+        """
+        Return the requested_wv value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: integer as default (i.e., format=None)
+        :return: the requested water vapour (as an integer percentile value) of
+                 the observation
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_requested_wv"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            keyword = None
+            if key in keydict.keys():
+                keyword = keydict[key]
+                
+            #print hasattr(self.descriptor_calculator, "requested_wv")
+            if not hasattr(self.descriptor_calculator, "requested_wv"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for requested_wv")
+                    raise Errors.DescriptorError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.requested_wv(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "requested_wv",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = int )
+            return ret
+        
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -3408,13 +3589,12 @@ class CalculatorInterface:
         """
         Return the saturation_level value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: integer as default (i.e., format=None)
-        :return: the saturation level in the raw images (in ADU) of the 
-                 observation
+        :return: the saturation level (in ADU) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -3455,7 +3635,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -3464,7 +3646,7 @@ class CalculatorInterface:
         """
         Return the slit value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -3475,7 +3657,7 @@ class CalculatorInterface:
                        slit value
         :type pretty: Python boolean
         :rtype: string as default (i.e., format=None)
-        :return: the slit used for the observation
+        :return: the name of the slit used for the observation
         """
         try:
             self._lazyloadCalculator()
@@ -3516,7 +3698,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -3533,7 +3717,7 @@ class CalculatorInterface:
         trying to parse their values, are those known to occur in Gemini data.
         Note that some of the early gemini data, and that taken from lower
         level engineering interfaces, lack standard headers. Also the format
-        and occurence of various headers has changed over time, even on the
+        and occurrence of various headers has changed over time, even on the
         same instrument. If strict is set to True, the date or time are
         determined from valid FITS keywords. If it cannot be determined, None
         is returned. If dateonly or timeonly are set to True, then a
@@ -3545,7 +3729,7 @@ class CalculatorInterface:
         valid date. The dateonly and timeonly flags are intended for use by
         the ut_date and ut_time descriptors.
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -3599,7 +3783,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -3608,7 +3794,7 @@ class CalculatorInterface:
         """
         Return the ut_time value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -3654,7 +3840,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -3663,13 +3851,13 @@ class CalculatorInterface:
         """
         Return the wavefront_sensor value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
         :return: the wavefront sensor (either 'AOWFS', 'OIWFS', 'PWFS1', 
-                 'PWFS2', some combination in alphebetic order separated with 
+                 'PWFS2', some combination in alphabetic order separated with 
                  an ampersand or None) used for the observation
         """
         try:
@@ -3711,7 +3899,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -3720,12 +3910,12 @@ class CalculatorInterface:
         """
         Return the wavelength_band value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the wavelength_band
+        :return: the wavelength band name (e.g., J, V, R, N) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -3766,7 +3956,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -3775,7 +3967,7 @@ class CalculatorInterface:
         """
         Return the wavelength_reference_pixel value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
                        set to as_dict to return a dictionary, where the number 
@@ -3786,7 +3978,7 @@ class CalculatorInterface:
         :type format: string
         :rtype: float as default (i.e., format=None)
         :rtype: dictionary containing one or more float(s) (format=as_dict)
-        :return: the reference pixel of the central wavelength of the 
+        :return: the 1-based reference pixel of the central wavelength of the 
                  observation
         """
         try:
@@ -3828,7 +4020,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -3837,7 +4031,7 @@ class CalculatorInterface:
         """
         Return the well_depth_setting value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
@@ -3884,7 +4078,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -3893,12 +4089,12 @@ class CalculatorInterface:
         """
         Return the x_offset value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: float as default (i.e., format=None)
-        :return: the x offset of the observation
+        :return: the telescope offset in x (in arcsec) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -3939,7 +4135,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
@@ -3948,12 +4146,12 @@ class CalculatorInterface:
         """
         Return the y_offset value
         
-        :param dataset: the data set
+        :param dataset: the dataset
         :type dataset: AstroData
         :param format: the return format
         :type format: string
         :rtype: float as default (i.e., format=None)
-        :return: the y offset of the observation
+        :return: the telescope offset in y (in arcsec) of the observation
         """
         try:
             self._lazyloadCalculator()
@@ -3994,7 +4192,9 @@ class CalculatorInterface:
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
-            else:            
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
                 return None
         except:
             raise
