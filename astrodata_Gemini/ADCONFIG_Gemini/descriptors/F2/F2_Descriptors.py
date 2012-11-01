@@ -70,23 +70,11 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         old_ut_date = datetime(2010, 3, 1, 0, 0)
         
         if obs_ut_date > old_ut_date:
-            
             # Determine the two filter name keywords from the global keyword
             # dictionary
             keyword1 = self.get_descriptor_key("key_filter1")
             keyword2 = self.get_descriptor_key("key_filter2")
             
-            # Get the value of the two filter name keywords from the header of
-            # the PHU
-            filter1 = dataset.phu_get_key_value(keyword1)
-            filter2 = dataset.phu_get_key_value(keyword2)
-            
-            if filter1 is None or filter2 is None:
-                # The phu_get_key_value() function returns None if a value
-                # cannot be found and stores the exception info. Re-raise the
-                # exception. It will be dealt with by the CalculatorInterface.
-                if hasattr(dataset, "exception_info"):
-                    raise dataset.exception_info
         else:
             # Make sure the filter_name descriptor is backwards compatible with
             # old engineering data
@@ -96,17 +84,17 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             keyword1 = self.get_descriptor_key("key_old_filter1")
             keyword2 = self.get_descriptor_key("key_old_filter2")
             
-            # Get the value of the two filter name keywords from the header of
-            # the PHU
-            filter1 = dataset.phu_get_key_value(keyword1)
-            filter2 = dataset.phu_get_key_value(keyword2)
+        # Get the value of the two filter name keywords from the header of the
+        # PHU 
+        filter1 = dataset.phu_get_key_value(keyword1)
+        filter2 = dataset.phu_get_key_value(keyword2)
             
-            if filter1 is None or filter2 is None:
-                # The phu_get_key_value() function returns None if a value
-                # cannot be found and stores the exception info. Re-raise the
-                # exception. It will be dealt with by the CalculatorInterface.
-                if hasattr(dataset, "exception_info"):
-                    raise dataset.exception_info
+        if filter1 is None or filter2 is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
         
         if stripID or pretty:
             # Strip the component ID from the two filter name values
