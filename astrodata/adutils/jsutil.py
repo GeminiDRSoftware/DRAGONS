@@ -1,3 +1,5 @@
+import os
+
 class JSDiv:
     def __init__(self):
         pass
@@ -21,17 +23,28 @@ class JSAce(JSDiv):
     code = None
     lnum = 0
     local_client = False
-    def __init__(self, code= None, lnum = 0, local_client = False):
+    filename = None
+    basename = None
+    dirname = None
+    def __init__(self, code = None, 
+                        lnum = 0, 
+                        local_client = False, 
+                        filename=None, 
+                        target=None):
         JSDiv.__init__(self)
         self.code = code
         self.lnum = lnum
         self.local_client = local_client
+        self.filename = filename
+        self.target = target
+        self.basename = os.path.basename(filename)
+        self.dirname  = os.path.dirname(filename)
     def div(self,code = None):
         code = self.code
         if self.local_client:
-            local_client_frag = '<input type="submit" value="SAVE"/>'
+            local_client_frag = '<input style="float:right" type="submit" value="SAVE"/>'
         else:
-            local_client_frag = "To be able to save you must be on localhost."
+            local_client_frag = "<span style='color:dk_blue'>To be able to save you must be on localhost.<br/></span>"
         if code == None:
             code = """class Foo:
     prop = None
@@ -51,8 +64,11 @@ class JSAce(JSDiv):
         left: 0;
     }
 </style>
-<div style="position:absolute; top:0; bottom:30; left:0;right:0">
+<div style="font-size:12px;position:absolute; top:0; bottom:30; left:0;right:0">
 %(localClientFrag)s
+Target: %(target)s from file: %(basename)s <br/>
+in %(dirname)s<br/>
+
 </div>
 <div id="editor" style="width:600px">%(code)s</div>
     
@@ -73,7 +89,12 @@ class JSAce(JSDiv):
         """  % {"code":code, 
                 "lnum":self.lnum, 
                 "localClientFrag": local_client_frag,              
-                "localClient":self.local_client}
+                "localClient":self.local_client,
+                "filename":self.filename,
+                "dirname":self.dirname,
+                "basename":self.basename,
+                "target":self.target
+                }
 class JSAccord(JSDiv):
     def div(self):
         return """
@@ -267,6 +288,87 @@ class JSDescriptors(JSDiv):
     def div(self):
          return """<div class="lp_descriptors" style="float:left;width:38%">
                    <script type="text/javascript">
+                   function showCalculator(astrotype)
+                   {
+                        var loaded = false;
+                        var focus = $($(".pdk_focus")[0]);
+                        focus.slideUp(500,function () {
+                            if (!loaded){
+                                focus.empty();
+                                focus.html("Loading Calculator Information: "  + astrotype);                            
+                                function pulse ()
+                                {
+                                    if (!loaded)
+                                    {
+                                        console.log("pulse");
+                                        focus.fadeOut(500).fadeIn(500);
+                                        setTimeout(pulse,1000);
+                                    }                                
+                                }
+                                focus.fadeIn(1000)
+                                setTimeout( pulse, 1000);
+                                    
+                                }                            
+                            });
+                        $.ajax({url: "/calculator_by_type/"+astrotype,
+                                data:{  "astrotype":astrotype},
+                                type:"get",
+                                dataType:"json",
+                                success: function(data) {
+                                    loaded = true;
+                                    focus.empty();
+                                    focus.slideUp(500, function () {
+                                        
+                                        
+                                        var jqf = 'empty_pdk_focus()';
+                                        var html =  "<span>Calculator For Type: <b><i>"
+                                                    + data.astrotype 
+                                                    + "</i></b> "
+                                                    + "<a style = 'font-size:70%%' href='javascript:void(0)' onclick='" 
+                                                    + jqf
+                                                    + "'>(clear)</a>"
+                                                    
+                                                    + "</span>";
+                                        var descriptors = data.descriptorDict;
+                                        
+                                        focus.append($(html));
+                                        if (descriptors.length == 0)
+                                        {
+                                        focus.append("NO Descriptors DEFINED");
+                                        focus.slideDown();
+                                        }
+                                        else
+                                        {
+                                            //console.log("215:"+JSON.stringify(data.prim_info));
+                                            for ( key in descriptors)
+                                            {
+                                                
+                                                var lnum  = descriptors[key]["lnum"];
+                                                var tpath = descriptors[key]["path"];
+                                                var name = key
+                                                         
+                                                primml = "<div style='margin-left:5em'>"
+                                                         + " (<a style='font-size:75%' href='javascript:void(0)' "
+                                                         + " onclick='aceditFile("
+                                                         + '"' + tpath + '", '
+                                                         + '"' + lnum + '")'
+                                                         + "'>"
+                                                         + "visit"
+                                                         + "</a>) "
+                                                         + "<span title='"+tpath+"'>"
+                                                         + key
+                                                         + "</span>"
+                                                         + "</div>";
+                                                focus.append($(primml));
+                                            } 
+                                            focus.slideDown(); 
+                                            $("html, body").animate({ scrollTop: 0 }, 1000);               
+                                        }                                    
+                                    }); // slideup func
+                                 }  // ajax dict                             
+                                }); //top slideup                    
+                   }
+                   
                    function populateDescriptorsDiv(desmap)
                    {
                         //alert(JSON.stringify(desmap));
@@ -285,6 +387,12 @@ class JSDescriptors(JSDiv):
                                         +"<td><span title='"
                                         + desc.path
                                         + "'>" 
+                                        + "("
+                                        + '<a style="font-size:75%" href="javascript:void(0)" onclick="showCalculator('
+                                        + "'" + desc.type + "')" + '">'
+                                        + "detail"
+                                        + "</a>"
+                                        + ") "
                                         + desc.descriptor_class
                                         + "</span></td></tr>";
                             //console.log("47:"+line);
@@ -306,64 +414,117 @@ class JSRecipeSystem(JSDiv):
     def div(self):
          return """<div class="lp_recipesystem" style="float:left;width:38%">
                    <script type="text/javascript">
-                   function showPrimset(module, astrotype)
+                   function showPrimset(primclass, astrotype)
                    {
                         var loaded = false;
                         focus = $($(".pdk_focus")[0])
-                        focus.slideUp(function () {
+                        focus.slideUp(500,function () {
                             if (!loaded){
                                 focus.empty();
-                                focus.html("Loading Primset Information: "  + module);                            
-                                focus.slideDown();
+                                focus.html("Loading Primset Information: "  + primclass);                            
+                                function pulse ()
+                                {
+                                    if (!loaded)
+                                    {
+                                        console.log("pulse");
+                                        focus.fadeOut(500).fadeIn(500);
+                                        setTimeout(pulse,1000);
+                                    }                                
+                                }
+                                focus.fadeIn(1000)
+                                setTimeout( pulse, 1000);
+                                    
                                 }                            
                             });
                         $.ajax({url: "/primset_by_type/"+astrotype,
-                                data:{ module: module,
+                                data:{ primclass: primclass,
                                         "astrotype":astrotype},
                                 type:"get",
                                 dataType:"json",
                                 success: function(data) {
                                     loaded = true;
                                     focus.empty();
-                                    focus.hide();
-                                    var html =  "Primitive Set Class <b><i>"
-                                                + data.class
-                                                + "</i></b><br/><u>from <tt>"
-                                                + data.path
-                                                + "</tt><br/>"
-                                                + "</u>";
-                                    var prims = data.prims;
-                                    var pinfo = data.prim_info;
-                                    focus.append($(html));
-                                    if (prims.length == 0)
-                                    {
-                                    focus.append("NO PRIMITIVES DEFINED");
-                                    focus.slideDown();
-                                    }
-                                    else
-                                    {
-                                        //console.log("215:"+JSON.stringify(data.prim_info));
-                                        for (var i =0; i < prims.length; i++)
+                                    focus.slideUp(500, function () {
+                                        
+                                        var otherfrag = "";
+                                        if (data.other_primsets.length)
                                         {
-                                            var lnum = data.prim_info[prims[i]]["lnum"];
-                                            //console.log("219:"+lnum);
-                                            primml = "<div style='margin-left:5em'>"
-                                                     + " (<a style='font-size:75%' href='javascript:void(0)' "
-                                                     + " onclick='aceditFile("
-                                                     + '"' + data.path + '", '
-                                                     + '"' + lnum + '")'
-                                                     + "'>"
-                                                     + "visit"
-                                                     + "</a>) "
-                                                     + prims[i]
-                                                     + "</div>";
-                                            focus.append($(primml));
-                                        } 
-                                        focus.slideDown(); 
-                                        $("html, body").animate({ scrollTop: 0 }, 1000);               
-                                    }                                    
-                                  }                              
-                                });                     
+                                            for (var i = 0; i<data.other_primsets.length; i++)
+                                            {
+                                                otherfrag += data.other_primsets[i].link_frag;
+                                                otherfrag += " ";
+                                            }
+                                            otherfrag = "("+otherfrag+")";
+                                        }
+                                        
+                                        var jqf = 'empty_pdk_focus()';
+                                        var html =  "<span>Primitive Set Class: <b><i>"
+                                                    + data.class 
+                                                    + "</i></b> "
+                                                    + "<a style = 'font-size:70%%' href='javascript:void(0)' onclick='" 
+                                                    + jqf
+                                                    + "'>(clear)</a>"
+                                                    
+                                                    + "<span style='font-size:75%'> "
+                                                    + otherfrag
+                                                    + "</span>"
+    
+                                                    + "<br/><u>from <tt>"
+                                                    + data.path
+                                                    + "</tt><br/>"
+                                                    + "</u></span>";
+                                        var prims = data.prims;
+                                        var pinfo = data.prim_info;
+                                        
+                                        
+                                        focus.append($(html));
+                                        if (prims.length == 0)
+                                        {
+                                        focus.append("NO PRIMITIVES DEFINED");
+                                        focus.slideDown();
+                                        }
+                                        else
+                                        {
+                                            //console.log("215:"+JSON.stringify(data.prim_info));
+                                            var basepath = data["path"];
+                                            for (var i =0; i < prims.length; i++)
+                                            {
+                                                var lnum  = data.prim_info[prims[i]]["lnum"];
+                                                var tpath = data.prim_info[prims[i]]["path"];
+                                                // console.log("382:"+tpath+"<->"+basepath);
+                                                if (basepath == tpath)
+                                                {
+                                                    fromstr = "";
+                                                }
+                                                else
+                                                {
+                                                    fromstr = "<tt style='font-size:70%;color:gray' "
+                                                                + "title='"
+                                                                + data.prim_info[prims[i]]["basename"]
+                                                                + "'> inherited "
+                                                                +"</tt>";
+                                                }                      
+                                                primml = "<div style='margin-left:5em'>"
+                                                         + " (<a style='font-size:75%' href='javascript:void(0)' "
+                                                         + " onclick='aceditFile("
+                                                         + '"' + tpath + '", '
+                                                         + '"' + lnum + '")'
+                                                         + "'>"
+                                                         + "visit"
+                                                         + "</a>) "
+                                                         + "<span title='"+tpath+"'>"
+                                                         + prims[i]
+                                                         + "</span>"
+                                                         + fromstr
+                                                         + "</div>";
+                                                focus.append($(primml));
+                                            } 
+                                            focus.slideDown(); 
+                                            $("html, body").animate({ scrollTop: 0 }, 1000);               
+                                        }                                    
+                                    }); // slideup func
+                                 }  // ajax dict                             
+                                }); //top slideup                    
                    }
                    function populateRecipeSystemDiv(fullmap)
                    {
@@ -418,7 +579,7 @@ class JSRecipeSystem(JSDiv):
                                         + "'>" 
                                         + "(<a style='font-size:75%' href='javascript:void(0)'"
                         	            + " onclick='showPrimset("
-                        	            + '"' + ps.module + '","'
+                        	            + '"' + ps.class + '","'
                         	            + ps.astrotype + '")' + "'>"
                         	            + "detail</a>) "
                         	            
