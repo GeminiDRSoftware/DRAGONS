@@ -1,5 +1,4 @@
 [
-    DD("observatory"),
-    DD("telescope")
+    DD("observatory", pytype=str),
+    DD("telescope", pytype=str),
 ]
-    
