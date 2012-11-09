@@ -1457,16 +1457,17 @@ def make_dict(key_list=None, value_list=None):
 
 def mark_history(adinput=None, keyword=None, comment=None):
     """
-    Add or update a keyword with the UT time stamp (in the form
-    <YYYY>-<MM>-<DD>T<HH>:<MM>:<SS>) as the value to the header of the PHU of
-    the AstroData object to indicate when and what function was just performed
-    on the AstroData object
+    Add or update a keyword with the UT time stamp as the value (in the form
+    <YYYY>-<MM>-<DD>T<HH>:<MM>:<SS>) to the header of the PHU of the AstroData
+    object to indicate when and what function was just performed on the
+    AstroData object 
     
     :param adinput: The input AstroData object
     :type adinput: AstroData or list of AstroData
     :param keyword: The keyword to add or update in the PHU in upper case. The
-                    keyword should be less than 8 characters. If keyword is
-                    None, only the 'GEM-TLM' keyword is added or updated.
+                    keyword should be less than or equal to 8 characters. If
+                    keyword is None, only the 'GEM-TLM' keyword is added or
+                    updated. 
     :type keyword: string
     :param comment: Comment for the time stamp keyword. If comment is None, the
                     primitive the keyword is associated with will be determined
@@ -1475,10 +1476,6 @@ def mark_history(adinput=None, keyword=None, comment=None):
                     if the timestamp_keywords.py module cannot be found, the
                     comment 'UT time stamp for <keyword>' will instead be used.
     :type comment: string
-    :param name: Name to be added to the default comment. If comment is None
-                 (such that the default comment is used) and name is defined,
-                 <keyword> can be replaced by <name> in the default comment.
-    :type name: string
     """
     # Instantiate the log
     log = logutils.get_logger(__name__)
@@ -1486,7 +1483,7 @@ def mark_history(adinput=None, keyword=None, comment=None):
     # If adinput is a single AstroData object, put it in a list
     if not isinstance(adinput, list):
         adinput = [adinput]
-
+    
     # Get the current time to use for the time of last modification
     tlm = datetime.now().isoformat()[0:-7]
     
@@ -1497,35 +1494,34 @@ def mark_history(adinput=None, keyword=None, comment=None):
                 "Gemini/timestamp_keywords", "timestamp_keys")
         except:
             timestamp_keys = None
-
+        
         comment_suffix = keyword
         if timestamp_keys is not None:
             for primitive_name, key in timestamp_keys.iteritems():
                 if key == keyword:
                     comment_suffix = primitive_name
-    
+        
         final_comment = "UT time stamp for %s" % comment_suffix
     else:
         final_comment = comment
-
-    # The GEM-TLM keyword will always be added / updated
+    
+    # The GEM-TLM keyword will always be added or updated
     keyword_dict = {"GEM-TLM":"UT last modification with GEMINI"}
     
     if keyword is not None:
-        # Add / update the input keyword in addition to the GEM-TLM keyword
+        # Add or update the input keyword in addition to the GEM-TLM keyword
         keyword_dict.update({keyword:final_comment})
-
+    
     # Loop over each input AstroData object in the input list
     for ad in adinput:
         for key, comm in keyword_dict.iteritems():
             ad.phu_set_key_value(key, tlm, comm)
-
+        
         if keyword is not None:
-            log.fullinfo("PHU keyword %s = %s added to %s" \
-                         % (keyword, ad.phu_get_key_value(keyword),
-                            ad.filename))
-        log.fullinfo("PHU keyword GEM-TLM = %s added to %s" \
-                     % (ad.phu_get_key_value("GEM-TLM"), ad.filename))
+            log.fullinfo("PHU keyword %s = %s added to %s" % (
+              keyword, ad.phu_get_key_value(keyword), ad.filename))
+        log.fullinfo("PHU keyword GEM-TLM = %s added to %s" % (
+          ad.phu_get_key_value("GEM-TLM"), ad.filename))
 
 def obsmode_add(ad):
     """Add 'OBSMODE' keyword to input phu for IRAF routines in GMOS package
