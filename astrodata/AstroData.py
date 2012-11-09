@@ -1245,8 +1245,8 @@ help      False     show help information    """
         
         :type source: string | AstroData | pyfits.HDUList
         
-        :param mode: IO access mode, same as the pyfits open mode, "readonly,
-                     "update", or "append".  The mode is passed to pyfits so
+        :param mode: IO access mode, same as the pyfits open mode, 'readonly,
+                     'update', or 'append'.  The mode is passed to pyfits so
                      if it is an illegal mode name, pyfits will be the
                      subsystem reporting the error. 
         
@@ -1255,7 +1255,7 @@ help      False     show help information    """
         This function wraps a source dataset, which can be in memory as another
         AstroData or pyfits HDUList, or on disk, given as the string filename.
         
-        Please note that generally one does not use "open" directly, but passes
+        Please note that generally one does not use 'open' directly, but passes
         the filename to the AstroData constructor. The constructor uses
         open(..) however.  Most users should use the constructor, which may 
         perform extra operations.
@@ -1390,10 +1390,10 @@ help      False     show help information    """
     
     def rename_ext(self, name, ver=None, force=True):
         """
-        :param name: New "EXTNAME" for the given extension.
+        :param name: New 'EXTNAME' for the given extension.
         :type name: string
         
-        :param ver: New "EXTVER" for the given extension
+        :param ver: New 'EXTVER' for the given extension
         :type ver: int
 
         Note: This member only works on single extension AstroData instances.
@@ -1405,7 +1405,7 @@ help      False     show help information    """
         HDU class members which are not updated. 
         
         :warning:   This function maniplates private (or somewhat private)  HDU
-                    members, specifically "name" and "_extver". STSCI has been
+                    members, specifically 'name' and '_extver'. STSCI has been
                     informed of the issue and
                     has made a special HDU function for performing the renaming. 
                     When generally available, this new function will be used instead of
@@ -1506,7 +1506,7 @@ help      False     show help information    """
                     file.
         :type clobber: bool
         :param rename: This flag allows you to write the AstroData instance to
-            a new filename, but leave the "current" name in tact in memory.
+            a new filename, but leave the 'current' name in tact in memory.
         :type rename: bool
 
         The write function acts similarly to the pyfits HDUList.writeto(..)
@@ -1563,7 +1563,7 @@ help      False     show help information    """
     def get_hdulist(self):
         """
         This function retrieves the HDUList. NOTE: The HDUList should also be
-        "released" by calling L{release_hdulist}, as access is reference
+        'released' by calling L{release_hdulist}, as access is reference
         counted. This function is also aliased to L{get_hdulist(..)<get_hdulist>}.
         
         :return: The AstroData's HDUList as returned by pyfits.open()
@@ -1633,17 +1633,17 @@ help      False     show help information    """
         :rtype: list of strings
 
         The get_types(..) function returns a list of type names, where type 
-        names are as always, strings. It is possible to "prune" the list so
+        names are as always, strings. It is possible to 'prune' the list so
         that only leaf nodes are returned, which is useful when leaf
         nodes take precedence such
         as descriptors.
         
         Note: types are divided into two categories, one intended for types
         which represent processing status (i.e. RAW vs PREPARED), and another
-        which contains a more traditional "typology" consisting of a 
+        which contains a more traditional 'typology' consisting of a 
         heirarchical tree of dataset types. This latter tree maps roughly to
         instrument-modes, with instrument types branching from the general
-        observatory type, (e.g. "GEMINI"). 
+        observatory type, (e.g. 'GEMINI'). 
         
         To retrieve only status types, use get_status(..); to retreive just
         typological types use get_typology(..).  Note that the system does not
@@ -1674,8 +1674,8 @@ help      False     show help information    """
         """
         :param all: a flag which  controls how the classes are returned... if
             True, then the function will return a dictionary of three lists,
-            "all", "status", and "typology".  If False, the return value is a
-            list which is in fact the "all" list, containing all the status and
+            'all', 'status', and 'typology'.  If False, the return value is a
+            list which is in fact the 'all' list, containing all the status and
             typology related types together.
         :return: a list of DataClassification objects, or a dictionary of lists
             if the C{all} flag is set.
@@ -1706,14 +1706,14 @@ help      False     show help information    """
         """
         This function returns the set of type names (strings) which apply to
         this dataset and which come from the status section of the AstroData
-        Type library. "Status" classifications are those which tend to change
+        Type library. 'Status' classifications are those which tend to change
         during the reduction of a dataset based on the amount of processing,
-        e.g. RAW vs PREPARED.  Strictly, a "status" type 
+        e.g. RAW vs PREPARED.  Strictly, a 'status' type 
         is any type defined in or below the status part of the 
         ``classification`` directory within the 
         configuration. I.e. in the Gemini type configuration any type 
         definition files in or below the 
-        "astrodata_Gemini/ADCONFIG/classification/status" directory.
+        'astrodata_Gemini/ADCONFIG/classification/status' directory.
 
         :returns: a list of string classification names
         :rtype: list of strings
@@ -1739,7 +1739,7 @@ help      False     show help information    """
         """
         This function returns the set of type names (strings) which apply to
         this dataset and which come from the typology section of the AstroData
-        Type library. "Typology" classifications are those which tend to remain
+        Type library. 'Typology' classifications are those which tend to remain
         with the data in spite of reduction status, e.g. those related to the
         instrument-mode of the dataset or of the datasets used to produce
         it. Strictly these consist of any type defined in or below
@@ -1845,60 +1845,74 @@ help      False     show help information    """
         ad_obsolete("phuValue is obsolete, use phu_get_key_value")
         return self.phu_get_key_value(key)
     
-    def phu_set_key_value(self, key, value, comment = None):
+    def phu_set_key_value(self, keyword=None, value=None, comment=None):
         """
-        :param key: name of PHU header value to set
-        :type key: string
-        :param value: value to apply to PHU header
-        :type value: string (or can be converted to string)
-        :param comment: value to be put in the comment part of the header key
-        :type comment: string
+        Add or update a keyword in the PHU of the AstroData object with a
+        specific value and, optionally, a comment
         
-        The phu_set_key_value(..) function is used to set the value  (and
-        optionally the comment) associated with a given key in the primary
-        header unit of the dataset. The value argument will be converted to
-        string, so it must have a string operator member function or be passed
-        in as string. 
+        :param keyword: Name of the keyword to add or update in the PHU
+        :type keyword: string
+        :param value: Value of the keyword to add or update in the PHU
+        :type value: int, float or string
+        :param comment: Comment of the keyword to add or update in the PHU
+        :type comment: string
         """
-
-        # Get original value
-        original_value = self.phu_get_key_value(key)
-
-        # Define history_comment
-        if original_value is not None:
-            history_comment = "The keyword %s=%s was overwritten in "\
-                              "the PHU with new value %s" % \
-                              (key,str(original_value),value)
+        # Validate input parameters
+        if keyword is None:
+            raise Errors.AstroDataError("No keyword provided")
+        if value is None:
+            raise Errors.AstroDataError("No keyword value provided")
+        
+        # Check to see whether the keyword is already in the PHU
+        original_value = self.phu_get_key_value(keyword)
+        
+        if original_value is None:
+            # The keyword does not exist in PHU
+            history_comment = ("New keyword %s=%s was written to the PHU" %
+                               (keyword, value))
+            comment_prefix = "(NEW)"
         else:
-            history_comment = "New keyword %s=%s was written to "\
-                              "the PHU" % \
-                              (key,value)
-
-        # Prepend (UPDATED) to the comment if key already exists, 
-        # or (NEW) if it does not; don't prepend anything if value
-        # is the same as the original value
-        if comment is not None:
-            if original_value is None:
-                comment = "(NEW) %s" % comment
-            elif original_value!=value:
-                comment = "(UPDATED) %s" % comment
-
-            # Truncate comment if necessary
-            if len(str(value))>=65:
-                comment = ""
-            elif len(comment)>47:
-                comment = comment[0:47]
+            # The keyword exists in the PHU
+            if original_value == value:
+                # The input keyword value is the same as the keyword value
+                # already present in the PHU
+                if comment is not None:
+                    # Only the comment will be updated in the PHU
+                    history_comment = ("The comment for the keyword %s was "
+                                       "updated" % keyword)
+                    comment_prefix = "(UPDATED)"
             else:
-                comment = comment[0:65-len(str(value))]
-
-        # Set key, value, comment
+                # The keyword value will be updated in the PHU with the input
+                # keyword value 
+                history_comment = ("The keyword %s=%s was overwritten in the "
+                                   "PHU with new value %s" %
+                                   (keyword, original_value, value))
+                comment_prefix = "(UPDATED)"
+        
+        if comment is None:
+            # The comment in the header of the PHU will automatically be
+            # preserved if the comment parameter of header.update is set to
+            # None. However, if no comment is supplied, there will be no (NEW)
+            # or (UPDATED) prefix added to the comment.
+            final_comment = None
+        else:
+            full_comment = "%s %s" % (comment_prefix, comment)
+        
+            # Truncate comment if necessary
+            if len(str(value)) >= 65:
+                final_comment = ""
+            elif len(comment) > 47:
+                final_comment = full_comment[:47]
+            else:
+                final_comment = full_comment[:65-len(str(value))]
+        
         hdus = self.hdulist
-        hdus[0].header.update(key, value, comment)
-
+        hdus[0].header.update(keyword, value, final_comment)
+        
         # Add history comment
         if history_comment is not None:
             hdus[0].header.add_history(history_comment)
-
+        
         return
         
     def get_phu(self):
@@ -2184,42 +2198,6 @@ help      False     show help information    """
     def get_phuheader(self):
         return self.get_hdu(0).header
             
-    def history_mark(self, key=None, comment=None, stomp=True):
-        """
-        This function will add the timestamp type keys to the astrodata 
-        instance's PHU.  The default will be to update the GEM-TLM key by just
-        calling ad.history_mark() without any input vals. Value stored is the
-        UT time in the same format as the CL scripts.  The GEM-TLM key will be
-        updated along with the specified key automatically.
-        
-        param key: header keyword to be changed/added
-        type key: string
-        param comment: comment for the keyword in the PHU, keep it short
-                    default if key is provided is 'UT Time stamp for '+key 
-        type comment: string
-        param stomp: if True, use the current time; if False, use the latest 
-                    saved time
-        type stomp: boolean (True/False)
-        """
-        if stomp:
-            self.tlm = datetime.now().isoformat()[0:-7]
-        elif (stomp == False) and (self.tlm == None):
-            self.tlm = datetime.now().isoformat()[0:-7]
-        if comment == None and key != None:
-            comment = "UT Time stamp for " + key
-        
-        # Updating PHU with specified key and GEM-TLM    
-        if key !=None:
-            self.phu_set_key_value(key,self.tlm,comment)
-            self.phu_set_key_value("GEM-TLM", self.tlm, 
-                "UT Last modification with GEMINI")
-        # Only updating the GEM-TLM PHU key
-        else:
-             self.phu_set_key_value("GEM-TLM", self.tlm,
-                "UT Last modification with GEMINI")     
-        # Returning the current time for logging if desired
-        return self.tlm        
-    
     def store_original_name(self):
         """
         This function will add the key 'ORIGNAME' to PHU of an astrodata object 
