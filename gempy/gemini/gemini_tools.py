@@ -1,5 +1,6 @@
 import os, sys
 import re
+from datetime import datetime
 from copy import deepcopy
 import pyfits as pf
 import numpy as np
@@ -1395,28 +1396,19 @@ def send_fitsstore_report(qareport):
     
 
 
-def log_message(function, name, message_type):
-    if function == 'ulf':
-        full_function_name = 'user level function'
-    else:
-        full_function_name = function
+def log_message(function=None, name=None, message_type=None):
     if message_type == 'calling':
-        message = 'Calling the %s %s' \
-                  % (full_function_name, name)
+        message = 'Calling the %s %s' % (function, name)
     if message_type == 'starting':
-        message = 'Starting the %s %s' \
-                  % (full_function_name, name)
+        message = 'Starting the %s %s' % (function, name)
     if message_type == 'finishing':
-        message = 'Finishing the %s %s' \
-                  % (full_function_name, name)
+        message = 'Finishing the %s %s' % (function, name)
     if message_type == 'completed':
-        message = 'The %s %s completed successfully' \
-                  % (name, full_function_name)
+        message = 'The %s %s completed successfully' % (name, function)
     if message:
         return message
     else:
         return None
-
 
 def make_dict(key_list=None, value_list=None):
     """
@@ -1463,36 +1455,71 @@ def make_dict(key_list=None, value_list=None):
     
     return ret_dict
 
-def mark_history(adinput=None, keyword=None):
+def mark_history(adinput=None, keyword=None, comment=None):
     """
-    The function to use near the end of a python user level function to 
-    add a history_mark timestamp to all the outputs indicating when and what
-    function was just performed on them, then logging the new historyMarkKey
-    PHU key and updated 'GEM-TLM' key values due to history_mark.
+    Add or update a keyword with the UT time stamp (in the form
+    <YYYY>-<MM>-<DD>T<HH>:<MM>:<SS>) as the value to the header of the PHU of
+    the AstroData object to indicate when and what function was just performed
+    on the AstroData object
     
-    Note: The GEM-TLM key will be updated, or added if not in the PHU yet, 
-    automatically everytime wrapUp is called.
-    
-    :param adinput: List of astrodata instance(s) to perform history_mark 
-                      on.
-    :type adinput: Either a single or multiple astrodata instances in a 
-                     list.
-    
-    :param keyword: The PHU header key to write the current UT time 
-    :type keyword: Under 8 character, all caps, string.
-                          If None, then only 'GEM-TLM' is added/updated.
+    :param adinput: The input AstroData object
+    :type adinput: AstroData or list of AstroData
+    :param keyword: The keyword to add or update in the PHU in upper case. The
+                    keyword should be less than 8 characters. If keyword is
+                    None, only the 'GEM-TLM' keyword is added or updated.
+    :type keyword: string
+    :param comment: Comment for the time stamp keyword. If comment is None, the
+                    primitive the keyword is associated with will be determined
+                    from the timestamp_keywords.py module; a default comment of
+                    'UT time stamp for <primitive>' will then be used. However,
+                    if the timestamp_keywords.py module cannot be found, the
+                    comment 'UT time stamp for <keyword>' will instead be used.
+    :type comment: string
+    :param name: Name to be added to the default comment. If comment is None
+                 (such that the default comment is used) and name is defined,
+                 <keyword> can be replaced by <name> in the default comment.
+    :type name: string
     """
     # Instantiate the log
     log = logutils.get_logger(__name__)
+    
     # If adinput is a single AstroData object, put it in a list
     if not isinstance(adinput, list):
         adinput = [adinput]
+
+    # Get the current time to use for the time of last modification
+    tlm = datetime.now().isoformat()[0:-7]
+    
+    if comment is None:
+        # Construct the default comment
+        try:
+            timestamp_keys = Lookups.get_lookup_table(
+                "Gemini/timestamp_keywords", "timestamp_keys")
+        except:
+            timestamp_keys = None
+
+        comment_suffix = keyword
+        if timestamp_keys is not None:
+            for primitive_name, key in timestamp_keys.iteritems():
+                if key == keyword:
+                    comment_suffix = primitive_name
+    
+        final_comment = "UT time stamp for %s" % comment_suffix
+    else:
+        final_comment = comment
+
+    # The GEM-TLM keyword will always be added / updated
+    keyword_dict = {"GEM-TLM":"UT last modification with GEMINI"}
+    
+    if keyword is not None:
+        # Add / update the input keyword in addition to the GEM-TLM keyword
+        keyword_dict.update({keyword:final_comment})
+
     # Loop over each input AstroData object in the input list
     for ad in adinput:
-        # Add the 'GEM-TLM' keyword (automatic) and the keyword specified by
-        # the 'keyword' parameter to the PHU. If 'keyword' is None,
-        # history_mark will still add the 'GEM-TLM' keyword
-        ad.history_mark(key=keyword, stomp=True)
+        for key, comm in keyword_dict.iteritems():
+            ad.phu_set_key_value(key, tlm, comm)
+
         if keyword is not None:
             log.fullinfo("PHU keyword %s = %s added to %s" \
                          % (keyword, ad.phu_get_key_value(keyword),
