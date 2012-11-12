@@ -1,4 +1,5 @@
 from datetime import datetime
+import math
 from time import strptime
 
 from astrodata import Descriptors
@@ -20,9 +21,9 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def __init__(self):
         self.f2ArrayDict = Lookups.get_lookup_table(
-            "Gemini/F2/F2ArrayDict", "f2ArrayDict")
+          "Gemini/F2/F2ArrayDict", "f2ArrayDict")
         self.nifsConfigDict = Lookups.get_lookup_table(
-            "Gemini/F2/F2ConfigDict", "f2ConfigDict")
+          "Gemini/F2/F2ConfigDict", "f2ConfigDict")
         GEMINI_DescriptorCalc.__init__(self)
     
     def data_section(self, dataset, pretty=False, **args):
@@ -40,8 +41,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
                 data_section = gmu.sectionStrToIntList(raw_data_section)
             
             # Update the dictionary with the data section value
-            ret_data_section.update({(
-                ext.extname(), ext.extver()):data_section})
+            ret_data_section.update(
+              {(ext.extname(), ext.extver()):data_section})
         
         if ret_data_section == {}:
             # If the dictionary is still empty, the AstroData object has no
@@ -109,13 +110,14 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             if "open" not in filter2 and "Open" not in filter2:
                 filter.append(str(filter2))
             if len(filter) == 0:
-                filter.append("open")
+                filter = ["open"]
+            
             if "Block" in filter1 or "Block" in filter2:
-                filter.append("blank")
+                filter = ["blank"]
             if "Dark" in filter1 or "Dark" in filter2:
-                filter.append("blank")
+                filter = ["blank"]
             if "DK" in filter1 or "DK" in filter2:
-                filter.append("dark")
+                filter = ["dark"]
         else:
             filter = [filter1, filter2]
         
@@ -211,6 +213,75 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     
     f2ArrayDict = None
     
+    def pixel_scale(self, dataset, **args):
+        # First try to calculate the pixel scale using the values of the WCS
+        # matrix elements keywords
+        #
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always return a dictionary where the key
+        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        ret_pixel_scale = {}
+        
+        # Determine the WCS matrix elements keywords from the global keyword
+        # dictionary
+        keyword1 = self.get_descriptor_key("key_cd11")
+        keyword2 = self.get_descriptor_key("key_cd12")
+        keyword3 = self.get_descriptor_key("key_cd21")
+        keyword4 = self.get_descriptor_key("key_cd22")
+        
+        # Get the value of the WCS matrix elements keywords from the header of
+        # each pixel data extension as a dictionary 
+        cd11_dict = gmu.get_key_value_dict(dataset, keyword1)
+        cd12_dict = gmu.get_key_value_dict(dataset, keyword2)
+        cd21_dict = gmu.get_key_value_dict(dataset, keyword3)
+        cd22_dict = gmu.get_key_value_dict(dataset, keyword4)
+        
+        if cd11_dict is None or cd12_dict is None or cd21_dict is None or \
+          cd22_dict is None:
+            # The get_key_value_dict() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
+        for ext_name_ver, cd11 in cd11_dict.iteritems():
+            cd12 = cd12_dict[ext_name_ver]
+            cd21 = cd21_dict[ext_name_ver]
+            cd22 = cd22_dict[ext_name_ver]
+            
+            if cd11 is None:
+                pixel_scale = None
+            else:
+                # Calculate the pixel scale using the WCS matrix elements
+                pixel_scale = 3600 * (
+                  math.sqrt(math.pow(cd11, 2) + math.pow(cd12, 2)) +
+                  math.sqrt(math.pow(cd21, 2) + math.pow(cd22, 2))) / 2
+            
+            if pixel_scale is None or pixel_scale == 0.0:
+                # Get the pixel scale value using the value of the pixel scale
+                # keyword
+                #
+                # Determine the pixel scale keyword from the global keyword
+                # dictionary 
+                keyword = self.get_descriptor_key("key_pixel_scale")
+                
+                # Get the value of the pixel scale keyword from the header of
+                # the PHU
+                pixel_scale = dataset.phu_get_key_value(keyword)
+                
+                if pixel_scale is None:
+                    # The phu_get_key_value() function returns None if a value
+                    # cannot be found and stores the exception info. Re-raise
+                    # the exception. It will be dealt with by the
+                    # CalculatorInterface. 
+                    if hasattr(dataset, "exception_info"):
+                        raise dataset.exception_info
+            
+            # Update the dictionary with the array section value
+            ret_pixel_scale.update({ext_name_ver:pixel_scale})
+        
+        return ret_pixel_scale
+    
     def read_noise(self, dataset, **args):
         # Determine the number of non-destructive read pairs keyword (lnrs)
         # from the global keyword dictionary
@@ -271,7 +342,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         if "IMAGE" in dataset.types:
             # If imaging, associate the filter name with a central wavelength
             filter_table = Lookups.get_lookup_table(
-                "Gemini/F2/F2FilterWavelength", "filter_wavelength")
+              "Gemini/F2/F2FilterWavelength", "filter_wavelength")
             filter = str(dataset.filter_name(pretty=True))
             if filter in filter_table:
                 ctrl_wave = filter_table[filter]
