@@ -18,9 +18,9 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
     
     def __init__(self):
         self.nominal_extinction_table = Lookups.get_lookup_table(
-            "Gemini/NominalExtinction", "nominal_extinction")
+          "Gemini/NominalExtinction", "nominal_extinction")
         self.std_wavelength_band = Lookups.get_lookup_table(
-            "Gemini/WavelengthBand", "wavelength_band")
+          "Gemini/WavelengthBand", "wavelength_band")
         FITS_DescriptorCalc.__init__(self)
     
     def airmass(self, dataset, **args):
@@ -63,7 +63,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # dictionary
         keyword = self.get_descriptor_key("key_array_section")
         
-        # Get the value of the array_section keyword from the header of each
+        # Get the value of the array section keyword from the header of each
         # pixel data extension as a dictionary 
         array_section_dict = gmu.get_key_value_dict(dataset, keyword)
         
@@ -163,8 +163,8 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             # Use the utilities function convert_units to convert the central
             # wavelength value from the input units to the output units
             ret_central_wavelength = GemCalcUtil.convert_units(
-                input_units=input_units, input_value=central_wavelength,
-                output_units=output_units)
+              input_units=input_units, input_value=central_wavelength,
+              output_units=output_units)
         
         return ret_central_wavelength
     
@@ -294,7 +294,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                 # non-inclusive indexing as the value in the form
                 # [x1, x2, y1, y2] 
                 detector_section = gmu.sectionStrToIntList(
-                    raw_detector_section)
+                  raw_detector_section)
             
             # Update the dictionary with the detector section value
             ret_detector_section.update({ext_name_ver:detector_section})
@@ -1221,7 +1221,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # Get the value of the reference pixel of the central wavelength
         # keyword from the header of each pixel data extension as a dictionary
         wavelength_reference_pixel_dict = gmu.get_key_value_dict(
-            dataset, keyword)
+          dataset, keyword)
         
         if wavelength_reference_pixel_dict is None:
             # The get_key_value_dict() function returns None if a value cannot
@@ -1238,10 +1238,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                 # Use the reference pixel of the central wavelength float as
                 # the value
                 wavelength_reference_pixel = float(
-                    raw_wavelength_reference_pixel)
+                  raw_wavelength_reference_pixel)
             
-            ret_wavelength_reference_pixel.update({
-                ext_name_ver:wavelength_reference_pixel})
+            ret_wavelength_reference_pixel.update(
+              {ext_name_ver:wavelength_reference_pixel})
         
         return ret_wavelength_reference_pixel
     
