@@ -1897,7 +1897,7 @@ help      False     show help information    """
             final_comment = None
         else:
             full_comment = "%s %s" % (comment_prefix, comment)
-        
+            
             # Truncate comment if necessary
             if len(str(value)) >= 65:
                 final_comment = ""
@@ -2059,29 +2059,31 @@ help      False     show help information    """
             setattr(self, "exception_info", sys.exc_info()[1])
             return None
     
-    def ext_set_key_value(self, extension, key, value, comment=None):
+    def ext_set_key_value(self, extension=None, keyword=None, value=None,
+                          comment=None):
         """
-        :param extension: identifies which extension, either an integer index 
-                          or (EXTNAME, EXTVER) tuple
+        Add or update a keyword in the header of an extension of the AstroData
+        object with a specific value and, optionally, a comment. To add or
+        update a keyword in the PHU of the AstroData object, use
+        phu_set_key_value().
+        
+        :param extension: Name of the extension to add or update. The index [0]
+                          refers to the first extension in the AstroData
+                          object.
         :type extension: int or (EXTNAME, EXTVER) tuple
-        :param key: name of PHU header value to set
-        :type key: string
-        :param value: value to apply to PHU header
-        :type value: string (or can be converted to string)
-        :param comment: value to be put in the comment part of the header key
+        :param keyword: Name of the keyword to add or update in the extension
+        :type keyword: string
+        :param value: Value of the keyword to add or update in the extension
+        :type value: int, float or string
+        :param comment: Comment of the keyword to add or update in the
+                        extension 
         :type comment: string
-
-        The ext_set_key_value(..) function is used to set the value (and optionally
-        the comment) associated with a given key in the header unit of the given
-        extension within the dataset. This function sets the value in the
-        given extension's header, with "0" being the first data extension.  To
-        set values in the PHU use phusetKeyValue(..).
         """
         origextension = extension
         if type(extension) == int:
-            # this translates ints from our 0-relative base of AstroData to the 
-            #  1-relative base of the hdulist, but leaves tuple extensions
-            #  as is.
+            # this translates ints from our 0-relative base of AstroData to the
+            # 1-relative base of the hdulist, but leaves tuple extensions
+            # as is.
             #print "AD892: pre-ext", extension
             extension = self.translate_int_ext(extension)
             #print "AD892: ext", extension
@@ -2092,62 +2094,81 @@ help      False     show help information    """
         try:
             tx = self.hdulist[extension]
         except:
-            mes = "Extension %s not present in AstroData instance" % \
-                str(origextension)
+            mes = ("Extension %s not present in AstroData instance" %
+                   str(origextension))
             raise Errors.AstroDataError(mes)
-
+        
         hdul = self.get_hdulist()
         ext = hdul[extension]
         extname = ext.header.get("EXTNAME")
         extver = ext.header.get("EXTVER")
-
-        # Get original value
-        original_value = ext.header.get(key)
-
-        # Define history comment
-        if original_value is not None:
-            history_comment = "The keyword %s=%s was overwritten in "\
-                              "extension %s,%s with new value %s" % \
-                              (key,str(original_value),extname,
-                               extver,value)
+        
+        # Validate input parameters
+        if keyword is None:
+            raise Errors.AstroDataError("No keyword provided")
+        if value is None:
+            raise Errors.AstroDataError("No keyword value provided")
+        
+        # Check to see whether the keyword is already in the extension
+        original_value = ext.header.get(keyword)
+        
+        if original_value is None:
+            # The keyword does not exist in extension
+            history_comment = ("New keyword %s=%s was written to extension "
+                               "%s,%s" % (keyword, value, extname, extver))
+            comment_prefix = "(NEW)"
         else:
-            history_comment = "New keyword %s=%s was written to "\
-                              "extension %s,%s" % \
-                              (key,value,extname,extver)
-
-        # Prepend (UPDATED) to the comment if key already exists,
-        # or (NEW) if it does not; don't prepend anything if value
-        # is the same as the original value
-        if comment is not None:
-            if original_value is None:
-                comment = "(NEW) %s" % comment
-            elif original_value!=value:
-                comment = "(UPDATED) %s" % comment
-
-            # Truncate comment if necessary
-            if len(str(value))>=65:
-                comment = ""
-            elif len(comment)>47:
-                comment = comment[0:47]
+            # The keyword exists in the extension
+            if original_value == value:
+                # The input keyword value is the same as the keyword value
+                # already present in the extension
+                if comment is not None:
+                    # Only the comment will be updated in the extension
+                    history_comment = ("The comment for the keyword %s was "
+                                       "updated" % keyword)
+                    comment_prefix = "(UPDATED)"
             else:
-                comment = comment[0:65-len(str(value))]
-
-        # Set key, value, comment
-        ext.header.update(key, value, comment)
-
-        # Add history comment to PHU
+                # The keyword value will be updated in the extension with the
+                # input keyword value 
+                history_comment = ("The keyword %s=%s was overwritten in "
+                                   "extension %s,%s with new value %s" %
+                                   (keyword, original_value, extname, extver,
+                                    value))
+                comment_prefix = "(UPDATED)"
+        
+        if comment is None:
+            # The comment in the header of the extension will automatically be
+            # preserved if the comment parameter of header.update is set to
+            # None. However, if no comment is supplied, there will be no (NEW)
+            # or (UPDATED) prefix added to the comment.
+            final_comment = None
+        else:
+            full_comment = "%s %s" % (comment_prefix, comment)
+            
+            # Truncate comment if necessary
+            if len(str(value)) >= 65:
+                final_comment = ""
+            elif len(comment) > 47:
+                final_comment = full_comment[:47]
+            else:
+                final_comment = full_comment[:65-len(str(value))]
+        
+        ext.header.update(keyword, value, final_comment)
+        
+        # Add history comment to the PHU
         if history_comment is not None:
             self.get_phuheader().add_history(history_comment)
-
+        
         self.release_hdulist()
-        return 
-   
+        
+        return
+    
     def info(self, oid=False, table=False, help=False):
         """The info(..) function prints self.infostr() and 
         is maintained for convienience and low level debugging.
         """
-        print self.infostr(oid=oid, table=table, help=help)       
-
+        print self.infostr(oid=oid, table=table, help=help)
+    
     def display_id(self):
         import IDFactory
         return IDFactory.generate_stackable_id(self)
