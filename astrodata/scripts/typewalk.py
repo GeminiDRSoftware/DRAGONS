@@ -41,7 +41,7 @@ if opti:
 # a demo for GeminiData... see options documentation.
 
 # parsing the command line
-parser = OptionParser()
+parser = OptionParser(usage = "usage: %prog [options] <path>")
 parser.add_option("-t", "--typewalk", dest="twdir", default =".",
         help="Recursively walk given directory and put type information to stdout.")
 parser.add_option("-o", "--only", dest="only", default="all",

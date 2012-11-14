@@ -376,6 +376,7 @@ class ExtID(object):
         this ExtID seeks.
         @type dataset: AstroData instance
         """
+        # print "S379:%s" % type(self)
         allReqs = self.head_reqs.copy()
         if self.other_reqs != None:
             allReqs.update(self.other_reqs)
@@ -419,13 +420,14 @@ def apply_structure_by_type(dataset):
         except KeyError:
             # no structure
             continue
+        # print "s422:", structstr
         
         if structstr != None:
             applied += 1
             structObj = instantiate_struct(structstr)
             #@@TODO: what if this is false... not handling at all
             structObj.find(dataset)
-            structObj.printout(dataset)
+            # structObj.printout(dataset)
             structObj.project(dataset)
             try:
                 ls = dataset.structures
