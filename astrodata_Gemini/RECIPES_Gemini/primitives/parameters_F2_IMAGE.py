@@ -22,7 +22,8 @@
         },
     "mdf":{
         "default"       : None,
-        "type"          : "str",
+        # No default type defined, since the mdf parameter could be a string or
+        # an AstroData object
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",

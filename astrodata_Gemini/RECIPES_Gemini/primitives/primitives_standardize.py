@@ -215,11 +215,11 @@ class StandardizePrimitives(GENERALPrimitives):
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
-            
-            # Check whether the input is an IMAGE type
-            if "IMAGE" in ad.types:
-                log.stdinfo("%s has type IMAGE, so no MDF will be added" %
-                            ad.filename)
+
+            # Check whether the input is spectroscopic data
+            if "SPECT" not in ad.types:
+                log.stdinfo("%s is not spectroscopic data, so no MDF will be "
+                            "added" % ad.filename)
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
@@ -389,7 +389,7 @@ def _select_bpm(adinput=None, bpm=None):
     
     if not isinstance(adinput, list):
         adinput = [adinput]
-    if bpm is None:
+    if bpm is None or bpm == "None":
         bpm_list = []
     elif bpm!="auto":
         # The user supplied an input to the bpm parameter
@@ -533,7 +533,8 @@ def _select_mdf(adinput=None, mdf=None):
     
     if not isinstance(adinput, list):
         adinput = [adinput]
-    if mdf is not None:
+
+    if mdf is not None and mdf != "None":
         # The user supplied an input to the mdf parameter
         if not isinstance(mdf, list):
             mdf_list = [mdf]

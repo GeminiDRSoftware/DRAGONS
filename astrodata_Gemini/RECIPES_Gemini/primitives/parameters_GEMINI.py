@@ -10,13 +10,14 @@
         },
     "bpm":{
         "default"       : "auto",
-        "type"          : "str",
+        # No default type defined, since the bpm parameter could be a string or
+        # an AstroData object
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
     },
-"addMDF":{
+ "addMDF":{
     "suffix":{
         "default"       : "_mdfAdded",
         "type"          : "str",
@@ -26,7 +27,8 @@
         },
     "mdf":{
         "default"       : None,
-        "type"          : "str",
+        # No default type defined, since the mdf parameter could be a string or
+        # an AstroData object
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
@@ -56,7 +58,7 @@
         "recipeOverride": True,
         "userOverride"  : True, 
         "uiLevel"       : "UIBASIC",
-       },
+        },
     "source":{
         "default"       : "sdss8",
         "type"          : "str",
@@ -243,7 +245,7 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-   },
+    },
  "detectSources":{
     "suffix":{
         "default"       : "_sourcesDetected",
@@ -265,7 +267,7 @@
         "recipeOverride": True,
         "userOverride"  : True, 
         "uiLevel"       : "UIBASIC",
-       },
+        },
     "max_sources":{
         "default"       : 50,
         "type"          : "int",
@@ -295,7 +297,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
-"display":{ 
+ "display":{ 
     "extname":{
         "default"       : "SCI",
         "type"          : "str",
@@ -348,10 +350,9 @@
         "uiLevel"       : "UIBASIC",
         },
     "flat":{
-        # No type defined here so that user can pass
-        # a string (eg. from command line) or an astrodata
-        # instance (eg. from a script)
         "default"       : None,
+        # No default type defined, since the flat parameter could be a string
+        # or an AstroData object
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
@@ -567,24 +568,6 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "standardizeGeminiHeaders":{
-    "suffix":{
-        "default"       : "_headersStandardized",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    },
- "standardizeInstrumentHeaders":{
-    "suffix":{
-        "default"       : "_headersStandardized",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    },
  "storeProcessedArc":{
     "suffix":{
         "default"       : "_arc",
@@ -630,10 +613,9 @@
         "uiLevel"       : "UIBASIC",
         },
     "dark":{
-        # No type defined here so that user can pass
-        # a string (eg. from command line) or an astrodata
-        # instance (eg. from a script)
         "default"       : None,
+        # No default type defined, since the dark parameter could be a string
+        # or an AstroData object
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",

@@ -9,9 +9,9 @@
         "uiLevel"       : "UIBASIC",
         },
     "operand":{
-        # No type defined here so that user can pass
-        # a number, an AD instance, or a dictionary
         "default"       : None,
+        # No default type defined, since the operand parameter could be a
+        # float, a dictionary or an AstroData object
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
@@ -26,9 +26,9 @@
         "uiLevel"       : "UIBASIC",
         },
     "operand":{
-        # No type defined here so that user can pass
-        # a number, an AD instance, or a dictionary
         "default"       : None,
+        # No default type defined, since the operand parameter could be a
+        # float, a dictionary or an AstroData object
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
@@ -43,9 +43,9 @@
         "uiLevel"       : "UIBASIC",
         },
     "operand":{
-        # No type defined here so that user can pass
-        # a number, an AD instance, or a dictionary
         "default"       : None,
+        # No default type defined, since the operand parameter could be a
+        # float, a dictionary or an AstroData object
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
@@ -60,9 +60,9 @@
         "uiLevel"       : "UIBASIC",
         },
     "operand":{
-        # No type defined here so that user can pass
-        # a number, an AD instance, or a dictionary
         "default"       : None,
+        # No default type defined, since the operand parameter could be a
+        # float, a dictionary or an AstroData object
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",

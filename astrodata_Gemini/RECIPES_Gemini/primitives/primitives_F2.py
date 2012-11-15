@@ -78,7 +78,7 @@ class F2Primitives(GEMINIPrimitives):
               adinput=ad, descriptor="saturation_level()", extname="SCI")
             
             # Dispersion axis (new keyword, should it be written?)
-            if "IMAGE" not in ad.types:
+            if "SPECT" in ad.types:
                 gt.update_key_from_descriptor(
                   adinput=ad, descriptor="dispersion_axis()", extname="SCI")
             
@@ -105,8 +105,9 @@ class F2Primitives(GEMINIPrimitives):
         
         :param attach_mdf: Set to True to attach an MDF extension to the input
                            AstroData object(s). If an input AstroData object
-                           has an AstroData type of IMAGE, no MDF will be
-                           added, regardless of the value of this parameter.
+                           does not have an AstroData type of SPECT, no MDF
+                           will be added, regardless of the value of this
+                           parameter.
         :type attach_mdf: Python boolean
         :param mdf: The file name, including the full path, of the MDF(s) to
                     attach to the input AstroData object(s). If only one MDF is

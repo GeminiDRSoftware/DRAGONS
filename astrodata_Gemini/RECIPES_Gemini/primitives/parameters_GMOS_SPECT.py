@@ -10,7 +10,8 @@
     # so turn off the BPM argument in addDQ for now.
     "bpm":{
         "default"       : None,
-        "type"          : "str",
+        # No default type defined, since the bpm parameter could be a string or
+        # an AstroData object
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
@@ -25,10 +26,9 @@
         "uiLevel"       : "UIBASIC",
         },
      "arc":{
-        # No type defined here so that user can pass
-        # a string (eg. from command line) or an astrodata
-        # instance (eg. from a script)
         "default"       : None,
+        # No default type defined, since the arc parameter could be a string or
+        # an AstroData object
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
