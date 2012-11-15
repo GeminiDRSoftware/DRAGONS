@@ -24,6 +24,13 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    "mdf":{
+        "default"       : None,
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     },
  "validateData":{
     "suffix":{

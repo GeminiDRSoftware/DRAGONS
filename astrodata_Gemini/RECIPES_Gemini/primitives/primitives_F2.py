@@ -1,5 +1,5 @@
 import numpy as np
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from gempy.gemini import gemini_tools as gt
 from primitives_GEMINI import GEMINIPrimitives
 
@@ -20,10 +20,8 @@ class F2Primitives(GEMINIPrimitives):
         This primitive is used to make the changes and additions to the
         keywords in the headers of FLAMINGOS-2 data, specifically.
         """
-        
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "standardizeInstrumentHeaders",
@@ -38,8 +36,8 @@ class F2Primitives(GEMINIPrimitives):
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
-            # Check whether the standardizeInstrumentHeaders primitive
-            # has been run previously
+            # Check whether the standardizeInstrumentHeaders primitive has been
+            # run previously
             if ad.phu_get_key_value(timestamp_key):
                 log.warning("No changes will be made to %s, since it has "
                             "already been processed by "
@@ -50,8 +48,8 @@ class F2Primitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Update the keywords in the headers that are specific to
-            # FLAMINGOS-2
+            # Standardize the headers of the input AstroData object. Update the
+            # keywords in the headers that are specific to FLAMINGOS-2.
             log.status("Updating keywords that are specific to FLAMINGOS-2")
             
             # Filter name (required for IRAF?)
@@ -88,15 +86,14 @@ class F2Primitives(GEMINIPrimitives):
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             
             # Change the filename
-            ad.filename = gt.filename_updater(
-              adinput=ad, suffix=rc["suffix"], strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
+                                              strip=True)
             
-            # Append the output AstroData object to the list
-            # of output AstroData objects
+            # Append the output AstroData object to the list of output
+            # AstroData objects 
             adoutput_list.append(ad)
         
-        # Report the list of output AstroData objects to the reduction
-        # context
+        # Report the list of output AstroData objects to the reduction context
         rc.report_output(adoutput_list)
         
         yield rc 
@@ -105,11 +102,23 @@ class F2Primitives(GEMINIPrimitives):
         """
         This primitive is used to standardize the structure of FLAMINGOS-2
         data, specifically.
-        """
         
+        :param attach_mdf: Set to True to attach an MDF extension to the input
+                           AstroData object(s). If an input AstroData object
+                           has an AstroData type of IMAGE, no MDF will be
+                           added, regardless of the value of this parameter.
+        :type attach_mdf: Python boolean
+        :param mdf: The file name, including the full path, of the MDF(s) to
+                    attach to the input AstroData object(s). If only one MDF is
+                    provided, that MDF will be attached to all input AstroData
+                    object(s). If more than one MDF is provided, the number of
+                    MDFs must match the number of input AstroData objects. If
+                    no MDF is provided, the primitive will attempt to determine
+                    an appropriate MDF.
+        :type mdf: string or list of strings
+        """
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "standardizeStructure",
@@ -121,6 +130,9 @@ class F2Primitives(GEMINIPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
+        # Use a flag to determine whether to run addMDF
+        attach_mdf = True
+        
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
@@ -130,6 +142,7 @@ class F2Primitives(GEMINIPrimitives):
                 log.warning("No changes will be made to %s, since it has "
                             "already been processed by standardizeStructure"
                             % ad.filename)
+                
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
@@ -160,26 +173,31 @@ class F2Primitives(GEMINIPrimitives):
                       ext.data.shape))
             
             # Attach an MDF to each input AstroData object
-            if rc["attach_mdf"]:
+            if rc["attach_mdf"] and attach_mdf:
+                
+                # Get the mdf parameter from the reduction context
                 mdf = rc["mdf"]
                 if mdf is not None:
                     rc.run("addMDF(mdf=%s)" % mdf)
                 else:
                     rc.run("addMDF")
+                
+                # Since addMDF uses all the AstroData inputs from the reduction
+                # context, it only needs to be run once in this loop
+                attach_mdf = False
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             
             # Change the filename
-            ad.filename = gt.filename_updater(
-              adinput=ad, suffix=rc["suffix"], strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
+                                              strip=True)
             
-            # Append the output AstroData object to the list
-            # of output AstroData objects
+            # Append the output AstroData object to the list of output
+            # AstroData objects 
             adoutput_list.append(ad)
         
-        # Report the list of output AstroData objects to the reduction
-        # context
+        # Report the list of output AstroData objects to the reduction context
         rc.report_output(adoutput_list)
         
         yield rc
@@ -188,20 +206,18 @@ class F2Primitives(GEMINIPrimitives):
         """
         This primitive is used to validate FLAMINGOS-2 data, specifically.
         
-        :param repair: Set to True to repair the data. Note: this feature does
-                       not work yet. 
+        :param repair: Set to True to repair the data, if necessary. Note: this
+                       feature does not work yet. 
         :type repair: Python boolean
         """
-        
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        
-        # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["validateData"]
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "validateData", "starting"))
+        
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["validateData"]
         
         # Initialize the list of output AstroData objects
         adoutput_list = []
@@ -214,30 +230,27 @@ class F2Primitives(GEMINIPrimitives):
                 log.warning("No changes will be made to %s, since it has "
                             "already been processed by validateData"
                             % ad.filename)
+                
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
             
-            # Get the repair parameter from the RC
-            repair = rc["repair"]
-            
             # Validate the input AstroData object.
-            log.stdinfo("No validation required for FLAMINGOS-2")
+            log.stdinfo("No validation required for %s" % ad.filename)
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             
             # Change the filename
-            ad.filename = gt.filename_updater(
-              adinput=ad, suffix=rc["suffix"], strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
+                                              strip=True)
             
-            # Append the output AstroData object to the list
-            # of output AstroData objects
+            # Append the output AstroData object to the list of output
+            # AstroData objects
             adoutput_list.append(ad)
         
-        # Report the list of output AstroData objects to the reduction
-        # context
+        # Report the list of output AstroData objects to the reduction context
         rc.report_output(adoutput_list)
         
         yield rc

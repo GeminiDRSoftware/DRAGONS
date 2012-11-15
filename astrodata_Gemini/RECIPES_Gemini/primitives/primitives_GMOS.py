@@ -187,10 +187,9 @@ class GMOSPrimitives(GEMINIPrimitives):
     
     def standardizeInstrumentHeaders(self,rc):
         """
-        This primitive is used to update and add keywords specific
-        to GMOS data.
+        This primitive is used to make the changes and additions to the
+        keywords in the headers of GMOS data, specifically.
         """
-        
         # Instantiate the log
         log = logutils.get_logger(__name__)
         
@@ -200,69 +199,65 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         # Define the keyword to be used for the time stamp for this primitive
         timestamp_key = self.timestamp_keys["standardizeInstrumentHeaders"]
-
+        
         # Initialize the list of output AstroData objects
         adoutput_list = []
-
-        # Look up static bias levels
-        gmosampsBias, gmosampsBiasBefore20060831 = \
-            Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
-                                     "gmosampsBias",
-                                     "gmosampsBiasBefore20060831")
-
+        
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
-            # Check whether the standardizeInstrumentHeaders primitive
-            # has been run previously
+            # Check whether the standardizeInstrumentHeaders primitive has been
+            # run previously
             if ad.phu_get_key_value(timestamp_key):
-                log.warning("No changes will be made to %s, since it has " \
-                            "already been processed by "\
-                            "standardizeInstrumentHeaders" % (ad.filename))
+                log.warning("No changes will be made to %s, since it has "
+                            "already been processed by "
+                            "standardizeInstrumentHeaders" % ad.filename)
+                
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
             
-            # Update the keywords in the headers that are specific to GMOS
+            # Standardize the headers of the input AstroData object. Update the
+            # keywords in the headers that are specific to GMOS.
             log.fullinfo("Updating keywords that are specific to GMOS")
-
+            
             # Pixel scale
             gt.update_key_from_descriptor(
-                adinput=ad, descriptor="pixel_scale()", extname="SCI")
-
+              adinput=ad, descriptor="pixel_scale()", extname="SCI")
+            
             # Read noise
             gt.update_key_from_descriptor(
-                adinput=ad, descriptor="read_noise()", extname="SCI")
-
+              adinput=ad, descriptor="read_noise()", extname="SCI")
+            
             # Gain setting
             gt.update_key_from_descriptor(
-                adinput=ad, descriptor="gain_setting()", extname="SCI")
-
+              adinput=ad, descriptor="gain_setting()", extname="SCI")
+            
             # Gain
             gt.update_key_from_descriptor(
-                adinput=ad, descriptor="gain()", extname="SCI")
+              adinput=ad, descriptor="gain()", extname="SCI")
             
             # Bias level
             if "qa" in rc.context:
                 # Get the bias level from static tables
                 gt.update_key_from_descriptor(
-                    adinput=ad, descriptor="bias_level()", extname="SCI")
+                  adinput=ad, descriptor="bias_level()", extname="SCI")
             else:
                 # For science quality, get the bias from a median
-                # of the overscan region.  Assume that data has not
+                # of the overscan region. Assume that data has not
                 # yet been trimmed or processed to remove bias level,
                 # and that units are ADU
                 oversec_dv = ad.overscan_section()
                 if oversec_dv is None:
                     # Use the static bias levels
                     gt.update_key_from_descriptor(
-                        adinput=ad, descriptor="bias_level()", extname="SCI")
+                      adinput=ad, descriptor="bias_level()", extname="SCI")
                 else:
                     oversec_dict = oversec_dv.dict_val
-
+                    
                     detector_type = ad.phu_get_key_value("DETTYPE")
-        
+                    
                     # The type of CCD determines the number of contaminated
                     # columns in the overscan region
                     if detector_type=="SDSU II CCD":
@@ -273,11 +268,11 @@ class GMOSPrimitives(GEMINIPrimitives):
                         nbiascontam = 4
                     else:
                         nbiascontam = 4
-
+                    
                     for ext in ad["SCI"]:
                         dict_key = (ext.extname(),ext.extver())
                         oversec = oversec_dict[dict_key]
-
+                        
                         # Don't include columns at edges
                         if oversec[0]==0:
                             # Overscan region is on the left
@@ -287,66 +282,61 @@ class GMOSPrimitives(GEMINIPrimitives):
                             # Overscan region is on the right
                             oversec[0]+=nbiascontam
                             oversec[1]-=1
-                    
-                        # Extract overscan data.  In numpy arrays, 
+                        
+                        # Extract overscan data. In numpy arrays, 
                         # y indices come first.
                         overdata = ext.data[oversec[2]:oversec[3],
                                             oversec[0]:oversec[1]]
-                
+                        
                         bias_level = np.median(overdata)
                         ext.set_key_value(
                             "RAWBIAS",bias_level,
                             comment=self.keyword_comments["RAWBIAS"])
-
+            
             # Saturation level
             gt.update_key_from_descriptor(
-                adinput=ad, descriptor="saturation_level()", extname="SCI")
-
+              adinput=ad, descriptor="saturation_level()", extname="SCI")
+            
             # Dispersion axis
             if "IMAGE" not in ad.types:
                 gt.update_key_from_descriptor(
-                    adinput=ad, descriptor="dispersion_axis()", extname="SCI")
-
+                  adinput=ad, descriptor="dispersion_axis()", extname="SCI")
+            
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
-
+            
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
                                               strip=True)
             
-            # Append the output AstroData object to the list
-            # of output AstroData objects
+            # Append the output AstroData object to the list of output
+            # AstroData objects 
             adoutput_list.append(ad)
         
-        # Report the list of output AstroData objects to the reduction
-        # context
+        # Report the list of output AstroData objects to the reduction context
         rc.report_output(adoutput_list)
         
         yield rc
     
     def standardizeStructure(self,rc):
         """
-        This function ensures the MEF structure of GMOS data is ready for
-        further processing, through adding an MDF if necessary. 
-        Appropriately all SPECT type data should have an MDF added, while
-        that of IMAGE should not. If input contains mixed types of GMOS data
-        (ie. some IMAGE and some SPECT), then only those of type SPECT will
-        have MDFs attached.
-
-        :param attach_mdf: A flag to turn on/off appending the appropriate MDF 
-                           file to the inputs.
-        :type attach_mdf: Python boolean (True/False)
-                          default: True
-                  
-        :param mdf: A file name (with path) of the MDF file to append onto the
-                     input(s).
-                     Note: If there are multiple inputs and one mdf
-                     provided, then the same MDF will be applied to all inputs;
-                     else the mdf must be in a list of match the length of
-                     the inputs and the inputs must ALL be of type SPECT.
-        :type mdf: String, or list of strings
-        """
+        This primitive is used to standardize the structure of GMOS data,
+        specifically. 
         
+        :param attach_mdf: Set to True to attach an MDF extension to the input
+                           AstroData object(s). If an input AstroData object
+                           has an AstroData type of IMAGE, no MDF will be
+                           added, regardless of the value of this parameter.
+        :type attach_mdf: Python boolean
+        :param mdf: The file name, including the full path, of the MDF(s) to
+                    attach to the input AstroData object(s). If only one MDF is
+                    provided, that MDF will be attached to all input AstroData
+                    object(s). If more than one MDF is provided, the number of
+                    MDFs must match the number of input AstroData objects. If
+                    no MDF is provided, the primitive will attempt to determine
+                    an appropriate MDF.
+        :type mdf: string or list of strings
+        """
         # Instantiate the log
         log = logutils.get_logger(__name__)
         
@@ -356,52 +346,56 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         # Define the keyword to be used for the time stamp for this primitive
         timestamp_key = self.timestamp_keys["standardizeStructure"]
-
+        
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
-        # First run addMDF if necessary to attach mdf files to the input
-        for ad in rc.get_inputs_as_astrodata():
-            if rc["attach_mdf"]:
-                # Get the mdf parameter from the RC
-                mdf = rc["mdf"]
-                if mdf is not None:
-                    rc.run("addMDF(mdf=%s)" % mdf)
-                else:
-                    rc.run("addMDF")
-
-                # It only needs to run once, on all input, so break loop
-                break
-
+        # Use a flag to determine whether to run addMDF
+        attach_mdf = True
+        
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
-
+            
             # Check whether the standardizeStructure primitive has been run
             # previously
             if ad.phu_get_key_value(timestamp_key):
-                log.warning("No changes will be made to %s, since it has " \
-                            "already been processed by standardizeStructure" \
-                            % (ad.filename))
+                log.warning("No changes will be made to %s, since it has "
+                            "already been processed by standardizeStructure"
+                            % ad.filename)
+                
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
             
+            # Attach an MDF to each input AstroData object
+            if rc["attach_mdf"] and attach_mdf:
+                
+                # Get the mdf parameter from the reduction context
+                mdf = rc["mdf"]
+                if mdf is not None:
+                    rc.run("addMDF(mdf=%s)" % mdf)
+                else:
+                    rc.run("addMDF")
+                
+                # Since addMDF uses all the AstroData inputs from the reduction
+                # context, it only needs to be run once in this loop
+                attach_mdf = False
+            
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
-                
+            
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
                                               strip=True)
             
-            # Append the output AstroData object to the list
-            # of output AstroData objects
+            # Append the output AstroData object to the list of output
+            # AstroData objects 
             adoutput_list.append(ad)
-
-        # Report the list of output AstroData objects to the reduction
-        # context
+        
+        # Report the list of output AstroData objects to the reduction context
         rc.report_output(adoutput_list)
-            
+        
         yield rc
     
     def subtractBias(self, rc):
@@ -1054,18 +1048,14 @@ class GMOSPrimitives(GEMINIPrimitives):
     
     def validateData(self, rc):
         """
-        This primitive is used to validate GMOS data, specifically. It will
-        ensure the data is not corrupted or in an odd format that will affect
-        later steps in the reduction process. If there are issues with the
-        data, the flag 'repair' can be used to turn on the feature to repair it
-        or not (e.g., validateData(repair=True)). It currently just checks if
-        there are 1, 2, 3, 4, 6, or 12 SCI extensions in the input.
-
-        :param repair: Set to True to repair the data. Note: this feature does
-                       not work yet.
+        This primitive is used to validate GMOS data, specifically. The input
+        AstroData object(s) are validated by ensuring that 1, 2, 3, 4, 6 or 12
+        extensions are present.
+        
+        :param repair: Set to True to repair the data, if necessary. Note: this
+                       feature does not work yet.
         :type repair: Python boolean
         """
-        
         # Instantiate the log
         log = logutils.get_logger(__name__)
         
@@ -1074,7 +1064,7 @@ class GMOSPrimitives(GEMINIPrimitives):
         
         # Define the keyword to be used for the time stamp for this primitive
         timestamp_key = self.timestamp_keys["validateData"]
-
+        
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
@@ -1083,23 +1073,24 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Check whether the validateData primitive has been run previously
             if ad.phu_get_key_value(timestamp_key):
-                log.warning("No changes will be made to %s, since it has " \
-                            "already been processed by validateData" \
-                            % (ad.filename))
+                log.warning("No changes will be made to %s, since it has "
+                            "already been processed by validateData"
+                            % ad.filename)
+                
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
             
-            # Get the repair parameter from the RC
+            # Get the repair parameter from the reduction context
             repair = rc["repair"]
-
+            
             if repair:
                 # Set repair to False, since it doesn't work at the moment
                 log.warning("Setting repair=False, since this functionality "
                             "is not yet implemented")
                 repair = False
-
+            
             # Validate the input AstroData object by ensuring that it has
             # 1, 2, 3, 4, 6 or 12 extensions
             valid_num_ext = [1, 2, 3, 4, 6, 12]
@@ -1110,29 +1101,27 @@ class GMOSPrimitives(GEMINIPrimitives):
                     # This shouldn't happen while repair = False exists above
                     pass
                 else:
-                    raise Errors.Error("The number of extensions in %s do " \
-                                       "match with the number of extensions " \
-                                       "expected in raw GMOS data." \
-                                           % (ad.filename))
-                    
+                    raise Errors.Error("The number of extensions in %s do "
+                                       "match with the number of extensions "
+                                       "expected in raw GMOS data."
+                                       % ad.filename)
+            
             else:
-                log.fullinfo("The GMOS input file has been validated: %s " \
+                log.fullinfo("The GMOS input file has been validated: %s "
                              "contains %d extensions" % (ad.filename, num_ext))
-
-
+            
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
-
+            
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
                                               strip=True)
             
-            # Append the output AstroData object to the list
-            # of output AstroData objects
+            # Append the output AstroData object to the list of output
+            # AstroData objects
             adoutput_list.append(ad)
         
-        # Report the list of output AstroData objects to the reduction
-        # context
+        # Report the list of output AstroData objects to the reduction context
         rc.report_output(adoutput_list)
         
         yield rc
