@@ -339,7 +339,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 detector_x_bin = None
             else:
                 # Use the binning of the x-axis integer as the value
-                detector_x_bin, detector_y_bin = ccdsum.split()
+                x_bin, y_bin = ccdsum.split()
+                detector_x_bin = int(x_bin)
             
             # Update the dictionary with the binning of the x-axis value
             ret_detector_x_bin.update({ext_name_ver:detector_x_bin})
@@ -371,7 +372,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 detector_y_bin = None
             else:
                 # Use the binning of the y-axis integer as the value
-                detector_x_bin, detector_y_bin = ccdsum.split()
+                x_bin, y_bin = ccdsum.split()
+                detector_y_bin = int(y_bin)
             
             # Update the dictionary with the binning of the y-axis value
             ret_detector_y_bin.update({ext_name_ver:detector_y_bin})
@@ -1163,14 +1165,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
             else:
-                xbin_dict = xbin_dv.dict_val
+                xbin_dict = xbin_dv.as_dict()
             
             ybin_dv = dataset["SCI"].detector_y_bin()
             if ybin_dv is None:
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
             else:
-                ybin_dict = ybin_dv.dict_val
+                ybin_dict = ybin_dv.as_dict()
         
         # Loop over the science extensions in the dataset to
         # determine whether bias level is needed
@@ -1206,7 +1208,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 xbin = xbin_dict[ext_name_ver]
                 ybin = ybin_dict[ext_name_ver]
                 bin_factor = xbin*ybin
-                bin_factor_dict[ext_name_ver] = bin_factor
+                bin_factor_dict.update({ext_name_ver: bin_factor})
             
             # Get the bias level for all extensions only if necessary
             # because the bias level calculation can take some time
