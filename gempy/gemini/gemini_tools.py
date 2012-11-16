@@ -1462,7 +1462,8 @@ def mark_history(adinput=None, keyword=None, comment=None):
     object to indicate when and what function was just performed on the
     AstroData object 
     
-    :param adinput: The input AstroData object
+    :param adinput: The input AstroData object to add or update the time stamp
+                    keyword
     :type adinput: AstroData or list of AstroData
     :param keyword: The keyword to add or update in the PHU in upper case. The
                     keyword should be less than or equal to 8 characters. If
@@ -1477,12 +1478,9 @@ def mark_history(adinput=None, keyword=None, comment=None):
                     comment 'UT time stamp for <keyword>' will instead be used.
     :type comment: string
     """
-    # Instantiate the log
-    log = logutils.get_logger(__name__)
-    
-    # If adinput is a single AstroData object, put it in a list
-    if not isinstance(adinput, list):
-        adinput = [adinput]
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
+    adinput_list = validate_input(adinput=adinput)
     
     # Get the current time to use for the time of last modification
     tlm = datetime.now().isoformat()[0:-7]
@@ -1510,22 +1508,10 @@ def mark_history(adinput=None, keyword=None, comment=None):
         keyword_dict.update({keyword:final_comment})
     
     # Loop over each input AstroData object in the input list
-    for ad in adinput:
+    for ad in adinput_list:
         for key, comm in keyword_dict.iteritems():
-            # Check to see whether the keyword is already in the PHU
-            original_value = ad.phu_get_key_value(key)
-            if original_value is not None:
-                # The keyword exists
-                log.debug("Keyword %s=%s already exists in the PHU" % (
-                  key, original_value))
-                msg = "updated in"
-            else:
-                msg = "added to"
-            
-            # Add or update the keyword value and comment
-            ad.phu_set_key_value(key, tlm, comm)
-            log.fullinfo("PHU keyword %s=%s %s %s" % (key, tlm, msg,
-                                                      ad.filename))
+            update_key(adinput=ad, keyword=key, value=tlm, comment=comm,
+                       extname="PHU")
 
 def obsmode_add(ad):
     """Add 'OBSMODE' keyword to input phu for IRAF routines in GMOS package
@@ -1775,6 +1761,97 @@ def trim_to_data_section(adinput=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
+def update_key(adinput=None, keyword=None, value=None, comment=None,
+               extname=None):
+    """
+    Add or update a keyword in the specified header of the AstroData object.
+    
+    :param adinput: The input AstroData object to add or update the keyword
+    :type adinput: AstroData
+    :param keyword: The keyword to add or update in the header in upper
+                    case. The keyword should be less than or equal to 8
+                    characters.
+    :type keyword: string
+    :param value: The value to add or update in the header.
+    :param comment: Comment for the keyword. If comment is None, a default
+                    comment, as defined in the keyword_comments.py module, will
+                    be used. However, if the keyword_comments.py module cannot
+                    be found, the comment will not be updated.
+    :type comment: string
+    :param extname: Name of the extension to add or update the keyword, e.g.,
+                   'PHU', 'SCI', 'VAR', 'DQ'
+    :type extname: string
+    """
+    # Instantiate the log
+    log = logutils.get_logger(__name__)
+    
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
+    adinput_list = validate_input(adinput=adinput)
+    
+    if len(adinput_list) > 1:
+        raise Errors.Error("Please provide only one AstroData object as input")
+    else:
+        ad = adinput_list[0]
+    
+    # Validate remaining input parameters
+    if keyword is None:
+        raise Errors.Error("No keyword provided")
+    if value is None:
+        raise Errors.Error("No value provided")
+    if extname is None:
+        raise Errors.Error("No extension name provided")
+    if extname != "PHU":
+        if not ad[extname]:
+            raise Errors.Error("Extension %s does not exist in %s"
+                               % (extname, ad))
+    
+    # Get the comment for the keyword, if available
+    if comment is None:
+        if keyword in keyword_comments:
+            comment = keyword_comments[keyword]
+    
+    if extname == "PHU":
+        # Check to see whether the keyword is already in the PHU
+        original_value = ad.phu_get_key_value(keyword)
+        if original_value is not None:
+            # The keyword exists
+            log.debug("Keyword %s=%s already exists in the PHU" % (
+              keyword, original_value))
+            msg = "updated in"
+        else:
+            msg = "added to"
+        
+        # Add or update the keyword value and comment
+        ad.phu_set_key_value(keyword, value, comment)
+        log.fullinfo("PHU keyword %s=%s %s %s" % (keyword, value, msg,
+                                                  ad.filename))
+    
+    else:
+        for ext in ad[extname]:
+            extname = ext.extname()
+            extver = ext.extver()
+            if type(value) is dict:
+                val = value[(extname, extver)]
+            else:
+                val = value
+            
+            # Check to see whether the keyword is already in the specified
+            # extension
+            original_value = ext.get_key_value(keyword)
+            if original_value is not None:
+                # The keyword exists
+                log.debug("Keyword %s=%s already exists in extension "
+                          "%s,%s" % (keyword, original_value, extname, extver))
+                msg = "updated in"
+            else:
+                msg = "added to"
+            
+            # Add or update the keyword value and comment
+            if val is not None:
+                ext.set_key_value(keyword, val, comment)
+                log.fullinfo("%s,%s keyword %s=%s %s %s" % (
+                  extname, extver, keyword, val, msg, ad.filename))
 
 def update_key_from_descriptor(adinput=None, descriptor=None, keyword=None,
                                extname=None):
@@ -1782,7 +1859,7 @@ def update_key_from_descriptor(adinput=None, descriptor=None, keyword=None,
     Add or update a keyword in the specified header of the AstroData object
     with a value determined from the specified descriptor.
     
-    :param adinput: Input AstroData object to add or update the keyword
+    :param adinput: The input AstroData object to add or update the keyword
     :type adinput: AstroData
     :param descriptor: Name of the descriptor used to obtain the value that
                        will be written to the header, e.g., 'gain()'
@@ -1804,9 +1881,6 @@ def update_key_from_descriptor(adinput=None, descriptor=None, keyword=None,
     if extname is None:
         raise Errors.Error("No extension name provided")
     
-    # Instantiate the log
-    log = logutils.get_logger(__name__)
-    
     # Determine the value of the descriptor
     ad = adinput_list[0]
     exec("dv = ad.%s" % descriptor)
@@ -1824,57 +1898,18 @@ def update_key_from_descriptor(adinput=None, descriptor=None, keyword=None,
     if key is None:
         raise Errors.Error("No keyword found for descriptor %s" % descriptor)
     
-    # Get the comment for the keyword, if available
-    comment = None
-    if key in keyword_comments:
-        comment = keyword_comments[key]
-    
     if extname == "PHU":
         # Use as_pytype() to return the value of the descriptor as the default
         # python type, rather than an object. 
         value = dv.as_pytype()
-        
-        # Check to see whether the keyword is already in the PHU
-        original_value = ad.phu_get_key_value(key)
-        if original_value is not None:
-            # The keyword exists
-            log.debug("Keyword %s=%s already exists in the PHU" % (
-              key, original_value))
-            msg = "updated in"
-        else:
-            msg = "added to"
-        
-        # Add or update the keyword value and comment
-        ad.phu_set_key_value(key, value, comment)
-        log.fullinfo("PHU keyword %s=%s %s %s" % (key, value, msg,
-                                                  ad.filename))
-    
     else:
         # Use as_dict() to return the value of the descriptor as a dictionary,
         # rather than an object, where the key of the dictionary is an
         # (EXTNAME, EXTVER) tuple 
-        descriptor_dict = dv.as_dict()
-        
-        for ext in ad[extname]:
-            extname = ext.extname()
-            extver = ext.extver()
-            value = descriptor_dict[(extname, extver)]
-            
-            # Check to see whether the keyword is already in the specified
-            # extension
-            original_value = ext.get_key_value(key)
-            if original_value is not None:
-                # The keyword exists
-                log.fullinfo("Keyword %s=%s already exists in extension "
-                             "%s,%s" % (key, original_value, extname, extver))
-                msg = "updated in"
-            else:
-                msg = "added to"
-            
-            # Add or update the keyword value and comment
-            ext.set_key_value(key, value, comment)
-            log.fullinfo("%s,%s keyword %s=%s %s %s" % (
-              extname, extver, key, value, msg, ad.filename))
+        value = dv.as_dict()
+    
+    update_key(adinput=ad, keyword=key, value=value, comment=None,
+               extname=extname) 
 
 def validate_input(adinput=None):
     """
