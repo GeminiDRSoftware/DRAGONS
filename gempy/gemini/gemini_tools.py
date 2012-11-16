@@ -1487,14 +1487,11 @@ def mark_history(adinput=None, keyword=None, comment=None):
     # Get the current time to use for the time of last modification
     tlm = datetime.now().isoformat()[0:-7]
     
+    # Construct the default comment
+    timestamp_keys = None
     if comment is None:
-        # Construct the default comment
-        try:
-            timestamp_keys = Lookups.get_lookup_table(
-                "Gemini/timestamp_keywords", "timestamp_keys")
-        except:
-            timestamp_keys = None
-        
+        timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
+                                                  "timestamp_keys")
         comment_suffix = keyword
         if timestamp_keys is not None:
             for primitive_name, key in timestamp_keys.iteritems():
@@ -1515,13 +1512,20 @@ def mark_history(adinput=None, keyword=None, comment=None):
     # Loop over each input AstroData object in the input list
     for ad in adinput:
         for key, comm in keyword_dict.iteritems():
+            # Check to see whether the keyword is already in the PHU
+            original_value = ad.phu_get_key_value(key)
+            if original_value is not None:
+                # The keyword exists
+                log.debug("Keyword %s=%s already exists in the PHU" % (
+                  key, original_value))
+                msg = "updated in"
+            else:
+                msg = "added to"
+            
+            # Add or update the keyword value and comment
             ad.phu_set_key_value(key, tlm, comm)
-        
-        if keyword is not None:
-            log.fullinfo("PHU keyword %s = %s added to %s" % (
-              keyword, ad.phu_get_key_value(keyword), ad.filename))
-        log.fullinfo("PHU keyword GEM-TLM = %s added to %s" % (
-          ad.phu_get_key_value("GEM-TLM"), ad.filename))
+            log.fullinfo("PHU keyword %s=%s %s %s" % (key, tlm, msg,
+                                                      ad.filename))
 
 def obsmode_add(ad):
     """Add 'OBSMODE' keyword to input phu for IRAF routines in GMOS package
@@ -1772,84 +1776,124 @@ def trim_to_data_section(adinput=None):
         raise
 
 
-def update_key_from_descriptor(adinput=None, descriptor=None, 
-                               keyword=None, extname=None):
+def update_key_from_descriptor(adinput=None, descriptor=None, keyword=None,
+                               extname=None):
     """
-    This function updates keywords in the headers of the input dataset,
-    performs logging of the changes and writes history keyword related to the
-    changes to the PHU.
+    Add or update a keyword in the specified header of the AstroData object
+    with a value determined from the specified descriptor.
     
-    :param adinput: astrodata instance to perform header key updates on
-    :type adinput: an AstroData instance
-    
-    :param descriptor: string for an astrodata function or descriptor function
-                       to perform on the input ad.
-                       ie. for ad.gain(), descriptor='gain()'
+    :param adinput: Input AstroData object to add or update the keyword
+    :type adinput: AstroData
+    :param descriptor: Name of the descriptor used to obtain the value that
+                       will be written to the header, e.g., 'gain()'
     :type descriptor: string 
-    
-    :param extname: Set to 'PHU', 'SCI', 'VAR' or 'DQ' to update the given
-                    keyword in the PHU, SCI, VAR or DQ extension, respectively.
-                    
+    :param extname: Name of the extension to add or update the keyword, e.g.,
+                   'PHU', 'SCI', 'VAR', 'DQ'
     :type extname: string
     """
-    log = logutils.get_logger(__name__)
-    historyComment = None
-
-    # Make sure a valid extname is specified
-    if extname is None:
-        extname = "SCI"
-
-    # Use exec to perform the requested function on full AD 
-    # Allow it to raise the error if the descriptor fails
-    exec('dv = adinput.%s' % descriptor)
-    if dv is None:
-        log.fullinfo("No value found for descriptor %s on %s" % 
-                     (descriptor,adinput.filename))
-    else:
-
-        if keyword is not None:
-            key = keyword
-        else:
-            key = dv.keyword
-            if key is None:
-                raise Errors.ToolboxError(
-                    "No keyword found for descriptor %s" % descriptor)
-
-        # Get comment from lookup table
-        # Allow it to raise the KeyError if it can't find it
-        comment = keyword_comments[key]
-            
-        if extname == "PHU":
-            # Set the keyword value and comment
-            adinput.phu_set_key_value(key, dv.as_pytype(), comment)
-        else:
-            # Use the dictionary form of the descriptor value
-            dv_dict = dv.dict_val
-
-            for ext in adinput[extname]:
-                # Get value from dictionary
-                dict_key = (ext.extname(),ext.extver())
-                value = dv_dict[dict_key]
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more AstroData objects
+    adinput_list = validate_input(adinput=adinput)
+    
+    if len(adinput_list) > 1:
+        raise Errors.Error("Please provide only one AstroData object as input")
         
-                # Set the keyword value and comment
-                ext.set_key_value(key, value, comment)
+    # Validate remaining input parameters
+    if descriptor is None:
+        raise Errors.Error("No descriptor name provided")
+    if extname is None:
+        raise Errors.Error("No extension name provided")
+    
+    # Instantiate the log
+    log = logutils.get_logger(__name__)
+    
+    # Determine the value of the descriptor
+    ad = adinput_list[0]
+    exec("dv = ad.%s" % descriptor)
+    
+    if dv is None:
+        raise Errors.Error("No value found for %s descriptor in %s" %
+                           (descriptor, ad.filename))
+    
+    if keyword is None:
+        # Use the default keyword stored in the DescriptorValue object
+        key = dv.keyword
+    else:
+        key = keyword
+    
+    if key is None:
+        raise Errors.Error("No keyword found for descriptor %s" % descriptor)
+    
+    # Get the comment for the keyword, if available
+    comment = None
+    if key in keyword_comments:
+        comment = keyword_comments[key]
+    
+    if extname == "PHU":
+        # Use as_pytype() to return the value of the descriptor as the default
+        # python type, rather than an object. 
+        value = dv.as_pytype()
+        
+        # Check to see whether the keyword is already in the PHU
+        original_value = ad.phu_get_key_value(key)
+        if original_value is not None:
+            # The keyword exists
+            log.debug("Keyword %s=%s already exists in the PHU" % (
+              key, original_value))
+            msg = "updated in"
+        else:
+            msg = "added to"
+        
+        # Add or update the keyword value and comment
+        ad.phu_set_key_value(key, value, comment)
+        log.fullinfo("PHU keyword %s=%s %s %s" % (key, value, msg,
+                                                  ad.filename))
+    
+    else:
+        # Use as_dict() to return the value of the descriptor as a dictionary,
+        # rather than an object, where the key of the dictionary is an
+        # (EXTNAME, EXTVER) tuple 
+        descriptor_dict = dv.as_dict()
+        
+        for ext in ad[extname]:
+            extname = ext.extname()
+            extver = ext.extver()
+            value = descriptor_dict[(extname, extver)]
             
-
+            # Check to see whether the keyword is already in the specified
+            # extension
+            original_value = ext.get_key_value(key)
+            if original_value is not None:
+                # The keyword exists
+                log.fullinfo("Keyword %s=%s already exists in extension "
+                             "%s,%s" % (key, original_value, extname, extver))
+                msg = "updated in"
+            else:
+                msg = "added to"
+            
+            # Add or update the keyword value and comment
+            ext.set_key_value(key, value, comment)
+            log.fullinfo("%s,%s keyword %s=%s %s %s" % (
+              extname, extver, key, value, msg, ad.filename))
 
 def validate_input(adinput=None):
     """
-    The validate_input helper function is used to validate the inputs given to
-    the user level functions.
+    The validate_input helper function is used to validate the input value to
+    the adinput parameter. If adinput is None, an exception is raised. This
+    function returns a list containing one or more AstroData objects.
     """
     # If the adinput is None, raise an exception
     if adinput is None:
         raise Errors.InputError("The adinput cannot be None")
+    
     # If the adinput is a single AstroData object, put it in a list
     if not isinstance(adinput, list):
         adinput = [adinput]
+    
     # If the adinput is an empty list, raise an exception
     if len(adinput) == 0:
         raise Errors.InputError("The adinput cannot be an empty list")
+    
     # Now, adinput is a list that contains one or more AstroData objects
     return adinput
 
