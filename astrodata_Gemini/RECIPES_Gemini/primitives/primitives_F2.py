@@ -157,10 +157,9 @@ class F2Primitives(GEMINIPrimitives):
                 if len(ext.data.shape) == 3:
                     
                     # Remove the single-dimensional axis from the pixel data
+                    log.fullinfo("Removing the third dimension from %s"
+                                 % ad.filename)
                     ext.data = np.squeeze(ext.data)
-                    if len(ext.data.shape) == 2:
-                        log.fullinfo("Removed the third dimension from %s"
-                                     % ad.filename)
                     
                     if len(ext.data.shape) == 3:
                         # The np.squeeze method only removes a dimension from
