@@ -3,7 +3,7 @@ from copy import deepcopy
 import numpy as np
 from astrodata import AstroData
 from astrodata import Errors
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
@@ -26,17 +26,15 @@ class PreprocessPrimitives(GENERALPrimitives):
         of the input AstroData object from ADU to electrons by multiplying
         by the gain.
         """
-        
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "aduToElectrons", "starting"))
         
         # Define the keyword to be used for the time stamp for this primitive
         timestamp_key = self.timestamp_keys["aduToElectrons"]
-
+        
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
@@ -46,9 +44,10 @@ class PreprocessPrimitives(GENERALPrimitives):
             # Check whether the aduToElectrons primitive has been run
             # previously
             if ad.phu_get_key_value(timestamp_key):
-                log.warning("No changes will be made to %s, since it has " \
-                            "already been processed by aduToElectrons" \
-                            % (ad.filename))
+                log.warning("No changes will be made to %s, since it has "
+                            "already been processed by aduToElectrons"
+                            % ad.filename)
+                
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
@@ -58,38 +57,35 @@ class PreprocessPrimitives(GENERALPrimitives):
             # electrons. First, get the gain value using the appropriate
             # descriptor
             gain = ad.gain()
-
+            
             # Now multiply the pixel data in the science extension by the gain
             # and the pixel data in the variance extension by the gain squared
-            log.fullinfo("Converting %s from ADU to electrons by " \
-                         "multiplying the science extension by the gain = %s" \
-                         % (ad.filename, gain))
+            log.status("Converting %s from ADU to electrons by multiplying "
+                       "the science extension by the gain = %s"
+                       % (ad.filename, gain))
             ad = ad.mult(gain)
             
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
-            for ext in ad["SCI"]:
-                ext.set_key_value("BUNIT","electron",
-                                  comment=self.keyword_comments["BUNIT"])
-            varext = ad["VAR"]
-            if varext is not None:
-                for ext in varext:
-                    ext.set_key_value("BUNIT","electron*electron",
-                                      comment=self.keyword_comments["BUNIT"])
-
+            gt.update_key(adinput=ad, keyword="BUNIT", value="electron",
+                          comment=None, extname="SCI")
+            if ad["VAR"]:
+                gt.update_key(adinput=ad, keyword="BUNIT",
+                              value="electron*electron", comment=None,
+                              extname="VAR")
+            
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
-
+            
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
                                               strip=True)
             
-            # Append the output AstroData object to the list 
-            # of output AstroData objects
+            # Append the output AstroData object to the list of output
+            # AstroData objects
             adoutput_list.append(ad)
         
-        # Report the list of output AstroData objects to the reduction
-        # context
+        # Report the list of output AstroData objects to the reduction context
         rc.report_output(adoutput_list)
         
         yield rc
@@ -100,10 +96,8 @@ class PreprocessPrimitives(GENERALPrimitives):
         of images to put their sky background at the same level
         as the reference image before stacking.
         """
-
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
 
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", 
@@ -222,10 +216,8 @@ class PreprocessPrimitives(GENERALPrimitives):
         of the corresponding flat. If the inputs contain VAR or DQ frames,
         those will also be updated accordingly due to the division on the data.
         """
-        
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "divideByFlat", "starting"))
@@ -349,10 +341,8 @@ class PreprocessPrimitives(GENERALPrimitives):
         a value to assign to uncorrectable pixels, or do we want to just add
         those pixels to the DQ plane with a specific value?
         """
-          
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "nonlinearityCorrect",
@@ -512,10 +502,8 @@ class PreprocessPrimitives(GENERALPrimitives):
         This primitive normalizes each science extension of the input
         AstroData object by its mean
         """
-        
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "normalizeFlat", "starting"))
@@ -576,10 +564,8 @@ class PreprocessPrimitives(GENERALPrimitives):
         those will also be updated accordingly due to the subtraction on the 
         data.
         """
-        
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "subtractDark", "starting"))
