@@ -157,7 +157,7 @@ class F2Primitives(GEMINIPrimitives):
                 if len(ext.data.shape) == 3:
                     
                     # Remove the single-dimensional axis from the pixel data
-                    log.fullinfo("Removing the third dimension from %s"
+                    log.status("Removing the third dimension from %s"
                                  % ad.filename)
                     ext.data = np.squeeze(ext.data)
                     
@@ -237,7 +237,7 @@ class F2Primitives(GEMINIPrimitives):
                 continue
             
             # Validate the input AstroData object.
-            log.stdinfo("No validation required for %s" % ad.filename)
+            log.status("No validation required for %s" % ad.filename)
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
