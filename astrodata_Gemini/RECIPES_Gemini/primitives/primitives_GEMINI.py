@@ -81,17 +81,17 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
             ad.store_original_name()
             
             # Number of science extensions
-            ad.phu_set_key_value("NSCIEXT", ad.count_exts("SCI"),
-                                 comment=self.keyword_comments["NSCIEXT"])
+            gt.update_key(adinput=ad, keyword="NSCIEXT",
+                          value=ad.count_exts("SCI"), comment=None,
+                          extname="PHU") 
             
             # Number of extensions
-            ad.phu_set_key_value("NEXTEND", len(ad),
-                                 comment=self.keyword_comments["NEXTEND"])
+            gt.update_key(adinput=ad, keyword="NEXTEND", value=len(ad),
+                          comment=None, extname="PHU")
             
             # Physical units (assuming raw data has units of ADU)
-            for ext in ad["SCI"]:
-                ext.set_key_value("BUNIT", "adu",
-                                  comment=self.keyword_comments["BUNIT"])
+            gt.update_key(adinput=ad, keyword="BUNIT", value="adu",
+                          comment=None, extname="SCI")
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
