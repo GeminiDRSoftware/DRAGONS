@@ -9,7 +9,7 @@
         "uiLevel"       : "UIBASIC",
         },
     "bpm":{
-        "default"       : "auto",
+        "default"       : None,
         # No default type defined, since the bpm parameter could be a string or
         # an AstroData object
         "recipeOverride": True,
