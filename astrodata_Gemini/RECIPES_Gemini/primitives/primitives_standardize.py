@@ -106,10 +106,18 @@ class StandardizePrimitives(GENERALPrimitives):
             final_bpm = gt.clip_auxiliary_data(adinput=ad, aux=bpm_ad,
                                                aux_type="bpm")[0]
             
+            # Get the non-linear level and the saturation level using the
+            # appropriate descriptors. Use as_dict() to return a dictionary
+            # rather than an object, where the key of the dictionary is an
+            # (EXTNAME, EXTVER) tuple
+            non_linear_level_dict = ad.non_linear_level().as_dict()
+            saturation_level_dict = ad.saturation_level().as_dict()
+            
             # Loop over each science extension in each input AstroData object
             for ext in ad["SCI"]:
                 
-                # Retrieve the extension number for this extension
+                # Retrieve the extension name and number for this extension
+                extname = ext.extname()
                 extver = ext.extver()
                 
                 # Check whether an extension with the same name as the DQ
@@ -119,10 +127,10 @@ class StandardizePrimitives(GENERALPrimitives):
                                 % (extver, ad.filename))
                     continue
                 
-                # Get the non-linear level and the saturation level as integers
-                # using the appropriate descriptors
-                non_linear_level = ext.non_linear_level().as_pytype()
-                saturation_level = ext.saturation_level().as_pytype()
+                # Get the non-linear level and the saturation level for this
+                # extension
+                non_linear_level = non_linear_level_dict[(extname, extver)]
+                saturation_level = saturation_level_dict[(extname, extver)]
                 
                 # Create an array that contains pixels that have a value of 2
                 # when that pixel is in the non-linear regime in the input
@@ -462,7 +470,7 @@ class StandardizePrimitives(GENERALPrimitives):
                 log.warning("It is not recommended to add a poisson noise "
                             "component to the variance of a bias frame")
             if poisson_noise and "GMOS" in ad.types and not \
-               ad.phu_get_key_value(timestamp_keys["subtractBias"]):
+               ad.phu_get_key_value(self.timestamp_keys["subtractBias"]):
                 log.warning("It is not recommended to calculate a poisson "
                             "noise component of the variance using data that "
                             "still contains a bias level")
@@ -612,10 +620,17 @@ class StandardizePrimitives(GENERALPrimitives):
         # Instantiate the log
         log = logutils.get_logger(__name__)
         
+        # Get the gain and the read noise using the appropriate descriptors.
+        # Use as_dict() to return a dictionary rather than an object, where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple
+        gain_dict = adinput.gain().as_dict()
+        read_noise_dict = adinput.read_noise().as_dict()
+        
         # Loop over the science extensions in the dataset
         for ext in adinput["SCI"]:
             
-            # Retrieve the extension number for this extension
+            # Retrieve the extension name and number for this extension
+            extname = ext.extname()
             extver = ext.extver()
             
             # Determine the units of the pixel data in the input science
@@ -624,7 +639,7 @@ class StandardizePrimitives(GENERALPrimitives):
             if bunit == "adu":
                 # Get the gain value using the appropriate descriptor. The gain
                 # is only if the units are in ADU
-                gain = ext.gain().as_pytype()
+                gain = gain_dict[(extname, extver)]
                 log.fullinfo("Gain for %s[SCI,%d] = %f"
                              % (adinput.filename, extver, gain))
                 units = "ADU"
@@ -639,7 +654,7 @@ class StandardizePrimitives(GENERALPrimitives):
                 # Get the read noise value (in units of electrons) using the
                 # appropriate descriptor. The read noise is only used if
                 # add_read_noise is True 
-                read_noise = ext.read_noise()
+                read_noise = read_noise_dict[(extname, extver)]
                 log.fullinfo("Read noise for %s[SCI,%d] = %f"
                              % (adinput.filename, extver, read_noise))
                 
