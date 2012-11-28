@@ -8,7 +8,6 @@ GEMINI_KeyDict = {
     "key_array_section":"ARRAYSEC",
     "key_azimuth":"AZIMUTH",
     "key_bias_image":"BIASIM",
-    "key_bias_level":"RAWBIAS",
     "key_bunit":"BUNIT",
     "key_camera":"CAMERA",
     "key_cass_rotator_pa":"CRPA",

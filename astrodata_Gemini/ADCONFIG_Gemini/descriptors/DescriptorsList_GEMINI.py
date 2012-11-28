@@ -3,7 +3,6 @@
     DD("amp_read_area", pytype=str),
     DD("array_section", pytype=list),
     DD("azimuth", pytype=float),
-    DD("bias_level", pytype=float),
     DD("camera", pytype=str),
     DD("cass_rotator_pa", pytype=float),
     DD("central_wavelength", pytype=float),

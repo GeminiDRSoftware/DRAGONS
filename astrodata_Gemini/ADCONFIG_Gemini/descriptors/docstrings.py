@@ -76,25 +76,6 @@ class docstrings:
         """
         pass
     
-    def bias_level(self):
-        """
-        Return the bias_level value
-        
-        :param dataset: the dataset
-        :type dataset: AstroData
-        :param format: the return format
-                       set to as_dict to return a dictionary, where the number 
-                       of dictionary elements equals the number of pixel data 
-                       extensions in the image. The key of the dictionary is 
-                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
-                       the key is the integer index of the extension.
-        :type format: string
-        :rtype: float as default (i.e., format=None)
-        :rtype: dictionary containing one or more float(s) (format=as_dict)
-        :return: the bias level (in ADU) of the observation
-        """
-        pass
-    
     def camera(self):
         """
         Return the camera value

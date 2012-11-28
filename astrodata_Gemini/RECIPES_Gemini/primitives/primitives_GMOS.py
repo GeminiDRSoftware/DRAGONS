@@ -8,6 +8,7 @@ from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import logutils
 from astrodata.adutils.gemutil import pyrafLoader
+from gempy.gemini import gemini_data_calculations as gdc
 from gempy.gemini import gemini_tools as gt
 from primitives_GEMINI import GEMINIPrimitives
 from gempy.gemini import eti
@@ -220,7 +221,7 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Standardize the headers of the input AstroData object. Update the
             # keywords in the headers that are specific to GMOS.
-            log.fullinfo("Updating keywords that are specific to GMOS")
+            log.status("Updating keywords that are specific to GMOS")
             
             # Pixel scale
             gt.update_key_from_descriptor(
@@ -240,58 +241,13 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Bias level
             if "qa" in rc.context:
-                # Get the bias level from static tables
-                gt.update_key_from_descriptor(
-                  adinput=ad, descriptor="bias_level()", extname="SCI")
+                # Determine an estimate of the bias level
+                bias_level = gdc.get_bias_level(adinput=ad, estimate=True)
             else:
-                # For science quality, get the bias from a median
-                # of the overscan region. Assume that data has not
-                # yet been trimmed or processed to remove bias level,
-                # and that units are ADU
-                oversec_dv = ad.overscan_section()
-                if oversec_dv is None:
-                    # Use the static bias levels
-                    gt.update_key_from_descriptor(
-                      adinput=ad, descriptor="bias_level()", extname="SCI")
-                else:
-                    oversec_dict = oversec_dv.dict_val
-                    
-                    detector_type = ad.phu_get_key_value("DETTYPE")
-                    
-                    # The type of CCD determines the number of contaminated
-                    # columns in the overscan region
-                    if detector_type=="SDSU II CCD":
-                        nbiascontam = 4
-                    elif detector_type=="SDSU II e2v DD CCD42-90":
-                        nbiascontam = 5
-                    elif detector_type=="S10892-01":
-                        nbiascontam = 4
-                    else:
-                        nbiascontam = 4
-                    
-                    for ext in ad["SCI"]:
-                        dict_key = (ext.extname(),ext.extver())
-                        oversec = oversec_dict[dict_key]
-                        
-                        # Don't include columns at edges
-                        if oversec[0]==0:
-                            # Overscan region is on the left
-                            oversec[1]-=nbiascontam
-                            oversec[0]+=1
-                        else:
-                            # Overscan region is on the right
-                            oversec[0]+=nbiascontam
-                            oversec[1]-=1
-                        
-                        # Extract overscan data. In numpy arrays, 
-                        # y indices come first.
-                        overdata = ext.data[oversec[2]:oversec[3],
-                                            oversec[0]:oversec[1]]
-                        
-                        bias_level = np.median(overdata)
-                        ext.set_key_value(
-                            "RAWBIAS",bias_level,
-                            comment=self.keyword_comments["RAWBIAS"])
+                bias_level = gdc.get_bias_level(adinput=ad, estimate=False)
+            
+            gt.update_key(adinput=ad, keyword="RAWBIAS", value=bias_level,
+                          comment=None, extname="SCI")
             
             # Saturation level
             gt.update_key_from_descriptor(

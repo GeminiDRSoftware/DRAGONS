@@ -5,6 +5,7 @@ import numpy as np
 
 from astrodata import Errors
 from astrodata import Lookups
+from gempy.gemini import gemini_data_calculations as gdc
 from gempy.gemini import gemini_metadata_utils as gmu
 import GemCalcUtil
 
@@ -65,110 +66,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             ret_amp_read_area.update({ext_name_ver:amp_read_area})
         
         return ret_amp_read_area
-    
-    def bias_level(self, dataset, **args):
-        # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple
-        ret_bias_level = {}
-        
-        # Get the static bias lookup table
-        gmosampsBias, gmosampsBiasBefore20060831 = Lookups.get_lookup_table(
-            "Gemini/GMOS/GMOSAmpTables", "gmosampsBias",
-            "gmosampsBiasBefore20060831")
-        
-        # Get the UT date, gain, gain setting and read speed setting values
-        # using the appropriate descriptors. Use get_value() and as_pytype() to
-        # return the values as a dictionary and the default python type,
-        # respectively, rather than an object.
-        ut_date = str(dataset.ut_date())
-        gain_dict = dataset.gain().get_value()
-        gain_setting_dict = dataset.gain_setting().get_value()
-        read_speed_setting = dataset.read_speed_setting().as_pytype()
-        
-        if ut_date is None or gain_dict is None or \
-           gain_setting_dict is None or read_speed_setting is None:
-            # The descriptor functions return None if a value cannot be
-            # found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, "exception_info"):
-                raise dataset.exception_info
-        
-        obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
-        old_ut_date = datetime(2006, 8, 31, 0, 0)
-        
-        # Determine the name of the detector amplifier keyword (ampname) from
-        # the global keyword dictionary 
-        keyword = self.get_descriptor_key("key_ampname")
-        
-        # Get the value of the name of the detector amplifier keyword from the
-        # header of each pixel data extension as a dictionary
-        ampname_dict = gmu.get_key_value_dict(dataset, keyword)
-        
-        if ampname_dict is None:
-            # The get_key_value_dict() function returns None if a value cannot
-            # be found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, "exception_info"):
-                raise dataset.exception_info
-        
-        # Loop over the pixel data extensions in the dataset
-        for ext in dataset:
-            # Get the (EXTNAME, EXTVER) tuple
-            ext_name_ver = (ext.extname(), ext.extver())
-            
-            ampname = ampname_dict[ext_name_ver]
-            
-            if ampname is None:
-                bias_level = None
-            else:
-                # Check whether data has been overscan-subtracted
-                overscan = ext.get_key_value(
-                    self.get_descriptor_key("key_overscan_value"))
-                
-                # Check whether a raw bias was written to the header
-                # (e.g., in the prepare step)
-                raw_bias = ext.get_key_value(
-                    self.get_descriptor_key("key_bias_level"))
-                
-                # Get the approximate bias level for the extension
-                if overscan is not None:
-                    # Use the average overscan level as the bias level
-                    bias_level = overscan
-                elif raw_bias is not None:
-                    # Use the previously calculated bias level
-                    # (written in prepare step)
-                    bias_level = raw_bias
-                else:
-                    # Use the static bias levels from the lookup table. Get the
-                    # gain, gain_setting, and read_speed_setting for the
-                    # extension.
-                    gain = gain_dict[ext_name_ver]
-                    gain_setting = gain_setting_dict[ext_name_ver]
-                    
-                    bias_key = (read_speed_setting, gain_setting, ampname)
-                    if obs_ut_date > old_ut_date:
-                        if bias_key in gmosampsBias:
-                            static_bias = gmosampsBias[bias_key]
-                        else:
-                            raise Errors.TableKeyError()
-                    else:
-                        if bias_key in gmosampsBiasBefore20060831:
-                            static_bias = gmosampsBiasBefore20060831[bias_key]
-                        else:
-                            raise Errors.TableKeyError()
-                    
-                    bias_level = static_bias
-            
-            # Update the dictionary with the array section value
-            ret_bias_level.update({ext_name_ver: bias_level})
-        
-        if ret_bias_level == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
-        
-        return ret_bias_level
     
     def central_wavelength(self, dataset, asMicrometers=False,
                            asNanometers=False, asAngstroms=False, **args):
@@ -626,7 +523,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                         else:
                             raise Errors.TableKeyError()
                 
-                # Return a dictionary with the gain float as the value
+                # Update the dictionary with the gain value
                 ret_gain.update({ext_name_ver:gain})
         
         return ret_gain
@@ -1217,12 +1114,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 need_bias_level = True
         
         if need_bias_level:
-            bias_level_dv = dataset.bias_level()
-            if bias_level_dv is None:
-                if hasattr(ext, "exception_info"):
-                    raise ext.exception_info
-            else:
-                bias_level_dict = bias_level_dv.dict_val
+            bias_level_dict = gdc.get_bias_level(adinput=dataset)
+            if bias_level_dict is None:
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
         
         # Loop over extensions to calculate saturation value
         for ext in dataset["SCI"]:

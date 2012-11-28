@@ -5,6 +5,7 @@ from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog
 from astrodata.adutils.gemutil import pyrafLoader
+from gempy.gemini import gemini_data_calculations as gdc
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import eti
 from primitives_GENERAL import GENERALPrimitives
@@ -93,24 +94,22 @@ class DisplayPrimitives(GENERALPrimitives):
                 overscan = np.array([ext.get_key_value("OVERSCAN") 
                                      for ext in ad["SCI"]])
                 if np.any(overscan) or biasim or darkim:
-                    log.fullinfo("Bias level has already been removed "\
-                                 "from data; no approximate correction "\
+                    log.fullinfo("Bias level has already been removed "
+                                 "from data; no approximate correction "
                                  "will be performed")
                 else:
-                    # Try to get the bias level from the descriptor
-                    try:
-                        bias_level = ad.bias_level()
-                    except:
-                        log.warning("Bias level not found for %s; " \
+                    # Get the bias level
+                    bias_level = gdc.get_bias_level(adinput=ad)
+                    if bias_level is not None:
+                        # Subtract the bias level from each science extension
+                        log.stdinfo("Subtracting approximate bias level "
+                                     "from %s for display" % ad.filename)
+                        log.fullinfo("Bias levels used: %s" % str(bias_level))
+                        ad = ad.sub(bias_level)
+                    else:
+                        log.warning("Bias level not found for %s; "
                                     "approximate bias will not be removed" % 
                                     ad.filename)
-                    else:
-                        # Subtract the bias level from each science extension
-                        log.stdinfo("\nSubtracting approximate bias level "\
-                                     "from %s for display\n" \
-                                     % ad.filename)
-                        log.fullinfo("Bias levels used: %s" % str(bias_level))
-                        ad = ad.sub(bias_level.dict_val)
 
                 new_adinput.append(ad)
             adinput = new_adinput
