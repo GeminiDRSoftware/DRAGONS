@@ -1,8 +1,8 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_F2.py file, in alphabetical order.
-{"standardizeHeaders":{
+{"standardizeInstrumentHeaders":{
     "suffix":{
-        "default"       : "_headersStandardized",
+        "default"       : "_instrumentHeadersStandardized",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,

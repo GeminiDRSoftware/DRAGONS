@@ -568,6 +568,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "standardizeGeminiHeaders":{
+    "suffix":{
+        "default"       : "_geminiHeadersStandardized",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "storeProcessedArc":{
     "suffix":{
         "default"       : "_arc",

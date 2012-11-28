@@ -106,7 +106,7 @@
     },
  "standardizeInstrumentHeaders":{
     "suffix":{
-        "default"       : "_headersStandardized",
+        "default"       : "_instrumentHeadersStandardized",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
