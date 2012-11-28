@@ -149,10 +149,6 @@ def get_key_value_dict(dataset, keyword):
             # the exception to the dataset.
             if hasattr(ext, "exception_info"):
                 setattr(dataset, "exception_info", ext.exception_info)
-        else:
-            # The value of the keyword was found for at least one extension, so
-            # the dictionary can be returned
-            return_dictionary = True
             
         # Update the dictionary with the value
         ret_keyword_value.update({(ext.extname(), ext.extver()):value})
@@ -160,12 +156,13 @@ def get_key_value_dict(dataset, keyword):
     try:
         if ret_keyword_value == {}:
             # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions 
+            # pixel data extensions
             raise Errors.CorruptDataError()
         
-        if not return_dictionary:
+        unique_values = set(ret_keyword_value.values())
+        if len(unique_values) == 1 and None in unique_values:
             # The value of the keyword was not found for any of the pixel data
-            # extensions
+            # extensions (all the values in the dictionary are equal to None)
             raise dataset.exception_info
         
         return ret_keyword_value
