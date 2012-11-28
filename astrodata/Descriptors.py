@@ -125,7 +125,7 @@ class DescriptorValue(object):
         else:
             self._val = initval
             self.dict_val = {}
-            for ext in ad["SCI"]:
+            for ext in ad:
                 self.dict_val.update({(ext.extname(),ext.extver()) : self._val})
         
         #NOTE:
