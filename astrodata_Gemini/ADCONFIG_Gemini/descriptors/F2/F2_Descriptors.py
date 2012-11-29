@@ -236,49 +236,58 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         cd21_dict = gmu.get_key_value_dict(dataset, keyword3)
         cd22_dict = gmu.get_key_value_dict(dataset, keyword4)
         
-        if cd11_dict is None or cd12_dict is None or cd21_dict is None or \
-          cd22_dict is None:
-            # The get_key_value_dict() function returns None if a value cannot
+        if cd11_dict is None:
+            # Get the pixel scale value using the value of the pixel scale
+            # keyword
+            pixel_scale = self._get_pixel_scale_from_header(dataset=dataset)
+            for ext in dataset:
+                # Update the dictionary with the pixel_scale value
+                ret_pixel_scale.update(
+                  {(ext.extname(), ext.extver): pixel_scale})
+        else:
+            for ext_name_ver, cd11 in cd11_dict.iteritems():
+                cd12 = None
+                if cd12_dict is not None:
+                    cd12 = cd12_dict[ext_name_ver]
+                cd21 = None
+                if cd21_dict is not None:
+                    cd21 = cd21_dict[ext_name_ver]
+                cd22 = None
+                if cd22_dict is not None:
+                    cd22 = cd22_dict[ext_name_ver]
+                
+                pixel_scale = None
+                if cd11 is not None and cd12 is not None and \
+                 cd21 is not None and cd22 is not None:
+                    # Calculate the pixel scale using the WCS matrix elements
+                    pixel_scale = 3600 * (
+                      math.sqrt(math.pow(cd11, 2) + math.pow(cd12, 2)) +
+                      math.sqrt(math.pow(cd21, 2) + math.pow(cd22, 2))) / 2
+                
+                if pixel_scale is None or pixel_scale == 0.0:
+                    # Get the pixel scale value using the value of the pixel
+                    # scale keyword
+                    pixel_scale = self._get_pixel_scale_from_header(
+                      dataset=dataset)
+                
+                # Update the dictionary with the pixel scale value
+                ret_pixel_scale.update({ext_name_ver: pixel_scale})
+        
+        return ret_pixel_scale
+    
+    def _get_pixel_scale_from_header(self, dataset):
+        # Determine the pixel scale keyword from the global keyword dictionary
+        keyword = self.get_descriptor_key("key_pixel_scale")
+        
+        # Get the value of the pixel scale keyword from the header of the PHU
+        ret_pixel_scale = dataset.phu_get_key_value(keyword)
+        
+        if ret_pixel_scale is None:
+            # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
-        
-        for ext_name_ver, cd11 in cd11_dict.iteritems():
-            cd12 = cd12_dict[ext_name_ver]
-            cd21 = cd21_dict[ext_name_ver]
-            cd22 = cd22_dict[ext_name_ver]
-            
-            if cd11 is None:
-                pixel_scale = None
-            else:
-                # Calculate the pixel scale using the WCS matrix elements
-                pixel_scale = 3600 * (
-                  math.sqrt(math.pow(cd11, 2) + math.pow(cd12, 2)) +
-                  math.sqrt(math.pow(cd21, 2) + math.pow(cd22, 2))) / 2
-            
-            if pixel_scale is None or pixel_scale == 0.0:
-                # Get the pixel scale value using the value of the pixel scale
-                # keyword
-                #
-                # Determine the pixel scale keyword from the global keyword
-                # dictionary 
-                keyword = self.get_descriptor_key("key_pixel_scale")
-                
-                # Get the value of the pixel scale keyword from the header of
-                # the PHU
-                pixel_scale = dataset.phu_get_key_value(keyword)
-                
-                if pixel_scale is None:
-                    # The phu_get_key_value() function returns None if a value
-                    # cannot be found and stores the exception info. Re-raise
-                    # the exception. It will be dealt with by the
-                    # CalculatorInterface. 
-                    if hasattr(dataset, "exception_info"):
-                        raise dataset.exception_info
-            
-            # Update the dictionary with the array section value
-            ret_pixel_scale.update({ext_name_ver:pixel_scale})
         
         return ret_pixel_scale
     
