@@ -2,8 +2,12 @@
 # apply to them
 
 structureIndex = {
-    "GEMINI": "StructBASICGEM.StructGemBundleArray()",
-    "MOS": "StructBASICGEM.StructSpecArray()",
+    "dutype_members"   : "StructBASICGEM.StructDUTypeMembers()",
+    "pixel_exts": "StructBASICGEM.StructPixelDataMembers()",
+    "bintable_exts" : "StructBASICGEM.StructBintableMembers()",
+    #"mdf_member":"StructBASICGEM.StructWithMDF()",
+    #"bundle_members": "StructBASICGEM.StructGemBundleArray()",
+    #"spect_members": "StructBASICGEM.StructSpecArray()",
     # testing
-    "NODCHOP": "StructBASICGEM.StructNodChopTree()"
+    #"NODCHOP": "StructBASICGEM.StructNodChopTree()"
 }
