@@ -396,9 +396,11 @@ integrates other functionality.
             The PHU can be accessed via the ``phu`` AstroData member of using
             the PHU related member functions.
         """
+        import Structures
         hdul = self.hdulist # get_hdulist()
         # ext can be tuple, an int, or string ("EXTNAME")
         exs = []
+        
         if (type(ext) == str):
             # str needs to be EXTNAME, so we go over the extensions
             # to collect those with the correct extname
@@ -448,6 +450,9 @@ integrates other functionality.
             # self.release_hdulist()
             # print "gd132: %s" % str(gdpart)
             return gdpart
+        elif isinstance(ext, Structures.Structure):
+            # print "AD454:"
+            return Structures.get_structured_slice(self,structure=ext) 
         else:
             raise KeyError()
             
@@ -623,6 +628,11 @@ integrates other functionality.
                 if ext in et_host.xdict.keys():
                     for ver in et_guest.xdict[ext].keys():
                         if ver in et_host.xdict[ext].keys():
+                            print "AD626:",ver,ext
+                            print "--"*20
+                            print repr(et_guest.xdict)
+                            print "--"*20
+                            print repr(et_host.xdict)
                             raise Errors.AstroDataError(\
                         "EXTNAME, EXTVER conflict, use auto_number")
             for hdu in hdul[1:]:

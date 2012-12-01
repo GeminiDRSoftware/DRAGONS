@@ -1,8 +1,56 @@
 # The Structure system includes two main classes
 import os, sys, re
-import AstroData
+from astrodata.data import AstroData
 
 from ConfigSpace import config_walk
+from Requirements import *
+from pprint import pformat
+from copy import copy
+
+
+class HDUTypeReq(Requirement):
+    typeclass = None
+    
+    def __init__(self, typeclass):
+        self.typeclass = typeclass
+    def satisfied_by(self, dataset):
+        import pyfits
+        # print "s16:", repr(dataset.hdulist[1])
+        if isinstance(dataset.hdulist[1], self.typeclass):
+            satis = True
+        else:
+            satis = False 
+        # print "s16:", satis        
+        return satis
+
+HDUTYPE = HDUTypeReq
+
+
+class HUReq(Requirement):
+    typeclass = None
+    huReqs = None
+    
+    def __init__(self, hureqs = None, ** argd):
+        if hureqs == None:
+            hureqs = {}
+        hureqs.update(argd)
+        self.huReqs = hureqs
+        # print "S38:",pformat(hureqs)
+        
+    def satisfied_by(self, dataset):
+        satis = True
+        for key in self.huReqs.keys():
+            huval = self.huReqs[key]
+            print "S44:", key, huval
+            if dataset.header[key] != huval:
+                satis = False
+                break
+        return satis
+
+HU = HUReq
+    
+ 
+
 
 # some common defines mainly for Structure Definition Modules
 # these are standard strings, these variable save typing quotes
@@ -11,6 +59,7 @@ array_by = "array_by"
 optional = "optional"
 retain = "retain"
 structure = "structure"
+
 
 class StructureExcept:
     """ This is the general exception the classes and functions in the
@@ -24,13 +73,13 @@ class StructureExcept:
         @param msg: a string description about why this exception was thrown
         @type msg: string
         """  
-        self.message = msg
+        self.message =msg
     def __str__(self):
         """This string operator allows the default exception handling to
         print the message associated with this exception.
         @returns: string representation of this exception, the self.message member
         @rtype: string"""
-        return self.message
+        return "------\n"+self.message+"\n"+"-"*70
     
 class ProjectionExcept(StructureExcept):
     """ This exception is raised to communicate (potentially) fatal errors
@@ -76,6 +125,8 @@ class Part(object):
     #: up the hierarchy
     other_reqs = None # requirements given by superstructure
     
+    arrayToken = None
+    
     def __init__(self, structClass = None, arrayBy = None, 
                     name=None, otherReqs={}, required=True):
         """Constructor for Part class.
@@ -110,7 +161,24 @@ class Part(object):
             self.array_by = arrayBy
             self.struct_name = name
             self.other_reqs = otherReqs.copy()
-            
+    
+    def find(self, *args, **argd):
+        self.struct_inst.find(*args, **argd)
+        #print "S166:", self.struct_inst.extension  
+        
+    def extension(self):
+        if self.struct_inst:
+            if hasattr(self.struct_inst,"extension"):
+                return self.struct_inst.extension
+            elif hasattr( self.struct_inst,"get_extentions"):
+                exts = self.struct_inst.get_extensions()
+                if len(exts) == 0:
+                    return None
+                else:
+                    return exts
+        else:
+            return None    
+        
 class PartList(Part, list):
     """This class is for a part that is an array.
     """
@@ -127,7 +195,8 @@ class Structure(object):
     parts = None
     partInsts = None
     otherReqs = None
-    def find(self, dataset):
+    arrayToken = None # sortable id to use to array_by 
+    def find(self, dataset, hduignore = []):
         """
         This function attempts to find the structure given in the dataset given.
         @param dataset: the data in which to seek the structure defined in
@@ -156,7 +225,8 @@ class Structure(object):
                 except KeyError:
                     raise StructureExcept("Structure Part Does not Define Structure")
                 try:               
-                    arrayBy = partattr["arrayBy"]
+                    arrayBy = partattr["array_by"]
+                    # print "S188:",arrayBy
                 except KeyError:
                     arrayBy = None
                 try:
@@ -170,26 +240,62 @@ class Structure(object):
             if arrayBy != None:
                 # then this part is an array
                 # create associateByList
-                associateList = get_concrete_array_by_values(dataset, array_by = arrayBy, reqs = self.otherReqs)
-                # for each concrete association
-                newPartAry = PartList(None, 
-                                arrayBy = arrayBy, 
-                                name=partkey, 
-                                otherReqs = self.otherReqs, 
-                                required=required)
-                for associateVal in associateList:
-                    # define other_reqs to pass in, the one we got as an arg
-                    # plus the arrayBy:associateVal addition
-                    addReqs = self.otherReqs.copy()
-                    addReqs.update({arrayBy:associateVal})
-                    #  instantiate part with reqs (which it saves)
-                    newPart = Part(structClass, 
-                                arrayBy = arrayBy, 
-                                name=partkey, 
-                                otherReqs = addReqs, 
-                                required=required)
-                    newPartAry.append(newPart)
+                if hasattr(arrayBy, "__call__"):
+                    newPartAry = PartList(None, 
+                        arrayBy = arrayBy, 
+                        name=partkey, 
+                        otherReqs = self.otherReqs, 
+                        required=required)  
+                    ppfound = []
+                    hduignore = []
+                    while(True):
+                        ppart = Part(structClass,
+                                       arrayBy=arrayBy,
+                                        name = partkey,
+                                        otherReqs = None,
+                                        required = required)
+                        ppart.find(dataset, hduignore = hduignore)
+                        if ppart.extension():
+                            ppfound.append(ppart)
+                            hdu = ppart.extension().hdulist[1]
+                            #print "S220:", id(ppart), ppart.extension()
+                            #print "S221:", arrayBy, arrayBy(ppart.extension())
+                            hduignore.append(hdu)
+                            self.arrayToken = arrayBy(AstroData(hdu))
+                        else:
+                            if len(ppfound) == 0:
+                                # found failure, add part
+                                ppfound.append(ppart)
+                            break 
+                    for part in newPartAry:
+                        print "s226:", id(part), part.extension()
+                                            
+                    newPartAry.extend(ppfound)
+                    #for part in newPartAry:
+                    #    print "s229:", id(part) , part.extension()
+                        #id(ppart.extension().hdulist[1]), len(ppart.extension)   
                     
+                elif type(arrayBy) == str:
+                    associateList = get_concrete_array_by_values(dataset, 
+                                                             array_by = arrayBy, 
+                                                             reqs = self.otherReqs)
+                    # for each concrete association
+                    print "S199",pformat(associateList)
+                    
+                    for associateVal in associateList:
+                        # define other_reqs to pass in, the one we got as an arg
+                        # plus the arrayBy:associateVal addition
+                        addReqs = self.otherReqs.copy()
+                        addReqs.update({arrayBy:associateVal})
+                        #  instantiate part with reqs (which it saves)
+                        newPart = Part(structClass, 
+                                    arrayBy = arrayBy, 
+                                    name=partkey, 
+                                    otherReqs = addReqs, 
+                                    required=required)
+                        newPartAry.append(newPart)
+                    
+                # result of old or new method    
                 self.partInsts.append(newPartAry)
             else:
                 # instantiate singlular part
@@ -198,6 +304,8 @@ class Structure(object):
                             name=partkey, 
                             otherReqs = self.otherReqs, 
                             required=required)
+                newPart.find(dataset)
+                        
                 if newPart != None:
                     self.partInsts.append(newPart)
         
@@ -208,7 +316,8 @@ class Structure(object):
             if isinstance(part,list):
                 for subpart in part:
                     # @@TODO: make this a function call in common with block below
-                    bFound = subpart.struct_inst.find(dataset)
+                    bFound = subpart.extension()
+                    # print "S317:", type(subpart) #  subpart.arrayToken
                     if bFound == False:
                         if part.required == False:
                             part.struct_inst = None
@@ -218,7 +327,7 @@ class Structure(object):
                             
                             return False
             else:
-                bFound = part.struct_inst.find(dataset)
+                bFound = part.extension()
                 if bFound == False:
                     if part.required == False:
                         part.struct_inst = None
@@ -227,6 +336,7 @@ class Structure(object):
                         raise StructureExcept("Temporary Exception... failure when required == True"+ errstr)
                         return False
         
+        printParts(294,self.partInsts)
         return True
     
     def project(self, dataset):
@@ -242,15 +352,24 @@ class Structure(object):
         @param dataset: the AstroData instance to which to apply the structure members
         @type dataset: AstroData instance
         """
+        
         # @@TODO: check this dataset was the one used for the same find (store id in part array somewhere)
+        printParts(315,self.partInsts)
         for part in self.partInsts:
             if isinstance(part,list):
                 newmem = []
                 for subpart in part:
+                    # print "S320:",subpart.extension().hdulist[1]
                     exts = subpart.struct_inst.get_extensions()
-                    newds = AstroData.AstroData(dataset, extInsts = exts)
-                    newmem.append(newds)
-                    subpart.struct_inst.project(newds)                    
+                    #print "S322:",repr(exts)
+                    if exts:
+                        newds = AstroData(dataset, extInsts = exts)
+                        #print "S324:",newds.info()                    
+                        newmem.append(newds)
+                        subpart.struct_inst.project(newds)
+                    elif subpart.required:
+                        raise StructureExcept("..... required part (%s) not found\n..... in dataset %s" % 
+                                        (subpart.struct_class, dataset.filename) )               
                 newmemstr = "dataset.%s" % part.struct_name
                 # check if this is already projected... note, we WANT an attributeerror
                 # here to ensure the attribute is not already projected.
@@ -265,11 +384,11 @@ class Structure(object):
                 projectstr = "%s = newmem" % newmemstr
                 exec(projectstr)
                 if (self.cdebug):
-                    print "projectstr = '%s' (dataset=%s)" % (projectstr, str(dataset))
+                    print "S341: projectstr = '%s' (dataset=%s)" % (projectstr, str(dataset))
             elif isinstance(part, Part):
                 if (part.struct_inst != None):
                     exts = part.struct_inst.get_extensions()
-                    newds = AstroData.AstroData(dataset, extInsts = exts)
+                    newds = AstroData(dataset, extInsts = exts)
                 else:
                     newds = None
                 newmemstr = "dataset.%s" % part.struct_name
@@ -280,22 +399,109 @@ class Structure(object):
                     pass
                 projectstr = "%s = newds" % newmemstr
                 if (self.cdebug):
-                    print "projectstr = '%s' (dataset=%s)" % (projectstr, str(dataset))
+                    print "XX: projectstr = '%s' (dataset=%s)" % (projectstr, str(dataset))
+                    exec("print 'XX'+'%s'"%newmemstr)
                 exec(projectstr)
                 if part.struct_inst != None:
                     part.struct_inst.project(newds)
             else:
                 # only options... how did a non-Part class get here?
                 raise StructureExcept("Non Part Class found in part array - fatal flaw")
+    def collect(self, dataset):
+        """
+        This function will collect parts defined by a structure onto a given AstrData object,
+        that is, it will add the correct members to the AstroData instance.
+        In short, this function attaches an AstroData instance, or, 
+        for array members, a list of AstroData instances, as a member of the
+        given dataset which contains the extensions in that section of the dataset.
+        
+        NOTE: the structure should have been previously "found" 
+        (e.g. via 'structureInstance.find(dataset)').
+        @param dataset: the AstroData instance to which to apply the structure members
+        @type dataset: AstroData instance
+        """
+        
+        # @@TODO: check this dataset was the one used for the same find (store id in part array somewhere)
+        # print "S425: numparts in collect", len(self.partInsts)
+        slicedict = {}
+        for part in self.partInsts:
+            #print "S428:", part.struct_name
+            if isinstance(part,list):
+                newmem = []
+                for subpart in part:
+                    # print "S320:",subpart.extension().hdulist[1]
+                    exts = subpart.struct_inst.get_extensions()
+                    #print "S322:",repr(exts)
+                    if exts:
+                        newds = AstroData(dataset, extInsts = exts)
+                        #print "S324:",newds.info()                    
+                        newmem.append(newds)
+                        subpart.struct_inst.project(newds)
+                    elif subpart.required:
+                        raise StructureExcept("..... required part (%s) not found\n..... in dataset %s" % 
+                                        (subpart.struct_class, dataset.filename) )               
+                newmemstr = "dataset.%s" % part.struct_name
+                # check if this is already projected... note, we WANT an attributeerror
+                # here to ensure the attribute is not already projected.
+                # NOTE: this may not be the behavior we want eventually, but right now
+                # this will help us avoid conflicts.
+                try:
+                    testattr = eval(newmemstr)
+                    raise ProjectionExcept('Projection Conflict, member "%s" already exists' % part.struct_name)
+                except AttributeError:
+                    pass
+                
+                projectstr = "%s = newmem" % newmemstr
+                hdus = [ext.hdulist[1] for ext in newmem]
+                
+                slicedict[part.struct_name] = AstroData(dataset,extInsts=hdus)
+                #exec(projectstr)
+                if (self.cdebug):
+                    print "S341: projectstr = '%s' (dataset=%s)" % (projectstr, str(dataset))
+            elif isinstance(part, Part):
+                if (part.struct_inst != None):
+                    exts = part.struct_inst.get_extensions()
+                    newds = AstroData(dataset, extInsts = exts)
+                else:
+                    newds = None
+                newmemstr = "dataset.%s" % part.struct_name
+                try:
+                    testattr = eval(newmemstr)
+                    raise ProjectionExcept('Projection Conflict, member "%s" already exists' % part.struct_name)
+                except AttributeError:
+                    pass
+                projectstr = "%s = newds" % newmemstr
+                if (self.cdebug):
+                    print "XX: projectstr = '%s' (dataset=%s)" % (projectstr, str(dataset))
+                    exec("print 'XX'+'%s'"%newmemstr)
+                #exec(projectstr)
+                slicedict[part.struct_name] = newds
+                if part.struct_inst != None:
+                    part.struct_inst.project(newds)
+            else:
+                # only options... how did a non-Part class get here?
+                raise StructureExcept("Non Part Class found in part array - fatal flaw")
+            
+        keys = slicedict.keys()
+        # print "S483:", keys
+        if len(keys) == 0:
+            return None
+        elif len(keys) == 1:
+            return slicedict[keys[0]]
+        else:
+            return slicedict
+
+            
     def get_extensions(self):
         retary = []
         for part in self.partInsts:
             if part.struct_inst != None:
                 exts = part.struct_inst.get_extensions()
+                print "S351:",repr(exts)
                 if exts != None:
                     retary += exts
         return retary
-
+    
     def printout(self,dataset,prefix = "", nest = 0):
         indent = ""
         for i in range(0,nest):
@@ -332,6 +538,7 @@ class ExtID(object):
     head_reqs = None
     extension = None # Note: this is (should be) a single extension 
                      # .. AstroData instance
+    requirement = None
     cdebug = False
     other_reqs = None
     def printout(self, dataset, prefix = "", nest=0):
@@ -368,7 +575,7 @@ class ExtID(object):
             return [self.extension.hdulist[1]]
         else:
             return None
-    def find(self, dataset):
+    def find(self, dataset, hduignore = []):
         """
         This function will try to find the extension matching
         its requirements in the given dataset.
@@ -377,33 +584,60 @@ class ExtID(object):
         @type dataset: AstroData instance
         """
         # print "S379:%s" % type(self)
-        allReqs = self.head_reqs.copy()
-        if self.other_reqs != None:
-            allReqs.update(self.other_reqs)
+        if self.requirement:
+            if (self.cdebug):
+                print "ExtID: finding: by Requirement: %s" % self.__class__.__name__
+            for ext in dataset:
+                if ext.hdulist[1] in hduignore:
+                    bMatch = False
+                else:
+                    bMatch = self.requirement.satisfied_by(ext)
+                
+                if bMatch == True:
+                    self.extension = ext
+                    return True
+                # else we try again via the loops
             
-        if (self.cdebug):
-            print "ExtID: finding:\n\t%s" % str(allReqs)
-        for ext in dataset:
-            bMatch = True # falsified below
-            for hkey in allReqs.keys():
-                try:
-                    if ext.header[hkey] != allReqs[hkey]:
+            
+        if self.head_reqs:
+            allReqs = self.head_reqs.copy()
+            if self.other_reqs != None:
+                allReqs.update(self.other_reqs)
+                
+            if (self.cdebug):
+                print "ExtID: finding:\n\t%s" % str(allReqs)
+            for ext in dataset:
+                bMatch = True # falsified below
+                for hkey in allReqs.keys():
+                    try:
+                        if ext.header[hkey] != allReqs[hkey]:
+                            print "s391:",hkey, ":",ext.header[hkey]
+                            bMatch = False
+                            break
+                    except KeyError:
                         bMatch = False
                         break
-                except KeyError:
-                    bMatch = False
-                    break
-            if bMatch == True:
-                self.extension = ext
-                return True
-            # else we try again via the loops
+                if bMatch == True:
+                    self.extension = ext
+                    return True
+                # else we try again via the loops
+        self.extension = None
         return False
         
 
 #functions
 
+def retrieve_structure_obj(stype):
+    if stype not in centralStructureIndex:
+        return None
+        
+    structstr = centralStructureIndex[stype]
+    struct_obj = instantiate_struct(structstr)
 
-def apply_structure_by_type(dataset):
+    return struct_obj
+    
+    
+def get_structured_slice(dataset = None, stype = None, structure = None):
     """ Apply all structures to dataset based on which types apply to
     the given dataset
     @param dataset: dataset to apply structure to
@@ -411,7 +645,48 @@ def apply_structure_by_type(dataset):
     @return: The number of structures applied
     @rtype: int
     """
-    types = dataset.get_types()
+    structstr = None
+    if not stype and not structure:
+        raise StructureExcept("return_structured_slice worker needs a structure type name or Structure object, not None")
+
+    applied = 0
+    if not structure:
+        if stype in centralStructureIndex:
+            structstr = centralStructureIndex[stype]
+        else:
+            raise StructureExcept('No Structure registered under name "%s"' % stype)    
+        # print "s422:", structstr
+        
+    if structstr != None:
+        applied += 1
+        structObj = instantiate_struct(structstr)
+        #@@TODO: what if this is false... not handling at all
+    else:
+        structObj = structure
+
+    structObj.find(dataset)
+    #print "S664:"
+    #structObj.printout(664)
+    return structObj.collect(dataset)
+
+def apply_structure_by_type(dataset = None, stype = None):
+    """ Apply all structures to dataset based on which types apply to
+    the given dataset
+    @param dataset: dataset to apply structure to
+    @type dataset: AstroData instance
+    @return: The number of structures applied
+    @rtype: int
+    """
+    orig_dataset = dataset
+    dataset = AstroData(dataset.hdulist)
+    dataset.filename = orig_dataset.filename
+    if stype:
+        if type(stype) == str:
+            types = [stype]
+        if type(stype) == list:
+            types = stype
+    else:
+        types = dataset.get_types()
     applied = 0
     for typ in types:
         # see if there is a structure
@@ -427,7 +702,8 @@ def apply_structure_by_type(dataset):
             structObj = instantiate_struct(structstr)
             #@@TODO: what if this is false... not handling at all
             structObj.find(dataset)
-            # structObj.printout(dataset)
+#            print "S566:"
+#            structObj.printout(dataset)
             structObj.project(dataset)
             try:
                 ls = dataset.structures
@@ -439,51 +715,12 @@ def apply_structure_by_type(dataset):
                 
             dataset.structures.append(structObj)
     
-    return applied
+    return dataset
 
 def instantiate_struct(structstr):
     modname = structstr.split(".")[0]
     exec "import " + modname
     return eval (structstr)
-
-def get_concrete_array_by_values(dataset, array_by, reqs = None):
-    if array_by == None:
-        raise StructureExcept("Structure.py: cannot get concrete values; array_by == None")
-    
-    retlist = []
-    
-    # is going through the whole list of extensions sensible?
-    for ext in dataset.hdulist[1:]:
-        eheader = ext.header.ascardlist()
-        passedReqs = True # falsified  if need by by guantlet below below
-        if reqs != None:
-            for reqkey in reqs.keys():
-                try:
-                    if eheader[reqkey].value != reqs[reqkey]:
-                        # one falure is one too many, this is not an extension we are 
-                        # looking at in the callers part of the structure
-                        passedReqs = False
-                        break
-                except KeyError:
-                    # means match failed, exists in reqs but not eheader
-                    passedReqs = False
-                    break
-        
-        if (passedReqs == True):
-            # might mean there were no extra reqs...
-            # ncv == New Concrete Value (to add to retlist)
-            try:
-                ncv = eheader[array_by]
-                if ncv.value not in retlist:
-                    retlist.append(ncv.value)
-            except KeyError:
-                # just means this extension doesn't have a concrete value to contribute
-                # which also means it won't be found in this part of the structure
-                # which obviously means it has not passed... MUST HAVE whatever
-                # the array_by key is...
-                pass
-            
-    return retlist
 
 # CODE THAT RUNS ON IMPORT
 # THIS MODULE ACTS AS A SINGLETON FOR STRUCTURE FEATURES
@@ -537,3 +774,15 @@ if (True): # was firstrun logic... python interpreter makes sure this module onl
                         raise StructureExcept(msg)
                         
                 centralStructureIndex.update(structureIndex)
+                
+def printParts(line,parts):
+    for part in parts:
+        if False:
+            tag = "s-PP%s:"%line
+            print tag, id(part) , part.extension()
+            if part.extension():
+                print tag, part.extension().hdulist[1]
+        if isinstance(part, list):
+            printParts(str(line)+"  ",part)
+        #id(ppart.extension().hdulist[1]), len(ppart.extension)   
+    
