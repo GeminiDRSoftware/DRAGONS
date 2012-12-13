@@ -1,4 +1,6 @@
 
+from copy import deepcopy
+
 # Mosaic task
 #------------
 
@@ -27,7 +29,7 @@ gaps = {   # gaps: (x_gap, y_gap)  One tuple per detector
 }
 
 gaps_tile = gaps
-gaps_transform = gaps
+gaps_transform = deepcopy(gaps)
 
 shift = {                #  (x_shift, y_shift) for detectors (1,2,3).
     ('GMOS-S','SDSU II CCD','GMOS + Blue1','unbinned'):[(-1.44,5.46),(0.,0.),(7.53,9.57)],  
@@ -108,5 +110,6 @@ magnification = {
 interpolator= {  # Values could be 'linear','nearest','spline2','spline3','spline4'
               'SCI':'linear','DQ':'linear', 'VAR':'linear','OBJMASK':'linear',
 }
-ref_block = { 'ref_block':(2,1)    # Reference detector (x,y) position in the mosaic grid
+ref_block = { 'ref_block':(1,0)    # (0-base). Reference detector (x,y) position 
+                                   # in the mosaic grid
 }
