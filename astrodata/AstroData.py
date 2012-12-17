@@ -35,6 +35,17 @@ verbose = False
 verboseLoadTypes = True
 verbt = False
 
+from astrodata import new_pyfits_version
+def _pyfits_update_compatible(hdu):
+    """
+      Creates a member with the header function pointer
+      set or update if new_pyfits_version is True
+      or False.
+      The new_pyfits_version member is defined in astrodata/__init__.py
+    """
+    if new_pyfits_version:
+        hdu.header.update = hdu.header.set
+
 def ad_obsolete(msg):
     print "DEPRECATED:--------------\n"*1
     print "OBSOLETE:"+msg
@@ -78,10 +89,16 @@ def re_header_keys(rekey, header):
     the header passed in which match the given regular expression.
     """
     retset = []
-    for k in header.ascardlist().keys():
-        # print "gd278: key=%s" % k
-        if re.match(rekey, k):
-            retset.append(k)
+    if new_pyfits_version:
+        for k in header.keys():
+            #print "gd278: key=%s" % k
+            if re.match(rekey, k):
+                retset.append(k)
+    else:
+        for k in header.ascardlist().keys():
+            # print "gd278: key=%s" % k
+            if re.match(rekey, k):
+                retset.append(k)
 
     if len(retset) == 0:
        retset = None
@@ -400,7 +417,6 @@ integrates other functionality.
         hdul = self.hdulist # get_hdulist()
         # ext can be tuple, an int, or string ("EXTNAME")
         exs = []
-        
         if (type(ext) == str):
             # str needs to be EXTNAME, so we go over the extensions
             # to collect those with the correct extname
@@ -652,8 +668,9 @@ integrates other functionality.
         header = self.verify_header(extname=extname, extver=extver, \
             header=header)
         xver = None
-        if header.has_key("EXTVER"):
+        if "EXTVER" in header:
             xver = header["EXTVER"]
+
         et_host = ExtTable(self)
         if not autonum:
             for ext in et_host.xdict.keys():
@@ -662,6 +679,8 @@ integrates other functionality.
                         raise Errors.AstroDataError(\
                             "EXTNAME EXTVER conflict, use auto_number") 
         host_bigver = et_host.largest_extver()
+        if new_pyfits_version:
+            header.update = header.set
         if extver:
             xver = extver
             header.update("EXTVER", xver, "Added by AstroData", after="EXTNAME")
@@ -851,13 +870,19 @@ integrates other functionality.
                 rets += "\n Obj. ID: %s" % str(id(self))
             rets += "\n    Type: %s" % selftype
             rets += "\n    Mode: %s" % str(self.mode)
+
+            if new_pyfits_version:
+                lencards = len(self.phu._header.cards)
+            else:
+                lencards = len(self.phu._header.ascard)
+
             if oid:
                 rets += "\n\nAD No.    Name          Type      MEF No."
                 rets += "  Cards    Dimensions   Format   ObjectID   "
                 rets += "\n%shdulist%s%s%s%s" % (" "*8, " "*7, \
                     hdulisttype, " "*45, str(id(self.hdulist)))
                 rets += "\n%sphu%s%s    0%s%d%s%s" % (" "*8, " "*11, \
-                    phutype, " "*7, len(self.phu._header.ascard),\
+                    phutype, " "*7, lencards,\
                     " "*27, str(id(self.phu)))
                 rets += "\n%sphu.header%s%s%s%s" % (" "*8, " "*4, \
                     phuHeaderType, " "*46, str(id(self.phu.header)))
@@ -866,7 +891,7 @@ integrates other functionality.
                 rets += "  Cards    Dimensions   Format   "
                 rets += "\n%shdulist%s%s" % (" "*8, " "*7, hdulisttype)
                 rets += "\n%sphu%s%s    0%s%d" % (" "*8, " "*11, \
-                    phutype, " "*7, len(self.phu._header.ascard))
+                    phutype, " "*7, lencards)
                 rets += "\n%sphu.header%s%s" % (" "*8, " "*4, phuHeaderType)
             hdu_indx = 1
             for hdu in self.hdulist[1:]:
@@ -906,12 +931,16 @@ integrates other functionality.
                 try:
                     name_ = None
                     cards_ = None
-                    if not hdu.header.has_key("EXTVER"):
+                    if not "EXTVER" in hdu.header:
                         name_ = hdu.header["EXTNAME"]
                     else:
                         name_ = "('" + hdu.header['EXTNAME'] + "', "
                         name_ += str(hdu.header['EXTVER']) + ")"
-                    cards_ = len(self.hdulist[hdu_indx]._header.ascard)
+                    if new_pyfits_version:
+                        cards_ = len(self.hdulist[hdu_indx]._header.cards)
+                    else:
+                        cards_ = len(self.hdulist[hdu_indx]._header.ascard)
+
                 except:
                     pass
                 if extType == "ImageHDU":
@@ -1325,10 +1354,12 @@ help      False     show help information    """
                         hdulist.append(imagehdu)
                         self.hdulist=hdulist
                         kafter = "GCOUNT"
-                        if not hdu.header.has_key(kafter): 
+                        if not kafter in hdu.header:
                             kafter = None
                         if hdu.header.get("TFIELDS"): 
                             kafter = "TFIELDS"
+
+                        _pyfits_update_compatible(hdu)
                         hdu.header.update("EXTNAME", "SCI", \
                             "added by AstroData", after=kafter)
 
@@ -1368,11 +1399,13 @@ help      False     show help information    """
                 # nhdulist = pyfits.HDUList(nhdul)
                 for i in range(1, l):
                     hdu = hdul[i]
+                    _pyfits_update_compatible(hdu)
                     kafter = "GCOUNT"
                     if hdu.header.get("TFIELDS"): kafter = "TFIELDS"
                     hdu.header.update("EXTNAME", "SCI", \
                         "added by AstroData", after=kafter)
-                    del hdu.header['extver']
+                    if 'EXTVER' in hdu.header:
+                        del hdu.header['EXTVER']
                     hdu.header.update("EXTVER", i, \
                         "added by AstroData", after="EXTNAME")
                     hdu.name = SCI
@@ -1391,10 +1424,12 @@ help      False     show help information    """
                 numhdu = len(hdul)
                 for i in range(1, numhdu):
                     hdu = hdul[i]
+                    _pyfits_update_compatible(hdu)
                     ev = hdu.header.get("EXTVER")
                     inferEV += 1
                     if not ev or int(ev)< 1:
-                        del hdu.header['extver']
+                        if 'EXTVER' in hdu.header:
+                            del hdu.header['EXTVER']
                         hdu.header.update("EXTVER", inferEV ,after="EXTNAME")
                         hdu._extver = inferEV
     
@@ -1488,20 +1523,25 @@ help      False     show help information    """
         if header is None:
             ihdu = pyfits.ImageHDU()
             header = ihdu.header
+
+            _pyfits_update_compatible(ihdu)
+
             if extname is None:
                 raise Errors.AstroDataError("cannot resolve extname")
             else: 
-                header.update("EXTNAME", extname, "Added by AstroData")
+                ihdu.header.update("EXTNAME", extname, "Added by AstroData")
             if extver is None:
-                header.update("EXTVER", 1, "Added by AstroData", \
+                ihdu.header.update("EXTVER", 1, "Added by AstroData", \
                     after="EXTNAME")
             else:
-                header.update("EXTVER", extver, "Added by AstroData", \
+                ihdu.header_update("EXTVER", extver, "Added by AstroData", \
                     after="EXTNAME")
         else:
-            if extname and header.has_key("EXTNAME"):
+            if new_pyfits_version:
+                header.update = header.set
+            if extname and ("EXTNAME" in header):
                 header.update("EXTNAME", extname, "Added by AstroData")
-            if extver and header.has_key("EXTVER"):
+            if extver and ("EXTVER" in header):
                 header.update("EXTVER", extver, "Added by AstroData", \
                     after="EXTNAME")
         return header
@@ -1916,12 +1956,13 @@ help      False     show help information    """
             else:
                 final_comment = full_comment[:65-len(str(value))]
         
-        hdus = self.hdulist
-        hdus[0].header.update(keyword, value, final_comment)
+        phu = self.hdulist[0]
+        _pyfits_update_compatible(phu)
+        phu.header.update(keyword, value, final_comment)
         
         # Add history comment
         if history_comment is not None:
-            hdus[0].header.add_history(history_comment)
+            phu.header.add_history(history_comment)
         
         return
         
@@ -2163,6 +2204,7 @@ help      False     show help information    """
             else:
                 final_comment = full_comment[:65-len(str(value))]
         
+        _pyfits_update_compatible(ext)
         ext.header.update(keyword, value, final_comment)
         
         # Add history comment to the PHU
