@@ -6,6 +6,8 @@ import sys
 import sre_constants
 from ConfigSpace import config_walk
 
+from astrodata import new_pyfits_version
+
 verbose = False
 verboseLoadTypes = True
 verbt = False
@@ -63,8 +65,13 @@ class PHUReq(Requirement):
         
     def satisfied_by(self, hdulist):
         try:
-            phuCards = hdulist[0].header.ascard
-            phuCardsKeys = phuCards.keys()
+            if new_pyfits_version:
+                phuHeader = hdulist[0].header
+                phuCards = phuHeader.cards
+                phuCardsKeys = phuHeader.keys()
+            else:
+                phuCards = hdulist[0].header.ascard
+                phuCardsKeys = phuCards.keys()
         except KeyError:
             return False
         
