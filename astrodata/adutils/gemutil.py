@@ -6,7 +6,7 @@ import strutil
 import time
 
 from astrodata.adutils import gemLog
-from astrodata import Errors
+from astrodata import Errors, new_pyfits_version
 
 log = None
 
@@ -332,13 +332,15 @@ def gemhedit(filename=None, extension=0, keyword='', value='', comment='',
     header = fd[extension].header
 
     if delete:
-        if header.has_key (keyword.upper()):
+        if keyword.upper() in header:
             del (header[keyword])
         # else do nothing
     else:
-        if header.has_key (keyword.upper()):
+        if keyword.upper() in header:
             header[keyword] = value
         else:
+            if new_pyfits_version:
+                header.update = header.set
             header.update(keyword, value=value, comment=comment)
 
     fd.close()
@@ -584,11 +586,13 @@ def rename_hdu(name=None, ver=None, hdu=None):
     #if ver == None:
     #    ver = 1
     nheader = hdu.header
+    if new_pyfits_version:
+        nheader.update  = nheader.set
     kafter = "GCOUNT"
     if nheader.get("TFIELDS"): 
         kafter = "TFIELDS"
     if name is None:
-        if not nheader.has_key("EXTNAME"):
+        if not "EXTNAME" in nheader:
             raise Errors.gemutilError("name is None and EXTNAME not in header")
         if ver:
             nheader.update("extver", ver, "added by AstroData", after="EXTNAME")

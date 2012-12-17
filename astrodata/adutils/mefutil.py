@@ -1,6 +1,7 @@
 
 import os
 import pyfits
+from astrodata import new_pyfits_version
 
 """This file contains the following utilities:
     hdrhedit (header=None, keyword="", value="", comment="")
@@ -32,9 +33,11 @@ def hdrhedit (header=None, keyword="", value="", comment=""):
     @type comment: string
     """
 
-    if header.has_key (keyword.upper()):
+    if keyword.upper() in header:
         header[keyword] = value
     else:
+        if new_pyfits_version:
+            header.update = header.set
         header.update (keyword, value=value, comment=comment)
 
 #---------------------------------------------------------------------------
@@ -166,6 +169,8 @@ def convertMEF (filenames, output, extname=["SCI"], template=None):
         hdr = phdr.copy()
 
         # put the image in the extension
+        if new_pyfits_version:
+            hdr.update = hdr.set
         hdr.update ("EXTNAME", ename)
         hdr.update ("EXTVER", 1)
         hdu = pyfits.ImageHDU (data, hdr)
@@ -207,8 +212,11 @@ def getkeys (keywords, filename, extension=0, default="not found",
 
     results = []
     missing = []
-    cardlist = hdr.ascardlist()
-    keywords_in_header = cardlist.keys()
+    if new_pyfits_version:
+        keywords_in_header = hdr.keys()
+    else:
+        cardlist = hdr.ascardlist()
+        keywords_in_header = cardlist.keys()
     for keyword in keywords:
         keyword = keyword.upper()
         if keyword in keywords_in_header:
