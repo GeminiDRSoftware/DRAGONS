@@ -11,6 +11,8 @@ import os
 from copy import copy,deepcopy
 from AstroData import Errors
 
+from astrodata import new_pyfits_version
+
 uselocalcalserv = False
 batchno = 100
 
@@ -85,7 +87,10 @@ class DataSpider(object):
         
     def dumpinfo(self):
 	    #print self.hdulist.info()
-	    cards = self.hdulist[0].header.ascard
+            if new_pyfits_version:
+	        cards = self.hdulist[0].header.cards
+            else:
+	        cards = self.hdulist[0].header.ascard
 
 	    for hd in self.hdulist:
 	        if (hd.data != None):

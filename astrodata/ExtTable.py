@@ -30,14 +30,14 @@ class ExtTable(object):
             xname = None
             xver = None
             hdu = hdulist[i]
-            if hdu.header.has_key('EXTNAME'):
+            if 'EXTNAME' in hdu.header:
                 xname = hdu.header['EXTNAME']
                 newname = True
                 if xname in extnames:
                     newname=False
                 else:
                     extnames.append(xname)
-            if hdu.header.has_key('EXTVER'):
+            if 'EXTVER' in hdu.header:
                 xver = hdu.header['EXTVER']
             if newname:
                 if self.ad is None:
