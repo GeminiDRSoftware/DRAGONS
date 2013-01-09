@@ -68,6 +68,7 @@ def upload_calibration(filename):
     #print "RESPONSE"
     #print response
 
+calsearch_exc = None
 
 def calibration_search(rq, fullResult = False):
     import urllib, urllib2
@@ -113,6 +114,7 @@ def calibration_search(rq, fullResult = False):
     ### send request
     sequence = [("descriptors", rq["descriptors"]), ("types", rq["types"])]
     postdata = urllib.urlencode(sequence)
+    response = "CALIBRATION_NOT_FOUND"    
     try:
         # print "ppu106:", repr(sequence)
         # print "ppu107:", pprint.pformat(rq["descriptors"])
@@ -125,9 +127,12 @@ def calibration_search(rq, fullResult = False):
             
         response = u.read()
     except urllib2.HTTPError, error:
-        print "ppu110:HTTPError", error.read()
+        calserv_msg = error.read()
+        print "ppu131:HTTPError- server returns:", error.read()
         import traceback
+        import sys
         traceback.print_exc()
+        return (None, calserv_msg)
     #response = urllib.urlopen(rqurl).read()
     # print "prs129:", response
     if fullResult:

@@ -140,6 +140,7 @@ class CalibrationDefinitionLibrary(object):
                                'program_id',
                                'read_speed_setting',
                                'ut_datetime',
+                               'detector_roi_setting'
                                ]
             options = {'central_wavelength':'asMicrometers=True'}
 

@@ -514,11 +514,22 @@ def command_clause(ro, coi):
                             # print "488: calurl", repr(calurl)
                             #if calname:
                             #    return calname
+                            if calurl and len(calurl) and calurl[0] == None:
+                                log.warning(calurl[1])
+                                calurl = None
                         if calurl == None:
                             # print "RO492", repr(rq)
                             calurl = prs.calibration_search( rq )
                             if calurl is not None:
-                                calurl,calmd5 = calurl
+                                if len(calurl) and calurl[0] == None:
+                                    adcc_msg = calurl[1]                                    
+                                    calurl = None
+                                    log.error("CALIBRATION SERVICE REPORT:\n"*2)
+                                    log.error(adcc_msg)
+                                    log.error("END CAL SERVICE REPORT:\n"*2)
+                                    calurl = None                                
+                                else:                            
+                                    calurl,calmd5 = calurl
                             # print "RO475:", calurl, calmd5
                     except:
                         calurl = None
