@@ -114,13 +114,13 @@ class AstroDataRecord( ReductionContextRecord ):
     ad = None
     parent = None
     
-    def __init__(self, filename, display_id=None, timestamp=None, ad=None, parent=None, load = True):
+    def __init__(self, filename, display_id=None, timestamp=None, parent=None, load = True):
         super( AstroDataRecord, self ).__init__( timestamp )
         #print "RCR110:", type(filename), isinstance(filename, AstroData)
         if isinstance(filename, AstroData):
             self.filename = filename.filename
             self.ad = filename
-            self.parent = filename.filename
+            self.parent = parent #filename.filename
         elif type( filename ) == str:
             self.filename = filename
             if load == True:
@@ -129,8 +129,12 @@ class AstroDataRecord( ReductionContextRecord ):
                 self.ad = None
             self.parent = parent
         elif type( filename ) == AstroDataRecord:
-            self = filename
-            return
+            adr = filename
+            self.display_id = adr.display_id
+            self.filename = adr.filename
+            self.ad = adr.ad
+            self.parent = adr.parent        
+            return                      
         else:
             raise "BAD ARGUMENT"
         ##@@TODO: display_id may be obsolete

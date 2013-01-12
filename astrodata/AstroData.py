@@ -1361,7 +1361,7 @@ help      False     show help information    """
 
                         _pyfits_update_compatible(hdu)
                         hdu.header.update("EXTNAME", "SCI", \
-                            "added by AstroData", after=kafter)
+                            "ad1364: added by AstroData", after=kafter)
 
 		    #print "AD591:", self.hdulist[1].header["EXTNAME"]
                     #print "AD543: opened with pyfits", len(self.hdulist)
@@ -1403,11 +1403,11 @@ help      False     show help information    """
                     kafter = "GCOUNT"
                     if hdu.header.get("TFIELDS"): kafter = "TFIELDS"
                     hdu.header.update("EXTNAME", "SCI", \
-                        "added by AstroData", after=kafter)
+                        "ad1406: added by AstroData", after=kafter)
                     if 'EXTVER' in hdu.header:
                         del hdu.header['EXTVER']
                     hdu.header.update("EXTVER", i, \
-                        "added by AstroData", after="EXTNAME")
+                        "ad1410: added by AstroData", after="EXTNAME")
                     hdu.name = SCI
                     hdu._extver = i
             else:
