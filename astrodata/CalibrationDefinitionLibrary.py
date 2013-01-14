@@ -14,7 +14,7 @@ from Errors import CalibrationDefinitionLibraryError as CDLExcept
 from Errors import AstroDataError
 from Errors import ExistError
 from Errors import DescriptorTypeError
-               
+from Errors import FatalDeprecation               
 class CalibrationDefinitionLibrary(object):
     '''
     This class deals with obtaining request data from XML calibration files and generating 
@@ -26,17 +26,20 @@ class CalibrationDefinitionLibrary(object):
         '''
         Goes into ConfigSpace and gets all the file URIs to create a XML index.
         '''
+        # raise FatalDeprecation("CalibrationDefinitionLibrary NOT IN USE!")
+        
         self.xmlIndex = {}
-        self.update_xml_index()
+        #self.update_xml_index()
         # instantiate the logger object and put into the global variable 
         self.log = gemLog.getGeminiLog()
             
         
-    def update_xml_index(self):
+    def OBSOLETE_update_xml_index(self):
         '''
         Re-updates the xml index, could be useful if this becomes long running and there are changes to
         the xml files, etc.
         '''
+        
         self.xmlIndex = {}
         try:
             for dpath, dnames, files in ConfigSpace.config_walk( "xmlcalibrations" ):
@@ -136,6 +139,7 @@ class CalibrationDefinitionLibrary(object):
                                'nod_count',
                                'nod_pixels',
                                'object',
+                               "observation_class",
                                'observation_type',
                                'program_id',
                                'read_speed_setting',
@@ -153,11 +157,14 @@ class CalibrationDefinitionLibrary(object):
                 else:
                     opt = ''
                 try:
-                    exec('dv = ad.%s(%s)' % (desc_name,opt))
+                    exec_cmd = 'dv = ad.%s(%s)' % (desc_name,opt)
+                    exec(exec_cmd)
+                    # print "cdl161:"+exec_cmd+"=="+str(dv)
                 except (ExistError,KeyError,DescriptorTypeError):
                     continue
                 if dv is not None:
                     desc_dict[desc_name] = dv.for_db()
+                
                 
             cr.descriptors = desc_dict
             cr.types = ad.types
@@ -313,6 +320,7 @@ class CalibrationDefinitionLibrary(object):
         @rtype: dict
         '''
         calIndex = {}
+        raise FatalDeprecation("CalibrationDefinitionLibrary NOT IN USE!")
         
         for calFile in self.xmlIndex.keys():
             # calFile will look like 'GMOS-bias.xml', for split reference below.
@@ -321,7 +329,7 @@ class CalibrationDefinitionLibrary(object):
             tempCal = temp[1].split( '.' )[0]
             if tempCal == caltype:
                 calIndex.update( {adType:calFile} )
-        #print "CDL213:", calIndex
+        print "CDL213:", calIndex
         return calIndex
 
     

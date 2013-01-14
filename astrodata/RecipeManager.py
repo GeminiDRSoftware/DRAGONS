@@ -1555,7 +1555,7 @@ class ReductionContext(dict):
             addToCmdQueue = self.cdl.get_cal_req(inputs, caltype)
             #print "RM1389:", repr(addToCmdQueue[0].as_dict())
         for re in addToCmdQueue:
-            # print "RM1106:",repr(dir(re))
+            # print "RM1558:",repr(dir(re))
             re.source = source
             self.add_rq(re)
             

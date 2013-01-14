@@ -10,6 +10,9 @@ class Error(Exception):
     def __repr__(self):
         return self.__class__.__name__+"(%s)" % repr(self.message)
 
+class FatalDeprecation(Error):
+    pass
+    
 # The following exceptions are listed alphabetically
 class ArithError(Error):
     """
