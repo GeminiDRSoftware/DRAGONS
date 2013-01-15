@@ -56,6 +56,12 @@ class ExtTableError(Error):
     """
     message = "Exception raised in ExtTable.py"
 
+class FatalDeprecation(Error):
+    """
+    Raised when code that isn't supposed to be called anymore is called anyway.
+    """
+    message = "Fatal Deprecation"
+
 class gemutilError(Error):
     """
     General exception raised for Errors in adutils/gemutil.py

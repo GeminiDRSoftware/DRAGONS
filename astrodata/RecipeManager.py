@@ -315,34 +315,36 @@ class ReductionContext(dict):
     def __str__(self):
         """Used to dump Reduction Context(co) into file for test system
         """
-        tempStr = ""
-        tempStr = tempStr + "REDUCTION CONTEXT OBJECT (CO)\n" + \
-            "inputs = " + str(self.inputs) + \
-            "\ninputsHistory =  " + str(self.inputs_history) + \
-            "\ncalibrations = \n" + self.calsummary() + \
-            "\nrorqs = " 
-        if self.rorqs != []:
-            for rq_obj in self.rorqs:            
-                tempStr = tempStr + str(rq_obj)
-        else:
-            tempStr = tempStr + str(self.rorqs)
+        FatalDeprecation("ReductionContext.__str__() obsolete and non-functional, please report.")
         
-        #no loop initiated for stkrqs object printouts yet
-        tempStr = tempStr + "\noutputs = " 
-        if self.outputs[MAINSTREAM] != []:
-            for out_obj in self.outputs[MAINSTREAM]:
-                tempStr = tempStr + str(out_obj)
-        else:
-            tempStr = tempStr + str(self.outputs)
-        #"stephistory = " + str( self.stephistory ) + \
-        tempStr = tempStr + "\nhostname = " + str(self.hostname) + \
-            "\ndisplayName = " + str(self.display_name) + \
-            "\ncdl = " + str(self.cdl) + \
-            "\nindent = " + str(self.indent) + \
-            "\nstackeep = " + str(self.stackeep)
-        for param in self.values():
-            tempStr += "\n" + self.paramsummary()
-        return tempStr   
+        #tempStr = ""
+#        tempStr = tempStr + "REDUCTION CONTEXT OBJECT (CO)\n" + \
+#            "inputs = " + str(self.inputs) + \
+#            "\ninputsHistory =  " + str(self.inputs_history) + \
+#            "\ncalibrations = \n" + self.calsummary() + \
+#            "\nrorqs = " 
+#        if self.rorqs != []:
+#            for rq_obj in self.rorqs:            
+#                tempStr = tempStr + str(rq_obj)
+#        else:
+#            tempStr = tempStr + str(self.rorqs)
+#        
+#        #no loop initiated for stkrqs object printouts yet
+#        tempStr = tempStr + "\noutputs = " 
+#        if self.outputs[MAINSTREAM] != []:
+#            for out_obj in self.outputs[MAINSTREAM]:
+#                tempStr = tempStr + str(out_obj)
+#        else:
+#            tempStr = tempStr + str(self.outputs)
+#        #"stephistory = " + str( self.stephistory ) + \
+#        tempStr = tempStr + "\nhostname = " + str(self.hostname) + \
+#            "\ndisplayName = " + str(self.display_name) + \
+#            "\ncdl = " + str(self.cdl) + \
+#            "\nindent = " + str(self.indent) + \
+#            "\nstackeep = " + str(self.stackeep)
+#        for param in self.values():
+#            tempStr += "\n" + self.paramsummary()
+#        return tempStr   
     
     def add_cal(self, data, caltyp, calname, timestamp=None):
         '''
