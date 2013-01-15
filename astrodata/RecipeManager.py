@@ -315,6 +315,7 @@ class ReductionContext(dict):
     def __str__(self):
         """Used to dump Reduction Context(co) into file for test system
         """
+        # @@DEPRECATED: remove on review
         FatalDeprecation("ReductionContext.__str__() obsolete and non-functional, please report.")
         
         #tempStr = ""
