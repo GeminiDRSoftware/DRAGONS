@@ -20,8 +20,10 @@ spaces = {  "descriptors":"descriptors",
 RECIPEMARKER = "RECIPES_"
 LOOKUPDIRNAME = "lookups"
 PIFMARKER = "PIF_"
-CALCIFACEMARKER = "CalculatorInterface(.*).py$"
-DDLISTMARKER    = "DescriptorsList(.*).py$"
+CALCIFACEMARKER = "CalculatorInterface_(.*).py$"
+DDLISTMARKER    = "DescriptorsList_(.*).py$"
+CALCIFACEFORMAT = "CalculatorInterface_%s.py"
+DDLISTFORMAT    = "DescriptorsList_%s.py"
 cs = None
 class ConfigSpaceExcept:
     """This class is an exception class for the ConfigSpace module"""
@@ -112,6 +114,7 @@ class ConfigSpace(object):
                     thefile = None
                     for fil in elem[2]:
                         if re.match(CALCIFACEMARKER, fil):
+                            # print "CS117:", fil
                             self.calc_iface_list.append(
                                     (   "CALCIFACE",
                                         os.path.join(
@@ -119,14 +122,23 @@ class ConfigSpace(object):
                                             )
                                     )    
                                 )
-                        elif re.match(DDLISTMARKER, fil):
-                            self.calc_iface_list.append(
-                                    ( "DDLIST",
-                                        os.path.join(
-                                            elem[0], fil
-                                            )
+                        ddresult = re.match(DDLISTMARKER, fil)
+                        if ddresult:
+                            calcname = CALCIFACEFORMAT % ddresult.group(1)
+                            fcalcname = os.path.join(elem[0], calcname)
+                            if not os.path.exists(fcalcname):
+                                # if there is a CALCIFACEMARKER file, it supercedes this ddlist
+                                # expecting to be a cache for performance purpsoes, a modified instance or otherwise
+                                # the actual calculator interface
+                                # print "CS133:", fil
+                                
+                                self.calc_iface_list.append(
+                                        ( "DDLIST",
+                                            os.path.join(
+                                                elem[0], fil
+                                                )
+                                        )
                                     )
-                                )
                     self.curpack = from_which(elem)        
                     yield elem
             
