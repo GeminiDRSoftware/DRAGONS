@@ -157,7 +157,7 @@ class PRSProxy(object):
             self.found = True
         except socket.error:
             self.found = False
-            raise "NOPE"
+            raise ADCCCommunicationError("Socket Error")
         
     @classmethod
     def get_adcc(cls, reduce_server = None, check_once = False):
@@ -166,7 +166,7 @@ class PRSProxy(object):
         if not os.path.exists(racefile):
             if check_once == True:
                 return None
-            raise "SYSTEM ERROR: ADCC not found after being started"
+            raise ADCCCommunicationError("SYSTEM ERROR: ADCC not found after attempt to start")
         infof = file(racefile)
         infos = infof.read()
         infof.close()

@@ -32,6 +32,9 @@ class AstroDataReadonlyError(AstroDataError):
     """
     message = 'Readonly Exception Raised in AstroData.py'
 
+class ADCCCommunicationError(Error):
+    message = "ADCCCommunicationError"
+
 class CalibrationDefinitionLibraryError(Error):
     """
     Exceptions raised for CallibrationDefinitionLibrary.py

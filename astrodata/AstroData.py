@@ -326,7 +326,7 @@ integrates other functionality.
                 dataset = pyfits.HDUList(hdu)
                 if type(phu) is pyfits.core.PrimaryHDU:
                     dataset[0] = phu
-                # if phu is a header, then it will be assigned to a new phu
+                # if phu is a header, then it will be assigned to a new phuyes, if you give the extensions the PHU is supposed to be the 0'th in the array, and this can of course be ad.phu... 
                 elif phu.__class__ == pyfits.core.Header:
                     dataset[0].header = phu
                 else:
@@ -1306,7 +1306,7 @@ help      False     show help information    """
             inferRAW = False
             self.filename = source.filename
             self.__origFilename = source.filename
-            self.borrowed_hdulist = True
+            self.borrowed_hdulist = True # @@REVIEW with REFCOUNTING
             self.container = source
             
             # @@REVISIT: should this cache copy of types be here?
@@ -1317,6 +1317,7 @@ help      False     show help information    """
             chdu = source.hdulist #get_hdulist()
             # include the phu no matter what
             sublist = [chdu[0]]
+            
             if self.extensions != None:
                 # then some extensions have been identified to refer to
                 for extn in self.extensions:
@@ -1325,6 +1326,9 @@ help      False     show help information    """
             elif (self.extInsts != None):
                 # then some extension (HDU objects) have been given in a list
                 sublist += self.extInsts
+            else:
+                for extn in chdu:
+                    sublist.append(extn)            
             self.hdulist = pyfits.HDUList(sublist)
             # print "AD559:", self.hdulist[1].header["EXTVER"]
         
