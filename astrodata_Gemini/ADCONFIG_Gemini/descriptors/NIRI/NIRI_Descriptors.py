@@ -145,7 +145,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
                 # Return a dictionary with the data section list that uses
                 # 0-based, non-inclusive indexing as the value in the form
                 # [x1, x2, y1, y2]
-                data_section = [x_start, x_end, y_start, y_end]
+                data_section = [x_start, x_end + 1, y_start, y_end + 1]
             
             # Update the dictionary with the data section value
             ret_data_section.update({ext_name_ver:data_section})
