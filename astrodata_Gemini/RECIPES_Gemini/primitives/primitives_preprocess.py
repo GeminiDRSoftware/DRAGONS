@@ -387,7 +387,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                 continue
 
             # Get the appropriate information using the descriptors
-            coadds = ad.coadds()
+            coadds = ad.coadds().as_pytype()
             read_mode = ad.read_mode().as_pytype()
             total_exposure_time = ad.exposure_time()
             well_depth_setting = ad.well_depth_setting().as_pytype()
