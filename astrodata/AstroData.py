@@ -1550,7 +1550,7 @@ help      False     show help information    """
                     after="EXTNAME")
         return header
         
-    def write(self, filename=None, clobber=False, rename=None):
+    def write(self, filename=None, clobber=False, rename=None, prefix = None, suffix = None):
         """
         :param fname: file name to write to, optional if instance already has
                       name, which might not be the case for new AstroData
@@ -1598,8 +1598,18 @@ help      False     show help information    """
                 mes = ("Option rename=True but filename is None")
                 raise Errors.AstroDataError(mes)
             fname = self.filename
-        else:
-            if rename == True:
+        
+        # apply prefix or suffix    
+        if prefix or suffix:
+            fpath = os.path.dirname(fname)
+            fname = os.path.basename(fname)
+            base,ext = os.path.splitext(fname)
+            pfix = prefix if prefix else ""
+            sfix = suffix if suffix else ""
+            fname = os.path.join(fpath, pfix+base+sfix+ext)
+            
+        # postfix and suffix work        
+        if fname != self.filename and rename == True:
                 self.filename = fname
         # by here fname is either the name passed in, or if None,
         #    it is self.filename
@@ -1607,6 +1617,8 @@ help      False     show help information    """
             # @@FUTURE:
             # perhaps create tempfile name and use it?
             raise Errors.AstroDataError("fname is None")
+            
+        
         if os.path.exists(fname):
             if clobber:
                 os.remove(fname)

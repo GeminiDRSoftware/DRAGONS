@@ -10,6 +10,7 @@ try:
     from astrodata.adutils import logutils
     from optparse import OptionParser
     
+    
     version = '1_0'
 
     # parsing the command line
@@ -991,7 +992,17 @@ try:
             log.error("Recipe not found for " + ",".join([ inp.filename 
                                                             for inp in infiles]))
             log.error(str(rnf))
-            
+        except RecipeExcept, x:
+            # print "r995:", str(dir(x))
+            traceback.print_exc()
+            print "INSTRUCTION MIGHT BE A MISPELLED PRIMITIVE OR RECIPE NAME"
+            msg = "name of recipe unknown" 
+            if hasattr(x, "name"):
+                msg = '"%s" is not a known recipe or primitive name' % x.name
+            print "-"*len(msg)
+            print msg
+            print "-"*len(msg)
+                        
         except:
             import traceback
             if infiles:

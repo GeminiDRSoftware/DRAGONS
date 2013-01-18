@@ -1911,8 +1911,8 @@ class RecipeLibrary(object):
                 # bind the recipe to the reduction object
                 ro = self.bind_recipe(ro, name, rfunc)
             else:
-                raise RecipeExcept("Error: Recipe Source Not Found\n\ttype=%s, name=%s, src=%s"
-                                    % (astrotype, name, src))
+                raise RecipeExcept("Error: Recipe Source for '%s' Not Found\n\ttype=%s, instruction_name=%s, src=%s"
+                                    % (name, astrotype, name, src), name = name)
         elif dataset != None:
             gd, bnc = open_if_name(dataset)
             types = gd.get_types()
@@ -2134,6 +2134,7 @@ class RecipeLibrary(object):
                         print  "      with the 'mkiraf' command"""
                         print "NOTE "*15
                         sys.exit(1)
+                    
                     except:
                         print
                         print ("!@"*40)
