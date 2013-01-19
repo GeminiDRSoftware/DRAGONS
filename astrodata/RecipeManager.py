@@ -12,6 +12,7 @@ import traceback
 import astrodata
 import AstroDataType
 import ConfigSpace
+from ConfigSpace import RECIPEMARKER
 # not needed and double import import Descriptors
 import gdpgutil
 from gdpgutil import inherit_index
@@ -36,6 +37,7 @@ from primitivescat import PrimitivesCatalog
 
 centralPrimitivesIndex = {}
 centralRecipeIndex = {}
+centralRecipeInfo = {}
 centralReductionMap = {}
 centralAstroTypeRecipeIndex = {}
 centralParametersIndex = {}
@@ -2360,6 +2362,26 @@ parameterREMask = r"parameters\.(?P<recipename>.*?)\.py$"
 
 import os, sys, re
 
+from pprint import pformat
+
+def get_recipe_info(recname, filename):
+    rd = {}
+    paths = filename.split("/")
+    recipefile = paths[-1]
+    for d in paths:
+        if RECIPEMARKER in d:
+            ind = paths.index(d)
+            paths = paths[ind:-1]
+            break
+    recinfo = { "recipe_name":recname,
+                "fullpath":filename,
+                "basename":recipefile,
+                "category_list":repr(paths),
+                "package_path":"/".join(paths)
+               }
+    return recinfo
+    
+    
 if True: # was firstrun logic... python interpreter makes sure this module only runs once already
 
     # WALK the directory structure
@@ -2369,7 +2391,7 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
             
     for root, dirn, files in ConfigSpace.config_walk("recipes"):
         root = os.path.abspath(root)
-        # print "RM2193:", root, files
+        #print "RM2193:", root
         sys.path.append(root)
         curdir = root
         curpack = ConfigSpace.from_which(curdir)
@@ -2409,11 +2431,14 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                         # don't raise, this makes bad recipe packages halt the whole package!
                         # raise now because this should NEVER happen.
                         raise RecipeExcept("Two Recipes with the same name.")
-                
+                #print "RM2412:",fullpath
                 centralRecipeIndex.update({recname: fullpath})
+                recinfo = get_recipe_info(recname, fullpath)
+                centralRecipeInfo.update({recname: recinfo})               
+                
                 
                 am = re.match(recipeAstroTypeREMask, m.group("recipename"))
-                # print str(am)
+                #print (am)
                 if False: # am:
                     print "recipe:(%s) for type:(%s)" % (am.group("recipename"), am.group("astrotype"))
             elif mpI: # this is an primitives index
