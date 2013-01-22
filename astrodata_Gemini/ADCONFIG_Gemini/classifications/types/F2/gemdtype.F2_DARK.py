@@ -3,8 +3,7 @@ class F2_DARK(DataClassification):
     usage = """
         Applies to all dark datasets from the FLAMINGOS-2 instrument
         """
-    parent = "F2_IMAGE"
-    requirement = AND([  ISCLASS("F2_IMAGE"),
-                         PHU(OBSTYPE="DARK")  ])
+    parent = "F2"
+    requirement = PHU(OBSTYPE="DARK")
 
 newtypes.append(F2_DARK())
