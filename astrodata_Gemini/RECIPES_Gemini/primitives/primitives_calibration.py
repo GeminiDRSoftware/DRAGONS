@@ -2,7 +2,7 @@ import os
 from astrodata import AstroData
 from astrodata import Errors
 from astrodata import IDFactory
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from astrodata.adutils.reduceutils.prsproxyutil import upload_calibration
 from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
@@ -14,7 +14,7 @@ class CalibrationPrimitives(GENERALPrimitives):
         GENERALPrimitives.init(self, rc)
         return rc
     init.pt_hide = True
-
+    
     def failCalibration(self,rc):
         # Mark a given calibration "fail" and upload it 
         # to the system. This is intended to be used to mark a 
@@ -22,8 +22,7 @@ class CalibrationPrimitives(GENERALPrimitives):
         # it will not be returned as a valid match for future data.
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Initialize the list of output AstroData objects 
         adoutput_list = []
@@ -51,12 +50,11 @@ class CalibrationPrimitives(GENERALPrimitives):
         rc.run("storeCalibration")
         
         yield rc
-            
+    
     def getCalibration(self, rc):
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Retrieve type of calibration requested
         caltype = rc["caltype"]
@@ -86,11 +84,10 @@ class CalibrationPrimitives(GENERALPrimitives):
             rc.rq_cal(caltype, calibrationless_adlist, source=source)
         
         yield rc
-        
+    
     def getProcessedArc(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         caltype = "processed_arc"
         source = rc["source"]
@@ -124,8 +121,7 @@ class CalibrationPrimitives(GENERALPrimitives):
     
     def getProcessedBias(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         caltype = "processed_bias"
         source = rc["source"]
@@ -159,8 +155,7 @@ class CalibrationPrimitives(GENERALPrimitives):
     
     def getProcessedDark(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         caltype = "processed_dark"
         source = rc["source"]
@@ -194,8 +189,7 @@ class CalibrationPrimitives(GENERALPrimitives):
     
     def getProcessedFlat(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         caltype = "processed_flat"
         source = rc["source"]
@@ -229,8 +223,7 @@ class CalibrationPrimitives(GENERALPrimitives):
     
     def getProcessedFringe(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         caltype = "processed_fringe"
         source = rc["source"]
@@ -258,8 +251,7 @@ class CalibrationPrimitives(GENERALPrimitives):
     
     def showCals(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         if str(rc["showcals"]).lower() == "all":
             num = 0
@@ -286,21 +278,29 @@ class CalibrationPrimitives(GENERALPrimitives):
     
     def storeCalibration(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
-        # print repr(rc)
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "storeCalibration", "starting"))
+        
+        # Determine the path where the calibration will be stored
         storedcals = rc["cachedict"]["storedcals"]
         
+        # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
+            
+            # Construct the filename of the calibration, including the path
             fname = os.path.join(storedcals, os.path.basename(ad.filename))
-            ad.filename = fname
-            # always clobber, perhaps save clobbered file somewhere
-            ad.write(filename = fname, rename = True, clobber=True)
-            log.stdinfo("File saved to %s" % fname)
+            
+            # Write the calibration to disk. Use rename=False so that
+            # ad.filename does not change (i.e., does not include the
+            # calibration path)
+            ad.write(filename=fname, rename=False, clobber=True)
+            log.stdinfo("Calibration stored as %s" % fname)
+            
             if "upload" in rc.context:
                 try:
-                    upload_calibration(ad.filename)
+                    upload_calibration(fname)
                 except:
                     log.warning("Unable to upload file to calibration system")
                 else:
@@ -311,8 +311,7 @@ class CalibrationPrimitives(GENERALPrimitives):
     
     def storeProcessedArc(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "storeProcessedArc",
@@ -339,8 +338,7 @@ class CalibrationPrimitives(GENERALPrimitives):
     
     def storeProcessedBias(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "storeProcessedBias",
@@ -367,8 +365,7 @@ class CalibrationPrimitives(GENERALPrimitives):
     
     def storeProcessedDark(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "storeProcessedDark",
@@ -395,8 +392,7 @@ class CalibrationPrimitives(GENERALPrimitives):
     
     def storeProcessedFlat(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "storeProcessedFlat",
@@ -420,19 +416,18 @@ class CalibrationPrimitives(GENERALPrimitives):
         rc.run("storeCalibration")
         
         yield rc
-
+    
     def storeProcessedFringe(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "storeProcessedFringe",
                                  "starting"))
-
+        
         # Initialize the list of output AstroData objects
         adoutput_list = []
-
+        
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
@@ -444,7 +439,7 @@ class CalibrationPrimitives(GENERALPrimitives):
             # Sanitize the headers of the file so that it looks like
             # a public calibration file rather than a science file
             ad = gt.convert_to_cal_header(adinput=ad, caltype="fringe")[0]
-
+            
             # Adding a PROCFRNG time stamp to the PHU
             gt.mark_history(adinput=ad, keyword="PROCFRNG")
             
@@ -459,5 +454,5 @@ class CalibrationPrimitives(GENERALPrimitives):
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(adoutput_list)
-
+        
         yield rc
