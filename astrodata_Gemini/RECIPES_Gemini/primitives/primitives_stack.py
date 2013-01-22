@@ -171,15 +171,19 @@ class StackPrimitives(GENERALPrimitives):
                     "RDNOISE",ron[("SCI",1)],
                     comment=self.keyword_comments["RDNOISE"])
 
-            # Add suffix to the ORIGNAME to prevent future stripping 
-            # and to the datalabel to distinguish from the reference
-            # frame
             suffix = rc["suffix"]
-            adout.phu_set_key_value("ORIGNAME", 
-                gt.filename_updater(adinput=adinput[0],
-                                    suffix=suffix,strip=True),
-                comment=self.keyword_comments["ORIGNAME"])
+            
+            # The ORIGNAME keyword should not be updated in this way, since it
+            # defeats the point of having the ORIGNAME keyword.
+            
+            # Add suffix to the ORIGNAME to prevent future stripping 
+            #adout.phu_set_key_value("ORIGNAME", 
+            #    gt.filename_updater(adinput=adinput[0],
+            #                        suffix=suffix,strip=True),
+            #    comment=self.keyword_comments["ORIGNAME"])
 
+            # Add suffix to the datalabel to distinguish from the reference
+            # frame 
             orig_dl = adout.phu_get_key_value("DATALAB")
             adout.phu_set_key_value(
                 "DATALAB", orig_dl+suffix,
