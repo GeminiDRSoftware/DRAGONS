@@ -149,10 +149,23 @@ class F2Primitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            # Standardize the structure of the input AstroData object. Raw
-            # FLAMINGOS-2 data have three dimensions (e.g., 2048x2048x1), so
-            # check whether the third dimension has a length of one and remove
-            # it.
+            # Attach an MDF to each input AstroData object
+            if rc["attach_mdf"] and attach_mdf:
+                
+                # Get the mdf parameter from the reduction context
+                mdf = rc["mdf"]
+                if mdf is not None:
+                    rc.run("addMDF(mdf=%s)" % mdf)
+                else:
+                    rc.run("addMDF")
+                
+                # Since addMDF uses all the AstroData inputs from the reduction
+                # context, it only needs to be run once in this loop
+                attach_mdf = False
+            
+            # Raw FLAMINGOS-2 data have three dimensions (e.g., 2048x2048x1),
+            # so check whether the third dimension has a length of one and
+            # remove it.
             for ext in ad:
                 if len(ext.data.shape) == 3:
                     
@@ -171,20 +184,6 @@ class F2Primitives(GEMINIPrimitives):
                     log.debug("Dimensions of %s[%s,%d] = %s" % (
                       ad.filename, ext.extname(), ext.extver(),
                       ext.data.shape))
-            
-            # Attach an MDF to each input AstroData object
-            if rc["attach_mdf"] and attach_mdf:
-                
-                # Get the mdf parameter from the reduction context
-                mdf = rc["mdf"]
-                if mdf is not None:
-                    rc.run("addMDF(mdf=%s)" % mdf)
-                else:
-                    rc.run("addMDF")
-                
-                # Since addMDF uses all the AstroData inputs from the reduction
-                # context, it only needs to be run once in this loop
-                attach_mdf = False
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
