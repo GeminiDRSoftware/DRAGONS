@@ -259,6 +259,7 @@ class PRSProxy(object):
             calrqdict = cal_rq.as_dict()
             if (PDEB):
                 print "P165:", repr(calrqdict)
+            
             try:
                 cal = self.prs.calibration_search(calrqdict)
             except:
@@ -267,7 +268,7 @@ class PRSProxy(object):
                 traceback.print_exc()
                 log.error("P268: EXCEPTION from ADCC, no calibration to return")
                 
-                return cal
+                return None
             if (PDEB):
                 print "P167:", cal
             PDEB = False

@@ -72,6 +72,7 @@ calsearch_exc = None
 
 def calibration_search(rq, fullResult = False):
     import urllib, urllib2
+    calserv_msg = None
     print "\nppu68: calibration_search\n"
     from xmlrpclib import DateTime
     import datetime
@@ -110,14 +111,14 @@ def calibration_search(rq, fullResult = False):
         print "ppu118: LOCAL SEARCH: rqurl is "+ rqurl
 
     rqurl = rqurl+"/%s"%rq["filename"]
-    # print "prs100:", rqurl
+    print "prs113:", pprint.pformat(rq)
     ### send request
     sequence = [("descriptors", rq["descriptors"]), ("types", rq["types"])]
     postdata = urllib.urlencode(sequence)
     response = "CALIBRATION_NOT_FOUND"    
     try:
         # print "ppu106:", repr(sequence)
-        # print "ppu107:", pprint.pformat(rq["descriptors"])
+        print "ppu120:", pprint.pformat(rq["descriptors"])
         # print "ppu107: postdata",repr(postdata)
         calRQ = urllib2.Request(rqurl)
         if source == "local":
@@ -126,7 +127,9 @@ def calibration_search(rq, fullResult = False):
             u = urllib2.urlopen(calRQ, postdata)
             
         response = u.read()
+        # print "ppu129:", response
     except urllib2.HTTPError, error:
+        
         calserv_msg = error.read()
         print "ppu131:HTTPError- server returns:", error.read()
         import traceback
@@ -144,7 +147,7 @@ def calibration_search(rq, fullResult = False):
         calurlmd5 = dom.getElementsByTagName('md5')[0].childNodes[0]
     except exceptions.IndexError:
         print "No url for calibration in response, calibration not found"
-        return (None,None)
+        return (None,response)
     #print "prs70:", calurlel.data
     
     #@@TODO: test only 
