@@ -11,8 +11,9 @@ def urlfetch(url, store = None, clobber = False):
     log = gemLog.getGeminiLog()
     purl = urlparse.urlparse(url)
     host = "fits" #"hbffits3.hi.gemini.edu" #@@CONFIG: FITSSTORE RETRIEVAL HOST
+    print repr(dir(purl))
     npurl = urlparse.ParseResult(purl.scheme,
-                                 host,
+                                 purl.hostname,
                                  purl.path,
                                  purl.params,
                                  purl.query,
@@ -20,7 +21,8 @@ def urlfetch(url, store = None, clobber = False):
     
     url = npurl.geturl()
     log.debug("nu20: adutils.urlfetch asked to get ", url)
-
+    print("nu20: adutils.urlfetch asked to get ", url)
+    
     jar = cookielib.CookieJar()
 
 
@@ -48,8 +50,8 @@ def urlfetch(url, store = None, clobber = False):
     try:
         res = opener.open(url, c)
     except urllib2.HTTPError, error:
-        #print "ERROR"
-        #print error.read()
+        print "ERROR"
+        print error.read()
         raise 
     #for index, cookie in enumerate(jar):
     #    print index, ":", cookie
