@@ -51,11 +51,17 @@ try:
     ##@@FIXME: This next option should not be put into the package
     parser.add_option("-x", "--rtf-mode", dest="rtf", default=False, 
                       action="store_true", help="only used for rtf")
-    parser.add_option("--addcal", dest="add_cal", default=None, type="string",
-                      help="Add calibration. NOTE: won't work unless "
-                      "'--caltype' is set AND will overwrite any existing "
-                      "calibration in the index. (ex. reduce --addcal=N2"
-                      "009_bias.fits --caltype=bias N20091002S0219.fits)")
+    #parser.add_option("--addcal", dest="add_cal", default=None, type="string",
+    #                  help="Add calibration. NOTE: won't work unless "
+    #                  "'--caltype' is set AND will overwrite any existing "
+    #                  "calibration in the index. (ex. reduce --addcal=N2"
+    #                  "009_bias.fits --caltype=bias N20091002S0219.fits)")
+    #parser.add_option("--clrcal", dest="clr_cal", default=False, 
+    #                  action="store_true", help="remove all calibrations.")
+    #parser.add_option("--remcal", dest="rem_cal", default=False, 
+    #                  action="store_true", help="Remove calibration (of target)"
+    #                  "from cache. NOTE: will not work unless --caltype is set."
+    #                  " (ex. reduce --remcal --caltype=bias N20091002S0219.fits)")
     parser.add_option("--addprimset", dest="primsetname", default = None,
                       help="add user supplied primitives to reduction")
     parser.add_option("--caltype", dest="cal_type", default=None, type="string",
@@ -64,8 +70,6 @@ try:
                       "'twilight')")
     parser.add_option("--calmgr", dest="cal_mgr", default=None, type="string",
                       help="calibration manager url (overides lookup table)")
-    parser.add_option("--clrcal", dest="clr_cal", default=False, 
-                      action="store_true", help="remove all calibrations.")
     parser.add_option("--force-height", dest="forceHeight", default=None,
                       help="force height of terminal output")
     parser.add_option("--force-width", dest="forceWidth", default=None,
@@ -81,10 +85,6 @@ try:
                       type="string", help="Set the verbose level for console "
                       "logging; (critical, error, warning, status, stdinfo, "
                       "fullinfo, debug)")
-    parser.add_option("--remcal", dest="rem_cal", default=False, 
-                      action="store_true", help="Remove calibration (of target)"
-                      "from cache. NOTE: will not work unless --caltype is set."
-                      " (ex. reduce --remcal --caltype=bias N20091002S0219.fits)")
     parser.add_option("--showcolors", dest="show_colors", default=False, 
                       action="store_true", help="Shows available colors based "
                       "on terminal setting (used for debugging color issues)")
@@ -335,21 +335,21 @@ try:
             sys.exit(0)
         infile = None
 
-        if options.clr_cal:
-            clrFile = None
+        #if options.clr_cal:
+        #    clrFile = None
+        #
+        #    co = ReductionContext()
+        #    co.restore_cal_index(calindfile)
+        #    co.calibrations = {}
+        #    #co.persist_cal_index( calindfile )
+        #    log.status("Calibration cache index cleared")
+        #    import shutil
 
-            co = ReductionContext()
-            co.restore_cal_index(calindfile)
-            co.calibrations = {}
-            #co.persist_cal_index( calindfile )
-            log.status("Calibration cache index cleared")
-            import shutil
-
-            if os.path.exists(CALDIR):
-                shutil.rmtree(CALDIR)
-            log.status("Calibration directory removed")
-
-            sys.exit(0)
+        #    if os.path.exists(CALDIR):
+        #        shutil.rmtree(CALDIR)
+        #    log.status("Calibration directory removed")
+        #
+        #    sys.exit(0)
 
         try:
             if len( args ) == 0 and options.astrotype == None:
@@ -389,50 +389,51 @@ try:
 
         # print "r161:", input_files
 
-        if options.add_cal != None:
-            if options.cal_type == None:
-                print "Reduce requires a calibration type. Use --caltype. For more " + \
-                "information use '-h' or '--help'."
-                sys.exit(1)
-            elif not os.access(options.add_cal, os.R_OK):
-                print "'" + options.add_cal + "' does not exist or cannot be accessed."
-                sys.exit(1)
-
-            # @@TODO: Perhaps need a list of valid calibration types.
-            # @@TODO: Need testing if passed in calibration type is valid.
-
-            co = ReductionContext()
-
-            #@@CHECK WARNING WHY?
-            co.restore_cal_index(calindfile)
-
-            for arg in infile:
-                co.add_cal(AstroData(arg), options.cal_type, os.path.abspath(options.add_cal))
-
-            #co.persist_cal_index(calindfile)
-            print "'" + options.add_cal + "' was successfully added for '" + str(input_files) + "'."
-            if options.recipename == None:
-                sys.exit(1)
-
-        elif options.rem_cal:
-            if options.cal_type == None:
-                print "Reduce requires a calibration type. Use --caltype. For more " + \
-                "information use '-h' or '--help'."
-                sys.exit(1)
-
-            # @@TODO: Perhaps need a list of valid calibration types.
-            # @@TODO: Need testing if passed in calibration type is valid.
-
-            co = ReductionContext()
-            co.restore_cal_index(calindfile)
-            for arg in infile:
-                try:
-                    co.rm_cal( arg, options.cal_type )
-                except:
-                    print arg + ' had no ' + options.cal_type
-            print "'" + options.cal_type + "' was removed from '" + str(input_files) + "'."
-            #co.persist_cal_index(calindfile)
-            sys.exit(0)
+        # OBSOLETE CALIBRATION override
+        #if options.add_cal != None:
+#            if options.cal_type == None:
+#                print "Reduce requires a calibration type. Use --caltype. For more " + \
+#                "information use '-h' or '--help'."
+#                sys.exit(1)
+#            elif not os.access(options.add_cal, os.R_OK):
+#                print "'" + options.add_cal + "' does not exist or cannot be accessed."
+#                sys.exit(1)
+#
+#            # @@TODO: Perhaps need a list of valid calibration types.
+#            # @@TODO: Need testing if passed in calibration type is valid.
+#
+#            co = ReductionContext()
+#
+#            #@@CHECK WARNING WHY?
+#            co.restore_cal_index(calindfile)
+#
+#            for arg in infile:
+#                co.add_cal(AstroData(arg), options.cal_type, os.path.abspath(options.add_cal))
+#
+#            #co.persist_cal_index(calindfile)
+#            print "'" + options.add_cal + "' was successfully added for '" + str(input_files) + "'."
+#            if options.recipename == None:
+#                sys.exit(1)
+#
+#        elif options.rem_cal:
+#            if options.cal_type == None:
+#                print "Reduce requires a calibration type. Use --caltype. For more " + \
+#                "information use '-h' or '--help'."
+#                sys.exit(1)
+#
+#            # @@TODO: Perhaps need a list of valid calibration types.
+#            # @@TODO: Need testing if passed in calibration type is valid.
+#
+#            co = ReductionContext()
+#            co.restore_cal_index(calindfile)
+#            for arg in infile:
+#                try:
+#                    co.rm_cal( arg, options.cal_type )
+#                except:
+#                    print arg + ' had no ' + options.cal_type
+#            print "'" + options.cal_type + "' was removed from '" + str(input_files) + "'."
+#            #co.persist_cal_index(calindfile)
+#            sys.exit(0)
 
         # parameters from command line and/or parameter file
         clups = []

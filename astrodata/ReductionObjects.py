@@ -507,11 +507,11 @@ def command_clause(ro, coi):
                     prs = Proxies.PRSProxy.get_adcc()
                     
                 if usePRS:
-                    log.debug("RO484:", pprint.pformat(rq.as_dict()), user_cal_service)
+                    #log.debug("RO484:", pprint.pformat(rq.as_dict()), user_cal_service)
                     try:
                         if user_cal_service:
                             calurl = user_cal_service.get_calibration(caltype = rq.caltype)
-                            print "488: calurl", repr(calurl)
+                            #print "488: calurl", repr(calurl)
                             #if calname:
                             #    return calname
                             if calurl and len(calurl) and calurl[0] == None:
