@@ -70,6 +70,12 @@ class CalibrationPrimitives(GENERALPrimitives):
         # Check whether calibrations are already available
         calibrationless_adlist = []
         adinput = rc.get_inputs_as_astrodata()
+        
+        
+        #print "70: WRITE ALL CALIBRATION SOURCES\n"*10
+        #for ad in adinput:
+        #    ad.write(clobber=True)
+
         #for ad in adinput:
         #    ad.mode = "update"
         #    calurl = rc.get_cal(ad,caltype)
