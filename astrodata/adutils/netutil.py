@@ -45,7 +45,7 @@ def urlfetch(url, store = None, clobber = False):
        
     #res = urllib2.urlopen(req)
     #c = urllib.urlencode( {'gemini_fits_authorization':'value'})
-    c = urllib.urlencode( {'gemini_fits_authorization':'value'})
+    c = urllib.urlencode( {'gemini_fits_authorization':'good_to_go'})
     
     try:
         res = opener.open(url, c)

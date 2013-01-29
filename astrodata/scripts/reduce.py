@@ -89,7 +89,8 @@ try:
                       action="store_true", help="Shows available colors based "
                       "on terminal setting (used for debugging color issues)")
     parser.add_option("--usercal", dest="user_cals", default=None, type="string",
-                      help="Add calibration to User Calibration Service.")
+                      help="Add calibration to User Calibration Service of this format:"
+                            "'-usercal=CALTYPE_1:CALFILEPATH_1,...,CALTYPE_N:CALFILEPATH_N'")
     parser.add_option("--writeInt", dest='writeInt', default=False, 
                       action="store_true", help="write intermediate outputs"
                       " (UNDER CONSTRUCTION)")       
