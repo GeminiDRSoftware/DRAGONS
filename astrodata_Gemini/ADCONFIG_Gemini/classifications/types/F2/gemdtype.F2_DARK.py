@@ -4,6 +4,6 @@ class F2_DARK(DataClassification):
         Applies to all dark datasets from the FLAMINGOS-2 instrument
         """
     parent = "F2"
-    requirement = PHU(OBSTYPE="DARK")
+    requirement = ISCLASS("F2") & PHU(OBSTYPE="DARK")
 
 newtypes.append(F2_DARK())
