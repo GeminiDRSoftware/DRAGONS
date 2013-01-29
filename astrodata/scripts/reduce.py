@@ -51,6 +51,7 @@ try:
     ##@@FIXME: This next option should not be put into the package
     parser.add_option("-x", "--rtf-mode", dest="rtf", default=False, 
                       action="store_true", help="only used for rtf")
+    
     #parser.add_option("--addcal", dest="add_cal", default=None, type="string",
     #                  help="Add calibration. NOTE: won't work unless "
     #                  "'--caltype' is set AND will overwrite any existing "
@@ -62,12 +63,13 @@ try:
     #                  action="store_true", help="Remove calibration (of target)"
     #                  "from cache. NOTE: will not work unless --caltype is set."
     #                  " (ex. reduce --remcal --caltype=bias N20091002S0219.fits)")
+    #parser.add_option("--caltype", dest="cal_type", default=None, type="string",
+    #                  help="Calibration type. NOTE: only works with '--addcal' or "
+    #                  "'--remcal' AND accepts only lowercase one word (ex. 'bias', "
+    #                  "'twilight')")
+    
     parser.add_option("--addprimset", dest="primsetname", default = None,
                       help="add user supplied primitives to reduction")
-    parser.add_option("--caltype", dest="cal_type", default=None, type="string",
-                      help="Calibration type. NOTE: only works with '--addcal' or "
-                      "'--remcal' AND accepts only lowercase one word (ex. 'bias', "
-                      "'twilight')")
     parser.add_option("--calmgr", dest="cal_mgr", default=None, type="string",
                       help="calibration manager url (overides lookup table)")
     parser.add_option("--force-height", dest="forceHeight", default=None,
@@ -88,7 +90,8 @@ try:
     parser.add_option("--showcolors", dest="show_colors", default=False, 
                       action="store_true", help="Shows available colors based "
                       "on terminal setting (used for debugging color issues)")
-    parser.add_option("--usercal", dest="user_cals", default=None, type="string",
+    # @@DEPRECATED remove --usercal flag below, was old name
+    parser.add_option("--override_cal", "--usercal", dest="user_cals", default=None, type="string",
                       help="Add calibration to User Calibration Service of this format:"
                             "'-usercal=CALTYPE_1:CALFILEPATH_1,...,CALTYPE_N:CALFILEPATH_N'")
     parser.add_option("--writeInt", dest='writeInt', default=False, 
