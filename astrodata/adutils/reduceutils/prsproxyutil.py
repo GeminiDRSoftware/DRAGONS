@@ -6,6 +6,7 @@ from astrodata import Lookups
 from xml.dom import minidom
 import exceptions
 import pprint
+from pprint import pformat
 
 calurldict = Lookups.get_lookup_table("Gemini/calurl_dict","calurl_dict")
 
@@ -118,7 +119,7 @@ def calibration_search(rq, fullResult = False):
     response = "CALIBRATION_NOT_FOUND"    
     try:
         # print "ppu106:", repr(sequence)
-        print "ppu120:", pprint.pformat(rq["descriptors"])
+        # print "ppu120:", pprint.pformat(rq["descriptors"])
         # print "ppu107: postdata",repr(postdata)
         calRQ = urllib2.Request(rqurl)
         if source == "local":
@@ -137,17 +138,19 @@ def calibration_search(rq, fullResult = False):
         traceback.print_exc()
         return (None, calserv_msg)
     #response = urllib.urlopen(rqurl).read()
-    # print "prs129:", response
+    print "prs129:", response
     if fullResult:
         return response
-    dom = minidom.parseString(response)
-    calel = dom.getElementsByTagName("calibration")
     try:
+        dom = minidom.parseString(response)
+        calel = dom.getElementsByTagName("calibration")
         calurlel = dom.getElementsByTagName('url')[0].childNodes[0]
         calurlmd5 = dom.getElementsByTagName('md5')[0].childNodes[0]
     except exceptions.IndexError:
         print "No url for calibration in response, calibration not found"
-        return (None,response)
+        return (None,"Request Data:\n" + pformat(sequence)+"\nRepsonse:\n"+response)
+    except:
+        return (None,"Request Data:\n" + pformat(sequence)+"\nRepsonse:\n"+response)
     #print "prs70:", calurlel.data
     
     #@@TODO: test only 

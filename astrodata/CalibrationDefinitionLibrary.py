@@ -164,7 +164,8 @@ class CalibrationDefinitionLibrary(object):
                     continue
                 if dv is not None:
                     desc_dict[desc_name] = dv.for_db()
-                
+                else:
+                    desc_dict[desc_name] = None
                 
             cr.descriptors = desc_dict
             cr.types = ad.types
