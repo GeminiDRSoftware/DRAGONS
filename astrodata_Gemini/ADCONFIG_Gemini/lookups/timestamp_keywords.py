@@ -15,7 +15,7 @@ timestamp_keys = {
     "attachWavelengthSolution": "ATTWVSOL",
     "correctBackgroundToReferenceImage": "CORRBG",
     "correctWCSToReferenceFrame": "CORRWCS",
-    "cut_slits": "CUTSLITS",
+    "cut_footprints": "CUTSFP",
     "detectSources": "DETECSRC",
     "determineWavelengthSolution": "WAVESOLN",
     "determineAstrometricSolution": "ASTRMTRY",
@@ -50,7 +50,7 @@ timestamp_keys = {
     "subtractSky": "SUBSKY",
     "tileArrays": "TILEARRY",
     "trimOverscan": "TRIMOVER",
-    "trace_slits": "TRACESLI",
+    "trace_footprints": "TRACEFP",
     "updateWCS": "UPDATWCS",
     "validateData": "VALDATA",
     }
