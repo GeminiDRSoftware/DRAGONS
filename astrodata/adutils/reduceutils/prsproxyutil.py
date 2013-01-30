@@ -141,6 +141,26 @@ def calibration_search(rq, fullResult = False):
     print "prs129:", response
     if fullResult:
         return response
+    nones = []
+    descripts = rq["descriptors"]
+    for desc in descripts:
+        if descripts[desc] == None:
+            nones.append(desc) 
+    preerr = """%%%%%%%%%%%%%%%% Request Data BEGIN:
+%(sequence)s
+%%%%%%%%%% Request Data END
+
+########## Calibration Server Response BEGIN:
+%(response)s
+########## Calibration Server Response END
+
+########## Nones Report (descriptors that returned None):
+%(nones)s
+########## Note: all descriptors shown above, scroll up.
+        """ %  { "sequence": pformat(sequence),
+                  "response": response.strip(),
+                  "nones"   : ", ".join(nones) if len(nones)>0 else "No Nones Sent"                  
+                  }
     try:
         dom = minidom.parseString(response)
         calel = dom.getElementsByTagName("calibration")
@@ -148,9 +168,10 @@ def calibration_search(rq, fullResult = False):
         calurlmd5 = dom.getElementsByTagName('md5')[0].childNodes[0]
     except exceptions.IndexError:
         print "No url for calibration in response, calibration not found"
-        return (None,"Request Data:\n" + pformat(sequence)+"\nRepsonse:\n"+response)
+        return (None,preerr)
     except:
-        return (None,"Request Data:\n" + pformat(sequence)+"\nRepsonse:\n"+response)
+        return (None,preerr)
+        
     #print "prs70:", calurlel.data
     
     #@@TODO: test only 

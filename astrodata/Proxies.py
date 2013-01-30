@@ -226,7 +226,7 @@ class PRSProxy(object):
         if self.registered:
             self.prs.unregister(os.getpid())
             self.registered=False
-            log.info("P229: unregistering with adcc")
+            log.info("Unregistering with adcc (P229)")
         else:
             log.warning("P231: not registering with adcc due to exception.")
             
