@@ -576,18 +576,23 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # pixel data extension as a dictionary 
             gain_setting_dict = gmu.get_key_value_dict(dataset, keyword)
             
-            if gain_setting_dict is None:
+            if gain_setting_dict is not None:
+                ret_gain_setting = gain_setting_dict
+            else:
                 # The dataset was not processed using gemini_python. Try to get
                 # the gain from the "GAINORIG" keyword in the header of each
                 # pixel data extension.
-                gain_orig_dict = gmu.get_key_value_dict(dataset, "GAINORIG")
+                gain_dict = gmu.get_key_value_dict(dataset, "GAINORIG")
                 
-                if gain_orig_dict is None:
+                if gain_dict is None:
                     # Resort to getting the gain using the appropriate
-                    # descriptor (this will use the updated gain value)
+                    # descriptor (this will use the updated gain value). Use
+                    # get_value() to return the values as a dictionary rather
+                    # than an object. 
                     gain_dict = dataset.gain().get_value()
+                    
                 else:
-                    for ext_name_ver, gain_orig in gain_orig_dict.iteritems():
+                    for ext_name_ver, gain_orig in gain_dict.iteritems():
                         count_exts = 0
                         count_gain_orig = 0
                         if gain_orig == 1:
@@ -602,23 +607,32 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                         # pixel data extensions. Try to get the gain from the
                         # "GAINMULT" keyword in the header of each pixel data
                         # extension.
-                        gain_mult_dict = gmu.get_key_value_dict(
-                            dataset, "GAINMULT")
-                    else:
-                        # Resort to getting the gain using the appropriate
-                        # descriptor (this will use the updated gain value)
-                        gain_dict = dataset.gain().get_value()
-            
-            for ext_name_ver, gain in gain_dict.iteritems():
-                if gain is None:
-                    gain_setting = None
-                elif gain > 3.0:
-                    gain_setting = "high"
-                else:
-                    gain_setting = "low"
+                        gain_dict = gmu.get_key_value_dict(dataset, "GAINMULT")
                 
-                # Update the dictionary with the gain setting value
-                ret_gain_setting.update({ext_name_ver:gain_setting})
+                if gain_dict is None:
+                    # The get_key_value_dict() function returns None if a value
+                    # cannot be found and stores the exception info. Re-raise
+                    # the exception. It will be dealt with by the
+                    # CalculatorInterface.
+                    if hasattr(dataset, "exception_info"):
+                        raise dataset.exception_info
+                
+                for ext_name_ver, gain in gain_dict.iteritems():
+                    if gain is None:
+                        gain_setting = None
+                    elif gain > 3.0:
+                        gain_setting = "high"
+                    else:
+                        gain_setting = "low"
+                    
+                    # Update the dictionary with the gain setting value
+                    ret_gain_setting.update({ext_name_ver:gain_setting})
+        
+        unique_values = set(ret_gain_setting.values())
+        if len(unique_values) == 1 and None in unique_values:
+            # The gain was not found for any of the pixel data extensions (all
+            # the values in the dictionary are equal to None) 
+            ret_gain_setting = None
         
         return ret_gain_setting
     
