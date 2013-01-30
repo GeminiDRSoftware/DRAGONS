@@ -11,4 +11,5 @@ bpm_dict = {
     "GMOS-S_EEV_11_3amp_v1": "Gemini/GMOS/BPM/gmos-s_bpm_EEV_11_3amp_v1.fits",
     "GMOS-S_EEV_22_3amp_v1": "Gemini/GMOS/BPM/gmos-s_bpm_EEV_22_3amp_v1.fits",
     "F2_1_1": "Gemini/F2/BPM/F2_bpm.fits",
+    "NIRI_1_1": "Gemini/NIRI/BPM/NIRI_bpm.fits",
     }
