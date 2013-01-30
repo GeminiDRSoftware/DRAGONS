@@ -4,6 +4,6 @@ class NIRI_DARK(DataClassification):
         Applies to all dark datasets from the NIRI instrument
         """
     parent = "NIRI"
-    requirement = PHU(OBSTYPE="DARK")
+    requirement = ISCLASS("NIRI") & PHU(OBSTYPE="DARK")
 
 newtypes.append(NIRI_DARK())

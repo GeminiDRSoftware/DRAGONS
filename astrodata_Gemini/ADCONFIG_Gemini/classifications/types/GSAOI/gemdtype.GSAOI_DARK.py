@@ -3,8 +3,7 @@ class GSAOI_DARK(DataClassification):
     usage = """
         Applies to all dark datasets from the GSAOI instrument
         """
-    parent = "GSAOI_IMAGE"
-    requirement = AND([  ISCLASS("GSAOI_IMAGE"),
-                         PHU(OBSTYPE="DARK")  ])
+    parent = "GSAOI"
+    requirement = ISCLASS("GSAOI") & PHU(OBSTYPE="DARK")
 
 newtypes.append(GSAOI_DARK())
