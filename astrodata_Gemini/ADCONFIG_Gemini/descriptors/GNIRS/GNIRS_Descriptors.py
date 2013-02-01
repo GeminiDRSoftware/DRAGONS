@@ -294,7 +294,14 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         m = cre.match(prism)
         if m:
             parts = m.groups()
-            ret_prism = "%s%s%s" % (parts[1], parts[2], parts[3])
+            # parts is a tuple containing four elements, where the first
+            # element is optional (i.e., it could be None). Contruct the
+            # appropriate prism name.
+            if parts[0] is not None:
+                ret_prism = "%s%s%s%s" % (
+                  parts[0], parts[1], parts[2], parts[3])
+            else:
+                ret_prism = "%s%s%s" % (parts[1], parts[2], parts[3])
             if stripID or pretty:
                 ret_prism = gmu.removeComponentID(ret_prism)
         else:
