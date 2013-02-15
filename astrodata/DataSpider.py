@@ -369,8 +369,12 @@ class DataSpider(object):
                                             dval = eval("fl."+sd)
                                         pad = " " * (maxlen - len(sd))
                                         sd = str(sd) + pad
-                                        if (not errOnly):
-                                            print ("          ${BOLD}%s${NORMAL} = %s") % (sd, str(dval))
+                                        if dval:
+                                            if (not errOnly):
+                                                print ("          ${BOLD}%s${NORMAL} = %s") % (sd, str(dval))
+                                        else:
+                                            print '          ${BOLD}(DERR)%s${NORMAL}: ${RED}returned None${NORMAL}' % (sd)
+                                                                               
                                     except AttributeError:
                                         exinfo = sys.exc_info()
                                         print '          ${BOLD}(DERR)%s${NORMAL}: ${RED}NO SUCH DESCRIPTOR${NORMAL}' % (sd)
