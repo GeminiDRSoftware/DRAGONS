@@ -1,8 +1,11 @@
 import os
 from copy import deepcopy
+import datetime
+import math
 import numpy as np
 from astrodata import AstroData
 from astrodata import Errors
+from astrodata import ReductionContextRecords as RCR
 from astrodata.adutils import logutils
 from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
@@ -87,6 +90,190 @@ class PreprocessPrimitives(GENERALPrimitives):
         
         # Report the list of output AstroData objects to the reduction context
         rc.report_output(adoutput_list)
+        
+        yield rc
+    
+    def associateSky(self, rc):
+        """
+        This primitive determines which sky AstroData objects are associated
+        with each science AstroData object and adds this information to a
+        dictionary (in the form {science1:[sky1,sky2],science2:[sky2,sky3]}),
+        where science1 and science2 are the science AstroData objects and sky1,
+        sky2 and sky3 are the sky AstroDataRecord objects, which is then added
+        to the reduction context.
+        
+        The input sky AstroData objects can be provided by the user using the
+        parameter 'sky'. Otherwise, the science AstroData objects are found in
+        the main stream (as normal) and the sky AstroData objects are found in
+        the sky stream.
+        
+        :param adinput: input science AstroData objects
+        :type adinput: Astrodata or Python list of AstroData
+        
+        :param sky: The input sky frame(s) to be subtracted from the input
+                    science frame(s). The input sky frame(s) can be a list of
+                    sky filenames, a sky filename, a list of AstroData objects
+                    or a single AstroData object. Note: If there are multiple
+                    input science frames and one input sky frame provided, then
+                    the same sky frame will be applied to all inputs; otherwise
+                    the number of input sky frames must match the number of
+                    input science frames.
+        :type sky: string, Python list of string, AstroData or Python list of
+                   Astrodata 
+        """
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "associateSky", "starting"))
+        
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["associateSky"]
+        
+        # Determine the suffix for this primitive
+        suffix = rc["suffix"]
+        
+        # This primitives requires at least one input science AstroData object
+        # and at least one input sky AstroData object
+        ad_science_list = rc.get_inputs_as_astrodata()
+        
+        if rc["sky"]:
+            # Use the list of sky frames provided by the user
+            adr_sky_list = []
+            for sky in rc["sky"]:
+                if not isinstance(sky, AstroData):
+                    sky = AstroData(sky)
+                
+                # Create a list of sky AstroDataRecord objects
+                adr_sky_list.append(RCR.AstroDataRecord(sky))
+        else:
+            # The seperateSky primitive puts the sky AstroData objects in the
+            # sky stream. The get_stream function returns a list of
+            # AstroDataRecord objects
+            adr_sky_list = rc.get_stream("sky")
+        
+        if not ad_science_list or not adr_sky_list:
+            log.warning("Cannot associate sky frames, since at least one "
+                        "science AstroData object and one sky AstroData "
+                        "object are required for associateSky")
+            
+            # Add the science and sky AstroData objects to the output science
+            # and sky AstroData object lists, respectively, without further
+            # processing, after adding the appropriate time stamp to the PHU
+            # and updating the filename.
+            if ad_science_list:
+                ad_science_output_list = gt.finalise_adinput(
+                  adinput=ad_science_list, timestamp_key=timestamp_key,
+                  suffix=suffix)
+            
+            if adr_sky_list:
+                ad_sky_output_list = gt.finalise_adinput(
+                  adinput=adr_sky_list, timestamp_key=timestamp_key,
+                  suffix=suffix)
+        else:
+            # Initialize the dictionary containing the association between the
+            # science AstroData objects and the sky AstroData objects
+            sky_dict = {}
+            
+            # Loop over each science AstroData object in the science list
+            for ad_science in ad_science_list:
+                
+                # Determine the sky AstroData objects that are associated with
+                # this science AstroData object. Initialize the list of sky
+                # AstroDataRecord objects
+                adr_sky_for_ad_science_list = []
+                
+                # Use the ORIGNAME of the science AstroData object as the key
+                # of the dictionary 
+                origname = ad_science.phu_get_key_value("ORIGNAME")
+                
+                # If use_all is True, use all of the sky AstroData objects for
+                # each science AstroData object
+                if rc["use_all"]:
+                    log.fullinfo("Associating all available sky AstroData "
+                                 "objects to %s" % ad_science.filename)
+                    
+                    # Set the list of sky AstroDataRecord objects for this
+                    # science AstroData object equal to the input list of sky
+                    # AstroDataRecord objects
+                    adr_sky_for_ad_science_list = adr_sky_list
+                    
+                    # Update the dictionary with the list of sky
+                    # AstroDataRecord objects associated with this science
+                    # AstroData object
+                    sky_dict.update({origname: adr_sky_for_ad_science_list})
+                else:
+                    # Get the datetime object of the science AstroData object
+                    # using the appropriate descriptor 
+                    ad_science_datetime = ad_science.ut_datetime()
+                    
+                    # Loop over each sky AstroDataRecord object in the input
+                    # list of sky AstroDataRecord objects
+                    for adr_sky in adr_sky_list:
+                    
+                        # Get the datetime object of the sky AstroData object
+                        # using the appropriate descriptor
+                        ad_sky = adr_sky.ad
+                        ad_sky_datetime = ad_sky.ut_datetime()
+                        
+                        # Create a timedelta object using the value of the
+                        # "time" parameter
+                        seconds = datetime.timedelta(seconds=rc["time"])
+                        
+                        # Select only those sky AstroData objects observed
+                        # within "time" seconds of the science AstroData object
+                        if (abs(ad_science_datetime - ad_sky_datetime) <
+                            seconds):
+                            
+                            # Get the distance of the science and sky AstroData
+                            # objects using the x_offset and y_offset
+                            # descriptors
+                            ad_science_distance = math.sqrt(
+                              ad_science.x_offset()**2 +
+                              ad_science.y_offset()**2)
+                            
+                            ad_sky_distance = math.sqrt(
+                              ad_sky.x_offset()**2 + ad_sky.y_offset()**2)
+                            
+                            # Select only those sky AstroData objects that are
+                            # greater than "distance" arcsec away from the
+                            # science AstroData object
+                            if (abs(ad_science_distance - ad_sky_distance) >
+                                rc["distance"]):
+                                adr_sky_for_ad_science_list.append(adr_sky)
+                    
+                    # Update the dictionary with the list of sky
+                    # AstroDataRecord objects associated with this science
+                    # AstroData object
+                    sky_dict.update({origname: adr_sky_for_ad_science_list})
+                
+                if not sky_dict[origname]:
+                    log.warning("No sky frames available for %s" % origname)
+                else:
+                    log.fullinfo("The sky frames associated with %s are:"
+                                 % origname)
+                    for adrecordsky in sky_dict[origname]:
+                        log.fullinfo(" %s" % adrecordsky.ad.filename)
+            
+            # Add the appropriate time stamp to the PHU and change the filename
+            # of the science and sky AstroData objects 
+            ad_science_output_list = gt.finalise_adinput(
+              adinput=ad_science_list, timestamp_key=timestamp_key,
+              suffix=suffix)
+            
+            ad_sky_output_list = gt.finalise_adinput(
+              adinput=adr_sky_list, timestamp_key=timestamp_key, suffix=suffix)
+            
+            # Add the association dictionary to the reduction context
+            rc["sky_dict"] = sky_dict
+        
+        # Report the list of output sky AstroData objects to the sky stream in
+        # the reduction context 
+        rc.report_output(ad_sky_output_list, stream="sky")
+        
+        # Report the list of output science AstroData objects to the reduction
+        # context 
+        rc.report_output(ad_science_output_list)
         
         yield rc
     
@@ -557,6 +744,78 @@ class PreprocessPrimitives(GENERALPrimitives):
         
         yield rc
 
+    def separateSky(self, rc):
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "separateSky", "starting"))
+        
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["separateSky"]
+        
+        # Determine the suffix for this primitive
+        suffix = rc["suffix"]
+        
+        # This primitive requires at least two input AstroData objects
+        ad_input_list = rc.get_inputs_as_astrodata()
+        
+        if len(ad_input_list) < 2:
+            log.warning("Cannot separate sky frames, since at least two "
+                        "input AstroData objects are required for "
+                        "separateSky")
+            
+            # Add the input AstroData objects to the output science AstroData
+            # object list without further processing, after adding the
+            # appropriate time stamp to the PHU and updating the filename.
+            if ad_input_list:
+                ad_science_output_list = gt.finalise_adinput(
+                  adinput=ad_input_list, timestamp_key=timestamp_key,
+                  suffix=suffix)
+        else:
+            # Initialize the lists of science and sky AstroData objects
+            ad_science_list = []
+            ad_sky_list = []
+            
+            # Loop over each input AstroData object in the input list
+            for ad in ad_input_list:
+            
+                # If any of the input AstroData objects contain a "SKYFRAME"
+                # keyword, that input can be used as a sky frame
+                if ad.phu_get_key_value("SKYFRAME"):
+                    log.fullinfo("%s can be used as a sky frame" % ad.filename)
+                    
+                    # Append the input AstroData object to the list of sky
+                    # AstroData objects
+                    ad_sky_list.append(ad)
+                
+                else:
+                    # Automatically determine the sky frames. For now, assume
+                    # everything else is science. 
+                    
+                    # Append the input AstroData object to the list of science
+                    # AstroData objects
+                    ad_science_list.append(ad)
+            
+            # Add the appropriate time stamp to the PHU and update the filename
+            # of the science and sky AstroData objects 
+            ad_science_output_list = gt.finalise_adinput(
+              adinput=ad_science_list, timestamp_key=timestamp_key,
+              suffix=suffix)
+            
+            ad_sky_output_list = gt.finalise_adinput(
+              adinput=ad_sky_list, timestamp_key=timestamp_key, suffix=suffix)
+               
+        # Report the list of output sky AstroData objects to the sky stream in
+        # the reduction context
+        rc.report_output(ad_sky_output_list, stream="sky")
+        
+        # Report the list of output science AstroData objects to the reduction
+        # context
+        rc.report_output(ad_science_output_list)
+        
+        yield rc
+    
     def subtractDark(self, rc):
         """
         This primitive will subtract each SCI extension of the inputs by those
@@ -572,7 +831,7 @@ class PreprocessPrimitives(GENERALPrimitives):
         
         # Define the keyword to be used for the time stamp for this primitive
         timestamp_key = self.timestamp_keys["subtractDark"]
-
+        
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
@@ -657,3 +916,109 @@ class PreprocessPrimitives(GENERALPrimitives):
         
         yield rc
 
+    def subtractSky(self, rc):
+        """
+        This function will subtract the science extension of the input sky
+        frames from the science extension of the input science frames. The
+        variance and data quality extension will be updated, if they exist.
+        
+        :param adinput: input science AstroData objects
+        :type adinput: Astrodata or Python list of AstroData
+        
+        :param sky: The input sky frame(s) to be subtracted from the input
+                    science frame(s). The input sky frame(s) can be a list of
+                    sky filenames, a sky filename, a list of AstroData objects
+                    or a single AstroData object. Note: If there are multiple
+                    input science frames and one input sky frame provided, then
+                    the same sky frame will be applied to all inputs; otherwise
+                    the number of input sky frames must match the number of
+                    input science frames.
+        :type sky: string, Python list of string, AstroData or Python list of
+                   Astrodata 
+        """
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "subtractSky", "starting"))
+        
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["subtractSky"]
+        
+        # Initialize the list of output sky corrected AstroData objects
+        ad_output_list = []
+        
+        if rc["sky"]:
+            # Use the list of sky frames provided by the user. Generate a
+            # dictionary associating the input sky AstroData objects to the
+            # input science AstroData objects.
+            sky = rc["sky"]
+            ad_science_list = rc.get_inputs_as_astrodata()
+            for i, ad in enumerate(ad_science_list):
+                origname = ad.phu_get_key_value("ORIGNAME")
+                if len(sky) == 1:
+                    sky_dict.update({origname: sky[0]})
+                elif len(sky) == len(ad_science_list):
+                    
+                    sky_dict.update({origname: RCR.AstroDataRecord(sky[i])})
+                else:
+                    raise Errors.Error("Number of input sky frames do not "
+                                       "match number of input science frames")
+        else:
+            # The associateSky primitive puts the dictionary containing the
+            # information associating the sky frames to the science frames in
+            # the reduction context
+            sky_dict = rc["stacked_sky_dict"]
+            
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+            
+            # Check whether the subtractSky primitive has been run previously
+            timestamp_key = self.timestamp_keys["subtractSky"]
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has "
+                            "already been processed by subtractSky"
+                            % (ad.filename))
+                
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                ad_output_list.append(ad)
+                continue
+            
+            # Retrieve the sky AstroData object associated with the input
+            # science AstroData object
+            origname = ad.phu_get_key_value("ORIGNAME")
+            if origname in sky_dict:
+                ad_sky_for_correction = sky_dict[origname].ad
+                
+                # Subtract the sky from the input AstroData object
+                log.fullinfo("Subtracting the sky (%s) from the science "
+                             "AstroData object %s"
+                             % (ad_sky_for_correction.filename, ad.filename))
+                ad.sub(ad_sky_for_correction)
+            else:
+                # There is no appropriate sky for the intput AstroData object
+                log.warning("No changes will be made to %s, since no "
+                            "appropriate sky could be retrieved"
+                            % (ad.filename))
+                
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                ad_output_list.append(ad)
+                continue
+            
+            # Append the output AstroData object to the list of output
+            # AstroData objects
+            ad_output_list.append(ad)
+            
+        # Add the appropriate time stamp to the PHU and update the filename
+        # of the science and sky AstroData objects 
+        ad_output_list = gt.finalise_adinput(
+          adinput=ad_output_list, timestamp_key=timestamp_key,
+          suffix=rc["suffix"])
+        
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(ad_output_list)
+        
+        yield rc
