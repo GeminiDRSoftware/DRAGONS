@@ -19,7 +19,7 @@ their dataset.
 """
 
 import datetime
-
+import types
 from astrodata import Errors
 from ConfigSpace import config_walk
 DESCRIPTORSPACE = "descriptors"
@@ -45,6 +45,9 @@ def whocalledme():
 
 firstrun = True
 
+class CouldNotCollapse:
+    pass
+
 class DescriptorValue(object):
     dict_val = None
     _val = None
@@ -53,6 +56,9 @@ class DescriptorValue(object):
     pytype = None
     unit = None
     _primary_extname = None
+    _valid_collapse = None
+    _extver_dict = None
+    
     
     def __init__(self,  initval, 
                         format = None, 
@@ -62,7 +68,7 @@ class DescriptorValue(object):
                         pytype = None,
                         unit = None,
                         primary_extname = "SCI"):
-                        
+        self._extver_dict = {}                
         self._primary_extname=primary_extname
         # print "DV82:", repr(unit)
         
@@ -75,46 +81,13 @@ class DescriptorValue(object):
         # pytype logic
         if pytype:
             self.pytype = pytype
-        else:
-            # Commenting out this code so that if pytype is not provided,
-            # it just gets the default value of float.  Pytype should
-            # always be provided,and it turns out that inspect.stack is
-            # insufficiently efficient
-
-            # careful moving this to a function, it gets the CALLER's function name!
-            #st = inspect.stack()
-            #callername = st[1][3]
-            #callerframe = inspect.stack()[1][0]
-            #fargs = inspect.getargvalues(callerframe)
-            #callercalc = fargs[3]["self"]
-            #try:
-            #    self.pytype = eval("callercalc.%s.pytype" % callername)
-            #except:
-            #    self.pytype = float
-
-            self.pytype = float
-
+        
         pytype = self.pytype
 
         # unit logic
         if unit:
             self.unit = unit
         else:
-            # Ditto for this code; inspect.stack is too inefficient and
-            # this functionality is not used. Default value of Units.scaler
-            # is used if unit is not provided.
-
-            # careful moving this to a function, it gets the CALLER's function name!
-            #st = inspect.stack()
-            #callername = st[1][3]
-            #callerframe = inspect.stack()[1][0]
-            #fargs = inspect.getargvalues(callerframe)
-            #callercalc = fargs[3]["self"]
-            #try:
-            #    self.unit = eval("callercalc.%s.unit" % callername)
-            #except:
-            #    self.unit = Units.scaler # can be DescriptorUnits.scaler (or whatever)
-
             self.unit = Units.scaler
 
         unit = self.unit
@@ -125,9 +98,11 @@ class DescriptorValue(object):
         else:
             self._val = initval
             self.dict_val = {}
-            for ext in ad:
-                self.dict_val.update({(ext.extname(),ext.extver()) : self._val})
-        
+            if ad:
+                for ext in ad:
+                     self.dict_val.update({(ext.extname(),ext.extver()) : self._val})
+            else:
+                self.dict_val = {("*",-1):self._val}
         #NOTE:
         # DO NOT SAVE AD INSTANCE, we don't want AD instances kept 
         #   in memory due to descriptor values persisting
@@ -147,6 +122,7 @@ class DescriptorValue(object):
             self.format = None
         # do after object is set up
         self._val = self.collapse_value() 
+        self.collapse_by_extver()
     
     
     def __float__(self):
@@ -162,24 +138,27 @@ class DescriptorValue(object):
         # do any automatic format heuristics
         if format == None:
             val = self.collapse_value()
-            if val == None:
+            #print "D140:", self._val, self._valid_collapse
+            if self._valid_collapse == False:
                 format = "as_dict"
             else:
                 format = "value"
         
+        #print "D145:",format
         # produce known formats
         retstr = "Unknown Format For DescriptorValue"
         if  format == "as_dict":
             retstr = str(self.dict_val)
         elif format == "db" or format == "value":
             val = self.collapse_value()
-            if val != None:
+            if val != CouldNotCollapse:
                 retstr = str(val)
             else:
                 parts = [str(val) for val in self.dict_val.values()]
                 retstr = "+".join(parts)
         elif format == "value":
             val = self.collapse_value()
+            retstr = str(val)
         return retstr
     
     def _get_primary_extname(self):
@@ -198,14 +177,18 @@ class DescriptorValue(object):
         value = self.collapse_value()
         if value == None:
             raise Errors.DescriptorsError("\n"
-                "Cannot convert DescriptorValue to scaler " 
-                "as the value varies across extensions \n"
-                "-------------------------------------\n"
+                "Cannot convert DescriptorValue to scaler\n" 
+                "as the value varies across extens versions\n"
+                "------------------------------------------\n"
                 + self.info()
                 )
         # got here then all values were identical
         return value
-
+    def collapse_by_extver(self):
+        for extver in self.ext_vers():
+            self.collapse_value(extver)
+        return self._extver_dict
+        
     def convert_value_to(self, new_units, new_type = None):
         # retval = self.unit.convert(self._val, new_units)
         newDict = copy(self.dict_val)
@@ -246,7 +229,7 @@ class DescriptorValue(object):
         dictionary and lists.
         """
         # case where the value cannot collapse (dict, list)
-        if self._val == None:
+        if self._valid_collapse == False:
             if convert_values is True and as_type != None:
                 if as_type == dict:
                     return self.dict_val
@@ -353,7 +336,7 @@ class DescriptorValue(object):
                     repr(self.dict_val[key])))
             count += 1
     
-    def collapse_value(self):
+    def collapse_value(self, extver = None):
         oldvalue = None
         primext = self.primary_extname
         # print "primest = " ,primext
@@ -361,20 +344,30 @@ class DescriptorValue(object):
             primext = None
         # print "ennames " ,self.ext_names()    
         for key in self.dict_val:
-            extname,extver = key
+            ext_name,ext_ver = key
+            if extver and ext_ver != extver:
+                continue
             # print primext, extname,extver
-            if primext and extname != primext:
-                print "skipping "+extname
+            if primext and ext_name != primext:
+                #print "skipping "+ext_name
                 continue
             value = self.dict_val[key]
             if oldvalue == None:
                 oldvalue = value
             else:
                 if oldvalue != value:
-                    self._val = None
+                    if extver == None:
+                        self._val = CouldNotCollapse
+                        self._valid_collapse = False
+                    else:
+                        self._extver_dict[extver] = CouldNotCollapse
                     return None
         # got here then all values were identical
-        self._val = value
+        if extver == None:
+            self._val = value
+            self._valid_collapse = True
+        else:
+            self._extver_dict[extver] = value
         return value
     
     def ext_names(self):
@@ -383,11 +376,18 @@ class DescriptorValue(object):
             if extname not in enames:
                 enames.append(extname)
         return enames
+    def ext_vers(self):
+        evers = []
+        for extname, extver in self.dict_val.keys():
+            if extver not in evers:
+                evers.append(extver)
+        evers.sort()
+        return evers   
     
     def overloaded(self, other):
         val = self.collapse_value()
         
-        if val == None:
+        if self._valid_collapse == False:
             mes =  "DescriptorValue contains complex result (differs for"
             mes += "different extension) and cannot be used as a simple "
             mes += str(self.pytype)
@@ -468,7 +468,7 @@ class DescriptorValue(object):
     def overloaded_cmp(self,other):
         val = self.collapse_value()
         
-        if val == None:
+        if self._valid_collapse == False:
             mes =  "DescriptorValue contains complex result (differs for "
             mes += "different extension) and cannot be used as a simple"
             mes += str(self.pytype)
