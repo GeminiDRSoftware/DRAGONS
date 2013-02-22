@@ -5,6 +5,8 @@ from astrodata import AstroData
 from astrodata.adutils import gemLog
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
+from astrodata import Lookups
+
 import pywcs
 
 from primitives_NIRI import NIRIPrimitives
@@ -24,7 +26,7 @@ class NIRI_IMAGEPrimitives(NIRIPrimitives):
     
     def addReferenceCatalog(self, rc):
         """
-        The reference catalog is a dictionary in jhk.py
+        The reference catalog is a dictionary in jhk_catalog.py
 
 
         Append the catalog as a FITS table with extenstion name
@@ -53,7 +55,6 @@ class NIRI_IMAGEPrimitives(NIRIPrimitives):
         """
 
         import pyfits as pf
-        from jhk import jhk
 
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
@@ -74,7 +75,8 @@ class NIRI_IMAGEPrimitives(NIRIPrimitives):
 
         # Get Local JHK catalog as a dictionary
 
-        
+        jhk = Lookups.get_lookup_table("Gemini/NIRI/jhk_catalog", "jhk") 
+
         #form arrays with input dict 
         ra=[]; dec=[]; vals=[]
         for key in jhk.keys():    

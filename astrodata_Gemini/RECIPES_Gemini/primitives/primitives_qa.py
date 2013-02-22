@@ -196,7 +196,7 @@ class QAPrimitives(GENERALPrimitives):
                 sciext.set_key_value(
                     "SKYLEVEL", sci_bg, comment="%s [%s]" % 
                     (self.keyword_comments["SKYLEVEL"],bunit))
-                
+
                 # Get nominal zeropoint
                 try:
                     npz = float(sciext.nominal_photometric_zeropoint())
@@ -491,7 +491,8 @@ class QAPrimitives(GENERALPrimitives):
             # a pre-requisite for this and not bother with
             # any of this if there are no reference catalogs
             if ad['REFCAT'] is None:
-                log.warning("No Reference Catalogs Present - not attempting to measure photometric Zeropoints")
+                log.warning("No Reference Catalogs Present - not attempting"
+                            " to measure photometric Zeropoints")
                 # This is a bit of a hack, but it circumvents the big for loop
                 objcats = []
 
