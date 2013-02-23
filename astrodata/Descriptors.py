@@ -150,8 +150,8 @@ class DescriptorValue(object):
         if  format == "as_dict":
             retstr = str(self.dict_val)
         elif format == "db" or format == "value":
-            val = self.collapse_value()
-            if val != CouldNotCollapse:
+            self.collapse_value()
+            if self._val != CouldNotCollapse:
                 retstr = str(val)
             else:
                 parts = [str(val) for val in self.dict_val.values()]
@@ -270,6 +270,7 @@ class DescriptorValue(object):
                     retlist.append(self.dict_val[key])
                 return retlist
             else:
+                print "273"
                 return str(self)
         
         # case where value is a single ext fits (int, str, float)
