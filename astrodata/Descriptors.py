@@ -154,7 +154,16 @@ class DescriptorValue(object):
             if self._val != CouldNotCollapse:
                 retstr = str(val)
             else:
-                parts = [str(val) for val in self.dict_val.values()]
+                #print "D157:", self._primary_extname
+                if (format == "db"):
+                    dv = self.dict_val
+                    parts = []
+                    for k in dv:
+                        name,ver = k
+                        if name == self._primary_extname:
+                            parts.append(dv[k])
+                else:
+                    parts = [str(val) for val in self.dict_val.values()]
                 retstr = "+".join(parts)
         elif format == "value":
             val = self.collapse_value()
