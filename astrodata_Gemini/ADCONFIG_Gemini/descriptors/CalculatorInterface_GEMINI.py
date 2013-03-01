@@ -60,7 +60,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "airmass",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -125,7 +131,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "amp_read_area",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -198,7 +210,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "array_section",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -255,7 +273,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "azimuth",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -312,7 +336,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "camera",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -370,7 +400,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "cass_rotator_pa",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -438,7 +474,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "central_wavelength",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -495,7 +537,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "coadds",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -553,7 +601,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "data_label",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -626,7 +680,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "data_section",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -689,7 +749,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "decker",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -746,7 +812,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "dec",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -809,7 +881,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "detector_name",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -869,7 +947,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "detector_roi_setting",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -929,7 +1013,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "detector_rois_requested",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1002,7 +1092,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "detector_section",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1066,7 +1162,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "detector_x_bin",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1130,7 +1232,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "detector_y_bin",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1193,7 +1301,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "disperser",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1257,7 +1371,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "dispersion_axis",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1330,7 +1450,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "dispersion",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1387,7 +1513,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "elevation",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1450,7 +1582,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "exposure_time",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1521,7 +1659,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "filter_name",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1584,7 +1728,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "focal_plane_mask",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1647,7 +1797,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "gain",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1710,7 +1866,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "gain_setting",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1773,7 +1935,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "grating",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1831,7 +1999,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "group_id",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1888,7 +2062,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "local_time",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -1952,7 +2132,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "mdf_row_id",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2010,7 +2196,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "nod_count",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2068,7 +2260,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "nod_pixels",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2127,7 +2325,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "nominal_atmospheric_extinction",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2190,7 +2394,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "nominal_photometric_zeropoint",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2248,7 +2458,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "non_linear_level",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2306,7 +2522,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "observation_class",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2363,7 +2585,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "observation_epoch",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2421,7 +2649,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "observation_id",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2479,7 +2713,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "observation_type",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2552,7 +2792,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "overscan_section",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2609,7 +2855,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "pixel_scale",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2672,7 +2924,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "prism",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2730,7 +2988,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "program_id",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2793,7 +3057,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "pupil_mask",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2851,7 +3121,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "qa_state",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2908,7 +3184,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "ra",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -2966,7 +3248,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "raw_bg",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3024,7 +3312,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "raw_cc",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3082,7 +3376,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "raw_iq",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3140,7 +3440,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "raw_wv",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3201,7 +3507,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "read_mode",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3264,7 +3576,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "read_noise",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3322,7 +3640,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "read_speed_setting",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3380,7 +3704,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "requested_bg",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3438,7 +3768,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "requested_cc",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3496,7 +3832,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "requested_iq",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3554,7 +3896,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "requested_wv",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3617,7 +3965,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "saturation_level",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3680,7 +4034,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "slit",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3765,7 +4125,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "ut_datetime",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3822,7 +4188,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "ut_time",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3881,7 +4253,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "wavefront_sensor",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -3938,7 +4316,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "wavelength_band",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -4002,7 +4386,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "wavelength_reference_pixel",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -4060,7 +4450,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "well_depth_setting",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -4117,7 +4513,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "x_offset",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
@@ -4174,7 +4576,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "y_offset",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     
