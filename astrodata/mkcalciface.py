@@ -53,7 +53,13 @@ class DescriptorDescriptor:
             else:
                 if not hasattr(self, \"exception_info\"):
                     setattr(self, \"exception_info\", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = \"%(name)s\",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = NoneType )
+                return ret
         except:
             raise
     """
