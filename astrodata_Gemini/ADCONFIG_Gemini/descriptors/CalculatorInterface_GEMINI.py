@@ -65,7 +65,7 @@ class CalculatorInterface:
                                        name = "airmass",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -136,7 +136,7 @@ class CalculatorInterface:
                                        name = "amp_read_area",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -215,7 +215,7 @@ class CalculatorInterface:
                                        name = "array_section",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = list )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -278,7 +278,7 @@ class CalculatorInterface:
                                        name = "azimuth",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -341,7 +341,7 @@ class CalculatorInterface:
                                        name = "camera",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -405,7 +405,7 @@ class CalculatorInterface:
                                        name = "cass_rotator_pa",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -479,7 +479,7 @@ class CalculatorInterface:
                                        name = "central_wavelength",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -542,7 +542,7 @@ class CalculatorInterface:
                                        name = "coadds",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -606,7 +606,7 @@ class CalculatorInterface:
                                        name = "data_label",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -685,7 +685,7 @@ class CalculatorInterface:
                                        name = "data_section",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = list )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -754,7 +754,7 @@ class CalculatorInterface:
                                        name = "decker",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -817,7 +817,7 @@ class CalculatorInterface:
                                        name = "dec",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -886,7 +886,7 @@ class CalculatorInterface:
                                        name = "detector_name",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -952,7 +952,7 @@ class CalculatorInterface:
                                        name = "detector_roi_setting",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -1018,7 +1018,7 @@ class CalculatorInterface:
                                        name = "detector_rois_requested",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = list )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -1097,7 +1097,7 @@ class CalculatorInterface:
                                        name = "detector_section",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = list )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -1167,7 +1167,7 @@ class CalculatorInterface:
                                        name = "detector_x_bin",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -1237,7 +1237,7 @@ class CalculatorInterface:
                                        name = "detector_y_bin",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -1306,7 +1306,7 @@ class CalculatorInterface:
                                        name = "disperser",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -1376,7 +1376,7 @@ class CalculatorInterface:
                                        name = "dispersion_axis",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -1455,7 +1455,7 @@ class CalculatorInterface:
                                        name = "dispersion",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -1518,7 +1518,7 @@ class CalculatorInterface:
                                        name = "elevation",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -1587,7 +1587,7 @@ class CalculatorInterface:
                                        name = "exposure_time",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -1664,7 +1664,7 @@ class CalculatorInterface:
                                        name = "filter_name",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -1733,7 +1733,7 @@ class CalculatorInterface:
                                        name = "focal_plane_mask",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -1802,7 +1802,7 @@ class CalculatorInterface:
                                        name = "gain",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -1871,7 +1871,7 @@ class CalculatorInterface:
                                        name = "gain_setting",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -1940,7 +1940,7 @@ class CalculatorInterface:
                                        name = "grating",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2004,7 +2004,7 @@ class CalculatorInterface:
                                        name = "group_id",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2067,7 +2067,7 @@ class CalculatorInterface:
                                        name = "local_time",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = datetime )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2137,7 +2137,7 @@ class CalculatorInterface:
                                        name = "mdf_row_id",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2201,7 +2201,7 @@ class CalculatorInterface:
                                        name = "nod_count",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2265,7 +2265,7 @@ class CalculatorInterface:
                                        name = "nod_pixels",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2330,7 +2330,7 @@ class CalculatorInterface:
                                        name = "nominal_atmospheric_extinction",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2399,7 +2399,7 @@ class CalculatorInterface:
                                        name = "nominal_photometric_zeropoint",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2463,7 +2463,7 @@ class CalculatorInterface:
                                        name = "non_linear_level",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2527,7 +2527,7 @@ class CalculatorInterface:
                                        name = "observation_class",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2590,7 +2590,7 @@ class CalculatorInterface:
                                        name = "observation_epoch",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2654,7 +2654,7 @@ class CalculatorInterface:
                                        name = "observation_id",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2718,7 +2718,7 @@ class CalculatorInterface:
                                        name = "observation_type",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2797,7 +2797,7 @@ class CalculatorInterface:
                                        name = "overscan_section",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = list )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2860,7 +2860,7 @@ class CalculatorInterface:
                                        name = "pixel_scale",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2929,7 +2929,7 @@ class CalculatorInterface:
                                        name = "prism",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -2993,7 +2993,7 @@ class CalculatorInterface:
                                        name = "program_id",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -3062,7 +3062,7 @@ class CalculatorInterface:
                                        name = "pupil_mask",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -3126,7 +3126,7 @@ class CalculatorInterface:
                                        name = "qa_state",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -3189,7 +3189,7 @@ class CalculatorInterface:
                                        name = "ra",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -3253,7 +3253,7 @@ class CalculatorInterface:
                                        name = "raw_bg",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -3317,7 +3317,7 @@ class CalculatorInterface:
                                        name = "raw_cc",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -3381,7 +3381,7 @@ class CalculatorInterface:
                                        name = "raw_iq",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -3445,7 +3445,7 @@ class CalculatorInterface:
                                        name = "raw_wv",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -3512,7 +3512,7 @@ class CalculatorInterface:
                                        name = "read_mode",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -3581,7 +3581,7 @@ class CalculatorInterface:
                                        name = "read_noise",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -3645,7 +3645,7 @@ class CalculatorInterface:
                                        name = "read_speed_setting",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -3709,7 +3709,7 @@ class CalculatorInterface:
                                        name = "requested_bg",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -3773,7 +3773,7 @@ class CalculatorInterface:
                                        name = "requested_cc",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -3837,7 +3837,7 @@ class CalculatorInterface:
                                        name = "requested_iq",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -3901,7 +3901,7 @@ class CalculatorInterface:
                                        name = "requested_wv",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -3970,7 +3970,7 @@ class CalculatorInterface:
                                        name = "saturation_level",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = int )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -4039,7 +4039,7 @@ class CalculatorInterface:
                                        name = "slit",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -4130,7 +4130,7 @@ class CalculatorInterface:
                                        name = "ut_datetime",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = datetime )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -4193,7 +4193,7 @@ class CalculatorInterface:
                                        name = "ut_time",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = datetime )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -4258,7 +4258,7 @@ class CalculatorInterface:
                                        name = "wavefront_sensor",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -4321,7 +4321,7 @@ class CalculatorInterface:
                                        name = "wavelength_band",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -4391,7 +4391,7 @@ class CalculatorInterface:
                                        name = "wavelength_reference_pixel",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -4455,7 +4455,7 @@ class CalculatorInterface:
                                        name = "well_depth_setting",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = str )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -4518,7 +4518,7 @@ class CalculatorInterface:
                                        name = "x_offset",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
@@ -4581,7 +4581,7 @@ class CalculatorInterface:
                                        name = "y_offset",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = float )
+                                       pytype = None )
                 return ret
         except:
             raise
