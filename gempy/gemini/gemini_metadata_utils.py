@@ -3,6 +3,8 @@
 import re
 import sys
 
+from astrodata.structuredslice import pixel_exts, bintable_exts
+
 def removeComponentID(instr):
     """
     Remove a component ID from a filter name
@@ -138,7 +140,7 @@ def get_key_value_dict(dataset, keyword):
     return_dictionary = False
         
     # Loop over the pixel data extensions in the dataset
-    for ext in dataset:
+    for ext in dataset[pixel_exts]:
         # Get the value of the keyword from the header of each pixel data
         # extension
         value = ext.get_key_value(keyword)
