@@ -9,8 +9,8 @@ try:
     import pydot
     from pydot import *
 except:
-    print "couldn't import pydot"
-    pass
+    print "couldn't import pydot, type graphs will not be drawn"
+    sys.exit(0)
     
 cl = get_classification_library()
 # print repr(cl.typesDict)
