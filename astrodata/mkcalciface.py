@@ -58,7 +58,7 @@ class DescriptorDescriptor:
                                        name = \"%(name)s\",
                                        keyword = keyword,
                                        ad = self,
-                                       pytype = %(pytype)s )
+                                       pytype = None )
                 return ret
         except:
             raise
