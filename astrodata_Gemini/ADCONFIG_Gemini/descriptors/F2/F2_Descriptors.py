@@ -6,6 +6,7 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
+from astrodata.structuredslice import pixel_exts, bintable_exts
 from gempy.gemini import gemini_metadata_utils as gmu
 
 from F2_Keywords import F2_KeyDict
@@ -30,7 +31,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_data_section = {}
         raw_data_section = "[1:2048,1:2048]"
         
-        for ext in dataset:
+        # Loop over the pixel data extensions in the dataset
+        for ext in dataset[pixel_exts]:
             if pretty:
                 # Use the data section string that uses 1-based indexing as the
                 # value in the form [x1:x2,y1:y2] 
@@ -132,7 +134,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_filter_name = {}
         
         # Loop over the pixel data extensions of the dataset
-        for ext in dataset:
+        for ext in dataset[pixel_exts]:
             ret_filter_name.update({(ext.extname(), ext.extver()):filter_name})
         
         if ret_filter_name == {}:
@@ -240,7 +242,9 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             # Get the pixel scale value using the value of the pixel scale
             # keyword
             pixel_scale = self._get_pixel_scale_from_header(dataset=dataset)
-            for ext in dataset:
+            
+            # Loop over the pixel data extensions in the dataset
+            for ext in dataset[pixel_exts]:
                 # Update the dictionary with the pixel_scale value
                 ret_pixel_scale.update(
                   {(ext.extname(), ext.extver): pixel_scale})

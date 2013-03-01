@@ -3,6 +3,7 @@ import dateutil.parser
 
 from astrodata import Errors
 from astrodata import Lookups
+from astrodata.structuredslice import pixel_exts, bintable_exts
 from gempy.gemini import gemini_metadata_utils as gmu
 import GemCalcUtil
 
@@ -308,7 +309,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         ret_detector_x_bin = {}
         
         # Loop over the pixel data extensions in the dataset
-        for ext in dataset:
+        for ext in dataset[pixel_exts]:
             
             # Return a dictionary with the binning of the x-axis integer (set
             # to 1 as default for Gemini data) as the value
@@ -328,7 +329,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         ret_detector_y_bin = {}
         
         # Loop over the pixel data extensions in the dataset
-        for ext in dataset:
+        for ext in dataset[pixel_exts]:
             
             # Return a dictionary with the binning of the y-axis integer (set
             # to 1 as default for Gemini data) as the value
@@ -494,7 +495,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         ret_filter_name = {}
         
         # Loop over the pixel data extensions of the dataset
-        for ext in dataset:
+        for ext in dataset[pixel_exts]:
             ret_filter_name.update({(ext.extname(), ext.extver()):filter_name})
         
         if ret_filter_name == {}:
@@ -1078,7 +1079,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             #print "Desperately trying FRMNAME, filename etc"
             try:
                 # Loop over the pixel data extensions in the dataset
-                for ext in dataset:
+                for ext in dataset[pixel_exts]:
                     frmname = ext.get_key_value("FRMNAME")
             except (KeyError, ValueError, IndexError):
                 frmname = ""

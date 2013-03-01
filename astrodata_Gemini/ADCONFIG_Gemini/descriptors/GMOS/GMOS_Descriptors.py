@@ -5,6 +5,7 @@ import numpy as np
 
 from astrodata import Errors
 from astrodata import Lookups
+from astrodata.structuredslice import pixel_exts, bintable_exts
 from gempy.gemini import gemini_data_calculations as gdc
 from gempy.gemini import gemini_metadata_utils as gmu
 import GemCalcUtil
@@ -153,7 +154,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     raise dataset.exception_info
             
             # Loop over the pixel data extensions in the dataset
-            for ext in dataset:
+            for ext in dataset[pixel_exts]:
                 # Update the dictionary with the detector name value
                 ret_detector_name.update({
                     (ext.extname(), ext.extver()):phu_detector_name})
@@ -183,8 +184,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             if x1 is not None:
                 # The headers are in the form of a start position and size
                 # so make them into start and end pixels here
-                xs *= int(dataset["SCI"].detector_x_bin())
-                ys *= int(dataset["SCI"].detector_y_bin())
+                xs *= int(dataset.detector_x_bin())
+                ys *= int(dataset.detector_y_bin())
                 rois.append([x1, x1+xs-1, y1, y1+ys-1])
             else:
                 break
@@ -642,8 +643,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the observation id, the binning of the x-axis and y-axis and the
         # amp_read_area values using the appropriate descriptors.
         observation_id = dataset.observation_id()
-        detector_x_bin = dataset["SCI"].detector_x_bin()
-        detector_y_bin = dataset["SCI"].detector_y_bin()
+        detector_x_bin = dataset.detector_x_bin()
+        detector_y_bin = dataset.detector_y_bin()
         
         # Return the amp_read_area as an ordered list
         amp_read_area = dataset.amp_read_area().as_list()
@@ -861,7 +862,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # the appropriate descriptors. Use as_pytype() to return the values as
         # the default python type, rather than an object.
         instrument = dataset.instrument().as_pytype()
-        detector_y_bin = dataset["SCI"].detector_y_bin()
+        detector_y_bin = dataset.detector_y_bin()
         
         # Determine the detector type keyword from the global keyword
         # dictionary
@@ -1071,28 +1072,28 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         # Get the binning factor for non-eev detectors
         if not is_eev:
-            xbin_dv = dataset["SCI"].detector_x_bin()
+            xbin_dv = dataset.detector_x_bin()
             if xbin_dv is None:
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
             else:
                 xbin_dict = xbin_dv.as_dict()
             
-            ybin_dv = dataset["SCI"].detector_y_bin()
+            ybin_dv = dataset.detector_y_bin()
             if ybin_dv is None:
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
             else:
                 ybin_dict = ybin_dv.as_dict()
         
-        # Loop over the science extensions in the dataset to
+        # Loop over the pixel data extensions in the dataset to
         # determine whether bias level is needed
         # Also store some useful information in dictionaries
         # to be retrieved in the next loop
         need_bias_level = False
         data_contains_bias_dict = {}
         bin_factor_dict = {}
-        for ext in dataset["SCI"]:
+        for ext in dataset[pixel_exts]:
             ext_name_ver = (ext.extname(),ext.extver())
             
             # Check whether data has been overscan-subtracted
@@ -1134,7 +1135,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     raise dataset.exception_info
         
         # Loop over extensions to calculate saturation value
-        for ext in dataset["SCI"]:
+        for ext in dataset[pixel_exts]:
             ext_name_ver = (ext.extname(),ext.extver())
             
             # Determine the name of the detector amplifier keyword (ampname)
