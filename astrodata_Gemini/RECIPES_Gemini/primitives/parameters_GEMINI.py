@@ -153,6 +153,13 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    "use_all":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     },
  "contextReport":{
     "report_history":{
@@ -515,6 +522,13 @@
     "suffix":{
         "default"       : "_skySeparated",
         "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "all_on_source":{
+        "default"       : False,
+        "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
