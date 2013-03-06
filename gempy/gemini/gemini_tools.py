@@ -1114,7 +1114,36 @@ def filename_updater(adinput=None, infilename='', suffix='', prefix='',
     # Create output filename
     outFileName = prefix+name+suffix+filetype
     return outFileName
+
+def finalise_adinput(adinput=None, timestamp_key=None, suffix=None):
+    if not adinput or adinput:
+        raise Error.InputError()
+    elif not isinstance(adinput, list):
+        adinput_list = [adinput]
+    else:
+        adinput_list = adinput
     
+    # Initialize the list of output AstroData objects
+    adoutput_list = []
+    
+    # Loop over each input AstroData object in the list
+    for ad in adinput_list:
+        
+        # Add the appropriate time stamps to the PHU
+        if timestamp_key is not None:
+            mark_history(adinput=ad, keyword=timestamp_key)
+        
+        # Update the filename
+        if suffix is not None:
+            ad.filename = filename_updater(adinput=ad, suffix=suffix,
+                                           strip=True) 
+        
+        # Append the output AstroData object to the list of output AstroData
+        # objects 
+        adoutput_list.append(ad)
+    
+    return adoutput_list
+
 def fit_continuum(ad):
     """
     This function fits Gaussians to the spectral continuum centered around 
