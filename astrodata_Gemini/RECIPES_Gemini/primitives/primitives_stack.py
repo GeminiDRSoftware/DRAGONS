@@ -1,7 +1,9 @@
 import sys
 import math
 import numpy as np
+from copy import deepcopy
 from astrodata import Errors
+from astrodata import ReductionContextRecords as RCR
 from astrodata.adutils import logutils
 from astrodata.adutils.gemutil import pyrafLoader
 from gempy.gemini import gemini_tools as gt
@@ -195,4 +197,144 @@ class StackPrimitives(GENERALPrimitives):
         # Report the output list to the reduction context
         rc.report_output(adoutput_list)
         #print("ETI TIME: %s sec" % str(time.time()-t1))
+        yield rc
+
+    def stackSkyFrames(self, rc):
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "stackSkyFrames", "starting"))
+        
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["stackSkyFrames"]
+        
+        # Initialize the list of output science and stacked sky AstroData
+        # objects
+        ad_science_output_list = []
+        ad_sky_for_correction_output_list = []
+        
+        # Initialize the dictionary that will contain the association between
+        # the science AstroData objects and the stacked sky AstroData objects
+        stacked_sky_dict = {}
+        
+        # The associateSky primitive puts the dictionary containing the
+        # information associating the sky frames to the science frames in
+        # the reduction context
+        sky_dict = rc["sky_dict"]
+        
+        # Loop over each science AstroData object in the science list
+        ad_science_list = rc.get_inputs_as_astrodata()
+        for ad_science in ad_science_list:
+            
+            # Retrieve the list of sky AstroData objects associated with the
+            # input science AstroData object
+            origname = ad_science.phu_get_key_value("ORIGNAME")
+            if origname in sky_dict:
+                adr_sky_list = sky_dict[origname]
+                
+                if not adr_sky_list:
+                    # There are no associated sky AstroData objects for this
+                    # science AstroData object
+                    log.warning("No sky frames available for %s" % origname)
+                    continue
+                
+                # Generate a unique suffix for the stacked sky AstroData object
+                if origname.endswith(".fits"):
+                    sky_suffix = "_for%s" % origname[:-5]
+                else:
+                    sky_suffix = "_for%s" % origname
+                
+                if len(adr_sky_list) == 1:
+                    # There is only one associated sky AstroData object for
+                    # this science AstroData object, so there is no need to
+                    # call stackFrames. Update the dictionary with the single
+                    # sky AstroDataRecord object associated with this science
+                    # AstroData object
+                    ad_sky = deepcopy(adr_sky_list[0].ad)
+                    
+                    # Update the filename
+                    ad_sky.filename = gt.filename_updater(
+                      adinput=ad_sky, suffix=sky_suffix, strip=True)
+                    
+                    # Create the AstroDataRecord for this new AstroData Object
+                    adr_sky = RCR.AstroDataRecord(ad_sky)
+                    log.fullinfo("Only one sky frame available for %s: %s" % (
+                      origname, adr_sky.ad.filename))
+                    
+                    # Update the dictionary with the stacked sky
+                    # AstroDataRecord object associated with this science 
+                    # AstroData object
+                    stacked_sky_dict.update({origname: adr_sky})
+                    
+                    # Update the output stacked sky AstroData list to contain
+                    # the sky for correction
+                    ad_sky_for_correction_output_list.append(adr_sky.ad)
+                
+                else:
+                    # Initialize the list of sky AstroData objects to be
+                    # stacked
+                    ad_sky_to_stack_list = []
+                    
+                    # Combine the list of sky AstroData objects
+                    log.fullinfo("Combining the following sky frames for %s"
+                                 % origname)
+                    
+                    for adr_sky in adr_sky_list:
+                        log.fullinfo(" %s" % adr_sky.ad.filename)
+                        ad_sky_to_stack_list.append(adr_sky.ad)
+                    
+                    # Add the sky AstroData objects to the forStack stream
+                    rc.report_output(ad_sky_to_stack_list, stream="forStack")
+                    
+                    # Call stackFrames using the sky AstroData objects in the
+                    # forStack stream. The stacked sky AstroData objects will
+                    # be added back into the forStack stream 
+                    rc.run("stackFrames(stream='forStack', suffix='%s')"
+                           % sky_suffix)
+                    
+                    # Get the stacked sky AstroData object from the forStack
+                    # stream and empty the forStack stream, in preparation for
+                    # creating the next stacked sky AstroData object
+                    adr_stacked_sky_list = rc.get_stream(
+                      stream="forStack", empty=True)
+                    
+                    # Add the sky to be used to correct this science AstroData
+                    # object to the list of output sky AstroData objects
+                    if len(adr_stacked_sky_list) == 1:
+                        adr_stacked_sky = adr_stacked_sky_list[0]
+                        
+                        # Add the appropriate time stamps to the PHU
+                        gt.mark_history(adinput=adr_stacked_sky.ad,
+                                        keyword=timestamp_key)
+                        
+                        ad_sky_for_correction_output_list.append(
+                          adr_stacked_sky.ad)
+                        
+                        # Update the dictionary with the stacked sky
+                        # AstroDataRecord object associated with this science 
+                        # AstroData object
+                        stacked_sky_dict.update({origname: adr_stacked_sky})
+                    else:
+                        log.warning("Problem with stacking")
+        
+        # Add the appropriate time stamp to the PHU and update the filename of
+        # the science AstroData objects
+        ad_science_output_list = gt.finalise_adinput(
+          adinput=ad_science_list, timestamp_key=timestamp_key,
+          suffix=rc["suffix"])
+        
+        # Add the association dictionary to the reduction context
+        rc["stacked_sky_dict"] = stacked_sky_dict
+        
+        # Report the list of output stacked sky AstroData objects to the
+        # forSkyCorrection stream in the reduction context 
+        rc.report_output(
+          ad_sky_for_correction_output_list, stream="forSkyCorrection")
+        rc.run("showInputs(stream='forSkyCorrection')")
+        
+        # Report the list of output science AstroData objects to the reduction
+        # context 
+        rc.report_output(ad_science_output_list)
+        
         yield rc
