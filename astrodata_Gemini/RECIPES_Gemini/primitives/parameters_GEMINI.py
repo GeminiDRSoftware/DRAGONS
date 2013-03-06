@@ -131,6 +131,29 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "associateSky":{
+    "suffix":{
+        "default"       : "_skyAssociated",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "time":{
+        "default"       : 600.,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "distance":{
+        "default"       : 3.,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "contextReport":{
     "report_history":{
         "default"       : False,
@@ -488,6 +511,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "separateSky":{
+    "suffix":{
+        "default"       : "_skySeparated",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "showList":{
     "purpose":{
         "default"       : None,
@@ -527,6 +559,50 @@
  "stackFrames":{
     "suffix":{
         "default"       : "_stack",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "mask":{
+        "default"       : True,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        }, 
+    "nhigh":{
+        "default"       : 1,
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "nlow":{
+        "default"       : 1,
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "operation":{
+        "default"       : "average",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "reject_method":{
+        "default"       : "avsigclip",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "stackSkyFrames":{
+    "suffix":{
+        "default"       : "_skyStacked",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
@@ -625,6 +701,15 @@
         "default"       : None,
         # No default type defined, since the dark parameter could be a string
         # or an AstroData object
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "subtractSky":{
+    "suffix":{
+        "default"       : "_skyCorrected",
+        "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
