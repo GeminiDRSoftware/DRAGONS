@@ -9,6 +9,6 @@ aduToElectrons
 addVAR(poisson_noise=True)
 darkCorrect
 flatCorrect
-#makeProcessedSky
-#skyCorrect
+makeSky
+skyCorrect
 #alignAndStack
