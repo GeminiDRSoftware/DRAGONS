@@ -277,11 +277,11 @@ class StackPrimitives(GENERALPrimitives):
                     ad_sky_to_stack_list = []
                     
                     # Combine the list of sky AstroData objects
-                    log.fullinfo("Combining the following sky frames for %s"
+                    log.stdinfo("Combining the following sky frames for %s"
                                  % origname)
                     
                     for adr_sky in adr_sky_list:
-                        log.fullinfo(" %s" % adr_sky.ad.filename)
+                        log.stdinfo("  %s" % adr_sky.ad.filename)
                         ad_sky_to_stack_list.append(adr_sky.ad)
                     
                     # Add the sky AstroData objects to the forStack stream
@@ -289,9 +289,11 @@ class StackPrimitives(GENERALPrimitives):
                     
                     # Call stackFrames using the sky AstroData objects in the
                     # forStack stream. The stacked sky AstroData objects will
-                    # be added back into the forStack stream 
+                    # be added back into the forStack stream.
+                    rc.run("showInputs(stream='forStack')")
                     rc.run("stackFrames(stream='forStack', suffix='%s')"
                            % sky_suffix)
+                    rc.run("showInputs(stream='forStack')")
                     
                     # Get the stacked sky AstroData object from the forStack
                     # stream and empty the forStack stream, in preparation for
