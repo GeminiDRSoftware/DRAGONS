@@ -1,6 +1,12 @@
-#addToList
-#getList
+# For now, use darkCorrect to remove the thermal emission, since there are 
+# currently no available "lamp off" flats for F2
+darkCorrect
+stackFrames
+
+# This is what this recipe should look like:
+#addToList(purpose="forStack")
+#getList(purpose="forStack")
 #separateLampOff
 #stackFrames(stream="lampoff")
-stackFrames
+#stackFrames
 #subtractLampOff
