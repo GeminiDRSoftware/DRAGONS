@@ -142,9 +142,10 @@ class PreprocessPrimitives(GENERALPrimitives):
             ad_sky_list = []
             for sky in rc["sky"]:
                 if not isinstance(sky, AstroData):
-                    ad_sky_list.append(AstroData(sky))
-                else:
-                    ad_sky_list.append(sky)
+                    sky = AstroData(sky)
+                
+                # Create a list of sky AstroDataRecord objects
+                ad_sky_list.append(sky)
         else:
             # The seperateSky primitive puts the sky AstroData objects in the
             # sky stream. The get_stream function returns a list of AstroData
@@ -190,7 +191,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                 # If use_all is True, use all of the sky AstroData objects for
                 # each science AstroData object
                 if rc["use_all"]:
-                    log.fullinfo("Associating all available sky AstroData "
+                    log.stdinfo("Associating all available sky AstroData "
                                  "objects to %s" % ad_science.filename)
                     
                     # Set the list of sky AstroDataRecord objects for this
@@ -249,10 +250,10 @@ class PreprocessPrimitives(GENERALPrimitives):
                 if not sky_dict[origname]:
                     log.warning("No sky frames available for %s" % origname)
                 else:
-                    log.fullinfo("The sky frames associated with %s are:"
+                    log.stdinfo("The sky frames associated with %s are:"
                                  % origname)
                     for adr_sky in sky_dict[origname]:
-                        log.fullinfo(" %s" % adr_sky.ad.filename)
+                        log.stdinfo("  %s" % adr_sky.ad.filename)
             
             # Add the appropriate time stamp to the PHU and change the filename
             # of the science and sky AstroData objects 
@@ -778,10 +779,17 @@ class PreprocessPrimitives(GENERALPrimitives):
             
             # Loop over each input AstroData object in the input list
             for ad in ad_input_list:
-            
+                
+                # If the all_on_source parameter is equal to yes, all the input
+                # on-source AstroData objects can be used as a sky frame
+                if rc["all_on_source"]:
+                    ad_science_list.append(ad)
+                    adsky = deepcopy(ad)
+                    ad_sky_list.append(adsky)
+                
                 # If any of the input AstroData objects contain a "SKYFRAME"
                 # keyword, that input can be used as a sky frame
-                if ad.phu_get_key_value("SKYFRAME"):
+                elif ad.phu_get_key_value("SKYFRAME"):
                     log.fullinfo("%s can be used as a sky frame" % ad.filename)
                     
                     # Append the input AstroData object to the list of sky
@@ -795,7 +803,15 @@ class PreprocessPrimitives(GENERALPrimitives):
                     # Append the input AstroData object to the list of science
                     # AstroData objects
                     ad_science_list.append(ad)
-            
+
+            log.stdinfo("Science frames:")
+            for ad_science in ad_science_list:
+                log.stdinfo("  %s" % ad_science.filename)
+
+            log.stdinfo("Sky frames:")
+            for ad_sky in ad_sky_list:
+                log.stdinfo("  %s" % ad_sky.filename)
+
             # Add the appropriate time stamp to the PHU and update the filename
             # of the science and sky AstroData objects 
             ad_science_output_list = gt.finalise_adinput(
@@ -991,10 +1007,10 @@ class PreprocessPrimitives(GENERALPrimitives):
                 ad_sky_for_correction = sky_dict[origname].ad
                 
                 # Subtract the sky from the input AstroData object
-                log.fullinfo("Subtracting the sky (%s) from the science "
-                             "AstroData object %s"
-                             % (ad_sky_for_correction.filename,
-                                ad_science.filename))
+                log.stdinfo("Subtracting the sky (%s) from the science "
+                            "AstroData object %s"
+                            % (ad_sky_for_correction.filename,
+                               ad_science.filename))
                 ad_science.sub(ad_sky_for_correction)
             else:
                 # There is no appropriate sky for the intput AstroData object
