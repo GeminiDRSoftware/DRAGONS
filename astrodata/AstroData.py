@@ -1929,6 +1929,13 @@ help      False     show help information    """
         if value is None:
             raise Errors.AstroDataError("No keyword value provided")
         
+        # Don't include any history when updating a "time of last modification"
+        # keyword, since these keywords are updated regularly
+        history_comment = None
+        add_history = True
+        if keyword.endswith("-TLM"):
+            add_history = False
+        
         # Check to see whether the keyword is already in the PHU
         original_value = self.phu_get_key_value(keyword)
         
@@ -1944,15 +1951,17 @@ help      False     show help information    """
                 # already present in the PHU
                 if comment is not None:
                     # Only the comment will be updated in the PHU
-                    history_comment = ("The comment for the keyword %s was "
-                                       "updated" % keyword)
+                    if add_history:
+                        history_comment = ("The comment for the keyword %s "
+                                           "was updated" % keyword)
                     comment_prefix = "(UPDATED)"
             else:
                 # The keyword value will be updated in the PHU with the input
-                # keyword value 
-                history_comment = ("The keyword %s=%s was overwritten in the "
-                                   "PHU with new value %s" %
-                                   (keyword, original_value, value))
+                # keyword value
+                if add_history:
+                    history_comment = ("The keyword %s=%s was overwritten in "
+                                       "the PHU with new value %s" %
+                                       (keyword, original_value, value))
                 comment_prefix = "(UPDATED)"
         
         if comment is None:
