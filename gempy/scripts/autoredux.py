@@ -87,7 +87,10 @@ def main():
     if time.timezone / 3600 == 10:        # HST = UTC+10
         localsite = GEMINI_NORTH
         prefix = "N"
-    elif time.timezone / 3600 == 4:       # CST = UTC+4
+    elif time.timezone / 3600 < 5:       # CST = UTC+4
+        # Set to < 5 due to inconsitent setting of timezones due to DST in
+        # Chile being extended at will by the Chilean government.
+
         localsite = GEMINI_SOUTH
         prefix = "S"
     else:
