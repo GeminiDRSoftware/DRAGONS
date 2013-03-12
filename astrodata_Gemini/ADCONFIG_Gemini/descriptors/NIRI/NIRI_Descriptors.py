@@ -522,3 +522,63 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_well_depth_setting = str(well_depth_setting)
         
         return ret_well_depth_setting
+
+    def nominal_photometric_zeropoint(self, dataset, **args):
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always return a dictionary where the key
+        # of the dictionary is an (EXTNAME, EXTVER) tuple
+ 
+        ret_nominal_photometric_zeropoint = {}
+        
+        table = Lookups.get_lookup_table("Gemini/NIRI/Nominal_Zeropoints",
+                                         "nominal_zeropoints")
+        
+        # Get the values of the gain, detector name and filter name using the
+        # appropriate descriptors. Use get_value() and as_pytype() to
+        # return the values as a dictionary and the default python type,
+        # respectively, rather than an object.
+  
+        gain = dataset.gain().get_value()
+        camera = dataset.camera().get_value()
+        filter_name = dataset.filter_name(pretty=True).as_pytype()
+        
+        if gain is None or camera is None or filter_name is None:
+            # The descriptor functions return None if a value cannot be
+            # found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
+        # Get the value of the BUNIT keyword from the header of each pixel data
+        # extension as a dictionary 
+        bunit_dict = gmu.get_key_value_dict(dataset, "BUNIT")
+        
+        ext_name_ver=(dataset.extname(),dataset.extver())
+
+        # Determine whether data are in ADU or electrons
+        if bunit_dict is not None:
+            bunit = bunit_dict[ext_name_ver]
+        else:
+            bunit = None
+        
+        # If bunit is "electron" or None, set the gain factor to 0.0 
+        gain_factor = 0.0
+        
+        if bunit == "adu":
+            gain_factor = 2.5 * math.log10(gain)
+            
+        nominal_zeropoint_key = (filter_name, camera)
+        
+        try:
+            nominal_photometric_zeropoint = (
+                table[nominal_zeropoint_key] - gain_factor)
+        except:
+            raise Errors.TableKeyError()
+            
+        # Update the dictionary with the nominal photometric zeropoint
+        # value 
+        ret_nominal_photometric_zeropoint.update({
+                ext_name_ver:nominal_photometric_zeropoint})
+
+        return ret_nominal_photometric_zeropoint
+    
