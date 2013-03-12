@@ -650,6 +650,8 @@ class StandardizePrimitives(GENERALPrimitives):
                 raise Errors.InputError("No units found. Not calculating "
                                         "variance.")
             
+            # Get the input datatype to cast to output VAR datatype to it.
+            input_ad_dtype = ext.data.dtype
             if add_read_noise:
                 # Get the read noise value (in units of electrons) using the
                 # appropriate descriptor. The read noise is only used if
@@ -714,11 +716,12 @@ class StandardizePrimitives(GENERALPrimitives):
                     log.fullinfo("Combining the newly calculated variance "
                                  "with the current variance extension "
                                  "%s[VAR,%d]" % (adinput.filename, extver))
-                    adinput["VAR", extver].data = np.add(
-                      adinput["VAR", extver].data, var_array_final)
+                    data = np.add(adinput["VAR", extver].data, var_array_final)
+                    adinput["VAR", extver].data = data.astype(input_ad_dtype)
             else:
                 # Create the variance AstroData object
-                var = AstroData(header=pf.Header(), data=var_array_final)
+                var = AstroData(header=pf.Header(), 
+                      data=var_array_final.astype(input_ad_dtype))
                 var.rename_ext("VAR", ver=extver)
                 var.filename = adinput.filename
                 
