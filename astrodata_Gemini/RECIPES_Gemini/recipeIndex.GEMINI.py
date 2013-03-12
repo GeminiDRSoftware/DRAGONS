@@ -13,5 +13,5 @@ localAstroTypeRecipeIndex = {
                                 "GMOS_LS_ARC": ["makeProcessedArc"],
                                 "GMOS_SPECT":["qaReduce"],
                                 "NIRI_IMAGE": ["qaReduce"],
-+                               "NIRI_IMAGE_FLAT": ["makeProcessedFlat"],
+                                "NIRI_IMAGE_FLAT": ["makeProcessedFlat"],
                             }
