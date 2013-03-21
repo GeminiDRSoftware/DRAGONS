@@ -32,6 +32,7 @@ class CalibrationRequest(ReductionObjectRequest):
     source = None
     descriptors = None
     types = None
+    calurl_dict = None
     
     def __init__(self,  filename=None, identifiers={}, criteria={}, 
                     priorities={}, caltype=None , source = 'all', ad = None):
@@ -55,7 +56,8 @@ class CalibrationRequest(ReductionObjectRequest):
                      "types": self.types,
                      #"ad":self.ad
                      })
-        # print 'ROR50:', retd
+        if self.calurl_dict:
+            retd["calurl_dict"] = self.calurl_dict
         return retd
         
     def from_dict(self, params):

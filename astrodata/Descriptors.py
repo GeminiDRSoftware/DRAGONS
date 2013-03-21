@@ -279,7 +279,7 @@ class DescriptorValue(object):
                     retlist.append(self.dict_val[key])
                 return retlist
             else:
-                print "273"
+                #print "D273"
                 return str(self)
         
         # case where value is a single ext fits (int, str, float)

@@ -10,9 +10,8 @@ from pprint import pformat
 
 calurldict = Lookups.get_lookup_table("Gemini/calurl_dict","calurl_dict")
 
-CALMGR = calurldict["CALMGR"]
-#CALMGR = "http://hbffits3.hi.gemini.edu/calmgr"
-LOCALCALMGR = calurldict["LOCALCALMGR"] 
+_CALMGR      = CALMGR      = calurldict["CALMGR"]
+_LOCALCALMGR = LOCALCALMGR = calurldict["LOCALCALMGR"] 
 
 #LOCALCALMGR = "http://localhost:%(httpport)d/calsearch.xml?caltype=%(caltype)s&%(tokenstr)s"
 #"None # needs to have adcc http port in
@@ -88,7 +87,13 @@ def calibration_search(rq, fullResult = False):
         print "ppu83",pyutc
         rq["descriptors"].update({"ut_datetime":pyutc} )
     
-    
+    # if the rq has calurl_dict use it!!!
+    if "calurl_dict" in rq :
+        CALMGR     = rq["calurl_dict"]["CALMGR"]
+        LOCALCALMGR = rq["calurl_dict"]["LOCALCALMGR"]
+    else:
+        CALMGR = _CALMGR
+        LOCALCALMGR = _LOCALCALMGR   
     
     if "source" not in rq:
         source = "central"

@@ -7,6 +7,7 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer
 import select
 import socket
 from astrodata.adutils import logutils
+from pprint import pformat
 
 log = logutils.get_logger(__name__)
 
@@ -254,16 +255,16 @@ class PRSProxy(object):
         if self.found == False:
             return None
         else:
-            #PDEB = True
             PDEB = False
             calrqdict = cal_rq.as_dict()
             if (PDEB):
-                print "P165:", repr(calrqdict)
+                print "P261:"+pformat(calrqdict)
+                print "P262:", repr(calrqdict)
             
             try:
                 cal = self.prs.calibration_search(calrqdict)
             except:
-                print "P264: Calibration search fault"
+                print "P267: Calibration search fault"
                 import traceback
                 traceback.print_exc()
                 log.error("P268: EXCEPTION from ADCC, no calibration to return")

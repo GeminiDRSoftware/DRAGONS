@@ -678,7 +678,7 @@ class ReductionContext(dict):
             of AstroData instances. "FN" directs it to return a list of filenames.
             If left blank or set to ``None``, the AstroDataRecord structures used
             by the Reduction Context will be returned.
-        :returns: a list of datasets as ``AstroData`` or filenames.
+        :returns: a list of ``AstroDataRecord`` objects, ``AstroData`` objects or filenames.
         :rtype: list
         
         Get stream returns a list of AstroData instances in the given stream.
@@ -1561,6 +1561,7 @@ class ReductionContext(dict):
             #print "RM1389:", repr(addToCmdQueue[0].as_dict())
         for re in addToCmdQueue:
             # print "RM1558:",repr(dir(re))
+            re.calurl_dict = self["calurl_dict"]
             re.source = source
             self.add_rq(re)
             

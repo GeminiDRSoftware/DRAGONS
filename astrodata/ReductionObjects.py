@@ -487,7 +487,8 @@ def command_clause(ro, coi):
         msg = 'REDUCE:\n'
         msg += '-'*30+'\n'
         if rqTyp == CalibrationRequest:
-            #print "RO390:", repr(rq.as_dict())
+            #print "RO490:", repr(rq.as_dict())
+            #print "RO491:", coi["calurl_dict"]
             sci_ad = rq.ad
             if sci_ad:
                 fn=sci_ad.filename

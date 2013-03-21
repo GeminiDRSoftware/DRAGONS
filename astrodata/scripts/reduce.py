@@ -785,16 +785,15 @@ try:
 
                         # Insert calibration url dictionary
                         # if given by command line will overide the lookup
-                        if options.cal_mgr is None:
-                            calurldict = Lookups.get_lookup_table("Gemini/calurl_dict",
-                                                                  "calurl_dict")
-                        else:
+                        calurldict = Lookups.get_lookup_table("Gemini/calurl_dict",
+                                                              "calurl_dict")
+                        if options.cal_mgr:
                             calmgr_str = options.cal_mgr
                             if calmgr_str[7:12] == 'local':
-                                calurldict = {'LOCALCALMGR' : calmgr_str}
+                                calurldict.update({'LOCALCALMGR' : calmgr_str})
                             else:
-                                calurldict = {'CALMGR' : calmgr_str}
-                        co.update({'calurl_dictionary':calurldict})
+                                calurldict.update({'CALMGR' : calmgr_str})
+                        co.update({'calurl_dict':calurldict})
                         #print "REDUCE 721", co.report(internal_dict=True)
 
                         if (useTK):
