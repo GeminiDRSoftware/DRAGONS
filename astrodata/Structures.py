@@ -438,7 +438,7 @@ class Structure(object):
                         newmem.append(newds)
                         subpart.struct_inst.project(newds)
                     elif subpart.required:
-                        raise StructureExcept("..... required part (%s) not found\n..... in dataset %s" % 
+                        raise StructureExcept("..... a required part (%s) not found\n..... in dataset %s" % 
                                         (subpart.struct_class, dataset.filename) )               
                 newmemstr = "dataset.%s" % part.struct_name
                 # check if this is already projected... note, we WANT an attributeerror
@@ -667,7 +667,11 @@ def get_structured_slice(dataset = None, stype = None, structure = None):
     structObj.find(dataset)
     #print "S664:"
     #structObj.printout(664)
-    return structObj.collect(dataset)
+    try:
+        ret = structObj.collect(dataset)
+    except StructureExcept:
+        return []
+    return ret
 
 def apply_structure_by_type(dataset = None, stype = None):
     """ Apply all structures to dataset based on which types apply to
