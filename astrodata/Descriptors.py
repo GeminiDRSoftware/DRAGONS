@@ -158,12 +158,18 @@ class DescriptorValue(object):
                 if (format == "db"):
                     dv = self.dict_val
                     parts = []
+                                        
                     for k in dv:
                         name,ver = k
                         if name == self._primary_extname:
                             parts.append(dv[k])
+                    #p rint "D166:", repr(parts)        
+                    parts.sort()
+                    #p rint "D166:", repr(parts)
                 else:
-                    parts = [str(val) for val in self.dict_val.values()]
+                    values = self.dict_val.values()
+                    values.sort()
+                    parts = [str(val) for val in values]
                 retstr = "+".join(parts)
         elif format == "value":
             val = self.collapse_value()
