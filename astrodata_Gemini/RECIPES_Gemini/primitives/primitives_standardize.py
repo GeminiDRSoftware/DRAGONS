@@ -749,10 +749,11 @@ class StandardizePrimitives(GENERALPrimitives):
                           comment=None, extname="DQ")
         
         # These should probably be done using descriptors (?)
-        keywords_from_sci = ["CTYPE1", "CRPIX1", "CRVAL1", "CTYPE2", "CRPIX2",
-                             "CRVAL2", "CD1_1", "CD1_2", "CD2_1", "CD2_2",
-                             "CCDSIZE", "CCDSUM", "CCDSEC", "DETSEC",
-                             "DATASEC", "BIASSEC", "SATLEVEL", "NONLINEA"]
+        keywords_from_sci = [
+          "AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC", "CCDSIZE", "CCDSUM",
+          "CD1_1", "CD1_2", "CD2_1", "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1",
+          "CRVAL2", "CTYPE1", "CTYPE2", "DATASEC", "DETSEC", "EXPTIME", "GAIN",
+          "GAINSET", "NONLINEA", "RDNOISE", "SATLEVEL"] 
         dq_comment = "Copied from ['SCI',%d]" % (sci.extver())
         
         for keyword in keywords_from_sci:
@@ -772,11 +773,11 @@ class StandardizePrimitives(GENERALPrimitives):
                           % (bunit, bunit), comment=None, extname="VAR")
         
         # These should probably be done using descriptors (?)
-        keywords_from_sci = ["CTYPE1", "CRPIX1", "CRVAL1", "CTYPE2", "CRPIX2",
-                             "CRVAL2", "CD1_1", "CD1_2", "CD2_1", "CD2_2",
-                             "EXPTIME", "CCDNAME", "AMPNAME", "CCDSIZE",
-                             "CCDSUM", "CCDSEC", "DETSEC", "DATASEC",
-                             "BIASSEC", "GAIN", "RDNOISE"]
+        keywords_from_sci = [
+          "AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC", "CCDSIZE", "CCDSUM",
+          "CD1_1", "CD1_2", "CD2_1", "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1",
+          "CRVAL2", "CTYPE1", "CTYPE2", "DATASEC", "DETSEC", "EXPTIME", "GAIN",
+          "GAINSET", "NONLINEA", "RDNOISE", "SATLEVEL"]
         var_comment = "Copied from ['SCI',%d]" % (sci.extver())
         
         for keyword in keywords_from_sci:
