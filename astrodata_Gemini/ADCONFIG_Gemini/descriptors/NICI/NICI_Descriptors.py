@@ -71,38 +71,68 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         filter_r_dict = gmu.get_key_value_dict(dataset, keyword1)
         filter_b_dict = gmu.get_key_value_dict(dataset, keyword2)
         
-        if filter_r_dict is None or filter_b_dict is None:
-            # The get_key_value_dict() function returns None if a value cannot
-            # be found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, "exception_info"):
-                raise dataset.exception_info
-        
-        for ext_name_ver, filter_r in filter_r_dict.iteritems():
-            filter_b = filter_b_dict[ext_name_ver]
-            
-            if filter_r is None and filter_b is None:
-                raw_filter = None
-            elif filter_r is None and filter_b is not None:
-                raw_filter = filter_b
-            elif filter_r is not None and filter_b is None:
-                raw_filter = filter_r
+        # The following code contains duplication so that the case when a user
+        # loops over extensions in an AstroData object and calls the
+        # filter_name descriptor on each extension, i.e.,
+        #
+        #   for ext in ad:
+        #       print ext.filter_name()
+        #
+        # is handled appropriately. There may be a better way to do this ...
+        if filter_r_dict is None:
+            if filter_b_dict is None:
+                # The get_key_value_dict() function returns None if a value
+                # cannot be found and stores the exception info. Re-raise the
+                # exception. It will be dealt with by the CalculatorInterface.
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
             else:
-                # Both filter_r and filter_b are defined for a single
-                # extension, which is incorrect 
-                raise Errors.CorruptDataError()
-            
-            if pretty:
-                stripID = True
-            if stripID:
-                # Strip the component ID from the filter name value
-                if raw_filter is not None:
-                    filter = gmu.removeComponentID(raw_filter)
-            else:
-                filter = raw_filter
-            
-            # Update the dictionary with the filter name value
-            ret_filter_name.update({ext_name_ver:filter})
+                for ext_name_ver, filter_b in filter_b_dict.iteritems():
+                    if filter_b is None:
+                        raw_filter = None
+                    else:
+                        raw_filter = filter_b
+                    
+                    if pretty:
+                        stripID = True
+                    if stripID:
+                        # Strip the component ID from the filter name value
+                        if raw_filter is not None:
+                            filter = gmu.removeComponentID(raw_filter)
+                    else:
+                        filter = raw_filter
+                    
+                    # Update the dictionary with the filter name value
+                    ret_filter_name.update({ext_name_ver:filter})
+        else:
+            for ext_name_ver, filter_r in filter_r_dict.iteritems():
+                if filter_b_dict is not None:
+                    filter_b = filter_b_dict[ext_name_ver]
+                else:
+                    filter_b = None
+                
+                if filter_r is None and filter_b is None:
+                    raw_filter = None
+                elif filter_r is None and filter_b is not None:
+                    raw_filter = filter_b
+                elif filter_r is not None and filter_b is None:
+                    raw_filter = filter_r
+                else:
+                    # Both filter_r and filter_b are defined for a single
+                    # extension, which is incorrect 
+                    raise Errors.CorruptDataError()
+                
+                if pretty:
+                    stripID = True
+                if stripID:
+                    # Strip the component ID from the filter name value
+                    if raw_filter is not None:
+                        filter = gmu.removeComponentID(raw_filter)
+                else:
+                    filter = raw_filter
+                
+                # Update the dictionary with the filter name value
+                ret_filter_name.update({ext_name_ver:filter})
         
         return ret_filter_name
     
