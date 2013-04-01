@@ -644,7 +644,7 @@
         "uiLevel"       : "UIBASIC",
         },
     "operation":{
-        "default"       : "average",
+        "default"       : "median",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
