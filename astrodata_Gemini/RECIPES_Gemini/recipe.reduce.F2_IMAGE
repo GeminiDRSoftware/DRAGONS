@@ -5,7 +5,7 @@ prepare
 addDQ
 addVAR(read_noise=True)
 #nonlinearityCorrect
-aduToElectrons
+ADUToElectrons
 addVAR(poisson_noise=True)
 darkCorrect
 flatCorrect

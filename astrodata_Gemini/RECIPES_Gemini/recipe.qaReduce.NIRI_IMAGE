@@ -1,6 +1,6 @@
 # Initial work in progress NIRI_IMAGE recipe.
 prepare
-aduToElectrons
+ADUToElectrons
 addDQ
 addVAR(read_noise=True, poisson_noise=True)
 #detectSources

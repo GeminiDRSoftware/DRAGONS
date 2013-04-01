@@ -10,7 +10,7 @@ timestamp_keys = {
     "addObjectMaskToDQ": "ADOBJMSK",
     "addReferenceCatalog": "ADDRECAT",
     "addVAR": "ADDVAR",
-    "aduToElectrons": "ADUTOELE",
+    "ADUToElectrons": "ADUTOELE",
     "alignToReferenceFrame": "ALIGN",
     "associateSky": "ASSOCSKY",
     "attachWavelengthSolution": "ATTWVSOL",

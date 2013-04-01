@@ -7,7 +7,7 @@ prepare
 addDQ
 addVAR(read_noise=True)
 #nonlinearityCorrect
-aduToElectrons
+ADUToElectrons
 addVAR(poisson_noise=True)
 addToList(purpose="forStack")
 getList(purpose="forStack")

@@ -11,7 +11,7 @@ measureBG
 measureCCAndAstrometry
 overscanCorrect
 biasCorrect
-aduToElectrons
+ADUToElectrons
 addVAR(poisson_noise=True)
 flatCorrect
 mosaicDetectors

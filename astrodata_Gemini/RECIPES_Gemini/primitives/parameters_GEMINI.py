@@ -99,9 +99,9 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "aduToElectrons":{
+ "ADUToElectrons":{
     "suffix":{
-        "default"       : "_aduToElectrons",
+        "default"       : "_ADUToElectrons",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,

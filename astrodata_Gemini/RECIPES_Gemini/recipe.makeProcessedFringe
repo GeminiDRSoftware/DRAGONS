@@ -9,7 +9,7 @@ addDQ
 addVAR(read_noise=True)
 overscanCorrect
 biasCorrect
-aduToElectrons
+ADUToElectrons
 addVAR(poisson_noise=True)
 flatCorrect
 addToList(purpose="forFringe")

@@ -39,7 +39,7 @@
                                       "pep8name": "measure_cc_and_astrometry",},
 
 # preprocess
-"aduToElectrons"                   : {"module": "preprocess"},
+"ADUToElectrons"                   : {"module": "preprocess"},
 "correctBackgroundToReferenceImage": {"module": "preprocess"},
 "divideByFlat"                     : {"module": "preprocess"},
 "nonlinearityCorrect"              : {"module": "preprocess"},

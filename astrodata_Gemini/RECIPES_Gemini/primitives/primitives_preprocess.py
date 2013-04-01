@@ -23,7 +23,7 @@ class PreprocessPrimitives(GENERALPrimitives):
         return rc
     init.pt_hide = True
     
-    def aduToElectrons(self, rc):
+    def ADUToElectrons(self, rc):
         """
         This primitive will convert the units of the pixel data extensions
         of the input AstroData object from ADU to electrons by multiplying
@@ -33,10 +33,10 @@ class PreprocessPrimitives(GENERALPrimitives):
         log = logutils.get_logger(__name__)
         
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "aduToElectrons", "starting"))
+        log.debug(gt.log_message("primitive", "ADUToElectrons", "starting"))
         
         # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["aduToElectrons"]
+        timestamp_key = self.timestamp_keys["ADUToElectrons"]
         
         # Initialize the list of output AstroData objects
         adoutput_list = []
@@ -44,11 +44,11 @@ class PreprocessPrimitives(GENERALPrimitives):
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
-            # Check whether the aduToElectrons primitive has been run
+            # Check whether the ADUToElectrons primitive has been run
             # previously
             if ad.phu_get_key_value(timestamp_key):
                 log.warning("No changes will be made to %s, since it has "
-                            "already been processed by aduToElectrons"
+                            "already been processed by ADUToElectrons"
                             % ad.filename)
                 
                 # Append the input AstroData object to the list of output

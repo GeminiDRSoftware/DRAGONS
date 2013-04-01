@@ -67,10 +67,10 @@ def normalize(*args, **argv):
         return outputs
     
     
-def adu_to_electrons(*args, **argv):
+def ADU_to_electrons(*args, **argv):
     ro = mkRO(astrotype="GEMINI", copy_input=True, 
               args=args, argv=argv)
-    ro.runstep("aduToElectrons", ro.context)
+    ro.runstep("ADUToElectrons", ro.context)
     outputs = ro.context.get_outputs(style="AD")
     if len(outputs)==0:
         return None
@@ -91,5 +91,3 @@ def nonlinearity_correct(*args, **argv):
         return outputs[0]
     else:
         return outputs
-    
-    

@@ -10,7 +10,7 @@ addVAR(read_noise=True)
 display
 overscanCorrect
 biasCorrect
-aduToElectrons
+ADUToElectrons
 addVAR(poisson_noise=True)
 mosaicDetectors(interpolate_gaps=False)
 determineWavelengthSolution
