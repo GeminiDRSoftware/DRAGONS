@@ -167,8 +167,10 @@ class ConfigSpace(object):
         # get the ADCONFIG package dirs
         adconfdirs = []
         i = 1
+        
+        packagemask = {}
         for path in self.wholepath:
-            #print "CS128:", path, str(os.path.abspath(path) !=  os.path.abspath(os.getcwd()))
+            #p rint "CS128:", path, str(os.path.abspath(path) !=  os.path.abspath(os.getcwd()))
             if  os.path.abspath(path) !=  os.path.abspath(os.getcwd()):
                 if os.path.isdir(path):
                             # print "ISADIR"
@@ -179,6 +181,14 @@ class ConfigSpace(object):
                                 #print "CS134:", subpath
                                 if PACKAGEMARKER in subpath:
                                     ppath = os.path.join(path, subpath)
+                                    # this code exists to allow packages early in the path
+                                    # to hide one's later in the path
+                                    pknam = os.path.basename(ppath)
+                                    if pknam in packagemask:
+                                        continue
+                                    else:
+                                        packagemask[pknam]=ppath
+                                    
                                     if ppath not in self.package_paths:
                                         self.package_paths.append(ppath)
                                     
@@ -249,6 +259,7 @@ class ConfigSpace(object):
             pathlist = rpath
         # print "CS197:", repr(pathlist)
         
+        pkmask = {}
         for path in pathlist:
             # print "@@@@@@@@:",".svn" in path,":::",  path
             if os.path.isdir(path):
@@ -258,6 +269,15 @@ class ConfigSpace(object):
                             if not os.path.isdir(os.path.join(path,subpath)):
                                 continue
                             if PACKAGEMARKER in subpath:
+                                # this logic allows packages early in the path
+                                # to hide packages late in the path
+                                                                
+                                pknam = os.path.basename(subpath)
+                                if pknam in pkmask:
+                                    continue
+                                else:
+                                    pkmask[pknam] = subpath
+
                                 subsubpaths = os.listdir(os.path.join(path,subpath))
                                 for subsubpath in subsubpaths:
                                     if RECIPEMARKER in subsubpath:
