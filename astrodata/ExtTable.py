@@ -105,9 +105,7 @@ class ExtTable(object):
                         rlist.append((xnam,ad[xnam,index]))
                     else:
                         rlist.append((xnam,self.xdict[xnam][index]))
-                else:
-                    rlist.append((xnam, self.xdict[xnam][None]))
-            yield rlist
+                    yield rlist
             index += 1
                 
     def largest_extver(self):

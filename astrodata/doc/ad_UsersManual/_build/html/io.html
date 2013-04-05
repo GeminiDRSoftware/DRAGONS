@@ -1,0 +1,190 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Input and Output Operations &mdash; AstroData User&#39;s Manual v1.0 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="AstroData User&#39;s Manual v1.0 documentation" href="index.html" />
+    <link rel="next" title="MEF Structure Mapping" href="structure.html" />
+    <link rel="prev" title="Tutorial" href="tutorial.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="structure.html" title="MEF Structure Mapping"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tutorial.html" title="Tutorial"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">AstroData User&#39;s Manual v1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="input-and-output-operations">
+<h1>Input and Output Operations<a class="headerlink" href="#input-and-output-operations" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="open-existing-mef-files">
+<h2>Open Existing MEF Files<a class="headerlink" href="#open-existing-mef-files" title="Permalink to this headline">¶</a></h2>
+<p>An AstroData object can be created from the name of the file on disk or from
+PyFITS HDUList.  An existing MEF file can be open as an AstroData object
+in <tt class="docutils literal"><span class="pre">readonly</span></tt>, <tt class="docutils literal"><span class="pre">update</span></tt>, or <tt class="docutils literal"><span class="pre">append</span></tt> mode.  The default is <tt class="docutils literal"><span class="pre">readonly</span></tt>.</p>
+<p><em>(KL: why would anyone want to create an AD from another AD??!!)</em>
+<em>(KL: what&#8217;s the deal with store and storeClobber?  Incomprehensible.)</em></p>
+<p>Here is a very simple example on how to open a file in <tt class="docutils literal"><span class="pre">readonly</span></tt> mode,
+check the structure, and then close it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20111124S0203.fits&#39;</span><span class="p">)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>To open the file in a mode other than <tt class="docutils literal"><span class="pre">readonly</span></tt>, specify the value of the
+<tt class="docutils literal"><span class="pre">mode</span></tt> argument:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20111124S0203.fits&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;update&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="update-existing-mef-files">
+<h2>Update Existing MEF Files<a class="headerlink" href="#update-existing-mef-files" title="Permalink to this headline">¶</a></h2>
+<p>ad.append()
+ad.insert(0, hdu/hdulist/Astrodata)
+ad.insert((&#8216;SCI&#8217;,1), data=ndarray, header=pyfits.Header, auto_number=?)</p>
+<p>ad.remove(0)
+ad.remove((&#8216;SCI&#8217;,1))</p>
+<p>ad.replace(2)
+ad.replace((&#8216;DQ&#8217;,1))</p>
+<p>ad.write()
+ad.write(&#8216;newfile.fits&#8217;,clobber=?)
+# what is the deal with &#8216;rename&#8217;?</p>
+<dl class="docutils">
+<dt>for ext in ad??:</dt>
+<dd>data = ext.data
+hdr = ext.header</dd>
+</dl>
+<p>data = ad[(&#8216;SCI&#8217;,1)].data</p>
+</div>
+<div class="section" id="create-new-mef-files">
+<h2>Create New MEF Files<a class="headerlink" href="#create-new-mef-files" title="Permalink to this headline">¶</a></h2>
+<p>The method <tt class="docutils literal"><span class="pre">write</span></tt> is use to write to disk a new MEF file from an AstroData
+object.  Here we show two ways to build that new AstroData object.</p>
+<div class="section" id="create-new-copy-of-mef-files">
+<h3>Create New Copy of MEF Files<a class="headerlink" href="#create-new-copy-of-mef-files" title="Permalink to this headline">¶</a></h3>
+<p>Let us consider the case where you already have a MEF file on disk and you want
+to work on it and write the modified MEF to a new file.</p>
+<p>Here we open a file, make a copy, and write a new MEF file on disk:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20111124S0203.fits&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>By using <a href="#id1"><span class="problematic" id="id2">**</span></a>* the copy is a true copy, it has its own memory allocation.  This
+allows one to modify the copy while leave the original AstroData intact.  This
+feature is useful when an operation requires both the modified and the
+original AstroData object since by design a simple copy still point to the same
+location in memory.</p>
+<p>example for deepcopy:</p>
+</div>
+<div class="section" id="create-new-mef-files-from-scratch">
+<h3>Create New MEF Files from Scratch<a class="headerlink" href="#create-new-mef-files-from-scratch" title="Permalink to this headline">¶</a></h3>
+<p>Another use case is creating a new MEF files when none existed before.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Input and Output Operations</a><ul>
+<li><a class="reference internal" href="#open-existing-mef-files">Open Existing MEF Files</a></li>
+<li><a class="reference internal" href="#update-existing-mef-files">Update Existing MEF Files</a></li>
+<li><a class="reference internal" href="#create-new-mef-files">Create New MEF Files</a><ul>
+<li><a class="reference internal" href="#create-new-copy-of-mef-files">Create New Copy of MEF Files</a></li>
+<li><a class="reference internal" href="#create-new-mef-files-from-scratch">Create New MEF Files from Scratch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tutorial.html"
+                        title="previous chapter">Tutorial</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="structure.html"
+                        title="next chapter">MEF Structure Mapping</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/io.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="structure.html" title="MEF Structure Mapping"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tutorial.html" title="Tutorial"
+             >previous</a> |</li>
+        <li><a href="index.html">AstroData User&#39;s Manual v1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Kathleen Labrie.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

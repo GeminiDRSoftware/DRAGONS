@@ -1,0 +1,87 @@
+.. io:
+
+***************************
+Input and Output Operations
+***************************
+
+Open Existing MEF Files
+=======================
+
+An AstroData object can be created from the name of the file on disk or from 
+PyFITS HDUList.  An existing MEF file can be open as an AstroData object 
+in ``readonly``, ``update``, or ``append`` mode.  The default is ``readonly``.
+
+*(KL: why would anyone want to create an AD from another AD??!!)*
+*(KL: what's the deal with store and storeClobber?  Incomprehensible.)*
+
+Here is a very simple example on how to open a file in ``readonly`` mode, 
+check the structure, and then close it::
+
+  from astrodata import AstroData
+  
+  ad = AstroData('N20111124S0203.fits')
+  ad.info()
+  ad.close()
+
+To open the file in a mode other than ``readonly``, specify the value of the
+``mode`` argument::
+
+  ad = AstroData('N20111124S0203.fits', mode='update')
+
+  
+
+
+Update Existing MEF Files
+=========================
+ad.append()
+ad.insert(0, hdu/hdulist/Astrodata)
+ad.insert(('SCI',1), data=ndarray, header=pyfits.Header, auto_number=?)
+
+ad.remove(0)
+ad.remove(('SCI',1))
+
+ad.replace(2)
+ad.replace(('DQ',1))
+
+ad.write()
+ad.write('newfile.fits',clobber=?)
+# what is the deal with 'rename'?
+
+for ext in ad??:
+    data = ext.data
+    hdr = ext.header
+data = ad[('SCI',1)].data
+
+
+
+Create New MEF Files
+=====================
+
+The method ``write`` is use to write to disk a new MEF file from an AstroData 
+object.  Here we show two ways to build that new AstroData object.
+
+Create New Copy of MEF Files
+----------------------------
+
+Let us consider the case where you already have a MEF file on disk and you want
+to work on it and write the modified MEF to a new file.
+
+Here we open a file, make a copy, and write a new MEF file on disk::
+
+  from astrodata import AstroData
+  
+  ad = AstroData('N20111124S0203.fits')
+  
+
+By using *** the copy is a true copy, it has its own memory allocation.  This
+allows one to modify the copy while leave the original AstroData intact.  This
+feature is useful when an operation requires both the modified and the
+original AstroData object since by design a simple copy still point to the same
+location in memory.
+
+example for deepcopy::  
+
+Create New MEF Files from Scratch
+---------------------------------
+
+Another use case is creating a new MEF files when none existed before.
