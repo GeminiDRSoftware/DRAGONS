@@ -2,6 +2,8 @@ import os, sys
 import re
 from datetime import datetime
 from copy import deepcopy
+import json
+import urllib2
 import pyfits as pf
 import numpy as np
 import tempfile
@@ -12,7 +14,6 @@ from astrodata.ConfigSpace import lookup_path
 from astrodata.AstroData import AstroData
 from astrodata import Errors
 from gempy.library import astrotools as at
-import pprint
 
 # Load the standard comments for header keywords that will be updated
 # in these functions
@@ -1400,7 +1401,7 @@ def fitsstore_report(ad, rc, metric, info_dict):
             # Add catalog information
             # This is hard coded for now, as there does not seem
             # to be a way to look it up easily
-            pe["photref"] = "SDSS8"
+            pe["astref"] = "SDSS8"
 
             qametric["pe"] = pe
             qametric_list.append(qametric)
@@ -1418,12 +1419,12 @@ def send_fitsstore_report(qareport):
     # from astrodata_Gemini/ADCONFIG_Gemini/lookups/calurl_dict.py    
     calurl_dict = Lookups.get_lookup_table("Gemini/calurl_dict", "calurl_dict")
     
-    calmgrurl = calurl_dict["CALMGR"]
+    list = [qareport]
     
-    print "g_t1393 qareport not finished: calurl = "+ calmgrurl
-    print "\tqareport follows:\n" + pprint.pformat(qareport)
-    
-
+    req = urllib2.Request(url = calurl_dict["QAMETRICURL"], data=json.dumps(list))
+    f = urllib2.urlopen(req)
+    # Should do some error checking here.
+    f.close()
 
 def log_message(function=None, name=None, message_type=None):
     if message_type == 'calling':
