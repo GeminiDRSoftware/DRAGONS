@@ -294,8 +294,6 @@ integrates other functionality.
                     if store:
                         # print "AD230: Storing in,", store
                         fname = urlfetch(dataset, store=store, clobber= True) #storeClobber)
-                        #fname,headers = urlretrieve(dataset, os.path.join(store, savename), None, 
-                        #    urllib.urlencode({"gemini_fits_authorization":"good_to_go"}))
                     else:
                         # print "AD235: Retrieved to temp file"
                         fname = urlfetch(dataset, clobber=True)
