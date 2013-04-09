@@ -22,32 +22,8 @@ def urlfetch(url, store = None, clobber = False):
     #log.debug("nu20: adutils.urlfetch asked to get ", url)
     #print("nu20: adutils.urlfetch asked to get ", url)
     
-    jar = cookielib.CookieJar()
-
-
- 
-    ck = cookielib.Cookie(  version=0, name='gemini_fits_authorization', 
-                            value='good_to_go', port=None, 
-                            port_specified=False, domain=host, 
-                            domain_specified=True, 
-                            domain_initial_dot=False, 
-                            path='/', path_specified=True, 
-                            secure=False, expires=None, 
-                            discard=True, comment=None, comment_url=None, 
-                            rest={'HttpOnly': None}, rfc2109=False)
-    jar.set_cookie(ck)
-    
-    handler = urllib2.HTTPCookieProcessor(jar)
-    opener = urllib2.build_opener(handler)
-    # for index, cookie in enumerate(jar):
-        # print "nu40:",index, ":", cookie
-       
-    #res = urllib2.urlopen(req)
-    #c = urllib.urlencode( {'gemini_fits_authorization':'value'})
-    c = urllib.urlencode( {'gemini_fits_authorization':'good_to_go'})
-    
     try:
-        res = opener.open(url, c)
+        res = urllib2.urlopen(url)
     except urllib2.HTTPError, error:
         print "ERROR"
         print error.read()
