@@ -371,6 +371,29 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "thresholdFlatfield":{
+    "suffix":{
+        "default"       : "_thresholdFlatfielded",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "upper":{
+        "default"       : 10.0,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "lower":{
+        "default"       : 0.01,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "divideByFlat":{
     "suffix":{
         "default"       : "_flatCorrected",

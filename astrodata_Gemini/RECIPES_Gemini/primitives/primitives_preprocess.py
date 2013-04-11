@@ -492,7 +492,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                          "by this flat:\n%s" % (ad.filename,
                                                 flat.filename))
             ad = ad.div(flat)
-            
+                        
             # Record the flat file used
             ad.phu_set_key_value("FLATIM", 
                                  os.path.basename(flat.filename),
@@ -684,6 +684,75 @@ class PreprocessPrimitives(GENERALPrimitives):
         
         yield rc
     
+    def thresholdFlatfield(self, rc):
+        """
+        This primitive sets the DQ '64' bit for any pixels which have a value
+        <lower or >upper in the SCI plane.
+        """
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "thresholdFlatfield", "starting"))
+        
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["thresholdFlatfield"]
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+        
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+            
+            # Check whether the normalizeFlat primitive has been run previously
+            # ASK EMMA if we need this message
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has " \
+                            "already been processed by thresholdFlatfield" \
+                            % (ad.filename))
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
+            
+            # Loop over each science extension in each input AstroData object
+            upper = rc['upper']
+            lower = rc['lower']
+            for ext in ad["SCI"]:
+                
+                extver = ext.extver()
+                sci_data = ext.data
+                dq_data = ad["DQ",extver].data
+
+                # Mark the unilumminated pixels with a bit '64' in the DQ plane.
+                unilum = np.where(
+                        (sci_data>upper) | (sci_data<lower), 64, 0)
+
+                dq_data = np.bitwise_or(dq_data,unilum)
+
+                # Now replace the DQ data
+                ad["DQ",extver].data = dq_data
+
+                log.fullinfo("ThresholdFlatfield set bit '64' for values"
+                             " outside the range [%.2f,%.2f]"%(lower,upper))
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+            # Change the filename
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+                                              strip=True)
+
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(ad)
+        
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+        
+        yield rc
+
     def normalizeFlat(self, rc):
         """
         This primitive normalizes each science extension of the input
