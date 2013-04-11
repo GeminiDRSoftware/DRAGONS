@@ -28,8 +28,8 @@ class BookkeepingPrimitives(GENERALPrimitives):
         
         :param purpose: 
         :type purpose: string
-        """
         
+        """
         # Instantiate the log
         log = gemLog.getGeminiLog(logType=rc["logType"],
                                   logLevel=rc["logLevel"])
@@ -39,11 +39,11 @@ class BookkeepingPrimitives(GENERALPrimitives):
         purpose = rc["purpose"]
         if purpose is None:
             purpose = ""
-        if purpose=="":
+        if purpose == "":
             suffix = "_list"
         else:
-            suffix = "_"+purpose
- 
+            suffix = "_%s" % purpose
+        
         # Update file names and write the files to disk to ensure the right
         # version is stored before adding it to the list.
         adoutput = []
@@ -51,7 +51,7 @@ class BookkeepingPrimitives(GENERALPrimitives):
             ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
                                               strip=True)
             log.stdinfo("Writing %s to disk" % ad.filename)
-            ad.write(clobber=rc["clobber"])
+            ad.write(clobber=True)
             adoutput.append(ad)
         
         rc.report_output(adoutput)
