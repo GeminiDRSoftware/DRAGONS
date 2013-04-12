@@ -52,6 +52,9 @@ class StandardizePrimitives(GENERALPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
+        # Set the data type of the data quality array
+        dq_dtype = np.dtype(np.uint8)
+        
         # Get the input AstroData objects
         adinput = rc.get_inputs_as_astrodata()
         
@@ -145,8 +148,6 @@ class StandardizePrimitives(GENERALPrimitives):
                         ((ext.data >= non_linear_level) &
                         (ext.data < saturation_level)), 2, 0)
                     
-                    # Set the data type of the array to be int16
-                    non_linear_array = non_linear_array.astype(np.int16)
                     for_dq_array.append(non_linear_array)
                 
                 # Create an array that contains pixels that have a value of 4
@@ -159,8 +160,6 @@ class StandardizePrimitives(GENERALPrimitives):
                     saturation_array = np.where(
                         ext.data >= saturation_level, 4, 0)
                     
-                    # Set the data type of the array to be int16
-                    saturation_array = saturation_array.astype(np.int16)
                     for_dq_array.append(saturation_array)
                 
                 # BPMs have an EXTNAME equal to "DQ"
@@ -172,8 +171,6 @@ class StandardizePrimitives(GENERALPrimitives):
                                  (ad.filename, extver, bpmname, extver))
                     bpm_array = final_bpm["DQ", extver].data
                     
-                    # Set the data type of the array to be int16
-                    bpm_array = bpm_array.astype(np.int16)
                     for_dq_array.append(bpm_array)
                 else:
                     bpmname = None
@@ -187,7 +184,7 @@ class StandardizePrimitives(GENERALPrimitives):
                     log.fullinfo("The BPM, non-linear and saturated arrays "
                                  "were not created. Creating a single DQ "
                                  "array with all the pixels set equal to zero")
-                    dq_array = np.zeros(ext.data.shape).astype(np.int16)
+                    dq_array = np.zeros(ext.data.shape).astype(dq_dtype)
                 
                 elif len(for_dq_array) == 1:
                     # Set the single array equal to the DQ array
@@ -203,6 +200,8 @@ class StandardizePrimitives(GENERALPrimitives):
                     raise Errors.Error("The number of elements in the list "
                                        "of arrays (%d) cannot be handled"
                                        % (len(for_dq_array)))
+                
+                dq_array = dq_array.astype(dq_dtype)
                 
                 # Create a data quality AstroData object
                 dq = AstroData(header=pf.Header(), data=dq_array)
@@ -650,8 +649,6 @@ class StandardizePrimitives(GENERALPrimitives):
                 raise Errors.InputError("No units found. Not calculating "
                                         "variance.")
             
-            # Get the input datatype to cast to output VAR datatype to it.
-            input_ad_dtype = ext.data.dtype
             if add_read_noise:
                 # Get the read noise value (in units of electrons) using the
                 # appropriate descriptor. The read noise is only used if
@@ -698,6 +695,10 @@ class StandardizePrimitives(GENERALPrimitives):
             if not add_read_noise and add_poisson_noise:
                 var_array_final = var_array_pn
             
+            # Set the data type of the final variance array
+            var_dtype = np.dtype(np.float32)
+            var_array_final = var_array_final.astype(var_dtype)
+            
             # If the read noise component and the poisson noise component are
             # calculated and added separately, then a variance extension will
             # already exist in the input AstroData object. In this case, just
@@ -716,12 +717,12 @@ class StandardizePrimitives(GENERALPrimitives):
                     log.fullinfo("Combining the newly calculated variance "
                                  "with the current variance extension "
                                  "%s[VAR,%d]" % (adinput.filename, extver))
-                    data = np.add(adinput["VAR", extver].data, var_array_final)
-                    adinput["VAR", extver].data = data.astype(input_ad_dtype)
+                    adinput["VAR", extver].data = np.add(
+                      adinput["VAR", extver].data, var_array_final,
+                      dtype=var_dtype)
             else:
                 # Create the variance AstroData object
-                var = AstroData(header=pf.Header(), 
-                      data=var_array_final.astype(input_ad_dtype))
+                var = AstroData(header=pf.Header(), data=var_array_final)
                 var.rename_ext("VAR", ver=extver)
                 var.filename = adinput.filename
                 
