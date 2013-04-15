@@ -624,6 +624,9 @@ class StandardizePrimitives(GENERALPrimitives):
         # key of the dictionary is an (EXTNAME, EXTVER) tuple
         gain_dict = adinput.gain().as_dict()
         read_noise_dict = adinput.read_noise().as_dict()
+
+        # Set the data type of the final variance array
+        var_dtype = np.dtype(np.float32)
         
         # Loop over the science extensions in the dataset
         for ext in adinput["SCI"]:
@@ -695,8 +698,7 @@ class StandardizePrimitives(GENERALPrimitives):
             if not add_read_noise and add_poisson_noise:
                 var_array_final = var_array_pn
             
-            # Set the data type of the final variance array
-            var_dtype = np.dtype(np.float32)
+            # Recast 
             var_array_final = var_array_final.astype(var_dtype)
             
             # If the read noise component and the poisson noise component are
@@ -718,8 +720,7 @@ class StandardizePrimitives(GENERALPrimitives):
                                  "with the current variance extension "
                                  "%s[VAR,%d]" % (adinput.filename, extver))
                     adinput["VAR", extver].data = np.add(
-                      adinput["VAR", extver].data, var_array_final,
-                      dtype=var_dtype)
+                      adinput["VAR", extver].data, var_array_final).astype(var_dtype)
             else:
                 # Create the variance AstroData object
                 var = AstroData(header=pf.Header(), data=var_array_final)
