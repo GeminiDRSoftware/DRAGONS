@@ -295,6 +295,27 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_pixel_scale
     
+    def read_mode(self, dataset, **args):
+        # Determine the number of non-destructive read pairs (lnrs) from the
+        # global keyword dictionary
+        keyword = self.get_descriptor_key("key_lnrs")
+        
+        # Get the values of the number of non-destructive read pairs from the
+        # header of the PHU
+        lnrs = dataset.phu_get_key_value(keyword)
+        
+        if lnrs is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
+        # Return the read mode string
+        ret_read_mode = int(lnrs)
+        
+        return ret_read_mode
+    
     def read_noise(self, dataset, **args):
         # Determine the number of non-destructive read pairs keyword (lnrs)
         # from the global keyword dictionary
