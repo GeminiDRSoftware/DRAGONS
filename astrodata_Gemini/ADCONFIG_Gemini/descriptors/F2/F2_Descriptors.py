@@ -177,7 +177,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_instrument
     
-    def lyot_stop(self, dataset, stripID=False, **args):
+    def lyot_stop(self, dataset, stripID=False, pretty=False, **args):
         # Determine the lyot stop keywords from the global keyword dictionary
         keyword = self.get_descriptor_key("key_lyot_stop")
             
@@ -191,7 +191,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
-        if stripID:
+        if stripID or pretty:
             # Strip the component ID from the two filter name values
             ret_lyot_stop = gmu.removeComponentID(lyot_stop)
         else:
