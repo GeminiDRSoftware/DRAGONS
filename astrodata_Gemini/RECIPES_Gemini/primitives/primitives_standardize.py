@@ -720,7 +720,8 @@ class StandardizePrimitives(GENERALPrimitives):
                                  "with the current variance extension "
                                  "%s[VAR,%d]" % (adinput.filename, extver))
                     adinput["VAR", extver].data = np.add(
-                      adinput["VAR", extver].data, var_array_final).astype(var_dtype)
+                                         adinput["VAR", extver].data, 
+                                         var_array_final).astype(var_dtype)
             else:
                 # Create the variance AstroData object
                 var = AstroData(header=pf.Header(), data=var_array_final)
