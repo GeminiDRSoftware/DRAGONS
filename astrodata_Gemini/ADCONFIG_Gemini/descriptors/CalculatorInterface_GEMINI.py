@@ -2072,6 +2072,69 @@ class CalculatorInterface:
         except:
             raise
     
+    def lyot_stop(self, format=None, **args):
+        """
+        Return the lyot_stop value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :return: the lyot stop used for the observation
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_lyot_stop"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            keyword = None
+            if key in keydict.keys():
+                keyword = keydict[key]
+                
+            #print hasattr(self.descriptor_calculator, "lyot_stop")
+            if not hasattr(self.descriptor_calculator, "lyot_stop"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for lyot_stop")
+                    raise Errors.DescriptorError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.lyot_stop(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "lyot_stop",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = str )
+            return ret
+        
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "lyot_stop",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = None )
+                return ret
+        except:
+            raise
+    
     def mdf_row_id(self, format=None, **args):
         """
         Return the mdf_row_id value

@@ -177,6 +177,28 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_instrument
     
+    def lyot_stop(self, dataset, stripID=False, **args):
+        # Determine the lyot stop keywords from the global keyword dictionary
+        keyword = self.get_descriptor_key("key_lyot_stop")
+            
+        # Get the value of the lyot stop keywords from the header of the PHU 
+        lyot_stop = dataset.phu_get_key_value(keyword)
+        
+        if lyot_stop is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
+        if stripID:
+            # Strip the component ID from the two filter name values
+            ret_lyot_stop = gmu.removeComponentID(lyot_stop)
+        else:
+            ret_lyot_stop = lyot_stop
+        
+        return ret_lyot_stop
+    
     def non_linear_level(self, dataset, **args):
         # Determine the number of non-destructive read pairs keyword (lnrs)
         # from the global keyword dictionary

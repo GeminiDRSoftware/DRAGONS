@@ -565,6 +565,19 @@ class docstrings:
         """
         pass
     
+    def lyot_stop(self):
+        """
+        Return the lyot_stop value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :return: the lyot stop used for the observation
+        """
+        pass
+    
     def mdf_row_id(self):
         """
         Return the mdf_row_id value

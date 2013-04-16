@@ -29,6 +29,7 @@
     DD("grating", pytype=str),
     DD("group_id", pytype=str),
     DD("local_time", pytype=datetime),
+    DD("lyot_stop", pytype=str),
     DD("mdf_row_id", pytype=int),
     DD("nod_count", pytype=int),
     DD("nod_pixels", pytype=int),

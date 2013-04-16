@@ -33,6 +33,7 @@ GEMINI_KeyDict = {
     "key_grating":"GRATING",
     "key_group_id":"GROUPID",
     "key_local_time":"LT",
+    "key_lyot_stop":"LYOTSTOP",
     "key_mdf_row_id":"MDFROW",
     "key_nod_count":"NODCOUNT",
     "key_nod_pixels":"NODPIX",
