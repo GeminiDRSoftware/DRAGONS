@@ -4,6 +4,6 @@ class NON_SIDEREAL(DataClassification):
     usage = "Data taken with the telesocope not tracking siderealy"
     
     parent = "GEMINI"
-    requirement =  NOT(ISCLASS("SIDEREAL"))
+    requirement =  PHU(FRAME='FK5') & NOT(ISCLASS("SIDEREAL"))
 
 newtypes.append(NON_SIDEREAL())
