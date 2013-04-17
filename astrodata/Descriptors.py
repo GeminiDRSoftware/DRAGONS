@@ -203,6 +203,20 @@ class DescriptorValue(object):
         for extver in self.ext_vers():
             self.collapse_value(extver)
         return self._extver_dict
+    
+    def validate_collapse_by_extver(self, edict):
+        for key in edict:
+            if edict[key]==CouldNotCollapse:
+                return False
+        return True
+        
+    def collapse_by_extver_if_valid(self):
+        edict = self.collapse_by_extver()
+        valid = self.validate_collapse_by_extver(edict)
+        if valid:
+            return edict
+        else:
+            return None    
         
     def convert_value_to(self, new_units, new_type = None):
         # retval = self.unit.convert(self._val, new_units)
