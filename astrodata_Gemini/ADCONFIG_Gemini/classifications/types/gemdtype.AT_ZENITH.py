@@ -1,5 +1,4 @@
-
-class AT_ZENITH(AZEL_TARGET):
+class AT_ZENITH(DataClassification):
     name="AT_ZENITH"
     usage = "Data taken at Zenith in the AZEL_TOPO co-ordinate system"
     
