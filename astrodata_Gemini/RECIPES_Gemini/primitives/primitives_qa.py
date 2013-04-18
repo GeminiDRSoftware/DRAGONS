@@ -517,6 +517,11 @@ class QAPrimitives(GENERALPrimitives):
 
                 # Need to correct the mags for the exposure time
                 et = float(ad.exposure_time())
+                # Need to multiply by coadds if this instrument does them, otherwise ignore
+                try:
+                  et *= float(ad.coadds())
+                except:
+                  pass
                 # If it's a funky nod-and-shuffle imaging acquistion,
                 # then need to scale exposure time
                 if(ad.is_type('GMOS_NODANDSHUFFLE')):
@@ -539,7 +544,7 @@ class QAPrimitives(GENERALPrimitives):
                     continue
 
                 zps = refmags - mags - nom_at_ext
-       
+
                 # Is this mathematically correct? These are logarithmic
                 # values... (PH)
                 # It'll do for now as an estimate at least
