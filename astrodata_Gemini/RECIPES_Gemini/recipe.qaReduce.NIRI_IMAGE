@@ -1,13 +1,12 @@
 # Initial work in progress NIRI_IMAGE recipe.
 prepare
-ADUToElectrons
 addDQ
+ADUToElectrons
 addVAR(read_noise=True, poisson_noise=True)
-#detectSources
-#measureIQ(display=True)
-#flatCorrect
-#detectSources
-#measureIQ(display=True)
-#measureBG
-#measureCCAndAstrometry
+darkCorrect
+flatCorrect
+detectSources
+measureIQ(display=True)
+measureBG
+measureCCAndAstrometry
 #addToList(purpose=forStack)
