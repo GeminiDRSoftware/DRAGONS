@@ -701,7 +701,7 @@ integrates other functionality.
                     header=header))
    
     def append(self, moredata=None, data=None, header=None, auto_number=False,\
-               extname=None, extver=None):
+               extname=None, extver=None, do_deepcopy=False):
         """
         :param moredata: either an AstroData instance, an HDUList instance, 
             or an HDU instance to add to this AstroData object.
@@ -722,12 +722,16 @@ integrates other functionality.
 
         :param auto_number: auto-increment extver to fit file convention
         :type auto_number: boolean
-
+        
         :param extname: extension name (ex, 'SCI', 'VAR', 'DQ')
         :type extname: string
 
         :param extver: extension's "extver" value
         :type extname: int
+
+        :param do_deepcopy: deepcopy the input before appending.  Might be useful
+            when auto_number is True and the input comes from another AD object.
+        :type do_deepcopy: boolean
 
         This function appends more header-data units (aka "HDUs") to the AstroData
         instance.
@@ -737,8 +741,23 @@ integrates other functionality.
             hdulist = self.moredata_check(md=moredata, append=True)
             if not hdulist:
                 return
+            
+            if do_deepcopy:
+                # To avoid inarvertedly corrupting the data we are appending 
+                # we need to deepcopy the hdulist to append, then append it.
+                # I (KL) cannot get deepcopy to work on the hdulist, but the
+                # AstroData deepcopy works, so I'll do some quick juggling.
+                # Note: it might be worth considering having the _check routine
+                # above return an AD instead of a hdulist.  This way we would
+                # have control on the deepcopy.
+                ad_from_input = AstroData(hdulist)
+                deepcopy_of_input = deepcopy(ad_from_input)
+                hdulist_to_append = deepcopy_of_input.hdulist
+            else:
+                hdulist_to_append = hdulist
+            
             self.moredata_work(append=True, autonum=auto_number, \
-                md=moredata, hdul=hdulist)
+                md=moredata, hdul=hdulist_to_append)
         else:
             self.onehdu_work(append=True, header=header, data=data, \
                 extname=extname, extver=extver, autonum=auto_number)
@@ -772,13 +791,20 @@ integrates other functionality.
             if index > len(self) - 1:
                 raise Errors.AstroDataError("Index out of range")
             if hdui:
+                # This is an HDUList.  Index refers to list index, with phu being
+                # at index 0.
+                if index == 0:
+                    raise Errors.AstroDataError("Illegal request - Cannot remove PHU.")
                 self.hdulist.__delitem__(index)
             else:
-                self.hdulist.__delitem__(index - 1)
+                # This is an AstroData object.  Index refers to extension number.
+                if index+1 == 0:
+                    raise Errors.AstroDataError("Illegal request - Cannot remove PHU.")
+                self.hdulist.__delitem__(index + 1)
 
             
     def insert(self, index, moredata=None, data=None, header=None, \
-               auto_number=False, extname=None, extver=False):
+               auto_number=False, extname=None, extver=False, do_deepcopy=False):
         """
         :param index: the extension index, either an int or (EXTNAME, EXTVER)
             pair before which the extension is to be inserted. Note, the 
@@ -809,6 +835,10 @@ integrates other functionality.
 
         :param extver: extension version (ex, 1, 2, 3) 
         :type extver: integer
+
+        :param do_deepcopy: deepcopy the input before appending.  Might be useful
+            when auto_number is True and the input comes from another AD object.
+        :type do_deepcopy: boolean
         
         This function inserts more data units (aka an "HDU") to the AstroData
         instance.
@@ -825,8 +855,23 @@ integrates other functionality.
             hdulist = self.moredata_check(md=moredata, insert=True, index=index)
             if not hdulist:
                 return
+            
+            if do_deepcopy:
+                # To avoid inarvertedly corrupting the data we are appending 
+                # we need to deepcopy the hdulist to insert, then insert it.
+                # I (KL) cannot get deepcopy to work on the hdulist, but the
+                # AstroData deepcopy works, so I'll do some quick juggling.
+                # Note: it might be worth considering having the _check routine
+                # above return an AD instead of a hdulist.  This way we would
+                # have control on the deepcopy.
+                ad_from_input = AstroData(hdulist)
+                deepcopy_of_input = deepcopy(ad_from_input)
+                hdulist_to_insert = deepcopy_of_input.hdulist
+            else:
+                hdulist_to_insert = hdulist
+
             self.moredata_work(insert=True, autonum=auto_number, \
-                md=moredata, hdul=hdulist, hduindx=hdu_index)
+                md=moredata, hdul=hdulist_to_insert, hduindx=hdu_index)
         else:
             self.onehdu_work(insert=True, header=header, data=data, \
                 extname=extname, extver=extver, autonum=auto_number,\
