@@ -1211,16 +1211,20 @@ def _sextractor(ad=None,seeing_estimate=None):
                             (ad.filename,extver))
                 break
 
-            tdata = hdulist[1].data
-            tcols = hdulist[1].columns
+            #tdata = hdulist[1].data
+            #tcols = hdulist[1].columns
 
             # If sextractor returned no data, don't bother with the
             # next iteration
-            if tdata is None:
+            if len(hdulist) <= 1:
                 problem = True
                 log.stdinfo("No sources found in %s[SCI,%d]" %
                             (ad.filename,extver))
                 break
+            else:
+                tdata = hdulist[1].data
+                tcols = hdulist[1].columns
+
 
             # Convert FWHM_WORLD to arcsec
             fwhm = tdata["FWHM_WORLD"]
@@ -1284,12 +1288,30 @@ def _sextractor(ad=None,seeing_estimate=None):
                                replace=True, columns=columns)[0]
 
             # Read in object mask
-            mask_hdu = pf.open(objtmpfn)[0]
-            mask_hdu.header.add_comment("Object mask created by SExtractor.")
-            mask_hdu.header.add_comment("0 indicates no object, 1 "\
-                                        "indicates object")
-            mask_ad = AstroData(mask_hdu)
+            # >>>> *** WARNING:: The FITS  file  objtmpfn does not
+            # This works OK for pyfits < 3.0, but NOT for newer version.
+
+            # have a PHU (first card is XTENSION not SIMPLE as it
+            # should). Fortunately AstroData can take care of this.
+            #mask_hdu = pf.open(objtmpfn)[0]
+            #mask_hdu.header.add_comment("Object mask created by SExtractor.")
+            #mask_hdu.header.add_comment("0 indicates no object, 1 "\
+            #                            "indicates object")
+            #print 'MHDU00:',mask_hdu.header.items()
+            #mask_ad = AstroData(mask_hdu)
+            ## By default the newly AD object has 'SCI' as EXTNAME value
+            #print '\nMAK00:',mask_ad.info()
+            #print '\nMAK01:',mask_ad.header.items(),extver,len(mask_ad)
+
+            
+            # Solution is to open the XTENSION fits file with AstroData. It
+            # creates a PHU.
+            mask_ad = AstroData(objtmpfn)
             mask_ad.rename_ext("OBJMASK",extver)
+            mask_hd = mask_ad['OBJMASK'].header
+            mask_hd.add_comment("Object mask created by SExtractor.")
+            mask_hd.add_comment("0 indicates no object, 1 indicates object")
+
             mask_ad.data = np.where(mask_ad.data!=0,1,0).astype(np.int16)
 
             # Remove old object mask if it exists 
