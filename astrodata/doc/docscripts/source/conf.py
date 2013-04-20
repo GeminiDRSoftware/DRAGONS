@@ -175,10 +175,10 @@ latex_documents = [
     'astrodatadocumentation.tex', 
     u'Astrodata Package Manual',
     u'Craig Allen', 'manual'),
-  ( "chapter_Gemini_Types", 
-    "ADtypereference.tex", 
-    u'Gemini AstroData Type Reference', 
-    "Craig Allen", "manual")
+#  ( "chapter_Gemini_Types", 
+#    "ADtypereference.tex", 
+#    u'Gemini AstroData Type Reference', 
+#    "Craig Allen", "manual")
 ]
 
 # only for type "manual" above (not "howto")
