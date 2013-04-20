@@ -468,10 +468,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         
         filter = []
         if pretty:
-            # Remove any filters that have the value "open" or "Open"
-            if "open" not in filter1 and "Open" not in filter1:
+            # Remove any filters that have the value "open" or "Open" or "Clear"
+            if "open" not in filter1 and "Open" not in filter1 and "Clear" not in filter1:
                 filter.append(str(filter1))
-            if "open" not in filter2 and "Open" not in filter2:
+            if "open" not in filter2 and "Open" not in filter2 and "Clear" not in filter2:
                 filter.append(str(filter2))
             if len(filter) == 0:
                 filter.append("open")
