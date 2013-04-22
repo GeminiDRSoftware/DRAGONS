@@ -1514,40 +1514,6 @@ help      False     show help information    """
     #alias
     setExtname = rename_ext
    
-    def replace(self, index, data=None, header=None, phu=None):
-        """
-        :param index: the extension index, either an int or (EXTNAME, EXTVER)
-            pair before which the extension is to be inserted. Note, the 
-            first data extension is [0], you cannot insert before the PHU.
-        :type index: integer or (EXTNAME,EXTVER) tuple
-        
-        :param data: data and header should both be set and are used to 
-            construct a new HDU which is then added to the AstroData instance.
-        :type data: numpy.ndarray
-
-        :param header: data and header should both be set and are used to 
-            construct a new HDU which is then added to the AstroData instance.
-        :type header: pyfits.Header
-        
-        :param phu: primary header unit  
-        :type phu: pyfits.core.PrimaryHDU, pyfits.core.Header 
-        """
-        hdul = self.get_hdulist()
-        hdulist = None
-        hdu_index = None
-        if type(index) == tuple:
-            hdu_index = self.get_int_ext(index, hduref=True)
-        else:    
-            hdu_index = index + 1
-        if hdu_index > len(hdul):
-            raise Errors.AstroDataError("Index out of range")
-        if phu is None:
-            self.onehdu_work(replace=True, header=header, data=data, \
-                extname=extname, extver=extver, autonum=auto_number,\
-                hduindx=hdu_index)
-        else:
-            hdul.__delitem__(0)
-            hdul.insert(0, phu)
             
     def verify_header(self, extname=None, extver=None, header=None):
         """
