@@ -74,27 +74,136 @@ check the structure, and then close it:</p>
 </div>
 <div class="section" id="update-existing-mef-files">
 <h2>Update Existing MEF Files<a class="headerlink" href="#update-existing-mef-files" title="Permalink to this headline">¶</a></h2>
-<p>ad.append()
-ad.insert(0, hdu/hdulist/Astrodata)
-ad.insert((&#8216;SCI&#8217;,1), data=ndarray, header=pyfits.Header, auto_number=?)</p>
-<p>ad.remove(0)
-ad.remove((&#8216;SCI&#8217;,1))</p>
-<p>ad.replace(2)
-ad.replace((&#8216;DQ&#8217;,1))</p>
-<p>ad.write()
-ad.write(&#8216;newfile.fits&#8217;,clobber=?)
-# what is the deal with &#8216;rename&#8217;?</p>
-<dl class="docutils">
-<dt>for ext in ad??:</dt>
-<dd>data = ext.data
-hdr = ext.header</dd>
-</dl>
-<p>data = ad[(&#8216;SCI&#8217;,1)].data</p>
+<p>To update an existing MEF file, it must have been opened in the <tt class="docutils literal"><span class="pre">update</span></tt> mode.  Then a collection
+of methods can be applied to the AstroData object.  Here we give examples on how to append an
+extension, how to insert an extension, how to remove an extension, and how to replace an extension.
+Then we show how do basic arithmetics on the pixel data and the headers in a loop.  Manipulations
+of the pixel data and of the headers are covered in more details in later sections (?? and ??, respectively).
+Finally we show how to write the updated AstroData object to disk as MEF file.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="c"># Open the file to update</span>
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;update&#39;</span><span class="p">)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<span class="c"># Get an already formed extension from another file (just for the</span>
+<span class="c"># sake of keeping the example simple)</span>
+<span class="n">adread</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110316S0321.fits&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;readonly&#39;</span><span class="p">)</span>
+<span class="n">new_extension</span> <span class="o">=</span> <span class="n">adread</span><span class="p">[</span><span class="s">&quot;SCI&quot;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+
+<span class="c"># Append an extension.</span>
+<span class="c"># WARNING: new_extension has EXTNAME=SCI and EXTVER=2</span>
+<span class="c">#          ad already has an extension SCI,2.</span>
+<span class="c">#          To avoid conflict, the appended extension needs</span>
+<span class="c">#          to be renumbered to SCI,4. auto_number=True takes</span>
+<span class="c">#          care of that.</span>
+<span class="c"># WARNING: renumbering the appended extension will affect</span>
+<span class="c">#          adread as new_extension is just a pointer to that</span>
+<span class="c">#          extension in adread.  To avoid the modification of</span>
+<span class="c">#          adread, one either does the deepcopy before the</span>
+<span class="c">#          call to append, or set the do_deepcopy argument</span>
+<span class="c">#          to True, as we do here.</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_extension</span><span class="p">,</span><span class="n">auto_number</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">do_deepcopy</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<span class="c"># Insert an extension between two already existing extensions.</span>
+<span class="c">#</span>
+<span class="c"># Let&#39;s first rename the new_extension to make it stand out once</span>
+<span class="c"># inserted.</span>
+<span class="n">new_extension</span> <span class="o">=</span> <span class="n">adread</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">new_extension</span><span class="o">.</span><span class="n">rename_ext</span><span class="p">(</span><span class="s">&#39;VAR&#39;</span><span class="p">)</span>
+<span class="n">new_extension</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<span class="c">#   Here we insert the extension between the PHU and the first</span>
+<span class="c">#   extension.</span>
+<span class="c">#   WARNING: An AstroData object is a PHU with a list of HDU, the</span>
+<span class="c">#            extensions. In AstroData, the extension numbering is zero-based.</span>
+<span class="c">#            Eg. in IRAF myMEF[1] -&gt; in AstroData ad[0]</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">new_extension</span><span class="p">)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<span class="c"># Note that because the extension was named (&#39;VAR&#39;,1) and that did not</span>
+<span class="c"># conflict with any of the extensions already present, we did not have</span>
+<span class="c"># to use auto_number=True.</span>
+
+<span class="c">#   Here we insert the extension between the third and the fourth</span>
+<span class="c">#   extensions.  Again, remember that the extension numbering is</span>
+<span class="c">#   zero-based.</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">new_extension</span><span class="p">,</span> <span class="n">auto_number</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">do_deepcopy</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c"># A (&#39;VAR&#39;,1) extension already exists in ad, therefore auto_number must</span>
+<span class="c"># be set to True.  Since we are insert the same new_extension, if we don&#39;t</span>
+<span class="c"># deepcopy it, the EXTVER of the previous insert will also change.</span>
+<span class="c"># Remember in Python, you might change the name of a variable, but both</span>
+<span class="c"># will continue pointing to the same data: change one and the other will</span>
+<span class="c"># change too.</span>
+
+<span class="c"># Here we insert the extension between [SCI,3] and [SCI,4]</span>
+<span class="c"># Note that the position we use for the index is (&#39;SCI&#39;,4)</span>
+<span class="c"># This is because we effectively asking for the new extension</span>
+<span class="c"># to push (&#39;SCI&#39;,4) and take its place in the sequence.</span>
+<span class="c">#</span>
+<span class="n">new_extension</span> <span class="o">=</span> <span class="n">adread</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">new_extension</span><span class="o">.</span><span class="n">rename_ext</span><span class="p">(</span><span class="s">&#39;VAR&#39;</span><span class="p">)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">insert</span><span class="p">((</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span> <span class="n">new_extension</span><span class="p">)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<span class="c"># Now that we have made a nice mess of ad, let&#39;s remove some extensions</span>
+<span class="c"># Removing AstroData extension 4 (0-based array).</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<span class="c"># Removing extension [&#39;VAR&#39;,5]</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">remove</span><span class="p">((</span><span class="s">&#39;VAR&#39;</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<span class="c"># Here is how to replace an extension.</span>
+<span class="c"># Let&#39;s replace extension (&#39;SCI&#39;,2) with the (&#39;SCI&#39;,2) extension from adread.</span>
+
+<span class="c">##### .replace() is broken.  Will add example when it&#39;s fixed.</span>
+
+
+<span class="c"># Finally, let&#39;s write this modified AstroData object to disk as a MEF file.</span>
+<span class="c"># The input MEF was open in update mode.  If no file name is provide to the</span>
+<span class="c"># write command, the file will be overwritten.  To write to a new file,</span>
+<span class="c"># specify a filename.</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">filename</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;newfile.fits&#39;</span><span class="p">)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">filename</span>
+
+<span class="c"># Note that any further write() would now write to &#39;newfile.fits&#39; if no filename</span>
+<span class="c"># is specified.</span>
+
+<span class="c"># The pixel data and header data obviously can be accessed and modified.</span>
+<span class="c"># More on pixel data manipulation in ???.  More on header manipulation in ???</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="k">for</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">ad</span><span class="p">:</span>
+   <span class="c"># Obtain a numpy.ndarray. Then any ndarray operations are valid.</span>
+   <span class="n">data</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">data</span>
+   <span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+   <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+   <span class="c"># Obtain a pyfits header.</span>
+   <span class="n">hdr</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">header</span>
+   <span class="k">print</span> <span class="n">hdr</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;NAXIS2&#39;</span><span class="p">)</span>
+
+<span class="c"># the numpy.ndarray can also be extracted this way.</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[(</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)]</span><span class="o">.</span><span class="n">data</span>
+
+<span class="c"># To close an AstroData object.  It is recommended to properly close the object</span>
+<span class="c"># when it will no longer be used.</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">adread</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="create-new-mef-files">
 <h2>Create New MEF Files<a class="headerlink" href="#create-new-mef-files" title="Permalink to this headline">¶</a></h2>
 <p>The method <tt class="docutils literal"><span class="pre">write</span></tt> is use to write to disk a new MEF file from an AstroData
-object.  Here we show two ways to build that new AstroData object.</p>
+object.  Here we show two ways to build that new AstroData object and create
+a MEF file, in memory or on disk, from that AstroData object.</p>
 <div class="section" id="create-new-copy-of-mef-files">
 <h3>Create New Copy of MEF Files<a class="headerlink" href="#create-new-copy-of-mef-files" title="Permalink to this headline">¶</a></h3>
 <p>Let us consider the case where you already have a MEF file on disk and you want
@@ -102,19 +211,55 @@ to work on it and write the modified MEF to a new file.</p>
 <p>Here we open a file, make a copy, and write a new MEF file on disk:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
 
-<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20111124S0203.fits&#39;</span><span class="p">)</span>
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;newfile2.fits&#39;</span><span class="p">)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>By using <a href="#id1"><span class="problematic" id="id2">**</span></a>* the copy is a true copy, it has its own memory allocation.  This
-allows one to modify the copy while leave the original AstroData intact.  This
-feature is useful when an operation requires both the modified and the
-original AstroData object since by design a simple copy still point to the same
-location in memory.</p>
-<p>example for deepcopy:</p>
+<p>Since in Python and when working with AstroData objects, the memory can be
+shared between variables, it is sometimes necessary to create a &#8220;true&#8221; copy
+of an AstroData object to keep us from modifying the original.</p>
+<p>By using <tt class="docutils literal"><span class="pre">deepcopy</span></tt> on an AstroData object the copy is a true copy, it has
+its own memory allocation.  This allows one to modify the copy while leave the
+original AstroData intact.  This feature is useful when an operation requires
+both the modified and the original AstroData object since by design a simple
+copy still point to the same location in memory.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+<span class="n">adcopy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the example above, <tt class="docutils literal"><span class="pre">adcopy</span></tt> is now completely independent of <tt class="docutils literal"><span class="pre">ad</span></tt>.
+This also means that you have doubled the memory footprint.</p>
 </div>
 <div class="section" id="create-new-mef-files-from-scratch">
 <h3>Create New MEF Files from Scratch<a class="headerlink" href="#create-new-mef-files-from-scratch" title="Permalink to this headline">¶</a></h3>
-<p>Another use case is creating a new MEF files when none existed before.</p>
+<p>Another use case is creating a new MEF files when none existed before. The
+pixel data needs to be created as a numpy ndarray.  The header must be created
+as pyfits header.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">import</span> <span class="nn">pyfits</span> <span class="kn">as</span> <span class="nn">pf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="c"># Create an empty header.  AstroData will take care of adding the minimal</span>
+<span class="c"># set of header cards to make the file FITS compliant.</span>
+<span class="n">new_header</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Header</span><span class="p">()</span>
+
+<span class="c"># Create a pixel data array.  Fill it with whatever values you need.</span>
+<span class="c"># Here we just create a fill gradient.</span>
+<span class="n">new_data</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1000.</span><span class="p">,</span> <span class="mi">2048</span><span class="o">*</span><span class="mi">1024</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2048</span><span class="p">,</span><span class="mi">1024</span><span class="p">)</span>
+
+<span class="c"># Create an AstroData object and give it a filename</span>
+<span class="n">new_ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">new_data</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">new_header</span><span class="p">)</span>
+<span class="n">new_ad</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="s">&#39;gradient.fits&#39;</span>
+
+<span class="c"># Write the file to disk and close</span>
+<span class="n">new_ad</span><span class="o">.</span><span class="n">write</span><span class="p">()</span>
+<span class="n">new_ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
 </div>
 </div>
 </div>
