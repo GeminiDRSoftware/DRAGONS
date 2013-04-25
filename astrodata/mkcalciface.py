@@ -1,4 +1,5 @@
 from datetime import datetime
+from astrodata import Errors
 
 from astrodata.ConfigSpace import CALCIFACEMARKER, DDLISTMARKER
 CALCIFACECLASSMARKER = "CalculatorInterface"
@@ -86,7 +87,8 @@ class DescriptorDescriptor:
                 rtype = 'string'
             if rtype == 'int':
                 rtype = 'integer'
-            
+        else:
+            raise Errors.BadConfiguration("'DD' Declaration for '%s' needs pytype defined." % self.name)   
         # Use the docstring defined in the docstrings module, if it exists
         use_docstrings = False
         try:
@@ -144,11 +146,14 @@ def get_calculator_interface():
     """Combination of making and getting calc iface objects
     """
     from astrodata.ConfigSpace import ConfigSpace
-    # print "mci239:", repr(ConfigSpace.calc_iface_list)
+    #p rint "mci239:", repr(ConfigSpace.calc_iface_list)
     calcIfaces = []
     for cil_el in ConfigSpace.calc_iface_list:
         ifType = cil_el[0]
         ifFile = cil_el[1]
+        
+        #p rint "mk150:", ifType, ifFile
+                
         if ifType == "CALCIFACE":
             # print CALCIFACEMARKER
             cib = open(ifFile)
@@ -169,7 +174,12 @@ def get_calculator_interface():
                  "datetime":datetime
                 }
             ddlist = eval(cibsrc, d)
-            cisrc = mk_calc_iface_body(ddlist)
+            #p rint "mkcal172:"
+            try:
+                cisrc = mk_calc_iface_body(ddlist)
+            except Errors.BadConfiguration as bc:
+                bc.add_msg("FATAL CONFIG ERROR: %s" % ifFile)
+                raise bc          
             exec(cisrc,d)
             for key in d:
                 if re.match(CALCIFACECLASSMARKER, key):
@@ -179,7 +189,8 @@ def get_calculator_interface():
     for calcIface in calcIfaces:
         # print "mcif183:", repr(calcIface)
         CalculatorInterfaceClass.__bases__ += (calcIface, )
-    
+    # note prints will wreck the output which is generally pipes from stdout to a string which is evaled
+    # print "mkcalc182:"+repr(CalculatorInterfaceClass)
     return CalculatorInterfaceClass
                 
             
@@ -189,7 +200,11 @@ def get_calc_iface_body():
 def mk_calc_iface_body(ddlist):
     out = ""
     for dd in ddlist:
-        out += dd.funcbody()
+        try:
+            out += dd.funcbody()
+        except Errors.BadConfiguration as bc:
+            bc.add_msg("Problem with ddlist item #%d"% ddlist.index(dd))
+            raise bc
 
     finalout = wholeout % {"descriptors": out}
 
