@@ -1581,10 +1581,22 @@ help      False     show help information    """
         throws an exception if the file already exists.
 
         """
+        # apply prefix or suffix
+        fname = filename if filename else self.filename    
+        if prefix or suffix:
+            fpath = os.path.dirname(fname)
+            fname = os.path.basename(fname)
+            base,ext = os.path.splitext(fname)
+            pfix = prefix if prefix else ""
+            sfix = suffix if suffix else ""
+            fname = os.path.join(fpath, pfix+base+sfix+ext)
+            filename = fname
+            
+        filenamechange = self.filename != filename
         
         if (filename and (rename==True or rename == None)):
             self.filename = filename
-        if (self.mode == "readonly" and not clobber):
+        if (self.mode == "readonly" and not clobber and not filenamechange):
             if rename == True  or rename == None:
                 if filename != None or filename != self.filename:
                     msg =  "Cannot use AstroData.write(..) on this instance,"
@@ -1600,7 +1612,7 @@ help      False     show help information    """
                 rename = False
             else:
                 rename = True
-        fname = filename
+        #f name = filename
         hdul = self.get_hdulist()
         if fname == None:
             if rename == True:
@@ -1608,14 +1620,6 @@ help      False     show help information    """
                 raise Errors.AstroDataError(mes)
             fname = self.filename
         
-        # apply prefix or suffix    
-        if prefix or suffix:
-            fpath = os.path.dirname(fname)
-            fname = os.path.basename(fname)
-            base,ext = os.path.splitext(fname)
-            pfix = prefix if prefix else ""
-            sfix = suffix if suffix else ""
-            fname = os.path.join(fpath, pfix+base+sfix+ext)
             
         # postfix and suffix work        
         if fname != self.filename and rename == True:
@@ -2427,6 +2431,7 @@ def prep_output(input_ary=None, name=None, clobber=False):
     
     :param clobber: By default prep_output(..) checks to see if a file of the
         given name already exists, and will raise an exception if found.
+        Set *clobber* to *True* to override this behavior and potentially
         Set *clobber* to *True* to override this behavior and potentially
         overwrite the extant file.  The datset on disk will not be overwritten
         as a direct result of prep_output, which only prepares the object
