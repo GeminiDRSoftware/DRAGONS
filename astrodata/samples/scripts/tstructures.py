@@ -16,3 +16,15 @@ print pixad.infostr()
 
 binad = od[bintable_exts]
 print binad.infostr()
+
+print od.gain()
+for ext in od:
+    try:
+        print "<<"*20
+        print "gain", ext.gain()
+        
+        print ">>"*20
+    except:
+        print "failed on "
+        print ext.infostr()
+        raise
