@@ -10,6 +10,9 @@ class Error(Exception):
     def __repr__(self):
         return self.__class__.__name__+"(%s)" % repr(self.message)
 
+    def add_msg(self, msg):
+        self.message += ("\n"+msg)
+
 class FatalDeprecation(Error):
     pass
     
@@ -226,7 +229,10 @@ class UndefinedKeyError(DescriptorError):
     pyfits.core.Undefined
     """
     message = "Keyword found but the value was undefined"
-    
+
+# Configuration system errors
+# Configuration system errors
+# Configuration system errors
 # Configuration system errors
 
 class ConfigurationError(Error):
@@ -234,8 +240,18 @@ class ConfigurationError(Error):
 
 class RecipeImportError(ConfigurationError):
     message = "Recipe Import Error"
+
+class BadConfiguration(ConfigurationError):
+    message = "Bad Configuration"
+    
+# Configuration system errors
+# Configuration system errors
+# Configuration system errors
+# Configuration system errors
+# Configuration system errors
     
 # High level errors (e.g. for reduce to throw)
 
+# note: this might not be a configuration error, could be mistyped at the reduce command line
 class RecipeNotFoundError(Error):
     message = "Recipe not found."
