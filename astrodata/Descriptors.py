@@ -93,6 +93,21 @@ class DescriptorValue(object):
         unit = self.unit
 
         if isinstance(initval, dict):
+            # process initval dicts keyed by int
+            keys = initval.keys()
+            ntuplekeys = 0
+            nintkeys = 0
+            for key in keys:
+                if type(key) == tuple:
+                    ntuplekeys += 1
+                elif type(key) == int:
+                    nintkeys += 1
+            if nintkeys > 0 and ntuplekeys == 0:
+                newinitval = {}
+                for key in keys:
+                    newinitval[("*",key)] = initval[key]
+                initval = newinitval
+              
             self.dict_val = initval
             val = None
         else:
