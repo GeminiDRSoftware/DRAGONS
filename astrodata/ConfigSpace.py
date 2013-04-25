@@ -149,9 +149,10 @@ class ConfigSpace(object):
         @type spacename: string
         @returns: list of directories
         @rtype: list"""
-        #print "CS109:", spacename
+        # print "CS152:", spacename
         if (self.configdirs != None):
             if spacename in self.configdirs:
+                print "CS155:", spacename, pformat(self.configdirs)
                 return self.configdirs[spacename]
         else:
             print "CS88:", "inefficency"
@@ -221,7 +222,6 @@ class ConfigSpace(object):
                                 pass # print ""
                             
         self.configdirs.update({spacename: adconfdirs})
-        # print "CS145:", repr(self.configdirs)
         return adconfdirs
 
     def get_recipe_dirs(self):

@@ -96,7 +96,9 @@ try:
                             "'-usercal=CALTYPE_1:CALFILEPATH_1,...,CALTYPE_N:CALFILEPATH_N'")
     parser.add_option("--writeInt", dest='writeInt', default=False, 
                       action="store_true", help="write intermediate outputs"
-                      " (UNDER CONSTRUCTION)")       
+                      " (UNDER CONSTRUCTION)")   
+    parser.add_option("--suffix", dest='suffix', default=None,
+                        help="Suffix to add to filenames written at end of reduction.")    
 
     (options,  args) = parser.parse_args()
     
@@ -970,18 +972,19 @@ try:
                     for output in outputs:
                         ad = output.ad
                         name = ad.filename
-                        #print "r908:", ad.mode
+                        # print "r908:", ad.mode
                         try:
-                            ad.write(clobber = clobber)
-                            log.stdinfo("Wrote %s in output directory" % name)
+                            ad.write(clobber = clobber, suffix = options.suffix, rename=True)
+                            log.stdinfo("Wrote %s in output directory" % ad.filename)
                         except Errors.OutputExists:
-                            log.error( "CANNOT WRITE %s, already exists" % name)
+                            log.error( "CANNOT WRITE %s, already exists" % ad.filename)
                         except Errors.AstroDataReadonlyError, err:
-                            log.warning('%s is in "readonly" mode, will not attempt to write.' % name)
+                            log.warning('%s is in "readonly" mode, will not attempt to write.' % ad.filename)
                         except Errors.AstroDataError, err:
-                            log.error("CANNOT WRITE %s: " % name + err.message)
+                            log.error("CANNOT WRITE %s: " % ad.filename + err.message)
                         except:
-                            log.error("CANNOT WRITE %s, unknown reason" % name)
+                            log.error("CANNOT WRITE %s, unknown reason" % ad.filename)
+                            raise
 
                 if interactiveMode == True:
                     reclist = ["USER"]

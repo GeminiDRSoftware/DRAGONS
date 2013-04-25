@@ -2095,7 +2095,7 @@ class RecipeLibrary(object):
             k = val.keys()
             if len(k) != 1:
                 print "RM1939:", repr(val)
-                #raise RecipeExcept("CAN'T RESOLVE PRIMITIVE SET CONFLICT")
+                # raise RecipeExcept("CAN'T RESOLVE PRIMITIVE SET CONFLICT")
             astrotype = k[0]
         if (astrotype != None):
             k = [astrotype]

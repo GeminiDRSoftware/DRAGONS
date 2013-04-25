@@ -354,7 +354,7 @@ class ReductionObject(object):
 
         # Loop through the types, stopping if the primitive was found
         for atype in possible_types:
-
+            print "RO357:", atype
             # If the primitive set has not been loaded, load it
             if atype not in self.primDict.keys():
                 newprimset = self.recipeLib.retrieve_primitive_set(
