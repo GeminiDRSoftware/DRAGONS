@@ -1,5 +1,6 @@
 # Gives the effective wavelength in microns for the standard wavelength regimes
 wavelength_band = {
+    "None" : 0.000,
     "U": 0.365,
     "B": 0.445,
     "V": 0.500,
