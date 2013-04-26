@@ -237,6 +237,31 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     
     f2ArrayDict = None
     
+    def observation_type(self, dataset, **args):
+        # Determine the observation type keyword from the global keyword
+        # dictionary
+        keyword = self.get_descriptor_key("key_observation_type")
+        
+        # Get the value of the observation type from the header of the PHU
+        observation_type = dataset.phu_get_key_value(keyword)
+        
+        if observation_type is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
+        # Sometimes FLAMINGOS-2 dark frames have the observation type
+        # incorrectly set to OBJECT. Ensure that DARK is returned as the
+        # observation type for dark frames.
+        if "F2_DARK" in dataset.types:
+            ret_observation_type = "DARK"
+        else:
+            ret_observation_type = observation_type
+        
+        return ret_observation_type
+    
     def pixel_scale(self, dataset, **args):
         # First try to calculate the pixel scale using the values of the WCS
         # matrix elements keywords
@@ -318,8 +343,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_pixel_scale
     
     def read_mode(self, dataset, **args):
-        # Determine the number of non-destructive read pairs (lnrs) from the
-        # global keyword dictionary
+        # Determine the number of non-destructive read pairs (lnrs) keyword
+        # from the global keyword dictionary
         keyword = self.get_descriptor_key("key_lnrs")
         
         # Get the values of the number of non-destructive read pairs from the
@@ -333,7 +358,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
-        # Return the read mode string
+        # Return the read mode integer
         ret_read_mode = int(lnrs)
         
         return ret_read_mode
