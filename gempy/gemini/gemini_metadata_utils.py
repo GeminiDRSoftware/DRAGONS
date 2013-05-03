@@ -180,7 +180,7 @@ def get_key_value_dict(dataset, keyword):
         # Instantiate the DescriptorValue (DV) object
         dv = DescriptorValue(keyword_value_dict)
         
-        # Create a new dictionary where the key of the dictionary is the EXTVER
+        # Create a new dictionary where the key of the dictionary is an EXTVER
         # integer
         extver_dict = dv.collapse_by_extver()
         
@@ -189,9 +189,9 @@ def get_key_value_dict(dataset, keyword):
             # values in the dictionary with the same EXTVER are not equal
             raise Errors.CollapseError()
         
-        # Instantiate a new DescriptorValue (DV) object using the newly created
-        # dictionary and get the dictionary where the key of the dictionary is
-        # an ("*", EXTVER) tuple
+        # Instantiate a new DV object using the newly created dictionary and
+        # get the dictionary where the key of the dictionary is an
+        # ("*", EXTVER) tuple
         new_dv = DescriptorValue(extver_dict)
         ret_dict = new_dv.as_dict()
         
