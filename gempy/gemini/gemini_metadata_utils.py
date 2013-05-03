@@ -3,6 +3,7 @@
 import re
 import sys
 
+from astrodata.Descriptors import DescriptorValue
 from astrodata.structuredslice import pixel_exts, bintable_exts
 
 def removeComponentID(instr):
@@ -132,15 +133,24 @@ def filternameFrom(filters):
     return filtername
 
 def get_key_value_dict(dataset, keyword):
+    """
+    The get_key_value_dict() function works similarly to the AstroData
+    get_key_value() and phu_get_key_value() member functions in that if the
+    value of the keyword for each pixel data extension is None, None is
+    returned and the reason why the value is None is stored in the
+    exception_info attribute of the AstroData object.
+    
+    """
     # Since this helper function accesses keywords in the headers of the pixel
-    # data extensions, always return a dictionary where the key of the
+    # data extensions, first construct a dictionary where the key of the
     # dictionary is an (EXTNAME, EXTVER) tuple
-    ret_keyword_value = {}
+    keyword_value_dict = {}
     
     return_dictionary = False
         
     # Loop over the pixel data extensions in the dataset
     for ext in dataset[pixel_exts]:
+        
         # Get the value of the keyword from the header of each pixel data
         # extension
         value = ext.get_key_value(keyword)
@@ -153,21 +163,39 @@ def get_key_value_dict(dataset, keyword):
                 setattr(dataset, "exception_info", ext.exception_info)
             
         # Update the dictionary with the value
-        ret_keyword_value.update({(ext.extname(), ext.extver()):value})
+        keyword_value_dict.update({(ext.extname(), ext.extver()):value})
     
     try:
-        if ret_keyword_value == {}:
+        if keyword_value_dict == {}:
             # If the dictionary is still empty, the AstroData object has no
             # pixel data extensions
             raise Errors.CorruptDataError()
         
-        unique_values = set(ret_keyword_value.values())
+        unique_values = set(keyword_value_dict.values())
         if len(unique_values) == 1 and None in unique_values:
             # The value of the keyword was not found for any of the pixel data
             # extensions (all the values in the dictionary are equal to None)
             raise dataset.exception_info
         
-        return ret_keyword_value
+        # Instantiate the DescriptorValue (DV) object
+        dv = DescriptorValue(keyword_value_dict)
+        
+        # Create a new dictionary where the key of the dictionary is the EXTVER
+        # integer
+        extver_dict = dv.collapse_by_extver()
+        
+        if not dv.validate_collapse_by_extver(extver_dict):
+            # The validate_collapse_by_extver function returns False if the
+            # values in the dictionary with the same EXTVER are not equal
+            raise Errors.CollapseError()
+        
+        # Instantiate a new DescriptorValue (DV) object using the newly created
+        # dictionary and get the dictionary where the key of the dictionary is
+        # an ("*", EXTVER) tuple
+        new_dv = DescriptorValue(extver_dict)
+        ret_dict = new_dv.as_dict()
+        
+        return ret_dict
     
     except:
         if not hasattr(dataset, "exception_info"):
