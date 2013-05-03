@@ -5,6 +5,7 @@ import numpy as np
 
 from astrodata import Errors
 from astrodata import Lookups
+from astrodata.Descriptors import DescriptorValue
 from astrodata.structuredslice import pixel_exts, bintable_exts
 from gempy.gemini import gemini_data_calculations as gdc
 from gempy.gemini import gemini_metadata_utils as gmu
@@ -23,16 +24,17 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def amp_read_area(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple
-        ret_amp_read_area = {}
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple
+        ret_amp_read_area_dict = {}
         
         # Determine the name of the detector amplifier keyword (ampname) from
         # the global keyword dictionary 
         keyword = self.get_descriptor_key("key_ampname")
         
         # Get the value of the name of the detector amplifier keyword from the
-        # header of each pixel data extension as a dictionary
+        # header of each pixel data extension as a dictionary where the key
+        # of the dictionary is an ("*", EXTVER) tuple
         ampname_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if ampname_dict is None:
@@ -43,9 +45,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 raise dataset.exception_info
         
         # Get the pretty (1-based indexing) readout area of the CCD (detsec)
-        # using the appropriate descriptor. Use get_value() to return the
-        # values as a dictionary rather than an object.
-        detsec_dict = dataset.detector_section(pretty=True).get_value()
+        # using the appropriate descriptor. Use as_dict() to return the
+        # values as a dictionary where the key of the dictionary is an
+        # ("*", EXTVER) tuple. 
+        detsec_dict = dataset.detector_section(pretty=True).as_dict()
         
         if detsec_dict is None:
             # The descriptor functions return None if a value cannot be
@@ -64,9 +67,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 amp_read_area = "'%s':%s" % (ampname, detsec)
             
             # Update the dictionary with the amp_read_area value
-            ret_amp_read_area.update({ext_name_ver:amp_read_area})
+            ret_amp_read_area_dict.update({ext_name_ver:amp_read_area})
         
-        return ret_amp_read_area
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_amp_read_area_dict, name="amp_read_area",
+                                 ad=dataset)
+        return ret_dv
     
     def central_wavelength(self, dataset, asMicrometers=False,
                            asNanometers=False, asAngstroms=False, **args):
@@ -119,20 +125,24 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 input_units=input_units, input_value=central_wavelength,
                 output_units=output_units)
         
-        return ret_central_wavelength
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_central_wavelength,
+                                 name="central_wavelength", ad=dataset)
+        return ret_dv
     
     def detector_name(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple
-        ret_detector_name = {}
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple
+        ret_detector_name_dict = {}
         
         # Determine the name of the detector keyword (ccdname) from the global
         # keyword dictionary
         keyword = self.get_descriptor_key("key_detector_name")
         
         # Get the value of the name of the detector keyword from the header of
-        # each pixel data extension as a dictionary 
+        # each pixel data extension as a dictionary where the key of the
+        # dictionary is an ("*", EXTVER) tuple
         detector_name_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if detector_name_dict is None:
@@ -155,74 +165,103 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             # Loop over the pixel data extensions in the dataset
             for ext in dataset[pixel_exts]:
+                
                 # Update the dictionary with the detector name value
-                ret_detector_name.update({
+                ret_detector_name_dict.update({
                     (ext.extname(), ext.extver()):phu_detector_name})
             
-            if ret_detector_name == {}:
+            if ret_detector_name_dict == {}:
                 # If the dictionary is still empty, the AstroData object has no
                 # pixel data extensions
                 raise Errors.CorruptDataError()
         else:
-            ret_detector_name = detector_name_dict
+            ret_detector_name_dict = detector_name_dict
         
-        return ret_detector_name
+        # Instantiate the DescriptorValue (DV) object
+        dv = DescriptorValue(ret_detector_name_dict)
+        
+        # Create a new dictionary where the key of the dictionary is the EXTVER
+        # integer
+        extver_dict = dv.collapse_by_extver()
+        
+        if not dv.validate_collapse_by_extver(extver_dict):
+            # The validate_collapse_by_extver function returns False if the
+            # values in the dictionary with the same EXTVER are not equal
+            raise Errors.CollapseError()
+        
+        # Instantiate the return DescriptorValue (DV) object using the newly
+        # created dictionary
+        ret_dv = DescriptorValue(extver_dict, name="detector_name", ad=dataset)
+        
+        return ret_dv
     
     def detector_rois_requested(self, dataset, **args):
         # This parses the DETROx GMOS headers and returns a list of ROIs in the
         # form [x1, x2, y1, y2]. These are in physical pixels - should be
         # irrespective of binning. These are 1-based, and inclusive, 2 pixels,
         # starting at pixel 2 would be [2, 3].
-        rois=[]
+        ret_detector_rois_requested_list = []
         
         # Must be single digit ROI number
-        for i in range(1,10):
-            x1 = dataset.phu_get_key_value('DETRO'+str(i)+'X')
-            xs = dataset.phu_get_key_value('DETRO'+str(i)+'XS')
-            y1 = dataset.phu_get_key_value('DETRO'+str(i)+'Y')
-            ys = dataset.phu_get_key_value('DETRO'+str(i)+'YS')
+        for i in range(1, 10):
+            x1 = dataset.phu_get_key_value("DETRO%sX" % i)
+            xs = dataset.phu_get_key_value("DETRO%sXS" % i)
+            y1 = dataset.phu_get_key_value("DETRO%sY" % i)
+            ys = dataset.phu_get_key_value("DETRO%sYS" % i)
+            
             if x1 is not None:
                 # The headers are in the form of a start position and size
                 # so make them into start and end pixels here
                 xs *= int(dataset.detector_x_bin())
                 ys *= int(dataset.detector_y_bin())
-                rois.append([x1, x1+xs-1, y1, y1+ys-1])
+                detector_rois_requested_list.append([x1, x1+xs-1, y1, y1+ys-1])
             else:
                 break
-        return rois
+        
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_detector_rois_requested_list,
+                                 name="detector_rois_requested", ad=dataset)
+        return ret_dv
     
     def detector_roi_setting(self, dataset, **args):
-        # Attempts to deduce the Name of the ROI, more or less as per
-        # the options you can select in the OT.
-        # Only considers the first ROI.
+        """
+        Attempts to deduce the Name of the ROI, more or less as per the options
+        you can select in the OT. Only considers the first ROI.
+        
+        """
+        # Get the lookup table containing the ROI sections
         gmosRoiSettings = Lookups.get_lookup_table("Gemini/GMOS/ROItable",
                                                    "gmosRoiSettings")
         
-        roi_setting = "Undefined"
+        ret_detector_roi_setting = "Undefined"
         rois = dataset.detector_rois_requested().as_list()
         if rois:
             roi = rois[0]
             
             # If we don't recognise it, it's "Custom"
-            roi_setting = "Custom"
+            ret_detector_roi_setting = "Custom"
             
             for s in gmosRoiSettings.keys():
                 if roi in gmosRoiSettings[s]:
-                    roi_setting = s
+                    ret_detector_roi_setting = s
         
-        return roi_setting
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_detector_roi_setting,
+                                 name="detector_roi_setting", ad=dataset)
+        return ret_dv
     
     def detector_x_bin(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple
-        ret_detector_x_bin = {}
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple
+        ret_detector_x_bin_dict = {}
         
         # Determine the ccdsum keyword from the global keyword dictionary 
         keyword = self.get_descriptor_key("key_ccdsum")
         
         # Get the value of the ccdsum keyword from the header of each pixel
-        # data extension as a dictionary 
+        # data extension as a dictionary where the key of the dictionary is an
+        # ("*", EXTVER) tuple
         ccdsum_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if ccdsum_dict is None:
@@ -241,21 +280,25 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 detector_x_bin = int(x_bin)
             
             # Update the dictionary with the binning of the x-axis value
-            ret_detector_x_bin.update({ext_name_ver:detector_x_bin})
+            ret_detector_x_bin_dict.update({ext_name_ver:detector_x_bin})
         
-        return ret_detector_x_bin
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_detector_x_bin_dict,
+                                 name="detector_x_bin", ad=dataset)
+        return ret_dv
     
     def detector_y_bin(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple
-        ret_detector_y_bin = {}
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple
+        ret_detector_y_bin_dict = {}
         
         # Determine the ccdsum keyword from the global keyword dictionary 
         keyword = self.get_descriptor_key("key_ccdsum")
         
         # Get the value of the ccdsum keyword from the header of each pixel
-        # data extension as a dictionary 
+        # data extension as a dictionary where the key of the dictionary is an
+        # ("*", EXTVER) tuple
         ccdsum_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if ccdsum_dict is None:
@@ -274,9 +317,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 detector_y_bin = int(y_bin)
             
             # Update the dictionary with the binning of the y-axis value
-            ret_detector_y_bin.update({ext_name_ver:detector_y_bin})
+            ret_detector_y_bin_dict.update({ext_name_ver:detector_y_bin})
         
-        return ret_detector_y_bin
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_detector_y_bin_dict,
+                                 name="detector_y_bin", ad=dataset)
+        return ret_dv
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         # Determine the disperser keyword from the global keyword dictionary
@@ -308,14 +354,17 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # Return the disperser string
             ret_disperser = str(disperser)
         
-        return ret_disperser
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_disperser, name="disperser", ad=dataset)
+        
+        return ret_dv
     
     def dispersion(self, dataset, asMicrometers=False, asNanometers=False,
                    asAngstroms=False, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple
-        ret_dispersion = {}
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple
+        ret_dispersion_dict = {}
         
         # Currently for GMOS data, the dispersion is recorded in meters (?)
         input_units = "meters"
@@ -342,7 +391,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         keyword = self.get_descriptor_key("key_dispersion")
         
         # Get the value of the dispersion keyword from the header of each pixel
-        # data extension as a dictionary 
+        # data extension as a dictionary where the key of the dictionary is an
+        # ("*", EXTVER) tuple
         dispersion_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if dispersion_dict is None:
@@ -363,15 +413,21 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     output_units=output_units))
             
             # Update the dictionary with the dispersion value
-            ret_dispersion.update({ext_name_ver:dispersion})
+            ret_dispersion_dict.update({ext_name_ver:dispersion})
         
-        return ret_dispersion
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_dispersion_dict, name="dispersion",
+                                 ad=dataset)
+        return ret_dv
     
     def dispersion_axis(self, dataset, **args):
         # The GMOS dispersion axis should always be 1
         ret_dispersion_axis = 1
         
-        return ret_dispersion_axis
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_dispersion_axis, name="dispersion_axis",
+                                 ad=dataset)
+        return ret_dv
     
     def exposure_time(self, dataset, **args):
         # Determine the exposure time keyword from the global keyword
@@ -395,7 +451,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # Return the exposure time float
             ret_exposure_time = float(exposure_time)
         
-        return ret_exposure_time
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_exposure_time, name="exposure_time",
+                                 ad=dataset)
+        return ret_dv
     
     def focal_plane_mask(self, dataset, stripID=False, pretty=False, **args):
         # Determine the focal plane mask keyword from the global keyword
@@ -418,13 +477,16 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # Return the focal plane mask string
             ret_focal_plane_mask = str(focal_plane_mask)
         
-        return ret_focal_plane_mask
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_focal_plane_mask, name="focal_plane_mask",
+                                 ad=dataset)
+        return ret_dv
     
     def gain(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple
-        ret_gain = {}
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple
+        ret_gain_dict = {}
         
         # If the data have been prepared, take the gain value directly from the
         # appropriate keyword. At some point, a check for the STDHDRSI header
@@ -436,7 +498,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             keyword = self.get_descriptor_key("key_gain")
             
             # Get the value of the gain keyword from the header of each pixel
-            # data extension as a dictionary
+            # data extension as a dictionary where the key of the dictionary is
+            # an ("*", EXTVER) tuple
             gain_dict = gmu.get_key_value_dict(dataset, keyword)
             
             if gain_dict is None:
@@ -446,10 +509,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
             
-            ret_gain = gain_dict
+            ret_gain_dict = gain_dict
         
         else:
-            # Get lookup table for GMOS gains by amp
+            # Get the lookup table containing the gain values by amplifier
             gmosampsGain, gmosampsGainBefore20060831 = \
                 Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
                                          "gmosampsGain",
@@ -471,11 +534,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     raise dataset.exception_info
             
             # Get the UT date, gain setting and read speed setting values using
-            # the appropriate descriptors. Use get_value() and as_pytype() to
-            # return the values as a dictionary and the default python type,
-            # respectively, rather than an object. 
+            # the appropriate descriptors. Use as_dict() and as_pytype() to
+            # return the values as a dictionary where the key of the dictionary
+            # is an ("*", EXTVER) tuple and the default python type,
+            # respectively, rather than an object.
             ut_date = str(dataset.ut_date())
-            gain_setting_dict = dataset.gain_setting().get_value()
+            gain_setting_dict = dataset.gain_setting().as_dict()
             read_speed_setting = dataset.read_speed_setting().as_pytype()
             
             if ut_date is None or read_speed_setting is None or \
@@ -495,7 +559,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             keyword = self.get_descriptor_key("key_ampname")
             
             # Get the value of the name of the detector amplifier keyword from
-            # the header of each pixel data extension as a dictionary
+            # the header of each pixel data extension as a dictionary where the
+            # key of the dictionary is an ("*", EXTVER) tuple
             ampname_dict = gmu.get_key_value_dict(dataset, keyword)
             
             if ampname_dict is None:
@@ -525,15 +590,18 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                             raise Errors.TableKeyError()
                 
                 # Update the dictionary with the gain value
-                ret_gain.update({ext_name_ver:gain})
+                ret_gain_dict.update({ext_name_ver:gain})
         
-        return ret_gain
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_gain_dict, name="gain", ad=dataset)
+        
+        return ret_dv
     
     def gain_setting(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple
-        ret_gain_setting = {}
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple
+        ret_gain_setting_dict = {}
         
         # If the data have not been prepared, take the raw gain value directly
         # from the appropriate keyword
@@ -543,7 +611,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             keyword = self.get_descriptor_key("key_gain")
             
             # Get the value of the gain keyword from the header of each pixel
-            # data extension as a dictionary 
+            # data extension as a dictionary where the key of the dictionary is
+            # an ("*", EXTVER) tuple
             gain_dict = gmu.get_key_value_dict(dataset, keyword)
             
             if gain_dict is None:
@@ -562,7 +631,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     gain_setting = "low"
                 
                 # Update the dictionary with the gain setting value
-                ret_gain_setting.update({ext_name_ver:gain_setting})
+                ret_gain_setting_dict.update({ext_name_ver:gain_setting})
         
         else:
             # If the data have been prepared, take the gain setting value
@@ -574,23 +643,26 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             keyword = self.get_descriptor_key("key_gain_setting")
             
             # Get the value of the gain setting keyword from the header of each
-            # pixel data extension as a dictionary 
+            # pixel data extension as a dictionary where the key of the
+            # dictionary is an ("*", EXTVER) tuple
             gain_setting_dict = gmu.get_key_value_dict(dataset, keyword)
             
             if gain_setting_dict is not None:
-                ret_gain_setting = gain_setting_dict
+                ret_gain_setting_dict = gain_setting_dict
             else:
                 # The dataset was not processed using gemini_python. Try to get
                 # the gain from the "GAINORIG" keyword in the header of each
-                # pixel data extension.
+                # pixel data extension as a dictionary where the key of the
+                # dictionary is an ("*", EXTVER) tuple.
                 gain_dict = gmu.get_key_value_dict(dataset, "GAINORIG")
                 
                 if gain_dict is None:
                     # Resort to getting the gain using the appropriate
                     # descriptor (this will use the updated gain value). Use
-                    # get_value() to return the values as a dictionary rather
+                    # as_dict() to return the values as a dictionary where the
+                    # key of the dictionary is an ("*", EXTVER) tuple rather
                     # than an object. 
-                    gain_dict = dataset.gain().get_value()
+                    gain_dict = dataset.gain().as_dict()
                     
                 else:
                     for ext_name_ver, gain_orig in gain_dict.iteritems():
@@ -607,7 +679,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                         # The value of "GAINORIG" keyword is equal to 1 in all
                         # pixel data extensions. Try to get the gain from the
                         # "GAINMULT" keyword in the header of each pixel data
-                        # extension.
+                        # extension as a dictionary where the key of the
+                        # dictionary is an ("*", EXTVER) tuple.
                         gain_dict = gmu.get_key_value_dict(dataset, "GAINMULT")
                 
                 if gain_dict is None:
@@ -627,15 +700,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                         gain_setting = "low"
                     
                     # Update the dictionary with the gain setting value
-                    ret_gain_setting.update({ext_name_ver:gain_setting})
+                    ret_gain_setting_dict.update({ext_name_ver:gain_setting})
         
-        unique_values = set(ret_gain_setting.values())
-        if len(unique_values) == 1 and None in unique_values:
-            # The gain was not found for any of the pixel data extensions (all
-            # the values in the dictionary are equal to None) 
-            ret_gain_setting = None
-        
-        return ret_gain_setting
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_gain_setting_dict, name="gain_setting",
+                                 ad=dataset)
+        return ret_dv
     
     def group_id(self, dataset, **args):
         # For GMOS data, the group id contains the detector_x_bin,
@@ -683,7 +753,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     observation_id, detector_x_bin, detector_y_bin,
                     filter_name, amp_read_area)
         
-        return ret_group_id
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_group_id, name="group_id", ad=dataset)
+        
+        return ret_dv
     
     def nod_count(self, dataset, **args):
         # The number of nod and shuffle cycles can only be obtained from nod
@@ -710,7 +783,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             raise Errors.DescriptorTypeError()
         
-        return ret_nod_count
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_nod_count, name="nod_count", ad=dataset)
+        
+        return ret_dv
     
     def nod_pixels(self, dataset, **args):
         # The number of pixel rows the charge is shuffled by can only be
@@ -737,23 +813,28 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             raise Errors.DescriptorTypeError()
         
-        return ret_nod_pixels
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_nod_pixels, name="nod_pixels", ad=dataset)
+        
+        return ret_dv
     
     def nominal_photometric_zeropoint(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple
-        ret_nominal_photometric_zeropoint = {}
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple
+        ret_nominal_photometric_zeropoint_dict = {}
         
+        # Get the lookup table containing the nominal zeropoints
         table = Lookups.get_lookup_table("Gemini/GMOS/Nominal_Zeropoints",
                                          "nominal_zeropoints")
         
         # Get the values of the gain, detector name and filter name using the
-        # appropriate descriptors. Use get_value() and as_pytype() to
-        # return the values as a dictionary and the default python type,
-        # respectively, rather than an object.
-        gain_dict = dataset.gain().get_value()
-        detector_name_dict = dataset.detector_name().get_value()
+        # appropriate descriptors. Use as_dict() and as_pytype() to
+        # return the values as a dictionary where the key of the dictionary is
+        # an ("*", EXTVER) tuple and the default python type, respectively,
+        # rather than an object.
+        gain_dict = dataset.gain().as_dict()
+        detector_name_dict = dataset.detector_name().as_dict()
         filter_name = dataset.filter_name(pretty=True).as_pytype()
         
         if gain_dict is None or detector_name_dict is None or \
@@ -765,7 +846,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 raise dataset.exception_info
         
         # Get the value of the BUNIT keyword from the header of each pixel data
-        # extension as a dictionary 
+        # extension as a dictionary where the key of the dictionary is an
+        # ("*", EXTVER) tuple 
         bunit_dict = gmu.get_key_value_dict(dataset, "BUNIT")
         
         for ext_name_ver, detector_name in detector_name_dict.iteritems():
@@ -794,10 +876,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             # Update the dictionary with the nominal photometric zeropoint
             # value 
-            ret_nominal_photometric_zeropoint.update({
+            ret_nominal_photometric_zeropoint_dict.update({
                 ext_name_ver:nominal_photometric_zeropoint})
         
-        return ret_nominal_photometric_zeropoint
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_nominal_photometric_zeropoint_dict,
+                                 name="nominal_photometric_zeropoint",
+                                 ad=dataset)
+        return ret_dv
     
     def non_linear_level(self, dataset, **args):
         # Set the non linear level equal to the saturation level for GMOS
@@ -810,20 +896,24 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
-        return ret_non_linear_level
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_non_linear_level, name="non_linear_level",
+                                 ad=dataset)
+        return ret_dv
     
     def overscan_section(self, dataset, pretty=False, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple
-        ret_overscan_section = {}
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple
+        ret_overscan_section_dict = {}
         
         # Determine the overscan section keyword from the global keyword
         # dictionary
         keyword = self.get_descriptor_key("key_overscan_section")
         
         # Get the value of the overscan section keyword from the header of each
-        # pixel data extension as a dictionary 
+        # pixel data extension as a dictionary where the key of the dictionary
+        # is an ("*", EXTVER) tuple
         overscan_section_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if overscan_section_dict is None:
@@ -849,12 +939,15 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     raw_overscan_section)
             
             # Update the dictionary with the array section value
-            ret_overscan_section.update({ext_name_ver:overscan_section})
+            ret_overscan_section_dict.update({ext_name_ver:overscan_section})
         
-        return ret_overscan_section
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_overscan_section_dict,
+                                 name="overscan_section", ad=dataset)
+        return ret_dv
     
     def pixel_scale(self, dataset, **args):
-        # Get the pixel scale lookup table
+        # Get the lookup table containing the pixel scale values
         gmosPixelScales = Lookups.get_lookup_table(
             "Gemini/GMOS/GMOSPixelScale", "gmosPixelScales")
         
@@ -892,13 +985,16 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the binned pixel scale value
         ret_pixel_scale = float(detector_y_bin * raw_pixel_scale)
         
-        return ret_pixel_scale
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_pixel_scale, name="pixel_scale",
+                                 ad=dataset)
+        return ret_dv
     
     def read_noise(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple
-        ret_read_noise = {}
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple
+        ret_read_noise_dict = {}
         
         # If the data have been prepared, take the read noise value directly
         # from the appropriate keyword. At some point, a check for the STDHDRSI
@@ -911,7 +1007,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             keyword = self.get_descriptor_key("key_read_noise")
             
             # Get the value of the read noise keyword from the header of each
-            # pixel data extension as a dictionary 
+            # pixel data extension as a dictionary where the key of the
+            # dictionary is an ("*", EXTVER) tuple
             read_noise_dict = gmu.get_key_value_dict(dataset, keyword)
             
             if read_noise_dict is None:
@@ -928,21 +1025,22 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     read_noise = float(raw_read_noise)
                 
                 # Update the dictionary with the read noise value
-                ret_read_noise.update({ext_name_ver:read_noise})
+                ret_read_noise_dict.update({ext_name_ver:read_noise})
         else:
             
-            # Get the lookup table containing read noise numbers by amplifier
+            # Get the lookup table containing the read noise values by
+            # amplifier
             gmosampsRdnoise, gmosampsRdnoiseBefore20060831 = \
                 Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
                                          "gmosampsRdnoise",
                                          "gmosampsRdnoiseBefore20060831")
             
             # Get the UT date, gain setting and read speed setting values using
-            # the appropriate descriptors. Use get_value() and as_pytype() to
+            # the appropriate descriptors. Use as_dict() and as_pytype() to
             # return the values as a dictionary and the default python type,
             # respectively, rather than an object.
             ut_date = str(dataset.ut_date())
-            gain_setting_dict = dataset.gain_setting().get_value()
+            gain_setting_dict = dataset.gain_setting().as_dict()
             read_speed_setting = dataset.read_speed_setting().as_pytype()
             
             if gain_setting_dict is None or read_speed_setting is None:
@@ -960,7 +1058,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             keyword = self.get_descriptor_key("key_ampname")
             
             # Get the value of the name of the detector amplifier keyword from
-            # the header of each pixel data extension as a dictionary
+            # the header of each pixel data extension as a dictionary where the
+            # key of the dictionary is an ("*", EXTVER) tuple
             ampname_dict = gmu.get_key_value_dict(dataset, keyword)
             
             if ampname_dict is None:
@@ -992,9 +1091,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                             raise Errors.TableKeyError()
                 
                 # Update the dictionary with the read noise value
-                ret_read_noise.update({ext_name_ver:read_noise})
+                ret_read_noise_dict.update({ext_name_ver:read_noise})
         
-        return ret_read_noise
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_read_noise_dict, name="read_noise",
+                                 ad=dataset)
+        return ret_dv
     
     def read_speed_setting(self, dataset, **args):
         # Determine the amplifier integration time keyword (ampinteg) from the
@@ -1016,24 +1118,33 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             ret_read_speed_setting = "slow"
         
-        return ret_read_speed_setting
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_read_speed_setting,
+                                 name="read_speed_setting", ad=dataset)
+        return ret_dv
     
     def saturation_level(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple
-        ret_saturation_level = {}
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple
+        ret_saturation_level_dict = {}
         
-        # Get the lookup table containing saturation values by amplifier
+        # Get the lookup table containing the saturation values by amplifier
         gmosThresholds = Lookups.get_lookup_table(
             "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
         
-        # Determine the detector type keyword from the global keyword
-        # dictionary
-        keyword = self.get_descriptor_key("key_detector_type")
+        # The hard limit for saturation is the controller digitization limit
+        controller_limit = 65535
         
-        # Get the value of the detector type keyword from the header of the PHU
-        detector_type = dataset.phu_get_key_value(keyword)
+        # Determine the detector type, the name of the bias image and the name
+        # of the dark image keywords from the global keyword dictionary
+        keyword1 = self.get_descriptor_key("key_detector_type")
+        keyword2 = self.get_descriptor_key("key_bias_image")
+        keyword3 = self.get_descriptor_key("key_dark_image")
+        
+        # Get the value of the detector type, the name of the bias image and
+        # the name of the dark image keywords from the header of the PHU
+        detector_type = dataset.phu_get_key_value(keyword1)
         
         if detector_type is None:
             # The phu_get_key_value() function returns None if a value cannot
@@ -1042,7 +1153,32 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
+        bias_image = dataset.phu_get_key_value(keyword2)
+        dark_image = dataset.phu_get_key_value(keyword3)
+        
+        # Determine the name of the detector amplifier (ampname) and the
+        # overscan value keywords from the global keyword dictionary
+        keyword4 = self.get_descriptor_key("key_ampname")
+        keyword5 = self.get_descriptor_key("key_overscan_value")
+        
+        # Get the value of the name of the detector amplifier, the overscan
+        # value and the BUNIT keywords from the header of each pixel data
+        # extension as a dictionary, where the key of the dictionary is an
+        # ("*", EXTVER) tuple
+        ampname_dict = gmu.get_key_value_dict(dataset, keyword4)
+        
+        if ampname_dict is None:
+            # The get_key_value_dict() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
+        overscan_dict = gmu.get_key_value_dict(dataset, keyword5)
+        bunit_dict = gmu.get_key_value_dict(dataset, "BUNIT")
+        
         # Determine which kind of CCDs we're working with
+        # THIS SHOULD BE A DETECTOR_NAME DESCRIPTOR!
         is_eev=False
         is_e2vDD=False
         is_hamamatsu=False
@@ -1053,133 +1189,63 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         elif detector_type=="S10892-01":
             is_hamamatsu = True
         
-        # The hard limit for saturation is the controller digitization limit
-        controller_limit = 65535
+        # Get the gain and the binning of the x-axis and y-axis values using
+        # the appropriate descriptors. Use as_dict() to return the values as a
+        # dictionary where the key of the dictionary is an ("*", EXTVER) tuple,
+        # rather than an object.
+        gain_dict = dataset.gain().as_dict()
+        detector_x_bin = dataset.detector_x_bin()
+        detector_y_bin = dataset.detector_y_bin()
         
-        # Check whether data has been bias- or dark-subtracted
-        biasim = dataset.phu_get_key_value(
-            self.get_descriptor_key("key_bias_image"))
-        darkim = dataset.phu_get_key_value(
-            self.get_descriptor_key("key_dark_image"))
-        
-        # Get the gain dictionary for the dataset
-        gain_dv = dataset.gain()
-        if gain_dv is None:
+        if gain_dict is None or detector_x_bin is None or \
+           detector_y_bin is None:
+            # The descriptor functions return None if a value cannot be
+            # found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
-        else:
-            gain_dict = gain_dv.dict_val
         
-        # Get the binning factor for non-eev detectors
-        if not is_eev:
-            xbin_dv = dataset.detector_x_bin()
-            if xbin_dv is None:
-                if hasattr(dataset, "exception_info"):
-                    raise dataset.exception_info
-            else:
-                xbin_dict = xbin_dv.as_dict()
-            
-            ybin_dv = dataset.detector_y_bin()
-            if ybin_dv is None:
-                if hasattr(dataset, "exception_info"):
-                    raise dataset.exception_info
-            else:
-                ybin_dict = ybin_dv.as_dict()
+        # Determine the bin factor. If the bin factor is great than 2, the
+        # saturation level will be equal to the controller digitization limit.
+        bin_factor = detector_x_bin * detector_y_bin
         
-        # Loop over the pixel data extensions in the dataset to
-        # determine whether bias level is needed
-        # Also store some useful information in dictionaries
-        # to be retrieved in the next loop
-        need_bias_level = False
-        data_contains_bias_dict = {}
-        bin_factor_dict = {}
-        for ext in dataset[pixel_exts]:
-            ext_name_ver = (ext.extname(),ext.extver())
-            
-            # Check whether data has been overscan-subtracted
-            overscan = ext.get_key_value(
-                self.get_descriptor_key("key_overscan_value"))
-            
-            # Check whether data still contains bias
-            if overscan is not None:
-                # Data was overscan-subtracted
-                data_contains_bias = False
-            elif biasim is not None or darkim is not None:
-                # Data was not overscan-corrected, but it was
-                # bias- or dark-corrected
-                data_contains_bias = False
-            else:
-                # Data still contains bias level
-                data_contains_bias = True
-            data_contains_bias_dict[ext_name_ver] = data_contains_bias
-            
-            # For the newer CCDs, get the x and y binning. If xbin*ybin
-            # is greater than 2, then saturation will always be the
-            # controller limit.
-            if not is_eev:
-                xbin = xbin_dict[ext_name_ver]
-                ybin = ybin_dict[ext_name_ver]
-                bin_factor = xbin*ybin
-                bin_factor_dict.update({ext_name_ver: bin_factor})
-            
-            # Get the bias level for all extensions only if necessary
-            # because the bias level calculation can take some time
-            if (not data_contains_bias) or \
-               (not is_eev and data_contains_bias and bin_factor<=2):
-                need_bias_level = True
-        
-        if need_bias_level:
-            bias_level_dict = gdc.get_bias_level(adinput=dataset)
-            if bias_level_dict is None:
-                if hasattr(dataset, "exception_info"):
-                    raise dataset.exception_info
-        
-        # Loop over extensions to calculate saturation value
-        for ext in dataset[pixel_exts]:
-            ext_name_ver = (ext.extname(),ext.extver())
-            
-            # Determine the name of the detector amplifier keyword (ampname)
-            # from the global keyword dictionary
-            keyword = self.get_descriptor_key("key_ampname")
-            
-            # Get the value of the name of the detector amplifier keyword from
-            # the header of each pixel data extension 
-            ampname = ext.get_key_value(keyword)
-            
-            if ampname is None:
-                # The phu_get_key_value() function returns None if a value
-                # cannot be found and stores the exception info. Re-raise the
-                # exception. It will be dealt with by the CalculatorInterface.
-                if hasattr(dataset, "exception_info"):
-                    raise dataset.exception_info
-            
-            # Check units of data (i.e., ADU vs. electrons)
-            bunit = ext.get_key_value(
-                self.get_descriptor_key("key_bunit"))
-            
-            # Get the gain for the extension
+        for ext_name_ver, ampname in ampname_dict.iteritems():
             gain = gain_dict[ext_name_ver]
             
-            # For the newer CCDs, get the bin factor
-            if not is_eev:
-                bin_factor = bin_factor_dict[ext_name_ver]
+            # Determine whether it is required to calculate the bias level
+            # (bias level calculations can take some time)
+            overscan = None
+            if overscan_dict is not None:
+                overscan = overscan_dict[ext_name_ver]
+            if overscan is not None:
+                # The overscan was subtracted from the data
+                data_contains_bias = False
+            elif bias_image is not None or dark_image is not None:
+                # The overscan was not subtracted from the data, but the bias
+                # or dark was subtracted from the data
+                data_contains_bias = False
+            else:
+                # The data still contains a bias level
+                data_contains_bias = True
             
-            # Check whether data still contains bias
-            data_contains_bias = data_contains_bias_dict[ext_name_ver]
-            
-            # Get the bias level of the extension only if necessary
             if (not data_contains_bias) or \
-               (not is_eev and data_contains_bias and bin_factor<=2):
-                bias_level = bias_level_dict[ext_name_ver]
+               (not is_eev and data_contains_bias and bin_factor <= 2):
+                # Calculate the bias level
+                bias_level = gdc.get_bias_level(adinput=dataset, estimate=True)
             
             # Correct the controller limit for bias level and units
             processed_limit = controller_limit
             if not data_contains_bias:
                 processed_limit -= bias_level
-            if bunit=="electron" or bunit=="electrons":
+            
+            # Check units of data (i.e., ADU vs. electrons)
+            bunit = None
+            if bunit_dict is not None:
+                bunit = bunit_dict[ext_name_ver]
+            if bunit == "electron" or bunit == "electrons":
                 processed_limit *= gain
             
-            if is_eev or bin_factor>2:
+            if is_eev or bin_factor > 2:
                 # For old EEV CCDs, use the detector limit
                 saturation = processed_limit
             else:
@@ -1213,14 +1279,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 if saturation > processed_limit:
                     saturation = processed_limit
             
-            ret_saturation_level.update({ext_name_ver: saturation})
+            ret_saturation_level_dict.update({ext_name_ver: saturation})
         
-        if ret_saturation_level == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
-        
-        return ret_saturation_level
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_saturation_level_dict,
+                                 name="saturation_level", ad=dataset)
+        return ret_dv
     
     def wavelength_band(self, dataset, **args):
         if "IMAGE" in dataset.types:
@@ -1250,4 +1314,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             ret_wavelength_band = band
         
-        return ret_wavelength_band
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_wavelength_band, name="wavelength_band",
+                                 ad=dataset)
+        return ret_dv
