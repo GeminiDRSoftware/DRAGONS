@@ -6,6 +6,7 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
+from astrodata.Descriptors import DescriptorValue
 from astrodata.structuredslice import pixel_exts, bintable_exts
 from gempy.gemini import gemini_metadata_utils as gmu
 
@@ -28,30 +29,21 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         GEMINI_DescriptorCalc.__init__(self)
     
     def data_section(self, dataset, pretty=False, **args):
-        ret_data_section = {}
         raw_data_section = "[1:2048,1:2048]"
         
-        # Loop over the pixel data extensions in the dataset
-        for ext in dataset[pixel_exts]:
-            if pretty:
-                # Use the data section string that uses 1-based indexing as the
-                # value in the form [x1:x2,y1:y2] 
-                data_section = raw_data_section
-            else:
-                # Use the data section list that used 0-based, non-inclusive
-                # indexing as the value in the form [x1, x2, y1, y2]
-                data_section = gmu.sectionStrToIntList(raw_data_section)
+        if pretty:
+            # Use the data section string that uses 1-based indexing as the
+            # value in the form [x1:x2,y1:y2] 
+            ret_data_section = raw_data_section
+        else:
+            # Use the data section list that used 0-based, non-inclusive
+            # indexing as the value in the form [x1, x2, y1, y2]
+            ret_data_section = gmu.sectionStrToIntList(raw_data_section)
             
-            # Update the dictionary with the data section value
-            ret_data_section.update(
-              {(ext.extname(), ext.extver()):data_section})
-        
-        if ret_data_section == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
-        
-        return ret_data_section
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_data_section, name="data_section",
+                                 ad=dataset)
+        return ret_dv
     
     array_section = data_section
     detector_section = data_section
@@ -125,24 +117,14 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         
         if len(filter) > 1:
             # Concatenate the filter names with "&"
-            filter_name = "%s&%s" % (filter[0], filter[1])
+            ret_filter_name = "%s&%s" % (filter[0], filter[1])
         else:
-            filter_name = str(filter[0])
+            ret_filter_name = str(filter[0])
         
-        # Return a dictionary where the key of the dictionary is an (EXTNAME,
-        # EXTVER) tuple and the value is the filter name string
-        ret_filter_name = {}
-        
-        # Loop over the pixel data extensions of the dataset
-        for ext in dataset[pixel_exts]:
-            ret_filter_name.update({(ext.extname(), ext.extver()):filter_name})
-        
-        if ret_filter_name == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
-        
-        return ret_filter_name
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_filter_name, name="filter_name",
+                                 ad=dataset)
+        return ret_dv
     
     def gain(self, dataset, **args):
         # Determine the number of non-destructive read pairs keyword (lnrs)
@@ -168,14 +150,20 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the gain float
         ret_gain = float(gain)
         
-        return ret_gain
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_gain, name="gain", ad=dataset)
+        
+        return ret_dv
     
     f2ArrayDict = None
     
     def instrument(self, dataset, **args):
         ret_instrument = "F2"
         
-        return ret_instrument
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_instrument, name="instrument", ad=dataset)
+        
+        return ret_dv
     
     def lyot_stop(self, dataset, stripID=False, pretty=False, **args):
         # Determine the lyot stop keywords from the global keyword dictionary
@@ -197,7 +185,10 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             ret_lyot_stop = lyot_stop
         
-        return ret_lyot_stop
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_lyot_stop, name="lyot_stop", ad=dataset)
+        
+        return ret_dv
     
     def non_linear_level(self, dataset, **args):
         # Determine the number of non-destructive read pairs keyword (lnrs)
@@ -233,7 +224,10 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the read noise float
         ret_non_linear_level = int(saturation_level * non_linear_fraction)
         
-        return ret_non_linear_level
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_non_linear_level, name="non_linear_level",
+                                 ad=dataset)
+        return ret_dv
     
     f2ArrayDict = None
     
@@ -260,7 +254,10 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             ret_observation_type = observation_type
         
-        return ret_observation_type
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_observation_type, name="observation_type",
+                                 ad=dataset)
+        return ret_dv
     
     def pixel_scale(self, dataset, **args):
         # First try to calculate the pixel scale using the values of the WCS
@@ -269,7 +266,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always return a dictionary where the key
         # of the dictionary is an (EXTNAME, EXTVER) tuple.
-        ret_pixel_scale = {}
+        ret_pixel_scale_dict = {}
         
         # Determine the WCS matrix elements keywords from the global keyword
         # dictionary
@@ -279,7 +276,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         keyword4 = self.get_descriptor_key("key_cd22")
         
         # Get the value of the WCS matrix elements keywords from the header of
-        # each pixel data extension as a dictionary 
+        # each pixel data extension as a dictionary where the key of the
+        # dictionary is an ("*", EXTVER) tuple
         cd11_dict = gmu.get_key_value_dict(dataset, keyword1)
         cd12_dict = gmu.get_key_value_dict(dataset, keyword2)
         cd21_dict = gmu.get_key_value_dict(dataset, keyword3)
@@ -287,14 +285,30 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         
         if cd11_dict is None:
             # Get the pixel scale value using the value of the pixel scale
-            # keyword
+            # keyword in the PHU
             pixel_scale = self._get_pixel_scale_from_header(dataset=dataset)
             
             # Loop over the pixel data extensions in the dataset
+            pixel_scale_dict = {}
             for ext in dataset[pixel_exts]:
                 # Update the dictionary with the pixel_scale value
-                ret_pixel_scale.update(
+                pixel_scale_dict.update(
                   {(ext.extname(), ext.extver): pixel_scale})
+            
+            # Instantiate the DescriptorValue (DV) object
+            dv = DescriptorValue(pixel_scale_dict)
+            
+            # Create a new dictionary where the key of the dictionary is the
+            # EXTVER integer
+            extver_dict = dv.collapse_by_extver()
+            
+            if not dv.validate_collapse_by_extver(extver_dict):
+                # The validate_collapse_by_extver function returns False if the
+                # values in the dictionary with the same EXTVER are not equal
+                raise Errors.CollapseError()
+            
+            ret_pixel_scale_dict = pixel_scale_dict
+        
         else:
             for ext_name_ver, cd11 in cd11_dict.iteritems():
                 cd12 = None
@@ -322,9 +336,13 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
                       dataset=dataset)
                 
                 # Update the dictionary with the pixel scale value
-                ret_pixel_scale.update({ext_name_ver: pixel_scale})
+                ret_pixel_scale_dict.update({ext_name_ver: pixel_scale})
         
-        return ret_pixel_scale
+        # Instantiate the return DescriptorValue (DV) object using the newly
+        # created dictionary
+        ret_dv = DescriptorValue(ret_pixel_scale_dict, name="pixel_scale",
+                                 ad=dataset)
+        return ret_dv
     
     def _get_pixel_scale_from_header(self, dataset):
         # Determine the pixel scale keyword from the global keyword dictionary
@@ -361,7 +379,10 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the read mode integer
         ret_read_mode = int(lnrs)
         
-        return ret_read_mode
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_read_mode, name="read_mode", ad=dataset)
+        
+        return ret_dv
     
     def read_noise(self, dataset, **args):
         # Determine the number of non-destructive read pairs keyword (lnrs)
@@ -387,7 +408,10 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the read noise float
         ret_read_noise = float(read_noise)
         
-        return ret_read_noise
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_read_noise, name="read_noise", ad=dataset)
+        
+        return ret_dv
     
     f2ArrayDict = None
     
@@ -412,11 +436,14 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             raise Errors.TableKeyError()
         
-        # Return the read noise float
+        # Return the saturation_level integer
         ret_saturation_level = int(saturation_level)
         
-        return ret_saturation_level
-    
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_saturation_level, name="saturation_level",
+                                 ad=dataset)
+        return ret_dv
+     
     f2ArrayDict = None
     
     def wavelength_band(self, dataset, **args):
@@ -446,7 +473,10 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             ret_wavelength_band = band
         
-        return ret_wavelength_band
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_wavelength_band, name="wavelength_band",
+                                 ad=dataset)
+        return ret_dv
     
     def x_offset(self, dataset, **args):
         # Determine the y offset keyword from the global keyword dictionary
@@ -464,7 +494,10 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         
         ret_x_offset = -y_offset
         
-        return ret_x_offset
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_x_offset, name="x_offset", ad=dataset)
+        
+        return ret_dv
     
     def y_offset(self, dataset, **args):
         # Determine the x offset keyword from the global keyword dictionary
@@ -482,4 +515,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         
         ret_y_offset = -x_offset
         
-        return ret_y_offset
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_y_offset, name="y_offset", ad=dataset)
+        
+        return ret_dv
