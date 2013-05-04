@@ -264,8 +264,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # matrix elements keywords
         #
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_pixel_scale_dict = {}
         
         # Determine the WCS matrix elements keywords from the global keyword
@@ -298,7 +298,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             # Instantiate the DescriptorValue (DV) object
             dv = DescriptorValue(pixel_scale_dict)
             
-            # Create a new dictionary where the key of the dictionary is the
+            # Create a new dictionary where the key of the dictionary is an
             # EXTVER integer
             extver_dict = dv.collapse_by_extver()
             
