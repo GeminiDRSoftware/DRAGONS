@@ -4,6 +4,7 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
+from astrodata.Descriptors import DescriptorValue
 from gempy.gemini import gemini_metadata_utils as gmu
 
 from GNIRS_Keywords import GNIRS_KeyDict
@@ -31,7 +32,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # GNIRS contains two dispersers - the grating and the prism. Get the
         # grating and the prism values using the appropriate descriptors
         grating = dataset.grating(stripID=stripID, pretty=pretty).as_pytype()
-        prism = dataset.prism(stripID=stripID, pretty=pretty).as_pytype()
+        prism = dataset.prism(stripID=stripID, pretty=pretty)
         
         if grating is None or prism is None:
             # The descriptor functions return None if a value cannot be found
@@ -55,7 +56,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         ret_disperser = str(disperser)
         
-        return ret_disperser
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_disperser, name="disperser", ad=dataset)
+        
+        return ret_dv
     
     def focal_plane_mask(self, dataset, stripID=False, pretty=False, **args):
         # For GNIRS, the focal plane mask is the combination of the slit
@@ -85,7 +89,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         ret_focal_plane_mask = str(focal_plane_mask)
         
-        return ret_focal_plane_mask
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_focal_plane_mask, name="focal_plane_mask",
+                                 ad=dataset)
+        return ret_dv
     
     def gain(self, dataset, **args):
         # Determine the bias value keyword (biasvolt) from the global keyword
@@ -114,7 +121,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         if count == 0:
             Errors.TableKeyError()
         
-        return ret_gain
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_gain, name="gain", ad=dataset)
+        
+        return ret_dv
     
     gnirsArrayDict = None
     
@@ -156,7 +166,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         if stripID or pretty:
             ret_grating = gmu.removeComponentID(ret_grating)
         
-        return ret_grating
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_grating, name="grating", ad=dataset)
+        
+        return ret_dv
     
     def non_linear_level(self, dataset, **args):
         # Determine the bias value keyword (biasvolt) from the global keyword
@@ -215,7 +228,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the saturation level integer
         ret_non_linear_level = int(saturation_level * linearlimit)
         
-        return ret_non_linear_level
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_non_linear_level, name="non_linear_level",
+                                 ad=dataset)
+        return ret_dv
     
     gnirsArrayDict = None
     
@@ -260,7 +276,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             raise Errors.TableValueError()
         
-        return ret_pixel_scale
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_pixel_scale, name="pixel_scale",
+                                 ad=dataset)
+        return ret_dv
     
     gnirsConfigDict = None
     
@@ -307,7 +326,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             ret_prism = prism
         
-        return ret_prism
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_prism, name="prism", ad=dataset)
+        
+        return ret_dv
     
     def read_mode(self, dataset, **args):
         # Determine the number of non-destructive read pairs (lnrs) and the
@@ -341,7 +363,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         ret_read_mode = str(read_mode)
         
-        return ret_read_mode
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_read_mode, name="read_mode", ad=dataset)
+        
+        return ret_dv
     
     def read_noise(self, dataset, **args):
         # Determine the bias value (biasvolt), the number of non-destructive
@@ -390,7 +415,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_read_noise = float((read_noise * math.sqrt(coadds)) /
                                (math.sqrt(lnrs) * math.sqrt(ndavgs)))
         
-        return ret_read_noise
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_read_noise, name="read_noise", ad=dataset)
+        
+        return ret_dv
     
     gnirsArrayDict = None
     
@@ -433,7 +461,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         ret_saturation_level = int(well * coadds)
         
-        return ret_saturation_level
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_saturation_level, name="saturation_level",
+                                 ad=dataset)
+        return ret_dv
     
     gnirsArrayDict = None
     
@@ -462,7 +493,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             ret_slit = str(slit)
         
-        return ret_slit
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_slit, name="slit", ad=dataset)
+        
+        return ret_dv
     
     def well_depth_setting(self, dataset, **args):
         # Determine the bias value (biasvolt) keyword from the global keyword
@@ -489,4 +523,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the well depth setting string
         ret_well_depth_setting = str(well_depth_setting)
         
-        return well_depth_setting
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_well_depth_setting,
+                                 name="well_depth_setting", ad=dataset)
+        return ret_dv
