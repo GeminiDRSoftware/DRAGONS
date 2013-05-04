@@ -172,6 +172,13 @@ class CalcError(DescriptorError):
     """
     message = "Descriptor unable to calculate value"
 
+class CollapseError(DescriptorError):
+    """
+    Exception raised for instances when the values for a given EXTVER are not
+    the same
+    """
+    message = "The values for a given EXTVER are not the same"
+
 class CorruptDataError(DescriptorError):
     """
     Exception raised for instances when an AstroData object does not contain
