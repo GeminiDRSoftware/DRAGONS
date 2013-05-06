@@ -82,9 +82,11 @@ class ReductionObject(object):
     curPrimType = None
     curPrimName = None
     funccommand_clause = None
+    primstype_order = None
     
     def __init__(self):
         self.primDict= {}
+        self.primstype_order = []
     
     def init(self, rc):
         """ This member is purely for overwriting.  Controllers should call this
@@ -320,10 +322,10 @@ class ReductionObject(object):
         paramdict0.update(newprimset.param_dict)
         newprimset.param_dict = paramdict0               
         
-    def add_prim_set(self,primset):
+    def add_prim_set(self,primset, add_to_front = False):
         if type(primset) == list:
             for ps in primset:
-                self.add_prim_set(ps)
+                self.add_prim_set(ps, add_to_front)
             return
             
         if primset.astrotype == None:
@@ -334,27 +336,45 @@ class ReductionObject(object):
                 raise ReductionExcept("Primitive btype=RECIPE should not have a param_dict")
             primset.param_dict = {}
         if not self.primDict.has_key(primset.astrotype):
+            if add_to_front:
+                self.primstype_order.insert(0,primset.astrotype)
+            else:
+                self.primstype_order.append(primset.astrotype)
             self.primDict.update({primset.astrotype:[]})
         primset.ro = self
         primsetary = self.primDict[primset.astrotype]
         self.join_param_dicts(primset, primsetary)
-        primsetary.append (primset)
+        if add_to_front:
+            primsetary.insert(0,primset)
+        else:
+            primsetary.append (primset)
     
     def get_prim_set(self, primname):
+        primset = None
+        if self.curPrimType != self.primstype_order[0]:
+            raise ReductionExcept("curPrimType does not equal primstype_order[0], unexpected")
+        for atype in self.primstype_order:
+            primset =  self.get_prim_set_for_type(primname, astrotype = atype)
+            if primset:
+                break
+        return primset
+
+    def get_prim_set_for_type(self, primname, astrotype = None):
 
         # Get all possible types the primitive could be inherited from,
         # starting from the leaf node and working up the tree
         from AstroDataType import get_classification_library
         cl = get_classification_library()
-        type_obj = cl.get_type_obj(self.curPrimType)
+        type_obj = cl.get_type_obj(astrotype)
         if type_obj is None:
             return None
         possible_types = type_obj.get_super_types(append_to=[type_obj])
         possible_types = [t.name for t in possible_types]
 
+        #p rint "RO355:"+repr(possible_types)
         # Loop through the types, stopping if the primitive was found
         for atype in possible_types:
-            print "RO357:", atype
+            #p rint "RO357:", atype
             # If the primitive set has not been loaded, load it
             if atype not in self.primDict.keys():
                 newprimset = self.recipeLib.retrieve_primitive_set(
@@ -368,6 +388,7 @@ class ReductionObject(object):
 
             # Get all the primitive sets for this type
             primsetary = self.primDict[atype]
+            #p rint "RO372:"+repr(primsetary)
             for primset in primsetary:
                 # Check for the primitive
                 if hasattr(primset, primname):

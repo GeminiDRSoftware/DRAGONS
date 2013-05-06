@@ -1566,8 +1566,8 @@ class ReductionContext(dict):
             self.add_rq(re)
             
     def save_cmd_history(self):
-        print "RM1113:", repr(self.rorqs)
-        print "RM1114:saveCmdHistorythis saves nothing atm! It's for the HTML iface"
+        print "RM1569:", repr(self.rorqs)
+        print "RM1570:saveCmdHistorythis saves nothing atm! It's for the HTML iface"
         
     def return_from_recipe(self):
         self._return_command = "return_from_recipe"
@@ -1849,9 +1849,9 @@ class RecipeLibrary(object):
         ref = context.get_reference_image()
         if ref == None:
             return None
-        val = pick_config(ref, centralPrimitivesIndex)
+        val = pick_config(ref, centralPrimitivesIndex, "leaves")
         k = val.keys()
-        if len(k) != 1:
+        if False: # we do allow this, have TO! for recipes and multiple packages len(k) != 1:
                 raise RecipeExcept("Can't discover correct primtype for %s, more than one (%s)" % (ref.filename, repr(k)))
         return k[0]
         
@@ -1891,7 +1891,7 @@ class RecipeLibrary(object):
         elif astrotype != None:
             # get recipe source
             rec = self.retrieve_recipe(name, astrotype=astrotype)
-            # print "RM1113:", name, rec, astrotype
+            #p rint "RM1894:", name, rec, astrotype
             try:
                 # print "RM1115: before"
                 ps = ro.get_prim_set(name)
@@ -1905,14 +1905,17 @@ class RecipeLibrary(object):
             except ReductionObjects.ReductionExcept:
                  pass # just means there is no primset, that function throws
                 
-                
+            print "RM1894: here with rec"    
             if rec:
                 # compose to python source
                 prec = self.compose_recipe(name, rec)
+                #p rint "RM1912:", prec
                 # compile to unbound function (using the python interpretor obviously)
                 rfunc = self.compile_recipe(name, prec)
+                #p rint "RM1915:", rfunc
                 # bind the recipe to the reduction object
                 ro = self.bind_recipe(ro, name, rfunc)
+                #p rint "RM1918:", dir(ro)
             else:
                 raise RecipeExcept("Error: Recipe Source for '%s' Not Found\n\ttype=%s, instruction_name=%s, src=%s"
                                     % (name, astrotype, name, src), name = name)
@@ -2068,6 +2071,7 @@ class RecipeLibrary(object):
         
         ro = ReductionObjects.ReductionObject()
         primsetlist = self.retrieve_primitive_set(dataset=dataset, astrotype=astrotype)
+        # print "RM2071:",repr(primsetlist)
         ro.recipeLib = self
         if primsetlist:
             ro.curPrimType = primsetlist[0].astrotype
@@ -2084,22 +2088,24 @@ class RecipeLibrary(object):
             source = "FILE: " + str(dataset)
         else:
             source = "UNKNOWN"
-            
+        #p rint "RM2088:",repr(ro.primDict)    
         #@@perform: monitory real performance loading primitives
         self.add_load_time(source, a, b)
         return ro
         
     def retrieve_primitive_set(self, dataset=None, astrotype=None):
+        #p rint "RM2094:",astrotype
+        val = None
         if (astrotype == None) and (dataset != None):
             val = pick_config(dataset, centralPrimitivesIndex, style="leaves")
             k = val.keys()
-            if len(k) != 1:
-                print "RM1939:", repr(val)
+            #if len(k) != 1:
+            #    print "RM1939:", repr(val)
                 # raise RecipeExcept("CAN'T RESOLVE PRIMITIVE SET CONFLICT")
-            astrotype = k[0]
+            #astrotype = k[0]
         if (astrotype != None):
             k = [astrotype]
-        # print "RM1272:", astrotype
+        #p rint "RM2103:", astrotype, k, val
         primset = None
         # print "RM1475:", repr(centralPrimitivesIndex)
         primlist = []
@@ -2244,25 +2250,29 @@ def %(name)s(self,cfgObj):
         rprimset = redobj.new_primitive_set(redobj.curPrimType, btype="RECIPE")
         bindstr = "rprimset.%s = new.instancemethod(recipefunc, redobj, None)" % name
         exec(bindstr)
-        redobj.add_prim_set(rprimset)
+        redobj.add_prim_set(rprimset, add_to_front = False)
+        #p rint "RM2254:", redobj.primstype_order
+        #p rint "RM2255:", repr(redobj.primDict)
         return redobj
     
     def check_method(self, redobj, primitivename):
         ps = redobj.get_prim_set(primitivename)
         if ps == None:
-            # print "RM1382: %s doesn't exist" % primitivename
+            #p rint "RM1382: %s doesn't exist" % primitivename
             # then this name doesn't exist
             return False
         else:
-            # print "RM1382: %s does exist" % primitivename
+            #p rint "RM1382: %s does exist" % primitivename
             return True
         
     def check_and_bind(self, redobj, name, context=None):
         # print "RM1389:", name
         if self.check_method(redobj, name):
+            #p rint "RM2266: checkmethod fires"
             return False
         else:
             # print "RM1078:", str(dir(context.inputs[0]))
+            #p rint "RM2268:", redobj.primstype_order
             self.load_and_bind_recipe(redobj, name, astrotype = redobj.curPrimType)
             return True
 
@@ -2272,7 +2282,7 @@ def %(name)s(self,cfgObj):
         '''
         explicitType = None
         if  type(dataset) == str:
-            if os.path.exists(datset):
+            if os.path.exists(dataset):
                 # then it's a file
                 astrod = AstroData(dataset)
                 byfname = True
