@@ -7,13 +7,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>2.5.1.1. Using Slices and “Subdata” &mdash; astrodata documentation v1.00 documentation</title>
+    <title>2.5.1.1. Using Slices and “Subdata” &mdash; astrodata documentation v1.0beta documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '1.00',
+        VERSION:     '1.0beta',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -22,7 +22,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="astrodata documentation v1.00 documentation" href="index.html" />
+    <link rel="top" title="astrodata documentation v1.0beta documentation" href="index.html" />
     <link rel="up" title="2. AstroData Class Reference" href="chapter_AstroDataClass.html" />
     <link rel="next" title="3. ReductionContext Class Reference" href="chapter_ReductionContextClass.html" />
     <link rel="prev" title="2. AstroData Class Reference" href="chapter_AstroDataClass.html" /> 
@@ -40,7 +40,7 @@
         <li class="right" >
           <a href="chapter_AstroDataClass.html" title="2. AstroData Class Reference"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li>
+        <li><a href="index.html">astrodata documentation v1.0beta documentation</a> &raquo;</li>
           <li><a href="chapter_AstroDataClass.html" accesskey="U">2. AstroData Class Reference</a> &raquo;</li> 
       </ul>
     </div>
@@ -80,13 +80,14 @@
             
   <div class="section" id="using-slices-and-subdata">
 <h1>2.5.1.1. Using Slices and &#8220;Subdata&#8221;<a class="headerlink" href="#using-slices-and-subdata" title="Permalink to this headline">¶</a></h1>
-<p>&lt;html&gt;&lt;img align=&#8221;right&#8221; width = &#8220;30%&#8221; src=&#8221;<a class="reference external" href="http://ophiuchus.hi.gemini.edu/ADMANUALSOURCE/diagrams/sharedHDUs.png">http://ophiuchus.hi.gemin
-i.edu/ADMANUALSOURCE/diagrams/sharedHDUs.png</a>&#8220;/&gt;&lt;/html&gt;</p>
+<a class="reference internal image-reference" href="_images/sharedHDUs4.svg"><div align="center" class="align-center"><object data="_images/sharedHDUs4.svg" type="image/svg+xml"><embed src="_images/sharedHDUs4.svg" type="image/svg+xml" /></object>
+</div>
+</a>
 <p>AstroData instances are presented as lists of AstroData instances.
 However, internally the list is merely a list of extensions and the
 <em>AstroData.getitem(..)</em> function (which implements the &#8220;[]&#8221; syntax)
 creates AstroData instances on the fly when called. Such instances
-share information in memory with their parent instance. This is the in
+share information in memory with their parent instance. This is in
 line with the general operation of pyfits and numpy, and in general
 how Python handles objects. This allows efficient use of memory and
 disk I/O. To make copies one must explicitly ask for copies. Thus when
@@ -149,7 +150,7 @@ then you can write the AstroData subdata instance to a new filename:</p>
         <li class="right" >
           <a href="chapter_AstroDataClass.html" title="2. AstroData Class Reference"
              >previous</a> |</li>
-        <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li>
+        <li><a href="index.html">astrodata documentation v1.0beta documentation</a> &raquo;</li>
           <li><a href="chapter_AstroDataClass.html" >2. AstroData Class Reference</a> &raquo;</li> 
       </ul>
     </div>

@@ -1,339 +1,269 @@
-Making output directory...
 Running Sphinx v1.0.7
-loading pickled environment... not yet created
-building [html]: targets for 143 source files that are out of date
-updating environment: 143 added, 0 changed, 0 removed
+loading pickled environment... done
+building [html]: targets for 108 source files that are out of date
+updating environment: 0 added, 110 changed, 0 removed
 reading sources... [  0%] appendix_typegraphs
-reading sources... [  1%] chapter_AstroDataClass
-reading sources... [  2%] chapter_Gemini_Types
-reading sources... [  2%] chapter_ReductionContextClass
-reading sources... [  3%] chapter_intro
-reading sources... [  4%] configElements
-reading sources... [  4%] creatingADescriptor
-reading sources... [  5%] creatingAPrimitive
-reading sources... [  6%] creatingAnAstroDataType
-reading sources... [  6%] developmentGuide
-reading sources... [  7%] documentBrief
-reading sources... [  8%] gatref/GATREF-introduction
-reading sources... [  9%] gatref/GATREF-overview
-reading sources... [  9%] gatref/gatrefdocbrief
-reading sources... [ 10%] gatref/gen.GATREF-Audience
-reading sources... [ 11%] gatref/gen.GATREF-Purpose
-reading sources... [ 11%] gatref/gen.GATREF-RevisionHistory
-reading sources... [ 12%] gen.ADMANUAL-ADSubdata
-reading sources... [ 13%] gen.ADMANUAL-AccessingPyfitsObjects
-reading sources... [ 13%] gen.ADMANUAL_ADConcepts
-reading sources... [ 14%] gen.ADMANUAL_ADSubdata
-reading sources... [ 15%] gen.ADMANUAL_Purpose
-reading sources... [ 16%] gen.ADMANUAL_RevisionHistory
-reading sources... [ 16%] gen.ADMANUAL_SingleHDUAD
-reading sources... [ 17%] gen.AstroDataLexicon
-reading sources... [ 18%] gen.AstroDataPackageOverview
-reading sources... [ 18%] gen.typedefs/gen.TypeSourceAppendix
-reading sources... [ 19%] gen.typedefs/gen.gemdtype.ACQUISITION
-reading sources... [ 20%] gen.typedefs/gen.gemdtype.AT_ZENITH
-reading sources... [ 20%] gen.typedefs/gen.gemdtype.AZEL_TARGET
-reading sources... [ 21%] gen.typedefs/gen.gemdtype.BIAS
-reading sources... [ 22%] gen.typedefs/gen.gemdtype.CAL
-reading sources... [ 23%] gen.typedefs/gen.gemdtype.DARK
-reading sources... [ 23%] gen.typedefs/gen.gemdtype.F2
-reading sources... [ 24%] gen.typedefs/gen.gemdtype.F2_CAL
-reading sources... [ 25%] gen.typedefs/gen.gemdtype.F2_DARK
-reading sources... [ 25%] gen.typedefs/gen.gemdtype.F2_IMAGE
-reading sources... [ 26%] gen.typedefs/gen.gemdtype.F2_IMAGE_FLAT
-reading sources... [ 27%] gen.typedefs/gen.gemdtype.F2_IMAGE_TWILIGHT
-reading sources... [ 27%] gen.typedefs/gen.gemdtype.F2_LS
-reading sources... [ 28%] gen.typedefs/gen.gemdtype.F2_LS_ARC
-reading sources... [ 29%] gen.typedefs/gen.gemdtype.F2_LS_FLAT
-reading sources... [ 30%] gen.typedefs/gen.gemdtype.F2_LS_TWILIGHT
-reading sources... [ 30%] gen.typedefs/gen.gemdtype.F2_MOS
-reading sources... [ 31%] gen.typedefs/gen.gemdtype.F2_MOS_ARC
-reading sources... [ 32%] gen.typedefs/gen.gemdtype.F2_MOS_FLAT
-reading sources... [ 32%] gen.typedefs/gen.gemdtype.F2_MOS_TWILIGHT
-reading sources... [ 33%] gen.typedefs/gen.gemdtype.F2_SPECT
-reading sources... [ 34%] gen.typedefs/gen.gemdtype.FLAT
-reading sources... [ 34%] gen.typedefs/gen.gemdtype.FRINGE
-reading sources... [ 35%] gen.typedefs/gen.gemdtype.GEMINI
-reading sources... [ 36%] gen.typedefs/gen.gemdtype.GEMINI_NORTH
-reading sources... [ 37%] gen.typedefs/gen.gemdtype.GEMINI_SOUTH
-reading sources... [ 37%] gen.typedefs/gen.gemdtype.GENERIC
-reading sources... [ 38%] gen.typedefs/gen.gemdtype.GMOS
-reading sources... [ 39%] gen.typedefs/gen.gemdtype.GMOS_BIAS
-reading sources... [ 39%] gen.typedefs/gen.gemdtype.GMOS_CAL
-reading sources... [ 40%] gen.typedefs/gen.gemdtype.GMOS_DARK
-reading sources... [ 41%] gen.typedefs/gen.gemdtype.GMOS_IFU
-reading sources... [ 41%] gen.typedefs/gen.gemdtype.GMOS_IFU_ARC
-reading sources... [ 42%] gen.typedefs/gen.gemdtype.GMOS_IFU_BLUE
-reading sources... [ 43%] gen.typedefs/gen.gemdtype.GMOS_IFU_FLAT
-reading sources... [ 44%] gen.typedefs/gen.gemdtype.GMOS_IFU_RED
-reading sources... [ 44%] gen.typedefs/gen.gemdtype.GMOS_IFU_TWILIGHT
-reading sources... [ 45%] gen.typedefs/gen.gemdtype.GMOS_IFU_TWO
-reading sources... [ 46%] gen.typedefs/gen.gemdtype.GMOS_IMAGE
-reading sources... [ 46%] gen.typedefs/gen.gemdtype.GMOS_IMAGE_FLAT
-reading sources... [ 47%] gen.typedefs/gen.gemdtype.GMOS_IMAGE_TWILIGHT
-reading sources... [ 48%] gen.typedefs/gen.gemdtype.GMOS_LS
-reading sources... [ 48%] gen.typedefs/gen.gemdtype.GMOS_LS_ARC
-reading sources... [ 49%] gen.typedefs/gen.gemdtype.GMOS_LS_FLAT
-reading sources... [ 50%] gen.typedefs/gen.gemdtype.GMOS_LS_TWILIGHT
-reading sources... [ 51%] gen.typedefs/gen.gemdtype.GMOS_MOS
-reading sources... [ 51%] gen.typedefs/gen.gemdtype.GMOS_MOS_ARC
-reading sources... [ 52%] gen.typedefs/gen.gemdtype.GMOS_MOS_FLAT
-reading sources... [ 53%] gen.typedefs/gen.gemdtype.GMOS_MOS_TWILIGHT
-reading sources... [ 53%] gen.typedefs/gen.gemdtype.GMOS_N
-reading sources... [ 54%] gen.typedefs/gen.gemdtype.GMOS_NODANDSHUFFLE
-reading sources... [ 55%] gen.typedefs/gen.gemdtype.GMOS_RAW
-reading sources... [ 55%] gen.typedefs/gen.gemdtype.GMOS_S
-reading sources... [ 56%] gen.typedefs/gen.gemdtype.GMOS_SPECT
-reading sources... [ 57%] gen.typedefs/gen.gemdtype.GNIRS
-reading sources... [ 58%] gen.typedefs/gen.gemdtype.GNIRS_IMAGE
-reading sources... [ 58%] gen.typedefs/gen.gemdtype.GNIRS_PINHOLE
-reading sources... [ 59%] gen.typedefs/gen.gemdtype.GNIRS_SPECT
-reading sources... [ 60%] gen.typedefs/gen.gemdtype.GSAOI
-reading sources... [ 60%] gen.typedefs/gen.gemdtype.GSAOI_CAL
-reading sources... [ 61%] gen.typedefs/gen.gemdtype.GSAOI_DARK
-reading sources... [ 62%] gen.typedefs/gen.gemdtype.GSAOI_IMAGE
-reading sources... [ 62%] gen.typedefs/gen.gemdtype.GSAOI_IMAGE_FLAT
-reading sources... [ 63%] gen.typedefs/gen.gemdtype.GSAOI_IMAGE_TWILIGHT
-reading sources... [ 64%] gen.typedefs/gen.gemdtype.HRWFS
-reading sources... [ 65%] gen.typedefs/gen.gemdtype.IFU
-reading sources... [ 65%] gen.typedefs/gen.gemdtype.IMAGE
-reading sources... [ 66%] gen.typedefs/gen.gemdtype.LS
-reading sources... [ 67%] gen.typedefs/gen.gemdtype.MICHELLE
-reading sources... [ 67%] gen.typedefs/gen.gemdtype.MICHELLE_IMAGE
-reading sources... [ 68%] gen.typedefs/gen.gemdtype.MICHELLE_SPECT
-reading sources... [ 69%] gen.typedefs/gen.gemdtype.MOS
-reading sources... [ 69%] gen.typedefs/gen.gemdtype.NEEDSFLUXCAL
-reading sources... [ 70%] gen.typedefs/gen.gemdtype.NICI
-reading sources... [ 71%] gen.typedefs/gen.gemdtype.NICI_ADI_B
-reading sources... [ 72%] gen.typedefs/gen.gemdtype.NICI_ADI_R
-reading sources... [ 72%] gen.typedefs/gen.gemdtype.NICI_ASDI
-reading sources... [ 73%] gen.typedefs/gen.gemdtype.NICI_CAL
-reading sources... [ 74%] gen.typedefs/gen.gemdtype.NICI_DARK
-reading sources... [ 74%] gen.typedefs/gen.gemdtype.NICI_DARK_CURRENT
-reading sources... [ 75%] gen.typedefs/gen.gemdtype.NICI_DARK_OLD
-reading sources... [ 76%] gen.typedefs/gen.gemdtype.NICI_FLAT
-reading sources... [ 76%] gen.typedefs/gen.gemdtype.NICI_IMAGE
-reading sources... [ 77%] gen.typedefs/gen.gemdtype.NICI_SDI
-reading sources... [ 78%] gen.typedefs/gen.gemdtype.NIFS
-reading sources... [ 79%] gen.typedefs/gen.gemdtype.NIFS_IMAGE
-reading sources... [ 79%] gen.typedefs/gen.gemdtype.NIFS_RONCHI
-reading sources... [ 80%] gen.typedefs/gen.gemdtype.NIFS_SPECT
-reading sources... [ 81%] gen.typedefs/gen.gemdtype.NIRI
-reading sources... [ 81%] gen.typedefs/gen.gemdtype.NIRI_DARK
-reading sources... [ 82%] gen.typedefs/gen.gemdtype.NIRI_IMAGE
-reading sources... [ 83%] gen.typedefs/gen.gemdtype.NIRI_IMAGE_FLAT
-reading sources... [ 83%] gen.typedefs/gen.gemdtype.NIRI_IMAGE_TWILIGHT
-reading sources... [ 84%] gen.typedefs/gen.gemdtype.NIRI_SPECT
-reading sources... [ 85%] gen.typedefs/gen.gemdtype.NODCHOP
-reading sources... [ 86%] gen.typedefs/gen.gemdtype.NON_SIDEREAL
-reading sources... [ 86%] gen.typedefs/gen.gemdtype.OSCIR
-reading sources... [ 87%] gen.typedefs/gen.gemdtype.OVERSCAN_SUBTRACTED
-reading sources... [ 88%] gen.typedefs/gen.gemdtype.OVERSCAN_TRIMMED
-reading sources... [ 88%] gen.typedefs/gen.gemdtype.PHOENIX
-reading sources... [ 89%] gen.typedefs/gen.gemdtype.PREPARED
-reading sources... [ 90%] gen.typedefs/gen.gemdtype.PROCESSED_ARC
+reading sources... [  1%] chapter_ReductionContextClass
+reading sources... [  2%] gen.typedefs/gen.TypeSourceAppendix
+reading sources... [  3%] gen.typedefs/gen.gemdtype.ACQUISITION
+reading sources... [  4%] gen.typedefs/gen.gemdtype.CAL
+reading sources... [  5%] gen.typedefs/gen.gemdtype.F2
+reading sources... [  6%] gen.typedefs/gen.gemdtype.F2_CAL
+reading sources... [  7%] gen.typedefs/gen.gemdtype.F2_DARK
+reading sources... [  8%] gen.typedefs/gen.gemdtype.F2_IMAGE
+reading sources... [  9%] gen.typedefs/gen.gemdtype.F2_IMAGE_FLAT
+reading sources... [ 10%] gen.typedefs/gen.gemdtype.F2_IMAGE_TWILIGHT
+reading sources... [ 10%] gen.typedefs/gen.gemdtype.F2_LS
+reading sources... [ 11%] gen.typedefs/gen.gemdtype.F2_LS_ARC
+reading sources... [ 12%] gen.typedefs/gen.gemdtype.F2_LS_FLAT
+reading sources... [ 13%] gen.typedefs/gen.gemdtype.F2_LS_TWILIGHT
+reading sources... [ 14%] gen.typedefs/gen.gemdtype.F2_MOS
+reading sources... [ 15%] gen.typedefs/gen.gemdtype.F2_MOS_ARC
+reading sources... [ 16%] gen.typedefs/gen.gemdtype.F2_MOS_FLAT
+reading sources... [ 17%] gen.typedefs/gen.gemdtype.F2_MOS_TWILIGHT
+reading sources... [ 18%] gen.typedefs/gen.gemdtype.F2_SPECT
+reading sources... [ 19%] gen.typedefs/gen.gemdtype.FRINGE
+reading sources... [ 20%] gen.typedefs/gen.gemdtype.GEMINI
+reading sources... [ 20%] gen.typedefs/gen.gemdtype.GEMINI_NORTH
+reading sources... [ 21%] gen.typedefs/gen.gemdtype.GEMINI_SOUTH
+reading sources... [ 22%] gen.typedefs/gen.gemdtype.GENERIC
+reading sources... [ 23%] gen.typedefs/gen.gemdtype.GMOS
+reading sources... [ 24%] gen.typedefs/gen.gemdtype.GMOS_BIAS
+reading sources... [ 25%] gen.typedefs/gen.gemdtype.GMOS_CAL
+reading sources... [ 26%] gen.typedefs/gen.gemdtype.GMOS_DARK
+reading sources... [ 27%] gen.typedefs/gen.gemdtype.GMOS_IFU
+reading sources... [ 28%] gen.typedefs/gen.gemdtype.GMOS_IFU_ARC
+reading sources... [ 29%] gen.typedefs/gen.gemdtype.GMOS_IFU_BLUE
+reading sources... [ 30%] gen.typedefs/gen.gemdtype.GMOS_IFU_FLAT
+reading sources... [ 30%] gen.typedefs/gen.gemdtype.GMOS_IFU_RED
+reading sources... [ 31%] gen.typedefs/gen.gemdtype.GMOS_IFU_TWILIGHT
+reading sources... [ 32%] gen.typedefs/gen.gemdtype.GMOS_IFU_TWO
+reading sources... [ 33%] gen.typedefs/gen.gemdtype.GMOS_IMAGE
+reading sources... [ 34%] gen.typedefs/gen.gemdtype.GMOS_IMAGE_FLAT
+reading sources... [ 35%] gen.typedefs/gen.gemdtype.GMOS_IMAGE_TWILIGHT
+reading sources... [ 36%] gen.typedefs/gen.gemdtype.GMOS_LS
+reading sources... [ 37%] gen.typedefs/gen.gemdtype.GMOS_LS_ARC
+reading sources... [ 38%] gen.typedefs/gen.gemdtype.GMOS_LS_FLAT
+reading sources... [ 39%] gen.typedefs/gen.gemdtype.GMOS_LS_TWILIGHT
+reading sources... [ 40%] gen.typedefs/gen.gemdtype.GMOS_MOS
+reading sources... [ 40%] gen.typedefs/gen.gemdtype.GMOS_MOS_ARC
+reading sources... [ 41%] gen.typedefs/gen.gemdtype.GMOS_MOS_FLAT
+reading sources... [ 42%] gen.typedefs/gen.gemdtype.GMOS_MOS_TWILIGHT
+reading sources... [ 43%] gen.typedefs/gen.gemdtype.GMOS_N
+reading sources... [ 44%] gen.typedefs/gen.gemdtype.GMOS_NODANDSHUFFLE
+reading sources... [ 45%] gen.typedefs/gen.gemdtype.GMOS_RAW
+reading sources... [ 46%] gen.typedefs/gen.gemdtype.GMOS_S
+reading sources... [ 47%] gen.typedefs/gen.gemdtype.GMOS_SPECT
+reading sources... [ 48%] gen.typedefs/gen.gemdtype.GNIRS
+reading sources... [ 49%] gen.typedefs/gen.gemdtype.GNIRS_IMAGE
+reading sources... [ 50%] gen.typedefs/gen.gemdtype.GNIRS_PINHOLE
+reading sources... [ 50%] gen.typedefs/gen.gemdtype.GNIRS_SPECT
+reading sources... [ 51%] gen.typedefs/gen.gemdtype.GSAOI
+reading sources... [ 52%] gen.typedefs/gen.gemdtype.GSAOI_CAL
+reading sources... [ 53%] gen.typedefs/gen.gemdtype.GSAOI_DARK
+reading sources... [ 54%] gen.typedefs/gen.gemdtype.GSAOI_IMAGE
+reading sources... [ 55%] gen.typedefs/gen.gemdtype.GSAOI_IMAGE_FLAT
+reading sources... [ 56%] gen.typedefs/gen.gemdtype.GSAOI_IMAGE_TWILIGHT
+reading sources... [ 57%] gen.typedefs/gen.gemdtype.HRWFS
+reading sources... [ 58%] gen.typedefs/gen.gemdtype.IMAGE
+reading sources... [ 59%] gen.typedefs/gen.gemdtype.MICHELLE
+reading sources... [ 60%] gen.typedefs/gen.gemdtype.MICHELLE_IMAGE
+reading sources... [ 60%] gen.typedefs/gen.gemdtype.MICHELLE_SPECT
+reading sources... [ 61%] gen.typedefs/gen.gemdtype.MOS
+reading sources... [ 62%] gen.typedefs/gen.gemdtype.NEEDSFLUXCAL
+reading sources... [ 63%] gen.typedefs/gen.gemdtype.NICI
+reading sources... [ 64%] gen.typedefs/gen.gemdtype.NICI_ADI_B
+reading sources... [ 65%] gen.typedefs/gen.gemdtype.NICI_ADI_R
+reading sources... [ 66%] gen.typedefs/gen.gemdtype.NICI_ASDI
+reading sources... [ 67%] gen.typedefs/gen.gemdtype.NICI_CAL
+reading sources... [ 68%] gen.typedefs/gen.gemdtype.NICI_DARK
+reading sources... [ 69%] gen.typedefs/gen.gemdtype.NICI_DARK_CURRENT
+reading sources... [ 70%] gen.typedefs/gen.gemdtype.NICI_DARK_OLD
+reading sources... [ 70%] gen.typedefs/gen.gemdtype.NICI_FLAT
+reading sources... [ 71%] gen.typedefs/gen.gemdtype.NICI_IMAGE
+reading sources... [ 72%] gen.typedefs/gen.gemdtype.NICI_SDI
+reading sources... [ 73%] gen.typedefs/gen.gemdtype.NIFS
+reading sources... [ 74%] gen.typedefs/gen.gemdtype.NIFS_IMAGE
+reading sources... [ 75%] gen.typedefs/gen.gemdtype.NIFS_RONCHI
+reading sources... [ 76%] gen.typedefs/gen.gemdtype.NIFS_SPECT
+reading sources... [ 77%] gen.typedefs/gen.gemdtype.NIRI
+reading sources... [ 78%] gen.typedefs/gen.gemdtype.NIRI_DARK
+reading sources... [ 79%] gen.typedefs/gen.gemdtype.NIRI_IMAGE
+reading sources... [ 80%] gen.typedefs/gen.gemdtype.NIRI_IMAGE_FLAT
+reading sources... [ 80%] gen.typedefs/gen.gemdtype.NIRI_IMAGE_TWILIGHT
+reading sources... [ 81%] gen.typedefs/gen.gemdtype.NIRI_SPECT
+reading sources... [ 82%] gen.typedefs/gen.gemdtype.NODCHOP
+reading sources... [ 83%] gen.typedefs/gen.gemdtype.NON_SIDEREAL
+reading sources... [ 84%] gen.typedefs/gen.gemdtype.OSCIR
+reading sources... [ 85%] gen.typedefs/gen.gemdtype.OVERSCAN_SUBTRACTED
+reading sources... [ 86%] gen.typedefs/gen.gemdtype.OVERSCAN_TRIMMED
+reading sources... [ 87%] gen.typedefs/gen.gemdtype.PHOENIX
+reading sources... [ 88%] gen.typedefs/gen.gemdtype.PREPARED
+reading sources... [ 89%] gen.typedefs/gen.gemdtype.PROCESSED_ARC
 reading sources... [ 90%] gen.typedefs/gen.gemdtype.PROCESSED_BIAS
-reading sources... [ 91%] gen.typedefs/gen.gemdtype.PROCESSED_DARK
-reading sources... [ 92%] gen.typedefs/gen.gemdtype.PROCESSED_FLAT
-reading sources... [ 93%] gen.typedefs/gen.gemdtype.PROCESSED_FRINGE
+reading sources... [ 90%] gen.typedefs/gen.gemdtype.PROCESSED_DARK
+reading sources... [ 91%] gen.typedefs/gen.gemdtype.PROCESSED_FLAT
+reading sources... [ 92%] gen.typedefs/gen.gemdtype.PROCESSED_FRINGE
 reading sources... [ 93%] gen.typedefs/gen.gemdtype.QUIRC
 reading sources... [ 94%] gen.typedefs/gen.gemdtype.RAW
 reading sources... [ 95%] gen.typedefs/gen.gemdtype.SIDEREAL
-reading sources... [ 95%] gen.typedefs/gen.gemdtype.SPECT
-reading sources... [ 96%] gen.typedefs/gen.gemdtype.TRECS
-reading sources... [ 97%] gen.typedefs/gen.gemdtype.TRECS_IMAGE
-reading sources... [ 97%] gen.typedefs/gen.gemdtype.TRECS_SPECT
-reading sources... [ 98%] gen.typedefs/gen.gemdtype.UNPREPARED
-reading sources... [ 99%] index
-reading sources... [100%] startingTheConfig
+reading sources... [ 96%] gen.typedefs/gen.gemdtype.SPECT
+reading sources... [ 97%] gen.typedefs/gen.gemdtype.TRECS
+reading sources... [ 98%] gen.typedefs/gen.gemdtype.TRECS_IMAGE
+reading sources... [ 99%] gen.typedefs/gen.gemdtype.TRECS_SPECT
+reading sources... [100%] gen.typedefs/gen.gemdtype.UNPREPARED
 
-/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst:11: (WARNING/2) Literal block expected; none found.
-
-/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst:228: (WARNING/2) Title underline too short.
-
-re_header_keys(..)
-#################
-
-/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/chapter_AstroDataClass.rst:228: (WARNING/2) Title underline too short.
-
-re_header_keys(..)
-#################
-
-/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gatref/GATREF-overview.rst:4: (ERROR/3) Unknown target name: "adconfig".
-
-/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.ADMANUAL_ADConcepts.rst:708: (WARNING/2) Explicit markup ends without a blank line; unexpected unindent.
-
-/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.AstroDataLexicon.rst:13: (WARNING/2) Bullet list ends without a blank line; unexpected unindent.
-
-/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.AstroDataLexicon.rst:28: (ERROR/3) Unexpected indentation.
-
-looking for now-outdated files... none found
+/data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/GENERIC-tree-pd.png
+/data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/GEMINI-tree-pd.png
+/data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/GMOS-tree-pd.png
+/data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/GNIRS-tree-pd.png
+/data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/NICI-tree-pd.png
+/data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/NIFS-tree-pd.png
+/data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/NIRI-tree-pd.png
+/data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/MICHELLE-tree-pd.png
+/data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/RAW-tree-pd.png
+/data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/appendix_typegraphs.rst:: WARNING: image file not readable: images_types/TRECS-tree-pd.png
+looking for now-outdated files... 13 found
 pickling environment... done
-checking consistency... /home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/chapter_Gemini_Types.rst:: WARNING: document isn't included in any toctree
-/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.ADMANUAL-AccessingPyfitsObjects.rst:: WARNING: document isn't included in any toctree
-/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.ADMANUAL_ADSubdata.rst:: WARNING: document isn't included in any toctree
-/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.ADMANUAL_SingleHDUAD.rst:: WARNING: document isn't included in any toctree
-/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.AstroDataLexicon.rst:: WARNING: document isn't included in any toctree
-/home/callen/SVN-AD/gemini_python/trunk/astrodata/doc/docscripts/source/gen.AstroDataPackageOverview.rst:: WARNING: document isn't included in any toctree
+checking consistency... /data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/chapter_Gemini_Types.rst:: WARNING: document isn't included in any toctree
+/data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/gen.ADMANUAL-AccessingPyfitsObjects.rst:: WARNING: document isn't included in any toctree
+/data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/gen.ADMANUAL_ADSubdata.rst:: WARNING: document isn't included in any toctree
+/data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/gen.ADMANUAL_SingleHDUAD.rst:: WARNING: document isn't included in any toctree
+/data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/gen.AstroDataLexicon.rst:: WARNING: document isn't included in any toctree
+/data/eclipse/workspace/gemini_python/astrodata/doc/docscripts/source/gen.AstroDataPackageOverview.rst:: WARNING: document isn't included in any toctree
 done
 preparing documents... done
 writing output... [  0%] appendix_typegraphs
-writing output... [  1%] chapter_AstroDataClass
-writing output... [  2%] chapter_Gemini_Types
+writing output... [  1%] chapter_Gemini_Types
 writing output... [  2%] chapter_ReductionContextClass
 writing output... [  3%] chapter_intro
-writing output... [  4%] configElements
+writing output... [  3%] configElements
 writing output... [  4%] creatingADescriptor
 writing output... [  5%] creatingAPrimitive
 writing output... [  6%] creatingAnAstroDataType
-writing output... [  6%] developmentGuide
+writing output... [  7%] developmentGuide
 writing output... [  7%] documentBrief
 writing output... [  8%] gatref/GATREF-introduction
 writing output... [  9%] gatref/GATREF-overview
-writing output... [  9%] gatref/gatrefdocbrief
+writing output... [ 10%] gatref/gatrefdocbrief
 writing output... [ 10%] gatref/gen.GATREF-Audience
 writing output... [ 11%] gatref/gen.GATREF-Purpose
-writing output... [ 11%] gatref/gen.GATREF-RevisionHistory
-writing output... [ 12%] gen.ADMANUAL-ADSubdata
-writing output... [ 13%] gen.ADMANUAL-AccessingPyfitsObjects
-writing output... [ 13%] gen.ADMANUAL_ADConcepts
-writing output... [ 14%] gen.ADMANUAL_ADSubdata
-writing output... [ 15%] gen.ADMANUAL_Purpose
-writing output... [ 16%] gen.ADMANUAL_RevisionHistory
-writing output... [ 16%] gen.ADMANUAL_SingleHDUAD
-writing output... [ 17%] gen.AstroDataLexicon
-writing output... [ 18%] gen.AstroDataPackageOverview
-writing output... [ 18%] gen.typedefs/gen.TypeSourceAppendix
-writing output... [ 19%] gen.typedefs/gen.gemdtype.ACQUISITION
-writing output... [ 20%] gen.typedefs/gen.gemdtype.AT_ZENITH
-writing output... [ 20%] gen.typedefs/gen.gemdtype.AZEL_TARGET
-writing output... [ 21%] gen.typedefs/gen.gemdtype.BIAS
-writing output... [ 22%] gen.typedefs/gen.gemdtype.CAL
-writing output... [ 23%] gen.typedefs/gen.gemdtype.DARK
-writing output... [ 23%] gen.typedefs/gen.gemdtype.F2
-writing output... [ 24%] gen.typedefs/gen.gemdtype.F2_CAL
-writing output... [ 25%] gen.typedefs/gen.gemdtype.F2_DARK
-writing output... [ 25%] gen.typedefs/gen.gemdtype.F2_IMAGE
-writing output... [ 26%] gen.typedefs/gen.gemdtype.F2_IMAGE_FLAT
-writing output... [ 27%] gen.typedefs/gen.gemdtype.F2_IMAGE_TWILIGHT
-writing output... [ 27%] gen.typedefs/gen.gemdtype.F2_LS
-writing output... [ 28%] gen.typedefs/gen.gemdtype.F2_LS_ARC
-writing output... [ 29%] gen.typedefs/gen.gemdtype.F2_LS_FLAT
-writing output... [ 30%] gen.typedefs/gen.gemdtype.F2_LS_TWILIGHT
-writing output... [ 30%] gen.typedefs/gen.gemdtype.F2_MOS
-writing output... [ 31%] gen.typedefs/gen.gemdtype.F2_MOS_ARC
-writing output... [ 32%] gen.typedefs/gen.gemdtype.F2_MOS_FLAT
-writing output... [ 32%] gen.typedefs/gen.gemdtype.F2_MOS_TWILIGHT
-writing output... [ 33%] gen.typedefs/gen.gemdtype.F2_SPECT
-writing output... [ 34%] gen.typedefs/gen.gemdtype.FLAT
-writing output... [ 34%] gen.typedefs/gen.gemdtype.FRINGE
-writing output... [ 35%] gen.typedefs/gen.gemdtype.GEMINI
-writing output... [ 36%] gen.typedefs/gen.gemdtype.GEMINI_NORTH
-writing output... [ 37%] gen.typedefs/gen.gemdtype.GEMINI_SOUTH
-writing output... [ 37%] gen.typedefs/gen.gemdtype.GENERIC
-writing output... [ 38%] gen.typedefs/gen.gemdtype.GMOS
-writing output... [ 39%] gen.typedefs/gen.gemdtype.GMOS_BIAS
-writing output... [ 39%] gen.typedefs/gen.gemdtype.GMOS_CAL
-writing output... [ 40%] gen.typedefs/gen.gemdtype.GMOS_DARK
-writing output... [ 41%] gen.typedefs/gen.gemdtype.GMOS_IFU
-writing output... [ 41%] gen.typedefs/gen.gemdtype.GMOS_IFU_ARC
-writing output... [ 42%] gen.typedefs/gen.gemdtype.GMOS_IFU_BLUE
-writing output... [ 43%] gen.typedefs/gen.gemdtype.GMOS_IFU_FLAT
-writing output... [ 44%] gen.typedefs/gen.gemdtype.GMOS_IFU_RED
-writing output... [ 44%] gen.typedefs/gen.gemdtype.GMOS_IFU_TWILIGHT
-writing output... [ 45%] gen.typedefs/gen.gemdtype.GMOS_IFU_TWO
-writing output... [ 46%] gen.typedefs/gen.gemdtype.GMOS_IMAGE
-writing output... [ 46%] gen.typedefs/gen.gemdtype.GMOS_IMAGE_FLAT
-writing output... [ 47%] gen.typedefs/gen.gemdtype.GMOS_IMAGE_TWILIGHT
-writing output... [ 48%] gen.typedefs/gen.gemdtype.GMOS_LS
-writing output... [ 48%] gen.typedefs/gen.gemdtype.GMOS_LS_ARC
-writing output... [ 49%] gen.typedefs/gen.gemdtype.GMOS_LS_FLAT
-writing output... [ 50%] gen.typedefs/gen.gemdtype.GMOS_LS_TWILIGHT
-writing output... [ 51%] gen.typedefs/gen.gemdtype.GMOS_MOS
-writing output... [ 51%] gen.typedefs/gen.gemdtype.GMOS_MOS_ARC
-writing output... [ 52%] gen.typedefs/gen.gemdtype.GMOS_MOS_FLAT
-writing output... [ 53%] gen.typedefs/gen.gemdtype.GMOS_MOS_TWILIGHT
-writing output... [ 53%] gen.typedefs/gen.gemdtype.GMOS_N
-writing output... [ 54%] gen.typedefs/gen.gemdtype.GMOS_NODANDSHUFFLE
-writing output... [ 55%] gen.typedefs/gen.gemdtype.GMOS_RAW
-writing output... [ 55%] gen.typedefs/gen.gemdtype.GMOS_S
-writing output... [ 56%] gen.typedefs/gen.gemdtype.GMOS_SPECT
-writing output... [ 57%] gen.typedefs/gen.gemdtype.GNIRS
-writing output... [ 58%] gen.typedefs/gen.gemdtype.GNIRS_IMAGE
-writing output... [ 58%] gen.typedefs/gen.gemdtype.GNIRS_PINHOLE
-writing output... [ 59%] gen.typedefs/gen.gemdtype.GNIRS_SPECT
-writing output... [ 60%] gen.typedefs/gen.gemdtype.GSAOI
-writing output... [ 60%] gen.typedefs/gen.gemdtype.GSAOI_CAL
-writing output... [ 61%] gen.typedefs/gen.gemdtype.GSAOI_DARK
-writing output... [ 62%] gen.typedefs/gen.gemdtype.GSAOI_IMAGE
-writing output... [ 62%] gen.typedefs/gen.gemdtype.GSAOI_IMAGE_FLAT
-writing output... [ 63%] gen.typedefs/gen.gemdtype.GSAOI_IMAGE_TWILIGHT
-writing output... [ 64%] gen.typedefs/gen.gemdtype.HRWFS
-writing output... [ 65%] gen.typedefs/gen.gemdtype.IFU
-writing output... [ 65%] gen.typedefs/gen.gemdtype.IMAGE
-writing output... [ 66%] gen.typedefs/gen.gemdtype.LS
-writing output... [ 67%] gen.typedefs/gen.gemdtype.MICHELLE
-writing output... [ 67%] gen.typedefs/gen.gemdtype.MICHELLE_IMAGE
-writing output... [ 68%] gen.typedefs/gen.gemdtype.MICHELLE_SPECT
-writing output... [ 69%] gen.typedefs/gen.gemdtype.MOS
-writing output... [ 69%] gen.typedefs/gen.gemdtype.NEEDSFLUXCAL
-writing output... [ 70%] gen.typedefs/gen.gemdtype.NICI
-writing output... [ 71%] gen.typedefs/gen.gemdtype.NICI_ADI_B
-writing output... [ 72%] gen.typedefs/gen.gemdtype.NICI_ADI_R
-writing output... [ 72%] gen.typedefs/gen.gemdtype.NICI_ASDI
-writing output... [ 73%] gen.typedefs/gen.gemdtype.NICI_CAL
-writing output... [ 74%] gen.typedefs/gen.gemdtype.NICI_DARK
-writing output... [ 74%] gen.typedefs/gen.gemdtype.NICI_DARK_CURRENT
-writing output... [ 75%] gen.typedefs/gen.gemdtype.NICI_DARK_OLD
-writing output... [ 76%] gen.typedefs/gen.gemdtype.NICI_FLAT
-writing output... [ 76%] gen.typedefs/gen.gemdtype.NICI_IMAGE
-writing output... [ 77%] gen.typedefs/gen.gemdtype.NICI_SDI
-writing output... [ 78%] gen.typedefs/gen.gemdtype.NIFS
-writing output... [ 79%] gen.typedefs/gen.gemdtype.NIFS_IMAGE
-writing output... [ 79%] gen.typedefs/gen.gemdtype.NIFS_RONCHI
-writing output... [ 80%] gen.typedefs/gen.gemdtype.NIFS_SPECT
-writing output... [ 81%] gen.typedefs/gen.gemdtype.NIRI
-writing output... [ 81%] gen.typedefs/gen.gemdtype.NIRI_DARK
-writing output... [ 82%] gen.typedefs/gen.gemdtype.NIRI_IMAGE
-writing output... [ 83%] gen.typedefs/gen.gemdtype.NIRI_IMAGE_FLAT
-writing output... [ 83%] gen.typedefs/gen.gemdtype.NIRI_IMAGE_TWILIGHT
-writing output... [ 84%] gen.typedefs/gen.gemdtype.NIRI_SPECT
-writing output... [ 85%] gen.typedefs/gen.gemdtype.NODCHOP
-writing output... [ 86%] gen.typedefs/gen.gemdtype.NON_SIDEREAL
-writing output... [ 86%] gen.typedefs/gen.gemdtype.OSCIR
-writing output... [ 87%] gen.typedefs/gen.gemdtype.OVERSCAN_SUBTRACTED
-writing output... [ 88%] gen.typedefs/gen.gemdtype.OVERSCAN_TRIMMED
-writing output... [ 88%] gen.typedefs/gen.gemdtype.PHOENIX
-writing output... [ 89%] gen.typedefs/gen.gemdtype.PREPARED
-writing output... [ 90%] gen.typedefs/gen.gemdtype.PROCESSED_ARC
-writing output... [ 90%] gen.typedefs/gen.gemdtype.PROCESSED_BIAS
-writing output... [ 91%] gen.typedefs/gen.gemdtype.PROCESSED_DARK
-writing output... [ 92%] gen.typedefs/gen.gemdtype.PROCESSED_FLAT
-writing output... [ 93%] gen.typedefs/gen.gemdtype.PROCESSED_FRINGE
-writing output... [ 93%] gen.typedefs/gen.gemdtype.QUIRC
-writing output... [ 94%] gen.typedefs/gen.gemdtype.RAW
-writing output... [ 95%] gen.typedefs/gen.gemdtype.SIDEREAL
+writing output... [ 12%] gatref/gen.GATREF-RevisionHistory
+writing output... [ 13%] gen.ADMANUAL_Purpose
+writing output... [ 14%] gen.ADMANUAL_RevisionHistory
+writing output... [ 14%] gen.typedefs/gen.TypeSourceAppendix
+writing output... [ 15%] gen.typedefs/gen.gemdtype.ACQUISITION
+writing output... [ 16%] gen.typedefs/gen.gemdtype.CAL
+writing output... [ 17%] gen.typedefs/gen.gemdtype.F2
+writing output... [ 17%] gen.typedefs/gen.gemdtype.F2_CAL
+writing output... [ 18%] gen.typedefs/gen.gemdtype.F2_DARK
+writing output... [ 19%] gen.typedefs/gen.gemdtype.F2_IMAGE
+writing output... [ 20%] gen.typedefs/gen.gemdtype.F2_IMAGE_FLAT
+writing output... [ 21%] gen.typedefs/gen.gemdtype.F2_IMAGE_TWILIGHT
+writing output... [ 21%] gen.typedefs/gen.gemdtype.F2_LS
+writing output... [ 22%] gen.typedefs/gen.gemdtype.F2_LS_ARC
+writing output... [ 23%] gen.typedefs/gen.gemdtype.F2_LS_FLAT
+writing output... [ 24%] gen.typedefs/gen.gemdtype.F2_LS_TWILIGHT
+writing output... [ 25%] gen.typedefs/gen.gemdtype.F2_MOS
+writing output... [ 25%] gen.typedefs/gen.gemdtype.F2_MOS_ARC
+writing output... [ 26%] gen.typedefs/gen.gemdtype.F2_MOS_FLAT
+writing output... [ 27%] gen.typedefs/gen.gemdtype.F2_MOS_TWILIGHT
+writing output... [ 28%] gen.typedefs/gen.gemdtype.F2_SPECT
+writing output... [ 28%] gen.typedefs/gen.gemdtype.FRINGE
+writing output... [ 29%] gen.typedefs/gen.gemdtype.GEMINI
+writing output... [ 30%] gen.typedefs/gen.gemdtype.GEMINI_NORTH
+writing output... [ 31%] gen.typedefs/gen.gemdtype.GEMINI_SOUTH
+writing output... [ 32%] gen.typedefs/gen.gemdtype.GENERIC
+writing output... [ 32%] gen.typedefs/gen.gemdtype.GMOS
+writing output... [ 33%] gen.typedefs/gen.gemdtype.GMOS_BIAS
+writing output... [ 34%] gen.typedefs/gen.gemdtype.GMOS_CAL
+writing output... [ 35%] gen.typedefs/gen.gemdtype.GMOS_DARK
+writing output... [ 35%] gen.typedefs/gen.gemdtype.GMOS_IFU
+writing output... [ 36%] gen.typedefs/gen.gemdtype.GMOS_IFU_ARC
+writing output... [ 37%] gen.typedefs/gen.gemdtype.GMOS_IFU_BLUE
+writing output... [ 38%] gen.typedefs/gen.gemdtype.GMOS_IFU_FLAT
+writing output... [ 39%] gen.typedefs/gen.gemdtype.GMOS_IFU_RED
+writing output... [ 39%] gen.typedefs/gen.gemdtype.GMOS_IFU_TWILIGHT
+writing output... [ 40%] gen.typedefs/gen.gemdtype.GMOS_IFU_TWO
+writing output... [ 41%] gen.typedefs/gen.gemdtype.GMOS_IMAGE
+writing output... [ 42%] gen.typedefs/gen.gemdtype.GMOS_IMAGE_FLAT
+writing output... [ 42%] gen.typedefs/gen.gemdtype.GMOS_IMAGE_TWILIGHT
+writing output... [ 43%] gen.typedefs/gen.gemdtype.GMOS_LS
+writing output... [ 44%] gen.typedefs/gen.gemdtype.GMOS_LS_ARC
+writing output... [ 45%] gen.typedefs/gen.gemdtype.GMOS_LS_FLAT
+writing output... [ 46%] gen.typedefs/gen.gemdtype.GMOS_LS_TWILIGHT
+writing output... [ 46%] gen.typedefs/gen.gemdtype.GMOS_MOS
+writing output... [ 47%] gen.typedefs/gen.gemdtype.GMOS_MOS_ARC
+writing output... [ 48%] gen.typedefs/gen.gemdtype.GMOS_MOS_FLAT
+writing output... [ 49%] gen.typedefs/gen.gemdtype.GMOS_MOS_TWILIGHT
+writing output... [ 50%] gen.typedefs/gen.gemdtype.GMOS_N
+writing output... [ 50%] gen.typedefs/gen.gemdtype.GMOS_NODANDSHUFFLE
+writing output... [ 51%] gen.typedefs/gen.gemdtype.GMOS_RAW
+writing output... [ 52%] gen.typedefs/gen.gemdtype.GMOS_S
+writing output... [ 53%] gen.typedefs/gen.gemdtype.GMOS_SPECT
+writing output... [ 53%] gen.typedefs/gen.gemdtype.GNIRS
+writing output... [ 54%] gen.typedefs/gen.gemdtype.GNIRS_IMAGE
+writing output... [ 55%] gen.typedefs/gen.gemdtype.GNIRS_PINHOLE
+writing output... [ 56%] gen.typedefs/gen.gemdtype.GNIRS_SPECT
+writing output... [ 57%] gen.typedefs/gen.gemdtype.GSAOI
+writing output... [ 57%] gen.typedefs/gen.gemdtype.GSAOI_CAL
+writing output... [ 58%] gen.typedefs/gen.gemdtype.GSAOI_DARK
+writing output... [ 59%] gen.typedefs/gen.gemdtype.GSAOI_IMAGE
+writing output... [ 60%] gen.typedefs/gen.gemdtype.GSAOI_IMAGE_FLAT
+writing output... [ 60%] gen.typedefs/gen.gemdtype.GSAOI_IMAGE_TWILIGHT
+writing output... [ 61%] gen.typedefs/gen.gemdtype.HRWFS
+writing output... [ 62%] gen.typedefs/gen.gemdtype.IMAGE
+writing output... [ 63%] gen.typedefs/gen.gemdtype.MICHELLE
+writing output... [ 64%] gen.typedefs/gen.gemdtype.MICHELLE_IMAGE
+writing output... [ 64%] gen.typedefs/gen.gemdtype.MICHELLE_SPECT
+writing output... [ 65%] gen.typedefs/gen.gemdtype.MOS
+writing output... [ 66%] gen.typedefs/gen.gemdtype.NEEDSFLUXCAL
+writing output... [ 67%] gen.typedefs/gen.gemdtype.NICI
+writing output... [ 67%] gen.typedefs/gen.gemdtype.NICI_ADI_B
+writing output... [ 68%] gen.typedefs/gen.gemdtype.NICI_ADI_R
+writing output... [ 69%] gen.typedefs/gen.gemdtype.NICI_ASDI
+writing output... [ 70%] gen.typedefs/gen.gemdtype.NICI_CAL
+writing output... [ 71%] gen.typedefs/gen.gemdtype.NICI_DARK
+writing output... [ 71%] gen.typedefs/gen.gemdtype.NICI_DARK_CURRENT
+writing output... [ 72%] gen.typedefs/gen.gemdtype.NICI_DARK_OLD
+writing output... [ 73%] gen.typedefs/gen.gemdtype.NICI_FLAT
+writing output... [ 74%] gen.typedefs/gen.gemdtype.NICI_IMAGE
+writing output... [ 75%] gen.typedefs/gen.gemdtype.NICI_SDI
+writing output... [ 75%] gen.typedefs/gen.gemdtype.NIFS
+writing output... [ 76%] gen.typedefs/gen.gemdtype.NIFS_IMAGE
+writing output... [ 77%] gen.typedefs/gen.gemdtype.NIFS_RONCHI
+writing output... [ 78%] gen.typedefs/gen.gemdtype.NIFS_SPECT
+writing output... [ 78%] gen.typedefs/gen.gemdtype.NIRI
+writing output... [ 79%] gen.typedefs/gen.gemdtype.NIRI_DARK
+writing output... [ 80%] gen.typedefs/gen.gemdtype.NIRI_IMAGE
+writing output... [ 81%] gen.typedefs/gen.gemdtype.NIRI_IMAGE_FLAT
+writing output... [ 82%] gen.typedefs/gen.gemdtype.NIRI_IMAGE_TWILIGHT
+writing output... [ 82%] gen.typedefs/gen.gemdtype.NIRI_SPECT
+writing output... [ 83%] gen.typedefs/gen.gemdtype.NODCHOP
+writing output... [ 84%] gen.typedefs/gen.gemdtype.NON_SIDEREAL
+writing output... [ 85%] gen.typedefs/gen.gemdtype.OSCIR
+writing output... [ 85%] gen.typedefs/gen.gemdtype.OVERSCAN_SUBTRACTED
+writing output... [ 86%] gen.typedefs/gen.gemdtype.OVERSCAN_TRIMMED
+writing output... [ 87%] gen.typedefs/gen.gemdtype.PHOENIX
+writing output... [ 88%] gen.typedefs/gen.gemdtype.PREPARED
+writing output... [ 89%] gen.typedefs/gen.gemdtype.PROCESSED_ARC
+writing output... [ 89%] gen.typedefs/gen.gemdtype.PROCESSED_BIAS
+writing output... [ 90%] gen.typedefs/gen.gemdtype.PROCESSED_DARK
+writing output... [ 91%] gen.typedefs/gen.gemdtype.PROCESSED_FLAT
+writing output... [ 92%] gen.typedefs/gen.gemdtype.PROCESSED_FRINGE
+writing output... [ 92%] gen.typedefs/gen.gemdtype.QUIRC
+writing output... [ 93%] gen.typedefs/gen.gemdtype.RAW
+writing output... [ 94%] gen.typedefs/gen.gemdtype.SIDEREAL
 writing output... [ 95%] gen.typedefs/gen.gemdtype.SPECT
 writing output... [ 96%] gen.typedefs/gen.gemdtype.TRECS
-writing output... [ 97%] gen.typedefs/gen.gemdtype.TRECS_IMAGE
+writing output... [ 96%] gen.typedefs/gen.gemdtype.TRECS_IMAGE
 writing output... [ 97%] gen.typedefs/gen.gemdtype.TRECS_SPECT
 writing output... [ 98%] gen.typedefs/gen.gemdtype.UNPREPARED
 writing output... [ 99%] index
 writing output... [100%] startingTheConfig
 
 writing additional files... genindex search
-copying images... [ 10%] images_types/NIFS-tree-pd.png
-copying images... [ 20%] images_types/MICHELLE-tree-pd.png
-copying images... [ 30%] images_types/GMOS-tree-pd.png
-copying images... [ 40%] images_types/GEMINI-tree-pd.png
-copying images... [ 50%] images_types/NIRI-tree-pd.png
-copying images... [ 60%] images_types/NICI-tree-pd.png
-copying images... [ 70%] images_types/GENERIC-tree-pd.png
-copying images... [ 80%] images_types/RAW-tree-pd.png
-copying images... [ 90%] images_types/TRECS-tree-pd.png
-copying images... [100%] images_types/GNIRS-tree-pd.png
-
 copying static files... done
 dumping search index... done
 dumping object inventory... done
-build succeeded, 13 warnings.
+build succeeded, 16 warnings.

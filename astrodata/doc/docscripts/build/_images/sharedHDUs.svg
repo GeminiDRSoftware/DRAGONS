@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
+<svg width="26cm" height="32cm" viewBox="20 -204 520 626" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <g>
+    <g>
+      <path style="fill: #ffffff" d="M 150.387 99.6 L 237.587,99.6 L 237.587,138.8 L 193.987,148.6 L 150.387,138.8 L 150.387,99.6z"/>
+      <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 150.387 99.6 L 237.587,99.6 L 237.587,138.8 L 193.987,148.6 L 150.387,138.8 L 150.387,99.6"/>
+      <text style="fill: #000000;text-anchor:middle;font-size:12.7998;font-family:sanserif;font-style:normal;font-weight:normal" x="193.987" y="115.2">
+        <tspan x="193.987" y="115.2"></tspan>
+        <tspan x="193.987" y="131.2">hdulist</tspan>
+      </text>
+    </g>
+    <g>
+      <path style="fill: #ffffff" d="M 160.937 64.4 L 226.937,64.4 L 226.937,111.543 C 213.737,103.686 207.137,103.686 193.937,111.543 C 180.737,119.4 174.137,119.4 160.937,111.543 L 160.937,64.4z"/>
+      <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 160.937 64.4 L 226.937,64.4 L 226.937,111.543 C 213.737,103.686 207.137,103.686 193.937,111.543 C 180.737,119.4 174.137,119.4 160.937,111.543 L 160.937,64.4"/>
+      <text style="fill: #000000;text-anchor:middle;font-size:12.7998;font-family:sanserif;font-style:normal;font-weight:normal" x="193.937" y="88.0429">
+        <tspan x="193.937" y="88.0429">ad</tspan>
+      </text>
+    </g>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="33.725" y="-202" width="493" height="250"/>
+    <path style="fill: #ffffff" d="M 33.725,-202 A 12,12 0 0 0 21.725,-190 L 33.725,-190 z"/>
+    <path style="fill: #ffffff" d="M 538.725,-190 A 12,12 0 0 0 526.725,-202 L 526.725,-190 z"/>
+    <rect style="fill: #ffffff" x="21.725" y="-190" width="517" height="226"/>
+    <path style="fill: #ffffff" d="M 21.725,36 A 12,12 0 0 0 33.725,48 L 33.725,36 z"/>
+    <path style="fill: #ffffff" d="M 526.725,48 A 12,12 0 0 0 538.725,36 L 526.725,36 z"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke-dasharray: 20; stroke: #000000" x1="33.725" y1="-202" x2="526.725" y2="-202"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke-dasharray: 20; stroke: #000000" x1="33.725" y1="48" x2="526.725" y2="48"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke-dasharray: 20; stroke: #000000" d="M 33.725,-202 A 12,12 0 0 0 21.725,-190"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke-dasharray: 20; stroke: #000000" d="M 538.725,-190 A 12,12 0 0 0 526.725,-202"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke-dasharray: 20; stroke: #000000" x1="21.725" y1="-190" x2="21.725" y2="36"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke-dasharray: 20; stroke: #000000" x1="538.725" y1="-190" x2="538.725" y2="36"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke-dasharray: 20; stroke: #000000" d="M 21.725,36 A 12,12 0 0 0 33.725,48"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke-dasharray: 20; stroke: #000000" d="M 526.725,48 A 12,12 0 0 0 538.725,36"/>
+    <text style="fill: #000000;text-anchor:start;font-size:12.7998;font-family:sanserif;font-style:normal;font-weight:normal" x="40.725" y="-169.1">
+      <tspan x="40.725" y="-169.1">Shared HDUs and AstroData Subdata</tspan>
+      <tspan x="40.725" y="-153.1"></tspan>
+      <tspan x="40.725" y="-137.1">given:</tspan>
+      <tspan x="40.725" y="-121.1"></tspan>
+      <tspan x="40.725" y="-105.1"> ad = AstroData("dataset.fits")</tspan>
+      <tspan x="40.725" y="-89.1"> adsci = ad["SCI"]</tspan>
+      <tspan x="40.725" y="-73.1"></tspan>
+      <tspan x="40.725" y="-57.1">changes to ad[("SCI",1)] will affect adsci[("SCI",1)] </tspan>
+      <tspan x="40.725" y="-41.1"></tspan>
+      <tspan x="40.725" y="-25.1">e.g. </tspan>
+      <tspan x="40.725" y="-9.1"> ad.[("SCI",1)].data[100:1000,100:1000] = 100 </tspan>
+      <tspan x="40.725" y="6.9"></tspan>
+      <tspan x="40.725" y="22.9">would set the data in adsci[("SCI",1)] as well due to shared HDUs.</tspan>
+    </text>
+  </g>
+  <text style="fill: #000000;text-anchor:start;font-size:12.7998;font-family:sanserif;font-style:normal;font-weight:normal" x="280.225" y="-77">
+    <tspan x="280.225" y="-77"></tspan>
+  </text>
+  <g>
+    <g>
+      <rect style="fill: #ffffff" x="144.312" y="143" width="98" height="38"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="144.312" y="143" width="98" height="38"/>
+      <text style="fill: #000000;text-anchor:middle;font-size:9.03097;font-family:sanserif;font-style:normal;font-weight:normal" x="193.312" y="164.756">
+        <tspan x="193.312" y="164.756">(SCI, 1) HDU</tspan>
+      </text>
+    </g>
+    <g>
+      <rect style="fill: #ffffff" x="144.312" y="191.06" width="98" height="38"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="144.312" y="191.06" width="98" height="38"/>
+      <text style="fill: #000000;text-anchor:middle;font-size:9.03097;font-family:sanserif;font-style:normal;font-weight:normal" x="193.312" y="212.816">
+        <tspan x="193.312" y="212.816">(SCI, 2) HDU</tspan>
+      </text>
+    </g>
+    <g>
+      <rect style="fill: #ffffff" x="144.312" y="239.12" width="98" height="38"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="144.312" y="239.12" width="98" height="38"/>
+      <text style="fill: #000000;text-anchor:middle;font-size:9.03097;font-family:sanserif;font-style:normal;font-weight:normal" x="193.312" y="260.876">
+        <tspan x="193.312" y="260.876">(VAR, 1) HDU</tspan>
+      </text>
+    </g>
+    <g>
+      <rect style="fill: #ffffff" x="144.312" y="287.18" width="98" height="38"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="144.312" y="287.18" width="98" height="38"/>
+      <text style="fill: #000000;text-anchor:middle;font-size:9.03097;font-family:sanserif;font-style:normal;font-weight:normal" x="193.312" y="308.936">
+        <tspan x="193.312" y="308.936">(VAR, 2) HDU</tspan>
+      </text>
+    </g>
+    <g>
+      <rect style="fill: #ffffff" x="144.312" y="335.24" width="98" height="38"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="144.312" y="335.24" width="98" height="38"/>
+      <text style="fill: #000000;text-anchor:middle;font-size:9.03097;font-family:sanserif;font-style:normal;font-weight:normal" x="193.312" y="356.996">
+        <tspan x="193.312" y="356.996">(DQ, 1) HDU</tspan>
+      </text>
+    </g>
+    <g>
+      <rect style="fill: #ffffff" x="144.312" y="383.3" width="98" height="38"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="144.312" y="383.3" width="98" height="38"/>
+      <text style="fill: #000000;text-anchor:middle;font-size:9.03097;font-family:sanserif;font-style:normal;font-weight:normal" x="193.312" y="405.056">
+        <tspan x="193.312" y="405.056">(DQ, 2) HDU</tspan>
+      </text>
+    </g>
+    <text style="fill: #000000;text-anchor:start;font-size:12.7998;font-family:sanserif;font-style:normal;font-weight:normal" x="193.312" y="210.06">
+      <tspan x="193.312" y="210.06"></tspan>
+    </text>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="328.037" y1="125" x2="251.251" y2="158.142"/>
+    <polygon style="fill: #000000" points="244.366,161.114 251.565,152.56 251.251,158.142 255.528,161.742 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="244.366,161.114 251.565,152.56 251.251,158.142 255.528,161.742 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="328.037" y1="134.8" x2="249.629" y2="203.637"/>
+    <polygon style="fill: #000000" points="243.993,208.585 248.209,198.23 249.629,203.637 254.806,205.745 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="243.993,208.585 248.209,198.23 249.629,203.637 254.806,205.745 "/>
+  </g>
+  <text style="fill: #000000;text-anchor:start;font-size:12.7998;font-family:sanserif;font-style:normal;font-weight:normal" x="193.987" y="124.1">
+    <tspan x="193.987" y="124.1"></tspan>
+  </text>
+  <g>
+    <g>
+      <path style="fill: #ffffff" d="M 327.037 99.6 L 414.237,99.6 L 414.237,138.8 L 370.637,148.6 L 327.037,138.8 L 327.037,99.6z"/>
+      <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 327.037 99.6 L 414.237,99.6 L 414.237,138.8 L 370.637,148.6 L 327.037,138.8 L 327.037,99.6"/>
+      <text style="fill: #000000;text-anchor:middle;font-size:12.7998;font-family:sanserif;font-style:normal;font-weight:normal" x="370.637" y="115.2">
+        <tspan x="370.637" y="115.2"></tspan>
+        <tspan x="370.637" y="131.2">hdulist</tspan>
+      </text>
+    </g>
+    <g>
+      <path style="fill: #ffffff" d="M 337.587 64.4 L 403.587,64.4 L 403.587,111.543 C 390.387,103.686 383.787,103.686 370.587,111.543 C 357.387,119.4 350.787,119.4 337.587,111.543 L 337.587,64.4z"/>
+      <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 337.587 64.4 L 403.587,64.4 L 403.587,111.543 C 390.387,103.686 383.787,103.686 370.587,111.543 C 357.387,119.4 350.787,119.4 337.587,111.543 L 337.587,64.4"/>
+      <text style="fill: #000000;text-anchor:middle;font-size:12.7998;font-family:sanserif;font-style:normal;font-weight:normal" x="370.587" y="88.0429">
+        <tspan x="370.587" y="88.0429">adsci</tspan>
+      </text>
+    </g>
+  </g>
+  <g>
+    <path style="fill: none; fill-opacity:0; stroke-width: 0.02; stroke-linecap: round; stroke: #000000" d="M 483.875 341.156 L 485.438,341.156 L 485.438,343.031 L 483.875,343.031 L 483.875,341.156 L 483.875,341.156"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 0.02; stroke-linecap: round; stroke: #000000" d="M 485.125 339.906 L 483.875,339.906 L 483.875,338.656 C 483.875,338.031 483.875,337.641 483.875,337.406 C 484.031,337.016 484.5,336.625 485.125,336.156 L 485.75,335.531 C 486.141,335.141 486.375,334.828 486.375,334.594 C 486.375,334.438 486.375,334.203 486.375,333.969 C 486.375,333.578 486.141,333.266 485.75,333.031 C 485.516,332.641 485.203,332.406 484.812,332.406 C 484.188,332.406 483.641,332.563 483.25,332.719 C 482.781,332.953 482.391,333.266 482,333.656 L 482,332.094 C 482.391,331.703 482.781,331.469 483.25,331.469 C 483.875,331.313 484.5,331.156 485.125,331.156 C 485.906,331.156 486.688,331.469 487.312,332.094 C 487.938,332.563 488.25,333.188 488.25,333.969 C 488.25,334.438 488.094,334.828 487.938,335.219 C 487.703,335.453 487.312,335.766 486.688,336.156 L 486.375,337.094 C 485.906,337.328 485.594,337.563 485.438,337.719 C 485.438,337.719 485.438,337.719 485.438,337.719 C 485.438,337.953 485.281,338.188 485.125,338.344 C 485.125,338.578 485.125,338.813 485.125,338.969 L 485.125,339.906 L 485.125,339.906"/>
+  </g>
+</svg>

@@ -7,13 +7,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>2. AstroData Class Reference &mdash; astrodata documentation v1.00 documentation</title>
+    <title>2. AstroData Class Reference &mdash; astrodata documentation v1.0beta documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '1.00',
+        VERSION:     '1.0beta',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -22,9 +22,9 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="astrodata documentation v1.00 documentation" href="index.html" />
+    <link rel="top" title="astrodata documentation v1.0beta documentation" href="index.html" />
     <link rel="next" title="2.5.1.1. Using Slices and “Subdata”" href="gen.ADMANUAL-ADSubdata.html" />
-    <link rel="prev" title="1.1.2. Intended Audience" href="gen.ADMANUAL_Purpose.html" /> 
+    <link rel="prev" title="1.1.2. Abbreviations Table" href="gen.ADMANUAL_Purpose.html" /> 
   </head>
   <body>
     <div class="related">
@@ -37,9 +37,9 @@
           <a href="gen.ADMANUAL-ADSubdata.html" title="2.5.1.1. Using Slices and “Subdata”"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="gen.ADMANUAL_Purpose.html" title="1.1.2. Intended Audience"
+          <a href="gen.ADMANUAL_Purpose.html" title="1.1.2. Abbreviations Table"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li> 
+        <li><a href="index.html">astrodata documentation v1.0beta documentation</a> &raquo;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar">
@@ -91,7 +91,7 @@
 <li><a class="reference internal" href="#overview">2.5.1. Overview</a><ul>
 </ul>
 </li>
-<li><a class="reference internal" href="#countexts">2.5.2. countExts(..)</a><ul>
+<li><a class="reference internal" href="#count-exts">2.5.2. count_exts(..)</a><ul>
 </ul>
 </li>
 <li><a class="reference internal" href="#the-operator">2.5.3. The [] Operator</a><ul>
@@ -129,7 +129,7 @@
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="gen.ADMANUAL_Purpose.html"
-                        title="previous chapter">1.1.2. Intended Audience</a></p>
+                        title="previous chapter">1.1.2. Abbreviations Table</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="gen.ADMANUAL-ADSubdata.html"
                         title="next chapter">2.5.1.1. Using Slices and &#8220;Subdata&#8221;</a></p>
@@ -165,14 +165,15 @@
 <ul class="simple">
 </ul>
 </div>
-<p>The following is information about the AstroData class. For descriptions of
-arguments shown for the class constructor, see AstroData.__init__(..).  This
-documentation is generated from in source docstrings. To import the
+<p>The following is information about the <tt class="docutils literal"><span class="pre">AstroData</span></tt> class. For descriptions of
+arguments shown for the class constructor, see <tt class="docutils literal"><span class="pre">AstroData.__init__(..)</span></tt>.  This
+documentation is generated from in-source docstrings. To import the
 <tt class="docutils literal"><span class="pre">AstroData</span></tt> class use:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+</pre></div>
+</div>
 <div class="section" id="astrodata-class">
 <h2>2.1. AstroData Class<a class="headerlink" href="#astrodata-class" title="Permalink to this headline">¶</a></h2>
-<blockquote>
-<div>from astrodata import AstroData</div></blockquote>
 <dl class="class">
 <dt id="astrodata.data.AstroData">
 <em class="property">class </em><tt class="descclassname">astrodata.data.</tt><tt class="descname">AstroData</tt><big>(</big><em>dataset=None</em>, <em>mode='readonly'</em>, <em>phu=None</em>, <em>header=None</em>, <em>data=None</em>, <em>store=None</em>, <em>storeClobber=False</em>, <em>exts=None</em>, <em>extInsts=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData" title="Permalink to this definition">¶</a></dt>
@@ -181,41 +182,40 @@ and provides uniform interfaces for working on datasets from different
 instruments and modes.  Configuration packages are used to describe
 the specific data characteristics, layout, and to store type-specific
 implementations.</p>
-<p>MEFs can dbe generalized as lists of header-data units, with key-value 
-pairs populating headers and pixel data populating data,
+<p>MEFs can be generalized as lists of header-data units (HDU), with key-value 
+pairs populating headers, and pixel values populating the data array.
 AstroData interprets a MEF as a single complex entity.  The individual
-&#8220;extensions&#8221; with the MEF are available using python list (&#8220;[]&#8221;) syntax and are 
-wrapped in AstroData objects (see 
-<a class="reference internal" href="#astrodata.data.AstroData.__getitem__" title="astrodata.data.AstroData.__getitem__"><tt class="xref py py-meth docutils literal"><span class="pre">AstroData.__getitem__()</span></tt></a>). AstroData uses 
-pyfits for MEF I/O and numpy for pixel manipulations.</p>
-<p>While the pyfits and numpy objects are available to the programmer, AstroData
-provides analagous methods for most pyfits functionality which allows it to
-maintain the dataset  as a cohesive whole. The programmer does however use the
-numpy pixel arrays directly for pixel manipulation.</p>
-<p>In order to identify types of dataset and provide type-specific behavior
-AstroData relies on configuration packages either in the PYTHONPATH environment
-variable or the Astrodata package environment variables, ADCONFIGPATH, or
-RECIPEPATH. The configuration (i.e. astrodata_Gemini) contains definitions for
-all  instrument-mode-specific behavior. The configuration contains type
+&#8220;extensions&#8221; within the MEF are available using Python list (&#8220;[]&#8221;) syntax; 
+they are wrapped in AstroData objects (see 
+<a class="reference internal" href="#astrodata.data.AstroData.__getitem__" title="astrodata.data.AstroData.__getitem__"><tt class="xref py py-meth docutils literal"><span class="pre">AstroData.__getitem__()</span></tt></a>). 
+AstroData uses <tt class="docutils literal"><span class="pre">pyfits</span></tt> for MEF I/O and <tt class="docutils literal"><span class="pre">numpy</span></tt> for pixel manipulations.</p>
+<p>While the <tt class="docutils literal"><span class="pre">pyfits</span></tt> and <tt class="docutils literal"><span class="pre">numpy</span></tt> objects are available to the programmer, 
+<tt class="docutils literal"><span class="pre">AstroData</span></tt> provides analogous methods for most <tt class="docutils literal"><span class="pre">pyfits</span></tt> functionalities 
+which allows it to maintain the dataset  as a cohesive whole. The programmer 
+does however use the <tt class="docutils literal"><span class="pre">numpy.ndarrays</span></tt> directly for pixel manipulation.</p>
+<p>In order to identify types of dataset and provide type-specific behavior,
+<tt class="docutils literal"><span class="pre">AstroData</span></tt> relies on configuration packages either in the <tt class="docutils literal"><span class="pre">PYTHONPATH</span></tt> environment
+variable or the <tt class="docutils literal"><span class="pre">Astrodata</span></tt> package environment variables, <tt class="docutils literal"><span class="pre">ADCONFIGPATH</span></tt> and
+<tt class="docutils literal"><span class="pre">RECIPEPATH</span></tt>. A configuration package (eg. <tt class="docutils literal"><span class="pre">astrodata_Gemini</span></tt>) contains definitions for
+all instruments and modes. A configuration package contains type
 definitions, meta-data functions, information lookup tables, and any other code
 or information needed to handle specific types of dataset.</p>
-<p>This allows AstroData to manage access to the dataset for convienience and
-consistency.
-For example AstroData is able...:</p>
+<p>This allows <tt class="docutils literal"><span class="pre">AstroData</span></tt> to manage access to the dataset for convenience and
+consistency. For example, <tt class="docutils literal"><span class="pre">AstroData</span></tt> is able:</p>
 <ul class="simple">
-<li>... to allow reduction scripts to have easy access to dataset classification 
-information in a consistent way across all instrument-modes</li>
-<li>... to provide consistent interfaces for obtaining common meta-data across all
-instrument modes</li>
-<li>... to relates internal extensions, e.g. discriminate between science and 
-variance arrays and associate them properly</li>
-<li>... to help propagate header-data units important to the given instrument mode,
-but unknown to general purpose transformations</li>
+<li>to allow reduction scripts to have easy access to dataset classification 
+information in a consistent way across all instruments and modes;</li>
+<li>to provide consistent interfaces for obtaining common meta-data across all
+instruments and modes;</li>
+<li>to relate internal extensions, e.g. discriminate between science and 
+variance arrays and associate them properly;</li>
+<li>to help propagate header-data units important to the given instrument mode,
+but unknown to general purpose transformations.</li>
 </ul>
-<p>AstroData&#8217;s purpose in general is to provide smart dataset-oriented interfaces
-which adapt to dataset type. The primary interfaces of note are for file
-handling, dataset-type checking, and managing meta-data, but AstroData also
-integrates other functionality.</p>
+<p>In general, the purpose of <tt class="docutils literal"><span class="pre">AstroData</span></tt> is to provide smart dataset-oriented interfaces
+that adapt to dataset type. The primary interfaces are for file
+handling, dataset-type checking, and managing meta-data, but <tt class="docutils literal"><span class="pre">AstroData</span></tt> also
+integrates other functionalities.</p>
 </dd></dl>
 
 </div>
@@ -237,25 +237,25 @@ integrates other functionality.</p>
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>dataset</strong> (<em>string, AstroData, HDUList</em>) &#8211; the dataset to load, either a filename (string) path
 or URL, an
-AstroData instance, or a pyfits.HDUList</li>
-<li><strong>mode</strong> (<em>string</em>) &#8211; IO access mode, same as pyfits mode (&#8220;readonly&#8221;, &#8220;update&#8221;,
-&#8220;or append&#8221;) with one additional AstroData-specific mode, &#8220;new&#8221;.
+<tt class="docutils literal"><span class="pre">AstroData</span></tt> instance, or a <tt class="docutils literal"><span class="pre">pyfits.HDUList</span></tt></li>
+<li><strong>mode</strong> (<em>string</em>) &#8211; IO access mode, same as <tt class="docutils literal"><span class="pre">pyfits</span></tt> mode (&#8220;readonly&#8221;, &#8220;update&#8221;,
+or &#8220;append&#8221;) with one additional AstroData-specific mode, &#8220;new&#8221;.
 If the mode is &#8220;new&#8221;, and a filename is provided, the constructor
 checks that the named file does not exist on disk,
-and if it does not it creates an empty AstroData of that name 
-but does not write it to disk. Such an AstroData 
+and if it does not it creates an empty <tt class="docutils literal"><span class="pre">AstroData</span></tt> of that name 
+but does not write it to disk. Such an <tt class="docutils literal"><span class="pre">AstroData</span></tt> 
 instance is ready to have HDUs appended, and to be written to disk
-at the user&#8217;s command with &#8220;ad.write()&#8221;.</li>
-<li><strong>phu</strong> (<em>pyfits.core.Header</em>) &#8211; primary header unit. This object is propagated to all 
+at the user&#8217;s command with <tt class="docutils literal"><span class="pre">ad.write()</span></tt>.</li>
+<li><strong>phu</strong> (<em>pyfits.core.Header</em>) &#8211; Primary Header Unit. This object is propagated to all 
 astrodata sub-data ImageHDUs. Special handling is made for header
 instances that are passed in as this arg., where a phu will be 
 created and the &#8216;.header&#8217; will be assigned (ex. hdulist[0], ad.phu,
 ad[0].hdulist[0], ad[&#8216;SCI&#8217;,1].hdulist[0], ad[0].phu, 
 ad[&#8216;SCI&#8217;,1].phu, and all the previous with .header appended)</li>
-<li><strong>header</strong> &#8211; extension header for images (ex. hdulist[1].header,
-ad[0].hdulist[1].header, ad[&#8216;SCI&#8217;,1].hdulist[1].header)</li>
-<li><strong>data</strong> (<em>numpy.ndarray</em>) &#8211; the image pixel array (ex. hdulist[1].data,
-ad[0].hdulist[1].data, ad[&#8216;SCI&#8217;,1].hdulist[1].data)</li>
+<li><strong>header</strong> &#8211; extension header for images (eg. <tt class="docutils literal"><span class="pre">hdulist[1].header</span></tt>,
+<tt class="docutils literal"><span class="pre">ad[0].hdulist[1].header</span></tt>, <tt class="docutils literal"><span class="pre">ad['SCI',1].hdulist[1].header</span></tt>)</li>
+<li><strong>data</strong> (<em>numpy.ndarray</em>) &#8211; the image pixel array (eg. <tt class="docutils literal"><span class="pre">hdulist[1].data</span></tt>,
+<tt class="docutils literal"><span class="pre">ad[0].hdulist[1].data</span></tt>, <tt class="docutils literal"><span class="pre">ad['SCI',1].hdulist[1].data</span></tt>)</li>
 <li><strong>store</strong> (<em>string</em>) &#8211; directory where a copy of the original file will be 
 stored.  This is used in the special case where the
 filename is an URL to a remote fits file.  Otherwise it has
@@ -263,33 +263,33 @@ no effect.</li>
 <li><strong>storeClobber</strong> (<em>boolean</em>) &#8211; remote file handling for existing files with the
 same name.  If true will save, if not, will delete.</li>
 <li><strong>exts</strong> (<em>list</em>) &#8211; <p>(advanced) a list of extension indexes in the parent
-HDUList that this instance should refer to, given  integer or 
-(EXTNAME, EXTVER) tuples specifying each extention in the &#8220;pyfits&#8221;
+<tt class="docutils literal"><span class="pre">HDUList</span></tt> that this instance should refer to, given  integer or 
+(<tt class="docutils literal"><span class="pre">EXTNAME</span></tt>, <tt class="docutils literal"><span class="pre">EXTVER</span></tt>) tuples specifying each extension in the <tt class="docutils literal"><span class="pre">pyfits</span></tt>
 index space where the PHU is at index 0, the first data extension
-is at index 1, and so on. I.e. This is primarilly intended for 
-internal use creating &#8220;sub-data&#8221;, which are AstroData instances
+is at index 1, and so on. I.e. This is primarily intended for 
+internal use when creating &#8220;sub-data&#8221;, which are AstroData instances
 that represent a slice, or subset, of some other AstroData instance.</p>
-<p>NOTE: if present this option will override and obscure the extInsts
-argument which will be ignored.</p>
+<p>NOTE: if present, this option will override and obscure the <tt class="docutils literal"><span class="pre">extInsts</span></tt>
+argument, in other word <tt class="docutils literal"><span class="pre">extInsts</span></tt> will be ignored.</p>
 <p>Example of sub-data:</p>
 <blockquote>
-<div>sci_subdata = ad[&#8220;SCI&#8221;]</div></blockquote>
-<p>The sub-data is is created by passing &#8220;SCI&#8221; as an argument to the
+<div><tt class="docutils literal"><span class="pre">sci_subdata</span> <span class="pre">=</span> <span class="pre">ad[&quot;SCI&quot;]</span></tt></div></blockquote>
+<p>The sub-data is created by passing &#8220;SCI&#8221; as an argument to the
 constructor. The &#8216;sci_subdata&#8217; object would consist of its own 
-AstroData instance referring to it&#8217;s own HDUList, but the HDUs in
-this list would still be shared (in memory) with the &#8216;ad&#8217; object,
-and appear in its HDUList as well.</p>
+<tt class="docutils literal"><span class="pre">AstroData</span></tt> instance referring to it&#8217;s own <tt class="docutils literal"><span class="pre">HDUList</span></tt>, but the HDUs in
+this list would still be shared (in memory) with the <tt class="docutils literal"><span class="pre">ad</span></tt> object,
+and appear in its <tt class="docutils literal"><span class="pre">HDUList</span></tt> as well.</p>
 </li>
-<li><strong>extInsts</strong> (<em>list of pyfits.HDU objects</em>) &#8211; (advanced) a list of extensions this instance should contain,
-given as actual pyfits.HDU instances. NOTE: if the &#8220;exts&#8221; argument
-is also set, this argument is ignored.</li>
+<li><strong>extInsts</strong> (<em>list of pyfits.HDU objects</em>) &#8211; (advanced) A list of extensions this instance should contain,
+specified as actual <tt class="docutils literal"><span class="pre">pyfits.HDU</span></tt> instances. NOTE: if the <tt class="docutils literal"><span class="pre">exts</span></tt> argument
+is also set, <tt class="docutils literal"><span class="pre">extInsts</span></tt> is ignored.</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
 <p>The AstroData constructor constructs an in-memory representation of a
-dataset. If given a filename it uses pyfits to open the dataset, reads
+dataset. If given a filename it uses <tt class="docutils literal"><span class="pre">pyfits</span></tt> to open the dataset, reads
 the header and detects applicable types. Binary data, such as pixel
 data, is left on disk until referenced.</p>
 </dd></dl>
@@ -303,7 +303,7 @@ data, is left on disk until referenced.</p>
 </div>
 <dl class="method">
 <dt id="astrodata.data.AstroData.append">
-<tt class="descclassname">AstroData.</tt><tt class="descname">append</tt><big>(</big><em>moredata=None</em>, <em>data=None</em>, <em>header=None</em>, <em>auto_number=False</em>, <em>extname=None</em>, <em>extver=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.append" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">AstroData.</tt><tt class="descname">append</tt><big>(</big><em>moredata=None</em>, <em>data=None</em>, <em>header=None</em>, <em>auto_number=False</em>, <em>extname=None</em>, <em>extver=None</em>, <em>do_deepcopy=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.append" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -312,23 +312,27 @@ data, is left on disk until referenced.</p>
 <li><strong>moredata</strong> (<em>pyfits.HDU, pyfits.HDUList, or AstroData</em>) &#8211; either an AstroData instance, an HDUList instance, 
 or an HDU instance to add to this AstroData object.
 When present, data and header arguments will be ignored.</li>
-<li><strong>data</strong> (<em>numarray.numaraycore.NumArray</em>) &#8211; if moredata <em>is not</em> specified, data and header should 
-both be set and are used to construct a new HDU which is then 
-added to the  AstroData object. The &#8216;data&#8217; argument should be set
-to a valid numpy array.</li>
-<li><strong>header</strong> (<em>pyfits.Header</em>) &#8211; if moredata <em>is not</em> specified, data and header are used
-to make  an HDU which is then added to the HDUList associated with
-this AstroData instance. The &#8216;header&#8217; argument should be set to a
-valid pyfits.Header object.</li>
-<li><strong>auto_number</strong> (<em>boolean</em>) &#8211; auto-increment extver to fit file convention</li>
-<li><strong>extname</strong> (<em>int</em>) &#8211; extension name (ex, &#8216;SCI&#8217;, &#8216;VAR&#8217;, &#8216;DQ&#8217;)</li>
-<li><strong>extver</strong> &#8211; extension&#8217;s &#8220;extver&#8221; value</li>
+<li><strong>data</strong> (<em>numpy.ndarray</em>) &#8211; <tt class="docutils literal"><span class="pre">data</span></tt> and <tt class="docutils literal"><span class="pre">header</span></tt> are used to construct a new HDU which is then 
+added to the <tt class="docutils literal"><span class="pre">HDUList</span></tt> associated to the <tt class="docutils literal"><span class="pre">AstroData</span></tt> instance. The <tt class="docutils literal"><span class="pre">data</span></tt> 
+argument should be set
+to a valid <tt class="docutils literal"><span class="pre">numpy</span></tt> array. If <tt class="docutils literal"><span class="pre">modedata</span></tt> is not specified, <tt class="docutils literal"><span class="pre">data</span></tt> and <tt class="docutils literal"><span class="pre">header</span></tt>
+must both be set.</li>
+<li><strong>header</strong> (<em>pyfits.Header</em>) &#8211; <tt class="docutils literal"><span class="pre">data</span></tt> and <tt class="docutils literal"><span class="pre">header</span></tt> are used
+to construct a new HDU which is then added to the <tt class="docutils literal"><span class="pre">HDUList</span></tt> associated to 
+<tt class="docutils literal"><span class="pre">AstroData</span></tt> instance. The <tt class="docutils literal"><span class="pre">header</span></tt> argument should be set to a
+valid <tt class="docutils literal"><span class="pre">pyfits.Header</span></tt> object. If <tt class="docutils literal"><span class="pre">moredata</span></tt> is not specified, <tt class="docutils literal"><span class="pre">data</span></tt> and
+<tt class="docutils literal"><span class="pre">header</span></tt> must both be set.</li>
+<li><strong>auto_number</strong> (<em>boolean</em>) &#8211; auto-increment the extension version, <tt class="docutils literal"><span class="pre">EXTVER</span></tt>, to fit file convention</li>
+<li><strong>extname</strong> (<em>string</em>) &#8211; extension name as set in keyword <tt class="docutils literal"><span class="pre">EXTNAME</span></tt> (eg. &#8216;SCI&#8217;, &#8216;VAR&#8217;, &#8216;DQ&#8217;)</li>
+<li><strong>extver</strong> (<em>int</em>) &#8211; extension version as set in keyword <tt class="docutils literal"><span class="pre">EXTVER</span></tt></li>
+<li><strong>do_deepcopy</strong> (<em>boolean</em>) &#8211; deepcopy the input before appending.  Might be useful
+when auto_number is True and the input comes from another AD object.</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<p>This function appends more header-data units (aka &#8220;HDUs&#8221;) to the AstroData
+<p>This function appends header-data units (HDUs) to the AstroData
 instance.</p>
 </dd></dl>
 
@@ -342,8 +346,8 @@ instance.</p>
 <dl class="method">
 <dt id="astrodata.data.AstroData.close">
 <tt class="descclassname">AstroData.</tt><tt class="descname">close</tt><big>(</big><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.close" title="Permalink to this definition">¶</a></dt>
-<dd><p>The close(..) function will close the HDUList associated with this
-AstroData instance.</p>
+<dd><p>The close(..) function will close the <tt class="docutils literal"><span class="pre">HDUList</span></tt> associated with this
+<tt class="docutils literal"><span class="pre">AstroData</span></tt> instance.</p>
 </dd></dl>
 
 </div>
@@ -355,7 +359,7 @@ AstroData instance.</p>
 </div>
 <dl class="method">
 <dt id="astrodata.data.AstroData.insert">
-<tt class="descclassname">AstroData.</tt><tt class="descname">insert</tt><big>(</big><em>index</em>, <em>moredata=None</em>, <em>data=None</em>, <em>header=None</em>, <em>auto_number=False</em>, <em>extname=None</em>, <em>extver=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.insert" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">AstroData.</tt><tt class="descname">insert</tt><big>(</big><em>index</em>, <em>moredata=None</em>, <em>data=None</em>, <em>header=None</em>, <em>auto_number=False</em>, <em>extname=None</em>, <em>extver=False</em>, <em>do_deepcopy=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.insert" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -367,22 +371,27 @@ first data extension is [0], you cannot insert before the PHU.
 Index always refers to Astrodata Numbering system, 0 = HDU</li>
 <li><strong>moredata</strong> (<em>pyfits.HDU, pyfits.HDUList, or AstroData</em>) &#8211; Either an AstroData instance, an HDUList instance, or
 an HDU instance. When present, data and header will be ignored.</li>
-<li><strong>data</strong> (<em>numarray.numaraycore.NumArray</em>) &#8211; if moredata <em>is not</em> specified, data and header should 
-both be set and are used to construct a new HDU which is then 
-added to the AstroData instance.</li>
-<li><strong>header</strong> (<em>pyfits.Header</em>) &#8211; if moredata <em>is not</em> specified, data and header are 
-used to make an HDU which is then added to the HDUList associated
-with this AstroData instance.</li>
-<li><strong>auto_number</strong> (<em>boolean</em>) &#8211; auto-increment appends to match existing extname - extver 
-convention.</li>
-<li><strong>extname</strong> (<em>string</em>) &#8211; extension name (ex, &#8216;SCI&#8217;, &#8216;VAR&#8217;, &#8216;DQ&#8217;)</li>
-<li><strong>extver</strong> (<em>integer</em>) &#8211; extension version (ex, 1, 2, 3)</li>
+<li><strong>data</strong> (<em>numpy.ndarray</em>) &#8211; <tt class="docutils literal"><span class="pre">data</span></tt> and <tt class="docutils literal"><span class="pre">header</span></tt> are used to construct a new HDU which is then 
+added to the <tt class="docutils literal"><span class="pre">HDUList</span></tt> associated to the <tt class="docutils literal"><span class="pre">AstroData</span></tt> instance. The <tt class="docutils literal"><span class="pre">data</span></tt> 
+argument should be set
+to a valid <tt class="docutils literal"><span class="pre">numpy</span></tt> array. If <tt class="docutils literal"><span class="pre">modedata</span></tt> is not specified, <tt class="docutils literal"><span class="pre">data</span></tt> and <tt class="docutils literal"><span class="pre">header</span></tt>
+must both be set.</li>
+<li><strong>header</strong> (<em>pyfits.Header</em>) &#8211; <tt class="docutils literal"><span class="pre">data</span></tt> and <tt class="docutils literal"><span class="pre">header</span></tt> are used
+to construct a new HDU which is then added to the <tt class="docutils literal"><span class="pre">HDUList</span></tt> associated to 
+<tt class="docutils literal"><span class="pre">AstroData</span></tt> instance. The <tt class="docutils literal"><span class="pre">header</span></tt> argument should be set to a
+valid <tt class="docutils literal"><span class="pre">pyfits.Header</span></tt> object. If <tt class="docutils literal"><span class="pre">moredata</span></tt> is not specified, <tt class="docutils literal"><span class="pre">data</span></tt> and
+<tt class="docutils literal"><span class="pre">header</span></tt> must both be set.</li>
+<li><strong>auto_number</strong> (<em>boolean</em>) &#8211; auto-increment the extension version, <tt class="docutils literal"><span class="pre">EXTVER</span></tt>, to fit file convention</li>
+<li><strong>extname</strong> (<em>string</em>) &#8211; extension name as set in keyword <tt class="docutils literal"><span class="pre">EXTNAME</span></tt> (eg. &#8216;SCI&#8217;, &#8216;VAR&#8217;, &#8216;DQ&#8217;)</li>
+<li><strong>extver</strong> (<em>int</em>) &#8211; extension version as set in keyword <tt class="docutils literal"><span class="pre">EXTVER</span></tt></li>
+<li><strong>do_deepcopy</strong> (<em>boolean</em>) &#8211; deepcopy the input before appending.  Might be useful
+when auto_number is True and the input comes from another AD object.</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<p>This function inserts more data units (aka an &#8220;HDU&#8221;) to the AstroData
+<p>This function inserts header-data units (HDUs) to the AstroData
 instance.</p>
 </dd></dl>
 
@@ -438,30 +447,34 @@ and so uses AstroData relative indexes, descriptors, and so on.</p>
 </div>
 <dl class="method">
 <dt id="astrodata.data.AstroData.write">
-<tt class="descclassname">AstroData.</tt><tt class="descname">write</tt><big>(</big><em>filename=None</em>, <em>clobber=False</em>, <em>rename=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.write" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">AstroData.</tt><tt class="descname">write</tt><big>(</big><em>filename=None</em>, <em>clobber=False</em>, <em>rename=None</em>, <em>prefix=None</em>, <em>suffix=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.write" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>fname</strong> (<em>string</em>) &#8211; file name to write to, optional if instance already has
-name, which might not be the case for new AstroData
+<li><strong>filename</strong> (<em>string</em>) &#8211; name of the file to write to. Optional if the instance
+already has a filename defined, which might not be the case for new AstroData
 instances created in memory.</li>
 <li><strong>clobber</strong> (<em>bool</em>) &#8211; This flag drives if AstroData will overwrite an existing
 file.</li>
 <li><strong>rename</strong> (<em>bool</em>) &#8211; This flag allows you to write the AstroData instance to
-a new filename, but leave the &#8220;current&#8221; name in tact in memory.</li>
+a new filename, but leave the &#8216;current&#8217; name in tact in memory.</li>
+<li><strong>prefix</strong> &#8211; Add a prefix to <tt class="docutils literal"><span class="pre">filename</span></tt>.</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<p>The write function acts similarly to the pyfits HDUList.writeto(..)
-function if a filename is given, or like pyfits.HDUList.update(..) if 
+<p>type prefix: string
+:param suffix: Add a suffix to <tt class="docutils literal"><span class="pre">filename</span></tt>.
+type suffix: string</p>
+<p>The write function acts similarly to the <tt class="docutils literal"><span class="pre">pyfits</span> <span class="pre">HDUList.writeto(..)</span></tt>
+function if a filename is given, or like <tt class="docutils literal"><span class="pre">pyfits.HDUList.update(..)</span></tt> if 
 no name is given, using whatever the current name is set to. When a name
-is given, this becomes the new name of the AstroData object and
+is given, this becomes the new name of the <tt class="docutils literal"><span class="pre">AstroData</span></tt> object and
 will be used on subsequent calls to  write for which a filename is not
-provided. If the clobber flag is False (the default) then write(..)
+provided. If the <tt class="docutils literal"><span class="pre">clobber</span></tt> flag is <tt class="xref docutils literal"><span class="pre">False</span></tt> (the default) then <tt class="docutils literal"><span class="pre">write(..)</span></tt>
 throws an exception if the file already exists.</p>
 </dd></dl>
 
@@ -480,23 +493,23 @@ throws an exception if the file already exists.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>typename</strong> (<em>string</em>) &#8211; specifies the type name to check.</td>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>typenames</strong> &#8211; specifies the type name to check.</td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body">True if the given types all apply to this dataset,
-False otherwise</td>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><tt class="xref docutils literal"><span class="pre">True</span></tt> if the given types all apply to this dataset,
+<tt class="xref docutils literal"><span class="pre">False</span></tt> otherwise.</td>
 </tr>
 <tr class="field"><th class="field-name">Return type:</th><td class="field-body">Bool</td>
 </tr>
 </tbody>
 </table>
-<p>This function checks the AstroData object to see if it is the
+<p>This function checks the <tt class="docutils literal"><span class="pre">AstroData</span></tt> object to see if it is the
 given type(s) and returns True if so.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Note :</th><td class="field-body">&#8220;AstroData.check_type(..)&#8221; is an alias for 
-&#8220;AstroData.is_type(..)&#8221;.</td>
+<tr class="field"><th class="field-name">Note :</th><td class="field-body"><tt class="docutils literal"><span class="pre">AstroData.check_type(..)</span></tt> is an alias for 
+<tt class="docutils literal"><span class="pre">AstroData.is_type(..)</span></tt>.</td>
 </tr>
 </tbody>
 </table>
@@ -520,16 +533,16 @@ is returned.</td>
 </tbody>
 </table>
 <p>The get_types(..) function returns a list of type names, where type 
-names are as always, strings. It is possible to &#8220;prune&#8221; the list so
+names are as always, strings. It is possible to &#8216;prune&#8217; the list so
 that only leaf nodes are returned, which is useful when leaf
 nodes take precedence such
-as descriptors.</p>
+as for descriptors.</p>
 <p>Note: types are divided into two categories, one intended for types
 which represent processing status (i.e. RAW vs PREPARED), and another
-which contains a more traditional &#8220;typology&#8221; consisting of a 
-heirarchical tree of dataset types. This latter tree maps roughly to
+which contains a more traditional &#8216;typology&#8217; consisting of a 
+hierarchical tree of dataset types. This latter tree maps roughly to
 instrument-modes, with instrument types branching from the general
-observatory type, (e.g. &#8220;GEMINI&#8221;).</p>
+observatory type, (e.g. &#8216;GEMINI&#8217;).</p>
 <p>To retrieve only status types, use get_status(..); to retreive just
 typological types use get_typology(..).  Note that the system does not
 enforce what checks are actually performed by types in each category,
@@ -549,14 +562,15 @@ scripts which make use of the distinction.</p>
 <tt class="descclassname">AstroData.</tt><tt class="descname">get_status</tt><big>(</big><em>prune=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.get_status" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function returns the set of type names (strings) which apply to
 this dataset and which come from the status section of the AstroData
-Type library. &#8220;Status&#8221; classifications are those which tend to change
+Type library. &#8216;Status&#8217; classifications are those which tend to change
 during the reduction of a dataset based on the amount of processing,
-e.g. RAW vs PREPARED.  Strictly, a &#8220;status&#8221; type 
+e.g. RAW vs PREPARED.  Strictly, a &#8216;status&#8217; type 
 is any type defined in or below the status part of the 
 <tt class="docutils literal"><span class="pre">classification</span></tt> directory within the 
-configuration. I.e. in the Gemini type configuration any type 
+configuration package. For example, in the Gemini type configuration 
+this means any type 
 definition files in or below the 
-&#8220;astrodata_Gemini/ADCONFIG/classification/status&#8221; directory.</p>
+&#8216;astrodata_Gemini/ADCONFIG/classification/status&#8217; directory.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -571,14 +585,15 @@ definition files in or below the
 
 <dl class="method">
 <dt id="astrodata.data.AstroData.get_typology">
-<tt class="descclassname">AstroData.</tt><tt class="descname">get_typology</tt><big>(</big><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.get_typology" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">AstroData.</tt><tt class="descname">get_typology</tt><big>(</big><em>prune=False</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.get_typology" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function returns the set of type names (strings) which apply to
 this dataset and which come from the typology section of the AstroData
-Type library. &#8220;Typology&#8221; classifications are those which tend to remain
+Type library. &#8216;Typology&#8217; classifications are those which tend to remain
 with the data in spite of reduction status, e.g. those related to the
 instrument-mode of the dataset or of the datasets used to produce
 it. Strictly these consist of any type defined in or below
-the correct configuration directory, i.e. in Gemini&#8217;s configuration,
+the correct configuration directory, for example, in Gemini&#8217;s configuration
+package, it would be anything in the
 &#8220;astrodata_Gemini/ADCONFIG/classification/types&#8221;  directory.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -604,9 +619,9 @@ pair settings in the header section of header-data units
 can be done directly using the AstroData header manipulation functions
 which cover both PHU and extension headers.
 For higher level metadata which is available for all types in the tree
-in a properly constructed configuration space, the metadata is retreived by
+in a properly constructed configuration space, the metadata is retrieved with
 descriptor functions, accessed as members of the AstroData object.</p>
-<p>To set information or retrieve meta-data not covered by descriptors, one must
+<p>To retrieve or set meta-data not covered by descriptors, one must
 read and write key-value pairs to the HDU headers at the lower-level. AstroData
 offers three pairs of functions for getting and setting header values, for each
 of three distinct cases.  While it is possible to use the pyfits.Header directly
@@ -654,25 +669,22 @@ and must be converted as necessary by the caller.</p>
 
 <dl class="method">
 <dt id="astrodata.data.AstroData.phu_set_key_value">
-<tt class="descclassname">AstroData.</tt><tt class="descname">phu_set_key_value</tt><big>(</big><em>key</em>, <em>value</em>, <em>comment=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.phu_set_key_value" title="Permalink to this definition">¶</a></dt>
-<dd><table class="docutils field-list" frame="void" rules="none">
+<tt class="descclassname">AstroData.</tt><tt class="descname">phu_set_key_value</tt><big>(</big><em>keyword=None</em>, <em>value=None</em>, <em>comment=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.phu_set_key_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add or update a keyword in the PHU of the AstroData object with a
+specific value and, optionally, a comment</p>
+<table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>key</strong> (<em>string</em>) &#8211; name of PHU header value to set</li>
-<li><strong>value</strong> (<em>string (or can be converted to string)</em>) &#8211; value to apply to PHU header</li>
-<li><strong>comment</strong> (<em>string</em>) &#8211; value to be put in the comment part of the header key</li>
+<li><strong>keyword</strong> (<em>string</em>) &#8211; Name of the keyword to add or update in the PHU</li>
+<li><strong>value</strong> (<em>int, float or string</em>) &#8211; Value of the keyword to add or update in the PHU</li>
+<li><strong>comment</strong> (<em>string</em>) &#8211; Comment of the keyword to add or update in the PHU</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<p>The phu_set_key_value(..) function is used to set the value  (and
-optionally the comment) associated with a given key in the primary
-header unit of the dataset. The value argument will be converted to
-string, so it must have a string operator member function or be passed
-in as string.</p>
 </dd></dl>
 
 </div>
@@ -735,7 +747,7 @@ AstroData object, and can be used more convieniently.</p>
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>key</strong> (<em>string</em>) &#8211; name of data header value to set</li>
-<li><strong>value</strong> (<em>string (or can be converted to string)</em>) &#8211; value to apply to header</li>
+<li><strong>value</strong> (<em>int, float, string</em>) &#8211; value to apply to header</li>
 <li><strong>comment</strong> (<em>string</em>) &#8211; value to be put in the comment part of the header key</li>
 </ul>
 </td>
@@ -805,27 +817,28 @@ values from the PHU use phu_get_key_value(..).</p>
 
 <dl class="method">
 <dt id="astrodata.data.AstroData.ext_set_key_value">
-<tt class="descclassname">AstroData.</tt><tt class="descname">ext_set_key_value</tt><big>(</big><em>extension</em>, <em>key</em>, <em>value</em>, <em>comment=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.ext_set_key_value" title="Permalink to this definition">¶</a></dt>
-<dd><table class="docutils field-list" frame="void" rules="none">
+<tt class="descclassname">AstroData.</tt><tt class="descname">ext_set_key_value</tt><big>(</big><em>extension=None</em>, <em>keyword=None</em>, <em>value=None</em>, <em>comment=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.ext_set_key_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add or update a keyword in the header of an extension of the AstroData
+object with a specific value and, optionally, a comment. To add or
+update a keyword in the PHU of the AstroData object, use
+phu_set_key_value().</p>
+<table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>extension</strong> (<em>int or (EXTNAME, EXTVER) tuple</em>) &#8211; identifies which extension, either an integer index 
-or (EXTNAME, EXTVER) tuple</li>
-<li><strong>key</strong> (<em>string</em>) &#8211; name of PHU header value to set</li>
-<li><strong>value</strong> (<em>string (or can be converted to string)</em>) &#8211; value to apply to PHU header</li>
-<li><strong>comment</strong> (<em>string</em>) &#8211; value to be put in the comment part of the header key</li>
+<li><strong>extension</strong> (<em>int or (EXTNAME, EXTVER) tuple</em>) &#8211; Name of the extension to add or update. The index [0]
+refers to the first extension in the AstroData
+object.</li>
+<li><strong>keyword</strong> (<em>string</em>) &#8211; Name of the keyword to add or update in the extension</li>
+<li><strong>value</strong> (<em>int, float or string</em>) &#8211; Value of the keyword to add or update in the extension</li>
+<li><strong>comment</strong> (<em>string</em>) &#8211; Comment of the keyword to add or update in the
+extension</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<p>The ext_set_key_value(..) function is used to set the value (and optionally
-the comment) associated with a given key in the header unit of the given
-extension within the dataset. This function sets the value in the
-given extension&#8217;s header, with &#8220;0&#8221; being the first data extension.  To
-set values in the PHU use phusetKeyValue(..).</p>
 </dd></dl>
 
 </div>
@@ -844,15 +857,15 @@ set values in the PHU use phusetKeyValue(..).</p>
 </ul>
 </div>
 </div>
-<div class="section" id="countexts">
-<h3>2.5.2. countExts(..)<a class="headerlink" href="#countexts" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="count-exts">
+<h3>2.5.2. count_exts(..)<a class="headerlink" href="#count-exts" title="Permalink to this headline">¶</a></h3>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
 </div>
 <dl class="method">
 <dt id="astrodata.data.AstroData.count_exts">
-<tt class="descclassname">AstroData.</tt><tt class="descname">count_exts</tt><big>(</big><em>extname</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.count_exts" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">AstroData.</tt><tt class="descname">count_exts</tt><big>(</big><em>extname=None</em><big>)</big><a class="headerlink" href="#astrodata.data.AstroData.count_exts" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -868,7 +881,7 @@ header.</td>
 </tbody>
 </table>
 <p>The count_exts(..) function counts the extensions of a given name
-(as stored in the HDUs &#8220;EXTVER&#8221; header).</p>
+(as stored in the HDUs &#8220;EXTNAME&#8221; header).</p>
 </dd></dl>
 
 </div>
@@ -885,7 +898,7 @@ header.</td>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ext</strong> (<em>string, int, or tuple</em>) &#8211; The integeter index, an indexing <tt class="docutils literal"><span class="pre">(EXTNAME,</span> <span class="pre">EXTVER)</span></tt> tuple,
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ext</strong> (<em>string, int, or tuple</em>) &#8211; The integer index, an indexing <tt class="docutils literal"><span class="pre">(EXTNAME,</span> <span class="pre">EXTVER)</span></tt> tuple,
 or EXTNAME name. If an int or tuple, the single
 extension identified is wrapped with an AstroData instance, and
 &#8220;single-extension&#8221; members of the AstroData object can be used. If
@@ -901,36 +914,38 @@ EXTNAME will be wrapped by the  new AstroData instance.</td>
 <p>This function supports the &#8220;[]&#8221; syntax for AstroData instances,
 e.g. <em>ad[(&#8220;SCI&#8221;,1)]</em>.  We use it to create
 AstroData objects associated with &#8220;subdata&#8221; of the parent
-AstroData object, that is, consisting of an HDUList which
-consists of some subset of the parent MEF. e.g.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">datasetA</span> <span class="o">=</span> <span class="n">AstroData</span><span class="o">.</span><span class="n">AstroData</span><span class="p">(</span><span class="s">&quot;datasetMEF.fits&quot;</span><span class="p">)</span>
+AstroData object, that is, consisting of an HDUList made up of 
+some subset of the parent MEF. e.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">datasetA</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&quot;datasetMEF.fits&quot;</span><span class="p">)</span>
 <span class="n">datasetB</span> <span class="o">=</span> <span class="n">datasetA</span><span class="p">[</span><span class="n">SCI</span><span class="p">]</span>
 </pre></div>
 </div>
-<p>In this case, after the operations, datasetB is an AstroData object
+<p>In this case, after the operations, datasetB is an <tt class="docutils literal"><span class="pre">AstroData</span></tt> object
 associated with the same MEF, sharing some of the the same actual HDUs
-in memory as  datasetA. The object in &#8220;datasetB&#8221; will behave as if the
+in memory as <tt class="docutils literal"><span class="pre">datasetA</span></tt>. The object in <tt class="docutils literal"><span class="pre">datasetB</span></tt> will behave as if the
 SCI extensions are its only members, and it does in fact have its own
-pyfits.HDUList. Note that datasetA and datasetB share the PHU and also
+<tt class="docutils literal"><span class="pre">pyfits.HDUList</span></tt>. Note that <tt class="docutils literal"><span class="pre">datasetA</span></tt> and <tt class="docutils literal"><span class="pre">datasetB</span></tt> share the PHU and also
 the data structures of the HDUs they have in common, so that a change
-to &#8220;datasetA[(&#8216;SCI&#8217;,1)].data&#8221; will change the 
-&#8220;datasetB[(&#8216;SCI&#8217;,1)].data&#8221; member and vice versa. They are in fact both
-references to the same numpy array in memory. The HDUList is a 
+to <tt class="docutils literal"><span class="pre">datasetA[('SCI',1)].data</span></tt> will change the 
+<tt class="docutils literal"><span class="pre">datasetB[('SCI',1)].data</span></tt> member and vice versa. They are in fact both
+references to the same <tt class="docutils literal"><span class="pre">numpy</span></tt> array in memory. The <tt class="docutils literal"><span class="pre">HDUList</span></tt> is a 
 different list, however, that references common HDUs. If a subdata 
-related AstroData object is written to disk, the resulting MEF will
-contain only the extensions in the subdata&#8217;s HDUList.</p>
+related <tt class="docutils literal"><span class="pre">AstroData</span></tt> object is written to disk, the resulting MEF will
+contain only the extensions in the subdata&#8217;s <tt class="docutils literal"><span class="pre">HDUList</span></tt>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Note :</th><td class="field-body">Integer extensions start at 0 for the data-containing 
-extensions, not at the PHU as with pyfits.  This is important:
-ad[0] is the first content extension, in a traditional MEF 
+extensions, not at the PHU as with <tt class="docutils literal"><span class="pre">pyfits</span></tt>.  This is important:
+<tt class="docutils literal"><span class="pre">ad[0]</span></tt> is the first content extension, in a traditional MEF 
 perspective, the extension AFTER the PHU; it is not the PHU!  In
-AstroData instances, the PHU is purely a header, and not counted
+<tt class="docutils literal"><span class="pre">AstroData</span></tt> instances, the PHU is purely a header, and not counted
 as an extension in the way that headers generally are not counted
 as their own elements in the array they contain meta-data for.
-The PHU can be accessed via the <tt class="docutils literal"><span class="pre">phu</span></tt> AstroData member of using
+The PHU can be accessed via the <tt class="docutils literal"><span class="pre">phu</span></tt> <tt class="docutils literal"><span class="pre">AstroData</span></tt> member of using
 the PHU related member functions.</td>
 </tr>
 </tbody>
@@ -975,19 +990,19 @@ member, use <em>npdata = ad.data</em>.</p>
 </tr>
 </tbody>
 </table>
-<p>The <em>get_data(..)</em> member is the function behind the property-style
+<p>The <tt class="docutils literal"><span class="pre">get_data(..)</span></tt> member is the function behind the property-style
 &#8220;data&#8221; member and returns appropriate HDU&#8217;s data member(s) specifically
-for the case in which the AstroData instance has ONE HDU (in addition to
-the PHU). This allows a single-extension AstroData, such as AstroData
+for the case in which the <tt class="docutils literal"><span class="pre">AstroData</span></tt> instance has ONE HDU (in addition to
+the PHU). This allows a single-extension <tt class="docutils literal"><span class="pre">AstroData</span></tt>, such as <tt class="docutils literal"><span class="pre">AstroData</span></tt>
 generates through iteration,  to be used as though it simply is just the
-one extension, e.g. allowing <em>gd.data</em> to be used in place of the more
-esoteric and ultimately more dangerous <em>gd[0].data</em>. One can assure one
-is dealing with single extension AstroData instances when iterating over
-the AstroData extensions and when picking out an extension  by integer
+one extension, e.g. allowing <tt class="docutils literal"><span class="pre">ad.data</span></tt> to be used in place of the more
+esoteric and ultimately more dangerous <tt class="docutils literal"><span class="pre">ad[0].data</span></tt>. One
+is dealing with single extension <tt class="docutils literal"><span class="pre">AstroData</span></tt> instances when iterating over
+the <tt class="docutils literal"><span class="pre">AstroData</span></tt> extensions and when picking out an extension by integer
 or tuple indexing, e.g.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">gd</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="n">SCI</span><span class="p">]:</span>
-    <span class="c"># gd is a single-HDU index</span>
-    <span class="n">gd</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">newdata</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="n">SCI</span><span class="p">]:</span>
+    <span class="c"># ad is a single-HDU index</span>
+    <span class="n">ad</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">newdata</span>
 
 <span class="c"># assuming the named extension exists,</span>
 <span class="c"># sd will be a single-HDU AstroData</span>
@@ -1003,7 +1018,7 @@ or tuple indexing, e.g.:</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>newdata</strong> (<em>numarray.numarraycore.NumArray</em>) &#8211; new data objects</td>
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>newdata</strong> (<em>numpy.ndarray</em>) &#8211; new data objects</td>
 </tr>
 <tr class="field"><th class="field-name" colspan="2">Raises Errors.SingleHDUMemberExcept:</th></tr>
 <tr><td>&nbsp;</td><td class="field-body">if AstroData instance has more 
@@ -1011,11 +1026,11 @@ than one extension (not including PHU).</td>
 </tr>
 </tbody>
 </table>
-<p>This function sets the data member of a data section of an AstroData
-object, specifically for the case in which the AstroData instance has
+<p>This function sets the data member of a data section of an <tt class="docutils literal"><span class="pre">AstroData</span></tt>
+object, specifically for the case in which the <tt class="docutils literal"><span class="pre">AstroData</span></tt> instance has
 ONE header-data unit (in addition to PHU).  This case is assured when
-iterating over the AstroData extensions, e.g.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">gd</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="n">SCI</span><span class="p">]:</span>
+iterating over the <tt class="docutils literal"><span class="pre">AstroData</span></tt> extensions, as in:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="n">SCI</span><span class="p">]:</span>
     <span class="o">...</span>
 </pre></div>
 </div>
@@ -1058,11 +1073,11 @@ than one extension exists.
 </tr>
 </tbody>
 </table>
-<p>The get_header(..) function returns the header member for Single-HDU
-AstroData instances (which are those that have only one extension plus
+<p>The <tt class="docutils literal"><span class="pre">get_header(..)</span></tt> function returns the header member for Single-HDU
+<tt class="docutils literal"><span class="pre">AstroData</span></tt> instances (which are those that have only one extension plus
 PHU). This case  can be assured when iterating over extensions using
-AstroData, e.g.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">gd</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="n">SCI</span><span class="p">]:</span> 
+<tt class="docutils literal"><span class="pre">AstroData</span></tt>, e.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="n">SCI</span><span class="p">]:</span> 
     <span class="o">...</span>
 </pre></div>
 </div>
@@ -1091,12 +1106,12 @@ than one extension exists.</p>
 </tr>
 </tbody>
 </table>
-<p>The set_header(..) function sets the extension header member for single
+<p>The <tt class="docutils literal"><span class="pre">set_header(..)</span></tt> function sets the extension header member for single
 extension (which are those that have only one extension plus PHU). This
-case  is assured when iterating over extensions using AstroData, e.g.:</p>
+case  is assured when iterating over extensions using <tt class="docutils literal"><span class="pre">AstroData</span></tt>, e.g.:</p>
 <blockquote>
 <div><dl class="docutils">
-<dt>for gd in dataset[SCI]: </dt>
+<dt>for ad in dataset[SCI]: </dt>
 <dd>...</dd>
 </dl>
 </div></blockquote>
@@ -1117,30 +1132,31 @@ case  is assured when iterating over extensions using AstroData, e.g.:</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> (<em>string</em>) &#8211; New &#8220;EXTNAME&#8221; for the given extension.</li>
-<li><strong>ver</strong> (<em>int</em>) &#8211; New &#8220;EXTVER&#8221; for the given extension</li>
+<li><strong>name</strong> (<em>string</em>) &#8211; New &#8216;EXTNAME&#8217; for the given extension.</li>
+<li><strong>ver</strong> (<em>int</em>) &#8211; New &#8216;EXTVER&#8217; for the given extension</li>
+<li><strong>force</strong> (<em>boolean</em>) &#8211; ???  Default=True</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<p>Note: This member only works on single extension AstroData instances.</p>
-<p>The rename_ext() function is used in order to rename an HDU with a new
-EXTNAME and EXTVER based identifier.  Merely changing the EXTNAME and 
-EXTEVER values in the extensions pyfits.Header are not sufficient.
-Though the values change in the pyfits.Header object, there are special
+<p>Note: This member only works on single extension <tt class="docutils literal"><span class="pre">AstroData</span></tt> instances.</p>
+<p>The <tt class="docutils literal"><span class="pre">rename_ext(..)</span></tt> function is used in order to rename an HDU with a new
+EXTNAME and EXTVER identifier.  Merely changing the EXTNAME and 
+EXTEVER values in the extensions <tt class="docutils literal"><span class="pre">pyfits.Header</span></tt> are not sufficient.
+Though the values change in the <tt class="docutils literal"><span class="pre">pyfits.Header</span></tt> object, there are special
 HDU class members which are not updated.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">Warning :</th><td class="field-body">This function maniplates private (or somewhat private)  HDU
-members, specifically &#8220;name&#8221; and &#8220;_extver&#8221;. STSCI has been
+<tr class="field"><th class="field-name">Warning :</th><td class="field-body">This function manipulates private (or somewhat private)  HDU
+members, specifically &#8216;name&#8217; and &#8216;_extver&#8217;. STSCI has been
 informed of the issue and
 has made a special HDU function for performing the renaming. 
 When generally available, this new function will be used instead of
 manipulating the  HDU&#8217;s properties directly, and this function will 
-call the new pyfits.HDUList(..) function.</td>
+call the new <tt class="docutils literal"><span class="pre">pyfits.HDUList(..)</span></tt> function.</td>
 </tr>
 </tbody>
 </table>
@@ -1168,7 +1184,7 @@ call the new pyfits.HDUList(..) function.</td>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>iary</strong> (<em>list of AstroData instance</em>) &#8211; A list of AstroData instances for which a correlation dictionary
-will be constructed to produce a correlation dict.</td>
+will be constructed.</td>
 </tr>
 <tr class="field"><th class="field-name">Returns:</th><td class="field-body">a list of tuples containing correlated extensions from the arguments.</td>
 </tr>
@@ -1176,14 +1192,14 @@ will be constructed to produce a correlation dict.</td>
 </tr>
 </tbody>
 </table>
-<p>The <em>correlate(..)</em> function is a module-level helper function which returns
-a list of tuples of Single Extension AstroData instances which associate
+<p>The <tt class="docutils literal"><span class="pre">correlate(..)</span></tt> function is a module-level helper function which returns
+a list of tuples of Single Extension <tt class="docutils literal"><span class="pre">AstroData</span></tt> instances which associate
 extensions from each listed AstroData object, to identically named
-extensions among the rest of the input array. The <em>correlate(..)</em> function
-accepts a variable number of arguments, all of which should be AstroData
+extensions among the rest of the input array. The <tt class="docutils literal"><span class="pre">correlate(..)</span></tt> function
+accepts a variable number of arguments, all of which should be <tt class="docutils literal"><span class="pre">AstroData</span></tt>
 instances.</p>
-<p>The function returns a structured dictionary of dictories of lists of
-AstroData objects. For example, given three inputs, <em>ad</em>, <em>bd</em> and <em>cd</em>, all
+<p>The function returns a structured dictionary of dictionaries of lists of
+<tt class="docutils literal"><span class="pre">AstroData</span></tt> objects. For example, given three inputs, <em>ad</em>, <em>bd</em> and <em>cd</em>, all
 with three &#8220;SCI&#8221;, &#8220;VAR&#8221; and &#8220;DQ&#8221; extensions. Given <em>adlist = [ad, bd,
 cd]</em>, then <em>corstruct = correlate(adlist)</em> will return to <em>corstruct</em> a
 dictionary first keyed by the EXTNAME, then keyed by tuple. The contents
@@ -1217,23 +1233,23 @@ with the given (EXTNAME,EXTVER) for that tuple.</td>
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>input_ary</strong> (<em>list of AstroData Instances</em>) &#8211; The input array from which propagated content (such as
 the  source PHU) will be taken. Note: the zero-th element in the list
-is  used as the reference dataset, for PHU or other items which require
+is  used as the reference dataset for PHU or other items which require
 a particular reference.</li>
 <li><strong>name</strong> &#8211; File name to use for returned AstroData, optional.</li>
-<li><strong>clobber</strong> (<em>bool</em>) &#8211; By default prep_output(..) checks to see if a file of the
+<li><strong>clobber</strong> (<em>bool</em>) &#8211; By default <tt class="docutils literal"><span class="pre">prep_output(..)</span></tt> checks to see if a file of the
 given name already exists, and will raise an exception if found.
 Set <em>clobber</em> to <em>True</em> to override this behavior and potentially
-overwrite the extant file.  The datset on disk will not be overwritten
+overwrite the extant file.  The dataset on disk will not be overwritten
 as a direct result of prep_output, which only prepares the object
 in memory, but will occur when the AstroData object returned is 
-written (i.e. <em>ad.write()</em>)).</li>
+written (i.e. <tt class="docutils literal"><span class="pre">ad.write(..)</span></tt>)).</li>
 </ul>
 </td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">an AstroData instance initialized with appropriate
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">an <tt class="docutils literal"><span class="pre">AstroData</span></tt> instance initialized with appropriate
 header-data units such as the PHU, Standard Gemini headers
 and with type-specific associated  data-header units such as
-binary table Mask Definition tables (aka MDF).</p>
+binary table Mask Definition tables (MDF).</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">AstroData</p>
@@ -1241,35 +1257,29 @@ binary table Mask Definition tables (aka MDF).</p>
 </tr>
 </tbody>
 </table>
-<p>..info: File will not have been written to disk by prep_output(..).</p>
-<p>The prep_output(..) function creates a new AstroData object ready for
+<p>..info: File will not have been written to disk by <tt class="docutils literal"><span class="pre">prep_output(..)</span></tt>.</p>
+<p>The <tt class="docutils literal"><span class="pre">prep_output(..)</span></tt> function creates a new <tt class="docutils literal"><span class="pre">AstroData</span></tt> object ready for
 appending output information (e.g. <tt class="docutils literal"><span class="pre">ad.append(..)</span></tt>).  While you can also
-create an empty AstroData object by giving no arguments to the AstroData
+create an empty <tt class="docutils literal"><span class="pre">AstroData</span></tt> object by giving no arguments to the <tt class="docutils literal"><span class="pre">AstroData</span></tt>
 constructor  (i.e. <tt class="docutils literal"><span class="pre">ad</span> <span class="pre">=</span> <span class="pre">AstroData()</span></tt>), <tt class="docutils literal"><span class="pre">prep_output(..)</span></tt> exists for the
 common case where a new dataset object is intended as the output of
-come combinatorial process on a list of source dataset, and some information
+some processing on a list of source datasets, and some information
 from the source inputs must be propagated.</p>
 <p>The <tt class="docutils literal"><span class="pre">prep_output(..)</span></tt> function makes use of this knowledge to ensure the
 file meets standards in what is considered a complete output file given
 such a combination.  In the future this function can make use of dataset
 history and structure definitions in the ADCONFIG configuration space. As
-<tt class="docutils literal"><span class="pre">prepOutput</span></tt> improves, scripts and primitives that use it
+<tt class="docutils literal"><span class="pre">prep_output</span></tt> improves, scripts and primitives that use it
 will benefit in a forward compatible way, in that their output datasets will
 benefit from more automatic propagation, validations, and data flow control,
 such as the emergence of history database propagation.</p>
 <p>Presently, it already provides the following:</p>
-<ul>
-<li><p class="first">Ensures that all standard headers  are in place in the new file, using the
-configuration .</p>
-</li>
-<li><p class="first">Copy the PHU of the reference image (input_ary[0]).</p>
-</li>
-<li><dl class="first docutils">
-<dt>Propagate associated information such as the MDF in the case of a MOS </dt>
-<dd><p class="first last">observation, configurable by the Astrodata Structures system.</p>
-</dd>
-</dl>
-</li>
+<ul class="simple">
+<li>Ensures that all standard headers are in place in the new file, using the
+configuration .</li>
+<li>Copy the PHU of the reference image (<tt class="docutils literal"><span class="pre">input_ary[0]</span></tt>).</li>
+<li>Propagate associated information such as the MDF in the case of a MOS 
+observation, configurable by the Astrodata Structures system.</li>
 </ul>
 </dd></dl>
 
@@ -1288,12 +1298,12 @@ configuration .</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>rekey</strong> (<em>string</em>) &#8211; a regular expresion to match to keys in header</li>
-<li><strong>header</strong> (<em>pyfits.Header</em>) &#8211; a pyfits.Header object as returned by <em>ad[(&#8220;SCI&#8221;,1)].header</em></li>
+<li><strong>rekey</strong> (<em>string</em>) &#8211; a regular expression to match keys in header</li>
+<li><strong>header</strong> (<em>pyfits.Header</em>) &#8211; a <tt class="docutils literal"><span class="pre">pyfits.Header</span></tt> object as returned by <tt class="docutils literal"><span class="pre">ad[(&quot;SCI&quot;,1)].header</span></tt></li>
 </ul>
 </td>
 </tr>
-<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a list of keys that appear in the given header</p>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a list of matching keys</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of strings</p>
@@ -1302,7 +1312,7 @@ configuration .</p>
 </tbody>
 </table>
 <p>This utility function returns a list of keys from 
-the header passed in which match the given regular expression.</p>
+the input header that match the regular expression.</p>
 </dd></dl>
 
 </div>
@@ -1325,9 +1335,9 @@ the header passed in which match the given regular expression.</p>
           <a href="gen.ADMANUAL-ADSubdata.html" title="2.5.1.1. Using Slices and “Subdata”"
              >next</a> |</li>
         <li class="right" >
-          <a href="gen.ADMANUAL_Purpose.html" title="1.1.2. Intended Audience"
+          <a href="gen.ADMANUAL_Purpose.html" title="1.1.2. Abbreviations Table"
              >previous</a> |</li>
-        <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li> 
+        <li><a href="index.html">astrodata documentation v1.0beta documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

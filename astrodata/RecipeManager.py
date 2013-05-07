@@ -235,11 +235,11 @@ class ReductionContext(dict):
     
     def __contains__(self, thing):
         """
-        :param thing: A key to check for presences in the Reduction Context
+        :param thing: A key to check for presence in the Reduction Context
         :type thing: str
         
-        The __contains__ function implements the python 'in' operator. The 
-        ReductionContext is a subclass of a ``dict``, but it also has a secondary
+        The ``__contains__`` function implements the Python ``in`` operator. The 
+        ``ReductionContext`` is a subclass of a ``dict``, but it also has a secondary
         dict of "local parameters" which are available to the current primitive \
         only, which are also tested by the ``__contains__(..)`` member.
         These parameters will generally be those passed in as arguments
@@ -608,14 +608,14 @@ class ReductionContext(dict):
         '''
         Retrieve calibration.
         
-        :param data: File for which calibration will be applied.
-        :type data: str or AstroData instance
+        :param data: File for which calibration must be retrieved.
+        :type data: string or AstroData instance
         
         :param caltype: The type of calibration (ex.'bias', 'flat').
-        :type caltype: str
+        :type caltype: string
         
         :return: The URI of the currently stored calibration or None.
-        :rtype: str or None 
+        :rtype: string or None 
         '''
         #print "RM467:"+ repr(data)+repr( type( data ))dd
         adID = idFac.generate_astro_data_id(data)
@@ -644,7 +644,7 @@ class ReductionContext(dict):
         :return: a list of ``AstroData`` instances or ``string`` filenames
         :rtype: list
         
-        Get inputs gets the current input datasets from the current stream. You cannot
+        ``get_inputs(..)`` gets the current input datasets from the current stream. You cannot
         choose the stream, use ``get_stream(..)`` for that.  To report modified
         datasets back to the stream use ``report_output(..)``.
         """
@@ -681,7 +681,7 @@ class ReductionContext(dict):
         :returns: a list of ``AstroDataRecord`` objects, ``AstroData`` objects or filenames.
         :rtype: list
         
-        Get stream returns a list of AstroData instances in the given stream.
+        ``get_stream`` returns a list of AstroData instances in the specified stream.
         """
         
         if stream in self.outputs:
@@ -749,8 +749,8 @@ class ReductionContext(dict):
         This function returns the current reference image.  At the moment
         this is simply the first dataset in the current inputs.  However,
         use of this function allows us to evolve our concept of reference
-        image for more complicated issues where choice of a "reference" image
-        may be more complicated (e.g. require some data analysis to determine).
+        image for more complicated cases where the choice of a "reference" image
+        may need to be different (e.g. require some data analysis to determine).
         """
         if len(self.inputs) == 0:
             return None
@@ -791,16 +791,16 @@ class ReductionContext(dict):
         
     def get_list(self, id):
         """
-        :param id: Lists are assiciated with arbitrary identifiers,
-            passed as strings.  See IDFactory for ids built from
-            standard astrodata characteristics.
+        :param id: Lists are associated with arbitrary identifiers,
+            passed as strings.  See ``IDFactory`` for IDs built from
+            standard ``astrodata`` characteristics.
         :type id: str
         
         The list functionality allows storing dataset names in a list
         which is shared by all instances of reduce running in a given
-        directory.  The list is kept by an adcc instance in charge of that
-        sub-directory.  The "get_list" function retrieves a list that has
-        already been requested via "rq_stack_get()" which initiates the
+        directory.  The list is kept by an ``adcc`` instance in charge of that
+        sub-directory.  The ``get_list(..)`` function retrieves a list that has
+        already been requested via ``rq_stack_get(..)`` which initiates the
         interprocess request.
         
         This function does not block, and if the stack was not requested
@@ -978,7 +978,7 @@ class ReductionContext(dict):
     
     def run(self, stepname):
         """ :param stepname: The primitive or recipe name to run. Note: this is 
-                actually compiled as a recipe... proxy recipe names may appear
+                actually compiled as a recipe. Proxy recipe names may appear
                 in the logs.
             :type stepname: string
             
@@ -1259,7 +1259,7 @@ class ReductionContext(dict):
         :return: List of new prepended paths.
         :rtype: list  
         
-        Prepends a prefix string to either the inputs or the given list of filenamesfilename.
+        Prepends a prefix string to either the inputs or the given list of filenames.
         
         '''
         retlist = []
@@ -1548,7 +1548,7 @@ class ReductionContext(dict):
                         or ``None`` current "inputs" are used.
         :type inputs: list of AstroData instances                
         :param source: Directs what calibration service to contact, for future
-                        compatibility, surrently only "all" is supported.
+                        compatibility, currently only "all" is supported.
         '''
         if type(caltype) != str:
             raise RecipeExcept("caltype not string, type = " + str( type(caltype)))
@@ -1616,8 +1616,8 @@ class ReductionContext(dict):
     def rq_stack_get(self, purpose = ""):
         """
         :param purpose: The purpose is a string prepended to the stackingID
-                        used to identify the list (see get_list).
-        :type purpose: str
+                        used to identify the list (see ``get_list(..)``).
+        :type purpose: string
         
         The stackingID (see IDFactory module) is used to identify the list.
         The first input in the rc.inputs list is used as the reference image 
@@ -1627,7 +1627,7 @@ class ReductionContext(dict):
         The stackingID function in IDFactory is meant to produce identical
         stacking identifiers for different images which can/should be stacked 
         together, e.g. based
-        on program id and/or other details.  Again, see IDFactory for the
+        on program ID and/or other details.  Again, see IDFactory for the
         particular algorithm in use.
         
         :note: a versioning system is latent within the code, and is added
@@ -1648,7 +1648,7 @@ class ReductionContext(dict):
         :param purpose: The purpose argument is a string prefixed to the
             generated stackingID.  This allows two images which would
             produce identical stackingIDs to go in different lists,
-            i.e. such as a fringe frame which, which might be prepended with
+            i.e. such as a fringe frame which might be prepended with
             "fringe" as the purpose.
             
         :type purpose: str
@@ -1696,20 +1696,19 @@ class ReductionContext(dict):
     
     def list_append(self, id, files, cachefile = None):
         """
-        :param id: A string which identifies the list to append the listed 
-            filenames to.
-        :type id: str
+        :param id: A string that identifies to which list to append the filenames.
+        :type id: string
         :param files: A list of filenames to add to the list.
-        :type files: list of str
-        :param cachefile: The filename to use to store the list.
-        :type cachefile: str
+        :type files: list of strings
+        :param cachefile: Filename to use to store the list.
+        :type cachefile: string
         
-        The caller is expected to supply cachefile, though in principle
+        The caller is expected to supply ``cachefile``, which in principle
         a value of "None" could mean the "default cachefile" this is not
-        supported by the adcc as of yet, since the desired behavior is for
+        supported by the ``adcc`` as of yet. The desired behavior is for
         reduce instances running in the same directory to cooperate, and those
         running in separate directories be kept separate, and this is 
-        implemented by providing an argument for cachefile which is in a 
+        implemented by providing an argument for ``cachefile`` which is in a 
         generated subdirectory (hidden) based on the startup directory
         for the reduce process.  
         

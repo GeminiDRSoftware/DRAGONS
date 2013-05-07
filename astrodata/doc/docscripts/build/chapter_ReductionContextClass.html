@@ -1,0 +1,682 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. ReductionContext Class Reference &mdash; astrodata documentation v1.0beta documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0beta',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="astrodata documentation v1.0beta documentation" href="index.html" />
+    <link rel="next" title="4. AstroData Configuration Package Development Guide" href="developmentGuide.html" />
+    <link rel="prev" title="2.5.1.1. Using Slices and “Subdata”" href="gen.ADMANUAL-ADSubdata.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="developmentGuide.html" title="4. AstroData Configuration Package Development Guide"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gen.ADMANUAL-ADSubdata.html" title="2.5.1.1. Using Slices and “Subdata”"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">astrodata documentation v1.0beta documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3. ReductionContext Class Reference</a><ul>
+<li><a class="reference internal" href="#parameter-and-dictionary-features">3.1. Parameter and Dictionary Features</a><ul>
+<li><a class="reference internal" href="#the-in-operator-contains">3.1.1. The &#8220;in&#8221; operator: contains(..)</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#dataset-streams-input-and-output-datasets">3.2. Dataset Streams: Input and Output Datasets</a><ul>
+<li><a class="reference internal" href="#get-inputs">3.2.1. get_inputs(..)</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#get-inputs-as-astrodata">3.2.2. get_inputs_as_astrodata(..)</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#get-inputs-as-filenames">3.2.3. get_inputs_as_filenames(..)</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#get-stream">3.2.4. get_stream(..)</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#get-reference-image">3.2.5. get_reference_image(..)</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#report-output">3.2.6. report_output(..)</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#switch-stream">3.2.7. switch_stream(..)</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#adcc-services">3.3. ADCC Services</a></li>
+<li><a class="reference internal" href="#calibrations">3.4. Calibrations</a><ul>
+<li><a class="reference internal" href="#get-cal">3.4.1. get_cal(..)</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#rq-cal">3.4.2. rq_cal(..)</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#stacking">3.5. Stacking</a><ul>
+<li><a class="reference internal" href="#rq-stack-get">3.5.1. rq_stack_get(..)</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#rq-stack-update">3.5.2. rq_stack_update(..)</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#lists">3.6. Lists</a><ul>
+<li><a class="reference internal" href="#list-append">3.6.1. list_append(..)</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#get-list">3.6.2. get_list(..)</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#utility">3.7. Utility</a><ul>
+<li><a class="reference internal" href="#prepend-names">3.7.1. prepend_names(..)</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#run">3.7.2. run(..)</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gen.ADMANUAL-ADSubdata.html"
+                        title="previous chapter">2.5.1.1. Using Slices and &#8220;Subdata&#8221;</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="developmentGuide.html"
+                        title="next chapter">4. AstroData Configuration Package Development Guide</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/chapter_ReductionContextClass.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="reductioncontext-class-reference">
+<h1>3. ReductionContext Class Reference<a class="headerlink" href="#reductioncontext-class-reference" title="Permalink to this headline">¶</a></h1>
+<p>The following is information about the ReductionContext class. When writing
+primitives the reduction context is passed into the primitive as the sole
+argument (generally named <tt class="docutils literal"><span class="pre">rc</span></tt> by
+Gemini conventions and in addition to the <tt class="docutils literal"><span class="pre">self</span></tt> argument).
+This object is used by the primitive to both get inputs
+and store outputs, as well as to communicate with subsystems
+like the calibration queries system or list keeping for stacking.</p>
+<div class="section" id="parameter-and-dictionary-features">
+<h2>3.1. Parameter and Dictionary Features<a class="headerlink" href="#parameter-and-dictionary-features" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="the-in-operator-contains">
+<h3>3.1.1. The &#8220;in&#8221; operator: contains(..)<a class="headerlink" href="#the-in-operator-contains" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.__contains__">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">__contains__</tt><big>(</big><em>thing</em><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.__contains__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>thing</strong> (<em>str</em>) &#8211; A key to check for presence in the Reduction Context</td>
+</tr>
+</tbody>
+</table>
+<p>The <tt class="docutils literal"><span class="pre">__contains__</span></tt> function implements the Python <tt class="docutils literal"><span class="pre">in</span></tt> operator. The 
+<tt class="docutils literal"><span class="pre">ReductionContext</span></tt> is a subclass of a <tt class="docutils literal"><span class="pre">dict</span></tt>, but it also has a secondary
+dict of &#8220;local parameters&#8221; which are available to the current primitive         only, which are also tested by the <tt class="docutils literal"><span class="pre">__contains__(..)</span></tt> member.
+These parameters will generally be those passed in as arguments
+to a primitive call from a recipe.</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="dataset-streams-input-and-output-datasets">
+<h2>3.2. Dataset Streams: Input and Output Datasets<a class="headerlink" href="#dataset-streams-input-and-output-datasets" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="get-inputs">
+<h3>3.2.1. get_inputs(..)<a class="headerlink" href="#get-inputs" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.get_inputs">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">get_inputs</tt><big>(</big><em>style=None</em><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.get_inputs" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>style</strong> (<em>string</em>) &#8211; Controls the type of return value. Supported values are &#8220;AD&#8221;
+and &#8220;FN&#8221; for <tt class="docutils literal"><span class="pre">AstroData</span></tt> and <tt class="docutils literal"><span class="pre">string</span></tt> filenames respectively.</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body">a list of <tt class="docutils literal"><span class="pre">AstroData</span></tt> instances or <tt class="docutils literal"><span class="pre">string</span></tt> filenames</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+</tbody>
+</table>
+<p><tt class="docutils literal"><span class="pre">get_inputs(..)</span></tt> gets the current input datasets from the current stream. You cannot
+choose the stream, use <tt class="docutils literal"><span class="pre">get_stream(..)</span></tt> for that.  To report modified
+datasets back to the stream use <tt class="docutils literal"><span class="pre">report_output(..)</span></tt>.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="get-inputs-as-astrodata">
+<h3>3.2.2. get_inputs_as_astrodata(..)<a class="headerlink" href="#get-inputs-as-astrodata" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.get_inputs_as_astrodata">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">get_inputs_as_astrodata</tt><big>(</big><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.get_inputs_as_astrodata" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is equivalent to:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">get_inputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&quot;AD&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="get-inputs-as-filenames">
+<h3>3.2.3. get_inputs_as_filenames(..)<a class="headerlink" href="#get-inputs-as-filenames" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.get_inputs_as_filenames">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">get_inputs_as_filenames</tt><big>(</big><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.get_inputs_as_filenames" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is equivalent for:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">get_inputs</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s">&quot;FN&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="get-stream">
+<h3>3.2.4. get_stream(..)<a class="headerlink" href="#get-stream" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.get_stream">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">get_stream</tt><big>(</big><em>stream='main'</em>, <em>empty=False</em>, <em>style=None</em><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.get_stream" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>stream</strong> (<em>str</em>) &#8211; A string name for the stream in question.  
+To use the standard stream do not set.</li>
+<li><strong>empty</strong> (<em>bool</em>) &#8211; Controls if the stream is
+emptied, defaults to &#8220;False&#8221;.</li>
+<li><strong>style</strong> &#8211; controls the type of output. &#8220;AD&#8221; directs the function
+to return a list
+of AstroData instances. &#8220;FN&#8221; directs it to return a list of filenames.
+If left blank or set to <tt class="xref docutils literal"><span class="pre">None</span></tt>, the AstroDataRecord structures used
+by the Reduction Context will be returned.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a list of <tt class="docutils literal"><span class="pre">AstroDataRecord</span></tt> objects, <tt class="docutils literal"><span class="pre">AstroData</span></tt> objects or filenames.</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><tt class="docutils literal"><span class="pre">get_stream</span></tt> returns a list of AstroData instances in the specified stream.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="get-reference-image">
+<h3>3.2.5. get_reference_image(..)<a class="headerlink" href="#get-reference-image" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.get_reference_image">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">get_reference_image</tt><big>(</big><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.get_reference_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function returns the current reference image.  At the moment
+this is simply the first dataset in the current inputs.  However,
+use of this function allows us to evolve our concept of reference
+image for more complicated cases where the choice of a &#8220;reference&#8221; image
+may need to be different (e.g. require some data analysis to determine).</p>
+</dd></dl>
+
+</div>
+<div class="section" id="report-output">
+<h3>3.2.6. report_output(..)<a class="headerlink" href="#report-output" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.report_output">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">report_output</tt><big>(</big><em>inp</em>, <em>stream=None</em>, <em>load=True</em><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.report_output" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>inp</strong> (<em>str, AstroData instance, or list</em>) &#8211; The inputs to report (add to the given or current stream).
+Input can be a string (filename), an AstroData instance, or a list of
+strings and/or AstroData instances.  Each individual dataset is
+wrapped in an AstroDataRecord and stored in the current stream.</li>
+<li><strong>stream</strong> (<em>str</em>) &#8211; If not specified the default (&#8220;main&#8221;) stream is used.
+When specified the named stream is created if necessary.</li>
+<li><strong>load</strong> &#8211; A boolean (default: True) which specifies whether string
+arguments (pathnames) should be loaded into AstroData instances
+or if it should be kept as a filename, unloaded.  This argument
+has no effect when &#8220;report&#8221;
+<tt class="docutils literal"><span class="pre">AstroData</span></tt> instances already in memory.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>This function, along with <tt class="docutils literal"><span class="pre">get_inputs(..)</span></tt> allows a primitive to
+interact with the datastream in which it was invoked (or access
+other streams).</p>
+</dd></dl>
+
+</div>
+<div class="section" id="switch-stream">
+<h3>3.2.7. switch_stream(..)<a class="headerlink" href="#switch-stream" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.switch_stream">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">switch_stream</tt><big>(</big><em>switch_to=None</em><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.switch_stream" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>switch_to</strong> (<em>str</em>) &#8211; The string name of the stream to switch to. The 
+named stream must already exist.</td>
+</tr>
+<tr class="field"><th class="field-name">Note :</th><td class="field-body">This function is used by the infrastructure (in an application
+such as reduce and in the ReductionContext) to switch the stream
+being used. Reported output then goes to the specified stream.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="adcc-services">
+<h2>3.3. ADCC Services<a class="headerlink" href="#adcc-services" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="calibrations">
+<h2>3.4. Calibrations<a class="headerlink" href="#calibrations" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="get-cal">
+<h3>3.4.1. get_cal(..)<a class="headerlink" href="#get-cal" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.get_cal">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">get_cal</tt><big>(</big><em>data</em>, <em>caltype</em><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.get_cal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve calibration.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data</strong> (<em>string or AstroData instance</em>) &#8211; File for which calibration must be retrieved.</li>
+<li><strong>caltype</strong> (<em>string</em>) &#8211; The type of calibration (ex.&#8217;bias&#8217;, &#8216;flat&#8217;).</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The URI of the currently stored calibration or None.</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">string or None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="rq-cal">
+<h3>3.4.2. rq_cal(..)<a class="headerlink" href="#rq-cal" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.rq_cal">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">rq_cal</tt><big>(</big><em>caltype</em>, <em>inputs=None</em>, <em>source='all'</em><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.rq_cal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create calibration requests based on raw inputs.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>caltype</strong> (<em>str</em>) &#8211; The type of calibration. For example, &#8216;bias&#8217; and &#8216;flat&#8217;.</li>
+<li><strong>inputs</strong> (<em>list of AstroData instances</em>) &#8211; The datasets for which to find calibrations, if not present
+or <tt class="xref docutils literal"><span class="pre">None</span></tt> current &#8220;inputs&#8221; are used.</li>
+<li><strong>source</strong> &#8211; Directs what calibration service to contact, for future
+compatibility, currently only &#8220;all&#8221; is supported.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="stacking">
+<h2>3.5. Stacking<a class="headerlink" href="#stacking" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="rq-stack-get">
+<h3>3.5.1. rq_stack_get(..)<a class="headerlink" href="#rq-stack-get" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.rq_stack_get">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">rq_stack_get</tt><big>(</big><em>purpose=''</em><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.rq_stack_get" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>purpose</strong> (<em>string</em>) &#8211; The purpose is a string prepended to the stackingID
+used to identify the list (see <tt class="docutils literal"><span class="pre">get_list(..)</span></tt>).</td>
+</tr>
+</tbody>
+</table>
+<p>The stackingID (see IDFactory module) is used to identify the list.
+The first input in the rc.inputs list is used as the reference image 
+to generate  
+the stackingID portion of the list identifier.</p>
+<p>The stackingID function in IDFactory is meant to produce identical
+stacking identifiers for different images which can/should be stacked 
+together, e.g. based
+on program ID and/or other details.  Again, see IDFactory for the
+particular algorithm in use.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Note :</th><td class="field-body">a versioning system is latent within the code, and is added
+to the id to allow adaptation in the future if identifer construction
+methods change.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="rq-stack-update">
+<h3>3.5.2. rq_stack_update(..)<a class="headerlink" href="#rq-stack-update" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.rq_stack_update">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">rq_stack_update</tt><big>(</big><em>purpose=None</em><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.rq_stack_update" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>purpose</strong> (<em>str</em>) &#8211; The purpose argument is a string prefixed to the
+generated stackingID.  This allows two images which would
+produce identical stackingIDs to go in different lists,
+i.e. such as a fringe frame which might be prepended with
+&#8220;fringe&#8221; as the purpose.</td>
+</tr>
+</tbody>
+</table>
+<p>This function creates requests to update a stack list with the files
+in the current rc.inputs list.  Each will go in a stack based on its
+own stackingID (prepended with &#8220;purpose&#8221;).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Note :</th><td class="field-body">this function places a message on an outbound message queue
+which will not be sent until the next &#8220;yield&#8221;, allowing the
+ReductionObject command clause to execute.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="lists">
+<h2>3.6. Lists<a class="headerlink" href="#lists" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="list-append">
+<h3>3.6.1. list_append(..)<a class="headerlink" href="#list-append" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.list_append">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">list_append</tt><big>(</big><em>id</em>, <em>files</em>, <em>cachefile=None</em><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.list_append" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>id</strong> (<em>string</em>) &#8211; A string that identifies to which list to append the filenames.</li>
+<li><strong>files</strong> (<em>list of strings</em>) &#8211; A list of filenames to add to the list.</li>
+<li><strong>cachefile</strong> (<em>string</em>) &#8211; Filename to use to store the list.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The caller is expected to supply <tt class="docutils literal"><span class="pre">cachefile</span></tt>, which in principle
+a value of &#8220;None&#8221; could mean the &#8220;default cachefile&#8221; this is not
+supported by the <tt class="docutils literal"><span class="pre">adcc</span></tt> as of yet. The desired behavior is for
+reduce instances running in the same directory to cooperate, and those
+running in separate directories be kept separate, and this is 
+implemented by providing an argument for <tt class="docutils literal"><span class="pre">cachefile</span></tt> which is in a 
+generated subdirectory (hidden) based on the startup directory
+for the reduce process.</p>
+<p>The adcc will negotiate all contention and race conditions regarding
+multiple applications manipulating a list simultaneously in separate
+process.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="get-list">
+<h3>3.6.2. get_list(..)<a class="headerlink" href="#get-list" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.get_list">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">get_list</tt><big>(</big><em>id</em><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.get_list" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>id</strong> (<em>str</em>) &#8211; Lists are associated with arbitrary identifiers,
+passed as strings.  See <tt class="docutils literal"><span class="pre">IDFactory</span></tt> for IDs built from
+standard <tt class="docutils literal"><span class="pre">astrodata</span></tt> characteristics.</td>
+</tr>
+</tbody>
+</table>
+<p>The list functionality allows storing dataset names in a list
+which is shared by all instances of reduce running in a given
+directory.  The list is kept by an <tt class="docutils literal"><span class="pre">adcc</span></tt> instance in charge of that
+sub-directory.  The <tt class="docutils literal"><span class="pre">get_list(..)</span></tt> function retrieves a list that has
+already been requested via <tt class="docutils literal"><span class="pre">rq_stack_get(..)</span></tt> which initiates the
+interprocess request.</p>
+<p>This function does not block, and if the stack was not requested
+prior to a yeild, prior to this call, then None or an out of date
+version of this list will be retrieved.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Note :</th><td class="field-body">&#8220;get_stack&#8221; calls get_list but takes a &#8220;purpose&#8221; to which it adds
+a stackingID as a suffix to the list identifier.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="utility">
+<h2>3.7. Utility<a class="headerlink" href="#utility" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="prepend-names">
+<h3>3.7.1. prepend_names(..)<a class="headerlink" href="#prepend-names" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.prepend_names">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">prepend_names</tt><big>(</big><em>prepend</em>, <em>current_dir=True</em>, <em>filepaths=None</em><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.prepend_names" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>prepend</strong> (<em>string</em>) &#8211; The string to be put at the front of the file.</li>
+<li><strong>current_dir</strong> (<em>boolean</em>) &#8211; Used if the filename (astrodata filename) is in the
+current working directory.</li>
+<li><strong>filepaths</strong> &#8211; If present, these file paths will be modified, otherwise
+the current inputs are modified.</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">List of new prepended paths.</p>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Prepends a prefix string to either the inputs or the given list of filenames.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="run">
+<h3>3.7.2. run(..)<a class="headerlink" href="#run" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<dl class="method">
+<dt id="astrodata.RecipeManager.ReductionContext.run">
+<tt class="descclassname">ReductionContext.</tt><tt class="descname">run</tt><big>(</big><em>stepname</em><big>)</big><a class="headerlink" href="#astrodata.RecipeManager.ReductionContext.run" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>stepname</strong> (<em>string</em>) &#8211; The primitive or recipe name to run. Note: this is 
+actually compiled as a recipe. Proxy recipe names may appear
+in the logs.</td>
+</tr>
+</tbody>
+</table>
+<p>The <tt class="docutils literal"><span class="pre">run(..)</span></tt> function allows a primitive to use the reduction
+context to execute another recipe or primitive.</p>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="developmentGuide.html" title="4. AstroData Configuration Package Development Guide"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gen.ADMANUAL-ADSubdata.html" title="2.5.1.1. Using Slices and “Subdata”"
+             >previous</a> |</li>
+        <li><a href="index.html">astrodata documentation v1.0beta documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2010, Craig Allen.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

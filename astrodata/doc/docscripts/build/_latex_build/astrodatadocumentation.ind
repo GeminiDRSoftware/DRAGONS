@@ -14,46 +14,46 @@
   \indexspace
   \bigletter C
   \item close() (astrodata.data.AstroData method), \hyperpage{5}
-  \item correlate() (in module astrodata.data), \hyperpage{13}
-  \item count\_exts() (astrodata.data.AstroData method), \hyperpage{10}
+  \item correlate() (in module astrodata.data), \hyperpage{14}
+  \item count\_exts() (astrodata.data.AstroData method), \hyperpage{11}
 
   \indexspace
   \bigletter D
-  \item data (astrodata.data.AstroData attribute), \hyperpage{11}
+  \item data (astrodata.data.AstroData attribute), \hyperpage{12}
 
   \indexspace
   \bigletter E
   \item ext\_get\_key\_value() (astrodata.data.AstroData method), \hyperpage{9}
-  \item ext\_set\_key\_value() (astrodata.data.AstroData method), \hyperpage{9}
+  \item ext\_set\_key\_value() (astrodata.data.AstroData method), \hyperpage{10}
 
   \indexspace
   \bigletter G
   \item get\_cal() (astrodata.RecipeManager.ReductionContext method), \hyperpage{19}
-  \item get\_data() (astrodata.data.AstroData method), \hyperpage{11}
-  \item get\_header() (astrodata.data.AstroData method), \hyperpage{12}
+  \item get\_data() (astrodata.data.AstroData method), \hyperpage{12}
+  \item get\_header() (astrodata.data.AstroData method), \hyperpage{13}
   \item get\_inputs() (astrodata.RecipeManager.ReductionContext method), \hyperpage{17}
   \item get\_inputs\_as\_astrodata() (astrodata.RecipeManager.ReductionContext method), 
 		\hyperpage{18}
   \item get\_inputs\_as\_filenames() (astrodata.RecipeManager.ReductionContext method), 
 		\hyperpage{18}
-  \item get\_key\_value() (astrodata.data.AstroData method), \hyperpage{8}
+  \item get\_key\_value() (astrodata.data.AstroData method), \hyperpage{9}
   \item get\_list() (astrodata.RecipeManager.ReductionContext method), \hyperpage{21}
   \item get\_reference\_image() (astrodata.RecipeManager.ReductionContext method), \hyperpage{18}
   \item get\_status() (astrodata.data.AstroData method), \hyperpage{7}
   \item get\_stream() (astrodata.RecipeManager.ReductionContext method), \hyperpage{18}
   \item get\_types() (astrodata.data.AstroData method), \hyperpage{7}
-  \item get\_typology() (astrodata.data.AstroData method), \hyperpage{7}
+  \item get\_typology() (astrodata.data.AstroData method), \hyperpage{8}
 
   \indexspace
   \bigletter H
-  \item header (astrodata.data.AstroData attribute), \hyperpage{12}
+  \item header (astrodata.data.AstroData attribute), \hyperpage{13}
 
   \indexspace
   \bigletter I
   \item info() (astrodata.data.AstroData method), \hyperpage{6}
   \item infostr() (astrodata.data.AstroData method), \hyperpage{6}
   \item insert() (astrodata.data.AstroData method), \hyperpage{5}
-  \item is\_type() (astrodata.data.AstroData method), \hyperpage{6}
+  \item is\_type() (astrodata.data.AstroData method), \hyperpage{7}
 
   \indexspace
   \bigletter L
@@ -68,7 +68,7 @@
 
   \indexspace
   \bigletter R
-  \item re\_header\_keys() (in module astrodata.data), \hyperpage{14}
+  \item re\_header\_keys() (in module astrodata.data), \hyperpage{15}
   \item rename\_ext() (astrodata.data.AstroData method), \hyperpage{13}
   \item report\_output() (astrodata.RecipeManager.ReductionContext method), \hyperpage{18}
   \item rq\_cal() (astrodata.RecipeManager.ReductionContext method), \hyperpage{19}
@@ -79,7 +79,7 @@
   \indexspace
   \bigletter S
   \item set\_data() (astrodata.data.AstroData method), \hyperpage{12}
-  \item set\_header() (astrodata.data.AstroData method), \hyperpage{12}
+  \item set\_header() (astrodata.data.AstroData method), \hyperpage{13}
   \item set\_key\_value() (astrodata.data.AstroData method), \hyperpage{9}
   \item switch\_stream() (astrodata.RecipeManager.ReductionContext method), \hyperpage{19}
 

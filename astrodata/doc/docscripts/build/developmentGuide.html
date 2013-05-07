@@ -7,13 +7,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>4. AstroData Configuration Package Development Guide &mdash; astrodata documentation v1.00 documentation</title>
+    <title>4. AstroData Configuration Package Development Guide &mdash; astrodata documentation v1.0beta documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '1.00',
+        VERSION:     '1.0beta',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -22,7 +22,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="astrodata documentation v1.00 documentation" href="index.html" />
+    <link rel="top" title="astrodata documentation v1.0beta documentation" href="index.html" />
     <link rel="next" title="4.1. Elements" href="configElements.html" />
     <link rel="prev" title="3. ReductionContext Class Reference" href="chapter_ReductionContextClass.html" /> 
   </head>
@@ -39,7 +39,7 @@
         <li class="right" >
           <a href="chapter_ReductionContextClass.html" title="3. ReductionContext Class Reference"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li> 
+        <li><a href="index.html">astrodata documentation v1.0beta documentation</a> &raquo;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar">
@@ -85,23 +85,24 @@
 <li class="toctree-l2"><a class="reference internal" href="configElements.html#configuration-elements-which-have-to-be-developed">4.1.2. Configuration Elements Which Have To Be  Developed</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="startingTheConfig.html">4.2. Creating A Config Package</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="startingTheConfig.html">4.2. Creating A Configuration Package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="startingTheConfig.html#preparation">4.2.1. Preparation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="startingTheConfig.html#clone-the-sample-package">4.2.2. Clone the Sample Package</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="creatingAnAstroDataType.html">4.3. Creating An AstroDataType</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="creatingAnAstroDataType.html#the-class-definition-line-by-line">4.3.1. The Class Definition Line by Line</a></li>
-<li class="toctree-l2"><a class="reference internal" href="creatingAnAstroDataType.html#the-requirement-classes">4.3.2. The Requirement Classes</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="creatingAnAstroDataType.html#concrete-requirements">4.3.2.1. Concrete Requirements</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="creatingAnAstroDataType.html#isclass-other-class-name">4.3.2.1.1. ISCLASS(other_class_name)</a></li>
-<li class="toctree-l4"><a class="reference internal" href="creatingAnAstroDataType.html#phu-keyname-re-val-keyname2-re-val2">4.3.2.1.2. PHU(keyname=re_val, [keyname2=re_val2 [...]])</a></li>
+<li class="toctree-l2"><a class="reference internal" href="creatingAnAstroDataType.html#overview">4.3.1. Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="creatingAnAstroDataType.html#the-class-definition-line-by-line">4.3.2. The Class Definition Line by Line</a></li>
+<li class="toctree-l2"><a class="reference internal" href="creatingAnAstroDataType.html#the-requirement-classes">4.3.3. The Requirement Classes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="creatingAnAstroDataType.html#concrete-requirements">4.3.3.1. Concrete Requirements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="creatingAnAstroDataType.html#isclass-other-class-name">4.3.3.1.1. ISCLASS(other_class_name)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="creatingAnAstroDataType.html#phu-keyname-re-val-keyname2-re-val2">4.3.3.1.2. PHU(keyname=re_val, [keyname2=re_val2 [...]])</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="creatingAnAstroDataType.html#logical-requirement-classes">4.3.2.2. Logical Requirement Classes</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="creatingAnAstroDataType.html#and-requirement-requirement-requirement-requirement">4.3.2.2.1. AND(&lt;requirement&gt;,&lt;requirement&gt; [, &lt;requirement&gt; [, &lt;requirement&gt; ] .. ])</a></li>
-<li class="toctree-l4"><a class="reference internal" href="creatingAnAstroDataType.html#not-requirement">4.3.2.2.2. NOT(&lt;requirement&gt;)</a></li>
-<li class="toctree-l4"><a class="reference internal" href="creatingAnAstroDataType.html#or-requirement-requirement-requirement-requirement">4.3.2.2.3. OR(&lt;requirement&gt;,&lt;requirement&gt; [, &lt;requirement&gt; [, &lt;requirement&gt; ] .. ])</a></li>
+<li class="toctree-l3"><a class="reference internal" href="creatingAnAstroDataType.html#logical-requirement-classes">4.3.3.2. Logical Requirement Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="creatingAnAstroDataType.html#and-requirement-requirement-requirement-requirement">4.3.3.2.1. AND(&lt;requirement&gt;,&lt;requirement&gt; [, &lt;requirement&gt; [, &lt;requirement&gt; ] .. ])</a></li>
+<li class="toctree-l4"><a class="reference internal" href="creatingAnAstroDataType.html#not-requirement">4.3.3.2.2. NOT(&lt;requirement&gt;)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="creatingAnAstroDataType.html#or-requirement-requirement-requirement-requirement">4.3.3.2.3. OR(&lt;requirement&gt;,&lt;requirement&gt; [, &lt;requirement&gt; [, &lt;requirement&gt; ] .. ])</a></li>
 </ul>
 </li>
 </ul>
@@ -120,10 +121,10 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="creatingAPrimitive.html">4.5. Creating Recipes and Primitive</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="creatingAPrimitive.html#understanding-primitives">4.5.1. Understanding Primitives</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="creatingAPrimitive.html#primitives-indeces">4.5.1.1. Primitives Indeces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="creatingAPrimitive.html#primitive-indices">4.5.1.1. Primitive Indices</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="creatingAPrimitive.html#recipies">4.5.2. Recipies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="creatingAPrimitive.html#recipes">4.5.2. Recipes</a></li>
 </ul>
 </li>
 </ul>
@@ -148,7 +149,7 @@
         <li class="right" >
           <a href="chapter_ReductionContextClass.html" title="3. ReductionContext Class Reference"
              >previous</a> |</li>
-        <li><a href="index.html">astrodata documentation v1.00 documentation</a> &raquo;</li> 
+        <li><a href="index.html">astrodata documentation v1.0beta documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

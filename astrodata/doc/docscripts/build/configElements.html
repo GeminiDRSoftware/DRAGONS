@@ -1,0 +1,175 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4.1. Elements &mdash; astrodata documentation v1.0beta documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0beta',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="astrodata documentation v1.0beta documentation" href="index.html" />
+    <link rel="up" title="4. AstroData Configuration Package Development Guide" href="developmentGuide.html" />
+    <link rel="next" title="4.2. Creating A Configuration Package" href="startingTheConfig.html" />
+    <link rel="prev" title="4. AstroData Configuration Package Development Guide" href="developmentGuide.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="startingTheConfig.html" title="4.2. Creating A Configuration Package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="developmentGuide.html" title="4. AstroData Configuration Package Development Guide"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">astrodata documentation v1.0beta documentation</a> &raquo;</li>
+          <li><a href="developmentGuide.html" accesskey="U">4. AstroData Configuration Package Development Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4.1. Elements</a><ul>
+<li><a class="reference internal" href="#the-general-configuration-creation-process">4.1.1. The General Configuration Creation Process</a></li>
+<li><a class="reference internal" href="#configuration-elements-which-have-to-be-developed">4.1.2. Configuration Elements Which Have To Be  Developed</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="developmentGuide.html"
+                        title="previous chapter">4. AstroData Configuration Package Development Guide</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="startingTheConfig.html"
+                        title="next chapter">4.2. Creating A Configuration Package</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/configElements.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="elements">
+<h1>4.1. Elements<a class="headerlink" href="#elements" title="Permalink to this headline">¶</a></h1>
+<p>Instrument-mode specific behaviors available through the <tt class="docutils literal"><span class="pre">AstroData</span></tt> class
+are not implemented in the <tt class="docutils literal"><span class="pre">astrodata</span></tt> package itself, but are instead loaded from
+configuration packages. In the case of Gemini data the
+configuration package is a directory named <tt class="docutils literal"><span class="pre">astrodata_Gemini</span></tt>.  This
+configuration path is found by astrodata by the containing directory
+appearing either on the <tt class="docutils literal"><span class="pre">PYTHONPATH</span></tt>, or on either of two astrodata environment
+variables, <tt class="docutils literal"><span class="pre">RECIPEPATH</span></tt> or <tt class="docutils literal"><span class="pre">ADCONFIGPATH</span></tt>.</p>
+<p>The <tt class="docutils literal"><span class="pre">astrodata</span></tt> package searches for all directories named <tt class="docutils literal"><span class="pre">astrodata_&lt;anything&gt;</span></tt>
+in these environment variables.  Though the configurations contain
+executable python, it is not meant to be imported as a regular python module but
+is loaded by the astrodata package.</p>
+<div class="section" id="the-general-configuration-creation-process">
+<h2>4.1.1. The General Configuration Creation Process<a class="headerlink" href="#the-general-configuration-creation-process" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>Define a tree of <tt class="docutils literal"><span class="pre">AstroDataTypes</span></tt> identifying types of your data.</li>
+<li>Create &#8220;descriptor&#8221; functions which calculate a particular metadata
+value for nodes of the <tt class="docutils literal"><span class="pre">AstroDataType</span></tt> tree defined,
+such as <tt class="docutils literal"><span class="pre">gain</span></tt> or <tt class="docutils literal"><span class="pre">filter_name</span></tt>.</li>
+<li>Write Python member functions bundled into <tt class="docutils literal"><span class="pre">PrimitivesSet</span></tt> classes,
+which specifically understand your dataset.</li>
+<li>Assemble primitives into sequential lists, which we call  processing
+&#8220;recipes&#8221;.</li>
+</ol>
+<p>Initially you will develop classifications
+for your data, and functions which will provide standard information, allowing
+you to use AstroData, e.g. in processing scripts.  Then you will put your
+processing scripts in the form of &#8220;primitives&#8221; and collect these in &#8220;recipes&#8221;
+so they can be used for automated data reduction.</p>
+</div>
+<div class="section" id="configuration-elements-which-have-to-be-developed">
+<h2>4.1.2. Configuration Elements Which Have To Be  Developed<a class="headerlink" href="#configuration-elements-which-have-to-be-developed" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><strong>AstroData Types</strong> identify classifications of MEF datasets to which other
+features can be assigned. Types have requirements which must hold for
+an identified dataset and also information about the place of the type in
+an overall type hierarchy (e.g. The GMOS type is the parent of GMOS_IMAGE).</li>
+<li><strong>AstroData Descriptors</strong> are functions which calculate a particular type
+of metadata which is expected to be available for all datasets throughout
+the type hierarchy. Examples from the Gemini configuration package are <tt class="docutils literal"><span class="pre">gain</span></tt>
+and <tt class="docutils literal"><span class="pre">filtername</span></tt>.  Different instruments
+store information about the gain in unique headers, and may even require
+lookup tables not located in the dataset.  Descriptors are type-appropriate
+functions assigned at runtime to the astrodata instance, allowing
+type-specific implementations to manage these peculiarities.</li>
+<li><strong>Primitives</strong> are dataset transformations meant to run in the Recipe System.
+Primitives are implemented as python generator functions in sets of primitives
+that apply to a common AstroDataType.</li>
+<li><strong>Recipes</strong> are lists of primitives stored in plain text which can be executed
+by the AstroData Recipe System. While primitives work on the <tt class="docutils literal"><span class="pre">Reduction</span>
+<span class="pre">Context</span></tt> explicitly, the reduction context is implicit in recipes
+so that recipes can arguably be considered to contain
+&#8220;scientifically meaningful&#8221; steps with no &#8220;software artifacts&#8221;.</li>
+</ol>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="startingTheConfig.html" title="4.2. Creating A Configuration Package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="developmentGuide.html" title="4. AstroData Configuration Package Development Guide"
+             >previous</a> |</li>
+        <li><a href="index.html">astrodata documentation v1.0beta documentation</a> &raquo;</li>
+          <li><a href="developmentGuide.html" >4. AstroData Configuration Package Development Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2010, Craig Allen.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

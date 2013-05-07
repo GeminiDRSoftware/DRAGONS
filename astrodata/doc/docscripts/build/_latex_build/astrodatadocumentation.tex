@@ -11,9 +11,9 @@
 \usepackage{sphinx}
 
 
-\title{Astrodata Package Manual}
-\date{March 09, 2012}
-\release{1.00}
+\title{Astrodata Package Programmer's Manual}
+\date{May 07, 2013}
+\release{1.0beta}
 \author{Craig Allen}
 \newcommand{\sphinxlogo}{}
 \renewcommand{\releasename}{Release}
@@ -126,53 +126,55 @@
 \item {} 
 v1.0 - Document ready for internal review
 
+\end{itemize}
+
+
+\subsection{Abbreviations Table}
+\label{gen.ADMANUAL_Purpose::doc}\label{gen.ADMANUAL_Purpose:abbreviations-table}\begin{itemize}
 \item {} 
-v0.91 - Document (nearly) ready for internal review
+HDU: Header-Data Unit
 
 \item {} 
-v0.9 - Review document created
+MEF: Multi-Extension FITS
 
 \item {} 
-v0.2 - Moved to Ophiuchus Craig Allen, Sphinx Generated
+PHU: Primary Header Unit
 
 \item {} 
-v0.1 - (final) - Initial Revision, Craig Allen, Sphinx Generated,
-testing Sphinx
+URL: Uniform Resource Locator
 
 \end{itemize}
 
-\textgreater{} \textless{} p\textgreater{}
-
 
 \subsection{Intended Audience}
-\label{gen.ADMANUAL_Purpose::doc}\label{gen.ADMANUAL_Purpose:intended-audience}
-This document is intended for both new and experience developers using
-astrodata:
+\label{gen.ADMANUAL_Purpose:intended-audience}
+This document is intended for both new and experienced developers using
+\code{astrodata}:
 \begin{enumerate}
 \item {} 
-users of the astrodata package in conjunction with the
-``astrodata\_Gemini'' configuration package
+Users of the \code{astrodata} package, in conjunction with the
+\code{astrodata\_Gemini} configuration package.
 
 \item {} 
-developers creating new configuration information (types,
-descriptors, and transformations), e.g. instrument developers
+Developers creating new configuration packages (types,
+descriptors, and transformations), e.g. instrument developers.
 
 \item {} 
-potential developers needing to understand the work involved prior
-to development (e.g. for making proposals)
+Potential developers needing to understand the work involved prior
+to development (e.g. for making proposals).
 
 \item {} 
-those trying to understand both what the system currently does,
+Those trying to understand both what the system currently does,
 it's design philosophy, and where the package can or is expected to
-evolve
+evolve.
 
 \end{enumerate}
 
 
-\subsection{Document Stucture}
-\label{gen.ADMANUAL_Purpose:document-stucture}
-This document is meant as an introductory user reference for Gemini
-Observatory's python-based data processing package, ``astrodata''. It is
+\subsection{Document Structure}
+\label{gen.ADMANUAL_Purpose:document-structure}
+This document is meant as an introductory programmer reference for Gemini
+Observatory's Python-based data processing package, \code{astrodata}. It is
 intended to serve both as an introductory reference for the actual
 function interfaces of two primary classes in the astrodata package,
 as well as a tool for new users to understand the general
@@ -180,35 +182,36 @@ characteristics of the package. To this end this document contains
 three related but somewhat distinct sections:
 \begin{itemize}
 \item {} 
-The first two chapters following this introduction are API reference
-manuals for the AstroData and ReductionContext classes respectively.
+Two chapters presenting the API reference
+manuals for the AstroData and ReductionContext classes, respectively.
 
 \item {} 
 A chapter on Creating an AstroData configuration Package, written as
-a hands on startup guide.
+a hands-on startup guide.
 
 \item {} 
-A chapter on the Concepts in the AstroData Infrastructure
+A chapter on the Concepts in the AstroData Infrastructure.
 
 \end{itemize}
 
-The AstroData class is a dataset abstraction for MEF files, while the
-ReductionContext is the interface for transformation primitives to
-communicate with the reduction system (i.e. access files in the
+The \code{AstroData} class is a dataset abstraction for MEF files, while the
+\code{ReductionContext} is the interface for transformation primitives to
+communicate with the reduction system (eg. access files in the
 pipeline, parameter information, execution context, and so on
 including all communication with the system.)
 
-The astrodata package includes only the infrastructure code, but is
-generally shipped with the astrodata\_Gemini configuration package,
+The \code{astrodata} package includes only the infrastructure code, but is
+generally shipped with the \code{astrodata\_Gemini} configuration package
 which contains all information and code regarding Gemini data types
-and type-specific transformations. The astrodata package also ships
+and type-specific transformations, and with the \code{astrodata\_FITS} configuration
+package that contains standard FITS definitions. The astrodata package also ships
 with an auxillary package of useful functions in the form of the
-``gempy'' package.
+\code{gempy} package.
 
 The term ``astrodata'' in this document can refer to three somewhat
-distinct aspects of the system. There is ``AstroData'' the class, which
+distinct aspects of the system. There is \code{AstroData} the class, which
 is distinguishable in print by the camel caps capitalization and is
-the core software element of the system. There is ``astrodata'' the
+the core software element of the system. There is \code{astrodata} the
 importable python package, which from the user's point of view imports
 the configurations which are available in the environment, but which
 strictly speaking contains only the infrustructural code. And there is
@@ -218,18 +221,18 @@ configuration package and support library.
 
 \chapter{AstroData Class Reference}
 \label{chapter_AstroDataClass:astrodata-class-reference}\label{chapter_AstroDataClass::doc}
-The following is information about the AstroData class. For descriptions of
-arguments shown for the class constructor, see AstroData.\_\_init\_\_(..).  This
-documentation is generated from in source docstrings. To import the
+The following is information about the \code{AstroData} class. For descriptions of
+arguments shown for the class constructor, see \code{AstroData.\_\_init\_\_(..)}.  This
+documentation is generated from in-source docstrings. To import the
 \code{AstroData} class use:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k+kn}{from} \PYG{n+nn}{astrodata} \PYG{k+kn}{import} \PYG{n}{AstroData}
+\end{Verbatim}
 
 
 \section{AstroData Class}
-\label{chapter_AstroDataClass:astrodata-class}\begin{quote}
-
-from astrodata import AstroData
-\end{quote}
-
+\label{chapter_AstroDataClass:astrodata-class}
 \index{AstroData (class in astrodata.data)}
 
 \begin{fulllineitems}
@@ -240,53 +243,52 @@ instruments and modes.  Configuration packages are used to describe
 the specific data characteristics, layout, and to store type-specific
 implementations.
 
-MEFs can dbe generalized as lists of header-data units, with key-value 
-pairs populating headers and pixel data populating data,
+MEFs can be generalized as lists of header-data units (HDU), with key-value 
+pairs populating headers, and pixel values populating the data array.
 AstroData interprets a MEF as a single complex entity.  The individual
-``extensions'' with the MEF are available using python list (``{[}{]}'') syntax and are 
-wrapped in AstroData objects (see 
-{\hyperref[chapter_AstroDataClass:astrodata.data.AstroData.__getitem__]{\code{AstroData.\_\_getitem\_\_()}}}). AstroData uses 
-pyfits for MEF I/O and numpy for pixel manipulations.
+``extensions'' within the MEF are available using Python list (``{[}{]}'') syntax; 
+they are wrapped in AstroData objects (see 
+{\hyperref[chapter_AstroDataClass:astrodata.data.AstroData.__getitem__]{\code{AstroData.\_\_getitem\_\_()}}}). 
+AstroData uses \code{pyfits} for MEF I/O and \code{numpy} for pixel manipulations.
 
-While the pyfits and numpy objects are available to the programmer, AstroData
-provides analagous methods for most pyfits functionality which allows it to
-maintain the dataset  as a cohesive whole. The programmer does however use the
-numpy pixel arrays directly for pixel manipulation.
+While the \code{pyfits} and \code{numpy} objects are available to the programmer, 
+\code{AstroData} provides analogous methods for most \code{pyfits} functionalities 
+which allows it to maintain the dataset  as a cohesive whole. The programmer 
+does however use the \code{numpy.ndarrays} directly for pixel manipulation.
 
-In order to identify types of dataset and provide type-specific behavior
-AstroData relies on configuration packages either in the PYTHONPATH environment
-variable or the Astrodata package environment variables, ADCONFIGPATH, or
-RECIPEPATH. The configuration (i.e. astrodata\_Gemini) contains definitions for
-all  instrument-mode-specific behavior. The configuration contains type
+In order to identify types of dataset and provide type-specific behavior,
+\code{AstroData} relies on configuration packages either in the \code{PYTHONPATH} environment
+variable or the \code{Astrodata} package environment variables, \code{ADCONFIGPATH} and
+\code{RECIPEPATH}. A configuration package (eg. \code{astrodata\_Gemini}) contains definitions for
+all instruments and modes. A configuration package contains type
 definitions, meta-data functions, information lookup tables, and any other code
 or information needed to handle specific types of dataset.
 
-This allows AstroData to manage access to the dataset for convienience and
-consistency.
-For example AstroData is able...:
+This allows \code{AstroData} to manage access to the dataset for convenience and
+consistency. For example, \code{AstroData} is able:
 \begin{itemize}
 \item {} 
-... to allow reduction scripts to have easy access to dataset classification 
-information in a consistent way across all instrument-modes
+to allow reduction scripts to have easy access to dataset classification 
+information in a consistent way across all instruments and modes;
 
 \item {} 
-... to provide consistent interfaces for obtaining common meta-data across all
-instrument modes
+to provide consistent interfaces for obtaining common meta-data across all
+instruments and modes;
 
 \item {} 
-... to relates internal extensions, e.g. discriminate between science and 
-variance arrays and associate them properly
+to relate internal extensions, e.g. discriminate between science and 
+variance arrays and associate them properly;
 
 \item {} 
-... to help propagate header-data units important to the given instrument mode,
-but unknown to general purpose transformations
+to help propagate header-data units important to the given instrument mode,
+but unknown to general purpose transformations.
 
 \end{itemize}
 
-AstroData's purpose in general is to provide smart dataset-oriented interfaces
-which adapt to dataset type. The primary interfaces of note are for file
-handling, dataset-type checking, and managing meta-data, but AstroData also
-integrates other functionality.
+In general, the purpose of \code{AstroData} is to provide smart dataset-oriented interfaces
+that adapt to dataset type. The primary interfaces are for file
+handling, dataset-type checking, and managing meta-data, but \code{AstroData} also
+integrates other functionalities.
 
 \end{fulllineitems}
 
@@ -305,20 +307,20 @@ integrates other functionality.
 \item {} 
 \textbf{dataset} (\emph{string, AstroData, HDUList}) -- the dataset to load, either a filename (string) path
 or URL, an
-AstroData instance, or a pyfits.HDUList
+\code{AstroData} instance, or a \code{pyfits.HDUList}
 
 \item {} 
-\textbf{mode} (\emph{string}) -- IO access mode, same as pyfits mode (``readonly'', ``update'',
-``or append'') with one additional AstroData-specific mode, ``new''.
+\textbf{mode} (\emph{string}) -- IO access mode, same as \code{pyfits} mode (``readonly'', ``update'',
+or ``append'') with one additional AstroData-specific mode, ``new''.
 If the mode is ``new'', and a filename is provided, the constructor
 checks that the named file does not exist on disk,
-and if it does not it creates an empty AstroData of that name 
-but does not write it to disk. Such an AstroData 
+and if it does not it creates an empty \code{AstroData} of that name 
+but does not write it to disk. Such an \code{AstroData} 
 instance is ready to have HDUs appended, and to be written to disk
-at the user's command with ``ad.write()''.
+at the user's command with \code{ad.write()}.
 
 \item {} 
-\textbf{phu} (\emph{pyfits.core.Header}) -- primary header unit. This object is propagated to all 
+\textbf{phu} (\emph{pyfits.core.Header}) -- Primary Header Unit. This object is propagated to all 
 astrodata sub-data ImageHDUs. Special handling is made for header
 instances that are passed in as this arg., where a phu will be 
 created and the `.header' will be assigned (ex. hdulist{[}0{]}, ad.phu,
@@ -326,12 +328,12 @@ ad{[}0{]}.hdulist{[}0{]}, ad{[}'SCI',1{]}.hdulist{[}0{]}, ad{[}0{]}.phu,
 ad{[}'SCI',1{]}.phu, and all the previous with .header appended)
 
 \item {} 
-\textbf{header} -- extension header for images (ex. hdulist{[}1{]}.header,
-ad{[}0{]}.hdulist{[}1{]}.header, ad{[}'SCI',1{]}.hdulist{[}1{]}.header)
+\textbf{header} -- extension header for images (eg. \code{hdulist{[}1{]}.header},
+\code{ad{[}0{]}.hdulist{[}1{]}.header}, \code{ad{[}'SCI',1{]}.hdulist{[}1{]}.header})
 
 \item {} 
-\textbf{data} (\emph{numpy.ndarray}) -- the image pixel array (ex. hdulist{[}1{]}.data,
-ad{[}0{]}.hdulist{[}1{]}.data, ad{[}'SCI',1{]}.hdulist{[}1{]}.data)
+\textbf{data} (\emph{numpy.ndarray}) -- the image pixel array (eg. \code{hdulist{[}1{]}.data},
+\code{ad{[}0{]}.hdulist{[}1{]}.data}, \code{ad{[}'SCI',1{]}.hdulist{[}1{]}.data})
 
 \item {} 
 \textbf{store} (\emph{string}) -- directory where a copy of the original file will be 
@@ -346,40 +348,40 @@ same name.  If true will save, if not, will delete.
 \item {} 
 \textbf{exts} (\emph{list}) -- 
 (advanced) a list of extension indexes in the parent
-HDUList that this instance should refer to, given  integer or 
-(EXTNAME, EXTVER) tuples specifying each extention in the ``pyfits''
+\code{HDUList} that this instance should refer to, given  integer or 
+(\code{EXTNAME}, \code{EXTVER}) tuples specifying each extension in the \code{pyfits}
 index space where the PHU is at index 0, the first data extension
-is at index 1, and so on. I.e. This is primarilly intended for 
-internal use creating ``sub-data'', which are AstroData instances
+is at index 1, and so on. I.e. This is primarily intended for 
+internal use when creating ``sub-data'', which are AstroData instances
 that represent a slice, or subset, of some other AstroData instance.
 
-NOTE: if present this option will override and obscure the extInsts
-argument which will be ignored.
+NOTE: if present, this option will override and obscure the \code{extInsts}
+argument, in other word \code{extInsts} will be ignored.
 
 Example of sub-data:
 \begin{quote}
 
-sci\_subdata = ad{[}''SCI''{]}
+\code{sci\_subdata = ad{[}"SCI"{]}}
 \end{quote}
 
-The sub-data is is created by passing ``SCI'' as an argument to the
+The sub-data is created by passing ``SCI'' as an argument to the
 constructor. The `sci\_subdata' object would consist of its own 
-AstroData instance referring to it's own HDUList, but the HDUs in
-this list would still be shared (in memory) with the `ad' object,
-and appear in its HDUList as well.
+\code{AstroData} instance referring to it's own \code{HDUList}, but the HDUs in
+this list would still be shared (in memory) with the \code{ad} object,
+and appear in its \code{HDUList} as well.
 
 
 \item {} 
-\textbf{extInsts} (\emph{list of pyfits.HDU objects}) -- (advanced) a list of extensions this instance should contain,
-given as actual pyfits.HDU instances. NOTE: if the ``exts'' argument
-is also set, this argument is ignored.
+\textbf{extInsts} (\emph{list of pyfits.HDU objects}) -- (advanced) A list of extensions this instance should contain,
+specified as actual \code{pyfits.HDU} instances. NOTE: if the \code{exts} argument
+is also set, \code{extInsts} is ignored.
 
 \end{itemize}
 
 \end{description}\end{quote}
 
 The AstroData constructor constructs an in-memory representation of a
-dataset. If given a filename it uses pyfits to open the dataset, reads
+dataset. If given a filename it uses \code{pyfits} to open the dataset, reads
 the header and detects applicable types. Binary data, such as pixel
 data, is left on disk until referenced.
 
@@ -392,7 +394,7 @@ data, is left on disk until referenced.
 \index{append() (astrodata.data.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.append}\pysiglinewithargsret{\code{AstroData.}\bfcode{append}}{\emph{moredata=None}, \emph{data=None}, \emph{header=None}, \emph{auto\_number=False}, \emph{extname=None}, \emph{extver=None}}{}~\begin{quote}\begin{description}
+\phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.append}\pysiglinewithargsret{\code{AstroData.}\bfcode{append}}{\emph{moredata=None}, \emph{data=None}, \emph{header=None}, \emph{auto\_number=False}, \emph{extname=None}, \emph{extver=None}, \emph{do\_deepcopy=False}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
 \textbf{moredata} (\emph{pyfits.HDU, pyfits.HDUList, or AstroData}) -- either an AstroData instance, an HDUList instance, 
@@ -400,31 +402,37 @@ or an HDU instance to add to this AstroData object.
 When present, data and header arguments will be ignored.
 
 \item {} 
-\textbf{data} (\emph{numarray.numaraycore.NumArray}) -- if moredata \emph{is not} specified, data and header should 
-both be set and are used to construct a new HDU which is then 
-added to the  AstroData object. The `data' argument should be set
-to a valid numpy array.
+\textbf{data} (\emph{numpy.ndarray}) -- \code{data} and \code{header} are used to construct a new HDU which is then 
+added to the \code{HDUList} associated to the \code{AstroData} instance. The \code{data} 
+argument should be set
+to a valid \code{numpy} array. If \code{modedata} is not specified, \code{data} and \code{header}
+must both be set.
 
 \item {} 
-\textbf{header} (\emph{pyfits.Header}) -- if moredata \emph{is not} specified, data and header are used
-to make  an HDU which is then added to the HDUList associated with
-this AstroData instance. The `header' argument should be set to a
-valid pyfits.Header object.
+\textbf{header} (\emph{pyfits.Header}) -- \code{data} and \code{header} are used
+to construct a new HDU which is then added to the \code{HDUList} associated to 
+\code{AstroData} instance. The \code{header} argument should be set to a
+valid \code{pyfits.Header} object. If \code{moredata} is not specified, \code{data} and
+\code{header} must both be set.
 
 \item {} 
-\textbf{auto\_number} (\emph{boolean}) -- auto-increment extver to fit file convention
+\textbf{auto\_number} (\emph{boolean}) -- auto-increment the extension version, \code{EXTVER}, to fit file convention
 
 \item {} 
-\textbf{extname} (\emph{int}) -- extension name (ex, `SCI', `VAR', `DQ')
+\textbf{extname} (\emph{string}) -- extension name as set in keyword \code{EXTNAME} (eg. `SCI', `VAR', `DQ')
 
 \item {} 
-\textbf{extver} -- extension's ``extver'' value
+\textbf{extver} (\emph{int}) -- extension version as set in keyword \code{EXTVER}
+
+\item {} 
+\textbf{do\_deepcopy} (\emph{boolean}) -- deepcopy the input before appending.  Might be useful
+when auto\_number is True and the input comes from another AD object.
 
 \end{itemize}
 
 \end{description}\end{quote}
 
-This function appends more header-data units (aka ``HDUs'') to the AstroData
+This function appends header-data units (HDUs) to the AstroData
 instance.
 
 \end{fulllineitems}
@@ -437,8 +445,8 @@ instance.
 
 \begin{fulllineitems}
 \phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.close}\pysiglinewithargsret{\code{AstroData.}\bfcode{close}}{}{}
-The close(..) function will close the HDUList associated with this
-AstroData instance.
+The close(..) function will close the \code{HDUList} associated with this
+\code{AstroData} instance.
 
 \end{fulllineitems}
 
@@ -449,7 +457,7 @@ AstroData instance.
 \index{insert() (astrodata.data.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.insert}\pysiglinewithargsret{\code{AstroData.}\bfcode{insert}}{\emph{index}, \emph{moredata=None}, \emph{data=None}, \emph{header=None}, \emph{auto\_number=False}, \emph{extname=None}, \emph{extver=False}}{}~\begin{quote}\begin{description}
+\phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.insert}\pysiglinewithargsret{\code{AstroData.}\bfcode{insert}}{\emph{index}, \emph{moredata=None}, \emph{data=None}, \emph{header=None}, \emph{auto\_number=False}, \emph{extname=None}, \emph{extver=False}, \emph{do\_deepcopy=False}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
 \textbf{index} (\emph{integer or (EXTNAME,EXTVER) tuple}) -- the extension index, either an int or (EXTNAME, EXTVER)
@@ -462,30 +470,37 @@ Index always refers to Astrodata Numbering system, 0 = HDU
 an HDU instance. When present, data and header will be ignored.
 
 \item {} 
-\textbf{data} (\emph{numarray.numaraycore.NumArray}) -- if moredata \emph{is not} specified, data and header should 
-both be set and are used to construct a new HDU which is then 
-added to the AstroData instance.
+\textbf{data} (\emph{numpy.ndarray}) -- \code{data} and \code{header} are used to construct a new HDU which is then 
+added to the \code{HDUList} associated to the \code{AstroData} instance. The \code{data} 
+argument should be set
+to a valid \code{numpy} array. If \code{modedata} is not specified, \code{data} and \code{header}
+must both be set.
 
 \item {} 
-\textbf{header} (\emph{pyfits.Header}) -- if moredata \emph{is not} specified, data and header are 
-used to make an HDU which is then added to the HDUList associated
-with this AstroData instance.
+\textbf{header} (\emph{pyfits.Header}) -- \code{data} and \code{header} are used
+to construct a new HDU which is then added to the \code{HDUList} associated to 
+\code{AstroData} instance. The \code{header} argument should be set to a
+valid \code{pyfits.Header} object. If \code{moredata} is not specified, \code{data} and
+\code{header} must both be set.
 
 \item {} 
-\textbf{auto\_number} (\emph{boolean}) -- auto-increment appends to match existing extname - extver 
-convention.
+\textbf{auto\_number} (\emph{boolean}) -- auto-increment the extension version, \code{EXTVER}, to fit file convention
 
 \item {} 
-\textbf{extname} (\emph{string}) -- extension name (ex, `SCI', `VAR', `DQ')
+\textbf{extname} (\emph{string}) -- extension name as set in keyword \code{EXTNAME} (eg. `SCI', `VAR', `DQ')
 
 \item {} 
-\textbf{extver} (\emph{integer}) -- extension version (ex, 1, 2, 3)
+\textbf{extver} (\emph{int}) -- extension version as set in keyword \code{EXTVER}
+
+\item {} 
+\textbf{do\_deepcopy} (\emph{boolean}) -- deepcopy the input before appending.  Might be useful
+when auto\_number is True and the input comes from another AD object.
 
 \end{itemize}
 
 \end{description}\end{quote}
 
-This function inserts more data units (aka an ``HDU'') to the AstroData
+This function inserts header-data units (HDUs) to the AstroData
 instance.
 
 \end{fulllineitems}
@@ -539,11 +554,11 @@ and so uses AstroData relative indexes, descriptors, and so on.
 \index{write() (astrodata.data.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.write}\pysiglinewithargsret{\code{AstroData.}\bfcode{write}}{\emph{filename=None}, \emph{clobber=False}, \emph{rename=None}}{}~\begin{quote}\begin{description}
+\phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.write}\pysiglinewithargsret{\code{AstroData.}\bfcode{write}}{\emph{filename=None}, \emph{clobber=False}, \emph{rename=None}, \emph{prefix=None}, \emph{suffix=None}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
-\textbf{fname} (\emph{string}) -- file name to write to, optional if instance already has
-name, which might not be the case for new AstroData
+\textbf{filename} (\emph{string}) -- name of the file to write to. Optional if the instance
+already has a filename defined, which might not be the case for new AstroData
 instances created in memory.
 
 \item {} 
@@ -552,18 +567,25 @@ file.
 
 \item {} 
 \textbf{rename} (\emph{bool}) -- This flag allows you to write the AstroData instance to
-a new filename, but leave the ``current'' name in tact in memory.
+a new filename, but leave the `current' name in tact in memory.
+
+\item {} 
+\textbf{prefix} -- Add a prefix to \code{filename}.
 
 \end{itemize}
 
 \end{description}\end{quote}
 
-The write function acts similarly to the pyfits HDUList.writeto(..)
-function if a filename is given, or like pyfits.HDUList.update(..) if 
+type prefix: string
+:param suffix: Add a suffix to \code{filename}.
+type suffix: string
+
+The write function acts similarly to the \code{pyfits HDUList.writeto(..)}
+function if a filename is given, or like \code{pyfits.HDUList.update(..)} if 
 no name is given, using whatever the current name is set to. When a name
-is given, this becomes the new name of the AstroData object and
+is given, this becomes the new name of the \code{AstroData} object and
 will be used on subsequent calls to  write for which a filename is not
-provided. If the clobber flag is False (the default) then write(..)
+provided. If the \code{clobber} flag is \code{False} (the default) then \code{write(..)}
 throws an exception if the file already exists.
 
 \end{fulllineitems}
@@ -577,23 +599,23 @@ throws an exception if the file already exists.
 \begin{fulllineitems}
 \phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.is_type}\pysiglinewithargsret{\code{AstroData.}\bfcode{is\_type}}{\emph{*typenames}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode
-\textbf{typename} (\emph{string}) -- specifies the type name to check.
+\textbf{typenames} -- specifies the type name to check.
 
 \item[{Returns}] \leavevmode
-True if the given types all apply to this dataset,
-False otherwise
+\code{True} if the given types all apply to this dataset,
+\code{False} otherwise.
 
 \item[{Return type}] \leavevmode
 Bool
 
 \end{description}\end{quote}
 
-This function checks the AstroData object to see if it is the
+This function checks the \code{AstroData} object to see if it is the
 given type(s) and returns True if so.
 \begin{quote}\begin{description}
 \item[{Note }] \leavevmode
-``AstroData.check\_type(..)'' is an alias for 
-``AstroData.is\_type(..)''.
+\code{AstroData.check\_type(..)} is an alias for 
+\code{AstroData.is\_type(..)}.
 
 \end{description}\end{quote}
 
@@ -618,17 +640,17 @@ list of strings
 \end{description}\end{quote}
 
 The get\_types(..) function returns a list of type names, where type 
-names are as always, strings. It is possible to ``prune'' the list so
+names are as always, strings. It is possible to `prune' the list so
 that only leaf nodes are returned, which is useful when leaf
 nodes take precedence such
-as descriptors.
+as for descriptors.
 
 Note: types are divided into two categories, one intended for types
 which represent processing status (i.e. RAW vs PREPARED), and another
-which contains a more traditional ``typology'' consisting of a 
-heirarchical tree of dataset types. This latter tree maps roughly to
+which contains a more traditional `typology' consisting of a 
+hierarchical tree of dataset types. This latter tree maps roughly to
 instrument-modes, with instrument types branching from the general
-observatory type, (e.g. ``GEMINI'').
+observatory type, (e.g. `GEMINI').
 
 To retrieve only status types, use get\_status(..); to retreive just
 typological types use get\_typology(..).  Note that the system does not
@@ -653,14 +675,15 @@ scripts which make use of the distinction.
 \phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.get_status}\pysiglinewithargsret{\code{AstroData.}\bfcode{get\_status}}{\emph{prune=False}}{}
 This function returns the set of type names (strings) which apply to
 this dataset and which come from the status section of the AstroData
-Type library. ``Status'' classifications are those which tend to change
+Type library. `Status' classifications are those which tend to change
 during the reduction of a dataset based on the amount of processing,
-e.g. RAW vs PREPARED.  Strictly, a ``status'' type 
+e.g. RAW vs PREPARED.  Strictly, a `status' type 
 is any type defined in or below the status part of the 
 \code{classification} directory within the 
-configuration. I.e. in the Gemini type configuration any type 
+configuration package. For example, in the Gemini type configuration 
+this means any type 
 definition files in or below the 
-``astrodata\_Gemini/ADCONFIG/classification/status'' directory.
+`astrodata\_Gemini/ADCONFIG/classification/status' directory.
 \begin{quote}\begin{description}
 \item[{Returns}] \leavevmode
 a list of string classification names
@@ -676,14 +699,15 @@ list of strings
 \index{get\_typology() (astrodata.data.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.get_typology}\pysiglinewithargsret{\code{AstroData.}\bfcode{get\_typology}}{}{}
+\phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.get_typology}\pysiglinewithargsret{\code{AstroData.}\bfcode{get\_typology}}{\emph{prune=False}}{}
 This function returns the set of type names (strings) which apply to
 this dataset and which come from the typology section of the AstroData
-Type library. ``Typology'' classifications are those which tend to remain
+Type library. `Typology' classifications are those which tend to remain
 with the data in spite of reduction status, e.g. those related to the
 instrument-mode of the dataset or of the datasets used to produce
 it. Strictly these consist of any type defined in or below
-the correct configuration directory, i.e. in Gemini's configuration,
+the correct configuration directory, for example, in Gemini's configuration
+package, it would be anything in the
 ``astrodata\_Gemini/ADCONFIG/classification/types''  directory.
 \begin{quote}\begin{description}
 \item[{Returns}] \leavevmode
@@ -705,10 +729,10 @@ pair settings in the header section of header-data units
 can be done directly using the AstroData header manipulation functions
 which cover both PHU and extension headers.
 For higher level metadata which is available for all types in the tree
-in a properly constructed configuration space, the metadata is retreived by
+in a properly constructed configuration space, the metadata is retrieved with
 descriptor functions, accessed as members of the AstroData object.
 
-To set information or retrieve meta-data not covered by descriptors, one must
+To retrieve or set meta-data not covered by descriptors, one must
 read and write key-value pairs to the HDU headers at the lower-level. AstroData
 offers three pairs of functions for getting and setting header values, for each
 of three distinct cases.  While it is possible to use the pyfits.Header directly
@@ -764,26 +788,23 @@ and must be converted as necessary by the caller.
 \index{phu\_set\_key\_value() (astrodata.data.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.phu_set_key_value}\pysiglinewithargsret{\code{AstroData.}\bfcode{phu\_set\_key\_value}}{\emph{key}, \emph{value}, \emph{comment=None}}{}~\begin{quote}\begin{description}
+\phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.phu_set_key_value}\pysiglinewithargsret{\code{AstroData.}\bfcode{phu\_set\_key\_value}}{\emph{keyword=None}, \emph{value=None}, \emph{comment=None}}{}
+Add or update a keyword in the PHU of the AstroData object with a
+specific value and, optionally, a comment
+\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
-\textbf{key} (\emph{string}) -- name of PHU header value to set
+\textbf{keyword} (\emph{string}) -- Name of the keyword to add or update in the PHU
 
 \item {} 
-\textbf{value} (\emph{string (or can be converted to string)}) -- value to apply to PHU header
+\textbf{value} (\emph{int, float or string}) -- Value of the keyword to add or update in the PHU
 
 \item {} 
-\textbf{comment} (\emph{string}) -- value to be put in the comment part of the header key
+\textbf{comment} (\emph{string}) -- Comment of the keyword to add or update in the PHU
 
 \end{itemize}
 
 \end{description}\end{quote}
-
-The phu\_set\_key\_value(..) function is used to set the value  (and
-optionally the comment) associated with a given key in the primary
-header unit of the dataset. The value argument will be converted to
-string, so it must have a string operator member function or be passed
-in as string.
 
 \end{fulllineitems}
 
@@ -844,7 +865,7 @@ AstroData object, and can be used more convieniently.
 \textbf{key} (\emph{string}) -- name of data header value to set
 
 \item {} 
-\textbf{value} (\emph{string (or can be converted to string)}) -- value to apply to header
+\textbf{value} (\emph{int, float, string}) -- value to apply to header
 
 \item {} 
 \textbf{comment} (\emph{string}) -- value to be put in the comment part of the header key
@@ -915,30 +936,31 @@ values from the PHU use phu\_get\_key\_value(..).
 \index{ext\_set\_key\_value() (astrodata.data.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.ext_set_key_value}\pysiglinewithargsret{\code{AstroData.}\bfcode{ext\_set\_key\_value}}{\emph{extension}, \emph{key}, \emph{value}, \emph{comment=None}}{}~\begin{quote}\begin{description}
+\phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.ext_set_key_value}\pysiglinewithargsret{\code{AstroData.}\bfcode{ext\_set\_key\_value}}{\emph{extension=None}, \emph{keyword=None}, \emph{value=None}, \emph{comment=None}}{}
+Add or update a keyword in the header of an extension of the AstroData
+object with a specific value and, optionally, a comment. To add or
+update a keyword in the PHU of the AstroData object, use
+phu\_set\_key\_value().
+\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
-\textbf{extension} (\emph{int or (EXTNAME, EXTVER) tuple}) -- identifies which extension, either an integer index 
-or (EXTNAME, EXTVER) tuple
+\textbf{extension} (\emph{int or (EXTNAME, EXTVER) tuple}) -- Name of the extension to add or update. The index {[}0{]}
+refers to the first extension in the AstroData
+object.
 
 \item {} 
-\textbf{key} (\emph{string}) -- name of PHU header value to set
+\textbf{keyword} (\emph{string}) -- Name of the keyword to add or update in the extension
 
 \item {} 
-\textbf{value} (\emph{string (or can be converted to string)}) -- value to apply to PHU header
+\textbf{value} (\emph{int, float or string}) -- Value of the keyword to add or update in the extension
 
 \item {} 
-\textbf{comment} (\emph{string}) -- value to be put in the comment part of the header key
+\textbf{comment} (\emph{string}) -- Comment of the keyword to add or update in the
+extension
 
 \end{itemize}
 
 \end{description}\end{quote}
-
-The ext\_set\_key\_value(..) function is used to set the value (and optionally
-the comment) associated with a given key in the header unit of the given
-extension within the dataset. This function sets the value in the
-given extension's header, with ``0'' being the first data extension.  To
-set values in the PHU use phusetKeyValue(..).
 
 \end{fulllineitems}
 
@@ -952,14 +974,13 @@ set values in the PHU use phusetKeyValue(..).
 
 \subsubsection{Using Slices and ``Subdata''}
 \label{gen.ADMANUAL-ADSubdata:using-slices-and-subdata}\label{gen.ADMANUAL-ADSubdata::doc}
-\textless{}html\textgreater{}\textless{}img align=''right'' width = ``30\%'' src=''\href{http://ophiuchus.hi.gemini.edu/ADMANUALSOURCE/diagrams/sharedHDUs.png}{http://ophiuchus.hi.gemin
-i.edu/ADMANUALSOURCE/diagrams/sharedHDUs.png}``/\textgreater{}\textless{}/html\textgreater{}
+{\hfill\scalebox{0.300000}{\includegraphics{sharedHDUs4.pdf}}\hfill}
 
 AstroData instances are presented as lists of AstroData instances.
 However, internally the list is merely a list of extensions and the
 \emph{AstroData.getitem(..)} function (which implements the ``{[}{]}'' syntax)
 creates AstroData instances on the fly when called. Such instances
-share information in memory with their parent instance. This is the in
+share information in memory with their parent instance. This is in
 line with the general operation of pyfits and numpy, and in general
 how Python handles objects. This allows efficient use of memory and
 disk I/O. To make copies one must explicitly ask for copies. Thus when
@@ -1001,12 +1022,12 @@ then you can write the AstroData subdata instance to a new filename:
 \end{Verbatim}
 
 
-\subsection{countExts(..)}
-\label{chapter_AstroDataClass:countexts}
+\subsection{count\_exts(..)}
+\label{chapter_AstroDataClass:count-exts}
 \index{count\_exts() (astrodata.data.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.count_exts}\pysiglinewithargsret{\code{AstroData.}\bfcode{count\_exts}}{\emph{extname}}{}~\begin{quote}\begin{description}
+\phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.count_exts}\pysiglinewithargsret{\code{AstroData.}\bfcode{count\_exts}}{\emph{extname=None}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode
 \textbf{extname} (\emph{string}) -- the name of the extension, equivalent to the
 value associated with the ``EXTNAME'' key in the extension 
@@ -1021,7 +1042,7 @@ int
 \end{description}\end{quote}
 
 The count\_exts(..) function counts the extensions of a given name
-(as stored in the HDUs ``EXTVER'' header).
+(as stored in the HDUs ``EXTNAME'' header).
 
 \end{fulllineitems}
 
@@ -1034,7 +1055,7 @@ The count\_exts(..) function counts the extensions of a given name
 \begin{fulllineitems}
 \phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.__getitem__}\pysiglinewithargsret{\code{AstroData.}\bfcode{\_\_getitem\_\_}}{\emph{ext}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode
-\textbf{ext} (\emph{string, int, or tuple}) -- The integeter index, an indexing \code{(EXTNAME, EXTVER)} tuple,
+\textbf{ext} (\emph{string, int, or tuple}) -- The integer index, an indexing \code{(EXTNAME, EXTVER)} tuple,
 or EXTNAME name. If an int or tuple, the single
 extension identified is wrapped with an AstroData instance, and
 ``single-extension'' members of the AstroData object can be used. If
@@ -1052,36 +1073,38 @@ AstroData
 This function supports the ``{[}{]}'' syntax for AstroData instances,
 e.g. \emph{ad{[}(``SCI'',1){]}}.  We use it to create
 AstroData objects associated with ``subdata'' of the parent
-AstroData object, that is, consisting of an HDUList which
-consists of some subset of the parent MEF. e.g.:
+AstroData object, that is, consisting of an HDUList made up of 
+some subset of the parent MEF. e.g.:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\PYG{n}{datasetA} \PYG{o}{=} \PYG{n}{AstroData}\PYG{o}{.}\PYG{n}{AstroData}\PYG{p}{(}\PYG{l+s}{"}\PYG{l+s}{datasetMEF.fits}\PYG{l+s}{"}\PYG{p}{)}
+\PYG{k+kn}{from} \PYG{n+nn}{astrodata} \PYG{k+kn}{import} \PYG{n}{AstroData}
+
+\PYG{n}{datasetA} \PYG{o}{=} \PYG{n}{AstroData}\PYG{p}{(}\PYG{l+s}{"}\PYG{l+s}{datasetMEF.fits}\PYG{l+s}{"}\PYG{p}{)}
 \PYG{n}{datasetB} \PYG{o}{=} \PYG{n}{datasetA}\PYG{p}{[}\PYG{n}{SCI}\PYG{p}{]}
 \end{Verbatim}
 
-In this case, after the operations, datasetB is an AstroData object
+In this case, after the operations, datasetB is an \code{AstroData} object
 associated with the same MEF, sharing some of the the same actual HDUs
-in memory as  datasetA. The object in ``datasetB'' will behave as if the
+in memory as \code{datasetA}. The object in \code{datasetB} will behave as if the
 SCI extensions are its only members, and it does in fact have its own
-pyfits.HDUList. Note that datasetA and datasetB share the PHU and also
+\code{pyfits.HDUList}. Note that \code{datasetA} and \code{datasetB} share the PHU and also
 the data structures of the HDUs they have in common, so that a change
-to ``datasetA{[}(`SCI',1){]}.data'' will change the 
-``datasetB{[}(`SCI',1){]}.data'' member and vice versa. They are in fact both
-references to the same numpy array in memory. The HDUList is a 
+to \code{datasetA{[}('SCI',1){]}.data} will change the 
+\code{datasetB{[}('SCI',1){]}.data} member and vice versa. They are in fact both
+references to the same \code{numpy} array in memory. The \code{HDUList} is a 
 different list, however, that references common HDUs. If a subdata 
-related AstroData object is written to disk, the resulting MEF will
-contain only the extensions in the subdata's HDUList.
+related \code{AstroData} object is written to disk, the resulting MEF will
+contain only the extensions in the subdata's \code{HDUList}.
 \begin{quote}\begin{description}
 \item[{Note }] \leavevmode
 Integer extensions start at 0 for the data-containing 
-extensions, not at the PHU as with pyfits.  This is important:
-ad{[}0{]} is the first content extension, in a traditional MEF 
+extensions, not at the PHU as with \code{pyfits}.  This is important:
+\code{ad{[}0{]}} is the first content extension, in a traditional MEF 
 perspective, the extension AFTER the PHU; it is not the PHU!  In
-AstroData instances, the PHU is purely a header, and not counted
+\code{AstroData} instances, the PHU is purely a header, and not counted
 as an extension in the way that headers generally are not counted
 as their own elements in the array they contain meta-data for.
-The PHU can be accessed via the \code{phu} AstroData member of using
+The PHU can be accessed via the \code{phu} \code{AstroData} member of using
 the PHU related member functions.
 
 \end{description}\end{quote}
@@ -1121,21 +1144,21 @@ pyfits.ndarray
 
 \end{description}\end{quote}
 
-The \emph{get\_data(..)} member is the function behind the property-style
+The \code{get\_data(..)} member is the function behind the property-style
 ``data'' member and returns appropriate HDU's data member(s) specifically
-for the case in which the AstroData instance has ONE HDU (in addition to
-the PHU). This allows a single-extension AstroData, such as AstroData
+for the case in which the \code{AstroData} instance has ONE HDU (in addition to
+the PHU). This allows a single-extension \code{AstroData}, such as \code{AstroData}
 generates through iteration,  to be used as though it simply is just the
-one extension, e.g. allowing \emph{gd.data} to be used in place of the more
-esoteric and ultimately more dangerous \emph{gd{[}0{]}.data}. One can assure one
-is dealing with single extension AstroData instances when iterating over
-the AstroData extensions and when picking out an extension  by integer
+one extension, e.g. allowing \code{ad.data} to be used in place of the more
+esoteric and ultimately more dangerous \code{ad{[}0{]}.data}. One
+is dealing with single extension \code{AstroData} instances when iterating over
+the \code{AstroData} extensions and when picking out an extension by integer
 or tuple indexing, e.g.:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\PYG{k}{for} \PYG{n}{gd} \PYG{o+ow}{in} \PYG{n}{dataset}\PYG{p}{[}\PYG{n}{SCI}\PYG{p}{]}\PYG{p}{:}
-    \PYG{c}{\PYGZsh{} gd is a single-HDU index}
-    \PYG{n}{gd}\PYG{o}{.}\PYG{n}{data} \PYG{o}{=} \PYG{n}{newdata}
+\PYG{k}{for} \PYG{n}{ad} \PYG{o+ow}{in} \PYG{n}{dataset}\PYG{p}{[}\PYG{n}{SCI}\PYG{p}{]}\PYG{p}{:}
+    \PYG{c}{\PYGZsh{} ad is a single-HDU index}
+    \PYG{n}{ad}\PYG{o}{.}\PYG{n}{data} \PYG{o}{=} \PYG{n}{newdata}
 
 \PYG{c}{\PYGZsh{} assuming the named extension exists,}
 \PYG{c}{\PYGZsh{} sd will be a single-HDU AstroData}
@@ -1150,7 +1173,7 @@ or tuple indexing, e.g.:
 \begin{fulllineitems}
 \phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.set_data}\pysiglinewithargsret{\code{AstroData.}\bfcode{set\_data}}{\emph{newdata}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode
-\textbf{newdata} (\emph{numarray.numarraycore.NumArray}) -- new data objects
+\textbf{newdata} (\emph{numpy.ndarray}) -- new data objects
 
 \item[{Raises Errors.SingleHDUMemberExcept}] \leavevmode
 if AstroData instance has more 
@@ -1158,13 +1181,13 @@ than one extension (not including PHU).
 
 \end{description}\end{quote}
 
-This function sets the data member of a data section of an AstroData
-object, specifically for the case in which the AstroData instance has
+This function sets the data member of a data section of an \code{AstroData}
+object, specifically for the case in which the \code{AstroData} instance has
 ONE header-data unit (in addition to PHU).  This case is assured when
-iterating over the AstroData extensions, e.g.:
+iterating over the \code{AstroData} extensions, as in:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\PYG{k}{for} \PYG{n}{gd} \PYG{o+ow}{in} \PYG{n}{dataset}\PYG{p}{[}\PYG{n}{SCI}\PYG{p}{]}\PYG{p}{:}
+\PYG{k}{for} \PYG{n}{ad} \PYG{o+ow}{in} \PYG{n}{dataset}\PYG{p}{[}\PYG{n}{SCI}\PYG{p}{]}\PYG{p}{:}
     \PYG{o}{.}\PYG{o}{.}\PYG{o}{.}
 \end{Verbatim}
 
@@ -1206,13 +1229,13 @@ than one extension exists.
 
 \end{description}\end{quote}
 
-The get\_header(..) function returns the header member for Single-HDU
-AstroData instances (which are those that have only one extension plus
+The \code{get\_header(..)} function returns the header member for Single-HDU
+\code{AstroData} instances (which are those that have only one extension plus
 PHU). This case  can be assured when iterating over extensions using
-AstroData, e.g.:
+\code{AstroData}, e.g.:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\PYG{k}{for} \PYG{n}{gd} \PYG{o+ow}{in} \PYG{n}{dataset}\PYG{p}{[}\PYG{n}{SCI}\PYG{p}{]}\PYG{p}{:} 
+\PYG{k}{for} \PYG{n}{ad} \PYG{o+ow}{in} \PYG{n}{dataset}\PYG{p}{[}\PYG{n}{SCI}\PYG{p}{]}\PYG{p}{:} 
     \PYG{o}{.}\PYG{o}{.}\PYG{o}{.}
 \end{Verbatim}
 
@@ -1241,12 +1264,12 @@ than one extension exists.
 
 \end{description}\end{quote}
 
-The set\_header(..) function sets the extension header member for single
+The \code{set\_header(..)} function sets the extension header member for single
 extension (which are those that have only one extension plus PHU). This
-case  is assured when iterating over extensions using AstroData, e.g.:
+case  is assured when iterating over extensions using \code{AstroData}, e.g.:
 \begin{quote}
 \begin{description}
-\item[{for gd in dataset{[}SCI{]}: }] \leavevmode
+\item[{for ad in dataset{[}SCI{]}: }] \leavevmode
 ...
 
 \end{description}
@@ -1264,31 +1287,34 @@ case  is assured when iterating over extensions using AstroData, e.g.:
 \phantomsection\label{chapter_AstroDataClass:astrodata.data.AstroData.rename_ext}\pysiglinewithargsret{\code{AstroData.}\bfcode{rename\_ext}}{\emph{name}, \emph{ver=None}, \emph{force=True}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
-\textbf{name} (\emph{string}) -- New ``EXTNAME'' for the given extension.
+\textbf{name} (\emph{string}) -- New `EXTNAME' for the given extension.
 
 \item {} 
-\textbf{ver} (\emph{int}) -- New ``EXTVER'' for the given extension
+\textbf{ver} (\emph{int}) -- New `EXTVER' for the given extension
+
+\item {} 
+\textbf{force} (\emph{boolean}) -- ???  Default=True
 
 \end{itemize}
 
 \end{description}\end{quote}
 
-Note: This member only works on single extension AstroData instances.
+Note: This member only works on single extension \code{AstroData} instances.
 
-The rename\_ext() function is used in order to rename an HDU with a new
-EXTNAME and EXTVER based identifier.  Merely changing the EXTNAME and 
-EXTEVER values in the extensions pyfits.Header are not sufficient.
-Though the values change in the pyfits.Header object, there are special
+The \code{rename\_ext(..)} function is used in order to rename an HDU with a new
+EXTNAME and EXTVER identifier.  Merely changing the EXTNAME and 
+EXTEVER values in the extensions \code{pyfits.Header} are not sufficient.
+Though the values change in the \code{pyfits.Header} object, there are special
 HDU class members which are not updated.
 \begin{quote}\begin{description}
 \item[{Warning }] \leavevmode
-This function maniplates private (or somewhat private)  HDU
-members, specifically ``name'' and ``\_extver''. STSCI has been
+This function manipulates private (or somewhat private)  HDU
+members, specifically `name' and `\_extver'. STSCI has been
 informed of the issue and
 has made a special HDU function for performing the renaming. 
 When generally available, this new function will be used instead of
 manipulating the  HDU's properties directly, and this function will 
-call the new pyfits.HDUList(..) function.
+call the new \code{pyfits.HDUList(..)} function.
 
 \end{description}\end{quote}
 
@@ -1307,7 +1333,7 @@ call the new pyfits.HDUList(..) function.
 \phantomsection\label{chapter_AstroDataClass:astrodata.data.correlate}\pysiglinewithargsret{\code{astrodata.data.}\bfcode{correlate}}{\emph{*iary}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode
 \textbf{iary} (\emph{list of AstroData instance}) -- A list of AstroData instances for which a correlation dictionary
-will be constructed to produce a correlation dict.
+will be constructed.
 
 \item[{Returns}] \leavevmode
 a list of tuples containing correlated extensions from the arguments.
@@ -1317,15 +1343,15 @@ list of tuples
 
 \end{description}\end{quote}
 
-The \emph{correlate(..)} function is a module-level helper function which returns
-a list of tuples of Single Extension AstroData instances which associate
+The \code{correlate(..)} function is a module-level helper function which returns
+a list of tuples of Single Extension \code{AstroData} instances which associate
 extensions from each listed AstroData object, to identically named
-extensions among the rest of the input array. The \emph{correlate(..)} function
-accepts a variable number of arguments, all of which should be AstroData
+extensions among the rest of the input array. The \code{correlate(..)} function
+accepts a variable number of arguments, all of which should be \code{AstroData}
 instances.
 
-The function returns a structured dictionary of dictories of lists of
-AstroData objects. For example, given three inputs, \emph{ad}, \emph{bd} and \emph{cd}, all
+The function returns a structured dictionary of dictionaries of lists of
+\code{AstroData} objects. For example, given three inputs, \emph{ad}, \emph{bd} and \emph{cd}, all
 with three ``SCI'', ``VAR'' and ``DQ'' extensions. Given \emph{adlist = {[}ad, bd,
 cd{]}}, then \emph{corstruct = correlate(adlist)} will return to \emph{corstruct} a
 dictionary first keyed by the EXTNAME, then keyed by tuple. The contents
@@ -1352,49 +1378,49 @@ with the given (EXTNAME,EXTVER) for that tuple.
 \item {} 
 \textbf{input\_ary} (\emph{list of AstroData Instances}) -- The input array from which propagated content (such as
 the  source PHU) will be taken. Note: the zero-th element in the list
-is  used as the reference dataset, for PHU or other items which require
+is  used as the reference dataset for PHU or other items which require
 a particular reference.
 
 \item {} 
 \textbf{name} -- File name to use for returned AstroData, optional.
 
 \item {} 
-\textbf{clobber} (\emph{bool}) -- By default prep\_output(..) checks to see if a file of the
+\textbf{clobber} (\emph{bool}) -- By default \code{prep\_output(..)} checks to see if a file of the
 given name already exists, and will raise an exception if found.
 Set \emph{clobber} to \emph{True} to override this behavior and potentially
-overwrite the extant file.  The datset on disk will not be overwritten
+overwrite the extant file.  The dataset on disk will not be overwritten
 as a direct result of prep\_output, which only prepares the object
 in memory, but will occur when the AstroData object returned is 
-written (i.e. \emph{ad.write()})).
+written (i.e. \code{ad.write(..)})).
 
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-an AstroData instance initialized with appropriate
+an \code{AstroData} instance initialized with appropriate
 header-data units such as the PHU, Standard Gemini headers
 and with type-specific associated  data-header units such as
-binary table Mask Definition tables (aka MDF).
+binary table Mask Definition tables (MDF).
 
 \item[{Return type}] \leavevmode
 AstroData
 
 \end{description}\end{quote}
 
-..info: File will not have been written to disk by prep\_output(..).
+..info: File will not have been written to disk by \code{prep\_output(..)}.
 
-The prep\_output(..) function creates a new AstroData object ready for
+The \code{prep\_output(..)} function creates a new \code{AstroData} object ready for
 appending output information (e.g. \code{ad.append(..)}).  While you can also
-create an empty AstroData object by giving no arguments to the AstroData
+create an empty \code{AstroData} object by giving no arguments to the \code{AstroData}
 constructor  (i.e. \code{ad = AstroData()}), \code{prep\_output(..)} exists for the
 common case where a new dataset object is intended as the output of
-come combinatorial process on a list of source dataset, and some information
+some processing on a list of source datasets, and some information
 from the source inputs must be propagated.
 
 The \code{prep\_output(..)} function makes use of this knowledge to ensure the
 file meets standards in what is considered a complete output file given
 such a combination.  In the future this function can make use of dataset
 history and structure definitions in the ADCONFIG configuration space. As
-\code{prepOutput} improves, scripts and primitives that use it
+\code{prep\_output} improves, scripts and primitives that use it
 will benefit in a forward compatible way, in that their output datasets will
 benefit from more automatic propagation, validations, and data flow control,
 such as the emergence of history database propagation.
@@ -1402,17 +1428,15 @@ such as the emergence of history database propagation.
 Presently, it already provides the following:
 \begin{itemize}
 \item {} 
-Ensures that all standard headers  are in place in the new file, using the
+Ensures that all standard headers are in place in the new file, using the
 configuration .
 
 \item {} 
-Copy the PHU of the reference image (input\_ary{[}0{]}).
+Copy the PHU of the reference image (\code{input\_ary{[}0{]}}).
 
-\item {} \begin{description}
-\item[{Propagate associated information such as the MDF in the case of a MOS }] \leavevmode
+\item {} 
+Propagate associated information such as the MDF in the case of a MOS 
 observation, configurable by the Astrodata Structures system.
-
-\end{description}
 
 \end{itemize}
 
@@ -1428,15 +1452,15 @@ observation, configurable by the Astrodata Structures system.
 \phantomsection\label{chapter_AstroDataClass:astrodata.data.re_header_keys}\pysiglinewithargsret{\code{astrodata.data.}\bfcode{re\_header\_keys}}{\emph{rekey}, \emph{header}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
-\textbf{rekey} (\emph{string}) -- a regular expresion to match to keys in header
+\textbf{rekey} (\emph{string}) -- a regular expression to match keys in header
 
 \item {} 
-\textbf{header} (\emph{pyfits.Header}) -- a pyfits.Header object as returned by \emph{ad{[}(``SCI'',1){]}.header}
+\textbf{header} (\emph{pyfits.Header}) -- a \code{pyfits.Header} object as returned by \code{ad{[}("SCI",1){]}.header}
 
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-a list of keys that appear in the given header
+a list of matching keys
 
 \item[{Return type}] \leavevmode
 list of strings
@@ -1444,7 +1468,7 @@ list of strings
 \end{description}\end{quote}
 
 This utility function returns a list of keys from 
-the header passed in which match the given regular expression.
+the input header that match the regular expression.
 
 \end{fulllineitems}
 
@@ -1453,7 +1477,7 @@ the header passed in which match the given regular expression.
 \chapter{ReductionContext Class Reference}
 \label{chapter_ReductionContextClass:reductioncontext-class-reference}\label{chapter_ReductionContextClass::doc}
 The following is information about the ReductionContext class. When writing
-primitives the reduction context is passed into the primitive as the the sole
+primitives the reduction context is passed into the primitive as the sole
 argument (generally named \code{rc} by
 Gemini conventions and in addition to the \code{self} argument).
 This object is used by the primitive to both get inputs
@@ -1471,12 +1495,12 @@ like the calibration queries system or list keeping for stacking.
 \begin{fulllineitems}
 \phantomsection\label{chapter_ReductionContextClass:astrodata.RecipeManager.ReductionContext.__contains__}\pysiglinewithargsret{\code{ReductionContext.}\bfcode{\_\_contains\_\_}}{\emph{thing}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode
-\textbf{thing} (\emph{str}) -- A key to check for presences in the Reduction Context
+\textbf{thing} (\emph{str}) -- A key to check for presence in the Reduction Context
 
 \end{description}\end{quote}
 
-The \_\_contains\_\_ function implements the python `in' operator. The 
-ReductionContext is a subclass of a \code{dict}, but it also has a secondary
+The \code{\_\_contains\_\_} function implements the Python \code{in} operator. The 
+\code{ReductionContext} is a subclass of a \code{dict}, but it also has a secondary
 dict of ``local parameters'' which are available to the current primitive         only, which are also tested by the \code{\_\_contains\_\_(..)} member.
 These parameters will generally be those passed in as arguments
 to a primitive call from a recipe.
@@ -1506,7 +1530,7 @@ list
 
 \end{description}\end{quote}
 
-Get inputs gets the current input datasets from the current stream. You cannot
+\code{get\_inputs(..)} gets the current input datasets from the current stream. You cannot
 choose the stream, use \code{get\_stream(..)} for that.  To report modified
 datasets back to the stream use \code{report\_output(..)}.
 
@@ -1571,14 +1595,14 @@ by the Reduction Context will be returned.
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-a list of datasets as \code{AstroData} or filenames.
+a list of \code{AstroDataRecord} objects, \code{AstroData} objects or filenames.
 
 \item[{Return type}] \leavevmode
 list
 
 \end{description}\end{quote}
 
-Get stream returns a list of AstroData instances in the given stream.
+\code{get\_stream} returns a list of AstroData instances in the specified stream.
 
 \end{fulllineitems}
 
@@ -1593,8 +1617,8 @@ Get stream returns a list of AstroData instances in the given stream.
 This function returns the current reference image.  At the moment
 this is simply the first dataset in the current inputs.  However,
 use of this function allows us to evolve our concept of reference
-image for more complicated issues where choice of a ``reference'' image
-may be more complicated (e.g. require some data analysis to determine).
+image for more complicated cases where the choice of a ``reference'' image
+may need to be different (e.g. require some data analysis to determine).
 
 \end{fulllineitems}
 
@@ -1673,10 +1697,10 @@ Retrieve calibration.
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
-\textbf{data} (\emph{str or AstroData instance}) -- File for which calibration will be applied.
+\textbf{data} (\emph{string or AstroData instance}) -- File for which calibration must be retrieved.
 
 \item {} 
-\textbf{caltype} (\emph{str}) -- The type of calibration (ex.'bias', `flat').
+\textbf{caltype} (\emph{string}) -- The type of calibration (ex.'bias', `flat').
 
 \end{itemize}
 
@@ -1684,7 +1708,7 @@ Retrieve calibration.
 The URI of the currently stored calibration or None.
 
 \item[{Return type}] \leavevmode
-str or None
+string or None
 
 \end{description}\end{quote}
 
@@ -1710,7 +1734,7 @@ or \code{None} current ``inputs'' are used.
 
 \item {} 
 \textbf{source} -- Directs what calibration service to contact, for future
-compatibility, surrently only ``all'' is supported.
+compatibility, currently only ``all'' is supported.
 
 \end{itemize}
 
@@ -1730,8 +1754,8 @@ compatibility, surrently only ``all'' is supported.
 \begin{fulllineitems}
 \phantomsection\label{chapter_ReductionContextClass:astrodata.RecipeManager.ReductionContext.rq_stack_get}\pysiglinewithargsret{\code{ReductionContext.}\bfcode{rq\_stack\_get}}{\emph{purpose='`}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode
-\textbf{purpose} (\emph{str}) -- The purpose is a string prepended to the stackingID
-used to identify the list (see get\_list).
+\textbf{purpose} (\emph{string}) -- The purpose is a string prepended to the stackingID
+used to identify the list (see \code{get\_list(..)}).
 
 \end{description}\end{quote}
 
@@ -1743,7 +1767,7 @@ the stackingID portion of the list identifier.
 The stackingID function in IDFactory is meant to produce identical
 stacking identifiers for different images which can/should be stacked 
 together, e.g. based
-on program id and/or other details.  Again, see IDFactory for the
+on program ID and/or other details.  Again, see IDFactory for the
 particular algorithm in use.
 \begin{quote}\begin{description}
 \item[{Note }] \leavevmode
@@ -1767,7 +1791,7 @@ methods change.
 \textbf{purpose} (\emph{str}) -- The purpose argument is a string prefixed to the
 generated stackingID.  This allows two images which would
 produce identical stackingIDs to go in different lists,
-i.e. such as a fringe frame which, which might be prepended with
+i.e. such as a fringe frame which might be prepended with
 ``fringe'' as the purpose.
 
 \end{description}\end{quote}
@@ -1798,25 +1822,24 @@ ReductionObject command clause to execute.
 \phantomsection\label{chapter_ReductionContextClass:astrodata.RecipeManager.ReductionContext.list_append}\pysiglinewithargsret{\code{ReductionContext.}\bfcode{list\_append}}{\emph{id}, \emph{files}, \emph{cachefile=None}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
 \item {} 
-\textbf{id} (\emph{str}) -- A string which identifies the list to append the listed 
-filenames to.
+\textbf{id} (\emph{string}) -- A string that identifies to which list to append the filenames.
 
 \item {} 
-\textbf{files} (\emph{list of str}) -- A list of filenames to add to the list.
+\textbf{files} (\emph{list of strings}) -- A list of filenames to add to the list.
 
 \item {} 
-\textbf{cachefile} (\emph{str}) -- The filename to use to store the list.
+\textbf{cachefile} (\emph{string}) -- Filename to use to store the list.
 
 \end{itemize}
 
 \end{description}\end{quote}
 
-The caller is expected to supply cachefile, though in principle
+The caller is expected to supply \code{cachefile}, which in principle
 a value of ``None'' could mean the ``default cachefile'' this is not
-supported by the adcc as of yet, since the desired behavior is for
+supported by the \code{adcc} as of yet. The desired behavior is for
 reduce instances running in the same directory to cooperate, and those
 running in separate directories be kept separate, and this is 
-implemented by providing an argument for cachefile which is in a 
+implemented by providing an argument for \code{cachefile} which is in a 
 generated subdirectory (hidden) based on the startup directory
 for the reduce process.
 
@@ -1835,17 +1858,17 @@ process.
 \begin{fulllineitems}
 \phantomsection\label{chapter_ReductionContextClass:astrodata.RecipeManager.ReductionContext.get_list}\pysiglinewithargsret{\code{ReductionContext.}\bfcode{get\_list}}{\emph{id}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode
-\textbf{id} (\emph{str}) -- Lists are assiciated with arbitrary identifiers,
-passed as strings.  See IDFactory for ids built from
-standard astrodata characteristics.
+\textbf{id} (\emph{str}) -- Lists are associated with arbitrary identifiers,
+passed as strings.  See \code{IDFactory} for IDs built from
+standard \code{astrodata} characteristics.
 
 \end{description}\end{quote}
 
 The list functionality allows storing dataset names in a list
 which is shared by all instances of reduce running in a given
-directory.  The list is kept by an adcc instance in charge of that
-sub-directory.  The ``get\_list'' function retrieves a list that has
-already been requested via ``rq\_stack\_get()'' which initiates the
+directory.  The list is kept by an \code{adcc} instance in charge of that
+sub-directory.  The \code{get\_list(..)} function retrieves a list that has
+already been requested via \code{rq\_stack\_get(..)} which initiates the
 interprocess request.
 
 This function does not block, and if the stack was not requested
@@ -1893,7 +1916,7 @@ list
 
 \end{description}\end{quote}
 
-Prepends a prefix string to either the inputs or the given list of filenamesfilename.
+Prepends a prefix string to either the inputs or the given list of filenames.
 
 \end{fulllineitems}
 
@@ -1907,7 +1930,7 @@ Prepends a prefix string to either the inputs or the given list of filenamesfile
 \phantomsection\label{chapter_ReductionContextClass:astrodata.RecipeManager.ReductionContext.run}\pysiglinewithargsret{\code{ReductionContext.}\bfcode{run}}{\emph{stepname}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode
 \textbf{stepname} (\emph{string}) -- The primitive or recipe name to run. Note: this is 
-actually compiled as a recipe... proxy recipe names may appear
+actually compiled as a recipe. Proxy recipe names may appear
 in the logs.
 
 \end{description}\end{quote}
@@ -1924,36 +1947,36 @@ context to execute another recipe or primitive.
 
 \section{Elements}
 \label{configElements:elements}\label{configElements::doc}
-Instrument-mode-specific behaviors available through the AstroData class
-are not implemented in the astrodata package itself, but are instead loaded from
+Instrument-mode specific behaviors available through the \code{AstroData} class
+are not implemented in the \code{astrodata} package itself, but are instead loaded from
 configuration packages. In the case of Gemini data the
 configuration package is a directory named \code{astrodata\_Gemini}.  This
 configuration path is found by astrodata by the containing directory
-appearing either on the PYTHONPATH, or on either of two astrodata environment
-variables, RECIPEPATH or ADCONFIGPATH.
+appearing either on the \code{PYTHONPATH}, or on either of two astrodata environment
+variables, \code{RECIPEPATH} or \code{ADCONFIGPATH}.
 
-The astrodata package searches for all directories named \code{astrodata\_\textless{}anything\textgreater{}}
+The \code{astrodata} package searches for all directories named \code{astrodata\_\textless{}anything\textgreater{}}
 in these environment variables.  Though the configurations contain
-exectable python, it is not meant to be imported as a regular python module but
+executable python, it is not meant to be imported as a regular python module but
 is loaded by the astrodata package.
 
 
 \subsection{The General Configuration Creation Process}
 \label{configElements:the-general-configuration-creation-process}\begin{enumerate}
 \item {} 
-You will define a tree of AstroDataTypes identifying types of your data.
+Define a tree of \code{AstroDataTypes} identifying types of your data.
 
 \item {} 
-You will create ``descriptor'' functions which calculate a particular metadata
-value for nodes of the AstroDataType tree defined,
+Create ``descriptor'' functions which calculate a particular metadata
+value for nodes of the \code{AstroDataType} tree defined,
 such as \code{gain} or \code{filter\_name}.
 
 \item {} 
-You will write python member functions bundled into PrimitivesSet classes,
+Write Python member functions bundled into \code{PrimitivesSet} classes,
 which specifically understand your dataset.
 
 \item {} 
-You will assemble primitives into sequential lists, which we call  processing
+Assemble primitives into sequential lists, which we call  processing
 ``recipes''.
 
 \end{enumerate}
@@ -1968,7 +1991,7 @@ so they can be used for automated data reduction.
 \subsection{Configuration Elements Which Have To Be  Developed}
 \label{configElements:configuration-elements-which-have-to-be-developed}\begin{enumerate}
 \item {} 
-\textbf{AstroData Types} identify classifications of MEF dataset to which other
+\textbf{AstroData Types} identify classifications of MEF datasets to which other
 features can be assigned. Types have requirements which must hold for
 an identified dataset and also information about the place of the type in
 an overall type hierarchy (e.g. The GMOS type is the parent of GMOS\_IMAGE).
@@ -1984,22 +2007,22 @@ functions assigned at runtime to the astrodata instance, allowing
 type-specific implementations to manage these peculiarities.
 
 \item {} 
-\textbf{Primitives} are dataset transformations meant to run in the recipe system.
+\textbf{Primitives} are dataset transformations meant to run in the Recipe System.
 Primitives are implemented as python generator functions in sets of primitives
 that apply to a common AstroDataType.
 
 \item {} 
 \textbf{Recipes} are lists of primitives stored in plain text which can be executed
 by the AstroData Recipe System. While primitives work on the \code{Reduction
-Context} explicitely, the reduction context is implicit in recipes
+Context} explicitly, the reduction context is implicit in recipes
 so that recipes can arguably be considered to contain
 ``scientifically meaningful'' steps with no ``software artifacts''.
 
 \end{enumerate}
 
 
-\section{Creating A Config Package}
-\label{startingTheConfig:creating-a-config-package}\label{startingTheConfig::doc}
+\section{Creating A Configuration Package}
+\label{startingTheConfig:creating-a-configuration-package}\label{startingTheConfig::doc}
 
 \subsection{Preparation}
 \label{startingTheConfig:preparation}
@@ -2015,7 +2038,7 @@ require that the \code{astrodata/scripts} package directory be added to the PATH
 
 \subsection{Clone the Sample Package}
 \label{startingTheConfig:clone-the-sample-package}
-The easiest and recommended way to start a new configuration package is by copying the
+The easiest, and recommended way to start a new configuration package is by copying the
 \code{astrodata\_Sample} package. The sample configuration package is located in
 \code{astrodata/sample/astrodata\_Sample}. Copy this directory to a development workspace
 as in the following example, where \code{\textless{}ad\_install\_dir\textgreater{}} should be the directory in
@@ -2029,7 +2052,7 @@ cd workspace
 cp -r @textless[]ad@_install@_dir@textgreater[]/astrodata/samples/astrodata@_Sample .
 \end{Verbatim}
 
-Note that presumably, \code{\textless{}ad\_install\_dir\textgreater{}} should already be on the PYTHONPATH.
+Note that \code{\textless{}ad\_install\_dir\textgreater{}} should already be on the \code{PYTHONPATH}.
 
 The name of the destination can, of course, be other than \code{astrodata\_Sample},
 and it can be changed later as well. For a real package it must be changed, and
@@ -2040,9 +2063,9 @@ portion of the name is present no other aspect of the configuration will have to
 change. However, every configuration package wherever on the
 path must have a unique name.
 
-You must also ensure the the new directory \emph{containing}
+You must also ensure that the new directory \emph{containing}
 \code{astrodata\_Sample} is in either ADCONFIGPATH or RECIPEPATH, or alternately
-for convienience (i.e. when installing packages via setup.py) in the PYTHONPATH.
+for convenience (i.e. when installing packages via setup.py) in the PYTHONPATH.
 If you are following the above steps, you are in the directory to which
 \code{astrodata\_Sample} was copied. Add this directory to the RECIPEPATH so your copy
 of \code{astrodata\_Sample} can be found:
@@ -2056,7 +2079,7 @@ discovered by the astrodata package
 by running a tool from the \code{astrodata/scripts} directory which should
 have been installed to system bin directories by the \code{setup.py} process.
 
-I will presume you are working in the test data directory, with a subdirectory
+Assuming that you are working in the test data directory, with a subdirectory
 named \code{source\_data} into which you have copied at least one fits file.
 For these examples, we assume for convienience your file is named \code{test.fits}:
 
@@ -2086,7 +2109,7 @@ directory: . (/home/dpd/test@_data)
  ................................... (UNPREPARED)
 \end{Verbatim}
 
-A line should show up for test.fits and any other fits files in the current
+A line should show up for \code{test.fits} and any other fits files in the current
 directory \textbf{and} any subdirectory listing the AstroData types which apply to the
 dataset. The list will contain some Gemini types, such as RAW and
 UNPREPARED, and if the data in question is Gemini data, types associated with
@@ -2099,19 +2122,18 @@ dataset has been manipulated by the Sample package previously), and \code{OBSERV
 
 \section{Creating An AstroDataType}
 \label{creatingAnAstroDataType:creating-an-astrodatatype}\label{creatingAnAstroDataType::doc}
-AstroData types are defined in python class definitions located in the
-subdirectories of either of two path locations in the our configuration package
-(\code{astrodata\_Sample}).
-\begin{itemize}
-\item {} 
-\code{astrodata\_Sample/classification/types} - for typological types
 
-\item {} 
-\code{astrodata\_Sample/classification/status} - for types related to processing pstatus.
+\subsection{Overview}
+\label{creatingAnAstroDataType:overview}
+AstroData types are defined in Python classes located in either of two path
+locations in the configuration package:
 
-\end{itemize}
+\begin{Verbatim}[commandchars=@\[\]]
+* []`[]`astrodata@_Sample/classification/types[]`[]` - for typological types
+* []`[]`astrodata@_Sample/classification/status[]`[]` - for types related to processing status.
+\end{Verbatim}
 
-The type definition syntax are equivalent,
+The type definition syntax is equivalent in both cases,
 the distinction is only for organization between two
 sorts of dataset classfication:
 \begin{enumerate}
@@ -2135,6 +2157,9 @@ as processing types,  provided as examples in the sample package that will demon
 the point in general. For more complicated examples of type requirements, we'll
 use examples from \code{astrodata\_Gemini}..
 
+
+\subsection{The Class Definition Line by Line}
+\label{creatingAnAstroDataType:the-class-definition-line-by-line}
 To inspect the types in the custom package change
 directory to \code{astrodata\_Sample/classifications/status} and get a directory
 listing:
@@ -2168,10 +2193,7 @@ ClassificationLibrary can use to inspect datasets. The ClassificationLibrary use
 \code{newtypes} list to recieve types defined in the module, allowing multiple types to be
 added to this list in a single type module if desired. At Gemini we have decided to
 have just one type definition per python type file.
-
-
-\subsection{The Class Definition Line by Line}
-\label{creatingAnAstroDataType:the-class-definition-line-by-line}\begin{enumerate}
+\begin{enumerate}
 \item {} 
 \code{class UNMARKED(DataClassification)}:
 By convention, we name the class identically to the chosen string name, in
@@ -2185,7 +2207,7 @@ sees the classification object, and deals with types as strings.
 
 \item {} 
 \code{usage="Processing Type for data not yet 'marked'."}:
-This is used in automatically generated documentation.
+This is used for automatically generated documentation.
 
 \item {} 
 \code{parent="OBSERVED"}:
@@ -2198,7 +2220,7 @@ assignments.
 \item {} 
 \code{requirement = PHU(\{"\{prohibit\}THEMARK":'.*'\})}:
 The requirement member uses requirement classes (see below) to define the given type.
-In this case, this is a PHU check to ensure that ``THEMARK'' is not set at all
+In this case, this is a PHU check to ensure that the header keyword ``THEMARK'' is not set at all
 in the PHU.
 
 \item {} 
@@ -2221,7 +2243,7 @@ for convienience, are already in scope.
 
 \subsubsection{Concrete Requirements}
 \label{creatingAnAstroDataType:concrete-requirements}
-Concrete Requirments are those that make actual physical checks of dataset characteristic.
+Concrete Requirements are those that make actual physical checks of dataset characteristics.
 
 \begin{tabulary}{\linewidth}{|L|L|L|}
 \hline
@@ -2259,7 +2281,7 @@ regular expressions, it could be expanded to make numerical comparisons (e.g. to
 have a dataset type dependent on seeing thresholds). Another example that we
 anticipate needing is a requirement class that checkes header values in extensions.
 
-Note that currently all type checking resolves to PHU checks, see below for
+Currently all type checking resolves to PHU checks, see below for
 a description of the PHU requirement object.
 
 
@@ -2267,7 +2289,7 @@ a description of the PHU requirement object.
 \label{creatingAnAstroDataType:isclass-other-class-name}
 The ISCLASS requirement accepts a string name and will cause the classification to check
 if the other type applies.  Circular definitions are possible and the configuration author
-must ensure such do not exit.
+must ensure such do not exist.
 
 ISCLASS example:
 
@@ -2293,7 +2315,7 @@ Since there are in fact two GMOS instruments at Gemini, one in Hawaii, one in Ch
 type really means checking that one of these two instruments was used.
 
 \begin{notice}{note}{Note:}
-This is also an example of use of the OR requirement, and specifically a convienience
+This is also an example of use of the OR requirement, and specifically a convenience
 feature allowing the ``\textbar{}'' symbol to be used for pair-wise or-ing. The included comment
 shows another form using the OR object constructor
 which allows more than two operands to be listed.
@@ -2315,10 +2337,10 @@ An example:
     \PYG{n}{parent} \PYG{o}{=} \PYG{l+s}{"}\PYG{l+s}{GMOS}\PYG{l+s}{"}
     \PYG{n}{requirement} \PYG{o}{=} \PYG{n}{PHU}\PYG{p}{(}\PYG{n}{NODPIX}\PYG{o}{=}\PYG{l+s}{'}\PYG{l+s}{.*}\PYG{l+s}{'}\PYG{p}{)}
 
-\PYG{n}{newtypes}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{GMOS\PYGZus{}IFU}\PYG{p}{(}\PYG{p}{)}\PYG{p}{)}
+\PYG{n}{newtypes}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{GMOS\PYGZus{}NODANDSHUFFLE}\PYG{p}{(}\PYG{p}{)}\PYG{p}{)}
 \end{Verbatim}
 
-It is also possible to probit a match, and to use regular expressions for key matching using a
+It is also possible to prohibit a match, and to use regular expressions for key matching using a
 special syntax for the key name. This is done by prepending an instruction to the key name,
 but also requires passing arguments to the PHU object constructor in a different way. For
 example the following requirement checks to ensure that the PHU key \code{MASKNAME} \emph{does not}
@@ -2332,9 +2354,9 @@ Note that in this case the arguments are passed to the PHU object constructor as
 The keys in the dictionary are used to match PHU keys, and the values are regular expressions
 which will be compared to PHU values.
 
-Generally, python helps instantiating the PHU object by turning the constructor parameter
+Generally, Python helps instantiating the PHU object by turning the constructor parameter
 names and their settings into the keys and values of the dictionary it uses internally.
-However, python doesn't like special characters like ``\{'' in argument names, so to use the
+However, Python does not like special characters like ``\{'' in argument names, so to use the
 extended key syntax requires passing the dictionary.
 
 To use regular expressions in key names (which is also considered dangerous and prone to
@@ -2355,7 +2377,7 @@ Due to our legacy reduction software conventions, Gemini datasets which have bee
 through the system will have a keyword of the sort ``\textless{}x\textgreater{}PREPARE'' with a value set to a
 time stamp.  The need for caution is due to, one, efficiency, since the classification
 must cycle through all headers to see if the regular expression matches, and two, this
-technique is prone to a name collision, i.e. in our example above... if a fits PHU
+technique is prone to a name collision, i.e. in our example above... if a PHU
 happens to have a key matching \code{"*PREPARE"} for some other reason than having been
 processed by the Gemini Package.
 
@@ -2468,7 +2490,7 @@ It is possible also to use the ``\textbar{}'' operator as a logical ``or'':
 
 \section{Creating a New Descriptor}
 \label{creatingADescriptor::doc}\label{creatingADescriptor:creating-a-new-descriptor}
-The descriptor implementations are defined in the
+The Descriptor implementations are defined in the
 \code{astrodata\_Sample/ADCONFIG\_Sample/descriptors} directory tree. A descriptor
 configuration requires the following elements:
 \begin{enumerate}
@@ -2489,11 +2511,11 @@ The descriptor must be listed in the \code{DescriptorsList.py} file.
 
 \subsection{The Calculator Class}
 \label{creatingADescriptor:the-calculator-class}
-The Calculator Class in the Sample package is in the file,
-\code{OBSERVED\_Descriptors.py}, located in the \code{descriptors} subdirectory of the
+The \code{Calculator} Class in the Sample package is, for the OBSERVED type, in the file
+\code{OBSERVED\_Descriptors.py}. That file is located in the \code{descriptors} subdirectory of the
 \code{ADCONFIG\_Sample} of the \code{astrodata\_Sample} package.
 It contains just one example descriptor function, \code{observatory} which relies
-on the standard MEF PHU key, \code{OBSERVAT}. Full source:
+on the standard MEF PHU key, \code{OBSERVAT}:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{k}{class} \PYG{n+nc}{OBSERVED\PYGZus{}DescriptorCalc}\PYG{p}{:}
@@ -2594,7 +2616,7 @@ To add the ``telescope'' descriptor means adding another function to this class:
     \PYG{k}{return} \PYG{n}{dataset}\PYG{o}{.}\PYG{n}{get\PYGZus{}phu\PYGZus{}key\PYGZus{}value}\PYG{p}{(}\PYG{l+s}{"}\PYG{l+s}{TELESCOP}\PYG{l+s}{"}\PYG{p}{)}
 \end{Verbatim}
 
-Note, all descriptors should have the same function signature,  including
+All descriptors should have the same function signature,  including
 \code{self}, a \code{dataset} argument and \code{**args} to catch all named arguments.
 The latter is required by the infrastructure so that unexpected parameters
 can be sent to all descriptor algorithms, some of which may be handled by the
@@ -2605,10 +2627,10 @@ infrastructure on behalf of the descriptor function.
 \label{creatingAPrimitive:creating-recipes-and-primitive}\label{creatingAPrimitive::doc}
 Primitives are basic transformations.  Since different dataset types will
 sometimes require different concrete implementations of code to perform the
-given step, the primitive names are shared system-wide, with
+requested step, the primitive names are shared system-wide, with
 type-specific implementations.
 
-A ``recipe'' is a text file containing one primitives (or other recipe) per line.
+A ``recipe'' is a text file containing one primitive (or other recipe) per line.
 It is thus a sequential view of a reduction or data analysis process. It
 contains no branching explicitly, but since primitives can be implemented
 for particular dataset types, there is implicit branching based on dataset
@@ -2624,26 +2646,24 @@ primitive set per package, which is resolved through the \code{parent} member of
 the AstroDataType. Leaf node primitive set assignments override parent
 assignments.
 
-Which primitive set will be loaded for a given type is specified in index files.
+Which primitive set is to be loaded for a given type is specified in index files.
 Index files and primitive sets must appear in
 \code{astrodata\_Sample/RECIPES\_Sample}, or any subdirectory of this directory.  Any
 arrangement of files into subdirectories below this directory is acceptable.
 However, by convention Gemini put all ``primitive set'' modules in the
-\code{primitives} subdirectory  and put only recipes in this top directory.  As the
-library of recipies grows, Gemini recipes will similarly move to a \code{recipies}
-subdirectory, with further subdirectories organized by scientific function.
+\code{primitives} subdirectory  and put only recipes in this top directory.
 
-The astrodata package essentially flattens these directories so moving files
+The astrodata package essentially flattens these directories; moving files
 around does not affect the configuration or require changing the content of any
 files, with the exception that the primitive parameter file must appear in the
 same location as the primitive set module itself.
 
 
-\subsubsection{Primitives Indeces}
-\label{creatingAPrimitive:primitives-indeces}
+\subsubsection{Primitive Indices}
+\label{creatingAPrimitive:primitive-indices}
 The astrodata package recursing a \code{RECIPES\_XYZ} directory will look at each
-filename and if it matches the primitives-index naming convention,
-\code{primitivesIndex.\textless{}unique\_name\textgreater{}.py}, it will try to load the contents of this
+filename, if it matches the primitive index naming convention,
+\code{primitivesIndex.\textless{}unique\_name\textgreater{}.py}, it will try to load the contents of that
 file and add it to the
 internal primitive set index.  Below is an example of a primitive index file
 which contributes to the central index:
@@ -2659,15 +2679,14 @@ which contributes to the central index:
 The dictionary in the file must be named ``localPrimitiveIndex''. The key is the
 type name and the value is a tuple containing the primitives' module basename
 and  the name of the class inside the file, respectively, as strings.  These are
-given as strings because they are only evaluated into python objects if needed.
+given as strings because they are only evaluated into Python objects if needed.
 
-Note: you can have multiple primitive indeces. As mentioned each index file
+There can be multiple primitive indices. As mentioned each index file
 merely updates a central index collected from all installed packages.
 The index used in the end is the union of all indices.
 
 Within the sample primitive set, \code{primitives\_OBSERVED.py},
-you will find something like the following (notice
-the Sample may have changed since construction of the document):
+you will find something like the following:
 
 \begin{Verbatim}[commandchars=@\[\]]
 from astrodata.ReductionObjects import PrimitiveSet
@@ -2705,8 +2724,8 @@ itself, not the primitives, that are registered in the index. However, note that
 primitives are implemented with ``generator'' functions. This type of functions
 is a standard Python feature. For purposes of writing a primitive all you need
 to understand about generators is that instead of a{}`{}`return{}`{}` statement, you
-will use \code{yield}.  Like \code{return} statement the \code{yeild} statement accepts a
-value, and as with ``returning a value'' a generator ``yeilds a value''.
+will use \code{yield}.  Like \code{return} statement the \code{yield} statement accepts a
+value, and as with ``returning a value'' a generator ``yields a value''.
 For primitives this value
 must be the reduction context passed in to the primitive.
 
@@ -2718,8 +2737,8 @@ statement, except that the infrastructure may process requests made by the
 primitive prior to the \code{yield}, such as a calibration request.
 
 
-\subsection{Recipies}
-\label{creatingAPrimitive:recipies}
+\subsection{Recipes}
+\label{creatingAPrimitive:recipes}
 Recipes should appear in the \code{RECIPES\_\textless{}XYZ\textgreater{}} subdirectory, and have the naming
 convention \code{recipe.\textless{}whatever\textgreater{}}. A simple recipe using the sample primitives is:
 
@@ -2757,17 +2776,17 @@ executed.
 \subsection{Dataset Abstraction}
 \label{gen.ADMANUAL_ADConcepts:dataset-abstraction}
 The AstroData class traces back to a request by Gemini Astronomers to
-``handle MEFs better'' in our reduction package. A ``MEF'' is of course a
-``Multiple-Extension FITS File'' and is also Gemini's standard dataset
-storage format. Investigation showed that the MEF libraries were
-sufficient for handling ``MEFs'' as such and the real meaning of the
+``handle MEFs better'' in our reduction package. A \emph{Multi-Extension FITS},
+or \emph{MEF} is the standard storage format that Gemini adopted for its datasets.
+Investigation showed that the MEF libraries were
+sufficient for handling MEFs as such and the real meaning of the
 request was for a better dataset abstraction for Gemini's datasets.
 Gemini MEFs, and MEFs in general, are usually meant to be coherent
 collections of data; the separate pixel arrays, or extensions, are
 collocated in a common MEF for that reason. The MEF abstraction itself
 does not recognize these connections, however, and views the MEF as a
 list of separate header-data units, their only relation being
-collocation in the list. Even the PHU, which has certain artifacts as
+collocation in the list. Even the Primary Header Unit, PHU, which has certain artifacts as
 a special header, generally not having pixel data, and which is used
 as a file-wide header, is merely presented as the header-data unit at
 index 0. AstroData relies on one pair of relational meta-data
@@ -2777,21 +2796,21 @@ specifier, and EXTVER serves to associate the extention with other
 extensions (e.g. by convention (``VAR'',2) is the variance plane for
 (``SCI'', 2).
 
-FITS libraries (e.g. pyfits) return opened MEFs as objects which act
-as lists of Header-Data Units, aka ``extensions''. AstroData on the
+FITS libraries (e.g. \code{pyfits}) return opened MEFs as objects which act
+as lists of Header-Data Units, or \emph{extensions}. \code{AstroData} on the
 other hand is designed to be configured to recognize many internal
-connections that MEF does not directly encode. AstroData detects the
-type of the data, and then can make sound assumptions about what the
-data is and how to handle it. Any particular (python-level) actions on
+connections that MEF does not directly encode. \code{AstroData} detects the
+type of the data, and then can make assumptions about what the
+data is and how to handle it. Any particular (Python-level) actions on
 the data are then performed by implementations in the configuration
 space.
 
 
-\subsection{Meta Data}
+\subsection{Meta-Data}
 \label{gen.ADMANUAL_ADConcepts:meta-data}
-An additional role of the AstroData abstraction is to standardize
+An additional role of the \code{AstroData} abstraction is to standardize
 access to metadata. FITS allows copious metadata in each extension and
-in the shared ``zero'th'' extension (aka ``the PHU''), but it standardizes
+in the shared Primary Header Unit (PHU), but it standardizes
 only a small subset of what sort of information is stored there. Many
 properties which are for Gemini essentially universal properties for
 all of our datasets, across instruments and modes, are not
@@ -2810,12 +2829,12 @@ to judge if it belongs in a given classification, but the intent is to
 find characteristics in the MEF's PHU. Using this knowledge, AstroData
 loads and applies particular instrument-mode-specific methods to
 obtain general behavior through a uniform interface, as desired for
-the user. This uniform interface can be presented not only in the case
+the developer. This uniform interface can be presented not only in the case
 of meta-data but also in the case of transformations and any other
 dataset-type-specific behavior.
 
 
-\section{=AstroData Types}
+\section{AstroData Types}
 \label{gen.ADMANUAL_ADConcepts:astrodata-types}
 To first order, Astrodata Types map to instrument-modes, and these
 provide a good concrete image of what Astrodata Type are. However more
@@ -2824,24 +2843,34 @@ themselves useful, such as generic types such as ``IFU'' vs ``IMAGE'', or
 processing status types such as ``RAW'' vs ``PREPARED''.
 
 
-\subsection{Dataset Transformations}
-\label{gen.ADMANUAL_ADConcepts:dataset-transformations}
+\subsection{Recipes and Primitives}
+\label{gen.ADMANUAL_ADConcepts:recipes-and-primitives}
 The Astrodata package's ``Recipe System'' handles all abstractions
 involved in transforming a dataset and is built on top of the
-AstroData dataset abstraction. The system is called the ``recipe
-system'' because the top level instructions for transforming data are
+AstroData dataset abstraction. The system is called the \emph{Recipe
+System} because the top level instructions for transforming data are
 ``recipes'', text files of sequential instructions to perform. For
-example the recipe ``overscanCorrect'' contains the following (comments
-removed):
+example the recipe \code{makeProcessedBias} contains the following:
 
-\begin{Verbatim}[commandchars=\\\{\},numbers=left,firstnumber=1,stepnumber=1]
-\PYG{n}{prepare}
-\PYG{n}{overscanCorrect}
-\PYG{n}{addVARDQ}
-\PYG{n}{setStackable}
-\PYG{n}{averageCombine}
-\PYG{n}{storeProcessedBias}\PYG{p}{(}\PYG{n}{clob}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\begin{Verbatim}[commandchars=@\[\]]
+.. code-block:: python
 \end{Verbatim}
+\begin{quote}
+\begin{quote}
+\begin{quote}\begin{description}
+\item[{linenos}] \leavevmode
+\end{description}\end{quote}
+\end{quote}
+
+prepare
+addDQ
+addVAR(read\_noise=True)
+overscanCorrect
+addToList(purpose=''forStack'')
+getList(purpose=''forStack'')
+stackFrames
+storeProcessedBias
+\end{quote}
 
 Each of these instructions is either a ``primitive'', which is a python
 function implemented in the configuration space for a dataset of the
@@ -2855,7 +2884,7 @@ to overwrite (clobber) any pre-existing bias of the same name.
 \label{gen.ADMANUAL_ADConcepts:zero-recipe-system-overhead-for-astrodata-only-users}
 Use of AstroData does NOT lead to importing any part of the ``Recipe
 System''. Thus there there is no overhead borne by users of the
-AstroData dataset abstract if they do not specifically invoke the
+AstroData dataset abstraction if they do not specifically invoke the
 Recipe System. Neither the configuration package nor even the related
 astrodata package modules are imported until the Recipe System is
 explicitly invoked by the calling program.
@@ -2869,17 +2898,17 @@ elements which are implemented in the configuration package in a way
 such that Astrodata can load and apply the functionality involved. Put
 simply a combination of location and naming conventions allows the
 configuration author to define elements in a way that astrodata will
-disover. In the current system there are three types of elements to be
+discover. In the current system there are three types of elements to be
 concerned with:
 \begin{itemize}
 \item {} 
-dataset classification names, aka \textbf{Astrodata Types}
+dataset classification names, \textbf{Astrodata Types}
 
 \item {} 
-high level metadata names, aka \textbf{Astrodata Descriptors}
+high level metadata names, \textbf{Astrodata Descriptors}
 
 \item {} 
-scientifically meaningful discrete dataset transformation names, aka
+scientifically meaningful discrete dataset transformation names,
 \textbf{Primitives}
 
 \end{itemize}
@@ -2887,7 +2916,7 @@ scientifically meaningful discrete dataset transformation names, aka
 Each of these have associated actions:
 \begin{itemize}
 \item {} 
-\textbf{Astrodata Type}: checks a dataset for adherence to an AstroData
+\textbf{Astrodata Type}: checks a dataset for adherence to AstroData
 type classification criteria, generally by checking key-value pairs in
 the PHU.
 
@@ -2897,20 +2926,20 @@ high-level metadata for a particular Astrodata Type in particular
 units.
 
 \item {} 
-\textbf{Primitives}: performs a named transformation on a dataset of a
+\textbf{Primitives}: performs a transformation on a dataset of a
 particular Astrodata Type.
 
 \end{itemize}
 
-The ``astrodata\_Gemini'' package contains these definitions for Gemini
+The \code{astrodata\_Gemini} package contains these definitions for Gemini
 datasets separated into two parts, one for the basic AstroData related
 configuration information, and another for Recipe System
 configuration. The first section, in its own subdirectory in the
-configuration package directory, in Gemini's case is found in the
-ADCONFIG\_Gemini configuration subdirectory. Configurations in this
+configuration package directory. In Gemini's case is found in the
+\code{ADCONFIG\_Gemini} configuration subdirectory. Configurations in this
 subdirectory define types, descriptor functions, and other AstroData-
 related features. The second section, in a sibling subdirectory in the
-configuration package, in Gemini's case, ``RECIPES\_Gemini'', defines
+configuration package, in Gemini's case, \code{RECIPES\_Gemini}. There are defined
 configurations and implementations needed by the Recipe System, such
 as recipes and primitives.
 
@@ -2919,16 +2948,16 @@ as recipes and primitives.
 \label{gen.ADMANUAL_ADConcepts:astrodata-type}
 An Astrodata Type is a named set of dataset characteristics.
 
-Lack of a central system for type detection in our legacy package
-meant that scripts and tasks in that system make extended checks on
+The lack of a central system for type detection in our legacy package
+meant that scripts and tasks made extended checks on
 the header data in the datasets they manipulate. Often these checks
-merely verify that the right type of data is being worked on, a very
+only verify that the right type of data is being worked on, a very
 common task, yet these checks can still be somewhat complex and
 brittle, for example relying on specific headers which may change when
 an instrument is upgraded.
 
-Astrodata's classification system on the other hand allows defining
-dataset classifications via configuration packaging such that the type
+The Astrodata classification system on the other hand allows the defining
+of dataset classifications via configuration packaging such that the type
 definitions are shared throughout the system. The calling code can
 refer to type information by a string name for the type, and any
 subtleties in or changes to the means of detection are centralized,
@@ -2949,8 +2978,8 @@ allows programmers to check dataset types with a single line of code:
    \PYG{n}{handle\PYGZus{}raw\PYGZus{}dataset}\PYG{p}{(}\PYG{n}{ad}\PYG{p}{)}
 \end{Verbatim}
 
-The \emph{isType(..)} function on lines 5 and 8 above is an example of one-
-line type checking. The one-line check replaces a larger set of PHU
+The \code{isType(..)} function on lines 5 and 8 above is an example of
+one-line type checking. The one-line check replaces a larger set of PHU
 header checks which would otherwise have to be used. Users benefit in
 a forward-compatible way from any future improvements to the named
 type, such as better checks or incorporation of new instruments and
@@ -2966,16 +2995,14 @@ with a consistent interface to the type of functionality involved.
 \label{gen.ADMANUAL_ADConcepts:astrodata-descriptors}
 A descriptor is named metadata.
 
-It goes without saying that our scientific datasets contain (and
-require) copious metadata. Significant amounts of ``information about
-the information'' is present along with the pixel data regarding an
-observation and much of it is important to data analysis processes.
+Significant amounts of information about
+the data is present along with the pixel data and much of it is important to data analysis processes.
 The MEF file structure supports such meta-data in
-the header units of the primary and other extension HDUs.
+the Primary Header Unit and the header section of the extensions.
 
-At first blush the problem retrieving metadata consistently is that
+The problem retrieving metadata consistently is that
 while the values of interest are stored in some form in the headers,
-the header key names do not follow consistent conventions over all.
+the header key names do not follow consistent conventions across instruments.
 It's easy to assume that there is a one to one relationship between
 particular metadata headers of different instrument-modes and that the
 discrepancy is that the developers have merely chosen different header
@@ -2985,7 +3012,7 @@ particular named piece of metadata based on the type of dataset. This
 particular key would be used to look up the information in the
 headers.
 
-However, this table driven approach is not workable because the
+However, this table-driven approach is not workable because the
 situation turns out to be more complex. Firstly, the units of the
 given header value may be different for different instruments and
 modes. A table could be expanded to have columns for the value's
@@ -2997,25 +3024,24 @@ approach are two, and lead us to a function-based approach. One, the
 information needed to provide the named metadata is sometimes
 distributed across multiple key/header values. These require
 combination or computation, and for different instruments and modes
-the distribution and combination requires differ. Two, a correct
+the distribution and combination required differ. Two, a correct
 calculation of the metadata sometimes requires use of look-up tables
-that must be loaded from a configuration space with instrument-
-specific information, based on the dataset's Astrodata Type.
+that must be loaded from a configuration space with instrument-specific
+information, based on the dataset's Astrodata Type.
 
-For metadata which complies with the more simple expectations first
-considered, widely shared descriptors for some metadata are standard
+For metadata which complies with the more simple expectations, widely
+shared descriptors for some metadata are standard
 functions able to lookup the meta-data based on standard names or
 using simple rules that generalize whatever variation there is in the
 storage of that particular meta-data across different instruments.
 While it is possible for a descriptor to store its calculated value in
 the header of the dataset, and return that if called again,
 essentially caching the value in the header, Gemini descriptors choose
-as a matter of policy to always recalculate, and leave such caching-
+as a matter of policy to always recalculate, and leave such caching
 schemes to the calling program.
 
 A complete descriptor definition includes the proper unit for the
-descriptor and a conceptual description (\href{http://gdpsg.wikis-internal.gemini.edu}{http://gdpsg.wikis-
-internal.gemini.edu}). E.g.
+descriptor and a conceptual description. E.g.
 Any CCD based data will have an associated ``gain'', relating to the
 electronics used to take the image. Given an AstroData instance, ad ,
 to get the ``gain'' for any supported Astrodata Type, you would use the
@@ -3028,25 +3054,20 @@ dataset:
 
 Because the proper descriptors are assigned to the correct Astrodata
 Types for Gemini Instruments, the line above will take into account
-any type-specific peculiarities that exist between any supported
+any type-specific peculiarities that exist for the supported
 dataset. The current ADCONFIG\_Gemini configuration implementation has
-descriptors present for all Gemini instruments. See ``Gemini AstroData
-Type Reference'' (\href{http://gdpsg.wikis-internal.gemini.edu/index.php?title=UserDocumentation}{http://gdpsg.wikis-
-internal.gemini.edu/index.php?title=UserDocumentation}) for
-a list of available descriptors for Gemini data. Note that descriptor
-names themselves are not covered in the Astrodata Users Manual itself
-because they are part of the type-specific configuration package.
+descriptors present for all Gemini instruments.
 
 
 \section{Recipe System Primitives}
 \label{gen.ADMANUAL_ADConcepts:recipe-system-primitives}
-A primitive is a named transformation.
+A primitive is a transformation.
 
-A primitive is meant to name an abstract dataset transformation for
-which we will want to assign concrete implementations on a per
-Astrodata Type basis. E.g. ``subtractSky'' is a transformation that has
+A primitive is an specific dataset transformation for
+which we will want to assign concrete implementations for the
+Astrodata Type. For example, \code{subtractSky} is a transformation that has
 meaning for a variety of wavelength regimes which involve subtracting
-sky frames from the science pixels. Nevertheless, different
+sky frames from the science pixels. Different
 instruments in different modes will require different implementations
 for this transformation, due both to differences in the data type and
 data layout produced by a particular instrument-mode, and also due to
@@ -3056,8 +3077,7 @@ Recipe and primitive names both play a role bridging the gap between
 what the computer does and what the science user expects to be done.
 The primitives are meant to be human-recognizable steps such as come
 up in a discussion among science users about data flow procedures. The
-recipes are, loosely, the names of data processing work, and the
-primitives are names for human-recognizable steps in that process.
+recipes are, loosely, the names of data processing work.
 This puts a constraint on how functionally fine grained primitives
 should becomes. For example at Gemini we have assumed the concept of
 primitives as ``scientifically meaningful'' steps means the data should
@@ -3066,45 +3086,43 @@ given step. Each step is at least a mini-milestone in a reduction
 process. So, for example, no primitive should require another
 primitive to be run subsequent in order to complete its own
 transformation, and primitives should always output valid, coherent
-datasets. E.g. there should not be a primitive that modifies pixel
+datasets. For example, there should not be a primitive that modifies pixel
 data which is followed by a primitive which modifies the header to
 reflect the change, and instead both steps should be within such a
 primitive so the data is never reported to the system in an invalid or
 misleading state.
 
-The fact that recipes can call recipes allows refactoring between
+Recipes can also call other recipes.  This allows refactoring between
 recipes and primitives as the set of transformation evolves. A recipe
 called by a higher level recipe is seen as an atomic step at the level
-of the calling recipe, and satisfies the requirement. But to experts
-in the mode being processed, this recipe in turn is made of coherent
-steps and these steps also satisfy the requirement. Coherent steps
+of the calling recipe. Coherent steps
 which can be broken down into smaller coherent steps are thus probably
-best addressed with a recipe calling a recipe. This formation helps
-recipes to work for more types. At bottom primitives have to be
-executed so that actual python can run and manipulate the dataset, but
-below a certain level of granularity primitives become inappropriate.
+best addressed with a recipe calling a recipe. This feature helps
+recipes to work for more types. In the end though, primitives have to be
+executed so that actual python can run and manipulate the dataset. Below
+a certain level of granularity primitives become inappropriate.
 Such code, insofar as it is reusable and/or needs to be encapsulated,
 is written as functions in utility libraries, such as the Gemini
-``gempy'' package.
+\code{gempy} package.
 
 Formalizing the transformation concept allows us to refactor our data
-reduction approaches due to unforeseen complications, new information,
+reduction approaches for unforeseen complications, new information,
 new instruments, and so on, without having to necessarily change
 recipes that call these transformations, or the named transformations
 which the recipes themselves represent. Recipes for specific nodes in
 the Astrodata Type tree can also be assigned as needed, and the fact
 that recipes and primitives can be used by name interchangeably
 ensures that transformations can be refactored and solved with
-different levels of recipe and primitive as experience grows and needs
-evolve. This flexibility helps us expand and improve the available
+different levels of recipes and primitives.  This flexibility helps us
+expand and improve the available
 transformations while still providing a stable interface to the user.
 
-AstroData is intended to be useful for general python scripting, that
+AstroData is intended to be useful for general Python scripting, that
 is, one does not have to write code in the form of primitives to use
-Astrodata. And, as mentioned previously, the Recipe System is not
+Astrodata. Also, the Recipe System is not
 automatically imported (i.e. as a result of ``import astrodata'') so
 that no overhead is borne by the AstroData user not making use of
-automation features, such as when writing a script. Further, a script
+automation features. A script
 using AstroData benefits from the type, descriptor, validation, and
 other built in data handling features of AstroData. However, such
 scripts do not lend themselves to use in a well-controlled automated
@@ -3117,7 +3135,7 @@ When writing primitives all inputs are provided through the Reduction
 Context, and depending on the control system these may come from the
 unix command line, the pyraf command line, from a pipeline control
 system or other software, or by the calling recipes and primitives.
-Primitive functions are written as python generators, allowing the
+Primitive functions are written as Python generators, allowing the
 control system to perform some tasks for the primitive, such as
 history keeping and logging, keeping lists of stackable images,
 retrieving appropriate calibrations, and reporting image statistics to
@@ -3125,19 +3143,19 @@ a central database, etc., when the primitive ``yields''.
 
 The automation system is designed to support a range of automation,
 from a ``dataset by dataset, fully automated'' mode for pipeline
-processing of data as it comes from the telescope, through to
+processing of data as it comes in from the telescope, through to
 ``interactive automation'' where the user decides at what level to
 initiate automation and where to intervene.
 
-As users advance it may be of interest to consider that strictly
+For advanced users it may be of interest that strictly
 speaking primitives transform the \code{ReductionContext} object and not
-specifically (or merely) the input datasets. This context contains
+only the input datasets. This context contains
 references to all objects and datasets which are part of the
 reduction, including the input dataset. While nearly all primitives
 will access their input datasets and most will modify the datasets and
 report them as outputs to the reduction context, some primitives may
 calculate statistics and report these to the reduction context without
-reporting outputs. In this case the stream inputs will be propagated
+reporting pixel data outputs. In this case the stream inputs will be propagated
 as inputs to the subsequent primitive. It is the Reduction Context as
 a whole that is passed into the primitives as the standard and sole
 argument (besides self) for the primitive. The reduction context must
@@ -3155,7 +3173,7 @@ testing. It performs some initial processing on RAW data.
 \PYG{n}{findshiftsAndCombine}
 \end{Verbatim}
 
-Presume the above is a generic recipe. This means, given that
+If that recipe is generic, this means, given that
 primitive sets for GMOS\_IMAGE, NIRI\_IMAGE, etc, implement the named
 primitives in the recipe, then when the recipe system executes a line
 such as biasSub , it will execute the ``biasSub'' member of the
@@ -3169,59 +3187,49 @@ primitive sets within the correct part of the configuration.
 
 \subsection{Some Benefits of the Primitive Concept}
 \label{gen.ADMANUAL_ADConcepts:some-benefits-of-the-primitive-concept}
-Use of primitives instead of scripts for reduction processes has a
-major side benefit besides enjoying automation features supplied by
+The use of primitives instead of scripts for reduction processes has a
+side benefit besides enjoying automation features supplied by
 the Recipe System. This benefit is due to the fact that the concept of
 the primitive as a named transformation is bound to the spoken
-language that Instrument Scientists, PIs, data analysts and the data
+language that Instrument Scientists, astronomers, data analysts and the data
 software group at Gemini use to discuss data flow procedures. This
 crossover between terms in our formal system and in our less formal
 spoken language has promoted consistency between the two. For example,
 when breaking reductions down into discrete chunks which can be
 implemented and shared when possible the process helps us understand
-what truly differentiates different implementations of the same named
+what truly differentiates implementations of the same named
 transformation. Sharing of code not only saves developers the effort
 of reimplementation, but more importantly it promotes consistency and
 provides locations in the system where wide ranging changes in policy
-can be implemented accommodating the inevitable evolution of reduction
+can be implemented, accommodating the inevitable evolution of reduction
 software.
 
-In short, discussing how to break down Gemini's classical reduction
+In short, discussing how to break down typical reduction
 procedures into recipes made of reusable primitives has had the effect
 of clarifying our understanding of these procedures. Sometimes the
 responsibilities of tasks in our legacy system had clear boundaries,
 such as for gemarith , but for other tasks, such as the ``prepare'' task
 in each instrument's package, the boundaries of responsibility were
-less clear. Adapting such transformation concepts which are already in
-our spoken lexicon to a more structures software environment
+less clear. Adapting transformation concepts which are already in
+our spoken lexicon to a more structured software environment
 represented with concrete implementations, guides us to creating a
-more concrete definition for \code{prepare} and for for the steps in
-\code{prepare}`. A source of these discrepancies is different practices
-in different wavelength and mode regimes which cause different
-interpretations of how far data should be reduced from the raw state
-to a more general starting point appropriate for a ``typical PI''.
-Flexibility in the system allows satisfaction of these special needs
+clearer definition for \code{prepare}.
+Flexibility in the system allows satisfaction of any special needs
 while developing truly shared transformation concepts.
 
 
 \subsubsection{Natural Emergence of Reusable Primitives}
 \label{gen.ADMANUAL_ADConcepts:natural-emergence-of-reusable-primitives}
-Reusable code naturally emerged from the process above because the
-work of isolating the steps taken in a data handling process naturally
-reveals similar or identical steps shared by other processes, which
+Reusable code naturally emerges from the process above because the
+work of isolating the steps in a data handling process naturally
+reveals similar or identical steps present in other processes, which
 can then easily be implemented at a shared level. In practice, even if
-creating a recipe which is over-all very instrument and mode-specific,
+creating a recipe that is over-all very instrument and mode-specific,
 there seem to emerge general purpose steps which can be of benefit in
-a toolkit of primitives. The corollary to this is that in the future
-after implementing many of these reusable pieces as part of
-accomplishing project-specific aims at the time, new project-specific
-tasks will be able to select from and reuse them freely. However, the
-original implementor saves time by being able to focus on their task
-at hand, and make a primitive they hope is reusable, without focusing
-on that as a requirement. This way we hope to benefit from
-opportunistic sharing of code via the natural evolution of primitives.
+a toolkit of primitives. New project-specific
+tasks will be able to select from and reuse them freely.
 
-The subsequent author has several options based on the needs of the
+Authors of primitives have several options based on the needs of the
 project at hand:
 \begin{enumerate}
 \item {} 
@@ -3240,33 +3248,11 @@ primitive in the project's use case
 The design of the recipes and primitives of the Recipe System is
 intended to facilitate negotiating these options in an environment
 with fall-backs and which does not cement you into a particular layout
-of your transformations. Option 3 is undesirable in general, given
-sufficient time and an ideal understanding of the problem, but given
-deadlines based on real world calendar events like instruments going
-on sky, commissioning, et cetera, it is a desirable fall-back option
-because in the end it allows the developer to focuss entirely on the
-problem at hand if it proves hard to generalize. Option 3 interacts
-with option 1 insofar as often a developer may find, when attempting
-to generalize code, that one has created a modified version that does
-work for the new case, but has broken the old case. The flexibility of
-the Recipe System allows the developer to split the code, use it as
-two different primitives each assigned to the correct type of datasets
-using the type system, allowing one to work toward a project milestone
-and defer more complete generalization of the primitive.
+of your transformations.
 
-If time is not given specifically to solve the problem afterwards,
-then at least when a third author requires the same functionality,
-they then have the same options and fall-backs, with a greater
-selection of potential primitives to use or generalize to suit their
-own purposes, with preservation of old behavior as need be. For Gemini
-primitives we are attempting to produce robust, general, primitives
-from the start, but this ability of the Recipe Configuration to evolve
-is still a crucial aspect of the primitive system.
 
-Test Case at Gemini Observatory: Refactoring Python Scripts into
-Recipes and Primitives
-++++++++++++++++++++++
-
+\subsubsection{Test Case at Gemini Observatory: Refactoring Python Scripts into Recipes and Primitives}
+\label{gen.ADMANUAL_ADConcepts:test-case-at-gemini-observatory-refactoring-python-scripts-into-recipes-and-primitives}
 We (GDPSG and DA teams) have performed the exercise of breaking down a
 set of pre-existing scripts into recipes and primitives in the case of
 some instrument monitoring scripts which are set up on a cron job.
@@ -3290,7 +3276,7 @@ identifying its input, output, and specific responsibilities.
 Cutting and pasting (or re-entering) source from the script into a
 primitive set class, adding adapter code which fetches or stores
 information in the reduction context to and from variables the script
-uses in its legacy form. The code can be largely left as is as
+uses in its legacy form. The code can be largely left as-is since
 primitives are simply python code, so long as input/output is adapted
 to the reduction context.
 
@@ -3308,22 +3294,15 @@ integrated, and for there to be iterative refactoring paths from the
 former to the latter.
 
 The primitives in the test case were developed into a separate recipe
-package (not in astrodata\_Gemini/RECIPES\_Gemini) which is added to the
-Astrodata package's RECIPEPATH environment variable. As a stand alone
-package for a particular internal purpose it was not as important for
-these primitives to follow idealized standards as it is for the
-general purpose ``astrodata\_Gemini'' package. Thus, instead of formal
-analysis of the scripts and a resultant design, these primitives were
-abstracted using the method above, from the ad hoc design of the
-scripts that had been doing the work.
+package (not in \code{astrodata\_Gemini/RECIPES\_Gemini}) which is added to the
+Astrodata package's \code{RECIPEPATH} environment variable.
 
 Even with lack of a formal structure to the refactoring, and the
 devil-you-know approach to preserving the functioning of the code, the
 process of adaptation to the recipe/primitive structure provides some
-natural order and formalism in the process of identifying the de facto
-transformations in the script. Improvement is incremental and procedes
-de facto design of the script, (i.e. a potentially ad hoc, design-as-
-you-go, non-design). But even in this case, at the very least, the
+natural order and formalism in the process of identifying the \emph{de facto}
+transformations in the script. Improvement is incremental. But even in this
+case, at the very least, the
 above analysis will lead to a sequential list of the steps in the
 script. That alone is a good starting point for making a complete
 replacement if that is necessary. Subsequent work on the recipes and
@@ -3343,25 +3322,21 @@ be made more robust and moved into the main package.
 
 \subsection{Recipes calling Recipes}
 \label{gen.ADMANUAL_ADConcepts:recipes-calling-recipes}
-Recipes can in fact call other recipes as well as primitives.
-Primitives, also, can call recipes and other primitives. During
+Recipes can call other recipes.
+Primitives, also, can call recipes or other primitives. During
 execution, the Astrodata Recipe System makes little distinction
 between recipes and primitives and from the view of those invoking
 recipes and primitives, recipe and primitive names are
-interchangeable. E.g. a user executing recipes through the reduce
+interchangeable. For example, a user executing recipes through the reduce
 command line program can just as easilly give a primitive name to the
 ``reduce'' command as a ``recipe'' name, and reduce will execute the
 primitive correctly. Still the general picture we tend to speak of is
 one in which we have a top level recipe for standard processes such as
 making a processed bias, which list the steps that the data must go
-through to complete the processing named by the recipe. In principle
-these steps are implemented in python and different types will be
-associated to different implementation, but again, in reality, the
-recipe may be calling other recipes which are broken down further into
-steps of either sub-recipes or final primitives.
+through to complete the processing named by the recipe.
 
 It is a judgment call how fine grained the steps in a recipe should
-be, and this in principle drives how fine grain primitives should be.
+be, and this in principle drives how fine grained primitives should be.
 However, what is appropriate to view in a recipe of a certain name and
 scope may not be the same granularity level which is appropriate for
 specialists in the data regime being processed, as the recipe will in
@@ -3412,7 +3387,7 @@ names for and describe metadata one expects to be associated with
 these datasets. Finally they create names for and describe
 transformations that can be performed on datasets.
 
-Datasets of particular Astrodata Types, sufficiently defined, can thus
+Datasets of particular Astrodata Types can thus
 be recognized by astrodata and the other type-specific behaviors can
 be assigned. For example, the ``astrodata\_Gemini'' package is the public
 configuration package defining data taken by Gemini instruments.
@@ -3441,9 +3416,6 @@ border:1px black solid'' width = ``90\%''
 src=''\href{http://ophiuchus.hi.gemini.edu/ADTYPETREEIMAGES/GMOS\_IMAGE-tree-pd.png}{http://ophiuchus.hi.gemini.edu/ADTYPETREEIMAGES/GMOS\_IMAGE-tree-
 pd.png}``/\textgreater{}
 
-astrodata package using the type definitions and graphviz, please
-forgive its purely utilitarian nature.
-
 This diagram shows GMOS\_IMAGE is a child type of the GMOS type, which
 in turn is a child of the GEMINI type. The children of GMOS\_IMAGE are
 other types which share some or all common primitives or other
@@ -3466,9 +3438,7 @@ fact, the members can be shared unless intentionally overridden.
 Primitives associated with the GEMINI Astrodata Type are generally
 just bookkeeping functions which rely on features of the Recipe System
 as few pixel transformations can be entirely generalized across all
-Gemini datasets, though some can. In the future, some of these
-primitives will be moved to a very general type associated with any
-MEF for which a more specific type is not recognized.
+Gemini datasets, though some can.
 
 
 
