@@ -52,24 +52,420 @@
 <h1>Pixel Data<a class="headerlink" href="#pixel-data" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="operate-on-the-pixel-data">
 <h2>Operate on the Pixel Data<a class="headerlink" href="#operate-on-the-pixel-data" title="Permalink to this headline">¶</a></h2>
+<p>The pixel data is stored as a numpy ndarray.  This means that anything that can be done with numpy on a ndarray
+can be done on the pixel data stored in the AstroData object.  Examples include arithmetic, statistics, display,
+plotting, etc.  Please refer to numpy documentation for details on what it offers.  In this chapter, we will
+present some typical examples.</p>
+<p>But first, here&#8217;s how one accesses the data array stored in an AstroData object:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+
+<span class="c"># The PHU does not have any pixel data.  Only the extensions can have pixel data.</span>
+<span class="n">the_data</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+<span class="c"># or to loop through the extensions.  Here we just print the sum of all the pixels</span>
+<span class="c"># for each extension.</span>
+<span class="k">for</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">]:</span>
+   <span class="n">the_data</span> <span class="o">=</span> <span class="n">extension</span><span class="o">.</span><span class="n">data</span>
+   <span class="k">print</span> <span class="n">the_data</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="arithmetic-on-astrodata-objects">
 <h2>Arithmetic on AstroData Objects<a class="headerlink" href="#arithmetic-on-astrodata-objects" title="Permalink to this headline">¶</a></h2>
-<p>ad.div(&#8216;normalizedflat.fits&#8217;)
-etc.</p>
+<p>AstroData supports basic arithmetic directly: addition, subtraction, multiplication, division.
+The big advantage of using the AstroData implementation of those operator is that if the
+AstroData object has variance and data quality planes, those will be calculated and propagated
+to the output appropriately.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+
+<span class="c"># addition</span>
+<span class="c">#   ad = ad + 5.</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mf">5.</span><span class="p">)</span>
+
+<span class="c"># subtraction</span>
+<span class="c">#   ad = ad - 5.</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="mf">5.</span><span class="p">)</span>
+
+<span class="c"># multiplication.  Using descriptor as operand.</span>
+<span class="c">#   ad = ad * gain</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">mult</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">gain</span><span class="p">())</span>
+
+<span class="c"># division. Using descriptor as operand.</span>
+<span class="c">#   ad = ad / gain</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">gain</span><span class="p">())</span>
+</pre></div>
 </div>
-<div class="section" id="useful-numpy-module-functions">
-<h2>Useful Numpy Module Functions<a class="headerlink" href="#useful-numpy-module-functions" title="Permalink to this headline">¶</a></h2>
+<p>When using the AstroData arithmetic, all the science (EXTNAME=&#8217;SCI&#8217;) frames are
+operated on.</p>
+<p>The AstroData arithmetic methods can be stringed together.  Note that because
+the calculations are done &#8220;in-place&#8221;, operator precedence cannot be respected.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ad</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">mult</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="c"># means:  ad = ((ad + 5) * 10) - 5</span>
+<span class="c"># not: ad = ad + (5 * 10) - 5</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The AstroData data arithmetic method modify the data &#8220;in-place&#8221;.  This means that the data
+values are modified and the original values are no more.  If you need to keep the original
+values unmodified, for example, you will need them later, use <tt class="docutils literal"><span class="pre">deepcopy</span></tt> to make a separate
+copy on which you can work.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+
+<span class="c"># To do:  x = x*10 + x</span>
+<span class="c">#  One must use deepcopy because after the mult(10), &#39;ad&#39; has been modified</span>
+<span class="c">#  and it is that modified version that will be use in add(ad)</span>
+
+<span class="c"># Let&#39;s follow a pixel through the math</span>
+
+<span class="n">value_before</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="n">expected_value_after</span> <span class="o">=</span> <span class="n">value_before</span><span class="o">*</span><span class="mi">10</span> <span class="o">+</span> <span class="n">value_before</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">mult</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+<span class="n">bad_value_after</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+
+<span class="k">print</span> <span class="n">expected_value_after</span><span class="p">,</span> <span class="n">bad_value_after</span>
+
+<span class="c"># The result of the arithmetic above is x = (x*10) + (x*10)</span>
+
+<span class="c"># To do the right thing, one can use ``deepcopy``</span>
+<span class="c"># First let&#39;s reload a fresh ad.</span>
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+<span class="n">adcopy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">adcopy</span><span class="o">.</span><span class="n">mult</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+
+<span class="n">good_value_after</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">expected_mean_after</span><span class="p">,</span> <span class="n">good_mean_after</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">adcopy</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>As one can see, for complex equation, using the AstroData arithmetic method
+can get fairly confusing.  Operator overload would solve this situation but
+it has not been implemented yet.  Therefore, we recommend to use numpy for
+really complex equation since operator overload is implemented and the operator
+precedence is respected.  The downside is that if you need the variance plane
+propagate correctly, you will have to do the math yourself.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+
+<span class="c"># Let&#39;s do &#39;x = x*10 + x&#39; again but this time we operate directly on</span>
+<span class="c"># the numpy ndarray return by &#39;.data&#39;.  We will follow a pixel through</span>
+<span class="c"># the math like before.</span>
+
+<span class="n">value_before</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="n">expected_value_after</span> <span class="o">=</span> <span class="n">value_before</span><span class="o">*</span><span class="mi">10</span> <span class="o">+</span> <span class="n">value_before</span>
+
+<span class="k">for</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">]:</span>
+    <span class="n">data_array</span> <span class="o">=</span> <span class="n">extension</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">data_array</span> <span class="o">=</span> <span class="n">data_array</span><span class="o">*</span><span class="mi">10</span> <span class="o">+</span> <span class="n">data_array</span>
+    <span class="n">extension</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data_array</span>
+
+<span class="n">value_after</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">expected_value_after</span><span class="p">,</span> <span class="n">value_after</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="variance">
+<h2>Variance<a class="headerlink" href="#variance" title="Permalink to this headline">¶</a></h2>
+<p>Here we demonstrate the variance propagation when using AstroData arithmetic methods.
+First let us create and append variance planes to our file.  We will just add the poisson
+noise and ignore read noise for the purpose of this example.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">]:</span>
+    <span class="n">variance</span> <span class="o">=</span> <span class="n">extension</span><span class="o">.</span><span class="n">data</span> <span class="o">/</span> <span class="n">extension</span><span class="o">.</span><span class="n">gain</span><span class="p">()</span><span class="o">.</span><span class="n">as_pytype</span><span class="p">()</span>
+    <span class="n">variance_header</span> <span class="o">=</span> <span class="n">extension</span><span class="o">.</span><span class="n">header</span>
+    <span class="n">variance_extension</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">variance</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">variance_header</span><span class="p">)</span>
+    <span class="n">variance_extension</span><span class="o">.</span><span class="n">rename_ext</span><span class="p">(</span><span class="s">&#39;VAR&#39;</span><span class="p">)</span>
+    <span class="n">ad</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">variance_extension</span><span class="p">)</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<span class="c"># Let&#39;s just save a copy of this ad for later use.</span>
+<span class="n">advar</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now let us follow a science pixel and a variance pixel through the AstroData arithmetic.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#     output = x * x</span>
+<span class="c"># var_output = var * x^2 + var * x^2</span>
+
+<span class="n">value_before</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="n">variance_before</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;VAR&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="n">expected_value_after</span> <span class="o">=</span> <span class="n">value_before</span> <span class="o">+</span> <span class="n">value_before</span>
+<span class="n">expected_variance_after</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">variance_before</span> <span class="o">*</span> <span class="n">value_before</span> <span class="o">*</span> <span class="n">value_before</span><span class="p">)</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">mult</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+
+<span class="n">value_after</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="n">variance_after</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;VAR&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">expected_value_after</span><span class="p">,</span> <span class="n">value_after</span>
+<span class="k">print</span> <span class="n">expected_variance_after</span><span class="p">,</span> <span class="n">variance_after</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>So all it took to multiply the science extensions by themselves and propagate
+the variance accordingly was <tt class="docutils literal"><span class="pre">ad.mult(ad)</span></tt>.</p>
+<p>To do the same thing operating directly on the numpy array:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Let&#39;s recall the ad with the variance planes we created earlier</span>
+<span class="n">ad</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">advar</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">ad</span><span class="o">.</span><span class="n">count_exts</span><span class="p">(</span><span class="s">&#39;SCI&#39;</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;VAR&#39;</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">d</span><span class="o">*</span><span class="n">d</span>
+    <span class="n">variance</span> <span class="o">=</span> <span class="n">v</span> <span class="o">*</span> <span class="n">d</span><span class="o">*</span><span class="n">d</span> <span class="o">+</span> <span class="n">v</span> <span class="o">*</span> <span class="n">d</span><span class="o">*</span><span class="n">d</span>
+    <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+    <span class="n">ad</span><span class="p">[</span><span class="s">&#39;VAR&#39;</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">variance</span>
+
+<span class="k">print</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;VAR&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="display">
+<h2>Display<a class="headerlink" href="#display" title="Permalink to this headline">¶</a></h2>
+<p>Displaying <tt class="docutils literal"><span class="pre">numpy</span></tt> arrays from Python is straighforward with the <tt class="docutils literal"><span class="pre">numdisplay</span></tt> module.
+The module also has a function to read the position the cursor, which can be useful when
+developing an interactive task.</p>
+<p>Start a display tool, like DS9 or ximtool. Then try the commands below.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">from</span> <span class="nn">numdisplay</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="kn">from</span> <span class="nn">numdisplay</span> <span class="kn">import</span> <span class="n">readcursor</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+
+<span class="n">display</span><span class="p">(</span><span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+<span class="c"># To scale &quot;a la IRAF&quot;</span>
+<span class="n">display</span><span class="p">(</span><span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">zscale</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c"># To set the minimum and maximum values to display</span>
+<span class="n">display</span><span class="p">(</span><span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">z1</span><span class="o">=</span><span class="mi">700</span><span class="p">,</span> <span class="n">z2</span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If you need to retrieve cursor position inputs, the numdisplay.readcursor function can help.
+It does not respond to mouse clicks, but it does respond to keyboard entries.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Invoke readcursor() and put the cursor on top of the image.</span>
+<span class="c"># Type any key.</span>
+<span class="c"># cursor_coo will contain the x, y positions and in the last column the key that was typed.</span>
+<span class="n">cursor_coo</span> <span class="o">=</span> <span class="n">readcursor</span><span class="p">()</span>
+<span class="k">print</span> <span class="n">cursor_coo</span>
+
+<span class="c"># If you just want to extract the x,y coordinates:</span>
+<span class="p">(</span><span class="n">xcoo</span><span class="p">,</span> <span class="n">ycoo</span><span class="p">)</span> <span class="o">=</span> <span class="n">cursor_coo</span><span class="o">.</span><span class="n">split</span><span class="p">()[:</span><span class="mi">2</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">xcoo</span><span class="p">,</span> <span class="n">ycoo</span>
+
+<span class="c"># If you are also interested in the keystoke:</span>
+<span class="p">(</span><span class="n">xcoo</span><span class="p">,</span> <span class="n">ycoo</span><span class="p">,</span> <span class="n">junk</span><span class="p">,</span> <span class="n">keystroke</span><span class="p">)</span> <span class="o">=</span> <span class="n">cursor_coo</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+<span class="k">print</span> <span class="s">&#39;You pressed this key: &quot;</span><span class="si">%s</span><span class="s">&quot;&#39;</span> <span class="o">%</span> <span class="n">keystroke</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="useful-tools-from-the-numpy-and-scipy-modules">
+<h2>Useful tools from the Numpy and SciPy Modules<a class="headerlink" href="#useful-tools-from-the-numpy-and-scipy-modules" title="Permalink to this headline">¶</a></h2>
+<p>The <tt class="docutils literal"><span class="pre">numpy</span></tt> and <tt class="docutils literal"><span class="pre">scipy</span></tt> modules offer a multitude of functions and tools.  They
+both have their own documentation.  Here we simply highlight a few functions that
+could be used for common things an astronomer might want to do.  The idea is to
+get the reader started in her exploration of <tt class="docutils literal"><span class="pre">numpy</span></tt> and <tt class="docutils literal"><span class="pre">scipy</span></tt>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.ma</span> <span class="kn">as</span> <span class="nn">ma</span>
+<span class="kn">import</span> <span class="nn">scipy.ndimage.filters</span> <span class="kn">as</span> <span class="nn">filters</span>
+<span class="kn">from</span> <span class="nn">numdisplay</span> <span class="kn">import</span> <span class="n">display</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+<span class="c"># The shape of the ndarray stored in data is given by .shape</span>
+<span class="c"># The first number is NAXIS2, the second number is NAXIS1.</span>
+<span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+
+<span class="c"># Calculate the mean and median of the entire array.</span>
+<span class="c"># Note how the way mean and median are called differently.</span>
+<span class="n">data</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+<span class="c"># If the desired operation is a clipped mean, ie. rejecting</span>
+<span class="c"># values before calculating the mean, the numpy.ma module</span>
+<span class="c"># can be used to mask the data.  Let&#39;s try a clipped mean</span>
+<span class="c"># at -3 and +3 times the standard deviation</span>
+
+<span class="c"># ma.masked_outside() with mask out anything outside +/- 3*stddev of the mean.</span>
+<span class="c"># mask_extreme contains the &quot;mask&quot; returned by masked_outside()</span>
+<span class="n">stddev</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+<span class="n">mean</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">mask_extreme</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">masked_outside</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mean</span><span class="o">-</span><span class="mi">3</span><span class="o">*</span><span class="n">stddev</span><span class="p">,</span> <span class="n">mean</span><span class="o">+</span><span class="mi">3</span><span class="o">*</span><span class="n">stddev</span><span class="p">)</span><span class="o">.</span><span class="n">mask</span>
+
+<span class="c"># ma.array() applies the mask to data.</span>
+<span class="c"># The compressed() method converts the masked data into a ndarray on</span>
+<span class="c"># which we can run .mean().</span>
+<span class="n">clipped_mean</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask_extreme</span><span class="p">)</span><span class="o">.</span><span class="n">compressed</span><span class="p">()</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+<span class="c"># Another common image operation is the filtering of an image.</span>
+<span class="c"># To gaussian filter an image, use scipy.ndimage.filters.gaussian_filter.</span>
+<span class="c"># The filters module offers several other functions for image processing,</span>
+<span class="c"># see help(filters)</span>
+<span class="n">conv_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="n">sigma</span> <span class="o">=</span> <span class="mf">10.</span>
+<span class="n">filters</span><span class="o">.</span><span class="n">gaussian_filter</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="n">conv_data</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">zscale</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">conv_data</span><span class="p">,</span> <span class="n">zscale</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c"># If you wanted to put this convoled data back in the AstroData</span>
+<span class="c"># object you would do:</span>
+<span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">conv_data</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-the-astrodata-data-quality-plane">
+<h2>Using the AstroData Data Quality Plane<a class="headerlink" href="#using-the-astrodata-data-quality-plane" title="Permalink to this headline">¶</a></h2>
+<p>transform DQ plane into a numpy mask and do statistics</p>
 </div>
 <div class="section" id="manipulate-data-sections">
 <h2>Manipulate Data Sections<a class="headerlink" href="#manipulate-data-sections" title="Permalink to this headline">¶</a></h2>
+<p>Sections of the data array can be accessed and processed.  It is important to
+note here that when indexing a numpy array, the left most number refers to the
+highest dimension&#8217;s axis.  Also important, is to remember that the numpy arrays
+are 0-indexed, not 1-indexed like in Fortran and IRAF.  For example, in a 2-D
+numpy array, the pixel position (x,y) = (50,75) would be accessed as data[74,49].</p>
+<p>Here are some examples using data sections.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+<span class="c"># Let&#39;s get statistics for a 25x25 pixel-wide box centered on pixel 50,75.</span>
+<span class="n">mean</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">62</span><span class="p">:</span><span class="mi">87</span><span class="p">,</span><span class="mi">37</span><span class="p">:</span><span class="mi">62</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">median</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">62</span><span class="p">:</span><span class="mi">87</span><span class="p">,</span><span class="mi">37</span><span class="p">:</span><span class="mi">62</span><span class="p">])</span>
+<span class="n">stddev</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">62</span><span class="p">:</span><span class="mi">87</span><span class="p">,</span><span class="mi">37</span><span class="p">:</span><span class="mi">62</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+<span class="n">minimum</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">62</span><span class="p">:</span><span class="mi">87</span><span class="p">,</span><span class="mi">37</span><span class="p">:</span><span class="mi">62</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+<span class="n">maximum</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">62</span><span class="p">:</span><span class="mi">87</span><span class="p">,</span><span class="mi">37</span><span class="p">:</span><span class="mi">62</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+<span class="k">print</span> <span class="s">&quot;Mean      Median Stddev       Min    Max</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">median</span><span class="p">,</span> <span class="n">stddev</span><span class="p">,</span> <span class="n">minimum</span><span class="p">,</span> <span class="n">maximum</span>
+</pre></div>
+</div>
+<p>Now let us apply our knownledge so far to do a quick overscan subtraction.
+In this example, we make use of Descriptors, astrodata arithmetic
+functions, data sections, numpy 0-based arrays, and numpy statistics function mean().:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Get the (EXTNAME,EXTVER)-keyed dictionary for the overscan section and</span>
+<span class="c"># the data section.</span>
+<span class="n">oversec_descriptor</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">overscan_section</span><span class="p">()</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+<span class="n">datasec_descriptor</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">data_section</span><span class="p">()</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+
+<span class="c"># Loop through the extensions.</span>
+<span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">]:</span>
+    <span class="n">extnamever</span> <span class="o">=</span> <span class="p">(</span><span class="n">ext</span><span class="o">.</span><span class="n">extname</span><span class="p">(),</span><span class="n">ext</span><span class="o">.</span><span class="n">extver</span><span class="p">())</span>
+    <span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">)</span> <span class="o">=</span> <span class="n">oversec_descriptor</span><span class="p">[</span><span class="n">extnamever</span><span class="p">]</span>
+    <span class="p">(</span><span class="n">dx1</span><span class="p">,</span> <span class="n">dx2</span><span class="p">,</span> <span class="n">dy1</span><span class="p">,</span> <span class="n">dy2</span><span class="p">)</span> <span class="o">=</span> <span class="n">datasec_descriptor</span><span class="p">[</span><span class="n">extnamever</span><span class="p">]</span>
+
+    <span class="c"># Measure and subtract the overscan level</span>
+    <span class="n">mean_overscan</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="n">extnamever</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">y1</span><span class="p">:</span><span class="n">y2</span><span class="p">,</span><span class="n">x1</span><span class="p">:</span><span class="n">x2</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">ad</span><span class="p">[</span><span class="n">extnamever</span><span class="p">]</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">mean_overscan</span><span class="p">)</span>
+
+    <span class="c"># Trim the data to remove the overscan section and keep only</span>
+    <span class="c"># the data section.</span>
+    <span class="n">ad</span><span class="p">[</span><span class="n">extnamever</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="n">extnamever</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">dy1</span><span class="p">:</span><span class="n">dy2</span><span class="p">,</span><span class="n">dx1</span><span class="p">:</span><span class="n">dx2</span><span class="p">]</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="work-on-data-cubes">
 <h2>Work on Data Cubes<a class="headerlink" href="#work-on-data-cubes" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">from</span> <span class="nn">numdisplay</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="kn">from</span> <span class="nn">pylab</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">adcube</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;gmosifu_cube.fits&#39;</span><span class="p">)</span>
+<span class="n">adcube</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<span class="c"># The pixel data is a 3-dimensional numpy array with wavelength is axis 0, and</span>
+<span class="c"># x,y positions in axis 2 and 1, respectively.  (In the FITS file, wavelength</span>
+<span class="c"># is in axis 3, and x, y are in axis 1 and 2, respectively.)</span>
+<span class="n">adcube</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+
+<span class="c"># To sum along the wavelength axis</span>
+<span class="n">sum_image</span> <span class="o">=</span> <span class="n">adcube</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">sum_image</span><span class="p">,</span> <span class="n">zscale</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c"># To plot a 1-D representation of the wavelength axis at pixel position (7,30)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">adcube</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span><span class="mi">29</span><span class="p">,</span><span class="mi">6</span><span class="p">])</span>
+<span class="n">show</span><span class="p">()</span>
+
+<span class="c"># To plot the same thing using the wavelength values for the x axis of the plot</span>
+<span class="c"># one needs to use the WCS to calculate the pixel to wavelength conversion.</span>
+<span class="n">crval3</span> <span class="o">=</span> <span class="n">adcube</span><span class="o">.</span><span class="n">get_key_value</span><span class="p">(</span><span class="s">&#39;CRVAL3&#39;</span><span class="p">)</span>
+<span class="n">cdelt3</span> <span class="o">=</span> <span class="n">adcube</span><span class="o">.</span><span class="n">get_key_value</span><span class="p">(</span><span class="s">&#39;CDELT3&#39;</span><span class="p">)</span>
+<span class="n">spec_length</span> <span class="o">=</span> <span class="n">adcube</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span><span class="mi">29</span><span class="p">,</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
+<span class="n">wavelength</span> <span class="o">=</span> <span class="n">crval3</span> <span class="o">+</span> <span class="n">arange</span><span class="p">(</span><span class="n">spec_length</span><span class="p">)</span><span class="o">*</span><span class="n">cdelt3</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">wavelength</span><span class="p">,</span> <span class="n">adcube</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span><span class="mi">29</span><span class="p">,</span><span class="mi">6</span><span class="p">])</span>
+<span class="n">show</span><span class="p">()</span>
+</pre></div>
 </div>
-<div class="section" id="display-and-plot-data">
-<h2>Display and Plot Data<a class="headerlink" href="#display-and-plot-data" title="Permalink to this headline">¶</a></h2>
-<p>(really basic stuff with numdisplay.  refer to AplPy and matplotlib.)</p>
+</div>
+<div class="section" id="plot-data">
+<h2>Plot Data<a class="headerlink" href="#plot-data" title="Permalink to this headline">¶</a></h2>
+<p>In Python, the main tool to create plots is <tt class="docutils literal"><span class="pre">matplotlib</span></tt>.  We have used it in the
+previous section on data cubes.  Here we do not aimed at covering all of <tt class="docutils literal"><span class="pre">matplotlib</span></tt>;
+the reader should refer to that package&#8217;s documentation.  Rather we will give a few
+examples that might be of use for quick inspection of the data.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">from</span> <span class="nn">pylab</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">adimg</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+<span class="n">adspec</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;estgsS20080220S0078.fits&#39;</span><span class="p">)</span>
+
+<span class="c"># Line plot from image.  Row #1044.</span>
+<span class="n">line_index</span> <span class="o">=</span> <span class="mi">1043</span>
+<span class="n">line</span> <span class="o">=</span> <span class="n">adimg</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">line_index</span><span class="p">,</span> <span class="p">:]</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+<span class="n">show</span><span class="p">()</span>
+
+<span class="c"># Column plot from image, averaging across 11 pixels around column #327.</span>
+<span class="n">col_index</span> <span class="o">=</span> <span class="mi">326</span>
+<span class="n">width</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">col_section</span> <span class="o">=</span> <span class="n">adimg</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span><span class="n">col_index</span><span class="o">-</span><span class="n">width</span><span class="p">:</span><span class="n">col_index</span><span class="o">+</span><span class="n">width</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">column</span> <span class="o">=</span> <span class="n">col_section</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">column</span><span class="p">)</span>
+<span class="n">show</span><span class="p">()</span>
+
+<span class="c"># Contour plot for section</span>
+<span class="n">galaxy</span> <span class="o">=</span> <span class="n">adimg</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">1045</span><span class="p">:</span><span class="mi">1085</span><span class="p">,</span><span class="mi">695</span><span class="p">:</span><span class="mi">735</span><span class="p">]</span>
+<span class="n">contour</span><span class="p">(</span><span class="n">galaxy</span><span class="p">)</span>
+<span class="n">axis</span><span class="p">(</span><span class="s">&#39;equal&#39;</span><span class="p">)</span>
+<span class="n">show</span><span class="p">()</span>
+
+<span class="c"># Spectrum in pixel</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">adspec</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+<span class="n">show</span><span class="p">()</span>
+
+<span class="c"># Spectrum in wavelength (CRPIX1 = 1)</span>
+<span class="n">crpix1</span> <span class="o">=</span> <span class="n">adspec</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_key_value</span><span class="p">(</span><span class="s">&#39;CRPIX1&#39;</span><span class="p">)</span>
+<span class="n">crval1</span> <span class="o">=</span> <span class="n">adspec</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_key_value</span><span class="p">(</span><span class="s">&#39;CRVAL1&#39;</span><span class="p">)</span>
+<span class="n">cdelt1</span> <span class="o">=</span> <span class="n">adspec</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_key_value</span><span class="p">(</span><span class="s">&#39;CDELT1&#39;</span><span class="p">)</span>
+<span class="n">length</span> <span class="o">=</span> <span class="n">adspec</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_key_value</span><span class="p">(</span><span class="s">&#39;NAXIS1&#39;</span><span class="p">)</span>
+<span class="n">wavelengths</span> <span class="o">=</span> <span class="n">crval1</span> <span class="o">+</span> <span class="p">(</span><span class="n">arange</span><span class="p">(</span><span class="n">length</span><span class="p">)</span><span class="o">-</span><span class="n">crpix1</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">cdelt1</span>
+<span class="n">plot</span><span class="p">(</span><span class="n">wavelengths</span><span class="p">,</span> <span class="n">adspec</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+<span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
 </div>
 </div>
 
@@ -84,10 +480,13 @@ etc.</p>
 <li><a class="reference internal" href="#">Pixel Data</a><ul>
 <li><a class="reference internal" href="#operate-on-the-pixel-data">Operate on the Pixel Data</a></li>
 <li><a class="reference internal" href="#arithmetic-on-astrodata-objects">Arithmetic on AstroData Objects</a></li>
-<li><a class="reference internal" href="#useful-numpy-module-functions">Useful Numpy Module Functions</a></li>
+<li><a class="reference internal" href="#variance">Variance</a></li>
+<li><a class="reference internal" href="#display">Display</a></li>
+<li><a class="reference internal" href="#useful-tools-from-the-numpy-and-scipy-modules">Useful tools from the Numpy and SciPy Modules</a></li>
+<li><a class="reference internal" href="#using-the-astrodata-data-quality-plane">Using the AstroData Data Quality Plane</a></li>
 <li><a class="reference internal" href="#manipulate-data-sections">Manipulate Data Sections</a></li>
 <li><a class="reference internal" href="#work-on-data-cubes">Work on Data Cubes</a></li>
-<li><a class="reference internal" href="#display-and-plot-data">Display and Plot Data</a></li>
+<li><a class="reference internal" href="#plot-data">Plot Data</a></li>
 </ul>
 </li>
 </ul>

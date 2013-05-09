@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 AstroData User's Manual
-==============================================
+=======================
 
 Contents:
 

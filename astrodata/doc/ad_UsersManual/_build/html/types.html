@@ -52,13 +52,31 @@
 <h1>AstroDataTypes<a class="headerlink" href="#astrodatatypes" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="what-are-astrodatatypes">
 <h2>What are AstroDataTypes<a class="headerlink" href="#what-are-astrodatatypes" title="Permalink to this headline">¶</a></h2>
-<p>(explain what they are.  explain how to install the Gemini types.)</p>
+<p>(explain what they are. data type &amp; data processing status. classification based on headers only.
+explain how to install the Gemini types.)</p>
 </div>
 <div class="section" id="using-astrodatatypes">
 <h2>Using AstroDataTypes<a class="headerlink" href="#using-astrodatatypes" title="Permalink to this headline">¶</a></h2>
-<p>ad.check_type(&#8216;GMOS_IMAGING&#8217;)
-ad.check_type(&#8216;GMOS_SPECT&#8217;)
-ad.discover_typology()</p>
+<p>There are two ways to check the AstroDataTypes of a dataset:</p>
+<div class="highlight-python"><pre>from astrodata import AstroData
+
+ad = AstroData('N20111124S0203.fits')
+
+if ad.is_type('GMOS_IMAGING'):
+    # do special steps for GMOS_IMAGING type data
+
+if 'GMOS_IMAGING' in ad.types:
+    # do special steps for GMOS_IMAGING type data</pre>
+</div>
+<p>The attribute <tt class="docutils literal"><span class="pre">ad.types</span></tt> returns a list of all the AstroDataTypes associated with the dataset.
+It can be useful when interactively exploring the various types associated with a dataset, or
+when there&#8217;s a need to write all the types to the screen or to a file, for logging purposes, for example.
+Use at your discretion based on your need.</p>
+<p>&#8220;Data Types&#8221; are referred to as <em>Typology</em> in the AstroDataTypes code.  &#8220;Data Processing Status&#8221; are
+referred to as <em>Status</em>.  There are two additional attributes that might be useful if those two
+concepts need to be addressed separately:  <tt class="docutils literal"><span class="pre">ad.typesStatus</span></tt> and <tt class="docutils literal"><span class="pre">ad.typesTypology</span></tt>.  They
+are used exactly the same way as <tt class="docutils literal"><span class="pre">ad.types</span></tt>.</p>
+<p>??? ad.refresh_types()</p>
 </div>
 <div class="section" id="creating-new-astrodatatypes">
 <h2>Creating New AstroDataTypes<a class="headerlink" href="#creating-new-astrodatatypes" title="Permalink to this headline">¶</a></h2>
