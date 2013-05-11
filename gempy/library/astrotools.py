@@ -4,6 +4,7 @@ import os
 import re
 import math
 import numpy as np
+import scipy.optimize as opt
 
 def rasextodec(string):
     """
@@ -1056,4 +1057,150 @@ class SpectralDatabase(object):
 ####here -- comments
 
         return table
+
+class FittedFunction:
+    """
+    Represents the result of trying to fit a function to some data.
+    
+    Members
+    ----------
+    get_success(): int
+        the value returned from scipy.optimize.leastsq
+    get_name(): str
+        the name of the fitted function ('moffat' or 'gaussian')
+    get_background(): float
+    get_peak(): float
+    get_center(): (float, float)
+        the center of the function
+    get_width(): (float, float)
+        the width of the function in x and y dimensions
+    get_theta(): float
+        the rotation of the function
+    get_fwhm_ellipticity(): (float, float)
+        returns the function width converted to FWHM and ellipticity
+    """
+    def __init__(self, function_name, success, bg, peak, x_ctr, y_ctr, x_width, y_width, theta):
+        self.success = success
+        self.function_name = function_name
+        self.background = bg
+        self.peak = peak
+        self.x_ctr = x_ctr
+        self.y_ctr = y_ctr
+        self.x_width = x_width
+        self.y_width = y_width
+        self.theta = theta
+
+    def get_success(self):
+        return self.success
+
+    def get_name(self):
+        return self.function_name
+
+    def get_background(self):
+        return self.background
+
+    def get_peak(self):
+        return self.peak
+
+    def get_center(self):
+        return (self.x_ctr, self.y_ctr)
+
+    def get_width(self):
+        return (self.x_width, self.y_width)
+
+    def get_theta(self):
+        return self.theta
+
+    def get_fwhm_ellipticity(self):
+        # convert fit parameters to FWHM, ellipticity
+        fwhmx = abs(2*np.sqrt(2*np.log(2))*x_width)
+        fwhmy = abs(2*np.sqrt(2*np.log(2))*y_width)
+        pa = (theta * (180 / np.pi))
+        pa = pa % 360
+        
+        if fwhmy < fwhmx:
+            ellip = 1 - fwhmy / fwhmx
+        elif fwhmx < fwhmy:
+            ellip = 1 - fwhmx / fwhmy
+            pa = pa - 90 
+        else:
+            ellip = 0
+
+        # FWHM is geometric mean of x and y FWHM
+        fwhm = np.sqrt(fwhmx * fwhmy)
+        
+        return fwhm, ellip
+        
             
+def get_fitted_function(stamp_data, default_fwhm, default_bg=None, centroid_function="moffat"):
+    """
+    This function returns a FittedFunction object containing the
+    parameters needed to fit the `centroid_function` to the
+    `stamp_data` using `default_fwhm` and `default_bg` as starting conditions.
+
+    :param stamp_data: subset of data to fit
+    :type stamp_data: 2D NumPy array
+
+    :param default_fwhm: the initial guess of the FWHM, related to pixel scale?
+    :type default_fwhm: float
+
+    :param default_bg: the initial guess of the background to use,
+      if None, uses the median of the data passed to stamp_data
+    :type default_bg: float
+
+    :param centroid_function: function to fit, either 'moffat' or 'gaussian'
+    :type  centroid_function: str
+    """
+    if default_bg is None:
+        default_bg = np.median(stamp_data)
+    
+    # starting values for model fit
+    bg = default_bg
+    peak = stamp_data.max() - bg
+    x_ctr = (stamp_data.shape[1] - 1) / 2.0
+    y_ctr = (stamp_data.shape[0] - 1) / 2.0
+    x_width = default_fwhm
+    y_width = default_fwhm
+    theta = 0.0
+    beta = 1.0
+
+    pars = (bg, peak, x_ctr, y_ctr, x_width, y_width, theta)
+
+    # instantiate model fit object and initial parameters
+    if centroid_function == "gauss":
+        mf = GaussFit(stamp_data)
+    elif centroid_function == "moffat":
+        pars = pars + (beta,)
+        mf = MoffatFit(stamp_data)
+    else:
+        raise Errors.InputError("Centroid function %s not supported" %
+                                centroid_function)
+    
+    # least squares fit of model to data
+    try:
+        # for scipy versions < 0.9
+        new_pars, success = opt.leastsq(mf.calc_diff,
+                                        pars,
+                                        maxfev=100, 
+                                        warning=False)
+    except:
+        # for scipy versions >= 0.9
+        import warnings
+        warnings.simplefilter("ignore")
+        new_pars, success = opt.leastsq(mf.calc_diff,
+                                        pars,
+                                        maxfev=100)
+
+    if centroid_function == "moffat":
+        # convert width to Gaussian-type sigma
+        x_width = new_pars[4]
+        y_width = new_pars[5]
+        beta = new_pars[7]
+        
+        new_pars[4] = x_width * np.sqrt(((2**(1/beta)-1)/(2*np.log(2))))
+        new_pars[5] = y_width * np.sqrt(((2**(1/beta)-1)/(2*np.log(2))))
+
+    # strip off the beta from moffat
+    pars = new_pars[:7]
+    
+    return FittedFunction(centroid_function, success, *pars)
