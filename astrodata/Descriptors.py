@@ -794,6 +794,11 @@ def get_calculator(dataset):
         concreteCalcClass = type("CompositeCalcClass", tuple(foundcalcs), {})
         #for calc in foundcalcs:
         #    concreteCalcClass.__bases__ += (calc.__class__, )
+        
         finalCalc = concreteCalcClass()
+        
+        from debugmodes import get_descriptor_throw
+        # p rint "get_descriptor_throw", get_descriptor_throw()
+        finalCalc.throwExceptions = get_descriptor_throw()
         return finalCalc
 #@@DOCPROJECT@@ done pass 1

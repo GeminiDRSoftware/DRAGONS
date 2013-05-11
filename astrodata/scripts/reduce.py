@@ -51,6 +51,8 @@ try:
     ##@@FIXME: This next option should not be put into the package
     parser.add_option("-x", "--rtf-mode", dest="rtf", default=False, 
                       action="store_true", help="only used for rtf")
+    parser.add_option("--throw_descriptor_exceptions", dest = "throwDescriptorExceptions", default=False,
+                        action = "store_true", help="debug mode, throws exceptions when Descriptors fail")
     
     #parser.add_option("--addcal", dest="add_cal", default=None, type="string",
     #                  help="Add calibration. NOTE: won't work unless "
@@ -222,8 +224,11 @@ try:
     terminal.forceWidth = options.forceWidth
     terminal.forceHeight = options.forceHeight
 
-
-
+    # do debug modes first
+    if options.throwDescriptorExceptions:
+        from astrodata.debugmodes import set_descriptor_throw
+        set_descriptor_throw(True)
+        
     if options.invoked:
         opener = "reduce started in adcc mode (--invoked)"
         log.fullinfo("."*len(opener))
