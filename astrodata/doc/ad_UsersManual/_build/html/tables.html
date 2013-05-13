@@ -50,14 +50,179 @@
             
   <div class="section" id="table-data">
 <h1>Table Data<a class="headerlink" href="#table-data" title="Permalink to this headline">¶</a></h1>
+<p><tt class="docutils literal"><span class="pre">Astrodata</span></tt> does not provide any special wrappers for FITS Table Data.  But
+since <tt class="docutils literal"><span class="pre">astrodata</span></tt> is built on top of <tt class="docutils literal"><span class="pre">pyfits</span></tt>, the standard <tt class="docutils literal"><span class="pre">pyfits</span></tt>
+table functions can be used.  The reader should refer to the <tt class="docutils literal"><span class="pre">pyfits</span></tt> documentation
+for complete details.  Here we show a few useful examples of basic usage.</p>
 <div class="section" id="read-from-a-fits-table">
 <h2>Read from a FITS Table<a class="headerlink" href="#read-from-a-fits-table" title="Permalink to this headline">¶</a></h2>
+<p>A FITS table is stored in a MEF file as a <tt class="docutils literal"><span class="pre">BinTableHDU</span></tt>.  The table data is retrieved from
+the <tt class="docutils literal"><span class="pre">AstroData</span></tt> object with the same <tt class="docutils literal"><span class="pre">.data</span></tt> attribute as for pixel extension, but for
+FITS tables <tt class="docutils literal"><span class="pre">.data</span></tt> returns a <tt class="docutils literal"><span class="pre">FITS_rec</span></tt>, which is a <tt class="docutils literal"><span class="pre">pyfits</span></tt> class.  Here is how to
+get information out of a FITS table.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">adspec</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;estgsS20080220S0078.fits&#39;</span><span class="p">)</span>
+<span class="n">adspec</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+<span class="c"># The first extension in that file is a FITS table with ``EXTNAME`` MDF, and ``EXTVER`` 1.</span>
+<span class="c"># MDF stands for &quot;Mask Definition File&quot;.  In Gemini data, those are used in the data reduction</span>
+<span class="c"># to identify, to first order, where spectra fall on the detector.</span>
+
+<span class="c"># Let&#39;s get the table data out of the AstroData object</span>
+<span class="n">table</span> <span class="o">=</span> <span class="n">adspec</span><span class="p">[</span><span class="s">&#39;MDF&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+<span class="c"># Get the column names with &#39;names&#39; or more details with &#39;columns&#39;</span>
+<span class="n">table</span><span class="o">.</span><span class="n">names</span>
+<span class="n">table</span><span class="o">.</span><span class="n">columns</span>
+
+<span class="c"># Get all the data for a column</span>
+<span class="n">x_ccd_values</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;x_ccd&#39;</span><span class="p">)</span>
+<span class="n">third_col</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c"># Print the table content</span>
+<span class="k">print</span> <span class="n">table</span>
+
+<span class="c"># Print the first 2 rows</span>
+<span class="k">print</span> <span class="n">table</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+
+<span class="c"># Select rows based on some criterion</span>
+<span class="n">select_table</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">table</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;y_ccd&#39;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">2000.</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">select_table</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="create-a-fits-table">
 <h2>Create a FITS Table<a class="headerlink" href="#create-a-fits-table" title="Permalink to this headline">¶</a></h2>
+<p>Creating a FITS table is mostly a matter of creating the columns, name and data.
+The name is a string, the data is stored in a <tt class="docutils literal"><span class="pre">numpy</span></tt> array.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">import</span> <span class="nn">pyfits</span> <span class="kn">as</span> <span class="nn">pf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="c"># Create the input data</span>
+<span class="n">snr_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s">&#39;S001&#39;</span><span class="p">,</span><span class="s">&#39;S002&#39;</span><span class="p">,</span><span class="s">&#39;S003&#39;</span><span class="p">])</span>
+<span class="n">feii</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">780.</span><span class="p">,</span><span class="mf">78.</span><span class="p">,</span><span class="mf">179.</span><span class="p">])</span>
+<span class="n">pabeta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">740.</span><span class="p">,</span><span class="mf">307.</span><span class="p">,</span><span class="mf">220.</span><span class="p">])</span>
+<span class="n">ratio</span> <span class="o">=</span> <span class="n">pabeta</span><span class="o">/</span><span class="n">feii</span>
+
+<span class="c"># Create the columns</span>
+<span class="n">col1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;4A&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">snr_id</span><span class="p">)</span>
+<span class="n">col2</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;ratio&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">ratio</span><span class="p">)</span>
+<span class="n">col3</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;feii&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">feii</span><span class="p">)</span>
+<span class="n">col4</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;pabeta&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">pabeta</span><span class="p">)</span>
+
+<span class="c"># Assemble the columns</span>
+<span class="n">cols</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">ColDefs</span><span class="p">([</span><span class="n">col1</span><span class="p">,</span><span class="n">col2</span><span class="p">,</span><span class="n">col3</span><span class="p">,</span><span class="n">col4</span><span class="p">])</span>
+
+<span class="c"># Create the table HDU</span>
+<span class="n">tablehdu</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+
+<span class="c"># Create an AstroData object to contain the table</span>
+<span class="c"># and write to disk.</span>
+<span class="n">new_ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="n">tablehdu</span><span class="p">)</span>
+<span class="n">new_ad</span><span class="o">.</span><span class="n">rename_ext</span><span class="p">(</span><span class="s">&#39;MYTABLE&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">new_ad</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;mytable.fits&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A new FITS table can also be appended to an already existing AstroData object with
+the <tt class="docutils literal"><span class="pre">.append()</span></tt> function.</p>
 </div>
 <div class="section" id="operate-on-a-fits-table">
 <h2>Operate on a FITS Table<a class="headerlink" href="#operate-on-a-fits-table" title="Permalink to this headline">¶</a></h2>
+<p>The <tt class="docutils literal"><span class="pre">pyfits</span></tt> manual is the recommended source for a more complete documentation
+on working on FITS table with Python.  Here are a few examples of what one can
+modify a FITS table.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">import</span> <span class="nn">pyfits</span> <span class="kn">as</span> <span class="nn">pf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="c"># Let us first create tables to play with</span>
+<span class="n">snr_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s">&#39;S001&#39;</span><span class="p">,</span><span class="s">&#39;S002&#39;</span><span class="p">,</span><span class="s">&#39;S003&#39;</span><span class="p">])</span>
+<span class="n">feii</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">780.</span><span class="p">,</span><span class="mf">78.</span><span class="p">,</span><span class="mf">179.</span><span class="p">])</span>
+<span class="n">pabeta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">740.</span><span class="p">,</span><span class="mf">307.</span><span class="p">,</span><span class="mf">220.</span><span class="p">])</span>
+<span class="n">ratio</span> <span class="o">=</span> <span class="n">pabeta</span><span class="o">/</span><span class="n">feii</span>
+<span class="n">col1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;4A&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">snr_id</span><span class="p">)</span>
+<span class="n">col2</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;ratio&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">ratio</span><span class="p">)</span>
+<span class="n">col3</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;feii&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">feii</span><span class="p">)</span>
+<span class="n">col4</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;pabeta&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">pabeta</span><span class="p">)</span>
+<span class="n">cols_t1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">ColDefs</span><span class="p">([</span><span class="n">col1</span><span class="p">,</span><span class="n">col3</span><span class="p">])</span>
+<span class="n">cols_t2</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">ColDefs</span><span class="p">([</span><span class="n">col1</span><span class="p">,</span><span class="n">col4</span><span class="p">])</span>
+<span class="n">cols_t3</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">ColDefs</span><span class="p">([</span><span class="n">col2</span><span class="p">])</span>
+
+<span class="n">table1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">cols_t1</span><span class="p">)</span>
+<span class="n">table2</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">cols_t2</span><span class="p">)</span>
+<span class="n">table3</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">cols_t3</span><span class="p">)</span>
+
+<span class="c"># Merge tables</span>
+<span class="c">#   WARNING: The input tables must NOT share any common field names.</span>
+<span class="c">#      For example, table1 and table2 cannot be merged this way since they share col1.</span>
+<span class="n">merged_cols</span> <span class="o">=</span> <span class="n">table1</span><span class="o">.</span><span class="n">columns</span> <span class="o">+</span> <span class="n">table3</span><span class="o">.</span><span class="n">columns</span>
+<span class="n">merged_table</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">merged_cols</span><span class="p">)</span>
+<span class="n">merged_table</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span>  <span class="c"># or merged_table.data.names</span>
+<span class="k">print</span> <span class="n">merged_table</span><span class="o">.</span><span class="n">data</span>
+
+<span class="c"># Add/Delete column</span>
+<span class="c">#   To &quot;add&quot; the &#39;pabeta&#39; column from table2 to table1</span>
+<span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">add_col</span><span class="p">(</span><span class="n">table2</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">table2</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;pabeta&#39;</span><span class="p">)])</span>
+<span class="n">table1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+<span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span>
+<span class="k">print</span> <span class="n">table1</span><span class="o">.</span><span class="n">data</span>
+
+<span class="c">#   To &quot;delete&quot; the &#39;pabeta&#39; column from this new table1</span>
+<span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">del_col</span><span class="p">(</span><span class="s">&#39;pabeta&#39;</span><span class="p">)</span>
+<span class="n">table1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+<span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span>
+<span class="k">print</span> <span class="n">table1</span><span class="o">.</span><span class="n">data</span>
+
+<span class="c"># Insert column</span>
+<span class="c">#   To insert a column, one has to extract the columns</span>
+<span class="c">#   and reorganize them into a new table.</span>
+<span class="c">#   Insert the first, and only column, in table3, between the first and second</span>
+<span class="c">#   column in table1</span>
+<span class="n">t1_col1</span> <span class="o">=</span> <span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">t1_col2</span> <span class="o">=</span> <span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">t3_col1</span> <span class="o">=</span> <span class="n">table3</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">table1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">([</span><span class="n">t1_col1</span><span class="p">,</span><span class="n">t3_col1</span><span class="p">,</span><span class="n">t1_col2</span><span class="p">])</span>
+<span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span>
+<span class="k">print</span> <span class="n">table1</span><span class="o">.</span><span class="n">data</span>
+
+<span class="c"># Change the name of a column</span>
+<span class="c">#   WARNING: There is method .change_name but it does not seem to be</span>
+<span class="c">#            working properly.</span>
+<span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;feii&#39;</span><span class="p">)]</span><span class="o">.</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;ironII&#39;</span>
+<span class="n">table1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+
+<span class="c"># Add/Delete row</span>
+<span class="c">#  Adding and deleting rows requires the creation of a new table</span>
+<span class="c">#  of the correct, new size.</span>
+<span class="c">#</span>
+<span class="c">#  Add 2 new entries to table2.  Only &#39;SNR_ID&#39; and &#39;pabeta&#39; will be</span>
+<span class="c">#  added as those are the columns already present in table2.</span>
+<span class="n">nb_new_entries</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">new_entries</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;S004&#39;</span><span class="p">,</span><span class="s">&#39;S005&#39;</span><span class="p">],</span>
+              <span class="s">&#39;ratio&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mf">1.12</span><span class="p">,</span> <span class="mf">0.72</span><span class="p">],</span>
+              <span class="s">&#39;feii&#39;</span>  <span class="p">:</span> <span class="p">[</span><span class="mf">77.</span><span class="p">,</span> <span class="mf">87.</span><span class="p">],</span>
+              <span class="s">&#39;pabeta&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">69.</span><span class="p">,</span> <span class="mf">122.</span><span class="p">]</span>
+              <span class="p">}</span>
+<span class="n">nrowst2</span> <span class="o">=</span> <span class="n">table2</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">large_table</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">table2</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">nrows</span><span class="o">=</span><span class="n">nrowst2</span><span class="o">+</span><span class="n">nb_new_entries</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">table2</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+    <span class="n">large_table</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">name</span><span class="p">)[</span><span class="n">nrowst2</span><span class="p">:]</span><span class="o">=</span><span class="n">new_entries</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+<span class="n">table2</span> <span class="o">=</span> <span class="n">large_table</span>
+
+<span class="c"># Delete the last 2 entries from table2</span>
+<span class="n">nb_bad_entries</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">nrowst2</span> <span class="o">=</span> <span class="n">table2</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">small_table</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">table2</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">nrows</span><span class="o">=</span><span class="n">nrowst2</span><span class="o">-</span><span class="n">nb_bad_entries</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">table2</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+    <span class="n">small_table</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">name</span><span class="p">)[:]</span><span class="o">=</span><span class="n">table2</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">name</span><span class="p">)[:</span><span class="o">-</span><span class="n">nb_bad_entries</span><span class="p">]</span>
+<span class="n">table2</span> <span class="o">=</span> <span class="n">small_table</span>
+
+<span class="c"># Change the &#39;pabeta&#39; value for source S002 in table2</span>
+<span class="n">rowindex</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">table2</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;S002&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">table2</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;pabeta&#39;</span><span class="p">)[</span><span class="n">rowindex</span><span class="p">]</span> <span class="o">=</span> <span class="mf">888.</span>
+</pre></div>
+</div>
 </div>
 </div>
 

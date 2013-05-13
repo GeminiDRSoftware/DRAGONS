@@ -298,7 +298,7 @@ get the reader started in her exploration of ``numpy`` and ``scipy``.
 
 Using the AstroData Data Quality Plane
 ======================================
-transform DQ plane into a numpy mask and do statistics
+TO BE WRITTEN -> transform DQ plane into a numpy mask and do statistics
 
 Manipulate Data Sections
 ========================
