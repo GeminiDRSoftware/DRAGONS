@@ -5,8 +5,7 @@ class GSAOI_IMAGE_TWILIGHT(DataClassification):
         instrument
         """
     parent = "GSAOI_IMAGE_FLAT"
-    requirement = AND([  ISCLASS("GSAOI_IMAGE_FLAT"),
-                         OR([  PHU(OBJECT="Twilight"),
-                               PHU(OBJECT="twilight")  ])  ])
+    requirement = AND([  ISCLASS("GSAOI_IMAGE"),
+                         PHU(OBJECT="(([Tt]wilight)+?)")  ])
 
 newtypes.append(GSAOI_IMAGE_TWILIGHT())

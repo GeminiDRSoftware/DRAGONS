@@ -5,8 +5,8 @@ class GSAOI_IMAGE_FLAT(DataClassification):
         """
     parent = "GSAOI_IMAGE"
     requirement = AND([  ISCLASS("GSAOI_IMAGE"),
-                         OR([  PHU(OBSTYPE="FLAT"),
-                               OR([  PHU(OBJECT="Twilight"),
-                                     PHU(OBJECT="twilight")  ])  ])  ])
+                         OR([PHU(OBSTYPE="FLAT"),
+                           PHU(OBJECT="(([Tt]wilight)+?)"),
+                           PHU(OBJECT="(([Dd]omeflat)+?)")  ])  ])
 
 newtypes.append(GSAOI_IMAGE_FLAT())
