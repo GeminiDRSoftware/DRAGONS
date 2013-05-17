@@ -198,7 +198,6 @@ def get_key_value_dict(dataset, keyword):
         return ret_dict
     
     except:
-        if not hasattr(dataset, "exception_info"):
-            setattr(dataset, "exception_info", sys.exc_info()[1])
+        setattr(dataset, "exception_info", sys.exc_info()[1])
         
         return None
