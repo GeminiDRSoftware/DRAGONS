@@ -225,19 +225,19 @@ class GMOSPrimitives(GEMINIPrimitives):
             
             # Pixel scale
             gt.update_key_from_descriptor(
-              adinput=ad, descriptor="pixel_scale()", extname="SCI")
+              adinput=ad, descriptor="pixel_scale()", extname="pixel_exts")
             
             # Read noise
             gt.update_key_from_descriptor(
-              adinput=ad, descriptor="read_noise()", extname="SCI")
+              adinput=ad, descriptor="read_noise()", extname="pixel_exts")
             
             # Gain setting
             gt.update_key_from_descriptor(
-              adinput=ad, descriptor="gain_setting()", extname="SCI")
+              adinput=ad, descriptor="gain_setting()", extname="pixel_exts")
             
             # Gain
             gt.update_key_from_descriptor(
-              adinput=ad, descriptor="gain()", extname="SCI")
+              adinput=ad, descriptor="gain()", extname="pixel_exts")
             
             # Bias level
             if "qa" in rc.context:
