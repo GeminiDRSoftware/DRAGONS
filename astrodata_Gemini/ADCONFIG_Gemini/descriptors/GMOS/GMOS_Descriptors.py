@@ -990,6 +990,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                                  ad=dataset)
         return ret_dv
     
+    def read_mode(self, dataset, **args):
+        # For GMOS data, raise an exception if the read_mode descriptor called,
+        # since it is not relevant for GMOS data.
+        raise Errors.ExistError()
+    
     def read_noise(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always construct a dictionary where the

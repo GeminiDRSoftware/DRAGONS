@@ -4,6 +4,7 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
+from astrodata.Descriptors import DescriptorValue
 from gempy.gemini import gemini_metadata_utils as gmu
 
 from NIFS_Keywords import NIFS_KeyDict
@@ -48,7 +49,10 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
             # Return the disperser string
             ret_disperser = str(disperser)
         
-        return ret_disperser
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_disperser, name="disperser", ad=dataset)
+        
+        return ret_dv
     
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         # Determine the filter name keyword from the global keyword dictionary
@@ -75,7 +79,10 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         if filter_name == "Blocked":
             ret_filter_name = "blank"
         
-        return ret_filter_name
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_filter_name, name="filter_name",
+                                 ad=dataset)
+        return ret_dv
     
     def gain(self, dataset, **args):
         # Determine the bias value keyword (biasvolt) from the global keyword
@@ -105,7 +112,10 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         if count == 0:
             Errors.TableKeyError()
         
-        return ret_gain
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_gain, name="gain", ad=dataset)
+        
+        return ret_dv
     
     nifsArrayDict = None
     
@@ -167,7 +177,10 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the saturation level integer
         ret_non_linear_level = int(saturation_level * linearlimit)
         
-        return ret_non_linear_level
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_non_linear_level, name="non_linear_level",
+                                 ad=dataset)
+        return ret_dv
     
     nifsArrayDict = None
     
@@ -200,7 +213,10 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             raise Errors.TableValueError()
         
-        return ret_pixel_scale
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_pixel_scale, name="pixel_scale",
+                                 ad=dataset)
+        return ret_dv
     
     nifsConfigDict = None
     
@@ -234,7 +250,10 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the read mode string
         ret_read_mode = str(read_mode)
         
-        return ret_read_mode
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_read_mode, name="read_mode", ad=dataset)
+        
+        return ret_dv
     
     def read_noise(self, dataset, **args):
         # Determine the number of non-destructive read pairs (lnrs) and the
@@ -280,7 +299,10 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_read_noise = float((read_noise * math.sqrt(coadds)) /
                                math.sqrt(lnrs))
         
-        return ret_read_noise
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_read_noise, name="read_noise", ad=dataset)
+        
+        return ret_dv
     
     nifsArrayDict = None
     
@@ -324,6 +346,9 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the saturation level integer
         ret_saturation_level = int(well * coadds)
         
-        return ret_saturation_level
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_saturation_level, name="saturation_level",
+                                 ad=dataset)
+        return ret_dv
     
     nifsArrayDict = None

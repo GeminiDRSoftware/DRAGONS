@@ -4,6 +4,7 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
+from astrodata.Descriptors import DescriptorValue
 from gempy.gemini import gemini_metadata_utils as gmu
 import GemCalcUtil 
 
@@ -98,12 +99,15 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             raise Errors.DescriptorTypeError()
         
-        return ret_central_wavelength
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_central_wavelength,
+                                 name="central_wavelength", ad=dataset)
+        return ret_dv
     
     def data_section(self, dataset, pretty=False, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_data_section = {}
         
         # Determine the region of interest keyword from the global keyword
@@ -114,7 +118,8 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         keyword4 = self.get_descriptor_key("key_hicol")
         
         # Get the value of the region of interest keyword from the header of
-        # each pixel data extension as a dictionary 
+        # each pixel data extension as a dictionary where the key of the
+        # dictionary is an ("*", EXTVER) tuple
         x_start_dict = gmu.get_key_value_dict(dataset, keyword1)
         x_end_dict = gmu.get_key_value_dict(dataset, keyword2)
         y_start_dict = gmu.get_key_value_dict(dataset, keyword3)
@@ -150,7 +155,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             # Update the dictionary with the data section value
             ret_data_section.update({ext_name_ver:data_section})
         
-        return ret_data_section
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_data_section, name="data_section",
+                                 ad=dataset)
+        return ret_dv
     
     array_section = data_section
     detector_section = data_section
@@ -170,7 +178,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         
         ret_roi_setting = roi_setting
         
-        return ret_roi_setting
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_roi_setting, name="roi_setting",
+                                 ad=dataset)
+        return ret_dv
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         if pretty:
@@ -207,7 +218,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             # Return the disperser string
             ret_disperser = str(disperser)
         
-        return ret_disperser
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_disperser, name="disperser", ad=dataset)
+        
+        return ret_dv
     
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         if pretty:
@@ -253,7 +267,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             ret_filter_name = gmu.filternameFrom(filters)
         
-        return ret_filter_name
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_filter_name, name="filter_name",
+                                 ad=dataset)
+        return ret_dv
     
     def gain(self, dataset, **args):
         # Get the gain value from the lookup table
@@ -265,7 +282,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the gain float
         ret_gain = float(gain)
         
-        return ret_gain
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_gain, name="gain", ad=dataset)
+        
+        return ret_dv
     
     niriSpecDict = None
     
@@ -290,7 +310,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the non linear level integer
         ret_non_linear_level = int(saturation_level * linearlimit)
         
-        return ret_non_linear_level
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_non_linear_level, name="non_linear_level",
+                                 ad=dataset)
+        return ret_dv
     
     niriSpecDict = None
     
@@ -325,7 +348,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the pixel scale float
         ret_pixel_scale = float(pixel_scale)
         
-        return ret_pixel_scale
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_pixel_scale, name="pixel_scale",
+                                 ad=dataset)
+        return ret_dv
     
     def pupil_mask(self, dataset, stripID=False, pretty=False, **args):
         if pretty:
@@ -360,7 +386,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             # Return the pupil_mask string
             ret_pupil_mask = str(pupil_mask)
         
-        return ret_pupil_mask
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_pupil_mask, name="pupil_mask", ad=dataset)
+        
+        return ret_dv
     
     def read_mode(self, dataset, **args):
         # Determine the number of non-destructive read pairs (lnrs) and the
@@ -393,7 +422,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the read mode string
         ret_read_mode = str(read_mode)
         
-        return ret_read_mode
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_read_mode, name="read_mode", ad=dataset)
+        
+        return ret_dv
     
     def read_noise(self, dataset, **args):
         # Get the read mode and the number of coadds using the appropriate
@@ -424,7 +456,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the read noise float
         ret_read_noise = float(read_noise * math.sqrt(coadds))
         
-        return ret_read_noise
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_read_noise, name="read_noise", ad=dataset)
+        
+        return ret_dv
     
     niriSpecDict = None
     
@@ -456,7 +491,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the saturation level integer
         ret_saturation_level = int(well * coadds / gain)
         
-        return ret_saturation_level
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_saturation_level, name="saturation_level",
+                                 ad=dataset)
+        return ret_dv
     
     niriSpecDict = None
     
@@ -487,7 +525,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             ret_wavelength_band = band
         
-        return ret_wavelength_band
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_wavelength_band, name="wavelength_band",
+                                 ad=dataset)
+        return ret_dv
     
     def well_depth_setting(self, dataset, **args):
         # Determine the VDDUC and VDETCOM detector bias voltage post exposure
@@ -521,13 +562,15 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the well depth setting string
         ret_well_depth_setting = str(well_depth_setting)
         
-        return ret_well_depth_setting
-
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_well_depth_setting,
+                                 name="well_depth_setting", ad=dataset)
+        return ret_dv
+    
     def nominal_photometric_zeropoint(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple
- 
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple
         ret_nominal_photometric_zeropoint = {}
         
         table = Lookups.get_lookup_table("Gemini/NIRI/Nominal_Zeropoints",
@@ -537,7 +580,6 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # appropriate descriptors. Use get_value() and as_pytype() to
         # return the values as a dictionary and the default python type,
         # respectively, rather than an object.
-  
         gain = dataset.gain().get_value()
         camera = dataset.camera().get_value()
         filter_name = dataset.filter_name(pretty=True).as_pytype()
@@ -550,35 +592,33 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
                 raise dataset.exception_info
         
         # Get the value of the BUNIT keyword from the header of each pixel data
-        # extension as a dictionary 
+        # extension as a dictionary where the key of the dictionary is an
+        # ("*", EXTVER) tuple 
         bunit_dict = gmu.get_key_value_dict(dataset, "BUNIT")
         
-        ext_name_ver=(dataset.extname(),dataset.extver())
-
-        # Determine whether data are in ADU or electrons
-        if bunit_dict is not None:
-            bunit = bunit_dict[ext_name_ver]
-        else:
-            bunit = None
-        
-        # If bunit is "electron" or None, set the gain factor to 0.0 
-        gain_factor = 0.0
-        
-        if bunit == "adu":
-            gain_factor = 2.5 * math.log10(gain)
+        for ext_name_ver, bunit in bunit_dict.iteritems():
             
-        nominal_zeropoint_key = (filter_name, camera)
-        
-        try:
-            nominal_photometric_zeropoint = (
-                table[nominal_zeropoint_key] - gain_factor)
-        except:
-            raise Errors.TableKeyError()
+            # If bunit is "electron" or None, set the gain factor to 0.0 
+            gain_factor = 0.0
             
-        # Update the dictionary with the nominal photometric zeropoint
-        # value 
-        ret_nominal_photometric_zeropoint.update({
-                ext_name_ver:nominal_photometric_zeropoint})
-
-        return ret_nominal_photometric_zeropoint
-    
+            if bunit == "adu":
+                gain_factor = 2.5 * math.log10(gain)
+                
+            nominal_zeropoint_key = (filter_name, camera)
+            
+            if nominal_zeropoint_key in table:
+                nominal_photometric_zeropoint = (
+                  table[nominal_zeropoint_key] - gain_factor)
+            else:
+                raise Errors.TableKeyError()
+            
+            # Update the dictionary with the nominal photometric zeropoint
+            # value 
+            ret_nominal_photometric_zeropoint.update(
+              {ext_name_ver:nominal_photometric_zeropoint})
+        
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_nominal_photometric_zeropoint,
+                                 name="nominal_photometric_zeropoint",
+                                 ad=dataset)
+        return ret_dv

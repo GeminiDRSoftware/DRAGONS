@@ -1,6 +1,7 @@
 from astrodata import Descriptors
 from astrodata import Errors
 from astrodata.Calculator import Calculator
+from astrodata.Descriptors import DescriptorValue
 
 from MICHELLE_Keywords import MICHELLE_KeyDict
 from GEMINI_Descriptors import GEMINI_DescriptorCalc
@@ -44,7 +45,10 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the exposure time float
         ret_exposure_time = float(exposure_time * coadds * extensions)
         
-        return ret_exposure_time
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_exposure_time, name="exposure_time",
+                                 ad=dataset)
+        return ret_dv
     
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         # Determine the filter name keyword from the global keyword dictionary
@@ -68,23 +72,7 @@ class MICHELLE_DescriptorCalc(GEMINI_DescriptorCalc):
             # Return the filter name string
             ret_filter_name = str(filter_name)
         
-        return ret_filter_name
-    
-    def read_mode(self, dataset, **args):
-        # Determine the read mode keyword from the global keyword dictionary
-        keyword = self.get_descriptor_key("key_read_mode")
-        
-        # Get the value of the read mode keyword from the header of the PHU
-        read_mode = dataset.phu_get_key_value(keyword)
-        
-        if read_mode is None:
-            # The phu_get_key_value() function returns None if a value cannot
-            # be found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, "exception_info"):
-                raise dataset.exception_info
-        
-        # Return the read mode string
-        ret_read_mode = str(read_mode)
-        
-        return ret_read_mode
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_filter_name, name="filter_name",
+                                 ad=dataset)
+        return ret_dv

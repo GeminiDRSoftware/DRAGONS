@@ -2,6 +2,7 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
+from astrodata.Descriptors import DescriptorValue
 from gempy.gemini import gemini_metadata_utils as gmu
 
 from NICI_Keywords import NICI_KeyDict
@@ -51,12 +52,15 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
             {key_exposure_time_r:total_exposure_time_r,
              key_exposure_time_b:total_exposure_time_b})
         
-        return ret_exposure_time
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_exposure_time, name="exposure_time",
+                                 ad=dataset)
+        return ret_dv
     
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_filter_name = {}
         
         # For NICI, the red filter is defined in the first science extension,
@@ -67,7 +71,8 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         keyword2 = self.get_descriptor_key("key_filter_b")
         
         # Get the value of the filter name keyword from the header of each
-        # pixel data extension as a dictionary 
+        # pixel data extension as a dictionary where the key of the dictionary
+        # is an ("*", EXTVER) tuple
         filter_r_dict = gmu.get_key_value_dict(dataset, keyword1)
         filter_b_dict = gmu.get_key_value_dict(dataset, keyword2)
         
@@ -134,10 +139,21 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
                 # Update the dictionary with the filter name value
                 ret_filter_name.update({ext_name_ver:filter})
         
-        return ret_filter_name
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_filter_name, name="filter_name",
+                                 ad=dataset)
+        return ret_dv
     
     def pixel_scale(self, dataset, **args):
         # Return the pixel scale float
         ret_pixel_scale = float(0.018)
         
-        return ret_pixel_scale
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_pixel_scale, name="pixel_scale",
+                                 ad=dataset)
+        return ret_dv
+    
+    def read_mode(self, dataset, **args):
+        # For NICI data, raise an exception if the read_mode descriptor called,
+        # since it is not relevant for NICI data.
+        raise Errors.ExistError()

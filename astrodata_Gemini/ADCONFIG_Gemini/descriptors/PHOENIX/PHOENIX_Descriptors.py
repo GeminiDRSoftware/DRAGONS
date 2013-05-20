@@ -3,6 +3,7 @@ import re
 from astrodata import Descriptors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
+from astrodata.Descriptors import DescriptorValue
 from gempy.library import astrotools
 
 from PHOENIX_Keywords import PHOENIX_KeyDict
@@ -33,7 +34,10 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the declination float
         ret_dec = float(astrotools.degsextodec(dec))
         
-        return ret_dec
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_dec, name="dec", ad=dataset)
+        
+        return ret_dv
     
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         # Determine the filter name keyword from the global keyword dictionary
@@ -58,7 +62,10 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
             # Return the filter name string
             ret_filter_name = str(filter_name)
         
-        return ret_filter_name
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_filter_name, name="filter_name",
+                                 ad=dataset)
+        return ret_dv
     
     def ra(self, dataset, **args):
         # Determine the R.A. keyword from the global keyword dictionary
@@ -77,4 +84,12 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the declination float
         ret_ra = float(astrotools.degsextodec(ra))
         
-        return ret_ra
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_ra, name="ra", ad=dataset)
+        
+        return ret_dv
+    
+    def read_mode(self, dataset, **args):
+        # For PHOENIX data, raise an exception if the read_mode descriptor
+        # called, since it is not relevant for PHOENIX data.
+        raise Errors.ExistError()

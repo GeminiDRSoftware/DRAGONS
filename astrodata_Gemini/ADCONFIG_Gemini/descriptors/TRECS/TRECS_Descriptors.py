@@ -2,6 +2,7 @@ from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
+from astrodata.Descriptors import DescriptorValue
 import GemCalcUtil
 
 from TRECS_Keywords import TRECS_KeyDict
@@ -77,7 +78,10 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
             input_units=input_units, input_value=central_wavelength,
             output_units=output_units)
         
-        return ret_central_wavelength
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_central_wavelength,
+                                 name="central_wavelength", ad=dataset)
+        return ret_dv
     
     def dispersion(self, dataset, asMicrometers=False, asNanometers=False,
                    asAngstroms=False, **args):
@@ -130,7 +134,10 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
             input_units=input_units, input_value=dispersion,
             output_units=output_units)
         
-        return ret_dispersion
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_dispersion, name="dispersion", ad=dataset)
+        
+        return ret_dv
     
     def gain(self, dataset, **args):
         # Determine the bias value keyword (biaslevel) from the global keyword
@@ -154,10 +161,21 @@ class TRECS_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             Errors.CalcError()
         
-        return ret_gain
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_gain, name="gain", ad=dataset)
+        
+        return ret_dv
     
     def pixel_scale(self, dataset, **args):
         # Return the pixel scale float
         ret_pixel_scale = float(0.089)
         
-        return ret_pixel_scale
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_pixel_scale, name="pixel_scale",
+                                 ad=dataset)
+        return ret_dv
+    
+    def read_mode(self, dataset, **args):
+        # For TRECS data, raise an exception if the read_mode descriptor
+        # called, since it is not relevant for TRECS data.
+        raise Errors.ExistError()

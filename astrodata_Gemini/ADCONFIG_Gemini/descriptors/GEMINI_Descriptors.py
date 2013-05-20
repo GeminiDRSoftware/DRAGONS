@@ -3,6 +3,7 @@ import dateutil.parser
 
 from astrodata import Errors
 from astrodata import Lookups
+from astrodata.Descriptors import DescriptorValue
 from astrodata.structuredslice import pixel_exts, bintable_exts
 from gempy.gemini import gemini_metadata_utils as gmu
 import GemCalcUtil
@@ -44,7 +45,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             ret_airmass = float(airmass)
         
-        return ret_airmass
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_airmass, name="airmass", ad=dataset)
+        
+        return ret_dv
     
     def amp_read_area(self, dataset, **args):
         # The amp_read_area descriptor is only specific to GMOS data. The code
@@ -56,8 +60,8 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
     
     def array_section(self, dataset, pretty=False, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_array_section = {}
         
         # Determine the array section keyword from the global keyword
@@ -65,7 +69,8 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         keyword = self.get_descriptor_key("key_array_section")
         
         # Get the value of the array section keyword from the header of each
-        # pixel data extension as a dictionary 
+        # pixel data extension as a dictionary where the key of the dictionary
+        # is an ("*", EXTVER) tuple
         array_section_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if array_section_dict is None:
@@ -90,7 +95,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             # Update the dictionary with the array section value
             ret_array_section.update({ext_name_ver:array_section})
         
-        return ret_array_section
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_array_section, name="array_section",
+                                 ad=dataset)
+        return ret_dv
     
     def cass_rotator_pa(self, dataset, **args):
         # Determine the cassegrain rotator position angle keyword from the
@@ -114,7 +122,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             ret_cass_rotator_pa = float(cass_rotator_pa)
         
-        return ret_cass_rotator_pa
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_cass_rotator_pa, name="cass_rotator_pa",
+                                 ad=dataset)
+        return ret_dv
     
     def central_wavelength(self, dataset, asMicrometers=False,
                            asNanometers=False, asAngstroms=False, **args):
@@ -167,7 +178,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
               input_units=input_units, input_value=central_wavelength,
               output_units=output_units)
         
-        return ret_central_wavelength
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_central_wavelength,
+                                 name="central_wavelength", ad=dataset)
+        return ret_dv
     
     def coadds(self, dataset, **args):
         # Determine the number of coadds keyword from the global keyword
@@ -185,19 +199,23 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             ret_coadds = int(coadds)
         
-        return ret_coadds
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_coadds, name="coadds", ad=dataset)
+        
+        return ret_dv
     
     def data_section(self, dataset, pretty=False, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_data_section = {}
         
         # Determine the data section keyword from the global keyword dictionary
         keyword = self.get_descriptor_key("key_data_section")
         
         # Get the value of the data section keyword from the header of each
-        # pixel data extension as a dictionary 
+        # pixel data extension as a dictionary where the key of the dictionary
+        # is an ("*", EXTVER) tuple 
         data_section_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if data_section_dict is None:
@@ -222,7 +240,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             # Update the dictionary with the data section value
             ret_data_section.update({ext_name_ver:data_section})
         
-        return ret_data_section
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_data_section, name="data_section",
+                                 ad=dataset)
+        return ret_dv
     
     def decker(self, dataset, stripID=False, pretty=False, **args):
         """
@@ -253,18 +274,24 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             # Return the decker string
             ret_decker = str(decker)
         
-        return ret_decker
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_decker, name="decker", ad=dataset)
+        
+        return ret_dv
     
     def detector_roi_setting(self, dataset, **args):
         # For instruments that do not support setting the ROI, return "Fixed"
         ret_detector_roi_setting = "Fixed"
         
-        return ret_detector_roi_setting
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_detector_roi_setting,
+                                 name="detector_roi_setting", ad=dataset)
+        return ret_dv
     
     def detector_section(self, dataset, pretty=False, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_detector_section = {}
         
         # Determine the detector section keyword from the global keyword
@@ -272,7 +299,8 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         keyword = self.get_descriptor_key("key_detector_section")
         
         # Get the value of the detector section keyword from the header of each
-        # pixel data extension as a dictionary 
+        # pixel data extension as a dictionary where the key of the dictionary
+        # is an ("*", EXTVER) tuple
         detector_section_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if detector_section_dict is None:
@@ -282,8 +310,8 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
-        dict = detector_section_dict.iteritems()
-        for ext_name_ver, raw_detector_section in dict:
+        ds_dict = detector_section_dict.iteritems()
+        for ext_name_ver, raw_detector_section in ds_dict:
             if raw_detector_section is None:
                 detector_section = None
             elif pretty:
@@ -300,47 +328,30 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             # Update the dictionary with the detector section value
             ret_detector_section.update({ext_name_ver:detector_section})
         
-        return ret_detector_section
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_detector_section, name="detector_section",
+                                 ad=dataset)
+        return ret_dv
     
     def detector_x_bin(self, dataset, **args):
-        # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple.
-        ret_detector_x_bin = {}
+        # Return the binning of the x-axis integer (set to 1 as default for
+        # Gemini data)
+        ret_detector_x_bin = int(1)
         
-        # Loop over the pixel data extensions in the dataset
-        for ext in dataset[pixel_exts]:
-            
-            # Return a dictionary with the binning of the x-axis integer (set
-            # to 1 as default for Gemini data) as the value
-            ret_detector_x_bin.update({(ext.extname(), ext.extver()):int(1)})
-        
-        if ret_detector_x_bin == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
-        
-        return ret_detector_x_bin
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_detector_x_bin, name="detector_x_bin",
+                                 ad=dataset)
+        return ret_dv
     
     def detector_y_bin(self, dataset, **args):
-        # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple.
-        ret_detector_y_bin = {}
+        # Return the binning of the y-axis integer (set to 1 as default for
+        # Gemini data)
+        ret_detector_y_bin = int(1)
         
-        # Loop over the pixel data extensions in the dataset
-        for ext in dataset[pixel_exts]:
-            
-            # Return a dictionary with the binning of the y-axis integer (set
-            # to 1 as default for Gemini data) as the value
-            ret_detector_y_bin.update({(ext.extname(), ext.extver()):int(1)})
-        
-        if ret_detector_y_bin == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
-        
-        return ret_detector_y_bin
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_detector_y_bin, name="detector_y_bin",
+                                 ad=dataset)
+        return ret_dv
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):
         # Determine the disperser keyword from the global keyword dictionary
@@ -365,12 +376,15 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             # Return the disperser string
             ret_disperser = str(disperser)
         
-        return ret_disperser
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_disperser, name="disperser", ad=dataset)
+        
+        return ret_dv
     
     def dispersion_axis(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_dispersion_axis = {}
         
         # The dispersion axis can only be obtained from data that does not
@@ -383,7 +397,8 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             keyword = self.get_descriptor_key("key_dispersion_axis")
             
             # Get the value of the dispersion axis keyword from the header of
-            # each pixel data extension as a dictionary 
+            # each pixel data extension as a dictionary where the key of the
+            # dictionary is an ("*", EXTVER) tuple
             dispersion_axis_dict = gmu.get_key_value_dict(dataset, keyword)
             
             if dispersion_axis_dict is None:
@@ -393,8 +408,8 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
             
-            dict = dispersion_axis_dict.iteritems()
-            for ext_name_ver, raw_dispersion_axis in dict:
+            da_dict = dispersion_axis_dict.iteritems()
+            for ext_name_ver, raw_dispersion_axis in da_dict:
                 if raw_dispersion_axis is None:
                     dispersion_axis = None
                 else:
@@ -406,7 +421,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             raise Errors.DescriptorTypeError()
         
-        return ret_dispersion_axis
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_dispersion_axis, name="dispersion_axis",
+                                 ad=dataset)
+        return ret_dv
     
     def exposure_time(self, dataset, **args):
         # Determine the exposure time keyword from the global keyword
@@ -441,7 +459,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             
             ret_exposure_time = float(exposure_time * coadds)
         
-        return ret_exposure_time
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_exposure_time, name="exposure_time",
+                                 ad=dataset)
+        return ret_dv
     
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         # Determine the two filter name keywords from the global keyword
@@ -468,10 +489,12 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         
         filter = []
         if pretty:
-            # Remove any filters that have the value "open" or "Open" or "Clear"
-            if "open" not in filter1 and "Open" not in filter1 and "Clear" not in filter1:
+            # Remove any filters that have the value "open", "Open" or "Clear"
+            if ("open" not in filter1 and "Open" not in filter1 and
+                "Clear" not in filter1):
                 filter.append(str(filter1))
-            if "open" not in filter2 and "Open" not in filter2 and "Clear" not in filter2:
+            if ("open" not in filter2 and "Open" not in filter2 and
+                "Clear" not in filter2):
                 filter.append(str(filter2))
             if len(filter) == 0:
                 filter.append("open")
@@ -486,24 +509,14 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         
         if len(filter) > 1:
             # Concatenate the filter names with "&"
-            filter_name = "%s&%s" % (filter[0], filter[1])
+            ret_filter_name = "%s&%s" % (filter[0], filter[1])
         else:
-            filter_name = str(filter[0])
+            ret_filter_name = str(filter[0])
         
-        # Return a dictionary where the key of the dictionary is an (EXTNAME,
-        # EXTVER) tuple and the value is the filter name string
-        ret_filter_name = {}
-        
-        # Loop over the pixel data extensions of the dataset
-        for ext in dataset[pixel_exts]:
-            ret_filter_name.update({(ext.extname(), ext.extver()):filter_name})
-        
-        if ret_filter_name == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
-        
-        return ret_filter_name
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_filter_name, name="filter_name",
+                                 ad=dataset)
+        return ret_dv
     
     def focal_plane_mask(self, dataset, stripID=False, pretty=False, **args):
         if pretty:
@@ -531,7 +544,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             # Return the focal plane mask string
             ret_focal_plane_mask = str(focal_plane_mask)
         
-        return ret_focal_plane_mask
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_focal_plane_mask, name="focal_plane_mask",
+                                 ad=dataset)
+        return ret_dv
     
     def gain_setting(self, dataset, **args):
         # The gain_setting descriptor is only specific to GMOS data. The code
@@ -556,7 +572,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # Gemini data 
         ret_group_id = "%s" % (observation_id)
         
-        return ret_group_id
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_group_id, name="group_id", ad=dataset)
+        
+        return ret_dv
     
     def local_time(self, dataset, **args):
         # Determine the local time keyword from the global keyword dictionary
@@ -581,12 +600,15 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             raise Errors.InvalidValueError()
         
-        return ret_local_time
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_local_time, name="local_time", ad=dataset)
+        
+        return ret_dv
     
     def mdf_row_id(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_mdf_row_id = {}
         
         # The MDF row ID can only be obtained from data that does not have an
@@ -600,7 +622,8 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             keyword = self.get_descriptor_key("key_mdf_row_id")
             
             # Get the value of the MDF row ID keyword from the header of each
-            # pixel data extension as a dictionary
+            # pixel data extension as a dictionary where the key of the
+            # dictionary is an ("*", EXTVER) tuple
             mdf_row_id_dict = gmu.get_key_value_dict(dataset, keyword)
             
             if mdf_row_id_dict is None:
@@ -622,7 +645,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             raise Errors.DescriptorTypeError()
         
-        return ret_mdf_row_id
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_mdf_row_id, name="mdf_row_id", ad=dataset)
+        
+        return ret_dv
     
     def nod_count(self, dataset, **args):
         # The nod_count descriptor is only specific to GMOS data. The code
@@ -658,7 +684,11 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         
         ret_nominal_atmospheric_extinction = coeff * (airmass - 1.0)
         
-        return ret_nominal_atmospheric_extinction
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_nominal_atmospheric_extinction,
+                                 name="nominal_atmospheric_extinction",
+                                 ad=dataset)
+        return ret_dv
     
     def overscan_section(self, dataset, **args):
         # The overscan_section descriptor is only specific to GMOS data. The
@@ -666,14 +696,6 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # descriptor function located in GMOS/GMOS_Descriptor.py for data with
         # an AstroData Type of "GMOS". For all other Gemini data, raise an
         # exception if this descriptor is called.
-        raise Errors.ExistError()
-    
-    def read_mode(self, dataset, **args):
-        # The read_mode descriptor is only specific to GNIRS, MICHELLE, NIFS
-        # and NIRI data. The code below will be replaced with the GNIRS,
-        # MICHELLE, NIFS or NIRI specific read_mode descriptor function located
-        # in the instrument specific descriptor files. For all other Gemini
-        # data, raise an exception if this descriptor is called.
         raise Errors.ExistError()
     
     def read_speed_setting(self, dataset, **args):
@@ -708,7 +730,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             raise Errors.InvalidValueError
         
-        return ret_raw_bg
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_raw_bg, name="raw_bg", ad=dataset)
+        
+        return ret_dv
     
     def raw_cc(self, dataset, **args):
         # Determine the raw cloud cover keyword from the global keyword
@@ -734,7 +759,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             raise Errors.InvalidValueError
         
-        return ret_raw_cc
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_raw_cc, name="raw_cc", ad=dataset)
+        
+        return ret_dv
     
     def raw_iq(self, dataset, **args):
         # Determine the raw image quality keyword from the global keyword
@@ -760,7 +788,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             raise Errors.InvalidValueError
         
-        return ret_raw_iq
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_raw_iq, name="raw_iq", ad=dataset)
+        
+        return ret_dv
     
     def raw_wv(self, dataset, **args):
         # Determine the raw water vapour keyword from the global keyword
@@ -786,7 +817,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             raise Errors.InvalidValueError
         
-        return ret_raw_wv
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_raw_wv, name="raw_wv", ad=dataset)
+        
+        return ret_dv
     
     def requested_bg(self, dataset, **args):
         # Determine the requested background keyword from the global keyword
@@ -812,7 +846,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             raise Errors.InvalidValueError
         
-        return ret_requested_bg
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_requested_bg, name="requested_bg",
+                                 ad=dataset)
+        return ret_dv
     
     def requested_cc(self, dataset, **args):
         # Determine the requested cloud cover keyword from the global keyword
@@ -838,7 +875,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             raise Errors.InvalidValueError
         
-        return ret_requested_cc
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_requested_cc, name="requested_cc",
+                                 ad=dataset)
+        return ret_dv
     
     def requested_iq(self, dataset, **args):
         # Determine the requested image quality keyword from the global keyword
@@ -864,7 +904,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             raise Errors.InvalidValueError
         
-        return ret_requested_iq
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_requested_iq, name="requested_iq",
+                                 ad=dataset)
+        return ret_dv
     
     def requested_wv(self, dataset, **args):
         # Determine the requested water vapour keyword from the global keyword
@@ -890,7 +933,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             raise Errors.InvalidValueError
         
-        return ret_requested_wv
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_requested_wv, name="requested_wv",
+                                 ad=dataset)
+        return ret_dv
     
     def qa_state(self, dataset, **args):
         # Determine the keywords for whether the PI requirements were met
@@ -925,7 +971,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         if rawpireq.upper() == "CHECK" or rawgemqa.upper() == "CHECK":
             ret_qa_state = "CHECK"
         
-        return ret_qa_state
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_qa_state, name="qa_state", ad=dataset)
+        
+        return ret_dv
     
     def ut_date(self, dataset, **args):
         # Call ut_datetime(strict=True, dateonly=True) to return a valid
@@ -939,7 +988,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
-        return ret_ut_date
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_ut_date, name="ut_date", ad=dataset)
+        
+        return ret_dv
     
     def ut_datetime(self, dataset, strict=False, dateonly=False,
                     timeonly=False, **args):
@@ -1137,7 +1189,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
-        return ret_ut_time
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_ut_time, name="ut_time", ad=dataset)
+        
+        return ret_dv
     
     def wavefront_sensor(self, dataset, **args):
         # Determine the AOWFS, OIWFS, PWFS1 and PWFS2 probe states (aowfs,
@@ -1182,7 +1237,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             wavefront_sensors.sort
             ret_wavefront_sensor = str("&".join(wavefront_sensors))
         
-        return ret_wavefront_sensor
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_wavefront_sensor, name="wavefront_sensor",
+                                 ad=dataset)
+        return ret_dv
     
     def wavelength_band(self, dataset, **args):
         # The wavelength band can only be obtained from data that has does not
@@ -1207,12 +1265,15 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             raise Errors.DescriptorTypeError()
         
-        return ret_wavelength_band
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_wavelength_band, name="wavelength_band",
+                                 ad=dataset)
+        return ret_dv
     
     def wavelength_reference_pixel(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always return a dictionary where the key
-        # of the dictionary is an (EXTNAME, EXTVER) tuple.
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple.
         ret_wavelength_reference_pixel = {}
         
         # Determine the reference pixel of the central wavelength keyword from
@@ -1221,6 +1282,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         
         # Get the value of the reference pixel of the central wavelength
         # keyword from the header of each pixel data extension as a dictionary
+        # where the key of the dictionary is an ("*", EXTVER) tuple
         wavelength_reference_pixel_dict = gmu.get_key_value_dict(
           dataset, keyword)
         
@@ -1231,8 +1293,8 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
-        dict = wavelength_reference_pixel_dict.iteritems()
-        for ext_name_ver, raw_wavelength_reference_pixel in dict:
+        wrp_dict = wavelength_reference_pixel_dict.iteritems()
+        for ext_name_ver, raw_wavelength_reference_pixel in wrp_dict:
             if raw_wavelength_reference_pixel is None:
                 wavelength_reference_pixel = None
             else:
@@ -1244,7 +1306,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             ret_wavelength_reference_pixel.update(
               {ext_name_ver:wavelength_reference_pixel})
         
-        return ret_wavelength_reference_pixel
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_wavelength_reference_pixel,
+                                 name="wavelength_reference_pixel", ad=dataset)
+        return ret_dv
     
     def well_depth_setting(self, dataset, **args):
         # The well_depth_setting descriptor is only specific to GNIRS and NIRI
