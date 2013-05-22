@@ -7,12 +7,11 @@ import urllib2
 import pyfits as pf
 import numpy as np
 import tempfile
-import astrodata
+from astrodata import AstroData
+from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import logutils
 from astrodata.ConfigSpace import lookup_path
-from astrodata.AstroData import AstroData
-from astrodata import Errors
 from gempy.library import astrotools as at
 
 # Load the standard comments for header keywords that will be updated
@@ -1834,7 +1833,7 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
     if extname != "PHU":
         if not ad[extname]:
             raise Errors.Error("Extension %s does not exist in %s"
-                               % (extname, ad))
+                               % (extname, ad.filename))
     
     # Get the comment for the keyword, if available
     if comment is None:
@@ -1978,4 +1977,3 @@ def write_database(ad, database_name=None, input_name=None):
         db = at.SpectralDatabase(binary_table=wavecal_table,
                                  record_name=record_name)
         db.write_to_disk(database_name=database_name)
-
