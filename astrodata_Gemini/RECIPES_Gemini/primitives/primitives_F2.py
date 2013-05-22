@@ -1,5 +1,5 @@
-import numpy as np
 from astrodata.adutils import logutils
+from gempy.adlibrary.manipulate_ad import remove_single_length_dimension
 from gempy.gemini import gemini_tools as gt
 from primitives_GEMINI import GEMINIPrimitives
 
@@ -163,27 +163,10 @@ class F2Primitives(GEMINIPrimitives):
                 # context, it only needs to be run once in this loop
                 attach_mdf = False
             
-            # Raw FLAMINGOS-2 data have three dimensions (e.g., 2048x2048x1),
-            # so check whether the third dimension has a length of one and
-            # remove it.
-            for ext in ad:
-                if len(ext.data.shape) == 3:
-                    
-                    # Remove the single-dimensional axis from the pixel data
-                    log.status("Removing the third dimension from %s"
-                                 % ad.filename)
-                    ext.data = np.squeeze(ext.data)
-                    
-                    if len(ext.data.shape) == 3:
-                        # The np.squeeze method only removes a dimension from
-                        # the array if it is equal to 1. In this case, the
-                        # third dimension contains multiple datasets. Need to
-                        # deal with this as some point
-                        pass
-                    
-                    log.debug("Dimensions of %s[%s,%d] = %s" % (
-                      ad.filename, ext.extname(), ext.extver(),
-                      ext.data.shape))
+            # Raw FLAMINGOS-2 pixel data have three dimensions (e.g.,
+            # 2048x2048x1). Remove the single length dimension from the pixel
+            # data.
+            ad = remove_single_length_dimension(adinput=ad)
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
