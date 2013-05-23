@@ -5,7 +5,6 @@ class F2_MOS(DataClassification):
         """
     parent = "F2_SPECT"
     requirement = AND ([  ISCLASS("F2_SPECT"),
-                          PHU(OBSTYPE="OBJECT"),
                           OR([  PHU(DECKER="mos"),
                                 PHU(DCKERPOS="mos"),
                                 PHU(MOSPOS="mos.?")  ])  ])
