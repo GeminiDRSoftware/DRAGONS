@@ -168,6 +168,13 @@ class F2Primitives(GEMINIPrimitives):
             # data.
             ad = remove_single_length_dimension(adinput=ad)
             
+            # Raw FLAMINGOS-2 pixel data have a data type of int32 (BITPIX=32),
+            # but since there are not 32 bits of entropy in the FLAMINGOS-2
+            # pixel data (the ADCs are 16 bit), convert the data type to
+            # float32 (otherwise when the data are operated on, numpy will
+            # promote the pixel data to float64, which is not necessary)
+            ad.data = ad.data.astype(np.dtype(np.float32))
+            
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             
