@@ -3,6 +3,7 @@
 import re
 import sys
 
+from astrodata import Errors
 from astrodata.Descriptors import DescriptorValue
 from astrodata.structuredslice import pixel_exts, bintable_exts
 
