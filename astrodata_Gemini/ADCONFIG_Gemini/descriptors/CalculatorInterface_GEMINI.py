@@ -141,6 +141,75 @@ class CalculatorInterface:
         except:
             raise
     
+    def array_name(self, format=None, **args):
+        """
+        Return the array_name value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :rtype: dictionary containing one or more string(s) (format=as_dict)
+        :return: the name of each array used for the observation
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_array_name"
+            #print "mkCI22:",key, repr(keydict)
+            #print "mkCI23:", key in keydict
+            keyword = None
+            if key in keydict.keys():
+                keyword = keydict[key]
+                
+            #print hasattr(self.descriptor_calculator, "array_name")
+            if not hasattr(self.descriptor_calculator, "array_name"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for array_name")
+                    raise Errors.DescriptorError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.array_name(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+            
+            
+            ret = DescriptorValue( retval, 
+                                   format = format, 
+                                   name = "array_name",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = str )
+            return ret
+        
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "array_name",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = None )
+                return ret
+        except:
+            raise
+    
     def array_section(self, format=None, **args):
         """
         Return the array_section value
@@ -837,7 +906,7 @@ class CalculatorInterface:
         :type format: string
         :rtype: string as default (i.e., format=None)
         :rtype: dictionary containing one or more string(s) (format=as_dict)
-        :return: the name of each array used for the observation
+        :return: the name of the detector used for the observation
         """
         try:
             self._lazyloadCalculator()

@@ -34,6 +34,25 @@ class docstrings:
         """
         pass
     
+    def array_name(self):
+        """
+        Return the array_name value
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :rtype: dictionary containing one or more string(s) (format=as_dict)
+        :return: the name of each array used for the observation
+        """
+        pass
+    
     def array_section(self):
         """
         Return the array_section value
@@ -230,7 +249,7 @@ class docstrings:
         :type format: string
         :rtype: string as default (i.e., format=None)
         :rtype: dictionary containing one or more string(s) (format=as_dict)
-        :return: the name of each array used for the observation
+        :return: the name of the detector used for the observation
         """
         pass
     

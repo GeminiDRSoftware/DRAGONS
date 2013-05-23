@@ -33,8 +33,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         keyword = self.get_descriptor_key("key_ampname")
         
         # Get the value of the name of the detector amplifier keyword from the
-        # header of each pixel data extension as a dictionary where the key
-        # of the dictionary is an ("*", EXTVER) tuple
+        # header of each pixel data extension as a dictionary where the key of
+        # the dictionary is an ("*", EXTVER) tuple
         ampname_dict = gmu.get_key_value_dict(dataset, keyword)
         
         if ampname_dict is None:
@@ -45,15 +45,15 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 raise dataset.exception_info
         
         # Get the pretty (1-based indexing) readout area of the CCD (detsec)
-        # using the appropriate descriptor. Use as_dict() to return the
-        # values as a dictionary where the key of the dictionary is an
-        # ("*", EXTVER) tuple. 
+        # using the appropriate descriptor. Use as_dict() to return the values
+        # as a dictionary where the key of the dictionary is an ("*", EXTVER)
+        # tuple.
         detsec_dict = dataset.detector_section(pretty=True).as_dict()
         
         if detsec_dict is None:
-            # The descriptor functions return None if a value cannot be
-            # found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface. 
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
@@ -72,6 +72,45 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_amp_read_area_dict, name="amp_read_area",
                                  ad=dataset)
+        return ret_dv
+    
+    def array_name(self, dataset, **args):
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple
+        array_name_dict = {}
+        
+        # Determine the name of the array keyword from the global keyword
+        # dictionary
+        keyword = self.get_descriptor_key("key_array_name")
+        
+        # Get the value of the name of the array keyword from the header of
+        # each pixel data extension as a dictionary where the key of the
+        # dictionary is an ("*", EXTVER) tuple
+        array_name_dict = gmu.get_key_value_dict(dataset, keyword)
+        
+        if array_name_dict is None:
+            # It is possible that the data have been mosaiced, which means that
+            # the name of the array keyword no longer exists in the pixel data
+            # extensions. Instead, determine the value of the detector name
+            # using the appropriate descriptor
+            detector_name = dataset.detector_name()
+            
+            if detector_name is None:
+                # The descriptor functions return None if a value cannot be
+                # found and stores the exception info. Re-raise the exception.
+                # It will be dealt with by the CalculatorInterface. 
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
+            
+            ret_array_name = detector_name
+        else:
+            ret_array_name = array_name_dict
+            
+        # Instantiate the return DescriptorValue (DV) object using the newly
+        # created dictionary
+        ret_dv = DescriptorValue(ret_array_name, name="array_name", ad=dataset)
+        
         return ret_dv
     
     def central_wavelength(self, dataset, asMicrometers=False,
@@ -130,69 +169,51 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                                  name="central_wavelength", ad=dataset)
         return ret_dv
     
-    def detector_name(self, dataset, **args):
-        # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always construct a dictionary where the
-        # key of the dictionary is an (EXTNAME, EXTVER) tuple
-        ret_detector_name_dict = {}
-        
-        # Determine the name of the detector keyword (ccdname) from the global
-        # keyword dictionary
-        keyword = self.get_descriptor_key("key_detector_name")
+    def detector_name(self, dataset, pretty=False, **args):
+        # Determine the name of the detector keyword from the global keyword
+        # dictionary
+        keyword1 = self.get_descriptor_key("key_detector_name")
         
         # Get the value of the name of the detector keyword from the header of
-        # each pixel data extension as a dictionary where the key of the
-        # dictionary is an ("*", EXTVER) tuple
-        detector_name_dict = gmu.get_key_value_dict(dataset, keyword)
+        # the PHU
+        detector_name = dataset.phu_get_key_value(keyword1)
         
-        if detector_name_dict is None:
-            # It is possible that the data have been mosaiced, which means that
-            # the ccdname keyword no longer exists in the pixel data
-            # extensions. Instead, determine the detector ID keyword from the
-            # global keyword dictionary.
-            keyword = self.get_descriptor_key("key_phu_detector_name")
+        if detector_name is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
+        if pretty:
+            # Define relationship between the type of the detector and the
+            # pretty name of the detector
+            pretty_detector_name_dict = {
+                "SDSU II CCD": "EEV",
+                "SDSU II e2v DD CCD42-90": "e2vDD",
+                "S10892-01": "Hamamatsu",
+                }
             
-            # Get the value of the detector ID keyword from the header of the
-            # PHU 
-            phu_detector_name = dataset.phu_get_key_value(keyword)
+            # Determine the type of the detector keyword from the global
+            # keyword dictionary
+            keyword2 = self.get_descriptor_key("key_detector_type")
             
-            if phu_detector_name is None:
-                # The phu_get_key_value() functions return None if a value
-                # cannot be found and stores the exception info. Re-raise the
-                # exception. It will be dealt with by the CalculatorInterface.
-                if hasattr(dataset, "exception_info"):
-                    raise dataset.exception_info
+            # Get the value of the type of the detector keyword from the header
+            # of the PHU
+            detector_type = dataset.phu_get_key_value(keyword2)
             
-            # Loop over the pixel data extensions in the dataset
-            for ext in dataset[pixel_exts]:
-                
-                # Update the dictionary with the detector name value
-                ret_detector_name_dict.update({
-                    (ext.extname(), ext.extver()):phu_detector_name})
-            
-            if ret_detector_name_dict == {}:
-                # If the dictionary is still empty, the AstroData object has no
-                # pixel data extensions
-                raise Errors.CorruptDataError()
+            # Return the pretty name of the detector
+            if detector_type in pretty_detector_name_dict:
+                ret_detector_name = pretty_detector_name_dict[detector_type]
+            else:
+                raise Errors.TableKeyError()
         else:
-            ret_detector_name_dict = detector_name_dict
+            # Return the name of the detectory
+            ret_detector_name = detector_name
         
-        # Instantiate the DescriptorValue (DV) object
-        dv = DescriptorValue(ret_detector_name_dict)
-        
-        # Create a new dictionary where the key of the dictionary is the EXTVER
-        # integer
-        extver_dict = dv.collapse_by_extver()
-        
-        if not dv.validate_collapse_by_extver(extver_dict):
-            # The validate_collapse_by_extver function returns False if the
-            # values in the dictionary with the same EXTVER are not equal
-            raise Errors.CollapseError()
-        
-        # Instantiate the return DescriptorValue (DV) object using the newly
-        # created dictionary
-        ret_dv = DescriptorValue(extver_dict, name="detector_name", ad=dataset)
-        
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_detector_name, name="detector_name",
+                                 ad=dataset)
         return ret_dv
     
     def detector_rois_requested(self, dataset, **args):
@@ -214,7 +235,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # so make them into start and end pixels here
                 xs *= int(dataset.detector_x_bin())
                 ys *= int(dataset.detector_y_bin())
-                detector_rois_requested_list.append([x1, x1+xs-1, y1, y1+ys-1])
+                ret_detector_rois_requested_list.append(
+                  [x1, x1+xs-1, y1, y1+ys-1])
             else:
                 break
         
@@ -513,10 +535,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         else:
             # Get the lookup table containing the gain values by amplifier
-            gmosampsGain, gmosampsGainBefore20060831 = \
-                Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
-                                         "gmosampsGain",
-                                         "gmosampsGainBefore20060831")
+            gmosampsGain, gmosampsGainBefore20060831 = (
+              Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
+                                       "gmosampsGain",
+                                       "gmosampsGainBefore20060831"))
             
             # Determine the amplifier integration time keyword (ampinteg) from
             # the global keyword dictionary
@@ -542,12 +564,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             gain_setting_dict = dataset.gain_setting().as_dict()
             read_speed_setting = dataset.read_speed_setting().as_pytype()
             
-            if ut_date is None or read_speed_setting is None or \
-               gain_setting_dict is None:
+            if (ut_date is None or read_speed_setting is None or
+                gain_setting_dict is None):
                 # The descriptor functions return None if a value cannot be
-                # found and stores the exception info. Re-raise the
-                # exception. It will be dealt with by the
-                # CalculatorInterface.
+                # found and stores the exception info. Re-raise the exception.
+                # It will be dealt with by the CalculatorInterface.
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
             
@@ -719,8 +740,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Return the amp_read_area as an ordered list
         amp_read_area = dataset.amp_read_area().as_list()
         
-        if observation_id is None or detector_x_bin is None or \
-           detector_x_bin is None or amp_read_area is None:
+        if (observation_id is None or detector_x_bin is None or
+            detector_x_bin is None or amp_read_area is None):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
@@ -829,19 +850,19 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                                          "nominal_zeropoints")
         
         # Get the values of the gain, detector name and filter name using the
-        # appropriate descriptors. Use as_dict() and as_pytype() to
-        # return the values as a dictionary where the key of the dictionary is
-        # an ("*", EXTVER) tuple and the default python type, respectively,
-        # rather than an object.
+        # appropriate descriptors. Use as_dict() and as_pytype() to return the
+        # values as a dictionary where the key of the dictionary is an
+        # ("*", EXTVER) tuple and the default python type, respectively, rather
+        # than an object.
         gain_dict = dataset.gain().as_dict()
         detector_name_dict = dataset.detector_name().as_dict()
         filter_name = dataset.filter_name(pretty=True).as_pytype()
         
-        if gain_dict is None or detector_name_dict is None or \
-           filter_name is None:
-            # The descriptor functions return None if a value cannot be
-            # found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
+        if (gain_dict is None or detector_name_dict is None or
+            filter_name is None):
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
@@ -949,7 +970,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     def pixel_scale(self, dataset, **args):
         # Get the lookup table containing the pixel scale values
         gmosPixelScales = Lookups.get_lookup_table(
-            "Gemini/GMOS/GMOSPixelScale", "gmosPixelScales")
+          "Gemini/GMOS/GMOSPixelScale", "gmosPixelScales")
         
         # Get the values of the instrument and the binning of the y-axis using
         # the appropriate descriptors. Use as_pytype() to return the values as
@@ -965,8 +986,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # PHU
         detector_type = dataset.phu_get_key_value(keyword)
         
-        if instrument is None or detector_y_bin is None or \
-           detector_type is None:
+        if (instrument is None or detector_y_bin is None or
+            detector_type is None):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
@@ -1035,10 +1056,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             # Get the lookup table containing the read noise values by
             # amplifier
-            gmosampsRdnoise, gmosampsRdnoiseBefore20060831 = \
-                Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
-                                         "gmosampsRdnoise",
-                                         "gmosampsRdnoiseBefore20060831")
+            gmosampsRdnoise, gmosampsRdnoiseBefore20060831 = (
+              Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
+                                       "gmosampsRdnoise",
+                                       "gmosampsRdnoiseBefore20060831"))
             
             # Get the UT date, gain setting and read speed setting values using
             # the appropriate descriptors. Use as_dict() and as_pytype() to
@@ -1136,41 +1157,31 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         # Get the lookup table containing the saturation values by amplifier
         gmosThresholds = Lookups.get_lookup_table(
-            "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
+          "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
         
         # The hard limit for saturation is the controller digitization limit
         controller_limit = 65535
         
-        # Determine the detector type, the name of the bias image and the name
-        # of the dark image keywords from the global keyword dictionary
-        keyword1 = self.get_descriptor_key("key_detector_type")
-        keyword2 = self.get_descriptor_key("key_bias_image")
-        keyword3 = self.get_descriptor_key("key_dark_image")
+        # Determine the name of the bias image and the name of the dark image
+        # keywords from the global keyword dictionary 
+        keyword1 = self.get_descriptor_key("key_bias_image")
+        keyword2 = self.get_descriptor_key("key_dark_image")
         
-        # Get the value of the detector type, the name of the bias image and
-        # the name of the dark image keywords from the header of the PHU
-        detector_type = dataset.phu_get_key_value(keyword1)
-        
-        if detector_type is None:
-            # The phu_get_key_value() function returns None if a value cannot
-            # be found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, "exception_info"):
-                raise dataset.exception_info
-        
-        bias_image = dataset.phu_get_key_value(keyword2)
-        dark_image = dataset.phu_get_key_value(keyword3)
+        # Get the value of the the name of the bias image and the name of the
+        # dark image keywords from the header of the PHU 
+        bias_image = dataset.phu_get_key_value(keyword1)
+        dark_image = dataset.phu_get_key_value(keyword2)
         
         # Determine the name of the detector amplifier (ampname) and the
         # overscan value keywords from the global keyword dictionary
-        keyword4 = self.get_descriptor_key("key_ampname")
-        keyword5 = self.get_descriptor_key("key_overscan_value")
+        keyword3 = self.get_descriptor_key("key_ampname")
+        keyword4 = self.get_descriptor_key("key_overscan_value")
         
         # Get the value of the name of the detector amplifier, the overscan
         # value and the BUNIT keywords from the header of each pixel data
         # extension as a dictionary, where the key of the dictionary is an
         # ("*", EXTVER) tuple
-        ampname_dict = gmu.get_key_value_dict(dataset, keyword4)
+        ampname_dict = gmu.get_key_value_dict(dataset, keyword3)
         
         if ampname_dict is None:
             # The get_key_value_dict() function returns None if a value cannot
@@ -1179,34 +1190,23 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
-        overscan_dict = gmu.get_key_value_dict(dataset, keyword5)
+        overscan_dict = gmu.get_key_value_dict(dataset, keyword4)
         bunit_dict = gmu.get_key_value_dict(dataset, "BUNIT")
         
-        # Determine which kind of CCDs we're working with
-        # THIS SHOULD BE A DETECTOR_NAME DESCRIPTOR!
-        is_eev=False
-        is_e2vDD=False
-        is_hamamatsu=False
-        if detector_type=="SDSU II CCD":
-            is_eev = True
-        elif detector_type=="SDSU II e2v DD CCD42-90":
-            is_e2vDD = True
-        elif detector_type=="S10892-01":
-            is_hamamatsu = True
-        
-        # Get the gain and the binning of the x-axis and y-axis values using
-        # the appropriate descriptors. Use as_dict() to return the values as a
-        # dictionary where the key of the dictionary is an ("*", EXTVER) tuple,
-        # rather than an object.
+        # Get the name of the detector, the gain and the binning of the x-axis
+        # and y-axis values using the appropriate descriptors. Use as_dict() to
+        # return the values as a dictionary where the key of the dictionary is
+        # an ("*", EXTVER) tuple, rather than an object.
+        detector_name = dataset.detector_name(pretty=True)
         gain_dict = dataset.gain().as_dict()
         detector_x_bin = dataset.detector_x_bin()
         detector_y_bin = dataset.detector_y_bin()
         
-        if gain_dict is None or detector_x_bin is None or \
-           detector_y_bin is None:
-            # The descriptor functions return None if a value cannot be
-            # found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
+        if (detector_name is None or gain_dict is None or
+            detector_x_bin is None or detector_y_bin is None):
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
@@ -1233,15 +1233,16 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # The data still contains a bias level
                 data_contains_bias = True
             
-            if (not data_contains_bias) or \
-               (not is_eev and data_contains_bias and bin_factor <= 2):
+            if ((not data_contains_bias) or
+                (not detector_name == "EEV" and data_contains_bias and
+                 bin_factor <= 2)):
                 # Calculate the bias level
                 bias_level = gdc.get_bias_level(adinput=dataset, estimate=True)
             
             # Correct the controller limit for bias level and units
             processed_limit = controller_limit
             if not data_contains_bias:
-                processed_limit -= bias_level
+                processed_limit -= bias_level[ext_name_ver]
             
             # Check units of data (i.e., ADU vs. electrons)
             bunit = None
@@ -1250,7 +1251,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             if bunit == "electron" or bunit == "electrons":
                 processed_limit *= gain
             
-            if is_eev or bin_factor > 2:
+            if detector_name == "EEV" or bin_factor > 2:
                 # For old EEV CCDs, use the detector limit
                 saturation = processed_limit
             else:
@@ -1295,7 +1296,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if "IMAGE" in dataset.types:
             # If imaging, associate the filter name with a central wavelength
             filter_table = Lookups.get_lookup_table(
-                "Gemini/GMOS/GMOSFilterWavelength", "filter_wavelength")
+              "Gemini/GMOS/GMOSFilterWavelength", "filter_wavelength")
             filter = str(dataset.filter_name(pretty=True))
             if filter in filter_table:
                 ctrl_wave = filter_table[filter]

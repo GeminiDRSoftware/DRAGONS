@@ -1,6 +1,7 @@
 [
     DD("airmass", pytype=float),
     DD("amp_read_area", pytype=str),
+    DD("array_name", pytype=str),
     DD("array_section", pytype=list),
     DD("azimuth", pytype=float),
     DD("camera", pytype=str),
