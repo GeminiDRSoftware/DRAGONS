@@ -2361,18 +2361,22 @@ help      False     show help information    """
             # last choice, private one is None, but phu one isn't
             origFilename = phuOrigFilename
         return origFilename
-
+    
     def div(self, denominator):
         return arith.div(self,denominator)
-
+    div.__doc__ = arith.div.__doc__
+    
     def mult(self, input_b):
         return arith.mult(self,input_b)
+    mult.__doc__ = arith.mult.__doc__
     
     def add(self, input_b):
         return arith.add(self, input_b)
+    add.__doc__ = arith.add.__doc__
     
     def sub(self, input_b):
         return arith.sub(self, input_b)
+    sub.__doc__ = arith.sub.__doc__
     
 # SERVICE FUNCTIONS and FACTORIES
 def correlate(*iary):
