@@ -299,11 +299,10 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
                                          "nominal_zeropoints")
         
         # Get the values of the gain, detector name and filter name using the
-        # appropriate descriptors. Use get_value() and as_pytype() to
-        # return the values as a dictionary and the default python type,
-        # respectively, rather than an object.
-        gain = dataset.gain().get_value()
-        camera = dataset.camera().get_value()
+        # appropriate descriptors. Use as_pytype() to return the values as the
+        # default python type rather than an object.
+        gain = dataset.gain().as_pytype()
+        camera = dataset.camera().as_pytype()
         filter_name = dataset.filter_name(pretty=True).as_pytype()
         
         if gain is None or camera is None or filter_name is None:
