@@ -106,12 +106,13 @@ def determine_inputs(input_a=None, input_b=None):
             # Make sure that the pixel data arrays are same size/shape
             if (input_a[(SCI, extver)].data.shape !=
                 input_b[(SCI, extver)].data.shape):
-                raise Errors.Error(
-                  "The input science extensions %(input_a)s[%(SCI)s, "
-                  "%(EXTVER)d] and %(input_b)s[%(SCI)s, %(EXTVER)d] are not "
-                  "the same size" % (
+                msg = ("The input science extensions "
+                       "%(input_a)s[%(SCI)s,%(EXTVER)d] and "
+                       "%(input_b)s[%(SCI)s,%(EXTVER)d] are not the same "
+                       "size") % (
                     {"input_a": input_a.filename, "input_b":input_b.filename,
                      "SCI": SCI, "EXTVER": extver}))
+                raise Errors.Error(msg)
             
             # Return the AstroData object
             return_value = input_b
