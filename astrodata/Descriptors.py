@@ -12,10 +12,10 @@ class.
 
 @note: the calculator could be mixed into the AstroData instance, but this
 would mean that before mixing those functions are not available. We have opted
-the slightly more typing intensive (for ourselves the developers, not for users)
-solution of proxying descriptor access in AstroData member functions which then
-call the appropriate member function of the calculator associated with
-their dataset.
+the slightly more typing intensive (for ourselves the developers, not for
+users) solution of proxying descriptor access in AstroData member functions
+which then call the appropriate member function of the calculator associated
+with their dataset.
 """
 
 import datetime
@@ -38,10 +38,10 @@ def whoami():
 def whocalledme():
     return inspect.stack()[2][3]
           
-# NOTE: to address the issue of Descriptors module being a singleton, instead of the 
-# approach used for the ClassificationLibrary, we use the descriptors module
-# itself as the singleton and thus these module level "globals" which serve
-# the purpose of acting as a central location for Descriptor behavior.
+# NOTE: to address the issue of Descriptors module being a singleton, instead
+# of the approach used for the ClassificationLibrary, we use the descriptors
+# module itself as the singleton and thus these module level "globals" which
+# serve the purpose of acting as a central location for Descriptor behavior.
 
 firstrun = True
 
@@ -68,7 +68,7 @@ class DescriptorValue(object):
                         pytype = None,
                         unit = None,
                         primary_extname = "SCI"):
-        self._extver_dict = {}                
+        self._extver_dict = {}
         self._primary_extname=primary_extname
         # print "DV82:", repr(unit)
         
@@ -83,15 +83,15 @@ class DescriptorValue(object):
             self.pytype = pytype
         
         pytype = self.pytype
-
+        
         # unit logic
         if unit:
             self.unit = unit
         else:
             self.unit = Units.scaler
-
+        
         unit = self.unit
-
+        
         if isinstance(initval, dict):
             # process initval dicts keyed by int
             keys = initval.keys()
@@ -107,7 +107,7 @@ class DescriptorValue(object):
                 for key in keys:
                     newinitval[("*",key)] = initval[key]
                 initval = newinitval
-              
+            
             self.dict_val = initval
             val = None
         else:
@@ -115,7 +115,8 @@ class DescriptorValue(object):
             self.dict_val = {}
             if ad:
                 for ext in ad:
-                     self.dict_val.update({(ext.extname(),ext.extver()) : self._val})
+                    self.dict_val.update(
+                       {(ext.extname(),ext.extver()) : self._val})
             else:
                 self.dict_val = {("*",-1):self._val}
         #NOTE:
@@ -125,7 +126,7 @@ class DescriptorValue(object):
         #   in memory due to descriptor values persisting
         # DO NOT SAVE AD INSTANCE, we don't want AD instances kept 
         #   in memory due to descriptor values persisting
-       
+        
         self.name = name
         self.keyword = keyword
         
@@ -162,7 +163,7 @@ class DescriptorValue(object):
         #print "D145:",format
         # produce known formats
         retstr = "Unknown Format For DescriptorValue"
-        if  format == "as_dict":
+        if format == "as_dict":
             retstr = str(self.dict_val)
         elif format == "db" or format == "value":
             self.collapse_value()
@@ -173,14 +174,14 @@ class DescriptorValue(object):
                 if (format == "db"):
                     dv = self.dict_val
                     parts = []
-                                        
+                    
                     for k in dv:
                         name,ver = k
                         if name == self._primary_extname:
                             parts.append(dv[k])
-                    #p rint "D166:", repr(parts)        
+                    #print "D166:", repr(parts)
                     parts.sort()
-                    #p rint "D166:", repr(parts)
+                    #print "D166:", repr(parts)
                 else:
                     values = self.dict_val.values()
                     values.sort()
@@ -231,8 +232,8 @@ class DescriptorValue(object):
         if valid:
             return edict
         else:
-            return None    
-        
+            return None
+    
     def convert_value_to(self, new_units, new_type = None):
         # retval = self.unit.convert(self._val, new_units)
         newDict = copy(self.dict_val)
@@ -266,7 +267,7 @@ class DescriptorValue(object):
         if type(val) == tuple:
             val = str(val)
         return val
-
+    
     def as_pytype(self, as_type=None, convert_values=False):
         """This function will convert the DV instance to its pytype or
         any other type specified. Special handling is done for 
@@ -337,26 +338,29 @@ class DescriptorValue(object):
                 return self._val
     # alias
     for_numpy = as_pytype
-
+    
     # the as_<type> aliases
     def as_dict(self):
         return self.as_pytype(dict)
-
+    
     def as_list(self):
         return self.as_pytype(list)
     
     def as_str(self):
         return self.as_pytype(str)
-
+    
     def as_float(self):
         return self.as_pytype(float, convert_values=True)
-
-    def as_int(self):
-        return self.as_pytype(int, convert_values=True)        
     
-    def get_value(self, as_type=None, convert_values=False):
+    def as_int(self):
+        return self.as_pytype(int, convert_values=True)
+    
+    def get_input_value(self, as_type=None, convert_values=False):
         return self.originalinitval
-
+    
+    def get_value(self, extver=None):
+        return self.collapse_value(extver=extver)
+    
     def info(self):
         dvstr = ""
         print("\nDescriptor Value Info:")
@@ -387,7 +391,7 @@ class DescriptorValue(object):
         # print "primest = " ,primext
         if primext not in self.ext_names():
             primext = None
-        # print "ennames " ,self.ext_names()    
+        # print "ennames " ,self.ext_names()
         for key in self.dict_val:
             ext_name,ext_ver = key
             if extver and ext_ver != extver:
@@ -427,13 +431,13 @@ class DescriptorValue(object):
             if extver not in evers:
                 evers.append(extver)
         evers.sort()
-        return evers   
+        return evers
     
     def overloaded(self, other):
         val = self.collapse_value()
         
         if self._valid_collapse == False:
-            mes =  "DescriptorValue contains complex result (differs for"
+            mes = "DescriptorValue contains complex result (differs for"
             mes += "different extension) and cannot be used as a simple "
             mes += str(self.pytype)
             raise Errors.DescriptorValueTypeError(mes)
@@ -444,7 +448,8 @@ class DescriptorValue(object):
         
         if isinstance(other, DescriptorValue):
             other = other.as_pytype()
-        if True: # always try the following and let it raise #hasattr(val, myfuncname):
+        # always try the following and let it raise #hasattr(val, myfuncname):
+        if True:
             try:
                 op = None
                 hasop = eval('hasattr(self.%s,"operation")' % myfuncname)
@@ -461,13 +466,15 @@ class DescriptorValue(object):
                 # print "D296: I'm here"
                 raise Errors.DescriptorValueTypeError(str(e))
         else:
-            raise Errors.DescriptorValueTypeError("Unsupported operand, %s, for types %s and %s"
-                        % (myfuncname, str(self.pytype), str(type(other))))
+            raise Errors.DescriptorValueTypeError(
+              "Unsupported operand, %s, for types %s and %s"
+              % (myfuncname, str(self.pytype), str(type(other))))
         print "IMPOSSIBLE_ERROR_PROVED_POSSIBLE: please report"
 #        mytype = self.pytype
 #        if isinstance(other, DescriptorValue):
 #            other = other.as_pytype()
-#            #print "D282:", other, type(other), self.as_pytype(), type(self.as_pytype()), self.pytype
+#            #print ("D282:", other, type(other), self.as_pytype(),
+#                    type(self.as_pytype()), self.pytype)
 #        othertype = type(other)
 #        
 #        if mytype == float and othertype == int:
@@ -493,7 +500,6 @@ class DescriptorValue(object):
 #                otherfuncname = "__" + myfuncname[3:]
 #            else:
 #                otherfuncname = "__r"+myfuncname[2:]
-#
 #        
 #        #print "D273:", myfuncname, "->", otherfuncname
 #        if hasattr(self.as_pytype(), myfuncname):
@@ -506,15 +512,16 @@ class DescriptorValue(object):
 #            #print "D295:", evalstr
 #            retval = eval(evalstr)
 #            return retval
-#
-#        raise Errors.IncompatibleOperand("%s has no method %s" % (str(type(other)),otherfuncname))
+#        
+#        raise Errors.IncompatibleOperand(
+#          "%s has no method %s" % (str(type(other)),otherfuncname))
     
     
     def overloaded_cmp(self,other):
         val = self.collapse_value()
         
         if self._valid_collapse == False:
-            mes =  "DescriptorValue contains complex result (differs for "
+            mes = "DescriptorValue contains complex result (differs for "
             mes += "different extension) and cannot be used as a simple"
             mes += str(self.pytype)
             raise Errors.DescriptorValueTypeError(mes)
@@ -526,7 +533,7 @@ class DescriptorValue(object):
         
         if isinstance(other, DescriptorValue):
             other = other.as_pytype()
-
+        
         othertype = type(other)
         
         mine = self.as_pytype()
@@ -553,10 +560,10 @@ class DescriptorValue(object):
                 return retval
             except:
                 pass
-        raise Errors.IncompatibleOperand("%s has no method %s" % (str(type(other)),myfuncname))
+        raise Errors.IncompatibleOperand("%s has no method %s"
+                                         % (str(type(other)),myfuncname))
     
-
-    # overloaded operators (used for int and float)  
+    # overloaded operators (used for int and float)
     def __add__(self, other):
         return self.overloaded(other)
     __add__.operation = "val + other"
@@ -644,13 +651,13 @@ class DescriptorValue(object):
     __rlshift__.operation = "other << val"
     def __ror__(self, other):
         return self.overloaded(other)
-    __ror__.operation  = "other | val"
+    __ror__.operation = "other | val"
     def __rrshift__(self, other):
         return self.overloaded(other)
     __rrshift__.operation = "other >> val"
     def __rshift__(self, other):
         return self.overloaded(other)
-    __rshift__.operation  = "val >> other" 
+    __rshift__.operation = "val >> other" 
     def __rxor__(self, other):
         return self.overloaded(other)
     __rxor__.operation = "other ^ val"
@@ -686,7 +693,7 @@ if (True):
     # WALK the config space as a directory structure
     for root, dirn, files in config_walk(DESCRIPTORSPACE):
         if root not in sys.path:
-	        sys.path.append(root)
+            sys.path.append(root)
         if True:
             for dfile in files:
                 if (re.match(calculatorIndexREMask, dfile)):
@@ -695,12 +702,12 @@ if (True):
                     exec diFile
                     diFile.close()
                     # file must declare calculatorIndex = {}
-                
+                    
                     # note, it might be confusing to find out if
                     # one index entry stomps another... so I'm going to 
                     # check that this dict doesn't have keys already
                     # in the central dict
-                
+                    
                     for key in calculatorIndex.keys():
                         if key == "OBSERVED":
                             from astrodata import Errors
@@ -734,8 +741,8 @@ def get_calculator(dataset):
     """ This function gets the Calculator instance appropriate for 
     the specified dataset.
     Conflicts, arising from Calculators being associated with more than one
-    AstroData type classification, are resolved by traversing the type tree to see if one
-    type is a subtype of the other so the more specific type can be
+    AstroData type classification, are resolved by traversing the type tree to
+    see if one type is a subtype of the other so the more specific type can be
     used.
     @param dataset: the dataset to load a calculator for
     @type dataset: AstroData
@@ -777,7 +784,8 @@ def get_calculator(dataset):
                 foundcalcs.append(loadedCalculatorIndex[calctype])
             else:
                 #print "D674: loading", calctype
-                # if here we need to import and instantiate the basic calculator
+                # if here we need to import and instantiate the basic
+                # calculator 
                 # note: module name is first part of calc string
                 calcID = cfg[calctype]
                 modname = calcID.split(".")[0]
@@ -787,7 +795,8 @@ def get_calculator(dataset):
                 # print "D682:",modname, calcID
                 exec "import " + modname
                 calcClass = eval(calcID)
-                # add this calculator to the loadedCalculatorIndex (aka "calculator cache")
+                # add this calculator to the loadedCalculatorIndex (aka
+                # "calculator cache")
                 loadedCalculatorIndex.update({calctype: calcClass})
                 foundcalcs.append(calcClass)
                 
