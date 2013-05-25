@@ -109,7 +109,7 @@ def determine_inputs(input_a=None, input_b=None):
                 msg = ("The input science extensions "
                        "%(input_a)s[%(SCI)s,%(EXTVER)d] and "
                        "%(input_b)s[%(SCI)s,%(EXTVER)d] are not the same "
-                       "size") % (
+                       "size" % (
                     {"input_a": input_a.filename, "input_b":input_b.filename,
                      "SCI": SCI, "EXTVER": extver}))
                 raise Errors.Error(msg)
