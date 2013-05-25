@@ -6,6 +6,7 @@ import numpy as np
 from time import strptime
 
 from astrodata import Lookups
+from astrodata.gemconstants import SCI
 from gempy.gemini import gemini_metadata_utils as gmu
 
 def get_bias_level(adinput=None, estimate=True):
@@ -22,29 +23,33 @@ def _get_bias_level(adinput=None):
     the median of the overscan region
     """
     # Since this function accesses keywords in the headers of the pixel data
-    # extensions, always return a dictionary where the key of the dictionary is
-    # an (EXTNAME, EXTVER) tuple 
+    # extensions, always construct a dictionary where the key of the dictionary
+    # is an (EXTNAME, EXTVER) tuple 
     ret_bias_level = {}
     
-    # Assume that data has not yet been trimmed or processed to remove bias
-    # level, and that units are ADU
-    overscan_section_dict = adinput.overscan_section().as_dict()
+    # Get the overscan section value of the science extensions using the
+    # appropriate descriptor. Use as_dict() to return the value as a dictionary
+    # rather than an object.
+    overscan_section_dict = adinput[SCI].overscan_section().as_dict()
+    
     if overscan_section_dict is not None:
         
-        # The type of CCD determines the number of contaminated
-        # columns in the overscan region
-        detector_type = adinput.phu_get_key_value("DETTYPE")
-        if detector_type == "SDSU II CCD":
+        # The type of CCD determines the number of contaminated columns in the
+        # overscan region. Get the pretty detector name value using the
+        # appropriate descriptor.
+        detector_name = adinput.detector_name(pretty=True)
+        
+        if detector_name == "EEV":
             nbiascontam = 4
-        elif detector_type == "SDSU II e2v DD CCD42-90":
+        elif detector_name == "e2vDD":
             nbiascontam = 5
-        elif detector_type == "S10892-01":
+        elif detector_name == "Hamamastu":
             nbiascontam = 4
         else:
             nbiascontam = 4
         
-        for ext_name_ver, overscan_section in \
-          overscan_section_dict.iteritems():
+        os_dict = overscan_section_dict.iteritems()
+        for ext_name_ver, overscan_section in os_dict:
             
             # Don't include columns at edges
             if overscan_section[0] == 0:
@@ -85,22 +90,26 @@ def _get_bias_level_estimate(adinput=None):
     ret_bias_level = {}
     
     # Get the overscan value and the raw bias level from the header of each
-    # pixel data extension as a dictionary
+    # pixel data extension as a dictionary where the key of the dictionary is
+    # an ("*", EXTVER) tuple
     overscan_value_dict = gmu.get_key_value_dict(adinput, "OVERSCAN")
     raw_bias_level_dict = gmu.get_key_value_dict(adinput, "RAWBIAS")
     
     if overscan_value_dict is None:
+        
         # If there is no overscan value for any extensions, use the raw bias
         # level value as the value for the bias level
         if raw_bias_level_dict is None:
+            
             # If there is no raw bias level value for any extensions, use the
             # static bias levels from the lookup table as the value for the
             # bias level
             ret_bias_level = _get_static_bias_level(adinput=adinput)
         else:
             # Use the raw bias level value as the value for the bias level
-            for ext_name_ver, raw_bias_level in \
-              raw_bias_level_dict.iteritems():
+            rbl_dict = raw_bias_level_dict.iteritems()
+            for ext_name_ver, raw_bias_level in rbl_dict:
+                
                 if raw_bias_level is None:
                     # If the raw bias level does not exist for a given
                     # extension, use the static bias levels from the lookup
@@ -115,10 +124,12 @@ def _get_bias_level_estimate(adinput=None):
     else:
         for ext_name_ver, overscan_value in overscan_value_dict.iteritems():
             if overscan_value is None:
+                
                 # If the overscan value does not exist for a given extension,
                 # use the raw bias level value from the header as the value for
                 # the bias level
                 if raw_bias_level_dict is None:
+                    
                     # If there is no raw bias level value for any extensions,
                     # use the static bias levels from the lookup table as the
                     # value for the bias level 
@@ -127,6 +138,7 @@ def _get_bias_level_estimate(adinput=None):
                 else:
                     raw_bias_level = raw_bias_level_dict[ext_name_ver]
                     if raw_bias_level is None:
+                        
                         # If the raw bias level does not exist for a given 
                         # extension, use the static bias levels from the lookup
                         # table as the value for the bias level 
@@ -163,19 +175,19 @@ def _get_static_bias_level(adinput=None):
         "gmosampsBiasBefore20060831")
     
     # Get the UT date, read speed setting and gain setting values using the
-    # appropriate descriptors. Use as_pytype() and get_value() to return the
+    # appropriate descriptors. Use as_pytype() and as_dict() to return the
     # values as the default python type and a dictionary, respectively, rather
     # than an object.
     ut_date = str(adinput.ut_date())
     read_speed_setting = adinput.read_speed_setting().as_pytype()
-    gain_setting_dict = adinput.gain_setting().get_value()
+    gain_setting_dict = adinput.gain_setting().as_dict()
     
     # Get the name of the detector amplifier from the header of each pixel data
     # extension as a dictionary
     ampname_dict = gmu.get_key_value_dict(adinput, "AMPNAME")
     
-    if ut_date is not None and read_speed_setting is not None and \
-      gain_setting_dict is not None and ampname_dict is not None:
+    if (ut_date is not None and read_speed_setting is not None and
+        gain_setting_dict is not None and ampname_dict is not None):
         
         obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
@@ -202,6 +214,7 @@ def _get_static_bias_level(adinput=None):
     else:
         unique_values = set(static_bias_level.values())
         if len(unique_values) == 1 and None in unique_values:
+            
             # The bias level was not found for any of the pixel data extensions
             # (all the values in the dictionary are equal to None)
             ret_static_bias_level = None
@@ -220,20 +233,19 @@ def _get_static_bias_level_for_ext(adinput=None):
         "gmosampsBiasBefore20060831")
     
     # Get the UT date, read speed setting and gain setting values using the
-    # appropriate descriptors. Use as_pytype() and get_value() to return the
-    # values as the default python type and a dictionary, respectively, rather
-    # than an object.
+    # appropriate descriptors. Use as_pytype() to return the values as the
+    # default python type rather than an object.
     ut_date = str(adinput.ut_date())
     read_speed_setting = adinput.read_speed_setting().as_pytype()
-    gain_setting = adinput.gain_setting()
+    gain_setting = adinput.gain_setting().as_pytype()
     
     # Get the name of the detector amplifier from the header of each pixel data
     # extension as a dictionary
     ampname = adinput.get_key_value("AMPNAME")
     
     ret_static_bias_level = None
-    if ut_date is not None and read_speed_setting is not None and \
-      gain_setting is not None and ampname is not None:
+    if (ut_date is not None and read_speed_setting is not None and
+        gain_setting is not None and ampname is not None):
         
         obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
