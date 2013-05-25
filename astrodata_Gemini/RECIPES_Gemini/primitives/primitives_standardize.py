@@ -5,6 +5,7 @@ from astrodata import AstroData
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import logutils
+from astrodata.gemconstants import SCI, VAR, DQ
 from astrodata.ConfigSpace import lookup_path
 from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
@@ -14,6 +15,7 @@ class StandardizePrimitives(GENERALPrimitives):
     This is the class containing all of the primitives used to standardize an
     AstroData object. It inherits all the primitives from the
     'GENERALPrimitives' class.
+    
     """
     astrotype = "GENERAL"
     
@@ -39,6 +41,7 @@ class StandardizePrimitives(GENERALPrimitives):
                     provided, the primitive will attempt to determine an
                     appropriate BPM.
         :type bpm: string or list of strings
+        
         """
         # Instantiate the log
         log = logutils.get_logger(__name__)
@@ -110,30 +113,27 @@ class StandardizePrimitives(GENERALPrimitives):
                                                aux_type="bpm")[0]
             
             # Get the non-linear level and the saturation level using the
-            # appropriate descriptors. Use as_dict() to return a dictionary
-            # rather than an object, where the key of the dictionary is an
-            # (EXTNAME, EXTVER) tuple
-            non_linear_level_dict = ad.non_linear_level().as_dict()
-            saturation_level_dict = ad.saturation_level().as_dict()
+            # appropriate descriptors
+            non_linear_level_dv = ad.non_linear_level()
+            saturation_level_dv = ad.saturation_level()
             
             # Loop over each science extension in each input AstroData object
-            for ext in ad["SCI"]:
+            for ext in ad[SCI]:
                 
-                # Retrieve the extension name and number for this extension
-                extname = ext.extname()
+                # Retrieve the extension number for this extension
                 extver = ext.extver()
                 
                 # Check whether an extension with the same name as the DQ
                 # AstroData object already exists in the input AstroData object
-                if ad["DQ", extver]:
-                    log.warning("A [DQ,%d] extension already exists in %s"
-                                % (extver, ad.filename))
+                if ad[DQ, extver]:
+                    log.warning("A [%s,%d] extension already exists in %s"
+                                % (DQ, extver, ad.filename))
                     continue
                 
                 # Get the non-linear level and the saturation level for this
                 # extension
-                non_linear_level = non_linear_level_dict[(extname, extver)]
-                saturation_level = saturation_level_dict[(extname, extver)]
+                non_linear_level = non_linear_level_dv.get_value(extver=extver)
+                saturation_level = saturation_level_dv.get_value(extver=extver)
                 
                 # Create an array that contains pixels that have a value of 2
                 # when that pixel is in the non-linear regime in the input
@@ -142,8 +142,8 @@ class StandardizePrimitives(GENERALPrimitives):
                 if non_linear_level is not None:
                     log.fullinfo("Flagging pixels in the DQ extension "
                                  "corresponding to non linear pixels in "
-                                 "%s[SCI,%d] using non linear level = %d" %
-                                 (ad.filename, extver, non_linear_level))
+                                 "%s[%s,%d] using non linear level = %d" %
+                                 (ad.filename, SCI, extver, non_linear_level))
                     non_linear_array = np.where(
                         ((ext.data >= non_linear_level) &
                         (ext.data < saturation_level)), 2, 0)
@@ -155,21 +155,21 @@ class StandardizePrimitives(GENERALPrimitives):
                 if saturation_level is not None:
                     log.fullinfo("Flagging pixels in the DQ extension "
                                  "corresponding to saturated pixels in "
-                                 "%s[SCI,%d] using saturation level = %d" %
-                                 (ad.filename, extver, saturation_level))
+                                 "%s[%s,%d] using saturation level = %d" %
+                                 (ad.filename, SCI, extver, saturation_level))
                     saturation_array = np.where(
                         ext.data >= saturation_level, 4, 0)
                     
                     for_dq_array.append(saturation_array)
                 
-                # BPMs have an EXTNAME equal to "DQ"
+                # BPMs have an EXTNAME equal to DQ
                 if final_bpm is not None:
                     bpmname = os.path.basename(final_bpm.filename)
                     log.fullinfo("Flagging pixels in the DQ extension "
-                                 "corresponding to bad pixels in %s[SCI,%d] "
-                                 "using the BPM %s[DQ,%d]" %
-                                 (ad.filename, extver, bpmname, extver))
-                    bpm_array = final_bpm["DQ", extver].data
+                                 "corresponding to bad pixels in %s[%s,%d] "
+                                 "using the BPM %s[%s,%d]" % (
+                        ad.filename, SCI, extver, bpmname, DQ, extver))
+                    bpm_array = final_bpm[DQ, extver].data
                     
                     for_dq_array.append(bpm_array)
                 else:
@@ -205,7 +205,7 @@ class StandardizePrimitives(GENERALPrimitives):
                 
                 # Create a data quality AstroData object
                 dq = AstroData(header=pf.Header(), data=dq_array)
-                dq.rename_ext("DQ", ver=extver)
+                dq.rename_ext(DQ, ver=extver)
                 dq.filename = ad.filename
                 
                 # Call the _update_dq_header helper function to update the
@@ -214,8 +214,8 @@ class StandardizePrimitives(GENERALPrimitives):
                 dq = self._update_dq_header(sci=ext, dq=dq, bpmname=bpmname)
                 
                 # Append the DQ AstroData object to the input AstroData object
-                log.fullinfo("Adding extension [DQ,%d] to %s"
-                             % (extver, ad.filename))
+                log.fullinfo("Adding extension [%s,%d] to %s"
+                             % (DQ, extver, ad.filename))
                 ad.append(moredata=dq)
             
             # Add the appropriate time stamps to the PHU
@@ -245,6 +245,7 @@ class StandardizePrimitives(GENERALPrimitives):
         
         :param mdf: The file name of the MDF(s) to be added to the input(s)
         :type mdf: string
+        
         """
         # Instantiate the log
         log = logutils.get_logger(__name__)
@@ -433,6 +434,7 @@ class StandardizePrimitives(GENERALPrimitives):
         :param poisson_noise: set to True to add the Poisson noise component
                               of the variance to the variance extension
         :type poisson_noise: Python boolean
+        
         """
         # Instantiate the log
         log = logutils.get_logger(__name__)
@@ -468,8 +470,9 @@ class StandardizePrimitives(GENERALPrimitives):
             if poisson_noise and "BIAS" in ad.types:
                 log.warning("It is not recommended to add a poisson noise "
                             "component to the variance of a bias frame")
-            if poisson_noise and "GMOS" in ad.types and not \
-               ad.phu_get_key_value(self.timestamp_keys["subtractBias"]):
+            if (poisson_noise and "GMOS" in ad.types and not
+                ad.phu_get_key_value(self.timestamp_keys["subtractBias"])):
+                
                 log.warning("It is not recommended to calculate a poisson "
                             "noise component of the variance using data that "
                             "still contains a bias level")
@@ -500,6 +503,7 @@ class StandardizePrimitives(GENERALPrimitives):
         This primitive is used to add a time stamp keyword to the PHU of the
         AstroData object and update the AstroData type, allowing the output
         AstroData object to be recognised as PREPARED.
+        
         """
         # Instantiate the log
         log = logutils.get_logger(__name__)
@@ -549,8 +553,9 @@ class StandardizePrimitives(GENERALPrimitives):
         detector_x_bin = ad.detector_x_bin()
         detector_y_bin = ad.detector_y_bin()
         
-        if instrument is None or detector_x_bin is None or \
-           detector_y_bin is None:
+        if (instrument is None or detector_x_bin is None or
+            detector_y_bin is None):
+            
             raise Errors.Error("Input parameters")
         
         key = "%s_%s_%s" % (instrument, detector_x_bin, detector_y_bin)
@@ -601,8 +606,7 @@ class StandardizePrimitives(GENERALPrimitives):
                 mos = ""
             
             # Get version required
-            # So far, there is only one version.  This may
-            # change someday.
+            # So far, there is only one version. This may change someday.
             ver = "v1"
             
             # Create the key
@@ -615,24 +619,22 @@ class StandardizePrimitives(GENERALPrimitives):
         """
         The _calculate_var helper function is used to calculate the variance
         and add a variance extension to the single input AstroData object.
+        
         """
         # Instantiate the log
         log = logutils.get_logger(__name__)
         
         # Get the gain and the read noise using the appropriate descriptors.
-        # Use as_dict() to return a dictionary rather than an object, where the
-        # key of the dictionary is an (EXTNAME, EXTVER) tuple
-        gain_dict = adinput.gain().as_dict()
-        read_noise_dict = adinput.read_noise().as_dict()
-
+        gain_dv = adinput.gain()
+        read_noise_dv = adinput.read_noise()
+        
         # Set the data type of the final variance array
         var_dtype = np.dtype(np.float32)
         
         # Loop over the science extensions in the dataset
-        for ext in adinput["SCI"]:
+        for ext in adinput[SCI]:
             
-            # Retrieve the extension name and number for this extension
-            extname = ext.extname()
+            # Retrieve the extension number for this extension
             extver = ext.extver()
             
             # Determine the units of the pixel data in the input science
@@ -641,9 +643,9 @@ class StandardizePrimitives(GENERALPrimitives):
             if bunit == "adu":
                 # Get the gain value using the appropriate descriptor. The gain
                 # is only if the units are in ADU
-                gain = gain_dict[(extname, extver)]
-                log.fullinfo("Gain for %s[SCI,%d] = %f"
-                             % (adinput.filename, extver, gain))
+                gain = gain_dv.get_value(extver=extver)
+                log.fullinfo("Gain for %s[%s,%d] = %f"
+                             % (adinput.filename, SCI, extver, gain))
                 units = "ADU"
             elif bunit == "electron" or bunit == "electrons":
                 units = "electrons"
@@ -655,10 +657,10 @@ class StandardizePrimitives(GENERALPrimitives):
             if add_read_noise:
                 # Get the read noise value (in units of electrons) using the
                 # appropriate descriptor. The read noise is only used if
-                # add_read_noise is True 
-                read_noise = read_noise_dict[(extname, extver)]
-                log.fullinfo("Read noise for %s[SCI,%d] = %f"
-                             % (adinput.filename, extver, read_noise))
+                # add_read_noise is True
+                read_noise = read_noise_dv.get_value(extver=extver)
+                log.fullinfo("Read noise for %s[%s,%d] = %f"
+                             % (adinput.filename, SCI, extver, read_noise))
                 
                 # Determine the variance value to use when calculating the read
                 # noise component of the variance.
@@ -698,14 +700,13 @@ class StandardizePrimitives(GENERALPrimitives):
             if not add_read_noise and add_poisson_noise:
                 var_array_final = var_array_pn
             
-            # Recast 
             var_array_final = var_array_final.astype(var_dtype)
             
             # If the read noise component and the poisson noise component are
             # calculated and added separately, then a variance extension will
             # already exist in the input AstroData object. In this case, just
             # add this new array to the current variance extension
-            if adinput["VAR", extver]:
+            if adinput[VAR, extver]:
                 
                 # If both the read noise component and the poisson noise
                 # component have been calculated, don't add to the variance
@@ -718,14 +719,14 @@ class StandardizePrimitives(GENERALPrimitives):
                 else:
                     log.fullinfo("Combining the newly calculated variance "
                                  "with the current variance extension "
-                                 "%s[VAR,%d]" % (adinput.filename, extver))
-                    adinput["VAR", extver].data = np.add(
-                                         adinput["VAR", extver].data, 
-                                         var_array_final).astype(var_dtype)
+                                 "%s[%s,%d]" % (adinput.filename, VAR, extver))
+                    adinput[VAR, extver].data = np.add(
+                      adinput[VAR, extver].data, var_array_final).astype(
+                      var_dtype)
             else:
                 # Create the variance AstroData object
                 var = AstroData(header=pf.Header(), data=var_array_final)
-                var.rename_ext("VAR", ver=extver)
+                var.rename_ext(VAR, ver=extver)
                 var.filename = adinput.filename
                 
                 # Call the _update_var_header helper function to update the
@@ -734,8 +735,8 @@ class StandardizePrimitives(GENERALPrimitives):
                 
                 # Append the variance AstroData object to the input AstroData
                 # object. 
-                log.fullinfo("Adding the [VAR,%d] extension to the input "
-                             "AstroData object %s" % (extver,
+                log.fullinfo("Adding the [%s,%d] extension to the input "
+                             "AstroData object %s" % (VAR, extver,
                                                       adinput.filename))
                 adinput.append(moredata=var)
         
@@ -744,12 +745,12 @@ class StandardizePrimitives(GENERALPrimitives):
     def _update_dq_header(self, sci=None, dq=None, bpmname=None):
         # Add the physical units keyword
         gt.update_key(adinput=dq, keyword="BUNIT", value="bit", comment=None,
-                      extname="DQ")
+                      extname=DQ)
         
         # Add the name of the bad pixel mask
         if bpmname is not None:
             gt.update_key(adinput=dq, keyword="BPMNAME", value=bpmname,
-                          comment=None, extname="DQ")
+                          comment=None, extname=DQ)
         
         # These should probably be done using descriptors (?)
         keywords_from_sci = [
@@ -757,7 +758,7 @@ class StandardizePrimitives(GENERALPrimitives):
           "CD1_1", "CD1_2", "CD2_1", "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1",
           "CRVAL2", "CTYPE1", "CTYPE2", "DATASEC", "DETSEC", "EXPTIME", "GAIN",
           "GAINSET", "NONLINEA", "RDNOISE", "SATLEVEL"] 
-        dq_comment = "Copied from ['SCI',%d]" % (sci.extver())
+        dq_comment = "Copied from ['%s',%d]" % (SCI, sci.extver())
         
         for keyword in keywords_from_sci:
             # Check if the keyword exists in the header of the input science
@@ -765,7 +766,7 @@ class StandardizePrimitives(GENERALPrimitives):
             keyword_value = sci.get_key_value(key=keyword)
             if keyword_value is not None:
                 gt.update_key(adinput=dq, keyword=keyword, value=keyword_value,
-                              comment=dq_comment, extname="DQ")
+                              comment=dq_comment, extname=DQ)
         
         return dq
     
@@ -773,7 +774,7 @@ class StandardizePrimitives(GENERALPrimitives):
         # Add the physical units keyword
         if bunit is not None:
             gt.update_key(adinput=var, keyword="BUNIT", value="%s*%s"
-                          % (bunit, bunit), comment=None, extname="VAR")
+                          % (bunit, bunit), comment=None, extname=VAR)
         
         # These should probably be done using descriptors (?)
         keywords_from_sci = [
@@ -781,7 +782,7 @@ class StandardizePrimitives(GENERALPrimitives):
           "CD1_1", "CD1_2", "CD2_1", "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1",
           "CRVAL2", "CTYPE1", "CTYPE2", "DATASEC", "DETSEC", "EXPTIME", "GAIN",
           "GAINSET", "NONLINEA", "RDNOISE", "SATLEVEL"]
-        var_comment = "Copied from ['SCI',%d]" % (sci.extver())
+        var_comment = "Copied from ['%s',%d]" % (SCI, sci.extver())
         
         for keyword in keywords_from_sci:
             # Check if the keyword exists in the header of the input science
@@ -790,6 +791,6 @@ class StandardizePrimitives(GENERALPrimitives):
             if keyword_value is not None:
                 gt.update_key(adinput=var, keyword=keyword,
                               value=keyword_value, comment=var_comment,
-                              extname="VAR")
+                              extname=VAR)
         
         return var
