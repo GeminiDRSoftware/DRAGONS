@@ -1,3 +1,4 @@
+import numpy as np
 from astrodata.adutils import logutils
 from gempy.adlibrary.manipulate_ad import remove_single_length_dimension
 from gempy.gemini import gemini_tools as gt
