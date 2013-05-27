@@ -133,7 +133,7 @@ def filternameFrom(filters):
     
     return filtername
 
-def get_key_value_dict(dataset, keyword):
+def get_key_value_dict(dataset=None, keyword=None, dict_key_extver=False):
     """
     The get_key_value_dict() function works similarly to the AstroData
     get_key_value() and phu_get_key_value() member functions in that if the
@@ -148,7 +148,7 @@ def get_key_value_dict(dataset, keyword):
     keyword_value_dict = {}
     
     return_dictionary = False
-        
+    
     # Loop over the pixel data extensions in the dataset
     for ext in dataset[pixel_exts]:
         
@@ -190,11 +190,16 @@ def get_key_value_dict(dataset, keyword):
             # values in the dictionary with the same EXTVER are not equal
             raise Errors.CollapseError()
         
-        # Instantiate a new DV object using the newly created dictionary and
-        # get the dictionary where the key of the dictionary is an
-        # ("*", EXTVER) tuple
-        new_dv = DescriptorValue(extver_dict)
-        ret_dict = new_dv.as_dict()
+        if dict_key_extver:
+            # Return the dictionary where the key of the dictionary is an
+            # EXTVER integer
+            ret_dict = extver_dict
+        else:
+            # Instantiate a new DV object using the newly created dictionary
+            # and get the dictionary where the key of the dictionary is an
+            # ("*", EXTVER) tuple
+            new_dv = DescriptorValue(extver_dict)
+            ret_dict = new_dv.as_dict()
         
         return ret_dict
     
