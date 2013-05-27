@@ -247,7 +247,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 bias_level = gdc.get_bias_level(adinput=ad, estimate=False)
             
             gt.update_key(adinput=ad, keyword="RAWBIAS", value=bias_level,
-                          comment=None, extname="SCI")
+                          comment=None, extname="pixel_exts")
             
             # Saturation level
             gt.update_key_from_descriptor(
