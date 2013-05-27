@@ -7,6 +7,7 @@ import urllib2
 import pyfits as pf
 import numpy as np
 import tempfile
+import astrodata
 from astrodata import AstroData
 from astrodata import Errors
 from astrodata import Lookups
@@ -527,7 +528,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
 
                 # Get the section information for this extension
                 # from the dictionary formed above
-                dict_key = (sciext.extname(),sciext.extver())
+                dict_key = ("*",sciext.extver())
                 sci_detsec = sci_detsec_dict[dict_key]
                 sci_datasec = sci_datasec_dict[dict_key]
                 sci_arraysec = sci_arraysec_dict[dict_key]
@@ -562,7 +563,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
                 for auxext in this_aux[extname]:
                     
                     # Get the section information for this extension
-                    dict_key = (auxext.extname(),auxext.extver())
+                    dict_key = ("*",auxext.extver())
                     aux_detsec = aux_detsec_dict[dict_key]
                     aux_datasec = aux_datasec_dict[dict_key]
                     aux_arraysec = aux_arraysec_dict[dict_key]
@@ -1878,9 +1879,10 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
                     raise Errors.Error(
                       "The dictionary provided to the 'value' parameter "
                       "contains an unknown key")
-            else:
-                # value is a DescriptorValue (DV) object
+            elif isinstance(value, astrodata.Descriptors.DescriptorValue):
                 value_for_ext = value.get_value(extver=extver)
+            else:
+                value_for_ext = value
             
             # Check to see whether the keyword is already in the specified
             # extension
