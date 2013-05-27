@@ -12,6 +12,7 @@ from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import logutils
 from astrodata.ConfigSpace import lookup_path
+from astrodata.structuredslice import pixel_exts, bintable_exts
 from gempy.library import astrotools as at
 
 # Load the standard comments for header keywords that will be updated
@@ -1831,6 +1832,8 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
     if extname is None:
         raise Errors.Error("No extension name provided")
     if extname != "PHU":
+        if extname == "pixel_exts":
+            extname = pixel_exts
         if not ad[extname]:
             raise Errors.Error("Extension %s does not exist in %s"
                                % (extname, ad.filename))
@@ -1857,13 +1860,27 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
                                                   ad.filename))
     
     else:
+        # Loop over each input AstroData object in the input list
         for ext in ad[extname]:
+            
+            # Retrieve the extension number for this extension
             extname = ext.extname()
             extver = ext.extver()
-            if type(value) is dict:
-                val = value[(extname, extver)]
+            
+            if isinstance(value, dict):
+                # The key of the dictionary could be an (EXTNAME, EXTVER) tuple
+                # or an EXTVER integer
+                if (extname, extver) in value:
+                    value_for_ext = value[(extname, extver)]
+                elif extver in value:
+                    value_for_ext = value[extver]
+                else:
+                    raise Errors.Error(
+                      "The dictionary provided to the 'value' parameter "
+                      "contains an unknown key")
             else:
-                val = value
+                # value is a DescriptorValue (DV) object
+                value_for_ext = value.get_value(extver=extver)
             
             # Check to see whether the keyword is already in the specified
             # extension
@@ -1877,10 +1894,10 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
                 msg = "added to"
             
             # Add or update the keyword value and comment
-            if val is not None:
-                ext.set_key_value(keyword, val, comment)
+            if value_for_ext is not None:
+                ext.set_key_value(keyword, value_for_ext, comment)
                 log.fullinfo("%s,%s keyword %s=%s %s %s" % (
-                  extname, extver, keyword, val, msg, ad.filename))
+                  extname, extver, keyword, value_for_ext, msg, ad.filename))
 
 def update_key_from_descriptor(adinput=None, descriptor=None, keyword=None,
                                extname=None):
@@ -1927,17 +1944,7 @@ def update_key_from_descriptor(adinput=None, descriptor=None, keyword=None,
     if key is None:
         raise Errors.Error("No keyword found for descriptor %s" % descriptor)
     
-    if extname == "PHU":
-        # Use as_pytype() to return the value of the descriptor as the default
-        # python type, rather than an object. 
-        value = dv.as_pytype()
-    else:
-        # Use as_dict() to return the value of the descriptor as a dictionary,
-        # rather than an object, where the key of the dictionary is an
-        # (EXTNAME, EXTVER) tuple 
-        value = dv.as_dict()
-    
-    update_key(adinput=ad, keyword=key, value=value, comment=None,
+    update_key(adinput=ad, keyword=key, value=dv, comment=None,
                extname=extname) 
 
 def validate_input(adinput=None):
