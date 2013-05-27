@@ -13,6 +13,7 @@ from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import logutils
 from astrodata.ConfigSpace import lookup_path
+from astrodata.gemconstants import SCI, VAR, DQ
 from astrodata.structuredslice import pixel_exts, bintable_exts
 from gempy.library import astrotools as at
 
@@ -149,7 +150,7 @@ def array_information(adinput=None):
             arrayinfo = {}
 
             # Get the number of science extensions
-            nsciext = ad.count_exts("SCI")
+            nsciext = ad.count_exts(SCI)
 
             # Get the correct order of the extensions by sorting on
             # the first element in detector section
@@ -186,7 +187,7 @@ def array_information(adinput=None):
             amps_per_array = {}
             num_array = 0
             for i in ampsorder:
-                sciext = ad["SCI",i]
+                sciext = ad[SCI,i]
                 this_detx1 = detx1[i-1]
                 this_arrayx1 = arrayx1[i-1]
                 
@@ -371,7 +372,7 @@ def check_inputs_match(ad1=None, ad2=None, check_filter=True):
             log.error('Inputs have different numbers of SCI extensions.')
             raise Errors.ToolboxError('Mismatching number of SCI ' \
                                       'extensions in inputs')
-        for sciA in A["SCI"]:
+        for sciA in A[SCI]:
             # grab matching SCI extensions from A's and B's
             extCount = sciA.extver()
             sciB = B[('SCI',extCount)]
@@ -400,15 +401,16 @@ def check_inputs_match(ad1=None, ad2=None, check_filter=True):
                     raise Errors.ToolboxError('Extensions have different ' +
                                               'filters')
         
-        log.fullinfo('Inputs match')    
+        log.fullinfo('Inputs match')
 
 
 def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
     """
     This function clips auxiliary data like calibration files or BPMs
-    to the size of the data section in the science.  It will pad auxiliary
+    to the size of the data section in the science. It will pad auxiliary
     data if required to match un-overscan-trimmed data, but otherwise
     requires that the auxiliary data contain the science data.
+    
     """
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
@@ -418,204 +420,187 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
     # returns a list containing one or more AstroData objects
     adinput = validate_input(adinput=adinput)
     aux = validate_input(adinput=aux)
-
+    
     # Create a dictionary that has the AstroData objects specified by adinput
     # as the key and the AstroData objects specified by aux as the value
     aux_dict = make_dict(key_list=adinput, value_list=aux)
     
     # Initialize the list of output AstroData objects
     aux_output_list = []
- 
+    
     try:
-        
         # Check aux_type parameter for valid value
         if aux_type is None:
             raise Errors.InputError("The aux_type parameter must not be None")
-
-        # If dealing with BPMs, relevant extensions are DQ;
-        # otherwise use SCI
+        
+        # If dealing with BPMs, relevant extensions are DQ; otherwise use SCI
         aux_type = aux_type.lower()
-        if aux_type=="bpm":
-            extname = "DQ"
+        if aux_type == "bpm":
+            extname = DQ
         else:
-            extname = "SCI"
-
+            extname = SCI
+        
         # Loop over each input AstroData object in the input list
         for ad in adinput:
-
+            
             # Get the associated auxiliary file
             this_aux = aux_dict[ad]
-
+            
             # Make a new blank auxiliary file for appending to
             new_aux = AstroData()
             new_aux.filename = this_aux.filename
             new_aux.phu = this_aux.phu
-
-            # Get the necessary section information from descriptors
-            # This should be done outside the loop over extensions
-            # for efficiency
-
-            # For the science file
-            sci_detsec_dv = ad.detector_section()
-            if sci_detsec_dv is None:
-                raise Errors.InputError("Input file %s does " \
-                                        "not have a detector section" %
-                                        ad.filename)
-            else:
-                detsec_kw = sci_detsec_dv.keyword
-                sci_detsec_dict = sci_detsec_dv.dict_val
-
-            sci_datasec_dv = ad.data_section()
-            if sci_datasec_dv is None:
-                raise Errors.InputError("Input file %s does " \
-                                        "not have a data section" %
-                                        ad.filename)
-            else:
-                datasec_kw = sci_datasec_dv.keyword
-                sci_datasec_dict = sci_datasec_dv.dict_val
-
-            sci_arraysec_dv = ad.array_section()
-            if sci_arraysec_dv is None:
-                raise Errors.InputError("Input file %s does " \
-                                        "not have an array section" %
-                                        ad.filename)
-            else:
-                arraysec_kw = sci_arraysec_dv.keyword
-                sci_arraysec_dict = sci_arraysec_dv.dict_val
-
-            sci_xbin_dv = ad.detector_x_bin()
-            if sci_xbin_dv is None:
-                raise Errors.InputError("Input file %s does " \
-                                        "not have an x-binning" %
-                                        ad.filename)
-            else:
-                sci_xbin_dict = sci_xbin_dv.dict_val
-
-            sci_ybin_dv = ad.detector_y_bin()
-            if sci_ybin_dv is None:
-                raise Errors.InputError("Input file %s does " \
-                                        "not have a y-binning" %
-                                        ad.filename)
-            else:
-                sci_ybin_dict = sci_ybin_dv.dict_val
-
-            # For the auxiliary file
-            aux_detsec_dv = this_aux.detector_section(extname=extname)
-            if aux_detsec_dv is None:
-                raise Errors.InputError("Input file %s does " \
-                                        "not have a detector section" %
-                                        ad.filename)
-            else:
-                aux_detsec_dict = aux_detsec_dv.dict_val
-
-            aux_datasec_dv = this_aux.data_section(extname=extname)
-            if aux_datasec_dv is None:
-                raise Errors.InputError("Input file %s does " \
-                                        "not have a data section" %
-                                        ad.filename)
-            else:
-                aux_datasec_dict = aux_datasec_dv.dict_val
-
-            aux_arraysec_dv = this_aux.array_section(extname=extname)
-            if aux_arraysec_dv is None:
-                raise Errors.InputError("Input file %s does " \
-                                        "not have an array section" %
-                                        ad.filename)
-            else:
-                aux_arraysec_dict = aux_arraysec_dv.dict_val
             
-            for sciext in ad["SCI"]:
-
-                # Get the section information for this extension
-                # from the dictionary formed above
-                dict_key = ("*",sciext.extver())
-                sci_detsec = sci_detsec_dict[dict_key]
-                sci_datasec = sci_datasec_dict[dict_key]
-                sci_arraysec = sci_arraysec_dict[dict_key]
-
+            # Get the detector section, data section, array section and the
+            # binning of the x-axis and y-axis values for the science AstroData
+            # object using the appropriate descriptors
+            science_detector_section_dv = ad.detector_section()
+            science_data_section_dv = ad.data_section()
+            science_array_section_dv = ad.array_section()
+            science_detector_x_bin_dv = ad.detector_x_bin()
+            science_detector_y_bin_dv = ad.detector_y_bin()
+            
+            if (science_detector_section_dv is None or
+                science_data_section_dv is None or
+                science_array_section_dv is None or
+                science_detector_x_bin_dv is None or
+                science_detector_y_bin_dv is None):
+                # The descriptor functions return None if a value cannot be
+                # found and stores the exception info. Re-raise the exception.
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
+            
+            # Get the associated keyword for the detector section, data
+            # section and array section from the DescriptorValue (DV) object
+            detector_section_keyword = science_detector_section_dv.keyword
+            data_section_keyword = science_data_section_dv.keyword
+            array_section_keyword = science_array_section_dv.keyword
+            
+            # Get the detector section, data section and array section values
+            # for the auxiliary AstroData object using the appropriate
+            # descriptors
+            aux_detector_section_dv = this_aux[extname].detector_section()
+            aux_data_section_dv = this_aux[extname].data_section()
+            aux_array_section_dv = this_aux[extname].array_section()
+            
+            for sciext in ad[SCI]:
+                
+                # Retrieve the extension number for this extension
+                science_extver = sciext.extver()
+                
+                # Get the section information for this extension from the DV
+                science_detector_section = (
+                  science_detector_section_dv.get_value(extver=science_extver))
+                science_data_section = (
+                  science_data_section_dv.get_value(extver=science_extver))
+                science_array_section = (
+                  science_array_section_dv.get_value(extver=science_extver))
+                
                 # Array section is unbinned; to use as indices for
                 # extracting data, need to divide by the binning
-                xbin = sci_xbin_dict[dict_key]
-                ybin = sci_ybin_dict[dict_key]
-                sci_arraysec = [sci_arraysec[0]/xbin,
-                                sci_arraysec[1]/xbin,
-                                sci_arraysec[2]/ybin,
-                                sci_arraysec[3]/ybin]
+                science_detector_x_bin = (
+                  science_detector_x_bin_dv.get_value(extver=science_extver))
+                science_detector_y_bin = (
+                  science_detector_y_bin_dv.get_value(extver=science_extver))
                 
-
+                science_array_section = [
+                  science_array_section[0] / science_detector_x_bin,
+                  science_array_section[1] / science_detector_x_bin,
+                  science_array_section[2] / science_detector_y_bin,
+                  science_array_section[3] / science_detector_y_bin]
+                
                 # Check whether science data has been overscan-trimmed
-                sci_shape = sciext.data.shape
-                if (sci_shape[1]==sci_datasec[1] and 
-                    sci_shape[0]==sci_datasec[3] and
-                    sci_datasec[0]==0 and
-                    sci_datasec[2]==0):
-                    sci_trimmed = True
-                    sci_offsets = [0,0,0,0]
+                science_shape = sciext.data.shape
+                if (science_shape[1] == science_data_section[1] and
+                    science_shape[0] == science_data_section[3] and
+                    science_data_section[0] == 0 and
+                    science_data_section[2] == 0):
+                    
+                    science_trimmed = True
+                    science_offsets = [0,0,0,0]
                 else:
-                    sci_trimmed = False
-
+                    science_trimmed = False
+                    
                     # Offsets give overscan regions on either side of data:
                     # [left offset, right offset, bottom offset, top offset]
-                    sci_offsets = [sci_datasec[0],sci_shape[1]-sci_datasec[1],
-                                   sci_datasec[2],sci_shape[0]-sci_datasec[3]]
-
+                    science_offsets = [
+                      science_data_section[0],
+                      science_shape[1] - science_data_section[1],
+                      science_data_section[2],
+                      science_shape[0] - science_data_section[3]]
+                
                 found = False
                 for auxext in this_aux[extname]:
                     
-                    # Get the section information for this extension
-                    dict_key = ("*",auxext.extver())
-                    aux_detsec = aux_detsec_dict[dict_key]
-                    aux_datasec = aux_datasec_dict[dict_key]
-                    aux_arraysec = aux_arraysec_dict[dict_key]
-
+                    # Retrieve the extension number for this extension
+                    aux_extver = auxext.extver()
+                    
+                    # Get the section information for this extension from the
+                    # DV 
+                    aux_detector_section = (
+                      aux_detector_section_dv.get_value(extver=aux_extver))
+                    aux_data_section = (
+                      aux_data_section_dv.get_value(extver=aux_extver))
+                    aux_array_section = (
+                      aux_array_section_dv.get_value(extver=aux_extver))
+                    
                     # Array section is unbinned; to use as indices for
                     # extracting data, need to divide by the binning
-                    aux_arraysec = [aux_arraysec[0]/xbin,
-                                    aux_arraysec[1]/xbin,
-                                    aux_arraysec[2]/ybin,
-                                    aux_arraysec[3]/ybin]
-
+                    aux_array_section = [
+                      aux_array_section[0] / science_detector_x_bin,
+                      aux_array_section[1] / science_detector_x_bin,
+                      aux_array_section[2] / science_detector_y_bin,
+                      aux_array_section[3] / science_detector_y_bin]
+                    
                     # Check whether auxiliary detector section contains
                     # science detector section
-                    if (aux_detsec[0] <= sci_detsec[0] and # x lower
-                        aux_detsec[1] >= sci_detsec[1] and # x upper
-                        aux_detsec[2] <= sci_detsec[2] and # y lower
-                        aux_detsec[3] >= sci_detsec[3]):   # y upper
-
+                    if (aux_detector_section[0] <=
+                        science_detector_section[0] and # x lower
+                        aux_detector_section[1] >=
+                        science_detector_section[1] and # x upper
+                        aux_detector_section[2] <=
+                        science_detector_section[2] and # y lower
+                        aux_detector_section[3] >=
+                        science_detector_section[3]):   # y upper
+                        
                         # Auxiliary data contains or is equal to science data
-                        found=True
+                        found = True
                     else:
                         continue
-
+                    
                     # Check whether auxiliary data has been overscan-trimmed
                     aux_shape = auxext.data.shape
-                    if (aux_shape[1]==aux_datasec[1] and 
-                        aux_shape[0]==aux_datasec[3] and
-                        aux_datasec[0]==0 and
-                        aux_datasec[2]==0):
+                    if (aux_shape[1] == aux_data_section[1] and 
+                        aux_shape[0] == aux_data_section[3] and
+                        aux_data_section[0] == 0 and
+                        aux_data_section[2] == 0):
+                        
                         aux_trimmed = True
                         aux_offsets = [0,0,0,0]
                     else:
                         aux_trimmed = False
-
+                        
                         # Offsets give overscan regions on either side of data:
-                        # [left offset, right offset, bottom offset, top offset]
-                        aux_offsets = [aux_datasec[0],
-                                       aux_shape[1]-aux_datasec[1],
-                                       aux_datasec[2],
-                                       aux_shape[0]-aux_datasec[3]]
-
+                        # [left offset, right offset, bottom offset, top
+                        # offset]
+                        aux_offsets = [aux_data_section[0],
+                                       aux_shape[1] - aux_data_section[1],
+                                       aux_data_section[2],
+                                       aux_shape[0] - aux_data_section[3]]
+                    
                     # Define data extraction region corresponding to science
                     # data section (not including overscan)
-                    x_translation = sci_arraysec[0] - sci_datasec[0] \
-                                    - aux_arraysec[0] + aux_datasec[0]
-                    y_translation = sci_arraysec[2] - sci_datasec[2] \
-                                    - aux_arraysec[2] + aux_datasec[2]
-                    region = [sci_datasec[2] + y_translation,
-                              sci_datasec[3] + y_translation,
-                              sci_datasec[0] + x_translation,
-                              sci_datasec[1] + x_translation]
-
+                    x_translation = (
+                      science_array_section[0] - science_data_section[0] -
+                      aux_array_section[0] + aux_data_section[0])
+                    y_translation = (
+                      science_array_section[2] - science_data_section[2] -
+                      aux_array_section[2] + aux_data_section[2])
+                    region = [science_data_section[2] + y_translation,
+                              science_data_section[3] + y_translation,
+                              science_data_section[0] + x_translation,
+                              science_data_section[1] + x_translation]
+                    
                     # Deepcopy auxiliary SCI plane
                     # and auxiliary VAR/DQ planes if they exist
                     # (in the non-BPM case)
@@ -625,25 +610,25 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
                     # deepcopy, the original auxiliary extension
                     # gets clipped
                     ext_to_clip = [deepcopy(auxext)]
-                    if aux_type!="bpm":
-                        varext = this_aux["VAR",auxext.extver()]
+                    if aux_type != "bpm":
+                        varext = this_aux[VAR,aux_extver]
                         if varext is not None:
                             ext_to_clip.append(deepcopy(varext))
                             
-                        dqext = this_aux["DQ",auxext.extver()]
+                        dqext = this_aux[DQ,aux_extver]
                         if dqext is not None:
                             ext_to_clip.append(deepcopy(dqext))
-
+                    
                     # Clip all relevant extensions
                     for ext in ext_to_clip:
-
+                        
                         # Pull out specified region
                         clipped = ext.data[region[0]:region[1],
                                            region[2]:region[3]]
                         
                         # Stack with overscan region if needed
-                        if aux_trimmed and not sci_trimmed:
-
+                        if aux_trimmed and not science_trimmed:
+                            
                             # Pad DQ planes with zeros to match
                             # science shape
                             # Note: this only allows an overscan
@@ -651,29 +636,29 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
                             # If there ends up being more
                             # than one for some instrument, this code
                             # will have to be revised.
-                            if aux_type=="bpm":
-                                if sci_offsets[0]>0:
+                            if aux_type == "bpm":
+                                if science_offsets[0] > 0:
                                     # Left-side overscan
-                                    overscan = np.zeros((sci_shape[0],
-                                                         sci_offsets[0]),
+                                    overscan = np.zeros((science_shape[0],
+                                                         science_offsets[0]),
                                                         dtype=np.int16)
                                     ext.data = np.hstack([overscan,clipped])
-                                elif sci_offsets[1]>0:
+                                elif science_offsets[1] > 0:
                                     # Right-side overscan
-                                    overscan = np.zeros((sci_shape[0],
-                                                         sci_offsets[1]),
+                                    overscan = np.zeros((science_shape[0],
+                                                         science_offsets[1]),
                                                         dtype=np.int16)
                                     ext.data = np.hstack([clipped,overscan])
-                                elif sci_offsets[2]>0:
+                                elif science_offsets[2] > 0:
                                     # Bottom-side overscan
-                                    overscan = np.zeros((sci_offsets[2],
-                                                         sci_shape[1]),
+                                    overscan = np.zeros((science_offsets[2],
+                                                         science_shape[1]),
                                                         dtype=np.int16)
                                     ext.data = np.vstack([clipped,overscan])
-                                elif sci_offsets[3]>0:
+                                elif science_offsets[3] > 0:
                                     # Top-side overscan
-                                    overscan = np.zeros((sci_offsets[3],
-                                                         sci_shape[1]),
+                                    overscan = np.zeros((science_offsets[3],
+                                                         science_shape[1]),
                                                         dtype=np.int16)
                                     ext.data = np.vstack([overscan,clipped])
                             else:
@@ -681,108 +666,116 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
                                 # can't be meaningfully matched to untrimmed
                                 # science data
                                 raise Errors.ScienceError(
-                                    "Auxiliary data %s is trimmed, but " \
+                                    "Auxiliary data %s is trimmed, but "
                                     "science data %s is untrimmed." %
                                     (auxext.filename,sciext.filename))
-
-                        elif not sci_trimmed:
+                        
+                        elif not science_trimmed:
                             
                             # Pick out overscan region corresponding
                             # to data section from auxiliary data
-                            if aux_offsets[0]>0:
-                                if aux_offsets[0]!=sci_offsets[0]:
+                            if aux_offsets[0] > 0:
+                                if aux_offsets[0] != science_offsets[0]:
                                     raise Errors.ScienceError(
-                                        "Overscan regions do not match in " \
+                                        "Overscan regions do not match in "
                                         "%s, %s" % 
                                         (auxext.filename,sciext.filename))
-
+                                
                                 # Left-side overscan: height is full ylength,
                                 # width comes from 0 -> offset
                                 overscan = ext.data[region[0]:region[1],
                                                     0:aux_offsets[0]]
                                 ext.data = np.hstack([overscan,clipped])
-
-                            elif aux_offsets[1]>0:
-                                if aux_offsets[1]!=sci_offsets[1]:
+                            
+                            elif aux_offsets[1] > 0:
+                                if aux_offsets[1] != science_offsets[1]:
                                     raise Errors.ScienceError(
-                                        "Overscan regions do not match in " \
+                                        "Overscan regions do not match in "
                                         "%s, %s" % 
                                         (auxext.filename,sciext.filename))
-
+                                
                                 # Right-side overscan: height is full ylength,
                                 # width comes from xlength-offset -> xlength
                                 overscan = ext.data[region[0]:region[1],
-                                    aux_shape[1]-aux_offsets[1]:aux_shape[1]]
+                                    aux_shape[1] - aux_offsets[1]:aux_shape[1]]
                                 ext.data = np.hstack([clipped,overscan])
-
-                            elif aux_offsets[2]>0: 
-                                if aux_offsets[2]!=sci_offsets[2]:
+                            
+                            elif aux_offsets[2] > 0: 
+                                if aux_offsets[2]!=science_offsets[2]:
                                     raise Errors.ScienceError(
-                                        "Overscan regions do not match in " \
+                                        "Overscan regions do not match in "
                                         "%s, %s" % 
                                         (auxext.filename,sciext.filename))
-
+                                
                                 # Bottom-side overscan: width is full xlength,
                                 # height comes from 0 -> offset
                                 overscan = ext.data[0:aux_offsets[2],
                                                     region[2]:region[3]]
                                 ext.data = np.vstack([clipped,overscan])
-
-                            elif aux_offsets[3]>0:
-                                if aux_offsets[3]!=sci_offsets[3]:
+                            
+                            elif aux_offsets[3] > 0:
+                                if aux_offsets[3] != science_offsets[3]:
                                     raise Errors.ScienceError(
-                                        "Overscan regions do not match in " \
+                                        "Overscan regions do not match in "
                                         "%s, %s" % 
                                         (auxext.filename,sciext.filename))
-
+                                
                                 # Top-side overscan: width is full xlength,
                                 # height comes from ylength-offset -> ylength
                                 overscan = ext.data[
-                                    aux_shape[0]-aux_offsets[3]:aux_shape[0],
+                                    aux_shape[0] - aux_offsets[3]:aux_shape[0],
                                     region[2]:region[3]]
                                 ext.data = np.vstack([overscan,clipped])
-
+                        
                         else:
                             # No overscan needed, just use the clipped region
                             ext.data = clipped
-
+                        
                         # Set the section keywords as appropriate
-                        if sciext.get_key_value(datasec_kw) is not None:
-                            ext.set_key_value(datasec_kw,
-                                              sciext.header[datasec_kw],
-                                              keyword_comments[datasec_kw])
-                        if sciext.get_key_value(detsec_kw) is not None:
-                            ext.set_key_value(detsec_kw,
-                                              sciext.header[detsec_kw],
-                                              keyword_comments[detsec_kw])
-                        if sciext.get_key_value(arraysec_kw) is not None:
-                            ext.set_key_value(arraysec_kw,
-                                              sciext.header[arraysec_kw],
-                                              keyword_comments[arraysec_kw])
-        
+                        data_section_value = sciext.get_key_value(
+                          data_section_keyword)
+                        if data_section_value is not None:
+                            ext.set_key_value(
+                              data_section_keyword,
+                              sciext.header[data_section_keyword],
+                              keyword_comments[data_section_keyword])
+                        
+                        detector_section_value = sciext.get_key_value(
+                          detector_section_keyword)
+                        if detector_section_value is not None:
+                            ext.set_key_value(
+                              detector_section_keyword,
+                              sciext.header[detector_section_keyword],
+                              keyword_comments[detector_section_keyword])
+                        
+                        array_section_value = sciext.get_key_value(
+                          array_section_keyword)
+                        if array_section_value is not None:
+                            ext.set_key_value(
+                              array_section_keyword,
+                              sciext.header[array_section_keyword],
+                              keyword_comments[array_section_keyword])
+                        
                         # Rename the auxext to the science extver
-                        ext.rename_ext(name=ext.extname(),ver=sciext.extver())
+                        ext.rename_ext(name=ext.extname(),ver=science_extver)
                         new_aux.append(ext)
-
+                
                 if not found:
-                    raise Errors.ScienceError("No auxiliary data in %s "\
-                                              "matches the detector section "\
-                                              "%s in %s[SCI,%d]" % 
-                                              (this_aux.filename,
-                                               sci_detsec,
-                                               ad.filename,
-                                               sciext.extver()))
-
+                    raise Errors.ScienceError(
+                      "No auxiliary data in %s matches the detector section "
+                      "%s in %s[%s,%d]" % (this_aux.filename, sci_detsec,
+                                           ad.filename, SCI, sciext.extver()))
+            
             new_aux.refresh_types()
             aux_output_list.append(new_aux)
-
-        return aux_output_list    
-
+        
+        return aux_output_list
+    
     except:
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
         raise
-                    
+
 def clip_sources(ad):
     """
     This function takes the source data from the OBJCAT and returns the best
@@ -793,7 +786,7 @@ def clip_sources(ad):
     """
 
     good_source = {}
-    for sciext in ad["SCI"]:
+    for sciext in ad[SCI]:
         extver = sciext.extver()
 
         objcat = ad["OBJCAT",extver]
@@ -880,7 +873,7 @@ def clip_sources(ad):
             rec = rec[(data<mean+sigma) & (data>mean-sigma)]
 
         # Store data
-        good_source[("SCI",extver)] = rec
+        good_source[(SCI,extver)] = rec
 
     return good_source
 
@@ -1012,7 +1005,7 @@ def convert_to_cal_header(adinput=None, caltype=None):
             # Do the same for each SCI,VAR,DQ extension
             # as well as the object name
             for ext in ad:
-                if ext.extname() not in ["SCI","VAR","DQ"]:
+                if ext.extname() not in [SCI,VAR,DQ]:
                     continue
                 if ext.get_key_value("CRVAL1") is not None:
                     ext.set_key_value("CRVAL1",0.0,keyword_comments["CRVAL1"])
@@ -1180,11 +1173,11 @@ def fit_continuum(ad):
     # Ignore spectrum if mean not >.9*std
     s2n_self = 0.9
 
-    for sciext in ad["SCI"]:
+    for sciext in ad[SCI]:
         extver = sciext.extver()
 
-        if ad["DQ",extver] is not None:
-            dqdata = ad["DQ",extver].data
+        if ad[DQ,extver] is not None:
+            dqdata = ad[DQ,extver].data
         else:
             dqdata = None
 
@@ -1275,7 +1268,7 @@ def fit_continuum(ad):
         #print rec["fwhm"].mean(),rec["fwhm_arcsec"].mean()
 
         # Store data
-        good_source[("SCI",extver)] = rec
+        good_source[(SCI,extver)] = rec
 
     return good_source
 
@@ -1312,7 +1305,7 @@ def fitsstore_report(ad, rc, metric, info_dict):
         # more information than measureIQ accesses
         source_data = clip_sources(ad)
 
-    for sciext in ad["SCI"]:
+    for sciext in ad[SCI]:
         key = ('SCI',sciext.extver())
 
         # Empty qametric dictionary to build into
@@ -1638,7 +1631,7 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
     out_basename = os.path.basename(output_name)
     out_basename,filetype = os.path.splitext(out_basename)
 
-    for sciext in ad["SCI"]:
+    for sciext in ad[SCI]:
         extver = sciext.extver()
 
         record_name = basename + "_%0.3d" % extver
@@ -1680,12 +1673,12 @@ def trim_to_data_section(adinput=None):
 
         for ad in adinput:
 
-            for sciext in ad["SCI"]:
+            for sciext in ad[SCI]:
                 
                 # Get matching VAR, DQ, OBJMASK planes if present
                 extver = sciext.extver()
-                varext = ad["VAR",extver]
-                dqext = ad["DQ",extver]
+                varext = ad[VAR,extver]
+                dqext = ad[DQ,extver]
                 objmask = ad["OBJMASK",extver]
                 
                 # Get the data section from the descriptor
@@ -1771,7 +1764,7 @@ def trim_to_data_section(adinput=None):
                             ext.set_key_value("NAXIS2",dsl[3]-dsl[2],
                                           comment=keyword_comments["NAXIS2"])
                             # Skip the rest for object masks
-                            if ext.extname() in ["VAR","DQ"]:
+                            if ext.extname() in [VAR,DQ]:
                                 # Set section keywords
                                 ext.set_key_value(ds_kw,newDataSecStr,
                                             comment=keyword_comments[ds_kw])
@@ -1785,7 +1778,7 @@ def trim_to_data_section(adinput=None):
 
             adoutput_list.append(ad)
 
-        return adoutput_list    
+        return adoutput_list
 
     except:
         # Log the message from the exception
@@ -1855,9 +1848,14 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
         else:
             msg = "added to"
         
+        if isinstance(value, astrodata.Descriptors.DescriptorValue):
+            value_for_phu = value.as_pytype()
+        else:
+            value_for_phu = value
+        
         # Add or update the keyword value and comment
-        ad.phu_set_key_value(keyword, value, comment)
-        log.fullinfo("PHU keyword %s=%s %s %s" % (keyword, value, msg,
+        ad.phu_set_key_value(keyword, value_for_phu, comment)
+        log.fullinfo("PHU keyword %s=%s %s %s" % (keyword, value_for_phu, msg,
                                                   ad.filename))
     
     else:
@@ -1977,7 +1975,7 @@ def write_database(ad, database_name=None, input_name=None):
     basename = os.path.basename(input_name)
     basename,filetype = os.path.splitext(basename)
 
-    for sciext in ad["SCI"]:
+    for sciext in ad[SCI]:
         record_name = basename + "_%0.3d" % sciext.extver()
         wavecal_table = ad["WAVECAL",sciext.extver()]
         if wavecal_table is None:
