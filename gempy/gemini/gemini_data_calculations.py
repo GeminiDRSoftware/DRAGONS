@@ -19,18 +19,26 @@ def get_bias_level(adinput=None, estimate=True):
     
 def _get_bias_level(adinput=None):
     """
-    Determine the bias level value from GMOS data. The bias level is equal to
-    the median of the overscan region
+    Determine the bias level value from the science extensions of the input
+    AstroData object. The bias level is equal to the median of the overscan
+    region.
     """
     # Since this function accesses keywords in the headers of the pixel data
     # extensions, always construct a dictionary where the key of the dictionary
-    # is an (EXTNAME, EXTVER) tuple 
+    # is an EXTVER integer
     ret_bias_level = {}
     
-    # Get the overscan section value of the science extensions using the
-    # appropriate descriptor. Use as_dict() to return the value as a dictionary
-    # rather than an object.
-    overscan_section_dict = adinput[SCI].overscan_section().as_dict()
+    # Get the overscan section value using the appropriate descriptor
+    overscan_section_dv = adinput.overscan_section()
+    
+    # Create a dictionary where the key of the dictionary is an EXTVER integer
+    overscan_section_dict = overscan_section_dv.collapse_by_extver()
+    
+    if not overscan_section_dv.validate_collapse_by_extver(
+      overscan_section_dict):
+        # The validate_collapse_by_extver function returns False if the values
+        # in the dictionary with the same EXTVER are not equal 
+        raise Errors.CollapseError()
     
     if overscan_section_dict is not None:
         
@@ -48,8 +56,7 @@ def _get_bias_level(adinput=None):
         else:
             nbiascontam = 4
         
-        os_dict = overscan_section_dict.iteritems()
-        for ext_name_ver, overscan_section in os_dict:
+        for extver, overscan_section in overscan_section_dict.iteritems():
             
             # Don't include columns at edges
             if overscan_section[0] == 0:
@@ -62,13 +69,13 @@ def _get_bias_level(adinput=None):
                 overscan_section[1] -= 1
             
             # Extract overscan data. In numpy arrays, y indices come first.
-            overdata = adinput[ext_name_ver].data[
+            overdata = adinput[SCI,extver].data[
               overscan_section[2]:overscan_section[3],
               overscan_section[0]:overscan_section[1]]
             bias_level = np.median(overdata)
             
             # Update the dictionary with the bias level value
-            ret_bias_level.update({ext_name_ver: bias_level})
+            ret_bias_level.update({extver: bias_level})
         
         unique_values = set(ret_bias_level.values())
         if len(unique_values) == 1 and None in unique_values:
@@ -85,16 +92,17 @@ def _get_bias_level_estimate(adinput=None):
     Determine an estiamte of the bias level value from GMOS data.
     """
     # Since this function accesses keywords in the headers of the pixel data
-    # extensions, always return a dictionary where the key of the dictionary is
-    # an (EXTNAME, EXTVER) tuple 
+    # extensions, always construct a dictionary where the key of the dictionary
+    # is an EXTVER integer
     ret_bias_level = {}
     
     # Get the overscan value and the raw bias level from the header of each
     # pixel data extension as a dictionary where the key of the dictionary is
-    # an ("*", EXTVER) tuple
-    overscan_value_dict = gmu.get_key_value_dict(adinput, "OVERSCAN")
-    raw_bias_level_dict = gmu.get_key_value_dict(adinput, "RAWBIAS")
-    
+    # an EXTVER integer
+    overscan_value_dict = gmu.get_key_value_dict(adinput, "OVERSCAN",
+                                                 dict_key_extver=True)
+    raw_bias_level_dict = gmu.get_key_value_dict(adinput, "RAWBIAS",
+                                                 dict_key_extver=True)
     if overscan_value_dict is None:
         
         # If there is no overscan value for any extensions, use the raw bias
@@ -107,22 +115,21 @@ def _get_bias_level_estimate(adinput=None):
             ret_bias_level = _get_static_bias_level(adinput=adinput)
         else:
             # Use the raw bias level value as the value for the bias level
-            rbl_dict = raw_bias_level_dict.iteritems()
-            for ext_name_ver, raw_bias_level in rbl_dict:
+            for extver, raw_bias_level in raw_bias_level_dict.iteritems():
                 
                 if raw_bias_level is None:
                     # If the raw bias level does not exist for a given
                     # extension, use the static bias levels from the lookup
                     # table as the value for the bias level
                     bias_level = _get_static_bias_level_for_ext(
-                      adinput=adinput[ext_name_ver])
+                      adinput=adinput[SCI,extver])
                 else:
                     bias_level = raw_bias_level
                 
                 # Update the dictionary with the bias level value
-                ret_bias_level.update({ext_name_ver: bias_level})
+                ret_bias_level.update({extver: bias_level})
     else:
-        for ext_name_ver, overscan_value in overscan_value_dict.iteritems():
+        for extver, overscan_value in overscan_value_dict.iteritems():
             if overscan_value is None:
                 
                 # If the overscan value does not exist for a given extension,
@@ -134,16 +141,16 @@ def _get_bias_level_estimate(adinput=None):
                     # use the static bias levels from the lookup table as the
                     # value for the bias level 
                     bias_level = _get_static_bias_level_for_ext(
-                      adinput=adinput, ext_name_ver=ext_name_ver)
+                      adinput=adinput[SCI,extver])
                 else:
-                    raw_bias_level = raw_bias_level_dict[ext_name_ver]
+                    raw_bias_level = raw_bias_level_dict[extver]
                     if raw_bias_level is None:
                         
                         # If the raw bias level does not exist for a given 
                         # extension, use the static bias levels from the lookup
                         # table as the value for the bias level 
                         bias_level = _get_static_bias_level_for_ext(
-                          adinput=adinput, ext_name_ver=ext_name_ver)
+                          adinput=adinput[SCI,extver])
                     else:
                         bias_level = raw_bias_level
             else:
@@ -165,8 +172,8 @@ def _get_static_bias_level(adinput=None):
     Determine the static bias level value from GMOS data.
     """
     # Since this function accesses keywords in the headers of the pixel data
-    # extensions, always return a dictionary where the key of the dictionary is
-    # an (EXTNAME, EXTVER) tuple 
+    # extensions, always construct a dictionary where the key of the dictionary
+    # is an EXTVER integer
     static_bias_level = {}
     
     # Get the static bias level lookup table
@@ -180,11 +187,20 @@ def _get_static_bias_level(adinput=None):
     # than an object.
     ut_date = str(adinput.ut_date())
     read_speed_setting = adinput.read_speed_setting().as_pytype()
-    gain_setting_dict = adinput.gain_setting().as_dict()
+    gain_setting_dv = adinput.gain_setting()
+    
+    # Create a dictionary where the key of the dictionary is an EXTVER integer
+    gain_setting_dict = gain_setting_dv.collapse_by_extver()
+    
+    if not gain_setting_dv.validate_collapse_by_extver(gain_setting_dict):
+        # The validate_collapse_by_extver function returns False if the values
+        # in the dictionary with the same EXTVER are not equal 
+        raise Errors.CollapseError()
     
     # Get the name of the detector amplifier from the header of each pixel data
     # extension as a dictionary
-    ampname_dict = gmu.get_key_value_dict(adinput, "AMPNAME")
+    ampname_dict = gmu.get_key_value_dict(adinput, "AMPNAME",
+                                          dict_key_extver=True)
     
     if (ut_date is not None and read_speed_setting is not None and
         gain_setting_dict is not None and ampname_dict is not None):
@@ -192,8 +208,8 @@ def _get_static_bias_level(adinput=None):
         obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
         
-        for ext_name_ver, gain_setting in gain_setting_dict.iteritems():
-            ampname = ampname_dict[ext_name_ver]
+        for extver, gain_setting in gain_setting_dict.iteritems():
+            ampname = ampname_dict[extver]
             
             bias_key = (read_speed_setting, gain_setting, ampname)
             
@@ -206,7 +222,7 @@ def _get_static_bias_level(adinput=None):
                     bias_level = gmosampsBiasBefore20060831[bias_key]
             
             # Update the dictionary with the bias level value
-            static_bias_level.update({ext_name_ver: bias_level})
+            static_bias_level.update({extver: bias_level})
     
     if len(static_bias_level) == 1:
         # Only one value will be returned
