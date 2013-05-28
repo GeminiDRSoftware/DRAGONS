@@ -67,8 +67,9 @@ class PreprocessPrimitives(GENERALPrimitives):
             log.status("Converting %s from ADU to electrons by multiplying by "
                        "the gain" % (ad.filename))
             for ext in ad[SCI]:
-                log.status("  gain for [%s,%d] = %s" %
-                           (SCI, ext.extver(), gain))
+                extver = ext.extver()
+                log.stdinfo("  gain for [%s,%d] = %s" %
+                            (SCI, extver, gain.get_value(extver=extver)))
             ad = ad.mult(gain)
             
             # Update the headers of the AstroData Object. The pixel data now
