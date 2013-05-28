@@ -7,6 +7,7 @@ from astrodata import AstroData
 from astrodata import Errors
 from astrodata import ReductionContextRecords as RCR
 from astrodata.adutils import logutils
+from astrodata.gemconstants import SCI, VAR, DQ
 from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
@@ -63,19 +64,21 @@ class PreprocessPrimitives(GENERALPrimitives):
             
             # Now multiply the pixel data in the science extension by the gain
             # and the pixel data in the variance extension by the gain squared
-            log.status("Converting %s from ADU to electrons by multiplying "
-                       "the science extension by the gain = %s"
-                       % (ad.filename, gain))
+            log.status("Converting %s from ADU to electrons by multiplying by "
+                       "the gain" % (ad.filename))
+            for ext in ad[SCI]:
+                log.status("  gain for [%s,%d] = %s" %
+                           (SCI, ext.extver(), gain))
             ad = ad.mult(gain)
             
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
             gt.update_key(adinput=ad, keyword="BUNIT", value="electron",
-                          comment=None, extname="SCI")
-            if ad["VAR"]:
+                          comment=None, extname=SCI)
+            if ad[VAR]:
                 gt.update_key(adinput=ad, keyword="BUNIT",
                               value="electron*electron", comment=None,
-                              extname="VAR")
+                              extname=VAR)
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
@@ -301,7 +304,7 @@ class PreprocessPrimitives(GENERALPrimitives):
         adinput = rc.get_inputs_as_astrodata()
         
         # Get the number of science extensions in each file
-        next = np.array([ad.count_exts("SCI") for ad in adinput])
+        next = np.array([ad.count_exts(SCI) for ad in adinput])
 
         # Check whether we are scaling to zero or to 1st image
         remove_zero_level = rc["remove_zero_level"]
@@ -327,7 +330,7 @@ class PreprocessPrimitives(GENERALPrimitives):
 
             # Check whether measureBG needs to be run
             bg_list = [sciext.get_key_value("SKYLEVEL") \
-                           for ad in adinput for sciext in ad["SCI"]]
+                           for ad in adinput for sciext in ad[SCI]]
             if None in bg_list:
                 log.fullinfo("SKYLEVEL not found, measuring background")
                 if rc["logLevel"]=="stdinfo":
@@ -341,7 +344,7 @@ class PreprocessPrimitives(GENERALPrimitives):
             for ad in adinput:
                 ref_bg_dict = {}
                 diff_dict = {}
-                for sciext in ad["SCI"]:
+                for sciext in ad[SCI]:
                     # Get background value from header
                     bg = sciext.get_key_value("SKYLEVEL")
                     if bg is None:
@@ -606,7 +609,7 @@ class PreprocessPrimitives(GENERALPrimitives):
             log.fullinfo("The well depth = %s" % well_depth_setting)
             
             # Loop over each science extension in each input AstroData object
-            for ext in ad["SCI"]:
+            for ext in ad[SCI]:
                 
                 # Get the size of the raw pixel data
                 naxis2 = ext.get_key_value("NAXIS2")
@@ -718,11 +721,11 @@ class PreprocessPrimitives(GENERALPrimitives):
             # Loop over each science extension in each input AstroData object
             upper = rc['upper']
             lower = rc['lower']
-            for ext in ad["SCI"]:
+            for ext in ad[SCI]:
                 
                 extver = ext.extver()
                 sci_data = ext.data
-                dq_data = ad["DQ",extver].data
+                dq_data = ad[DQ,extver].data
 
                 # Mark the unilumminated pixels with a bit '64' in the DQ plane.
                 unilum = np.where(
@@ -731,7 +734,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                 dq_data = np.bitwise_or(dq_data,unilum)
 
                 # Now replace the DQ data
-                ad["DQ",extver].data = dq_data
+                ad[DQ,extver].data = dq_data
 
                 log.fullinfo("ThresholdFlatfield set bit '64' for values"
                              " outside the range [%.2f,%.2f]"%(lower,upper))
@@ -784,7 +787,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                 continue
             
             # Loop over each science extension in each input AstroData object
-            for ext in ad["SCI"]:
+            for ext in ad[SCI]:
                 
                 # Normalise the input AstroData object. Calculate the mean
                 # value of the science extension
@@ -872,15 +875,15 @@ class PreprocessPrimitives(GENERALPrimitives):
                     # Append the input AstroData object to the list of science
                     # AstroData objects
                     ad_science_list.append(ad)
-
+            
             log.stdinfo("Science frames:")
             for ad_science in ad_science_list:
                 log.stdinfo("  %s" % ad_science.filename)
-
+            
             log.stdinfo("Sky frames:")
             for ad_sky in ad_sky_list:
                 log.stdinfo("  %s" % ad_sky.filename)
-
+            
             # Add the appropriate time stamp to the PHU and update the filename
             # of the science and sky AstroData objects 
             ad_science_output_list = gt.finalise_adinput(
