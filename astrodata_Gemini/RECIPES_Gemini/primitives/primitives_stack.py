@@ -6,6 +6,7 @@ from astrodata import Errors
 from astrodata import ReductionContextRecords as RCR
 from astrodata.adutils import logutils
 from astrodata.adutils.gemutil import pyrafLoader
+from astrodata.gemconstants import SCI, VAR, DQ
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import eti
 from primitives_GENERAL import GENERALPrimitives
@@ -39,9 +40,9 @@ class StackPrimitives(GENERALPrimitives):
         # Check whether two or more input AstroData objects were provided
         adinput = rc.get_inputs_as_astrodata()
         if len(adinput) <= 1:
-            log.stdinfo("No alignment or correction will be performed, " \
-                        "since at least two input AstroData objects are " \
-                        "required for alignAndStack")
+            log.stdinfo("No alignment or correction will be performed, since "
+                        "at least two input AstroData objects are required "
+                        "for alignAndStack")
             rc.report_output(adinput)
         else:
             recipe_list = []
@@ -82,123 +83,150 @@ class StackPrimitives(GENERALPrimitives):
         
         :param operation: type of combining operation to use.
         :type operation: string, options: 'average', 'median'.
-
+        
         :param reject_method: type of rejection algorithm
         :type reject_method: string, options: 'avsigclip', 'minmax', None
-
-        :param mask: Use DQ plane to mask bad pixels?
+        
+        :param mask: Use the data quality extension to mask bad pixels?
         :type mask: bool
         
         :param nlow: number of low pixels to reject (used with
                      reject_method=minmax)
         :type nlow: int
-
+        
         :param nhigh: number of high pixels to reject (used with
                       reject_method=minmax)
         :type nhigh: int
+        
         """
-        t1 = time.time()
+        # Instantiate the log
         log = logutils.get_logger(__name__)
+        
+        # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "stackFrames", "starting"))
         
-        adinput = rc.get_inputs_as_astrodata()
-        adoutput_list = []
+        # Define the keyword to be used for the time stamp for this primitive
         timestamp_key = self.timestamp_keys["stackFrames"]
-
-        # Check if inputs prepared
-        for ad in adinput:
-            if (ad.phu_get_key_value('GPREPARE')==None) and \
-               (ad.phu_get_key_value('PREPARE')==None):
-               raise Errors.InputError("%s must be prepared" % ad.filename)
         
-        if len(adinput) <= 1:
-            log.stdinfo("No stacking will be performed, since at least " \
-                        "two input AstroData objects are required for " \
-                        "stackFrames")
-            adoutput_list = adinput
+        # Initialize the list of output AstroData objects
+        ad_output_list = []
+        
+        # Get the input AstroData objects
+        ad_input_list = rc.get_inputs_as_astrodata()
+        
+        # Ensure that each input AstroData object has been prepared
+        for ad in ad_input_list:
+            if not "PREPARED" in ad.types:
+                raise Errors.InputError("%s must be prepared" % ad.filename)
+        
+        if len(ad_input_list) <= 1:
+            log.stdinfo("No stacking will be performed, since at least two "
+                        "input AstroData objects are required for stackFrames")
+            
+            # Set the list of input AstroData objects to the list of output
+            # AstroData objects without further processing 
+            ad_output_list = ad_input_list
+        
         else:
             
-            # Get average of current GAIN parameters from input files
-            # and add in quadrature the read-out noise
-            gain = adinput[0].gain().as_dict()
-            ron = adinput[0].read_noise().as_dict()
-            for ad in adinput[1:]:
-                for ext in ad["SCI"]:
-                    gain[("SCI",ext.extver())] += ext.gain()
-                    ron[("SCI",ext.extver())] += ext.read_noise()**2
-            for key in gain.keys():
-                gain[key] /= len(adinput)
-                ron[key] = math.sqrt(ron[key])
-        
+            # Get the gain and read noise from the first AstroData object in
+            # the input list using the appropriate descriptors
+            gain_dict = ad_input_list[0].gain().as_dict()
+            read_noise_dict = ad_input_list[0].read_noise().as_dict()
+            
+            # Determine the average gain from the input AstroData objects and
+            # add in quadrature the read noise
+            for ad in ad_input_list[1:]:
+                for ext in ad[SCI]:
+                    gain = ext.gain()
+                    read_noise = ext.read_noise()**2
+                    gain_dict[(SCI,ext.extver())] += gain
+                    read_noise_dict[(SCI,ext.extver())] += read_noise
+            for key in gain_dict.keys():
+                gain_dict[key] /= len(ad_input_list)
+                read_noise_dict[key] = math.sqrt(read_noise_dict[key])
+            
             # Instantiate ETI and then run the task 
             gemcombine_task = eti.gemcombineeti.GemcombineETI(rc)
-            adout = gemcombine_task.run()
+            ad_output = gemcombine_task.run()
             
-            # Change type of DQ plane back to int16 (gemcombine sets
-            # it to int32)
-            if adout["DQ"] is not None:
-                for dqext in adout["DQ"]:
-                    dqext.data = dqext.data.astype(np.int16)
-
-                    # Also delete the BUNIT keyword (gemcombine
-                    # sets it to same value as SCI)
-                    if dqext.get_key_value("BUNIT") is not None:
-                        del dqext.header['BUNIT']
-
-            # Fix BUNIT in VAR plane as well
-            # (gemcombine sets it to same value as SCI)
-            bunit = adout["SCI",1].get_key_value("BUNIT")
-            if adout["VAR"] is not None and bunit is not None:
-                for ext in adout["VAR"]:
-                    ext.set_key_value(
-                        "BUNIT","%s*%s" % (bunit,bunit),
-                        comment=self.keyword_comments["BUNIT"])
-
+            # Revert the BUNIT for the variance extension (gemcombine sets it
+            # to the same value as the science extension)
+            bunit = ad_output[SCI,1].get_key_value("BUNIT")
+            if ad_output[VAR]:
+                for ext in ad_output[VAR]:
+                    if bunit is not None:
+                        gt.update_key(adinput=ext, keyword="BUNIT",
+                                      value="%s*%s" % (bunit, bunit),
+                                      comment=None, extname=VAR)
+            
+            # Revert the dtype and BUNIT for the data quality extension
+            # (gemcombine sets them to int32 and the same value as the science
+            # extension, respectively)
+            if ad_output[DQ]:
+                for ext in ad_output[DQ]:
+                    ext.data = ext.data.astype(np.uint8)
+                    
+                    if bunit is not None:
+                        gt.update_key(adinput=ext, keyword="BUNIT",
+                                      value="bit", comment=None, extname=DQ)
+            
             # Gemcombine sets the GAIN keyword to the sum of the gains; 
-            # reset it to the average instead.  Set the RDNOISE to the
-            #  sum in quadrature of the input read noise. Set VAR/DQ
-            # keywords to the same as the science.
-            for ext in adout:
-                ext.set_key_value("GAIN", gain[("SCI",ext.extver())],
-                                  comment=self.keyword_comments["GAIN"])
-                ext.set_key_value("RDNOISE", ron[("SCI",ext.extver())],
-                                  comment=self.keyword_comments["RDNOISE"])
+            # reset it to the average instead. Set the RDNOISE to the
+            # sum in quadrature of the input read noise. Set the keywords in
+            # the variance and data quality extensions to be the same as the
+            # science extensions.
+            for ext in ad_output:
+                gain = gain_dict[(SCI,ext.extver())]
+                read_noise = read_noise_dict[(SCI,ext.extver())]
+                
+                gt.update_key(adinput=ext, keyword="GAIN", value=gain,
+                              comment=None, extname="pixel_exts")
+                gt.update_key(adinput=ext, keyword="RDNOISE", value=read_noise,
+                              comment=None, extname="pixel_exts")
             
-            if adout.phu_get_key_value("GAIN") is not None:
-                adout.phu_set_key_value(
-                    "GAIN",gain[("SCI",1)],
-                    comment=self.keyword_comments["GAIN"])
-            if adout.phu_get_key_value("RDNOISE") is not None:
-                adout.phu_set_key_value(
-                    "RDNOISE",ron[("SCI",1)],
-                    comment=self.keyword_comments["RDNOISE"])
-
+            gain = gain_dict[(SCI,1)]
+            read_noise = read_noise_dict[(SCI,1)]
+            
+            gt.update_key(adinput=ad_output, keyword="GAIN", value=gain,
+                          comment=None, extname="PHU")
+            gt.update_key(adinput=ad_output, keyword="RDNOISE",
+                          value=read_noise, comment=None, extname="PHU")
+            
             suffix = rc["suffix"]
             
             # The ORIGNAME keyword should not be updated in this way, since it
             # defeats the point of having the ORIGNAME keyword.
             
             # Add suffix to the ORIGNAME to prevent future stripping 
-            #adout.phu_set_key_value("ORIGNAME", 
+            #ad_output.phu_set_key_value("ORIGNAME", 
             #    gt.filename_updater(adinput=adinput[0],
             #                        suffix=suffix,strip=True),
             #    comment=self.keyword_comments["ORIGNAME"])
-
+            
             # Add suffix to the datalabel to distinguish from the reference
             # frame 
-            orig_dl = adout.phu_get_key_value("DATALAB")
-            adout.phu_set_key_value(
-                "DATALAB", orig_dl+suffix,
-                comment=self.keyword_comments["DATALAB"])
-
-            gt.mark_history(adinput=adout, keyword=timestamp_key)
-            adoutput_list.append(adout)
-
-        # Report the output list to the reduction context
-        rc.report_output(adoutput_list)
-        #print("ETI TIME: %s sec" % str(time.time()-t1))
+            orig_datalab = ad_output.phu_get_key_value("DATALAB")
+            new_datalab = "%s%s" % (orig_datalab, suffix)
+            gt.update_key(adinput=ad_output, keyword="DATALAB",
+                          value=new_datalab, comment=None, extname="PHU")
+            
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad_output, keyword=timestamp_key)
+            
+            # Change the filename
+            ad_output.filename = gt.filename_updater(adinput=ad_output,
+                                                     suffix=suffix, strip=True)
+            
+            # Append the output AstroData object to the list of output
+            # AstroData objects
+            ad_output_list.append(ad_output)
+        
+        # Report the list of output AstroData objects to the reduction context
+        rc.report_output(ad_output_list)
+        
         yield rc
-
+    
     def stackSkyFrames(self, rc):
         # Instantiate the log
         log = logutils.get_logger(__name__)
