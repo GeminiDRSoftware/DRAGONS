@@ -77,28 +77,25 @@ class QAPrimitives(GENERALPrimitives):
                 if np.any(overscan) or biasim or darkim:
                     bias_level = None
                 else:
-                    # Try to get the bias level from the descriptor
-                    try:
-                        bias_level = ad.bias_level().dict_val
-                    except:
+                    # Get the bias level
+                    bias_level = gdc.get_bias_level(adinput=ad, estimate=False)
+
+                    if bias_level is None:
                         log.warning("Bias level not found for %s; " \
                                     "approximate bias will not be removed " \
                                     "from the sky level" % ad.filename)
-                        bias_level = None
             else:
                 bias_level = None
 
             # Get the filter name and the corresponding BG band definition
             # and the requested band
             filter = str(ad.filter_name(pretty=True))
-            try:
+            if filter in bgConstraints:
                 bg_band_limits = bgConstraints[filter]
-            except KeyError:
+            else:
                 bg_band_limits = None
-            try:
-                req_bg = int(ad.requested_bg())
-            except:
-                req_bg = None
+
+            req_bg = int(ad.requested_bg())
 
             # Loop over SCI extensions
             all_bg = None
@@ -189,7 +186,7 @@ class QAPrimitives(GENERALPrimitives):
 
                 # Subtract bias level from BG number
                 if bias_level is not None:
-                    sci_bg -= bias_level[(sciext.extname(),sciext.extver())]
+                    sci_bg -= bias_level[sciext.extver()]
                     log.fullinfo("Bias-subtracted BG level = %f" % sci_bg)
 
                 # Write sky background to science header
@@ -198,10 +195,9 @@ class QAPrimitives(GENERALPrimitives):
                     (self.keyword_comments["SKYLEVEL"],bunit))
 
                 # Get nominal zeropoint
-                try:
-                    npz = float(sciext.nominal_photometric_zeropoint())
-                except:
-                    npz = None
+                npz = float(sciext.nominal_photometric_zeropoint())
+
+                if npz is None:
                     log.stdinfo("No nominal photometric zeropoint "\
                                  "available for %s[SCI,%d], filter %s" %
                                  (ad.filename,sciext.extver(),filter))
@@ -516,15 +512,15 @@ class QAPrimitives(GENERALPrimitives):
                     continue
 
                 # Need to correct the mags for the exposure time
-                et = float(ad.exposure_time())
-                # Need to multiply by coadds if this instrument does them, otherwise ignore
-                try:
-                  et *= float(ad.coadds())
-                except:
-                  pass
+                et = ad.exposure_time()
+                # Need to multiply by coadds if this instrument does them,
+                # otherwise ignore
+                if ad.coadds() is not None:
+                    et *= float(ad.coadds())
+
                 # If it's a funky nod-and-shuffle imaging acquistion,
                 # then need to scale exposure time
-                if(ad.is_type('GMOS_NODANDSHUFFLE')):
+                if ad.is_type('GMOS_NODANDSHUFFLE'):
                     log.warning("Imaging Nod-And-Shuffle. Photometry may be dubious")
                     # AFAIK the number of nod_cycles isn't actually relevant -
                     # there's always 2 nod positions, thus the exposure
@@ -604,14 +600,13 @@ class QAPrimitives(GENERALPrimitives):
 
                 # Now, in addition, we have the weighted mean zeropoint
                 # and its error, from this OBJCAT in zp and zpe
-                try:
-                    nominal_zeropoint = float(ad['SCI', extver].nominal_photometric_zeropoint())
-                except:
+                nominal_zeropoint = (
+                  ad['SCI', extver].nominal_photometric_zeropoint())
+                if nominal_zeropoint is None:
                     log.warning("No nominal photometric zeropoint "\
                                 "available for %s[SCI,%d], filter %s" %
                                 (ad.filename,extver,
                                  ad.filter_name(pretty=True)))
-                    continue
 
                 cloud = nominal_zeropoint - zp
                 clouds = nominal_zeropoint - zps
@@ -747,10 +742,7 @@ class QAPrimitives(GENERALPrimitives):
 
                 # Get requested CC band
                 cc_warn = None
-                try:
-                    req_cc = int(ad.requested_cc())
-                except:
-                    req_cc = None
+                req_cc = ad.requested_cc()
                 qad["requested"] = req_cc
 
                 if req_cc is not None:
@@ -889,10 +881,10 @@ class QAPrimitives(GENERALPrimitives):
                                          "from data; no approximate "\
                                          "correction will be performed")
                         else:
-                            # Try to get the bias level from the descriptor
-                            try:
-                                bias_level = ad.bias_level()
-                            except:
+                            # Get the bias level
+                            bias_level = gdc.get_bias_level(adinput=ad,
+                                                            estimate=False)
+                            if bias_level is None:
                                 log.warning("Bias level not found for %s; " \
                                             "approximate bias will not be "\
                                             "removed from displayed image" % 
@@ -906,7 +898,7 @@ class QAPrimitives(GENERALPrimitives):
                                 log.stdinfo(" ")
                                 log.fullinfo("Bias levels used: %s" %
                                              str(bias_level))
-                                ad = ad.sub(bias_level.dict_val)
+                                ad = ad.sub(bias_level)
 
                         new_adinput.append(ad)
                     adinput = new_adinput
@@ -986,10 +978,7 @@ class QAPrimitives(GENERALPrimitives):
                 #            "sextractor value to profile fit (imexam) value")
                 #mean_fwhm /= 1.08
 
-                try:
-                    airmass = float(ad.airmass())
-                except:
-                    airmass = None
+                airmass = ad.airmass()
                 if airmass is None:
                     log.warning("Airmass not found, not correcting to zenith")
                     corr = mean_fwhm
@@ -1046,11 +1035,7 @@ class QAPrimitives(GENERALPrimitives):
                     iqStr = '(IQ band could not be determined)'
 
                 # Get requested IQ band
-                try:
-                    req_iq = int(ad.requested_iq())
-                except:
-                    req_iq = None
-
+                req_iq = ad.requested_iq()
                 if req_iq is not None:
                     if req_iq==100:                            
                         reqStr = 'Requested IQ:'.ljust(llen) + \
@@ -1411,14 +1396,8 @@ def _iq_band(adinput=None,fwhm=None):
         count=0
         for ad in adinput:
 
-            try:
-                wfs = str(ad.wavefront_sensor())
-            except:
-                wfs = None
-            try:
-                waveband = str(ad.wavelength_band())
-            except:
-                waveband = None
+            wfs = ad.wavefront_sensor().as_pytype()
+            waveband = ad.wavelength_band().as_pytype()
 
             # default value for iq band
             iq = None
