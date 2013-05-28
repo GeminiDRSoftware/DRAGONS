@@ -314,9 +314,9 @@ def propagate_variance(input_a=None, input_b=None, operation=None):
         var_a = var.data
         
         # If input_b is a dictionary, the variable b is the single value
-        # specified by the key (EXTNAME, EXTVER)
+        # specified by the key EXTVER
         if isinstance(input_b, dict):
-            b = input_b[(SCI, extver)]
+            b = input_b[extver]
             
             # The variable var_b is zero, since there is no variance associated
             # with a single value 
