@@ -1,6 +1,10 @@
 from copy import deepcopy
 import numpy as np
-import numdisplay as nd
+try:
+    from stsci import numdisplay as nd
+except ImportError:
+    import numdisplay as nd
+
 from astrodata import Errors
 from astrodata import Lookups
 from astrodata.adutils import gemLog

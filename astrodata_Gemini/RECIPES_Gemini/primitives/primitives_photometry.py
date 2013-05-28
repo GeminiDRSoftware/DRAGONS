@@ -609,7 +609,10 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
     
     # import a few things only required by this helper function
     import time
-    from convolve import convolve2d
+    try:
+        from stsci.convolve import convolve2d
+    except ImportError:
+        from convolve import convolve2d
     
     log = gemLog.getGeminiLog()
     
