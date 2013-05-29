@@ -1,3 +1,0 @@
-pdflatex  'ADtypereference.tex'
-make: pdflatex: No such file or directory
-make: *** [ADtypereference.pdf] Error 1
