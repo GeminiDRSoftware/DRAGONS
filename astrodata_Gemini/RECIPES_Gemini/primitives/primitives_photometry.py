@@ -120,16 +120,20 @@ class PhotometryPrimitives(GENERALPrimitives):
 
                 # Try importing; break the outer loop if it doesn't work
                 try:
-                    import vo.conesearch
+                    import vo.conesearch as vocs
                     import vo.table
-                except:
-                    log.critical("Problem importing the vo module. This isn't going to work")
-                    adoutput_list = adinput
-                    break
+                except ImportError:
+                    try:
+                        import astropy.vo.conesearch as vocs
+                        
+                    except ImportError:
+                        log.critical("Problem importing the vo module. This isn't going to work")
+                        adoutput_list = adinput
+                        break
 
                 # Try the query; go to the next input if it fails
                 try:
-                    table = vo.conesearch.conesearch(catalog_db=url, ra=ra, dec=dec, sr=radius, pedantic=False, verb=2, verbose=False)
+                    table = vocs.conesearch(catalog_db=url, ra=ra, dec=dec, sr=radius, pedantic=False, verb=2, verbose=False)
                 except:
                     log.warning("Vizier query failed for %s" % ad.filename)
                     adoutput_list.append(ad)
