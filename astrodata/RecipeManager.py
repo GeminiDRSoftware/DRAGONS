@@ -171,6 +171,7 @@ class ReductionContext(dict):
     _nonstandard_stream = None
     _current_stream = None
     _output_streams = None
+    _stream_meta = None
     user_params = None # meant to be UserParams instance
     proxy_id = 1 # used to ensure uniqueness
     ro = None
@@ -198,6 +199,7 @@ class ReductionContext(dict):
         self.display_name = None
         self.arguments = []
         self.cache_files = {}
+        self._stream_meta = {}
         # TESTING
         self.cdl = CalibrationDefinitionLibrary()
         # undeclared
@@ -585,8 +587,10 @@ class ReductionContext(dict):
                 mes = "Bad Argument: Wrong Type '%(val)s' '%(typ)s'." \
                     % {'val':str(out), 'typ':str(type(out))}
                 raise RuntimeError(mes)
-            
+        # @@STREAMTESTS
+        #self.outputs[self._current_stream] = []    
         self.inputs = newinputlist
+        #print "RM591:", self.inputs
     
     # finish and is_finished is combined using property
     def is_finished(self, arg=None):
@@ -769,9 +773,11 @@ class ReductionContext(dict):
     def populate_stream(self, infiles, stream=None, load = True):
         self.report_output(infiles, stream = stream, load = load)
         #print repr(self._output_streams)
+        
         if stream == None:
             stream = self._current_stream
-        self._output_streams.remove(stream)
+        if stream in self._output_streams:
+			self._output_streams.remove(stream)
         return
     
     def get_stack(self, purpose=""):
@@ -1451,6 +1457,7 @@ class ReductionContext(dict):
         #print "RM1105:", self.ro.curPrimName, "stream:", stream
         # this clause saves the output stream so we know when to 
         # the first report happens so we can clear the set at that time.
+        # print "RM1459:report_output:"+stream+"|"+repr(self._output_streams) 
         if stream not in self._output_streams:
             self._output_streams.append(stream)
             self.outputs.update({stream:[]})
@@ -1477,6 +1484,8 @@ class ReductionContext(dict):
                 elif isinstance(temp, AstroData):
                     # print "RM891:", type(temp)
                     orecord = AstroDataRecord(temp)
+                elif isinstance(temp, AstroDataRecord):
+                    orecord = temp
                 elif type(temp) == str:
                     if not os.path.exists(temp):
                         raise "LAST PRIMITIVE FAILED."
@@ -1769,11 +1778,21 @@ class ReductionContext(dict):
             such as reduce and in the ReductionContext) to switch the stream
             being used. Reported output then goes to the specified stream.
         """
+        
+        #print "RM1778: SWITCHING TO %s \n" % switch_to
+        #print "RM1782: switch_stream", self._output_streams
+        if switch_to in self._output_streams:
+            self._output_streams.remove(switch_to)
         if switch_to not in self.outputs:
             #raise ReduceError(
             #            '"%s" stream does not exist, cannot switch to it' 
             #                % repr(switch_to))
             self.outputs.update({switch_to:[]})
+        if switch_to not in self._stream_meta:
+            self._stream_meta[switch_to] = {}
+        switch_meta = self._stream_meta[switch_to]
+        switch_meta["active_stream"] = True
+        switch_meta["outputs_reported"] = False    
         
         self._current_stream = switch_to
         self._nonstandard_stream.append(switch_to)
@@ -1791,7 +1810,9 @@ class ReductionContext(dict):
         
         Revert to the last stream prior to previous switch_stream(..) call.
         """
-        #print "RM1391: restore_stream"
+        #print "RM1811:"        
+        #print "RM1812: restore_stream", from_stream, self._output_streams
+        #print "RM1813:"
         
         if len(self._nonstandard_stream) > 0:
             prevstream = self._nonstandard_stream.pop()
