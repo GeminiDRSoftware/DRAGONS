@@ -195,21 +195,14 @@ class QAPrimitives(GENERALPrimitives):
                     (self.keyword_comments["SKYLEVEL"],bunit))
 
                 # Get nominal zeropoint
-                npz = float(sciext.nominal_photometric_zeropoint())
-
-                if npz is None:
-                    log.stdinfo("No nominal photometric zeropoint "\
-                                 "available for %s[SCI,%d], filter %s" %
-                                 (ad.filename,sciext.extver(),filter))
-                    
-                if npz is not None:
+                npz = sciext.nominal_photometric_zeropoint()
+                if npz._val is not None:
                     # Make sure we have a number in electrons
-                    if(bunit=='adu'):
+                    if bunit == "adu":
                         gain = float(sciext.gain())
                         bg_e = sci_bg * gain
                         std_e = sci_std * gain
-                        if npz is not None:
-                            npz = npz + 2.5*math.log10(gain)
+                        npz = npz + 2.5*math.log10(gain)
                     else:
                         bg_e = sci_bg
                         std_e = sci_std
@@ -230,8 +223,8 @@ class QAPrimitives(GENERALPrimitives):
                     # Now get that in (instrumental) magnitudes...
                     if bg_e<=0:
                         log.warning(
-                            "Background in electrons is "\
-                            "less than or equal to 0 for "\
+                            "Background in electrons is "
+                            "less than or equal to 0 for "
                             "%s[SCI,%d]" % (ad.filename,extver))
                         bg_am = None
                     else:
@@ -247,12 +240,15 @@ class QAPrimitives(GENERALPrimitives):
                         # dm = df * (2.5/ln(10)) / f 
                         std_am = std_e * (2.5/math.log(10)) / bg_e;
 
-                        info_dict[('SCI',extver)] = {"mag": bg_am,
+                        info_dict[("SCI",extver)] = {"mag": bg_am,
                                                      "mag_std": std_am,
                                                      "electrons":bg_e,
                                                      "electrons_std":std_e,
                                                      "nsamples":nsamples}
                 else:
+                    log.stdinfo("No nominal photometric zeropoint "
+                                 "available for %s[SCI,%d], filter %s" %
+                                 (ad.filename,sciext.extver(),filter))
                     bg_am = None
                     std_am = None
 
@@ -306,17 +302,17 @@ class QAPrimitives(GENERALPrimitives):
                 bg_warn = ""
                 if req_bg is not None:
                     if req_bg==100:                            
-                        req_str = 'Requested BG:'.ljust(llen) + \
-                                  'BGAny'.rjust(rlen)
+                        req_str = "Requested BG:".ljust(llen) + \
+                                  "BGAny".rjust(rlen)
                     else:
-                        req_str = 'Requested BG:'.ljust(llen) + \
-                                  ('BG%d' % req_bg).rjust(rlen)
+                        req_str = "Requested BG:".ljust(llen) + \
+                                  ("BG%d" % req_bg).rjust(rlen)
                     if bg_num is not None:
                         if req_bg<bg_num:
                             bg_warn = "\n    "+\
                                 "WARNING: BG requirement not met".rjust(dlen)
                 else:
-                    req_str = '(Requested BG could not be determined)'
+                    req_str = "(Requested BG could not be determined)"
 
                 # Log the calculated values for this extension if desired    
                 if separate_ext:
@@ -339,13 +335,13 @@ class QAPrimitives(GENERALPrimitives):
                     log.stdinfo(" ")
                     
                 # Record the band and comment in the fitsstore infodict
-                if info_dict.has_key(('SCI',extver)):
-                    info_dict[('SCI',extver)]["percentile_band"] = bg_num
+                if info_dict.has_key(("SCI",extver)):
+                    info_dict[("SCI",extver)]["percentile_band"] = bg_num
                     if bg_warn!="":
                         bg_comment = ["BG requirement not met"]
                     else:
                         bg_comment = []
-                    info_dict[('SCI',extver)]["comment"] = bg_comment
+                    info_dict[("SCI",extver)]["comment"] = bg_comment
 
             # Write mean background to PHU if averaging all together
             # (or if there's only one science extension)
@@ -475,7 +471,7 @@ class QAPrimitives(GENERALPrimitives):
             total_sources=0
             qad = {}
             # Loop over OBJCATs extensions
-            objcats = ad['OBJCAT']
+            objcats = ad["OBJCAT"]
             if objcats is None:
                 log.warning("No OBJCAT found in %s" % ad.filename)
                 adoutput_list.append(ad)
@@ -486,7 +482,7 @@ class QAPrimitives(GENERALPrimitives):
             # quick check for the presence of reference catalogs, which are
             # a pre-requisite for this and not bother with
             # any of this if there are no reference catalogs
-            if ad['REFCAT'] is None:
+            if ad["REFCAT"] is None:
                 log.warning("No Reference Catalogs Present - not attempting"
                             " to measure photometric Zeropoints")
                 # This is a bit of a hack, but it circumvents the big for loop
@@ -501,11 +497,11 @@ class QAPrimitives(GENERALPrimitives):
 
             for objcat in objcats:
                 extver = objcat.extver()
-                mags = objcat.data['MAG_AUTO']
-                mag_errs = objcat.data['MAGERR_AUTO']
-                flags = objcat.data['FLAGS']
-                iflags = objcat.data['IMAFLAGS_ISO']
-                ids = objcat.data['NUMBER']
+                mags = objcat.data["MAG_AUTO"]
+                mag_errs = objcat.data["MAGERR_AUTO"]
+                flags = objcat.data["FLAGS"]
+                iflags = objcat.data["IMAFLAGS_ISO"]
+                ids = objcat.data["NUMBER"]
                 if np.all(mags==-999):
                     log.warning("No magnitudes found in %s[OBJCAT,%d]"%
                                 (ad.filename,extver))
@@ -520,7 +516,7 @@ class QAPrimitives(GENERALPrimitives):
 
                 # If it's a funky nod-and-shuffle imaging acquistion,
                 # then need to scale exposure time
-                if ad.is_type('GMOS_NODANDSHUFFLE'):
+                if ad.is_type("GMOS_NODANDSHUFFLE"):
                     log.warning("Imaging Nod-And-Shuffle. Photometry may be dubious")
                     # AFAIK the number of nod_cycles isn't actually relevant -
                     # there's always 2 nod positions, thus the exposure
@@ -530,10 +526,10 @@ class QAPrimitives(GENERALPrimitives):
                 mags = np.where(mags==-999,mags,mags+magcor)
 
                 # Need to get the nominal atmospheric extinction
-                nom_at_ext = float(ad.nominal_atmospheric_extinction())
+                nom_at_ext = ad.nominal_atmospheric_extinction()
 
-                refmags = objcat.data['REF_MAG']
-                refmag_errs = objcat.data['REF_MAG_ERR']
+                refmags = objcat.data["REF_MAG"]
+                refmag_errs = objcat.data["REF_MAG_ERR"]
                 if np.all(refmags==-999):
                     log.warning("No reference magnitudes found in %s[OBJCAT,%d]"%
                                 (ad.filename,extver))
@@ -574,7 +570,7 @@ class QAPrimitives(GENERALPrimitives):
                 # OK, at this point, zps and zperrs are arrays of all
                 # the zeropoints and their errors from this OBJCAT
                 if len(zps)==0:
-                    log.warning('No good reference sources found in %s[OBJCAT,%d]'%
+                    log.warning("No good reference sources found in %s[OBJCAT,%d]"%
                                 (ad.filename,extver))
                     continue
                 elif len(zps)>2:
@@ -601,12 +597,13 @@ class QAPrimitives(GENERALPrimitives):
                 # Now, in addition, we have the weighted mean zeropoint
                 # and its error, from this OBJCAT in zp and zpe
                 nominal_zeropoint = (
-                  ad['SCI', extver].nominal_photometric_zeropoint())
+                  ad["SCI", extver].nominal_photometric_zeropoint())
                 if nominal_zeropoint is None:
                     log.warning("No nominal photometric zeropoint "\
                                 "available for %s[SCI,%d], filter %s" %
                                 (ad.filename,extver,
                                  ad.filter_name(pretty=True)))
+                    continue
 
                 cloud = nominal_zeropoint - zp
                 clouds = nominal_zeropoint - zps
@@ -620,11 +617,11 @@ class QAPrimitives(GENERALPrimitives):
                 total_sources += len(zps)
                 
                 # Write the zeropoint to the SCI extension header
-                ad['SCI', extver].set_key_value(
+                ad["SCI", extver].set_key_value(
                     "MEANZP", zp, comment=self.keyword_comments["MEANZP"])
 
                 ind = " " * rc["logindent"]
-                log.fullinfo("\n"+ind+"Filename: %s ['OBJCAT', %d]" % 
+                log.fullinfo("\n"+ind+"Filename: %s [\"OBJCAT\", %d]" % 
                             (ad.filename, extver))
                 log.fullinfo(ind+"%d sources used to measure zeropoint" % 
                              len(zps))
@@ -735,10 +732,10 @@ class QAPrimitives(GENERALPrimitives):
                     if(cc_canbe[c]):
                         qad["band"].append(c)
                         if(c==100):
-                            c='Any'
-                        ccband.append('CC%s' % c)
+                            c="Any"
+                        ccband.append("CC%s" % c)
                         #print "CC%d : %s" % (c, cc_canbe[c])
-                ccband = ', '.join(ccband)
+                ccband = ", ".join(ccband)
 
                 # Get requested CC band
                 cc_warn = None
@@ -753,14 +750,14 @@ class QAPrimitives(GENERALPrimitives):
                         ts = (cloud-ce) / ((clouderr+pop_sigma)/(math.sqrt(len(all_cloud))))
                         if(ts>1.645):
                           #H0 fails - cc is worse than the worst end of this cc band
-                          cc_warn = 'WARNING: CC requirement not met at the 95% confidence level'
-                          qad["comment"].append('CC requirement not met at '\
-                                                'the 95% confidence level')
+                          cc_warn = "WARNING: CC requirement not met at the 95% confidence level"
+                          qad["comment"].append("CC requirement not met at "\
+                                                "the 95% confidence level")
 
                     if req_cc==100:
-                        req_cc = 'CCAny'
+                        req_cc = "CCAny"
                     else:
-                        req_cc = 'CC%d' % req_cc
+                        req_cc = "CC%d" % req_cc
                 
                 ind = " " * rc["logindent"]
                 log.stdinfo("\n"+ind+"Filename: %s" % ad.filename)
@@ -933,7 +930,7 @@ class QAPrimitives(GENERALPrimitives):
 
             # Check for no sources found
             if len(keys)==0:
-                log.warning('No good sources found in %s' % ad.filename)
+                log.warning("No good sources found in %s" % ad.filename)
                 if display:
                     iq_overlays.append(None)
                 mean_fwhms.append(None)
@@ -948,11 +945,11 @@ class QAPrimitives(GENERALPrimitives):
 
                 if len(src)==0:
                     if separate_ext:
-                        log.warning('No good sources found in %s, '\
-                                    'extension %s' %
+                        log.warning("No good sources found in %s, "\
+                                    "extension %s" %
                                     (ad.filename,key))
                     else:
-                        log.warning('No good sources found in %s' %
+                        log.warning("No good sources found in %s" %
                                     (ad.filename))
                     if display:
                         iq_overlays.append(None)
@@ -970,8 +967,8 @@ class QAPrimitives(GENERALPrimitives):
                     mean_ellip = None
                     std_ellip = None
                 if len(src)==1:
-                    log.warning('Only one source found. IQ numbers may ' +
-                                'not be accurate.')
+                    log.warning("Only one source found. IQ numbers may " +
+                                "not be accurate.")
 
                 # Apply the horrible 8% sextractor -> imexam kludge
                 #log.warning("Applying scale factor of 1:/1.08 to scale from "\
@@ -995,25 +992,25 @@ class QAPrimitives(GENERALPrimitives):
                 llen = 32
                 rlen = 24
                 dlen = llen+rlen
-                pm = '+/-'
-                fnStr = 'Filename: %s' % ad.filename
+                pm = "+/-"
+                fnStr = "Filename: %s" % ad.filename
                 if separate_ext:
                     fnStr += "[%s,%s]" % key
-                fmStr = ('FWHM Mean %s Sigma:' % pm).ljust(llen) + \
-                        ('%.3f %s %.3f arcsec' % (mean_fwhm, pm,
+                fmStr = ("FWHM Mean %s Sigma:" % pm).ljust(llen) + \
+                        ("%.3f %s %.3f arcsec" % (mean_fwhm, pm,
                                                   std_fwhm)).rjust(rlen)
                 if is_image:
                     srcStr = "%d sources used to measure IQ." % len(src)
-                    emStr = ('Ellipticity Mean %s Sigma:' % pm).ljust(llen) + \
-                            ('%.3f %s %.3f' % (mean_ellip, pm, 
+                    emStr = ("Ellipticity Mean %s Sigma:" % pm).ljust(llen) + \
+                            ("%.3f %s %.3f" % (mean_ellip, pm, 
                                                std_ellip)).rjust(rlen)
                 else:
                     srcStr = "Spectrum centered at row %d used to measure IQ." % \
                              np.mean(src["y"])                             
                 if airmass is not None:
                     csStr = (
-                        'Zenith-corrected FWHM (AM %.2f):'%airmass).ljust(llen) + \
-                        ('%.3f %s %.3f arcsec' % (corr,pm,corr_std)).rjust(rlen)
+                        "Zenith-corrected FWHM (AM %.2f):"%airmass).ljust(llen) + \
+                        ("%.3f %s %.3f arcsec" % (corr,pm,corr_std)).rjust(rlen)
                 else:
                     csStr = "(Zenith FWHM could not be determined)"
 
@@ -1022,33 +1019,33 @@ class QAPrimitives(GENERALPrimitives):
 
                     # iq_band is (percentile, lower bound, upper bound)
                     if iq_band[0]==20:
-                        iq = 'IQ20 (<%.2f arcsec)' % iq_band[2]
+                        iq = "IQ20 (<%.2f arcsec)" % iq_band[2]
                     elif iq_band[0]==100:
-                        iq = 'IQAny (>%.2f arcsec)' % iq_band[1]
+                        iq = "IQAny (>%.2f arcsec)" % iq_band[1]
                     else:
-                        iq = 'IQ%d (%.2f-%.2f arcsec)' % iq_band
+                        iq = "IQ%d (%.2f-%.2f arcsec)" % iq_band
  
                     wvband = ad.wavelength_band()
-                    iqStr = ('IQ range for %s-band:'%wvband).ljust(llen)+\
+                    iqStr = ("IQ range for %s-band:"%wvband).ljust(llen)+\
                             iq.rjust(rlen)
                 else:
-                    iqStr = '(IQ band could not be determined)'
+                    iqStr = "(IQ band could not be determined)"
 
                 # Get requested IQ band
                 req_iq = ad.requested_iq()
                 if req_iq is not None:
                     if req_iq==100:                            
-                        reqStr = 'Requested IQ:'.ljust(llen) + \
-                                 'IQAny'.rjust(rlen)
+                        reqStr = "Requested IQ:".ljust(llen) + \
+                                 "IQAny".rjust(rlen)
                     else:
-                        reqStr = 'Requested IQ:'.ljust(llen) + \
-                                 ('IQ%d' % req_iq).rjust(rlen)
+                        reqStr = "Requested IQ:".ljust(llen) + \
+                                 ("IQ%d" % req_iq).rjust(rlen)
                     if iq_band is not None:
                         if req_iq<iq_band[0]:
                             iq_warn = "\n    "+\
                                 "WARNING: IQ requirement not met".rjust(dlen)
                 else:
-                    reqStr = '(Requested IQ could not be determined)'
+                    reqStr = "(Requested IQ could not be determined)"
 
                 # Warn if high ellipticity
                 if is_image and mean_ellip>0.1:
@@ -1065,7 +1062,7 @@ class QAPrimitives(GENERALPrimitives):
                 log.stdinfo(" ")
                 log.stdinfo(ind + fnStr)
                 log.stdinfo(ind + srcStr)
-                log.stdinfo(ind + '-'*dlen)
+                log.stdinfo(ind + "-"*dlen)
                 log.stdinfo(ind + fmStr)
                 if is_image:
                     log.stdinfo(ind + emStr)
@@ -1269,9 +1266,9 @@ class QAPrimitives(GENERALPrimitives):
                                             random.randint(1,999))
             dl = "GN-2012B-Q-%i-1-001" % random.randint(1,20)
 
-            wlen = ['g','V','r','R','i','I','z','I']
-            #wlen = ['u','U','b','B','g','V','r','R','i','I','z','I','Y','Y']
-            #wlen = ['g','V']
+            wlen = ["g","V","r","R","i","I","z","I"]
+            #wlen = ["u","U","b","B","g","V","r","R","i","I","z","I","Y","Y"]
+            #wlen = ["g","V"]
             wlen_ind = 2*random.randint(0,len(wlen)/2-1)
             
             mtd["metadata"].update({"ut_time": now_ut.strftime("%Y-%m-%d %H:%M:%S.%f"),
@@ -1408,23 +1405,23 @@ def _iq_band(adinput=None,fwhm=None):
                     if wfs in iqConstraints[waveband].keys():
 
                         # get limits for this observation
-                        iq20 = iqConstraints[waveband][wfs]['20']
-                        iq70 = iqConstraints[waveband][wfs]['70']
-                        iq85 = iqConstraints[waveband][wfs]['85']
+                        iq20 = iqConstraints[waveband][wfs]["20"]
+                        iq70 = iqConstraints[waveband][wfs]["70"]
+                        iq85 = iqConstraints[waveband][wfs]["85"]
 
                         # get iq band
                         if fwhm[count]<iq20:
                             iq = (20,None,iq20)
-                            #iq='IQ20 (<%.2f arcsec)' % iq20
+                            #iq="IQ20 (<%.2f arcsec)" % iq20
                         elif fwhm[count]<iq70:
                             iq = (70,iq20,iq70)
-                            #iq='IQ70 (%.2f-%.2f arcsec)' % (iq20,iq70)
+                            #iq="IQ70 (%.2f-%.2f arcsec)" % (iq20,iq70)
                         elif fwhm[count]<iq85:
                             iq = (85,iq70,iq85)
-                            #iq='IQ85 (%.2f-%.2f arcsec)' % (iq70,iq85)
+                            #iq="IQ85 (%.2f-%.2f arcsec)" % (iq70,iq85)
                         else:
                             iq = (100,iq85,None)
-                            #iq='IQAny (>%.2f arcsec)' % iq85
+                            #iq="IQAny (>%.2f arcsec)" % iq85
             
             # Append the iq band tuple to the output
             # Return value is (percentile, lower bound, upper bound)
@@ -1455,9 +1452,9 @@ def _iq_overlay(stars,data_shape):
     width = data_shape[1]
     height = data_shape[0]
     for star in stars:
-        x0 = star['x']
-        y0 = star['y']
-        #radius = star['fwhm']
+        x0 = star["x"]
+        y0 = star["y"]
+        #radius = star["fwhm"]
         radius = 16
         r2 = radius*radius
         quarter = int(math.ceil(radius * math.sqrt (0.5)))
