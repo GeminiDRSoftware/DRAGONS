@@ -122,7 +122,11 @@ class DataSpider(object):
         global batchno
         if batchnum != None:
             batchno = batchnum
-            
+          
+        if raiseExcept:
+            from astrodata.debugmodes import set_descriptor_throw
+            set_descriptor_throw(True)
+              
         onlylist = only.split(",")
         if (verbose):
             print "onlylist:",repr(onlylist)
