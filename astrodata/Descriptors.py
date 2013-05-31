@@ -60,14 +60,14 @@ class DescriptorValue(object):
     _extver_dict = None
     
     
-    def __init__(self,  initval, 
-                        format = None, 
-                        name = "unknown", 
-                        keyword = None,
-                        ad = None, 
-                        pytype = None,
-                        unit = None,
-                        primary_extname = "SCI"):
+    def __init__(self, initval, 
+                       format=None, 
+                       name="unknown", 
+                       keyword=None,
+                       ad=None, 
+                       pytype=None,
+                       unit=None,
+                       primary_extname="SCI"):
         self._extver_dict = {}
         self._primary_extname=primary_extname
         # print "DV82:", repr(unit)
@@ -116,7 +116,7 @@ class DescriptorValue(object):
             if ad:
                 for ext in ad:
                     self.dict_val.update(
-                       {(ext.extname(),ext.extver()) : self._val})
+                      {(ext.extname(),ext.extver()) : self._val})
             else:
                 self.dict_val = {("*",-1):self._val}
         #NOTE:
@@ -139,7 +139,6 @@ class DescriptorValue(object):
         # do after object is set up
         self._val = self.collapse_value() 
         self.collapse_by_extver()
-    
     
     def __float__(self):
         value = self.collapse_dict_val()
@@ -234,7 +233,7 @@ class DescriptorValue(object):
         else:
             return None
     
-    def convert_value_to(self, new_units, new_type = None):
+    def convert_value_to(self, new_units, new_type=None):
         # retval = self.unit.convert(self._val, new_units)
         newDict = copy(self.dict_val)
         for key in self.dict_val:
@@ -361,6 +360,12 @@ class DescriptorValue(object):
     def get_value(self, extver=None):
         return self.collapse_value(extver=extver)
     
+    def is_None(self):
+        if self.collapse_value() is None:
+            return True
+        else:
+            return False
+    
     def info(self):
         dvstr = ""
         print("\nDescriptor Value Info:")
@@ -385,7 +390,7 @@ class DescriptorValue(object):
                     repr(self.dict_val[key])))
             count += 1
     
-    def collapse_value(self, extver = None):
+    def collapse_value(self, extver=None):
         oldvalue = None
         primext = self.primary_extname
         # print "primest = " ,primext
@@ -517,7 +522,7 @@ class DescriptorValue(object):
 #          "%s has no method %s" % (str(type(other)),otherfuncname))
     
     
-    def overloaded_cmp(self,other):
+    def overloaded_cmp(self, other):
         val = self.collapse_value()
         
         if self._valid_collapse == False:
