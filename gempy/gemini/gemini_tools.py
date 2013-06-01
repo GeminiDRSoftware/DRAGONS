@@ -50,9 +50,9 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None):
     # since the log object is used in the except block 
     log = logutils.get_logger(__name__)
     
-    # The validate_input function ensures that adinput is not None and returns
-    # a list containing one or more AstroData objects
-    adinput = validate_input(adinput=adinput)
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more inputs
+    adinput_list = validate_input(input=adinput)
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -66,7 +66,7 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None):
                                  "PROFILE_FWHM","PROFILE_EE50"])
         
         # Loop over each input AstroData object in the input list
-        for ad in adinput:
+        for ad in adinput_list:
             
             # Check if OBJCAT already exists and just update if desired
             objcat = ad["OBJCAT",extver]
@@ -136,16 +136,16 @@ def array_information(adinput=None):
     # since the log object is used in the except block 
     log = logutils.get_logger(__name__)
     
-    # The validate_input function ensures that adinput is not None and returns
-    # a list containing one or more AstroData objects
-    adinput = validate_input(adinput=adinput)
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more inputs
+    adinput_list = validate_input(input=adinput)
     
     # Initialize the list of dictionaries of output array numbers
     # Keys will be (extname,extver)
     array_info_list = []
     try:
         # Loop over each input AstroData object in the input list
-        for ad in adinput:
+        for ad in adinput_list:
 
             arrayinfo = {}
 
@@ -417,13 +417,13 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
     log = logutils.get_logger(__name__)
     
     # The validate_input function ensures that the input is not None and
-    # returns a list containing one or more AstroData objects
-    adinput = validate_input(adinput=adinput)
-    aux = validate_input(adinput=aux)
+    # returns a list containing one or more inputs
+    adinput_list = validate_input(input=adinput)
+    aux_list = validate_input(input=aux)
     
     # Create a dictionary that has the AstroData objects specified by adinput
     # as the key and the AstroData objects specified by aux as the value
-    aux_dict = make_dict(key_list=adinput, value_list=aux)
+    aux_dict = make_dict(key_list=adinput_list, value_list=aux_list)
     
     # Initialize the list of output AstroData objects
     aux_output_list = []
@@ -441,7 +441,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
             extname = SCI
         
         # Loop over each input AstroData object in the input list
-        for ad in adinput:
+        for ad in adinput_list:
             
             # Get the associated auxiliary file
             this_aux = aux_dict[ad]
@@ -899,8 +899,8 @@ def convert_to_cal_header(adinput=None, caltype=None):
     log = logutils.get_logger(__name__)
     
     # The validate_input function ensures that the input is not None and
-    # returns a list containing one or more AstroData objects
-    adinput = validate_input(adinput=adinput)
+    # returns a list containing one or more inputs
+    adinput_list = validate_input(input=adinput)
     
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -913,7 +913,7 @@ def convert_to_cal_header(adinput=None, caltype=None):
         fitsfilenamecre = re.compile("^([NS])(20\d\d)([01]\d[0123]\d)(S)"\
                                      "(?P<fileno>\d\d\d\d)(.*)$")
 
-        for ad in adinput:
+        for ad in adinput_list:
 
             log.fullinfo("Setting OBSCLASS, OBSTYPE, GEMPRGID, OBSID, " +
                          "DATALAB, RELEASE, OBJECT, RA, DEC, CRVAL1, " +
@@ -1503,8 +1503,8 @@ def mark_history(adinput=None, keyword=None, comment=None):
     :type comment: string
     """
     # The validate_input function ensures that the input is not None and
-    # returns a list containing one or more AstroData objects
-    adinput_list = validate_input(adinput=adinput)
+    # returns a list containing one or more inputs
+    adinput_list = validate_input(input=adinput)
     
     # Get the current time to use for the time of last modification
     tlm = datetime.now().isoformat()[0:-7]
@@ -1663,15 +1663,15 @@ def trim_to_data_section(adinput=None):
     log = logutils.get_logger(__name__)
     
     # The validate_input function ensures that the input is not None and
-    # returns a list containing one or more AstroData objects
-    adinput = validate_input(adinput=adinput)
+    # returns a list containing one or more inputs
+    adinput_list = validate_input(input=adinput)
 
     # Initialize the list of output AstroData objects
     adoutput_list = []
  
     try:
 
-        for ad in adinput:
+        for ad in adinput_list:
 
             for sciext in ad[SCI]:
                 
@@ -1810,8 +1810,8 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
     log = logutils.get_logger(__name__)
     
     # The validate_input function ensures that the input is not None and
-    # returns a list containing one or more AstroData objects
-    adinput_list = validate_input(adinput=adinput)
+    # returns a list containing one or more inputs
+    adinput_list = validate_input(input=adinput)
     
     if len(adinput_list) > 1:
         raise Errors.Error("Please provide only one AstroData object as input")
@@ -1915,8 +1915,8 @@ def update_key_from_descriptor(adinput=None, descriptor=None, keyword=None,
     :type extname: string
     """
     # The validate_input function ensures that the input is not None and
-    # returns a list containing one or more AstroData objects
-    adinput_list = validate_input(adinput=adinput)
+    # returns a list containing one or more inputs
+    adinput_list = validate_input(input=adinput)
     
     if len(adinput_list) > 1:
         raise Errors.Error("Please provide only one AstroData object as input")
@@ -1947,26 +1947,26 @@ def update_key_from_descriptor(adinput=None, descriptor=None, keyword=None,
     update_key(adinput=ad, keyword=key, value=dv, comment=None,
                extname=extname) 
 
-def validate_input(adinput=None):
+def validate_input(input=None):
     """
     The validate_input helper function is used to validate the input value to
-    the adinput parameter. If adinput is None, an exception is raised. This
-    function returns a list containing one or more AstroData objects.
+    the input parameter. If input is None, an exception is raised. This
+    function returns a list containing one or more inputs.
     """
-    # If the adinput is None, raise an exception
-    if adinput is None:
-        raise Errors.InputError("The adinput cannot be None")
+    # If the input is None, raise an exception
+    if input is None:
+        raise Errors.InputError("The input cannot be None")
     
-    # If the adinput is a single AstroData object, put it in a list
-    if not isinstance(adinput, list):
-        adinput = [adinput]
+    # If the input is a single input, put it in a list
+    if not isinstance(input, list):
+        input = [input]
     
-    # If the adinput is an empty list, raise an exception
-    if len(adinput) == 0:
-        raise Errors.InputError("The adinput cannot be an empty list")
+    # If the input is an empty list, raise an exception
+    if len(input) == 0:
+        raise Errors.InputError("The input cannot be an empty list")
     
-    # Now, adinput is a list that contains one or more AstroData objects
-    return adinput
+    # Now, input is a list that contains one or more inputs
+    return input
 
 def write_database(ad, database_name=None, input_name=None):
     if input_name is None:
