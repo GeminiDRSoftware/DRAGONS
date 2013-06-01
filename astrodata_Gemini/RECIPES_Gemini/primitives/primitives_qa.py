@@ -1363,10 +1363,10 @@ def _iq_band(adinput=None,fwhm=None):
     # since the log object is used in the except block 
     log = logutils.get_logger(__name__)
 
-    # The validate_input function ensures that adinput is not None and returns
-    # a list containing one or more AstroData objects
-    adinput = gt.validate_input(adinput=adinput)
-    fwhm = gt.validate_input(adinput=fwhm)
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more inputs
+    adinput_list = gt.validate_input(input=adinput)
+    fwhm_list = gt.validate_input(input=fwhm)
 
     # Initialize the list of output IQ band tuples
     list_output = []
@@ -1380,18 +1380,18 @@ def _iq_band(adinput=None,fwhm=None):
         # if there is only one FWHM listed for all adinput, copy
         # that entry into a list that matches the length of the
         # adinput list
-        if len(fwhm)==1:
-            fwhm = [fwhm[0] for ad in adinput]
+        if len(fwhm_list)==1:
+            fwhm_list = [fwhm_list[0] for ad in adinput_list]
         else:
             # otherwise check that length of fwhm list matches 
             # the length of the adinput list
-            if len(adinput)!=len(fwhm):
+            if len(adinput_list)!=len(fwhm_list):
                 raise Errors.InputError("fwhm list must match length of " +
                                         "adinput list")
         
         # Loop over each input AstroData object in the input list
         count=0
-        for ad in adinput:
+        for ad in adinput_list:
 
             wfs = ad.wavefront_sensor().as_pytype()
             waveband = ad.wavelength_band().as_pytype()
@@ -1410,13 +1410,13 @@ def _iq_band(adinput=None,fwhm=None):
                         iq85 = iqConstraints[waveband][wfs]["85"]
 
                         # get iq band
-                        if fwhm[count]<iq20:
+                        if fwhm_list[count]<iq20:
                             iq = (20,None,iq20)
                             #iq="IQ20 (<%.2f arcsec)" % iq20
-                        elif fwhm[count]<iq70:
+                        elif fwhm_list[count]<iq70:
                             iq = (70,iq20,iq70)
                             #iq="IQ70 (%.2f-%.2f arcsec)" % (iq20,iq70)
-                        elif fwhm[count]<iq85:
+                        elif fwhm_list[count]<iq85:
                             iq = (85,iq70,iq85)
                             #iq="IQ85 (%.2f-%.2f arcsec)" % (iq70,iq85)
                         else:

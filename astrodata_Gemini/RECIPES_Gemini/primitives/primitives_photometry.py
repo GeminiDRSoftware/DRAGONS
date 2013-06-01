@@ -518,16 +518,16 @@ def _match_objcat_refcat(adinput=None):
     # since the log object is used in the except block 
     log = gemLog.getGeminiLog()
 
-    # The validate_input function ensures that adinput is not None and returns
-    # a list containing one or more AstroData objects
-    adinput = gt.validate_input(adinput=adinput)
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more inputs
+    adinput_list = gt.validate_input(input=adinput)
 
     # Initialize the list of output AstroData objects
     adoutput_list = []
     try:
 
         # Loop over each input AstroData object in the input list
-        for ad in adinput:
+        for ad in adinput_list:
             filter_name = ad.filter_name(pretty=True).as_pytype()
             if filter_name in ['u', 'g', 'r', 'i', 'z']:
                 magcolname = filter_name+'mag'

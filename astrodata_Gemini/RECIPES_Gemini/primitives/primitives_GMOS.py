@@ -1131,16 +1131,17 @@ def _tile_objcat(adinput=None,adoutput=None,mapping_dict=None):
     This function tiles together separate OBJCAT extensions, converting
     the pixel coordinates to the new WCS.
     """
-
-    adinput = gt.validate_input(adinput=adinput)
-    adoutput = gt.validate_input(adinput=adoutput)
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more inputs
+    adinput_list = gt.validate_input(input=adinput)
+    adoutput_list = gt.validate_input(input=adoutput)
 
     if mapping_dict is None:
         raise Errors.InputError("mapping_dict must not be None")
 
-    if len(adinput)!=len(adoutput):
+    if len(adinput_list)!=len(adoutput_list):
         raise Errors.InputError("adinput must have same length as adoutput")
-    output_dict = gt.make_dict(key_list=adinput, value_list=adoutput)
+    output_dict = gt.make_dict(key_list=adinput_list, value_list=adoutput_list)
 
     adoutput_list = []
     for ad in adinput:
