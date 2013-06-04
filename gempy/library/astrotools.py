@@ -1132,10 +1132,18 @@ class FittedFunction:
         return self.theta
 
     def get_fwhm_ellipticity(self):
+        x_width = self.x_width
+        y_width = self.y_width
+
         # convert fit parameters to FWHM, ellipticity
+        if self.function_name == "moffat":
+            # convert width to Gaussian-type sigma
+            x_width = x_width*np.sqrt(((2**(1/beta)-1)/(2*np.log(2))))
+            y_width = y_width*np.sqrt(((2**(1/beta)-1)/(2*np.log(2))))
+        
         fwhmx = abs(2*np.sqrt(2*np.log(2))*x_width)
         fwhmy = abs(2*np.sqrt(2*np.log(2))*y_width)
-        pa = (theta * (180 / np.pi))
+        pa = (self.theta * (180 / np.pi))
         pa = pa % 360
         
         if fwhmy < fwhmx:
@@ -1213,13 +1221,7 @@ def get_fitted_function(stamp_data, default_fwhm, default_bg=None, centroid_func
 
     beta = None
     if centroid_function == "moffat":
-        # convert width to Gaussian-type sigma
-        x_width = new_pars[4]
-        y_width = new_pars[5]
         beta = new_pars[7]
-        
-        new_pars[4] = x_width * np.sqrt(((2**(1/beta)-1)/(2*np.log(2))))
-        new_pars[5] = y_width * np.sqrt(((2**(1/beta)-1)/(2*np.log(2))))
 
     # strip off the beta from moffat
     pars = new_pars[:7]
