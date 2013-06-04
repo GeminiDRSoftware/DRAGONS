@@ -1064,6 +1064,8 @@ class FittedFunction:
     
     Members
     ----------
+    get_model_function(self): ndarray
+        returns an ndarray representing values of the fitted function
     get_success(): int
         the value returned from scipy.optimize.leastsq
     get_name(): str
@@ -1079,7 +1081,8 @@ class FittedFunction:
     get_fwhm_ellipticity(): (float, float)
         returns the function width converted to FWHM and ellipticity
     """
-    def __init__(self, function_name, success, bg, peak, x_ctr, y_ctr, x_width, y_width, theta):
+    def __init__(self, function, function_name, success, bg, peak, x_ctr, y_ctr, x_width, y_width, theta, beta=None):
+        self.function = function
         self.success = success
         self.function_name = function_name
         self.background = bg
@@ -1089,6 +1092,23 @@ class FittedFunction:
         self.x_width = x_width
         self.y_width = y_width
         self.theta = theta
+        self.beta = beta
+
+    def get_model_function(self):
+        pars = (self.background,
+                self.peak,
+                self.x_ctr,
+                self.y_ctr,
+                self.x_width,
+                self.y_width,
+                self.theta)
+        if self.function_name == "gauss":
+            return self.function.model_gauss_2d(pars)
+        elif self.function_name == "moffat":
+            pars = pars + (self.beta,)
+            return self.function.model_moffat_2d(pars)
+        else:
+            raise Errors.InputError("Function %s not supported" % self.function_name)
 
     def get_success(self):
         return self.success
@@ -1130,7 +1150,7 @@ class FittedFunction:
         fwhm = np.sqrt(fwhmx * fwhmy)
         
         return fwhm, ellip
-        
+
             
 def get_fitted_function(stamp_data, default_fwhm, default_bg=None, centroid_function="moffat"):
     """
@@ -1191,6 +1211,7 @@ def get_fitted_function(stamp_data, default_fwhm, default_bg=None, centroid_func
                                         pars,
                                         maxfev=100)
 
+    beta = None
     if centroid_function == "moffat":
         # convert width to Gaussian-type sigma
         x_width = new_pars[4]
@@ -1203,4 +1224,4 @@ def get_fitted_function(stamp_data, default_fwhm, default_bg=None, centroid_func
     # strip off the beta from moffat
     pars = new_pars[:7]
     
-    return FittedFunction(centroid_function, success, *pars)
+    return FittedFunction(mf, centroid_function, success, *pars, beta=beta)
