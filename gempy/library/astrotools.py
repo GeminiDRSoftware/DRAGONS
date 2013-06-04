@@ -1064,8 +1064,10 @@ class FittedFunction:
     
     Members
     ----------
-    get_model_function(self): ndarray
+    get_model_function(): ndarray
         returns an ndarray representing values of the fitted function
+    get_rsquared(): float
+        a number between zero and one describing how good the fit is
     get_success(): int
         the value returned from scipy.optimize.leastsq
     get_name(): str
@@ -1094,7 +1096,7 @@ class FittedFunction:
         self.theta = theta
         self.beta = beta
 
-    def get_model_function(self):
+    def get_params(self):
         pars = (self.background,
                 self.peak,
                 self.x_ctr,
@@ -1102,13 +1104,29 @@ class FittedFunction:
                 self.x_width,
                 self.y_width,
                 self.theta)
+        
+        if self.function_name == "moffat":
+            pars = pars + (self.beta,)
+
+        return pars        
+
+    def get_model_function(self):
+        pars = self.get_params()
         if self.function_name == "gauss":
             return self.function.model_gauss_2d(pars)
         elif self.function_name == "moffat":
-            pars = pars + (self.beta,)
             return self.function.model_moffat_2d(pars)
         else:
             raise Errors.InputError("Function %s not supported" % self.function_name)
+
+    def get_rsquared(self):
+        pars = self.get_params()
+        residuals = self.function.calc_diff(pars)
+        ss_err = (residuals**2).sum()
+
+        data = self.function.stamp
+        ss_tot = ((data - data.mean())**2).sum()
+        return 1.0 - (ss_err / ss_tot)
 
     def get_success(self):
         return self.success
