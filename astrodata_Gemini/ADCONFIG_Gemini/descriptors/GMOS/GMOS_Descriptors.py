@@ -985,7 +985,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     def pixel_scale(self, dataset, **args):
         # Get the lookup table containing the pixel scale values
         gmosPixelScales = Lookups.get_lookup_table(
-          "Gemini/GMOS/GMOSPixelScale", "gmosPixelScales")
+            "Gemini/GMOS/GMOSPixelScale", "gmosPixelScales")
         
         # Get the values of the instrument and the binning of the y-axis using
         # the appropriate descriptors
@@ -1181,7 +1181,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         # Get the lookup table containing the saturation values by amplifier
         gmosThresholds = Lookups.get_lookup_table(
-          "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
+            "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
         
         # The hard limit for saturation is the controller digitization limit
         controller_limit = 65535
@@ -1205,7 +1205,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # value and the BUNIT keywords from the header of each pixel data
         # extension as a dictionary, where the key of the dictionary is an
         # ("*", EXTVER) tuple
-        ampname_dict = gmu.get_key_value_dict(dataset, keyword3)
+        ampname_dict = gmu.get_key_value_dict(dataset, keyword3,
+                                              dict_key_extver=True)
         
         if ampname_dict is None:
             # The get_key_value_dict() function returns None if a value cannot
@@ -1214,8 +1215,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
-        overscan_dict = gmu.get_key_value_dict(dataset, keyword4)
-        bunit_dict = gmu.get_key_value_dict(dataset, "BUNIT")
+        overscan_dict = gmu.get_key_value_dict(dataset, keyword4,
+                                               dict_key_extver=True)
+        bunit_dict = gmu.get_key_value_dict(dataset, "BUNIT",
+                                            dict_key_extver=True)
         
         # Get the name of the detector, the gain and the binning of the x-axis
         # and y-axis values using the appropriate descriptors
@@ -1232,22 +1235,18 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
-        # Use as_dict() to return the gain value as a dictionary where the key
-        # of the dictionary is an ("*", EXTVER) tuple, rather than an object
-        gain_dict = gain_dv.as_dict()
-        
         # Determine the bin factor. If the bin factor is great than 2, the
         # saturation level will be equal to the controller digitization limit.
         bin_factor = detector_x_bin_dv * detector_y_bin_dv
         
-        for ext_name_ver, ampname in ampname_dict.iteritems():
-            gain = gain_dict[ext_name_ver]
+        for extver, ampname in ampname_dict.iteritems():
+            gain = gain_dv.get_value(extver=extver)
             
             # Determine whether it is required to calculate the bias level
             # (bias level calculations can take some time)
             overscan = None
             if overscan_dict is not None:
-                overscan = overscan_dict[ext_name_ver]
+                overscan = overscan_dict[extver]
             if overscan is not None:
                 # The overscan was subtracted from the data
                 data_contains_bias = False
@@ -1268,12 +1267,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # Correct the controller limit for bias level and units
             processed_limit = controller_limit
             if not data_contains_bias:
-                processed_limit -= bias_level[ext_name_ver]
+                processed_limit -= bias_level[extver]
             
             # Check units of data (i.e., ADU vs. electrons)
             bunit = None
             if bunit_dict is not None:
-                bunit = bunit_dict[ext_name_ver]
+                bunit = bunit_dict[extver]
             if bunit == "electron" or bunit == "electrons":
                 processed_limit *= gain
             
@@ -1304,14 +1303,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # The saturation level does not contain the bias; add it
                 # in if necessary
                 if data_contains_bias:
-                    saturation += bias_level
+                    saturation += bias_level[extver]
                 
                 # Check whether the value is now over the controller limit;
                 # if so, set it to the hard limit
                 if saturation > processed_limit:
                     saturation = processed_limit
             
-            ret_saturation_level_dict.update({ext_name_ver: saturation})
+            ret_saturation_level_dict.update({extver: saturation})
         
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_saturation_level_dict,
@@ -1322,7 +1321,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if "IMAGE" in dataset.types:
             # If imaging, associate the filter name with a central wavelength
             filter_table = Lookups.get_lookup_table(
-              "Gemini/GMOS/GMOSFilterWavelength", "filter_wavelength")
+                "Gemini/GMOS/GMOSFilterWavelength", "filter_wavelength")
             filter = str(dataset.filter_name(pretty=True))
             if filter in filter_table:
                 ctrl_wave = filter_table[filter]
