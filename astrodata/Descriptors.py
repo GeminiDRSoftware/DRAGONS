@@ -72,7 +72,7 @@ class DescriptorValue(object):
         self._primary_extname=primary_extname
         # print "DV82:", repr(unit)
         
-        if pytype == None and self.pytype == None:
+        if pytype is None and self.pytype is None:
             self.pytype = pytype = type(initval)
         self.originalinitval = initval
         if isinstance(initval, DescriptorValue):
@@ -132,7 +132,7 @@ class DescriptorValue(object):
         
         if format:
             self.format = format
-        elif ad != None and ad.descriptorFormat:
+        elif ad is not None and ad.descriptorFormat:
             self.format = ad.descriptorFormat
         else:
             self.format = None
@@ -151,10 +151,10 @@ class DescriptorValue(object):
     def __str__(self):
         format = self.format
         # do any automatic format heuristics
-        if format == None:
+        if format is None:
             val = self.collapse_value()
             #print "D140:", self._val, self._valid_collapse
-            if self._valid_collapse == False:
+            if not self._valid_collapse:
                 format = "as_dict"
             else:
                 format = "value"
@@ -205,7 +205,7 @@ class DescriptorValue(object):
     
     def collapse_dict_val(self):
         value = self.collapse_value()
-        if value == None:
+        if value is None:
             raise Errors.DescriptorsError("\n"
                 "Cannot convert DescriptorValue to scaler\n" 
                 "as the value varies across extens versions\n"
@@ -221,7 +221,7 @@ class DescriptorValue(object):
     
     def validate_collapse_by_extver(self, edict):
         for key in edict:
-            if edict[key]==CouldNotCollapse:
+            if edict[key] == CouldNotCollapse:
                 return False
         return True
         
@@ -242,7 +242,7 @@ class DescriptorValue(object):
             if new_type:
                 newval = new_type(newval)
             else:
-                if self.pytype != None:
+                if self.pytype is not None:
                     newval = self.pytype(newval)
             newDict.update({key:newval})
             
@@ -273,8 +273,8 @@ class DescriptorValue(object):
         dictionary and lists.
         """
         # case where the value cannot collapse (dict, list)
-        if self._valid_collapse == False:
-            if convert_values is True and as_type != None:
+        if not self._valid_collapse:
+            if convert_values is True and as_type is not None:
                 if as_type == dict:
                     return self.dict_val
                 elif as_type == list:
@@ -292,7 +292,7 @@ class DescriptorValue(object):
                         else:
                             retdict[key] = as_type(retdict[key])
                     return retdict
-            elif convert_values is False and as_type != None:
+            elif convert_values is False and as_type is not None:
                 if as_type == dict:
                     return self.dict_val
                 elif as_type == list:
@@ -318,7 +318,7 @@ class DescriptorValue(object):
                 return str(self)
         
         # case where value is a single ext fits (int, str, float)
-        elif as_type != None:
+        elif as_type is not None:
             if as_type == dict:
                 return self.dict_val
             elif as_type == list and self.pytype != list:
@@ -360,8 +360,8 @@ class DescriptorValue(object):
     def get_value(self, extver=None):
         return self.collapse_value(extver=extver)
     
-    def is_None(self):
-        if self.collapse_value() is None:
+    def is_none(self):
+        if self._valid_collapse and self._val is None:
             return True
         else:
             return False
@@ -406,18 +406,18 @@ class DescriptorValue(object):
                 #print "skipping "+ext_name
                 continue
             value = self.dict_val[key]
-            if oldvalue == None:
+            if oldvalue is None:
                 oldvalue = value
             else:
                 if oldvalue != value:
-                    if extver == None:
+                    if extver is None:
                         self._val = CouldNotCollapse
                         self._valid_collapse = False
                     else:
                         self._extver_dict[extver] = CouldNotCollapse
                     return None
         # got here then all values were identical
-        if extver == None:
+        if extver is None:
             self._val = value
             self._valid_collapse = True
         else:
@@ -441,7 +441,7 @@ class DescriptorValue(object):
     def overloaded(self, other):
         val = self.collapse_value()
         
-        if self._valid_collapse == False:
+        if not self._valid_collapse:
             mes = "DescriptorValue contains complex result (differs for"
             mes += "different extension) and cannot be used as a simple "
             mes += str(self.pytype)
@@ -525,7 +525,7 @@ class DescriptorValue(object):
     def overloaded_cmp(self, other):
         val = self.collapse_value()
         
-        if self._valid_collapse == False:
+        if not self._valid_collapse:
             mes = "DescriptorValue contains complex result (differs for "
             mes += "different extension) and cannot be used as a simple"
             mes += str(self.pytype)
@@ -546,7 +546,7 @@ class DescriptorValue(object):
         if hasattr(mine, "__eq__"):
             try:
                 retval = eval ("mine == other")
-                if retval == True:
+                if retval:
                     return 0
             except:
                 pass
