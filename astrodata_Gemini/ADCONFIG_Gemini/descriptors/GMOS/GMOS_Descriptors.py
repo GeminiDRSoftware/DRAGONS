@@ -44,27 +44,29 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
-        # Get the pretty (1-based indexing) readout area of the CCD (detsec)
-        # using the appropriate descriptor. Use as_dict() to return the values
-        # as a dictionary where the key of the dictionary is an ("*", EXTVER)
-        # tuple.
-        detsec_dict = dataset.detector_section(pretty=True).as_dict()
+        # Get the pretty (1-based indexing) readout area of the CCD using the
+        # appropriate descriptor
+        detector_section_dv = dataset.detector_section(pretty=True)
         
-        if detsec_dict is None:
+        if detector_section_dv.is_none():
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface. 
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
+        # Use as_dict() to return the detector section value as a dictionary
+        # where the key of the dictionary is an ("*", EXTVER) tuple 
+        detector_section_dict = detector_section_dv.as_dict()
+        
         for ext_name_ver, ampname in ampname_dict.iteritems():
-            detsec = detsec_dict[ext_name_ver]
+            detector_section = detector_section_dict[ext_name_ver]
             
-            if ampname is None or detsec is None:
+            if ampname is None or detector_section is None:
                 amp_read_area = None
             else:
                 # Use the composite amp_read_area string as the value
-                amp_read_area = "'%s':%s" % (ampname, detsec)
+                amp_read_area = "'%s':%s" % (ampname, detector_section)
             
             # Update the dictionary with the amp_read_area value
             ret_amp_read_area_dict.update({ext_name_ver:amp_read_area})
@@ -94,19 +96,19 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # the name of the array keyword no longer exists in the pixel data
             # extensions. Instead, determine the value of the detector name
             # using the appropriate descriptor
-            detector_name = dataset.detector_name()
+            detector_name_dv = dataset.detector_name()
             
-            if detector_name is None:
+            if detector_name_dv.is_none():
                 # The descriptor functions return None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
                 # It will be dealt with by the CalculatorInterface. 
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
             
-            ret_array_name = detector_name
+            ret_array_name = detector_name_dv
         else:
             ret_array_name = array_name_dict
-            
+        
         # Instantiate the return DescriptorValue (DV) object using the newly
         # created dictionary
         ret_dv = DescriptorValue(ret_array_name, name="array_name", ad=dataset)
@@ -556,21 +558,26 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     raise dataset.exception_info
             
             # Get the UT date, gain setting and read speed setting values using
-            # the appropriate descriptors. Use as_dict() and as_pytype() to
-            # return the values as a dictionary where the key of the dictionary
-            # is an ("*", EXTVER) tuple and the default python type,
-            # respectively, rather than an object.
-            ut_date = str(dataset.ut_date())
-            gain_setting_dict = dataset.gain_setting().as_dict()
-            read_speed_setting = dataset.read_speed_setting().as_pytype()
+            # the appropriate descriptors
+            ut_date_dv = dataset.ut_date()
+            gain_setting_dv = dataset.gain_setting()
+            read_speed_setting_dv = dataset.read_speed_setting()
             
-            if (ut_date is None or read_speed_setting is None or
-                gain_setting_dict is None):
+            if (ut_date_dv.is_none() or gain_setting_dv.is_none() or
+                read_speed_setting_dv.is_none()):
                 # The descriptor functions return None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
                 # It will be dealt with by the CalculatorInterface.
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
+            
+            # Use as_dict() and as_pytype() to return the values as a
+            # dictionary where the key of the dictionary is an ("*", EXTVER)
+            # tuple and the default python type, respectively, rather than an
+            # object
+            ut_date = str(ut_date_dv)
+            gain_setting_dict = gain_setting_dv.as_dict()
+            read_speed_setting = read_speed_setting_dv.as_pytype()
             
             obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
             old_ut_date = datetime(2006, 8, 31, 0, 0)
@@ -680,9 +687,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 if gain_dict is None:
                     # Resort to getting the gain using the appropriate
                     # descriptor (this will use the updated gain value). Use
-                    # as_dict() to return the values as a dictionary where the
-                    # key of the dictionary is an ("*", EXTVER) tuple rather
-                    # than an object. 
+                    # as_dict() to return the gain value as a dictionary where
+                    # the key of the dictionary is an ("*", EXTVER) tuple
+                    # rather than an object. 
                     gain_dict = dataset.gain().as_dict()
                     
                 else:
@@ -733,20 +740,21 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # detector_y_bin and amp_read_area in addition to the observation id.
         # Get the observation id, the binning of the x-axis and y-axis and the
         # amp_read_area values using the appropriate descriptors.
-        observation_id = dataset.observation_id()
-        detector_x_bin = dataset.detector_x_bin()
-        detector_y_bin = dataset.detector_y_bin()
+        observation_id_dv = dataset.observation_id()
+        detector_x_bin_dv = dataset.detector_x_bin()
+        detector_y_bin_dv = dataset.detector_y_bin()
+        amp_read_area_dv = dataset.amp_read_area()
         
-        # Return the amp_read_area as an ordered list
-        amp_read_area = dataset.amp_read_area().as_list()
-        
-        if (observation_id is None or detector_x_bin is None or
-            detector_x_bin is None or amp_read_area is None):
+        if (observation_id_dv.is_none() or detector_x_bin_dv.is_none() or
+            detector_x_bin_dv.is_none() or amp_read_area_dv.is_none()):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
+        
+        # Return the amp_read_area as an ordered list
+        amp_read_area_list = amp_read_area_dv.as_list()
         
         # For all data other than data with an AstroData type of GMOS_BIAS, the
         # group id contains the filter_name. Also, for data with an AstroData
@@ -754,12 +762,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # the observation id. 
         if "GMOS_BIAS" in dataset.types:
             ret_group_id = "%s_%s_%s" % (
-                detector_x_bin, detector_y_bin, amp_read_area)
+                detector_x_bin_dv, detector_y_bin_dv, amp_read_area_list)
         else:
             # Get the filter name using the appropriate descriptor
-            filter_name = dataset.filter_name(pretty=True)
+            filter_name_dv = dataset.filter_name(pretty=True)
             
-            if filter_name is None:
+            if filter_name_dv.is_none():
                 # The descriptor functions return None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
                 # It will be dealt with by the CalculatorInterface.
@@ -768,11 +776,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             if "GMOS_IMAGE_FLAT" in dataset.types:
                 ret_group_id = "%s_%s_%s_%s" % (
-                    detector_x_bin, detector_y_bin, filter_name, amp_read_area)
+                    detector_x_bin_dv, detector_y_bin_dv, filter_name_dv,
+                    amp_read_area_list)
             else:
                 ret_group_id = "%s_%s_%s_%s_%s" % (
-                    observation_id, detector_x_bin, detector_y_bin,
-                    filter_name, amp_read_area)
+                    observation_id_dv, detector_x_bin_dv, detector_y_bin_dv,
+                    filter_name_dv, amp_read_area_list)
         
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_group_id, name="group_id", ad=dataset)
@@ -850,21 +859,25 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                                          "nominal_zeropoints")
         
         # Get the values of the gain, detector name and filter name using the
-        # appropriate descriptors. Use as_dict() and as_pytype() to return the
-        # values as a dictionary where the key of the dictionary is an
-        # ("*", EXTVER) tuple and the default python type, respectively, rather
-        # than an object.
-        gain_dict = dataset.gain().as_dict()
-        detector_name_dict = dataset.detector_name().as_dict()
-        filter_name = dataset.filter_name(pretty=True).as_pytype()
+        # appropriate descriptors.
+        gain_dv = dataset.gain()
+        detector_name_dv = dataset.detector_name()
+        filter_name_dv = dataset.filter_name(pretty=True)
         
-        if (gain_dict is None or detector_name_dict is None or
-            filter_name is None):
+        if (gain_dv.is_none() or detector_name_dv.is_none() or
+            filter_name_dv.is_none()):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
+        
+        # Use as_dict() and as_pytype() to return the values as a dictionary
+        # where the key of the dictionary is an ("*", EXTVER) tuple and the
+        # default python type, respectively, rather than an object
+        gain_dict = gain_dv.as_dict()
+        detector_name_dict = detector_name_dv.as_dict()
+        filter_name = filter_name_dv.as_pytype()
         
         # Get the value of the BUNIT keyword from the header of each pixel data
         # extension as a dictionary where the key of the dictionary is an
@@ -908,14 +921,16 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def non_linear_level(self, dataset, **args):
         # Set the non linear level equal to the saturation level for GMOS
-        ret_non_linear_level = dataset.saturation_level()
+        non_linear_level_dv = dataset.saturation_level()
         
-        if ret_non_linear_level is None:
+        if non_linear_level_dv.is_none():
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
+        
+        ret_non_linear_level = non_linear_level_dv
         
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_non_linear_level, name="non_linear_level",
@@ -973,10 +988,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
           "Gemini/GMOS/GMOSPixelScale", "gmosPixelScales")
         
         # Get the values of the instrument and the binning of the y-axis using
-        # the appropriate descriptors. Use as_pytype() to return the values as
-        # the default python type, rather than an object.
-        instrument = dataset.instrument().as_pytype()
-        detector_y_bin = dataset.detector_y_bin()
+        # the appropriate descriptors
+        instrument_dv = dataset.instrument()
+        detector_y_bin_dv = dataset.detector_y_bin()
         
         # Determine the detector type keyword from the global keyword
         # dictionary
@@ -986,13 +1000,17 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # PHU
         detector_type = dataset.phu_get_key_value(keyword)
         
-        if (instrument is None or detector_y_bin is None or
+        if (instrument_dv.is_none() or detector_y_bin_dv.is_none() or
             detector_type is None):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
+        
+        # Use as_pytype() to return the instrument value as the default python
+        # type, rather than an object
+        instrument = instrument_dv.as_pytype()
         
         # Get the unbinned pixel scale (in arcseconds per unbinned pixel) from
         # the lookup table 
@@ -1004,7 +1022,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             raise Errors.TableKeyError()
         
         # Return the binned pixel scale value
-        ret_pixel_scale = float(detector_y_bin * raw_pixel_scale)
+        ret_pixel_scale = float(detector_y_bin_dv * raw_pixel_scale)
         
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_pixel_scale, name="pixel_scale",
@@ -1062,19 +1080,25 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                                        "gmosampsRdnoiseBefore20060831"))
             
             # Get the UT date, gain setting and read speed setting values using
-            # the appropriate descriptors. Use as_dict() and as_pytype() to
-            # return the values as a dictionary and the default python type,
-            # respectively, rather than an object.
-            ut_date = str(dataset.ut_date())
-            gain_setting_dict = dataset.gain_setting().as_dict()
-            read_speed_setting = dataset.read_speed_setting().as_pytype()
+            # the appropriate descriptors
+            ut_date_dv = dataset.ut_date()
+            gain_setting_dv = dataset.gain_setting()
+            read_speed_setting_dv = dataset.read_speed_setting()
             
-            if gain_setting_dict is None or read_speed_setting is None:
-                # The phu_get_key_value() function returns None if a value
-                # cannot be found and stores the exception info. Re-raise the
-                # exception. It will be dealt with by the CalculatorInterface.
+            if (ut_date_dv.is_none() or gain_setting_dv.is_none() or
+                read_speed_setting_dv.is_none()):
+                # The descriptor functions return None if a value cannot be
+                # found and stores the exception info. Re-raise the exception.
+                # It will be dealt with by the CalculatorInterface.
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
+            
+            # Use as_dict() and as_pytype() to return the values as a
+            # dictionary and the default python type, respectively, rather than
+            # an object
+            ut_date = str(ut_date_dv)
+            gain_setting_dict = gain_setting_dv.as_dict()
+            read_speed_setting = read_speed_setting_dv.as_pytype()
             
             obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
             old_ut_date = datetime(2006, 8, 31, 0, 0)
@@ -1194,25 +1218,27 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         bunit_dict = gmu.get_key_value_dict(dataset, "BUNIT")
         
         # Get the name of the detector, the gain and the binning of the x-axis
-        # and y-axis values using the appropriate descriptors. Use as_dict() to
-        # return the values as a dictionary where the key of the dictionary is
-        # an ("*", EXTVER) tuple, rather than an object.
-        detector_name = dataset.detector_name(pretty=True)
-        gain_dict = dataset.gain().as_dict()
-        detector_x_bin = dataset.detector_x_bin()
-        detector_y_bin = dataset.detector_y_bin()
+        # and y-axis values using the appropriate descriptors
+        detector_name_dv = dataset.detector_name(pretty=True)
+        gain_dv = dataset.gain()
+        detector_x_bin_dv = dataset.detector_x_bin()
+        detector_y_bin_dv = dataset.detector_y_bin()
         
-        if (detector_name is None or gain_dict is None or
-            detector_x_bin is None or detector_y_bin is None):
+        if (detector_name_dv.is_none() or gain_dv.is_none() or
+            detector_x_bin_dv.is_none() or detector_y_bin_dv.is_none()):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
+        # Use as_dict() to return the gain value as a dictionary where the key
+        # of the dictionary is an ("*", EXTVER) tuple, rather than an object
+        gain_dict = gain_dv.as_dict()
+        
         # Determine the bin factor. If the bin factor is great than 2, the
         # saturation level will be equal to the controller digitization limit.
-        bin_factor = detector_x_bin * detector_y_bin
+        bin_factor = detector_x_bin_dv * detector_y_bin_dv
         
         for ext_name_ver, ampname in ampname_dict.iteritems():
             gain = gain_dict[ext_name_ver]
@@ -1234,7 +1260,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 data_contains_bias = True
             
             if ((not data_contains_bias) or
-                (not detector_name == "EEV" and data_contains_bias and
+                (not detector_name_dv == "EEV" and data_contains_bias and
                  bin_factor <= 2)):
                 # Calculate the bias level
                 bias_level = gdc.get_bias_level(adinput=dataset, estimate=True)
@@ -1248,10 +1274,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             bunit = None
             if bunit_dict is not None:
                 bunit = bunit_dict[ext_name_ver]
-            if bunit == "electron" or bunit == "electrons":
+            if "electron" in bunit:
                 processed_limit *= gain
             
-            if detector_name == "EEV" or bin_factor > 2:
+            if detector_name_dv == "EEV" or bin_factor > 2:
                 # For old EEV CCDs, use the detector limit
                 saturation = processed_limit
             else:
@@ -1272,7 +1298,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 
                 # The saturation level is reported in electrons; convert
                 # it to ADU if needed
-                if (bunit!="electron" and bunit!="electrons"):
+                if "electron" not in bunit:
                     saturation = saturation / gain
                 
                 # The saturation level does not contain the bias; add it
