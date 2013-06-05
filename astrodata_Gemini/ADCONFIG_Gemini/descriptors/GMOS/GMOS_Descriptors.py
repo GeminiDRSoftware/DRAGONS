@@ -1274,7 +1274,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             bunit = None
             if bunit_dict is not None:
                 bunit = bunit_dict[ext_name_ver]
-            if "electron" in bunit:
+            if bunit == "electron" or bunit == "electrons":
                 processed_limit *= gain
             
             if detector_name_dv == "EEV" or bin_factor > 2:
@@ -1298,7 +1298,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 
                 # The saturation level is reported in electrons; convert
                 # it to ADU if needed
-                if "electron" not in bunit:
+                if bunit != "electron" or bunit != "electrons":
                     saturation = saturation / gain
                 
                 # The saturation level does not contain the bias; add it
