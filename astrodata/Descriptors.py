@@ -29,6 +29,7 @@ from copy import copy
 
 import DescriptorUnits as Units
 from DescriptorUnits import Unit
+import pprint
 
 # utility functions
 def whoami():
@@ -166,18 +167,24 @@ class DescriptorValue(object):
             retstr = str(self.dict_val)
         elif format == "db" or format == "value":
             self.collapse_value()
-            if self._val != CouldNotCollapse:
-                retstr = str(val)
+            if self._valid_collapse == True:
+                retstr = str(self._val)
             else:
+                #SEE IF IT COLLAPSES BY EXTVER
                 #print "D157:", self._primary_extname
                 if (format == "db"):
-                    dv = self.dict_val
+                    #dv = self.dict_val
+                    bevdict = self.collapse_by_extver_if_valid()  
+                    if (not bevdict):
+                        # print "D179: not bevdict"
+                        dv = self.dict_val
+                    else:
+                        dv = bevdict                            
                     parts = []
-                    
                     for k in dv:
-                        name,ver = k
-                        if name == self._primary_extname:
-                            parts.append(dv[k])
+                        parts.append(str(dv[k]))                       
+                        #if name == self._primary_extname:
+                        #    parts.append(dv[k])
                     #print "D166:", repr(parts)
                     parts.sort()
                     #print "D166:", repr(parts)
@@ -192,11 +199,11 @@ class DescriptorValue(object):
         return retstr
     
     def _get_primary_extname(self):
-        print "get primary extname"
+        #print "get primary extname"
         return self._primary_extname
         
     def _set_primary_extname(self, val):
-        print "setprimnam"
+        #print "setprimnam"
         self._val = None
         self._primary_extname = val
         
