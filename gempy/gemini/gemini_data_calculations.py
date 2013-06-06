@@ -45,13 +45,13 @@ def _get_bias_level(adinput=None):
         # The type of CCD determines the number of contaminated columns in the
         # overscan region. Get the pretty detector name value using the
         # appropriate descriptor.
-        detector_name = adinput.detector_name(pretty=True)
+        detector_name_dv = adinput.detector_name(pretty=True)
         
-        if detector_name == "EEV":
+        if detector_name_dv == "EEV":
             nbiascontam = 4
-        elif detector_name == "e2vDD":
+        elif detector_name_dv == "e2vDD":
             nbiascontam = 5
-        elif detector_name == "Hamamastu":
+        elif detector_name_dv == "Hamamastu":
             nbiascontam = 4
         else:
             nbiascontam = 4
@@ -69,10 +69,10 @@ def _get_bias_level(adinput=None):
                 overscan_section[1] -= 1
             
             # Extract overscan data. In numpy arrays, y indices come first.
-            overdata = adinput[SCI,extver].data[
-              overscan_section[2]:overscan_section[3],
-              overscan_section[0]:overscan_section[1]]
-            bias_level = np.median(overdata)
+            overscan_data = adinput[SCI,extver].data[
+                overscan_section[2]:overscan_section[3],
+                overscan_section[0]:overscan_section[1]]
+            bias_level = np.median(overscan_data)
             
             # Update the dictionary with the bias level value
             ret_bias_level.update({extver: bias_level})
@@ -99,10 +99,12 @@ def _get_bias_level_estimate(adinput=None):
     # Get the overscan value and the raw bias level from the header of each
     # pixel data extension as a dictionary where the key of the dictionary is
     # an EXTVER integer
-    overscan_value_dict = gmu.get_key_value_dict(adinput, "OVERSCAN",
-                                                 dict_key_extver=True)
-    raw_bias_level_dict = gmu.get_key_value_dict(adinput, "RAWBIAS",
-                                                 dict_key_extver=True)
+    keyword_value_dict = gmu.get_key_value_dict(
+        adinput=adinput, keyword=["OVERSCAN", "RAWBIAS"], dict_key_extver=True)
+    
+    overscan_value_dict = keyword_value_dict["OVERSCAN"]
+    raw_bias_level_dict = keyword_value_dict["RAWBIAS"]
+    
     if overscan_value_dict is None:
         
         # If there is no overscan value for any extensions, use the raw bias
@@ -122,7 +124,7 @@ def _get_bias_level_estimate(adinput=None):
                     # extension, use the static bias levels from the lookup
                     # table as the value for the bias level
                     bias_level = _get_static_bias_level_for_ext(
-                      adinput=adinput[SCI,extver])
+                        adinput=adinput[SCI,extver])
                 else:
                     bias_level = raw_bias_level
                 
@@ -141,7 +143,7 @@ def _get_bias_level_estimate(adinput=None):
                     # use the static bias levels from the lookup table as the
                     # value for the bias level 
                     bias_level = _get_static_bias_level_for_ext(
-                      adinput=adinput[SCI,extver])
+                        adinput=adinput[SCI,extver])
                 else:
                     raw_bias_level = raw_bias_level_dict[extver]
                     if raw_bias_level is None:
@@ -150,7 +152,7 @@ def _get_bias_level_estimate(adinput=None):
                         # extension, use the static bias levels from the lookup
                         # table as the value for the bias level 
                         bias_level = _get_static_bias_level_for_ext(
-                          adinput=adinput[SCI,extver])
+                            adinput=adinput[SCI,extver])
                     else:
                         bias_level = raw_bias_level
             else:
@@ -182,28 +184,32 @@ def _get_static_bias_level(adinput=None):
         "gmosampsBiasBefore20060831")
     
     # Get the UT date, read speed setting and gain setting values using the
-    # appropriate descriptors. Use as_pytype() and as_dict() to return the
-    # values as the default python type and a dictionary, respectively, rather
-    # than an object.
-    ut_date = str(adinput.ut_date())
-    read_speed_setting = adinput.read_speed_setting().as_pytype()
+    # appropriate descriptors
+    ut_date_dv = adinput.ut_date()
+    read_speed_setting_dv = adinput.read_speed_setting()
     gain_setting_dv = adinput.gain_setting()
-    
-    # Create a dictionary where the key of the dictionary is an EXTVER integer
-    gain_setting_dict = gain_setting_dv.collapse_by_extver()
-    
-    if not gain_setting_dv.validate_collapse_by_extver(gain_setting_dict):
-        # The validate_collapse_by_extver function returns False if the values
-        # in the dictionary with the same EXTVER are not equal 
-        raise Errors.CollapseError()
     
     # Get the name of the detector amplifier from the header of each pixel data
     # extension as a dictionary
-    ampname_dict = gmu.get_key_value_dict(adinput, "AMPNAME",
-                                          dict_key_extver=True)
+    ampname_dict = gmu.get_key_value_dict(
+        adinput=adinput, keyword="AMPNAME", dict_key_extver=True)
     
-    if (ut_date is not None and read_speed_setting is not None and
-        gain_setting_dict is not None and ampname_dict is not None):
+    if not (ut_date_dv.is_none() and read_speed_setting_dv.is_none() and
+            gain_setting_dv.is_none()) and ampname_dict is not None:
+        
+        # Use as_pytype() to return the values as the default python type
+        # rather than an object
+        ut_date = str(ut_date_dv)
+        read_speed_setting = read_speed_setting_dv.as_pytype()
+        
+        # Create a gain setting dictionary where the key of the dictionary is
+        # an EXTVER integer
+        gain_setting_dict = gain_setting_dv.collapse_by_extver()
+        
+        if not gain_setting_dv.validate_collapse_by_extver(gain_setting_dict):
+            # The validate_collapse_by_extver function returns False if the
+            # values in the dictionary with the same EXTVER are not equal 
+            raise Errors.CollapseError()
         
         obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
@@ -215,7 +221,7 @@ def _get_static_bias_level(adinput=None):
             
             bias_level = None
             if obs_ut_date > old_ut_date:
-                 if bias_key in gmosampsBias:
+                if bias_key in gmosampsBias:
                     bias_level = gmosampsBias[bias_key]
             else:
                 if bias_key in gmosampsBiasBefore20060831:
@@ -249,19 +255,24 @@ def _get_static_bias_level_for_ext(adinput=None):
         "gmosampsBiasBefore20060831")
     
     # Get the UT date, read speed setting and gain setting values using the
-    # appropriate descriptors. Use as_pytype() to return the values as the
-    # default python type rather than an object.
-    ut_date = str(adinput.ut_date())
-    read_speed_setting = adinput.read_speed_setting().as_pytype()
-    gain_setting = adinput.gain_setting().as_pytype()
+    # appropriate descriptors
+    ut_date_dv = adinput.ut_date()
+    read_speed_setting_dv = adinput.read_speed_setting()
+    gain_setting_dv = adinput.gain_setting()
     
-    # Get the name of the detector amplifier from the header of each pixel data
-    # extension as a dictionary
+    # Get the name of the detector amplifier from the header of the specific
+    # pixel data extension
     ampname = adinput.get_key_value("AMPNAME")
     
     ret_static_bias_level = None
-    if (ut_date is not None and read_speed_setting is not None and
-        gain_setting is not None and ampname is not None):
+    if not (ut_date_dv.is_none() and read_speed_setting_dv.is_none() and
+            gain_setting.dv.is_none()) and ampname is not None:
+        
+        # Use as_pytype() to return the values as the default python type
+        # rather than an object
+        ut_date = str(adinput.ut_date())
+        read_speed_setting = adinput.read_speed_setting().as_pytype()
+        gain_setting = adinput.gain_setting().as_pytype()
         
         obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
         old_ut_date = datetime(2006, 8, 31, 0, 0)
@@ -275,5 +286,5 @@ def _get_static_bias_level_for_ext(adinput=None):
         else:
             if bias_key in gmosampsBiasBefore20060831:
                 ret_static_bias_level = gmosampsBiasBefore20060831[bias_key]
-            
+    
     return ret_static_bias_level
