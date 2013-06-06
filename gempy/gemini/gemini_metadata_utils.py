@@ -6,6 +6,7 @@ import sys
 from astrodata import Errors
 from astrodata.Descriptors import DescriptorValue
 from astrodata.structuredslice import pixel_exts, bintable_exts
+from gempy.gemini import gemini_tools as gt
 
 def removeComponentID(instr):
     """
@@ -133,7 +134,7 @@ def filternameFrom(filters):
     
     return filtername
 
-def get_key_value_dict(dataset=None, keyword=None, dict_key_extver=False):
+def get_key_value_dict(adinput=None, keyword=None, dict_key_extver=False):
     """
     The get_key_value_dict() function works similarly to the AstroData
     get_key_value() and phu_get_key_value() member functions in that if the
@@ -141,69 +142,108 @@ def get_key_value_dict(dataset=None, keyword=None, dict_key_extver=False):
     returned and the reason why the value is None is stored in the
     exception_info attribute of the AstroData object.
     
+    :param adinput: the AstroData object
+    :type adinput: AstroData
+    
+    :param keyword: the keyword(s) to access in the pixel data extensions of
+                    the AstroData object
+    :type keyword: string or list of strings
+    
+    :rtype: dictionary
+    :return: if a single keyword is supplied to the keyword parameter, the key
+             of the return dictionary is the ('*', EXTVER) tuple and the value
+             is the value of the keyword from the header of the pixel data
+             extension of the input AstroData object with that EXTVER. If
+             multiple keywords are supplied to the keyword parameter, the key
+             of the return dictionary is the name of the keyword as supplied to
+             the keyword parameter and the value is a dictionary, where the key
+             of the dictionary is the ('*', EXTVER) tuple and the value is the
+             value of the keyword from the header of the pixel data extension
+             of the input AstroData object with that EXTVER.
+    
     """
     # Since this helper function accesses keywords in the headers of the pixel
     # data extensions, first construct a dictionary where the key of the
     # dictionary is an (EXTNAME, EXTVER) tuple
-    keyword_value_dict = {}
+    all_keyword_value_dict = {}
+    final_keyword_value_dict = {}
+    
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more inputs
+    keyword_list = gt.validate_input(input=keyword)
     
     return_dictionary = False
     
     # Loop over the pixel data extensions in the dataset
-    for ext in dataset[pixel_exts]:
+    for ext in adinput[pixel_exts]:
         
-        # Get the value of the keyword from the header of each pixel data
-        # extension
-        value = ext.get_key_value(keyword)
-        
-        if value is None:
-            # The get_key_value() function returns None if a value cannot be
-            # found and stores the exception info. Store the last occurance of
-            # the exception to the dataset.
-            if hasattr(ext, "exception_info"):
-                setattr(dataset, "exception_info", ext.exception_info)
+        # Loop over each keyword in the input keyword list
+        for keyword in keyword_list:
             
-        # Update the dictionary with the value
-        keyword_value_dict.update({(ext.extname(), ext.extver()):value})
+            # Get the value of the keyword from the header of each pixel data
+            # extension
+            value = ext.get_key_value(keyword)
+            
+            if value is None:
+                # The get_key_value() function returns None if a value cannot
+                # be found and stores the exception info. Store the last
+                # occurance of the exception to the dataset.
+                if hasattr(ext, "exception_info"):
+                    setattr(adinput, "exception_info", ext.exception_info)
+            
+            if keyword in all_keyword_value_dict:
+                # Update the dictionary with the value
+                all_keyword_value_dict[keyword].update(
+                    {(ext.extname(), ext.extver()):value})
+            else:
+                all_keyword_value_dict.update(
+                    {keyword: {(ext.extname(), ext.extver()):value}})
     
-    try:
-        if keyword_value_dict == {}:
-            # If the dictionary is still empty, the AstroData object has no
-            # pixel data extensions
-            raise Errors.CorruptDataError()
-        
-        unique_values = set(keyword_value_dict.values())
-        if len(unique_values) == 1 and None in unique_values:
-            # The value of the keyword was not found for any of the pixel data
-            # extensions (all the values in the dictionary are equal to None)
-            raise dataset.exception_info
-        
-        # Instantiate the DescriptorValue (DV) object
-        dv = DescriptorValue(keyword_value_dict)
-        
-        # Create a new dictionary where the key of the dictionary is an EXTVER
-        # integer
-        extver_dict = dv.collapse_by_extver()
-        
-        if not dv.validate_collapse_by_extver(extver_dict):
-            # The validate_collapse_by_extver function returns False if the
-            # values in the dictionary with the same EXTVER are not equal
-            raise Errors.CollapseError()
-        
-        if dict_key_extver:
-            # Return the dictionary where the key of the dictionary is an
+    for keyword, keyword_value_dict in all_keyword_value_dict.iteritems():
+        try:
+            if keyword_value_dict == {}:
+                # If the dictionary is still empty, the AstroData object has no
+                # pixel data extensions 
+                raise Errors.CorruptDataError()
+            
+            unique_values = set(keyword_value_dict.values())
+            if len(unique_values) == 1 and None in unique_values:
+                # The value of the keyword was not found for any of the pixel
+                # data extensions (all the values in the dictionary are equal
+                # to None)
+                raise adinput.exception_info
+            
+            # Instantiate the DescriptorValue (DV) object
+            dv = DescriptorValue(keyword_value_dict)
+            
+            # Create a new dictionary where the key of the dictionary is an
             # EXTVER integer
-            ret_dict = extver_dict
-        else:
-            # Instantiate a new DV object using the newly created dictionary
-            # and get the dictionary where the key of the dictionary is an
-            # ("*", EXTVER) tuple
-            new_dv = DescriptorValue(extver_dict)
-            ret_dict = new_dv.as_dict()
+            extver_dict = dv.collapse_by_extver()
+            
+            if not dv.validate_collapse_by_extver(extver_dict):
+                # The validate_collapse_by_extver function returns False if the
+                # values in the dictionary with the same EXTVER are not equal
+                raise Errors.CollapseError()
+            
+            if dict_key_extver:
+                # Return the dictionary where the key of the dictionary is an
+                # EXTVER integer 
+                ret_dict = extver_dict
+            else:
+                # Instantiate a new DV object using the newly created
+                # dictionary and get the dictionary where the key of the
+                # dictionary is an ("*", EXTVER) tuple 
+                new_dv = DescriptorValue(extver_dict)
+                ret_dict = new_dv.as_dict()
         
-        return ret_dict
+        except:
+            setattr(adinput, "exception_info", sys.exc_info()[1])
+            ret_dict = None
+        
+        # Construct the dictionary of dictionaries
+        final_keyword_value_dict.update({keyword: ret_dict})
     
-    except:
-        setattr(dataset, "exception_info", sys.exc_info()[1])
-        
-        return None
+    if len(final_keyword_value_dict) == 1:
+        return final_keyword_value_dict.values()[0]
+    else:
+        return final_keyword_value_dict
