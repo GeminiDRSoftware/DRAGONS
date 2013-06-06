@@ -23,9 +23,9 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def __init__(self):
         self.f2ArrayDict = Lookups.get_lookup_table(
-          "Gemini/F2/F2ArrayDict", "f2ArrayDict")
+            "Gemini/F2/F2ArrayDict", "f2ArrayDict")
         self.nifsConfigDict = Lookups.get_lookup_table(
-          "Gemini/F2/F2ConfigDict", "f2ConfigDict")
+            "Gemini/F2/F2ConfigDict", "f2ConfigDict")
         GEMINI_DescriptorCalc.__init__(self)
     
     def data_section(self, dataset, pretty=False, **args):
@@ -50,14 +50,16 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         # Get the UT date using the appropriate descriptor
-        ut_date = str(dataset.ut_date())
+        ut_date_dv = dataset.ut_date()
         
-        if ut_date is None:
+        if ut_date_dv.is_none():
             # The descriptor functions return None if a value cannot be
             # found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
+        
+        ut_date = str(ut_date_dv)
         
         obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
         
@@ -84,7 +86,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         filter1 = dataset.phu_get_key_value(keyword1)
         filter2 = dataset.phu_get_key_value(keyword2)
         
-        if filter1 is None or filter2 is None:
+        if None in [filter1, filter2]:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
@@ -168,7 +170,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     def lyot_stop(self, dataset, stripID=False, pretty=False, **args):
         # Determine the lyot stop keywords from the global keyword dictionary
         keyword = self.get_descriptor_key("key_lyot_stop")
-            
+        
         # Get the value of the lyot stop keywords from the header of the PHU 
         lyot_stop = dataset.phu_get_key_value(keyword)
         
@@ -207,9 +209,9 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
                 raise dataset.exception_info
         
         # Get the saturation level using the appropriate descriptor
-        saturation_level = dataset.saturation_level()
+        saturation_level_dv = dataset.saturation_level()
         
-        if saturation_level is None:
+        if saturation_level_dv.is_none():
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface.
@@ -222,7 +224,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             raise Errors.TableKeyError()
         
         # Return the read noise float
-        ret_non_linear_level = int(saturation_level * non_linear_fraction)
+        ret_non_linear_level = int(saturation_level_dv * non_linear_fraction)
         
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_non_linear_level, name="non_linear_level",
@@ -278,10 +280,13 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the value of the WCS matrix elements keywords from the header of
         # each pixel data extension as a dictionary where the key of the
         # dictionary is an ("*", EXTVER) tuple
-        cd11_dict = gmu.get_key_value_dict(dataset, keyword1)
-        cd12_dict = gmu.get_key_value_dict(dataset, keyword2)
-        cd21_dict = gmu.get_key_value_dict(dataset, keyword3)
-        cd22_dict = gmu.get_key_value_dict(dataset, keyword4)
+        cd_dict = gmu.get_key_value_dict(
+            adinput=dataset, keyword=[keyword1, keyword2, keyword3, keyword4])
+        
+        cd11_dict = cd_dict[keyword1]
+        cd12_dict = cd_dict[keyword2]
+        cd21_dict = cd_dict[keyword3]
+        cd22_dict = cd_dict[keyword4]
         
         if cd11_dict is None:
             # Get the pixel scale value using the value of the pixel scale
@@ -293,7 +298,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             for ext in dataset[pixel_exts]:
                 # Update the dictionary with the pixel_scale value
                 pixel_scale_dict.update(
-                  {(ext.extname(), ext.extver): pixel_scale})
+                    {(ext.extname(), ext.extver): pixel_scale})
             
             # Instantiate the DescriptorValue (DV) object
             dv = DescriptorValue(pixel_scale_dict)
@@ -322,8 +327,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
                     cd22 = cd22_dict[ext_name_ver]
                 
                 pixel_scale = None
-                if cd11 is not None and cd12 is not None and \
-                 cd21 is not None and cd22 is not None:
+                if not None in [cd11, cd12, cd21, cd22]:
                     # Calculate the pixel scale using the WCS matrix elements
                     pixel_scale = 3600 * (
                       math.sqrt(math.pow(cd11, 2) + math.pow(cd12, 2)) +
@@ -333,7 +337,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
                     # Get the pixel scale value using the value of the pixel
                     # scale keyword
                     pixel_scale = self._get_pixel_scale_from_header(
-                      dataset=dataset)
+                        dataset=dataset)
                 
                 # Update the dictionary with the pixel scale value
                 ret_pixel_scale_dict.update({ext_name_ver: pixel_scale})
@@ -450,7 +454,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         if "IMAGE" in dataset.types:
             # If imaging, associate the filter name with a central wavelength
             filter_table = Lookups.get_lookup_table(
-              "Gemini/F2/F2FilterWavelength", "filter_wavelength")
+                "Gemini/F2/F2FilterWavelength", "filter_wavelength")
             filter = str(dataset.filter_name(pretty=True))
             if filter in filter_table:
                 ctrl_wave = filter_table[filter]

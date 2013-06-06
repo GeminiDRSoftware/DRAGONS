@@ -35,8 +35,7 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         coadds_r = dataset.phu_get_key_value(keyword3)
         coadds_b = dataset.phu_get_key_value(keyword4)
         
-        if exposure_time_r is None or exposure_time_b is None or \
-            coadds_r is None or coadds_b is None:
+        if None in [exposure_time_r, exposure_time_b, coadds_r, coadds_b]:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
@@ -73,8 +72,11 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the value of the filter name keyword from the header of each
         # pixel data extension as a dictionary where the key of the dictionary
         # is an ("*", EXTVER) tuple
-        filter_r_dict = gmu.get_key_value_dict(dataset, keyword1)
-        filter_b_dict = gmu.get_key_value_dict(dataset, keyword2)
+        filter_dict = gmu.get_key_value_dict(adinput=dataset,
+                                             keyword=[keyword1, keyword2])
+        
+        filter_r_dict = filter_dict[keyword1]
+        filter_b_dict = filter_dict[keyword2]
         
         # The following code contains duplication so that the case when a user
         # loops over extensions in an AstroData object and calls the

@@ -80,8 +80,8 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             # table
             count = 0
             for row in self.nsappwave.data:
-                if focal_plane_mask == row.field("MASK") and \
-                   disperser == row.field("GRATING"):
+                if (focal_plane_mask == row.field("MASK") and
+                    disperser == row.field("GRATING")):
                     count += 1
                     if row.field("LAMBDA"):
                         raw_central_wavelength = float(row.field("LAMBDA"))
@@ -120,13 +120,15 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the value of the region of interest keyword from the header of
         # each pixel data extension as a dictionary where the key of the
         # dictionary is an ("*", EXTVER) tuple
-        x_start_dict = gmu.get_key_value_dict(dataset, keyword1)
-        x_end_dict = gmu.get_key_value_dict(dataset, keyword2)
-        y_start_dict = gmu.get_key_value_dict(dataset, keyword3)
-        y_end_dict = gmu.get_key_value_dict(dataset, keyword4)
+        coord_dict = gmu.get_key_value_dict(
+            adinput=dataset, keyword=[keyword1, keyword2, keyword3, keyword4])
         
-        if x_start_dict is None or x_end_dict is None or \
-           y_start_dict is None or y_end_dict is None:
+        x_start_dict = coord_dict[keyword1]
+        x_end_dict = coord_dict[keyword2]
+        y_start_dict = coord_dict[keyword3]
+        y_end_dict = coord_dict[keyword4]
+        
+        if None in [x_start_dict, x_end_dict, y_start_dict, y_end_dict]:
             # The get_key_value_dict() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
@@ -138,14 +140,13 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             y_start = y_start_dict[ext_name_ver]
             y_end = y_end_dict[ext_name_ver]
             
-            if x_start is None or x_end is None or y_start is None or \
-                y_end is None:
+            if None in [x_start, x_end, y_start, y_end]:
                 data_section = None
             elif pretty:
                 # Return a dictionary with the data section string that uses
                 # 1-based indexing as the value in the form [x1:x2,y1:y2] 
-                data_section = "[%d:%d,%d:%d]" % (x_start + 1, x_end + 1, \
-                    y_start + 1, y_end + 1)
+                data_section = "[%d:%d,%d:%d]" % (
+                    x_start + 1, x_end + 1, y_start + 1, y_end + 1)
             else:
                 # Return a dictionary with the data section list that uses
                 # 0-based, non-inclusive indexing as the value in the form
@@ -315,7 +316,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the value of the BUNIT keyword from the header of each pixel data
         # extension as a dictionary where the key of the dictionary is an
         # ("*", EXTVER) tuple 
-        bunit_dict = gmu.get_key_value_dict(dataset, "BUNIT")
+        bunit_dict = gmu.get_key_value_dict(adinput=dataset, keyword="BUNIT")
         
         for ext_name_ver, bunit in bunit_dict.iteritems():
             # If bunit is "electron" or None, set the gain factor to 0.0 
@@ -328,7 +329,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
             
             if nominal_zeropoint_key in table:
                 nominal_photometric_zeropoint = (
-                  table[nominal_zeropoint_key] - gain_factor)
+                    table[nominal_zeropoint_key] - gain_factor)
             else:
                 raise Errors.TableKeyError()
             
