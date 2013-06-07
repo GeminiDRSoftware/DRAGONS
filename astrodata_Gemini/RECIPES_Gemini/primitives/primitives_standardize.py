@@ -204,7 +204,7 @@ class StandardizePrimitives(GENERALPrimitives):
                 dq_array = dq_array.astype(dq_dtype)
                 
                 # Create a data quality AstroData object
-                dq = AstroData(header=pf.Header(), data=dq_array)
+                dq = AstroData(data=dq_array)
                 dq.rename_ext(DQ, ver=extver)
                 dq.filename = ad.filename
                 
@@ -721,11 +721,11 @@ class StandardizePrimitives(GENERALPrimitives):
                                  "with the current variance extension "
                                  "%s[%s,%d]" % (adinput.filename, VAR, extver))
                     adinput[VAR, extver].data = np.add(
-                      adinput[VAR, extver].data, var_array_final).astype(
-                      var_dtype)
+                      adinput[VAR, extver].data, var_array_final,
+                      dtype=var_dtype)
             else:
                 # Create the variance AstroData object
-                var = AstroData(header=pf.Header(), data=var_array_final)
+                var = AstroData(data=var_array_final)
                 var.rename_ext(VAR, ver=extver)
                 var.filename = adinput.filename
                 
