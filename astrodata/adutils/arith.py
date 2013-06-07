@@ -53,7 +53,7 @@ def determine_inputs(input_a=None, input_b=None):
             # However, in this case only the values for the science extensions
             # are required.
             sci_dict = dict(
-              (k, v) for k, v in input_b.iteritems() if k[0] == SCI)
+                (k, v) for k, v in input_b.iteritems() if k[0] == SCI)
             
             # Instantiate a new DV object using the dictionary containing only
             # the values for the science extensions 
@@ -164,7 +164,7 @@ def operate(input_a=None, input_b=None, operation=None):
         if isinstance(new_input_b, dict):
             call = ("sci.data = np.%s(sci.data, new_input_b[extver])"
                     % operation)
-              
+        
         if isinstance(new_input_b, astrodata.AstroData):
             call = ("sci.data = np.%s(sci.data, new_input_b[SCI, extver].data)"
                     % operation)
@@ -239,6 +239,25 @@ def mult(input_a=None, input_b=None):
     return operate(input_a=input_a, input_b=input_b, operation="multiply")
 mult.__doc__ += operate.__doc__
 
+def power(input_a=None, input_b=None):
+    """
+    The power function uses numpy.power to determine the valule of the
+    AstroData object (input_a) to the power of input_b, where input_b could be
+    either another AstroData object, a dictionary, list, float or integer, or a
+    DescriptorValue (DV) object. 
+    
+    If input_b is an AstroData object, the power function will determine the
+    value of each science extension in the input AstroData object (input_a) to
+    the power of the corresponding science extension in input_b and update the
+    variance and data quality extensions accordingly.
+    
+    If input_b is a dictionary, float, integer or a DescriptorValue object,
+    each science extension in the input AstroData object (input_a) to the power
+    of the single value is determined.
+    """
+    return operate(input_a=input_a, input_b=input_b, operation="power")
+power.__doc__ += operate.__doc__
+
 def sub(input_a=None, input_b=None):
     """
     The sub function uses numpy.subtract to subtract input_b from an AstroData
@@ -279,6 +298,8 @@ def propagate_variance(input_a=None, input_b=None, operation=None):
     var(a - b) = var(a) + var(b) - covariance term
     var(a * b) = (var(a) * b^2) + (var(b) * a^2) + covariance term
     var(a / b) = (var(a) / b^2) + (var(b) * a^2 / b^4) - covariance term
+    var(a ^ b) = (var(a) * [b * a^(b - 1)]^2) +
+                 (var(b) * a^b * ln(a)) + covariance term 
     
     Since the variance extensions contain only uncorrelated noise, the
     covariance terms above are zero.
@@ -351,13 +372,23 @@ def propagate_variance(input_a=None, input_b=None, operation=None):
             #     var(a * b) = (var(a) * b^2) + (var(b) * a^2)
             var.data = np.add(
                 np.multiply(var_a, b**2), np.multiply(var_b, a**2))
-                            
+        
         elif operation == "divide":
             # The variance is propagated using:
             #     var(a / b) = (var(a) / b^2) + (var(b) * a^2 / b^4)
             var.data = np.add(
                 np.divide(var_a, b**2),
                 np.multiply(var_b, np.divide(a**2, b**4)))
+        
+        elif operation == "power":
+            # The variance is propagated using:
+            #  var(a ^ b) = (var(a) * [b * a^(b - 1)]^2) +
+            #               (var(b) * a^b * ln(a))
+            var.data = np.add(
+                np.multiply(var_a,
+                            np.power(np.multiply(b, np.power(a, b - 1))), 2),
+                np.multiply(var_b, np.multiply(np.power(a, b), np.log(a))))
+        
         else:
             raise Errors.Error("The operation parameter must have a value of "
                                "either add, subtract, multiply or divide")
