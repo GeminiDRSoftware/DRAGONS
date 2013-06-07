@@ -166,15 +166,16 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def detector_roi_setting(self, dataset, **args):
         roi_setting = "Custom"
-        roi = dataset.data_section().as_pytype()
+        data_section = dataset.data_section().as_pytype()
         
-        if roi == [0, 255, 0, 255]:
+        # The data_section list uses 0-based, non-inclusive indexing
+        if data_section == [0, 256, 0, 256]:
             roi_setting = "Central 256"
-        if roi == [0, 511, 0, 511]:
+        if data_section == [0, 512, 0, 512]:
             roi_setting = "Central 512"
-        if roi == [0, 767, 0, 767]:
+        if data_section == [0, 768, 0, 768]:
             roi_setting = "Central 768"
-        if roi == [0, 1023, 0, 1023]:
+        if data_section == [0, 1024, 0, 1024]:
             roi_setting = "Full Frame"
         
         ret_roi_setting = roi_setting
