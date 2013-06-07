@@ -319,8 +319,8 @@ class StackPrimitives(GENERALPrimitives):
                     # forStack stream. The stacked sky AstroData objects will
                     # be added back into the forStack stream.
                     rc.run("showInputs(stream='forStack')")
-                    rc.run("stackFrames(stream='forStack', suffix='%s')"
-                           % sky_suffix)
+                    rc.run("stackFrames(stream='forStack', suffix='%s',"
+                           "operation='%s')" % (sky_suffix, rc["operation"]))
                     rc.run("showInputs(stream='forStack')")
                     
                     # Get the stacked sky AstroData object from the forStack
