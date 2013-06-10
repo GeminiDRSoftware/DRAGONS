@@ -8,6 +8,7 @@ from astrodata.adutils import logutils
 from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
+from gempy.gemini import gemini_data_calculations as gdc
 
 class QAPrimitives(GENERALPrimitives):
     """
