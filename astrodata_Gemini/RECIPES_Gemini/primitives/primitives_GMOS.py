@@ -1139,12 +1139,12 @@ def _tile_objcat(adinput=None,adoutput=None,mapping_dict=None):
     if mapping_dict is None:
         raise Errors.InputError("mapping_dict must not be None")
 
-    if len(adinput_list)!=len(adoutput_list):
+    if len(adinput_list) != len(adoutput_list):
         raise Errors.InputError("adinput must have same length as adoutput")
     output_dict = gt.make_dict(key_list=adinput_list, value_list=adoutput_list)
 
     adoutput_list = []
-    for ad in adinput:
+    for ad in adinput_list:
         
         adout = output_dict[ad]
 
