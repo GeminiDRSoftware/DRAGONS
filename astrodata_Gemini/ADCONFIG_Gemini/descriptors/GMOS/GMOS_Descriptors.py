@@ -861,10 +861,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the values of the gain, detector name and filter name using the
         # appropriate descriptors.
         gain_dv = dataset.gain()
-        detector_name_dv = dataset.detector_name()
+        array_name_dv = dataset.array_name()
         filter_name_dv = dataset.filter_name(pretty=True)
         
-        if (gain_dv.is_none() or detector_name_dv.is_none() or
+        if (gain_dv.is_none() or array_name_dv.is_none() or
             filter_name_dv.is_none()):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
@@ -876,16 +876,16 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # where the key of the dictionary is an ("*", EXTVER) tuple and the
         # default python type, respectively, rather than an object
         gain_dict = gain_dv.as_dict()
-        detector_name_dict = detector_name_dv.as_dict()
+        array_name_dict = array_name_dv.as_dict()
         filter_name = filter_name_dv.as_pytype()
-        
+
         # Get the value of the BUNIT keyword from the header of each pixel data
         # extension as a dictionary where the key of the dictionary is an
         # ("*", EXTVER) tuple 
         bunit_dict = gmu.get_key_value_dict(adinput=dataset, keyword="BUNIT")
         
-        for ext_name_ver, detector_name in detector_name_dict.iteritems():
-            if detector_name is None:
+        for ext_name_ver, array_name in array_name_dict.iteritems():
+            if array_name is None:
                 nominal_photometric_zeropoint = None
             else:
                 # Determine whether data are in ADU or electrons
@@ -900,7 +900,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 if bunit == "adu":
                     gain_factor = 2.5 * math.log10(gain_dict[ext_name_ver])
                     
-                nominal_zeropoint_key = (detector_name, filter_name)
+                nominal_zeropoint_key = (array_name, filter_name)
                 
                 if nominal_zeropoint_key in table:
                     nominal_photometric_zeropoint = (
