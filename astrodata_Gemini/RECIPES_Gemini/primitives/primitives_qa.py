@@ -1034,7 +1034,8 @@ class QAPrimitives(GENERALPrimitives):
 
                 # Get requested IQ band
                 req_iq = ad.requested_iq()
-                if req_iq is not None:
+                if not req_iq.is_none():
+                    
                     if req_iq==100:                            
                         reqStr = "Requested IQ:".ljust(llen) + \
                                  "IQAny".rjust(rlen)
@@ -1098,7 +1099,7 @@ class QAPrimitives(GENERALPrimitives):
                        "zenith_error": float(corr_std),
                        "ellipticity": mean_ellip,
                        "ellip_error": std_ellip,
-                       "requested": req_iq,
+                       "requested": req_iq.as_pytype(),
                        "comment": comment,}
                 info_dict[key] = qad
                 rc.report_qametric(ad, "iq", qad)
