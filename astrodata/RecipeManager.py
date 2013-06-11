@@ -1925,7 +1925,7 @@ class RecipeLibrary(object):
             except ReductionObjects.ReductionExcept:
                  pass # just means there is no primset, that function throws
                 
-            print "RM1894: here with rec"    
+            #p print "RM1894: here with rec"    
             if rec:
                 # compose to python source
                 prec = self.compose_recipe(name, rec)
