@@ -213,12 +213,13 @@ class DescriptorValue(object):
     def collapse_dict_val(self):
         value = self.collapse_value()
         if value is None:
-            raise Errors.DescriptorsError("\n"
-                "Cannot convert DescriptorValue to scaler\n" 
-                "as the value varies across extens versions\n"
-                "------------------------------------------\n"
-                + self.info()
-                )
+            err_msg = ("\n"
+                       "Cannot convert DescriptorValue to scaler\n"
+                       "as the value varies across extens versions\n"
+                       "------------------------------------------\n"
+                       "%s" % self._info())
+            raise Errors.DescriptorsError(err_msg)
+
         # got here then all values were identical
         return value
     def collapse_by_extver(self):
@@ -372,30 +373,38 @@ class DescriptorValue(object):
             return True
         else:
             return False
-    
-    def info(self):
-        dvstr = ""
-        print("\nDescriptor Value Info:")
-        print("\t.name             = %s" % self.name)
-        print("\t._val              = %s" % repr(self._val))
-        print("\ttype(._val)        = %s" % type(self._val))
-        print("\t.pytype           = %s" % str(self.pytype))
-        print("\t.unit             = %s" % str(self.unit))
+
+    def _info(self):
+        dvstr = ("\nDescriptor Value Info:\n"
+                 "\t.name             = %s\n"
+                 "\t._val             = %s\n"
+                 "\ttype(._val)       = %s\n"
+                 "\t.pytype           = %s\n"
+                 "\t.unit             = %s\n" % (str(self.name),
+                                                 repr(self._val),
+                                                 str(type(self._val)),
+                                                 str(self.pytype),
+                                                 str(self.unit)))
         keys = self.dict_val.keys()
         keys.sort()
         lkeys = len(keys)
         count = 0
         for key in keys:
             if count == 0:
-                print("\t.dict_val         = {%s:%s," % \
-                    (str(key), repr(self.dict_val[key])))
+                dvstr += ("\t.dict_val         = {%s:%s,\n" %
+                          (str(key), repr(self.dict_val[key])))
             elif count == lkeys - 1:
-                print("%s%s:%s}" % (" " * 29, str(key),\
-                    repr(self.dict_val[key])))
+                dvstr += ("%s%s:%s}\n" %
+                          (" " * 29, str(key), repr(self.dict_val[key])))
             else: 
-                print("%s%s:%s," % (" " * 29, str(key),\
-                    repr(self.dict_val[key])))
+                dvstr += ("%s%s:%s,\n" %
+                          (" " * 29, str(key), repr(self.dict_val[key])))
             count += 1
+        
+        return dvstr
+            
+    def info(self):
+        print self._info()
     
     def collapse_value(self, extver=None):
         oldvalue = None
