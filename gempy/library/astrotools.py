@@ -1066,6 +1066,8 @@ class FittedFunction:
     ----------
     get_model_function(): ndarray
         returns an ndarray representing values of the fitted function
+    get_fwhm(): float
+        the full width half maximum of the fitted function
     get_rsquared(): float
         a number between zero and one describing how good the fit is
     get_success(): int
@@ -1079,7 +1081,7 @@ class FittedFunction:
     get_width(): (float, float)
         the width of the function in x and y dimensions
     get_theta(): float
-        the rotation of the function
+        the rotation of the function in degrees
     get_fwhm_ellipticity(): (float, float)
         returns the function width converted to FWHM and ellipticity
     """
@@ -1121,11 +1123,14 @@ class FittedFunction:
 
     def get_rsquared(self):
         pars = self.get_params()
-        residuals = self.function.calc_diff(pars)
+
+        func = get_function_with_penalties(self.function)
+        residuals = func(pars)
         ss_err = (residuals**2).sum()
 
         data = self.function.stamp
         ss_tot = ((data - data.mean())**2).sum()
+
         return 1.0 - (ss_err / ss_tot)
 
     def get_success(self):
@@ -1143,11 +1148,21 @@ class FittedFunction:
     def get_center(self):
         return (self.x_ctr, self.y_ctr)
 
+    def get_fwhm(self):
+        if self.function_name == "moffat":
+            avg_width = (self.x_width + self.y_width) / 2.0
+            fwhm = avg_width * 2 * np.sqrt((2**(1 / self.beta)) - 1)
+            return fwhm
+        else:
+            fwhmx = abs(2*np.sqrt(2*np.log(2))*self.x_width)
+            fwhmy = abs(2*np.sqrt(2*np.log(2))*self.y_width)
+            return np.sqrt(fwhmx * fwhmy)
+
     def get_width(self):
         return (self.x_width, self.y_width)
 
     def get_theta(self):
-        return self.theta
+        return math.degrees(math.acos(math.cos(self.theta)))
 
     def get_fwhm_ellipticity(self):
         x_width = self.x_width
@@ -1176,6 +1191,22 @@ class FittedFunction:
         fwhm = np.sqrt(fwhmx * fwhmy)
         
         return fwhm, ellip
+
+def get_function_with_penalties(function):
+    """ heavily penalize the function when it wants to start using a negative width """
+    
+    def bounded_function(pars):
+        diff = function.calc_diff(pars)
+
+        bg, peak, x_ctr, y_ctr, x_width, y_width, theta = pars[:7]
+        if x_width < 0.0:
+            diff = diff * abs(x_width) * 100
+        
+        if y_width < 0.0:
+            diff = diff * abs(y_width) * 100
+
+        return diff
+    return bounded_function
 
             
 def get_fitted_function(stamp_data, default_fwhm, default_bg=None, centroid_function="moffat"):
@@ -1221,11 +1252,13 @@ def get_fitted_function(stamp_data, default_fwhm, default_bg=None, centroid_func
     else:
         raise Errors.InputError("Centroid function %s not supported" %
                                 centroid_function)
+
+    func = get_function_with_penalties(mf)
     
     # least squares fit of model to data
     try:
         # for scipy versions < 0.9
-        new_pars, success = opt.leastsq(mf.calc_diff,
+        new_pars, success = opt.leastsq(func,
                                         pars,
                                         maxfev=100, 
                                         warning=False)
@@ -1233,7 +1266,7 @@ def get_fitted_function(stamp_data, default_fwhm, default_bg=None, centroid_func
         # for scipy versions >= 0.9
         import warnings
         warnings.simplefilter("ignore")
-        new_pars, success = opt.leastsq(mf.calc_diff,
+        new_pars, success = opt.leastsq(func,
                                         pars,
                                         maxfev=100)
 
