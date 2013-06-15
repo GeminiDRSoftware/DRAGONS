@@ -1121,6 +1121,9 @@ class FittedFunction:
         else:
             raise Errors.InputError("Function %s not supported" % self.function_name)
 
+    def get_stamp_data(self):
+        return self.function.stamp
+
     def get_rsquared(self):
         pars = self.get_params()
 
@@ -1128,7 +1131,7 @@ class FittedFunction:
         residuals = func(pars)
         ss_err = (residuals**2).sum()
 
-        data = self.function.stamp
+        data = self.get_stamp_data()
         ss_tot = ((data - data.mean())**2).sum()
 
         return 1.0 - (ss_err / ss_tot)
