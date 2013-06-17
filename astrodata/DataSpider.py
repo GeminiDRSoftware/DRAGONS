@@ -382,17 +382,18 @@ class DataSpider(object):
                                     except AttributeError:
                                         exinfo = sys.exc_info()
                                         print '          ${BOLD}(DERR)%s${NORMAL}: ${RED}NO SUCH DESCRIPTOR${NORMAL}' % (sd)
-                                        if raiseExcept:
-                                            raise
-                                             
+                                        #if raiseExcept:
+                                        #    raise
+                                    except KeyboardInterrupt:
+                                        raise         
                                     except:
                                         # pad = " " * (maxlen - len(sd))
                                         # sd = str(sd) + pad
                                         exinfo = sys.exc_info()
                                         
                                         print '          ${BOLD}(DERR)%s${NORMAL}: ${RED}%s${NORMAL}' % (sd, repr(exinfo[1]).strip())
-                                        if raiseExcept:
-                                            raise
+                                        #if raiseExcept:
+                                        #    raise
                                         
                                         
 
