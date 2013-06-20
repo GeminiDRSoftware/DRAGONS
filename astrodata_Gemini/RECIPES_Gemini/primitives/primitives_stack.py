@@ -131,17 +131,36 @@ class StackPrimitives(GENERALPrimitives):
             
             # Get the gain and read noise from the first AstroData object in
             # the input list using the appropriate descriptors
-            gain_dict = ad_input_list[0].gain().as_dict()
-            read_noise_dict = ad_input_list[0].read_noise().as_dict()
             
             # Determine the average gain from the input AstroData objects and
             # add in quadrature the read noise
-            for ad in ad_input_list[1:]:
-                for ext in ad[SCI]:
-                    gain = ext.gain()
-                    read_noise = ext.read_noise()**2
-                    gain_dict[(SCI,ext.extver())] += gain
-                    read_noise_dict[(SCI,ext.extver())] += read_noise
+            gain_dict = {}
+            read_noise_dict = {}
+
+            gain_dvs = [ad.gain() for ad in ad_input_list]
+            read_noise_dvs = [ad.read_noise() for ad in ad_input_list]
+
+            # Check for Nones:
+            if True in [gain_dv.is_none() for gain_dv in gain_dvs]:
+                 raise Errors.InputError("One or more gain DVs are None")
+
+            if True in [read_noise_dv.is_none() for read_noise_dv in
+                        read_noise_dvs]:
+                 raise Errors.InputError("One or more read noise DVs are None")
+
+            # Sum the values
+            for extver in gain_dvs[0].ext_vers():
+                for gain_dv in gain_dvs:
+                    if extver not in gain_dict:
+                        gain_dict.update({extver: 0})
+                    gain_dict[extver] += gain_dv.get_value(extver)
+
+                for read_noise_dv in read_noise_dvs:
+                    if extver not in read_noise_dict:
+                        read_noise_dict.update({extver: 0})
+                    read_noise_dict[extver] += read_noise_dv.get_value(
+                                                   extver)**2
+
             for key in gain_dict.keys():
                 gain_dict[key] /= len(ad_input_list)
                 read_noise_dict[key] = math.sqrt(read_noise_dict[key])
@@ -177,16 +196,17 @@ class StackPrimitives(GENERALPrimitives):
             # the variance and data quality extensions to be the same as the
             # science extensions.
             for ext in ad_output:
-                gain = gain_dict[(SCI,ext.extver())]
-                read_noise = read_noise_dict[(SCI,ext.extver())]
+                extver = ext.extver()
+                gain = gain_dict[extver]
+                read_noise = read_noise_dict[extver]
                 
                 gt.update_key(adinput=ext, keyword="GAIN", value=gain,
                               comment=None, extname="pixel_exts")
                 gt.update_key(adinput=ext, keyword="RDNOISE", value=read_noise,
                               comment=None, extname="pixel_exts")
             
-            gain = gain_dict[(SCI,1)]
-            read_noise = read_noise_dict[(SCI,1)]
+            gain = gain_dict[1]
+            read_noise = read_noise_dict[1]
             
             gt.update_key(adinput=ad_output, keyword="GAIN", value=gain,
                           comment=None, extname="PHU")
