@@ -258,7 +258,15 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                                                    "gmosRoiSettings")
         
         ret_detector_roi_setting = "Undefined"
-        rois = dataset.detector_rois_requested().as_list()
+        rois = dataset.detector_rois_requested()
+        if rois.is_none():
+            # The descriptor functions return None if a value cannot be
+            # found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+
+        rois = rois.as_list()
         if rois:
             roi = rois[0]
             
@@ -690,7 +698,15 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                     # as_dict() to return the gain value as a dictionary where
                     # the key of the dictionary is an ("*", EXTVER) tuple
                     # rather than an object. 
-                    gain_dict = dataset.gain().as_dict()
+                    gain_dv = dataset.gain()
+                    if gain_dv.is_none():
+                        # The descriptor functions return None if a value
+                        # cannot be found and stores the exception
+                        # info. Re-raise the exception. It will be dealt with
+                        # by the CalculatorInterface. 
+                        if hasattr(dataset, "exception_info"):
+                            raise dataset.exception_info
+                    gain_dict = gain_dv.as_none() 
                     
                 else:
                     for ext_name_ver, gain_orig in gain_dict.iteritems():
@@ -872,19 +888,23 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
-        # Use as_dict() and as_pytype() to return the values as a dictionary
-        # where the key of the dictionary is an ("*", EXTVER) tuple and the
-        # default python type, respectively, rather than an object
-        gain_dict = gain_dv.as_dict()
-        array_name_dict = array_name_dv.as_dict()
-        filter_name = filter_name_dv.as_pytype()
-
         # Get the value of the BUNIT keyword from the header of each pixel data
         # extension as a dictionary where the key of the dictionary is an
         # ("*", EXTVER) tuple 
         bunit_dict = gmu.get_key_value_dict(adinput=dataset, keyword="BUNIT")
-        
-        for ext_name_ver, array_name in array_name_dict.iteritems():
+
+        # Loop over extvers in one of the DVs as they will all have the same
+        # extvers. Then use get_value method to get the value from a given DV
+        # for a particular extver
+        for extver in gain_dv.ext_vers():
+            # key used for bunit dict and for instantiating outuput DV
+            ext_name_ver = ("*", extver)
+            
+            # Obtain the values from the three DVs for the current extver
+            array_name = array_name_dv.get_value(extver)
+            gain = gain_dv.get_value(extver)
+            filter_name = filter_name_dv.get_value(extver)
+
             if array_name is None:
                 nominal_photometric_zeropoint = None
             else:
@@ -896,10 +916,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 
                 # If bunit is "electron" or None, set the gain factor to 0.0 
                 gain_factor = 0.0
-                
                 if bunit == "adu":
-                    gain_factor = 2.5 * math.log10(gain_dict[ext_name_ver])
-                    
+                    gain_factor = 2.5 * math.log10(gain)
+
                 nominal_zeropoint_key = (array_name, filter_name)
                 
                 if nominal_zeropoint_key in table:
@@ -911,8 +930,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # Update the dictionary with the nominal photometric zeropoint
             # value 
             ret_nominal_photometric_zeropoint_dict.update({
-                ext_name_ver:nominal_photometric_zeropoint})
-        
+                ext_name_ver: nominal_photometric_zeropoint})
+
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_nominal_photometric_zeropoint_dict,
                                  name="nominal_photometric_zeropoint",
