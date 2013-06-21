@@ -172,26 +172,19 @@ class DescriptorValue(object):
             else:
                 #SEE IF IT COLLAPSES BY EXTVER
                 #print "D157:", self._primary_extname
-                if (format == "db"):
-                    #dv = self.dict_val
-                    bevdict = self.collapse_by_extver_if_valid()  
-                    if (not bevdict):
-                        # print "D179: not bevdict"
-                        dv = self.dict_val
-                    else:
-                        dv = bevdict                            
-                    parts = []
-                    for k in dv:
-                        parts.append(str(dv[k]))                       
-                        #if name == self._primary_extname:
-                        #    parts.append(dv[k])
-                    #print "D166:", repr(parts)
-                    parts.sort()
-                    #print "D166:", repr(parts)
+                #dv = self.dict_val
+                bevdict = self.collapse_by_extver_if_valid()  
+                if (not bevdict):
+                    # print "D179: not bevdict"
+                    dv = self.dict_val
                 else:
-                    values = self.dict_val.values()
-                    values.sort()
-                    parts = [str(val) for val in values]
+                    dv = bevdict                            
+                parts = []
+                keys = dv.keys()
+                keys.sort()
+                for k in keys:
+                    parts.append(str(dv[k]))                       
+                #print "D166:", repr(parts)
                 retstr = "+".join(parts)
         elif format == "value":
             val = self.collapse_value()
