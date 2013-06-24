@@ -650,6 +650,7 @@ def command_clause(ro, coi):
                    
         elif rqTyp == ImageQualityRequest:
             # Logging returned Image Quality statistics
+            raise "SHOULD NOT HAPPEN, OBSOLETE, to be removed"
             log.stdinfo(str(rq), category='IQ')
             log.stdinfo('-'*40, category='IQ')
             #@@FIXME: All of this is kluge and will not remotely reflect how the 
