@@ -96,7 +96,11 @@ class QAPrimitives(GENERALPrimitives):
             else:
                 bg_band_limits = None
 
-            req_bg = int(ad.requested_bg())
+            req_bg_dv = ad.requested_bg()
+            if not req_bg_dv.is_none():
+                req_bg = int(req_bg_dv)
+            else:
+                req_bg = None
 
             # Loop over SCI extensions
             all_bg = None
