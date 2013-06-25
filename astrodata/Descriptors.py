@@ -133,8 +133,6 @@ class DescriptorValue(object):
         
         if format:
             self.format = format
-        elif ad is not None and ad.descriptorFormat:
-            self.format = ad.descriptorFormat
         else:
             self.format = None
         # do after object is set up

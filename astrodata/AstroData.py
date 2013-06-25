@@ -160,7 +160,6 @@ integrates other functionalities.
     hdurefcount = 0
     mode = "readonly"
     descriptor_calculator = None
-    descriptorFormat = None
     # index is for iterator behavior
     index = 0
     # for subdata
