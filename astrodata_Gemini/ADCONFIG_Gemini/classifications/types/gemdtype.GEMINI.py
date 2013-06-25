@@ -18,7 +18,8 @@ class GEMINI(DataClassification):
                      ISCLASS("F2"),
                      ISCLASS("NIFS"),
                      ISCLASS("TRECS"),
-                     ISCLASS("GSAOI"))
+                     ISCLASS("GSAOI"),
+                     ISCLASS("BHROS"))
                
 
 newtypes.append( GEMINI())
