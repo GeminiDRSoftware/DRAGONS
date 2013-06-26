@@ -470,7 +470,7 @@ class DescriptorValue(object):
                 if op:
                     retval = eval(op)
                 else:
-                    print "D306:",myfuncname
+                    #print "D306:",myfuncname
                     raise "problem"
                     retval = eval("val.%s(other)" % myfuncname)
                 return retval
@@ -481,7 +481,7 @@ class DescriptorValue(object):
             raise Errors.DescriptorValueTypeError(
               "Unsupported operand, %s, for types %s and %s"
               % (myfuncname, str(self.pytype), str(type(other))))
-        print "IMPOSSIBLE_ERROR_PROVED_POSSIBLE: please report"
+        raise Errors.DescriptorError( "IMPOSSIBLE_ERROR_PROVED_POSSIBLE: please report" )
 #        mytype = self.pytype
 #        if isinstance(other, DescriptorValue):
 #            other = other.as_pytype()
