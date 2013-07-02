@@ -160,7 +160,7 @@ class ReductionObject(object):
         if correctPrimType and correctPrimType != self.curPrimType:
             # print "RO98:", repr(correctPrimType), repr(self.curPrimType)
             newprimset  = self.recipeLib.retrieve_primitive_set(astrotype=correctPrimType)
-            self.add_prim_set(newprimset)
+            self.add_prim_set(newprimset, add_to_front=True)
             self.curPrimType = correctPrimType
         self.recipeLib.check_and_bind(self, primname, context=context) 
         
@@ -323,9 +323,15 @@ class ReductionObject(object):
         newprimset.param_dict = paramdict0               
         
     def add_prim_set(self,primset, add_to_front = False):
+        #import traceback
+        #print "=="*20
+        #print "RO327:"
+        #traceback.print_stack()
+        #print "=="*20
+        
         if type(primset) == list:
             for ps in primset:
-                self.add_prim_set(ps, add_to_front)
+                self.add_prim_set(ps, add_to_front = add_to_front)
             return
             
         if primset.astrotype == None:
@@ -352,6 +358,7 @@ class ReductionObject(object):
     def get_prim_set(self, primname):
         primset = None
         if self.curPrimType != self.primstype_order[0]:
+            print "RO355:", self.curPrimType, self.primstype_order
             raise ReductionExcept("curPrimType does not equal primstype_order[0], unexpected")
         for atype in self.primstype_order:
             primset =  self.get_prim_set_for_type(primname, astrotype = atype)

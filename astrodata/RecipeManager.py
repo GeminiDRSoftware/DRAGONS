@@ -2078,6 +2078,12 @@ class RecipeLibrary(object):
         return rtext
             
     def retrieve_reduction_object(self, dataset=None, astrotype=None):
+        #import traceback
+        #print "=="*20
+        #print "RM2083:"
+        #traceback.print_stack()
+        #print "=="*20
+        
         a = datetime.now()
         
         # if astrotpye is None, but dataset is set, then we need to get the astrotype from the 
@@ -2114,7 +2120,8 @@ class RecipeLibrary(object):
         return ro
         
     def retrieve_primitive_set(self, dataset=None, astrotype=None):
-        #p rint "RM2094:",astrotype
+        # print "RM117:",astrotype
+        
         val = None
         if (astrotype == None) and (dataset != None):
             val = pick_config(dataset, centralPrimitivesIndex, style="leaves")
