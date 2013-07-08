@@ -1,0 +1,8 @@
+--files=test_data/S20130616S0019.fits #test_data/N20100311S0090.fits
+#-i
+--context=qa
+#--poopypants
+#-r test_one
+#-x
+#--throw_descriptor_exceptions
+#--showcolors
