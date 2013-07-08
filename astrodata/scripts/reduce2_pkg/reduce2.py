@@ -10,8 +10,8 @@
 
 # $Id$
 # ------------------------------------------------------------------------------
-__version__      = '$Revision$'[11:-3]
-__version_date__ = '$Date$'[7:-3]
+__version__      = '$Revision$'[11:-2]
+__version_date__ = '$Date$'[7:-2]
 __author__       = "k.r. anderson, <kanderso@gemini.edu>"
 # ------------------------------------------------------------------------------
 # reduce2.py -- refactored reduce, cl parsing exported, functionalized.
