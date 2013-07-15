@@ -1084,6 +1084,8 @@ class FittedFunction:
         the rotation of the function in degrees
     get_fwhm_ellipticity(): (float, float)
         returns the function width converted to FWHM and ellipticity
+    get_beta(): float
+        the beta of the moffat function or None if not a moffat function
     """
     def __init__(self, function, function_name, success, bg, peak, x_ctr, y_ctr, x_width, y_width, theta, beta=None):
         self.function = function
@@ -1166,6 +1168,9 @@ class FittedFunction:
 
     def get_theta(self):
         return math.degrees(math.acos(math.cos(self.theta)))
+
+    def get_beta(self):
+        return self.beta
 
     def get_fwhm_ellipticity(self):
         x_width = self.x_width
