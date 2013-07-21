@@ -46,6 +46,7 @@ def get_lookup_table(modname, *lookup):
         if len(lookup) == 1:
             retval = table[lookup[0]]
         else:
+            retval = []
             for item in lookup:
                 retval.append(table[item])
             
