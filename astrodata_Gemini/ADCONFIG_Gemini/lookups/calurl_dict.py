@@ -16,8 +16,8 @@ calurl_dict = {
 "LOCALCALMGR" : "http://localhost:%(httpport)d/calmgr/%(caltype)s",
 #"UPLOADPROCCAL": "http://hbffits3.hi.gemini.edu/upload_processed_cal",
 "UPLOADPROCCAL": "http://fits/upload_processed_cal",
-"QAMETRICURL" : "http://fits/qareport",
-"QAQUERYURL"  : "http://fits/qaforgui",
-#"QAMETRICURL" : "http://cpofits1new/qareport",   # test site
-#"QAQUERYURL"  : "http://cpofits1new/qaforgui"    # test site
+#"QAMETRICURL" : "http://fits/qareport",
+#"QAQUERYURL"  : "http://fits/qaforgui",
+"QAMETRICURL" : "http://cpofits1new/qareport",   # test site
+"QAQUERYURL"  : "http://cpofits1new/qaforgui"    # test site
               }
