@@ -1391,7 +1391,7 @@ help      False     show help information    """
                 self.hdulist = pyfits.HDUList([phu])
             else:
                 if not os.path.exists(source):
-                    raise IOError("Cannot open " + source)
+                    raise IOError("Cannot open '%s'" % source)
                 self.filename = source
                 self.__origFilename = source
                 try:
