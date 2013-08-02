@@ -43,6 +43,13 @@ RESPONSESTR = """%%%%%%%%%%%%%%%% Request Data BEGIN:
         """
 # -----------------------------------------------------------------------------
 
+# dummy func that is not used, but hanging up adcc import. I.e. addc imports
+# urljoin, but never uses it.  This will go away  with new adcc, which has cleaned
+# up kruffy imports. - kra. 02-08-13
+
+def urljoin(): pass
+# -----------------------------------------------------------------------------
+
 def upload_calibration(filename):
     """Uploads a calibration file to the FITS Store.
 
