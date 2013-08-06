@@ -1,6 +1,5 @@
-#Copyright Jon Berg , turtlemeat.com
-import string,cgi,time
 from os import curdir, sep
+import string,cgi,time
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from astrodata.RecipeManager import RecipeLibrary
 #import pri
@@ -81,7 +80,7 @@ class PPWState(object):
 ppwstate = PPWState()
     
 webserverdone = False
-class MyHandler(BaseHTTPRequestHandler):
+class ADCCHandler(BaseHTTPRequestHandler):
     informers = None
     dataSpider = None
     dirdict = None
@@ -208,9 +207,9 @@ class MyHandler(BaseHTTPRequestHandler):
                 import time
                 import random
                 import pprint
-                # print "ppw207:"+repr(MyHandler.informers)
-                if "rim" in MyHandler.informers:
-                    rim = MyHandler.informers["rim"]
+                # print "ppw207:"+repr(ADCCHandler.informers)
+                if "rim" in ADCCHandler.informers:
+                    rim = ADCCHandler.informers["rim"]
                     # print "ppw211:"+pprint.pformat(parms)
                     if "timestamp" in parms:
                         fromtime = float( parms["timestamp"][0]) 
@@ -804,8 +803,8 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
                 
-                if "rim" in MyHandler.informers:
-                    rim = MyHandler.informers["rim"]
+                if "rim" in ADCCHandler.informers:
+                    rim = ADCCHandler.informers["rim"]
                     evman = rim.events_manager
                     import pprint
                     data = "<u>Events</u><br/><pre>"
@@ -899,8 +898,8 @@ class MyHandler(BaseHTTPRequestHandler):
 
             # Get events manager
             evman = None
-            if "rim" in MyHandler.informers:
-                rim = MyHandler.informers["rim"]
+            if "rim" in ADCCHandler.informers:
+                rim = ADCCHandler.informers["rim"]
                 evman = rim.events_manager
 
             self.send_response(200)
@@ -1036,8 +1035,8 @@ def startInterfaceServer(port = 8777, **informers):
     # print "ppw864:"+pprint.pformat(informers)
     import socket
     try:
-        # important to set prior to any instantiations of MyHandler
-        MyHandler.informers = informers
+        # important to set prior to any instantiations of ADCCHandler
+        ADCCHandler.informers = informers
         
         if "dirdict" in informers:
             ppwstate.dirdict    = informers["dirdict"]
@@ -1050,7 +1049,7 @@ def startInterfaceServer(port = 8777, **informers):
         while findingPort:
             try:
                 print "starting httpserver on port ...", port,
-                server = MTHTTPServer(('', port), MyHandler)
+                server = MTHTTPServer(('', port), ADCCHandler)
                 findingPort = False
             except socket.error:
                 print "failed, port taken"
@@ -1071,7 +1070,4 @@ def startInterfaceServer(port = 8777, **informers):
         server.socket.close()
 
 main = startInterfaceServer
-
-if __name__ == '__main__':
-    main()
 
