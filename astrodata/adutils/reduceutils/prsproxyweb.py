@@ -1,92 +1,233 @@
-from os import curdir, sep
-import string,cgi,time
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from astrodata.RecipeManager import RecipeLibrary
-#import pri
-import select
-from copy import copy
-import datetime
+#
+#                                                                     QAP Gemini
+#
+#                                                                 prsproxyweb.py
+#                                                                        07-2013
+# ------------------------------------------------------------------------------
+# $Id$
+# ------------------------------------------------------------------------------
+__version__      = '$Revision$'[11:-2]
+__version_date__ = '$Date$'[7:-2]
+# ------------------------------------------------------------------------------
+#
+# This has been modified to make queries on fitstore qaforgui urls.
+# 
+# Updated parsepath() w/ urlparse.
+
 import os
+import json
+import time
+import select
+import pprint
+import urllib2
+import urlparse
+import datetime
 import subprocess
-import cgi
-from astrodata import AstroData
-from SocketServer import ThreadingMixIn
+from copy import copy
+
 from xml.dom import minidom
+from SocketServer import ThreadingMixIn
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+
+from astrodata import AstroData
+from astrodata.Lookups import get_lookup_table
+from astrodata.RecipeManager import RecipeLibrary
+
+# try:
+#     from fitsstore.GeminiMetadataUtils import *
+# except:
+#     print "Cannot import GeminiMetadataUtils from FITSSTORE"
+
+# ------------------------------------------------------------------------------
 
 class PRec():
     _buff = ""
     uri = "localhost:8777"
     method = "GET"
-    def __init__(self, pdict = None, method="GET"):
+    def __init__(self, pdict=None, method="GET"):
         self._pdict = pdict
         self.method = method
-        
+
     def write(self, string):
-                self._buff+=string
+        self._buff += string
+        return
+
     def read(self):
         return self._pdict
-        
+
     def log_error(self, msg):
         print "PRec:log_error:", msg
-                 
+        return
+
+# ------------------------------------------------------------------------------
+
 def flattenParms(parms):
     for parmkey in parms:
-        if (        hasattr(parms[parmkey],"__getitem__") 
+        if (hasattr(parms[parmkey], "__getitem__") 
             and not type(parms[parmkey]) == str
             and not parmkey == "orderby"):
             parms.update({parmkey:parms[parmkey][0]})
-            
-rl = RecipeLibrary()
+    return
+
+# ------------------------------------------------------------------------------
+
 def parsepath(path):
-    rpath = None
-    rquery = None
+    """A better parsepath w/ urlparse.
+
+    parameters: <string>
+    return:     <dict>
+    """
     rparms = {}
-    
-    if "?" in path:
-        parts = path.split("?")
-        rpath = parts[0]
-        rquery = parts[1]
-        rparms.update({"path":rpath})
-        rparms.update({"query":rquery})
-        qd = cgi.parse_qs(rquery)
-        rparms.update(qd)
-        if False:
-            parms = rquery.split("&")
-            for parm in parms:
-                if "=" in parm:
-                    parts = parm.split("=")
-                    pkey = parts[0]
-                    pval = parts[1]
-                else:
-                    pkey = parm
-                    pval = True
-                rparms.update({pkey: pval})
-    else:
-        rparms.update({"path":path})
-        rparms.update({"query":""})
-    
+    parsed_url = urlparse.urlparse(path)
+    rparms.update({"path": parsed_url.path})
+    rparms.update({"query": parsed_url.query})
+    rparms.update(urlparse.parse_qs(parsed_url.query))
     return rparms
 
-try:
-    from fitsstore.GeminiMetadataUtils import *
-except:
-    print "Cannot import GeminiMetadataUtils from FITSSTORE"
+# ------------------------------------------------------------------------------
+#                                Timing functions
+
+def server_time():
+    """Return a dictionary of server timing quantities related to current time.
+    This dict will be returned to a call on the server, /rqsite.json (See
+    do_GET() method of ADCCHandler class.
+
+    parameters: <void>
+    return:     <dict>, dictionary of time now values.
+    """
+    lt_now  = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+    utc_now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
+    utc_offset = datetime.datetime.utcnow() - datetime.datetime.now()
+
+    if utc_offset.days != 0:
+        utc_offset = -utc_offset
+        utc_offset = -int(round(utc_offset.seconds/3600.))
+    else:
+        utc_offset = int(round(utc_offset.seconds/3600.))
+        
+    timezone = time.timezone / 3600
+    if timezone == 10:
+        local_site = 'gemini-north'
+    elif timezone == 4:
+        local_site = 'gemini-south'
+    else:
+        local_site = 'remote'
+                    
+    time_dict = {"local_site": local_site,
+                 "tzname"    : time.tzname[0],
+                 "lt_now"    : lt_now,
+                 "utc_now"   : utc_now,
+                 "utc_offset": utc_offset}
+    return time_dict
+
+
+def stamp_to_ymd(timestamp):
+    """Caller sends a timestamp in seconds of epoch. Return string for
+    year month day of that time as YYYYMMDD' as used by url requests, as in
+    http://<fitsstore_server>/qaforgui/20130616
+
+    parameters: <float>,  seconds of epochs.
+    return:     <string>, YYYYMMDD of passed time.
+    """
+    return time.strftime("%Y%m%d", time.localtime(timestamp))
+
+
+def stamp_to_opday(timestamp):
+    """Converts a passed time stamp (sec) into the corresponding operational
+    day. I.e. timestamps >= 14.00h are the next operational day.
+
+    parameters: <float>, time in epoch seconds
+    return:     <string>, YYYYMMDD
+    """
+    dt_object = datetime.datetime.fromtimestamp(timestamp)
+    if dt_object.hour >= 14:
+        timestamp = timestamp + 86400
+    return  stamp_to_ymd(timestamp)
+
+
+def ymd_to_stamp(yy, mm, dd, hh=0):
+    """Caller passes integers for year, month, and day. Return is
+    the epoch time (sec). Year is 4 digit, eg., 2013
+
+    parameters: <int>, <int>, <int>, Year, Month, Day
+    return:     <float>, epoch time in seconds.
+    """
+    return time.mktime(time.strptime("%s %s %s %s" % (yy, mm, dd, hh), "%Y %m %d %H"))
+
+
+def current_op_timestamp():
+    """Return the epoch time (sec) of the start of current operational day,
+    where turnover occurs @ 14.00h localtime. I.e. if the hour >= 14.00,
+    then the current operational day is tomorrow.
+
+    Eg., 2013-08-02 17.00h is 20130803
+
+    parameters: <void>
+    return:     <float>
+    """
+    hh = 14
+    tnow = datetime.datetime.now()
+    t_epoch = time.time()
+
+    if tnow.hour >= 14.0:
+        op_day = stamp_to_ymd(t_epoch)
+    else:
+        op_day = stamp_to_ymd(t_epoch - 86400)
+
+    yy, mm, dd = op_day[:4], op_day[4:6], op_day[6:]
+    timestamp = ymd_to_stamp(yy, mm, dd, hh)
+    return timestamp
+
+#                            End Timing functions
+# ------------------------------------------------------------------------------
+# FITS Store query.
+
+def fstore_get(timestamp):
+    """Open a url on fitsstore/qaforgui/ with the passed timestamp.
+    timestamp is in epoch seconds, which is converted here to a 
+    YMD string for the URL.  Return a list of dicts of qa metrics data.
+
+    N.B. A timestamp that evaluates to False (0, None) will request everything 
+    from fitsstore. This could be huge. Be careful passing no timestamp!
+
+    parameters: <float>, time in epoch seconds
+    return:     <list>,  list of a json blob of qametrics
+    """
+    # Get the fitsstore query url from calurl_dict
+    qurlPath     = "Gemini/calurl_dict"
+    fitsstore_qa = get_lookup_table(qurlPath, "calurl_dict")['QAQUERYURL']
+
+    if not timestamp:
+        furl         = os.path.join(fitsstore_qa)
+        store_handle = urllib2.urlopen(furl)
+        qa_data      = json.loads(store_handle.read())   
+    else:
+        date_query   = stamp_to_opday(timestamp)
+        furl         = os.path.join(fitsstore_qa, date_query)
+        store_handle = urllib2.urlopen(furl)
+        qa_data      = json.loads(store_handle.read())
+    return qa_data
+
+# ------------------------------------------------------------------------------
+
+rl = RecipeLibrary()
 
 class PPWState(object):
-    dataSpider = None
     dirdict = None
+    dataSpider = None
     displayCmdHistory = None
-    
-ppwstate = PPWState()
-    
-webserverdone = False
-class ADCCHandler(BaseHTTPRequestHandler):
-    informers = None
-    dataSpider = None
-    dirdict = None
 
-    state = None
-    counter = 0
+
+ppwstate = PPWState()
+webserverdone = False
+
+
+class ADCCHandler(BaseHTTPRequestHandler):
+    informers  = None
+    dataSpider = None
+    dirdict    = None
+    state      = None
+    counter    = 0
     
     def address_string(self):
         host, port = self.client_address[:2]
@@ -104,18 +245,11 @@ class ADCCHandler(BaseHTTPRequestHandler):
             dirdict.dataSpider = ds
         return dirdict
 
-
-        
     def do_GET(self):
         self.state = ppwstate
         global webserverdone
         parms = parsepath(self.path)
-        # print "prsw147:", repr(parms)
-        qd = cgi.parse_qs(self.path)
-        # print "prsw149:", repr(qd)
         rim = self.informers["rim"]
-        # print "prsw151: path=",self.path
-        # print "prsw152: parms=",repr(parms)
 
         try:
             if self.path == "/":
@@ -129,11 +263,12 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 <li><a href="/engineering">Engeering Interface</a></li>
                 <li><a href="qap/engineering.html">Engeering AJAX App</a></li>
                 <li><a href="datadir">Data Directory View</a></li>
-                <li><a href="killprs">Kill this server</a> (%(numinsts)d copies of reduce registered)</li>
-                
+                <li><a href="killprs">Kill this server</a> (%(numinsts)d """ +\
+                    """copies ofreduce registered)</li>
                 </ul>
                 <body>
-                </html>""" % {"numinsts":rim.numinsts}
+                </html>"""
+                page % {"numinsts":rim.numinsts}
                 self.send_response(200)
                 self.send_header("content-type", "text-html")
                 self.end_headers()
@@ -144,12 +279,10 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header('Content-type', "application/json")
                 self.end_headers()
-                import json
                 
                 if "file" in parms:
                     logfile = parms["file"][0]
                     print logfile
-                        
                     if not os.path.exists(logfile):
                         msg = "Log file not available"
                     else:
@@ -163,63 +296,77 @@ class ADCCHandler(BaseHTTPRequestHandler):
 
                 self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
                 return
-            
+ 
+           # ------------------------------------------------------------------
+           # Server time
+
             if parms["path"].startswith("/rqsite.json"):
                 self.send_response(200)
                 self.send_header('Content-type', "application/json")
                 self.end_headers()
-                import json
-                import datetime
-                import time
-
-                lt_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-                utc_now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
-                utc_offset = datetime.datetime.utcnow()-datetime.datetime.now()
-                if utc_offset.days!=0:
-                    utc_offset = -utc_offset
-                    utc_offset = -int(round(utc_offset.seconds/3600.))
-                else:
-                    utc_offset = int(round(utc_offset.seconds/3600.))
-
-                timezone = time.timezone / 3600
-                if timezone==10:
-                    local_site = 'gemini-north'
-                elif timezone==4:
-                    local_site = 'gemini-south'
-                else:
-                    local_site = 'remote'
-                    
-                tdic = {"local_site": local_site,
-                        "tzname": time.tzname[0],
-                        "lt_now": lt_now,
-                        "utc_now": utc_now,
-                        "utc_offset": utc_offset}
-
+                tdic = server_time()
                 self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
                 return
-            
+
+            # ------------------------------------------------------------------
+            # Metrics query employing fitsstore
+
             if parms["path"].startswith("/cmdqueue.json"):
                 self.send_response(200)
                 self.send_header('Content-type', "application/json")
                 self.end_headers()
-                import json
-                import datetime
-                import time
-                import random
-                import pprint
-                # print "ppw207:"+repr(ADCCHandler.informers)
-                if "rim" in ADCCHandler.informers:
-                    rim = ADCCHandler.informers["rim"]
-                    # print "ppw211:"+pprint.pformat(parms)
-                    if "timestamp" in parms:
-                        fromtime = float( parms["timestamp"][0]) 
-                    else:
-                        fromtime = 0
-                    tdic = rim.events_manager.get_list(fromtime = fromtime)
-                    tdic.insert(0, {"msgtype":"cmdqueue.request",
-                                    "timestamp":time.time()})
+
+                # event_list = [] implies a new adcc. Request current op day 
+                # metrics from fitsstore.
+
+                if not rim.events_manager.event_list:
+                    print "@ppw323:: Found no events."
+                    print "@ppw324:: Requesting current op day events, if any..."
+                    rim.events_manager.event_list = fstore_get(current_op_timestamp())
+                    print "@ppw326:: Received", len(rim.events_manager.event_list), "events."
+                    print "@ppw327:: On QA request:", stamp_to_opday(current_op_timestamp())
+                    tdic = rim.events_manager.get_list()
+                    tdic.insert(0, {"msgtype"  : "cmdqueue.request",
+                                    "timestamp": time.time()})
                     self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
+
+                # N.B. A timestamp of zero will request everything from fitsstore
+                # This could be huge. Be careful passing a cmdqueue.json request 
+                # with no timestamp.
+
+                if "timestamp" in parms:
+                    fromtime = float(parms["timestamp"][0])
+                else:
+                    fromtime = 0
+
+                # Handle current nighttime requests ...
+                if stamp_to_opday(fromtime) == stamp_to_opday(current_op_timestamp()):
+                    print "@ppw344:: Incoming request on current op day ...", \
+                        stamp_to_opday(fromtime)
+                    tdic = rim.events_manager.get_list(fromtime=fromtime)
+                    tdic.insert(0, {"msgtype"  : "cmdqueue.request",
+                                    "timestamp": time.time()})
+                    self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
+
+                # Handle previous day requests
+                elif fromtime < current_op_timestamp():
+                    print "@ppw353:: Incoming request on day ...", \
+                        stamp_to_opday(fromtime)
+                    tdic = fstore_get(fromtime)
+                    print "@ppw356:: Recieved",len(tdic),\
+                        "events from fitsstore."
+                    tdic.insert(0, {"msgtype"  : "cmdqueue.request",
+                                    "timestamp": time.time()})
+                    self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
+
+                # Cannot handle the future ...
+                else:
+                    print "@ppw364:: Invalid timestamp received."
+                    print "@ppw365:: Future events not known."
+
                 return
+
+            # ------------------------------------------------------------------
             
             if parms["path"].startswith("/cmdqueue.xml"):
                 self.send_response(200)
@@ -251,11 +398,11 @@ class ADCCHandler(BaseHTTPRequestHandler):
                             else:
                                 url = fileitem["url"]
                             xml += """<file basename="%(basename)s"
-                                        url = "%(url)s"
-                                        cmdnum = "%(cn)d"/>""" % {
-                                            "basename": basename,
-                                            "url": "" if "file" not in fileitem else fileitem["url"],
-                                            "cn":int(cmdbody["cmdNum"])}
+                            url = "%(url)s"
+                            cmdnum = "%(cn)d"/>""" % {
+                                "basename": basename,
+                                "url": "" if "file" not in fileitem else fileitem["url"],
+                                "cn":int(cmdbody["cmdNum"])}
                                             
                             # now any extension in the extdict
                             if "extdict" in fileitem:
@@ -282,7 +429,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 
             if parms["path"] == "/recipeindex.xml":
                 self.send_response(200)
-                self.send_header('Content-type',	'text/xml')
+                self.send_header('Content-type', 'text/xml')
                 self.end_headers()
                 
                 self.wfile.write(rl.getRecipeIndex(as_xml=True))
@@ -307,9 +454,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 from FitsStorageWebSummary.Selection import getselection
                 from FitsStorageWebSummary.CalMGR import calmgr
                 things = parms["path"].split("/")[2:]
-                # print "ppw311:"+ repr(things)
+                # print "ppw457:"+ repr(things)
                 self.send_response(200)
-                self.send_header('Content-type',	'text/xml')
+                self.send_header('Content-type', 'text/xml')
                 self.end_headers()
                 
                 # Parse the rest of the URL.
@@ -319,7 +466,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 # we should parse them here
                 req = PRec()
                 retval = calmgr(req, selection)
-                print "-------\n"*3,"ppw259:", req._buff
+                print "-------\n"*3,"ppw469:", req._buff
                 self.wfile.write(req._buff)
                 return 
                 
@@ -327,11 +474,11 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 import searcher
                 cparms = {}
                 cparms.update(parms)
-                print "pproxy298:"+repr(cparms)
+                print "pproxy466:"+repr(cparms)
                 if "datalab" in parms:
                     cparms.update({"datalab":parms["datalab"][0]})
                 if "filename" in parms:
-                    print "ppw302:", repr(parms["filename"])
+                    print "ppw481:", repr(parms["filename"])
                     cparms.update({"filename":parms["filename"][0]})
                 if "caltype" in parms:
                     cparms.update({"caltype":parms["caltype"][0]})
@@ -340,14 +487,14 @@ class ADCCHandler(BaseHTTPRequestHandler):
                     
                 buff = searcher.search(cparms)
                 self.send_response(200)
-                self.send_header('Content-type',	'text/xml')
+                self.send_header('Content-type', 'text/xml')
                 self.end_headers()
                 
                 self.wfile.write(buff)
                 return 
                 
             if parms["path"].startswith("/globalcalsearch.xml"):
-                from prsproxyutil import calibration_search  as calibrationSearch
+                from prsproxyutil import calibration_search
                 flattenParms(parms)
                 resultb = None
                 resultf = None
@@ -356,10 +503,10 @@ class ADCCHandler(BaseHTTPRequestHandler):
                     caltype = parms["caltype"]
                     if caltype == "processed_bias" or caltype == "all":
                         parms.update({"caltype":"processed_bias"})
-                        resultb = calibrationSearch(parms, fullResult=True)
+                        resultb = calibration_search(parms, fullResult=True)
                     if caltype == "processed_flat" or caltype == "all":
                         parms.update({"caltype":"processed_flat"})
-                        resultf = calibrationSearch(parms, fullResult = True)
+                        resultf = calibration_search(parms, fullResult = True)
                 
                 if caltype == "all":
                     try:
@@ -390,37 +537,35 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 print "prsw207:", result
                 self.send_response(200)
                 self.send_response(200)
-                self.send_header('Content-type',	'text/xml')
+                self.send_header('Content-type', 'text/xml')
                 self.end_headers()
                 
                 self.wfile.write(result)
                 return
-                
-
-            
                 
             if parms["path"] == "/recipecontent":
                 if "recipe" in parms:
                     recipe = parms["recipe"][0]
                     content = rl.retrieve_recipe(recipe)
                     self.send_response(200)
-                    self.send_header('Content-type',	'text/plain')
+                    self.send_header('Content-type', 'text/plain')
                     self.end_headers()
 
                     self.wfile.write(content)
                     return
+
             if parms["path"] == "/adinfo":
                 self.send_response(200)
-                self.send_header('Content-type',	'text/html')
+                self.send_header('Content-type', 'text/html')
                 self.end_headers()
-                from astrodata.RecipeManager import RecipeLibrary
+
                 if "filename" not in parms:
                     return "Error: Need Filename Parameter"
                 if "filename" in parms:
                     try:
                         ad = AstroData(parms["filename"][0])
                     except:
-                        self.wfile.write("Can't use AstroData to open %s"% parms["filename"])
+                        self.wfile.write("Can't use AstroData to open %s" % parms["filename"])
                         return
                     if "fullpage" in parms:
                         self.wfile.write("<html><body>")
@@ -429,13 +574,13 @@ class ADCCHandler(BaseHTTPRequestHandler):
                         self.wfile.write("<b>Name</b>: %s \n" % os.path.basename(ad.filename))
                         self.wfile.write("<br/><b>Path</b>: %s \n" % os.path.abspath(ad.filename))
                         self.wfile.write("<br/><b>Types</b>: %s\n" % ", ".join(ad.types))
-                        recdict = rl.get_applicable_recipes(ad, collate = True)
+                        recdict = rl.get_applicable_recipes(ad, collate=True)
                         keys = recdict.keys()
                         keys.sort()
                         for key in keys:
                             recname = recdict[key]                        
-                            self.wfile.write("<br/><b>Default Recipe(s)</b>:%s (<i>due to type</i>: %s)"
-                                                % (recname, key))
+                            self.wfile.write("<br/><b>Default Recipe(s)</b>:%s "+\
+                                             "(<i>due to type</i>: %s)" % (recname, key))
                         alldesc = ad.all_descriptors()
                         self.wfile.write("<br/><b>Descriptors</b>:\n")
                         self.wfile.write('<table style="margin-left:4em">\n')
@@ -451,49 +596,36 @@ class ADCCHandler(BaseHTTPRequestHandler):
                         self.wfile.write("</table>")
                     if "fullpage" in parms:
                         self.wfile.write("</body></html>")
-                        
                 return
-                
                 
             if parms["path"] == "/recipes.xml":
                 self.send_response(200)
-                self.send_header('Content-type',	'text/xml')
+                self.send_header('Content-type', 'text/xml')
                 self.end_headers()
-                # returned in xml  self.wfile.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
-
-                #self.wfile.write("<html><body>")
                 self.wfile.write(rl.list_recipes(as_xml = True) )
-                #self.wfile.write("</body></html>")
                 return
-            
+
             if parms["path"] == "/reduceconfigs.xml":
                 import glob
                 rcfgs = glob.glob("./*.rcfg")
-                
                 self.send_response(200)
-                self.send_header('Content-type',	'text/xml')
+                self.send_header('Content-type', 'text/xml')
                 self.end_headers()
-                
-                retxml  = '<?xml version="1.0" encoding="UTF-8" ?>\n'
+                retxml = '<?xml version="1.0" encoding="UTF-8" ?>\n'
                 retxml += "<reduceconfigs>\n"
                 for rcfg in rcfgs:
                     retxml += """\t<reduceconfig name="%s"/>\n""" % rcfg
                 retxml += "</reduceconfigs>\n"
                 self.wfile.write(retxml)
                 return
-            
+
             if parms["path"].startswith("/datadir.xml"):
-                #print "*"*300
-                #print "prsw168 in datadir.xml generation dirdict=", repr(self.dirdict)
                 dirdict = self.getDirdict()
                 ds = dirdict.dataSpider
-                
-                #print "prsw181: before as_xml"
                 xml = dirdict.as_xml()
-                #print "prsw185: after as_xml"
                 
                 self.send_response(200)
-                self.send_header('Content-type',	'text/xml')
+                self.send_header('Content-type', 'text/xml')
                 self.end_headers()
                 
                 self.wfile.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
@@ -502,12 +634,10 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 self.wfile.write("</datasetDict>")
                 self.wfile.flush()
                 return
-                
-            rrpath = "/runreduce"
+
             if parms["path"] == "/runreduce":
-                
                 self.send_response(200)
-                self.send_header('Content-type',	'text/html')
+                self.send_header('Content-type', 'text/html')
                 self.end_headers()
                 self.wfile.write("<html><head></head><body>\n")
                 from StringIO import StringIO
@@ -515,16 +645,14 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 cmdlist = ["reduce", "--invoked", "--verbose=6"]
                 cmdlist.extend(parms["p"])
                 
-                #print "prs97 executing: ", " ".join(cmdlist)
-                # make a convienience link to the log
                 logdir = ".autologs"
                 if not os.path.exists(logdir):
                     os.mkdir(logdir)
 
                 reducelog = os.path.join(logdir, 
-                                "reduce-addcinvokedlog-%d%s" % (
-                                os.getpid(), str(time.time())
-                                ))
+                                         "reduce-addcinvokedlog-%d%s" % (
+                                             os.getpid(), str(time.time())
+                                         ))
                 f = open(reducelog, "w")
                 
                 loglink = "reducelog-latest"
@@ -532,15 +660,14 @@ class ADCCHandler(BaseHTTPRequestHandler):
                     os.remove(loglink)
                 os.symlink(reducelog, loglink)
                             
-                # WARNING, this call had used Popen and 
-                # selected on the subprocess.PIPE... now uses call
-                # there is kruft remaining (may move it back to old style
-                # soon but there was a bug)
+                # WARNING, this call had used Popen and selected on the 
+                # subprocess.PIPE... now uses call there is kruft remaining 
+                # (may move it back to old style soon but there was a bug)
+
                 print "adcc running: \n\t" + " ".join(cmdlist)
                 pid = subprocess.call( cmdlist,
                                         stdout = f,
                                         stderr = f)
-                #f.write("hello there")
                 
                 self.wfile.write('<b style="font-size=150%">REDUCTION STARTED</b>')
                 self.wfile.write("<pre>")
@@ -561,7 +688,6 @@ class ADCCHandler(BaseHTTPRequestHandler):
                                   '<b>ENDING RECIPE:</b>  <span style="color:blue">\g<1></span>\n', ptxt)
                     ptxt = re.sub("(STATUS|INFO|FULLINFO|WARNING|CRITICAL|ERROR)(.*?)-(.*?)-", 
                                   '<span style="font-size:70%">\g<1>\g<2>-\g<3>- </span>', ptxt)
-                    
 
                 self.wfile.write(ptxt) # f.read())
                 f.close()
@@ -586,8 +712,6 @@ class ADCCHandler(BaseHTTPRequestHandler):
                                     stderr = pid.stderr.read()
                                     print "prsw494:", stderr
                                     break;
-
-
 
                         # stderr = pid.stderr.read(100)
                         #stdout, stderr  = pid.communicate()
@@ -648,25 +772,28 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 self.wfile.write(page)
                 if True:
                     body = ""
-                    body += "<b>date</b>: %s<br/>\n" % datetime.datetime.now().strftime("%A, %Y-%m-%d %H:%M:%S")
+                    body += "<b>date</b>: %s<br/>\n" \
+                            % datetime.datetime.now().strftime("%A, %Y-%m-%d %H:%M:%S")
                     body += "<u>Reduce Instances</u><br/>\n"
                     body += "n.o. instances: %d\n" % rim.numinsts 
                     body += "<ul>"
                     rdict = copy(rim.reducedict)
                     rpids = rim.reducedict.keys()
                     for rpid in rpids:
-                        body += "<li>client pid = %d at port %d</li>\n" % (rpid, rdict[rpid]["port"])
+                        body += "<li>client pid = %d at port %d</li>\n" \
+                                % (rpid, rdict[rpid]["port"])
                     body += "</ul>"
                     self.wfile.write(page % {"body":body})
                     self.wfile.flush()
-                                    
                 return 
+
             if self.path == "/killprs":
                 import datetime
                 self.send_response(200)
-                self.send_header('Content-type',	'text/html')
+                self.send_header('Content-type', 'text/html')
                 self.end_headers()
-                self.wfile.write("Killed this prsproxy instance, pid = %d at %s" %(os.getpid(), str(datetime.datetime.now())))
+                self.wfile.write("Killed this prsproxy instance, pid = %d at %s" \
+                                 %(os.getpid(), str(datetime.datetime.now())))
                 webserverdone = True
                 return
             
@@ -684,7 +811,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                     except:
                         return
                     self.send_response(200)
-                    self.send_header('Content-type',	'image/png')
+                    self.send_header('Content-type', 'image/png')
                     self.end_headers()
 
                     while True:
@@ -693,8 +820,8 @@ class ADCCHandler(BaseHTTPRequestHandler):
                             self.wfile.flush()
                             break
                         self.wfile.write(t)
-                
                 return
+
             if self.path.startswith("/fullheader"):
                 realpath = self.path.split('/')
                 realpath = realpath[1:]
@@ -707,7 +834,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 ad = AstroData(fname)
 
                 self.send_response(200)
-                self.send_header('Content-type',	'text/html')
+                self.send_header('Content-type', 'text/html')
                 self.end_headers()
         
                 self.wfile.write("<html><body>\n")
@@ -734,10 +861,11 @@ class ADCCHandler(BaseHTTPRequestHandler):
                         redval = '<span  style="color:red">'+str(alld[dname])+"</span>"
                         dval = redval
                     else:
-                        # print "ppw7--:",type(alld[dname])
+                        # print "ppw864:",type(alld[dname])
                         if not alld[dname].collapse_value():
                             import pprint
-                            dval = """<pre>%s</pre> """ % pprint.pformat(alld[dname].dict_val, indent=4, width=80)
+                            dval = """<pre>%s</pre> """ \
+                                   % pprint.pformat(alld[dname].dict_val, indent=4, width=80)
                         else:
                             dval = str(alld[dname])
                     self.wfile.write("""
@@ -782,7 +910,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 elif fname.endswith(".png"):
                     self.send_header('Content-type', "image/png")
                 else:
-                    self.send_header('Content-type',	'text/html')
+                    self.send_header('Content-type', 'text/html')
                 self.end_headers()
                 self.wfile.write(data)
                 return
@@ -797,8 +925,6 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 return 
                 
             if self.path.startswith("/engineering"):
-                from astrodata.eventsmanagers import EventsManager
-
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
@@ -830,10 +956,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 self.path = self.path.split("?")[0]
 
                 #append any further directory info.
-                joinlist.append( self.path[5:])
-                
-                # print "ppw790:", repr(joinlist), self.path
-                
+                joinlist.append(self.path[5:])
                 fname = os.path.join(*joinlist)
                 print "QAP IF: trying to open %s" % fname
                 try:
@@ -870,12 +993,10 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 data = "<b>NO SUCH RESOURCE FOUND</b>"
                 
             self.send_response(200)
-            self.send_header('Content-type',	'text/html')
+            self.send_header('Content-type', 'text/html')
             self.end_headers()
             self.wfile.write(data)
             return 
-
-                
         except IOError:
             raise
             print "handling IOError"
@@ -889,10 +1010,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
         head = self.rfile.read(vlen)
         pdict = head
         
-        #print("PPW300:"+head)
-
         if parms["path"].startswith("/runreduce"):
-                
             import time
             import json
 
@@ -903,7 +1021,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 evman = rim.events_manager
 
             self.send_response(200)
-            self.send_header('Content-type',	'text/plain')
+            self.send_header('Content-type', 'text/plain')
             self.end_headers()
             
             reduce_params = json.loads(pdict)
@@ -996,7 +1114,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
             things = parms["path"].split("/")[2:-1]
             print "ppwDOPOST:"+ repr(things)
             self.send_response(200)
-            self.send_header('Content-type',	'text/xml')
+            self.send_header('Content-type', 'text/xml')
             self.end_headers()
                 
             # Parse the rest of the URL.
@@ -1004,10 +1122,10 @@ class ADCCHandler(BaseHTTPRequestHandler):
             
             # If we want other arguments like order by
             # we should parse them here
-            # print "PPW820:"+repr(pdict)
+            # print "PPW1125:"+repr(pdict)
             req = PRec(pdict=pdict, method="POST")
             retval = calmgr(req, selection)
-            print "ppw824::::"*3, req._buff                
+            print "ppw1128::::"*3, req._buff                
             self.wfile.write(req._buff)
             return 
 
@@ -1026,24 +1144,28 @@ class ADCCHandler(BaseHTTPRequestHandler):
             
         except :
             pass
-            
+
+
 class MTHTTPServer(ThreadingMixIn, HTTPServer):
     """Handles requests using threads"""
 
-def startInterfaceServer(port = 8777, **informers):
-    import pprint
-    # print "ppw864:"+pprint.pformat(informers)
+
+def startInterfaceServer(port=8777, **informers):
     import socket
+
     try:
         # important to set prior to any instantiations of ADCCHandler
         ADCCHandler.informers = informers
         
         if "dirdict" in informers:
-            ppwstate.dirdict    = informers["dirdict"]
+            ppwstate.dirdict = informers["dirdict"]
+
         if "dataSpider" in informers:
             ppwstate.dataSpider = informers["dataSpider"]
+
         if "rim" in informers:
             ppwstate.rim = informers["rim"]
+
         # e.g. below by the HTTPServer class
         findingPort = True
         while findingPort:
@@ -1058,16 +1180,16 @@ def startInterfaceServer(port = 8777, **informers):
         print "started"
         #server.serve_forever()
         while True:
-            r,w,x = select.select([server.socket], [],[],.5)
+            r, w, x = select.select([server.socket], [], [], .5)
             if r:
                 server.handle_request()
-            # print "prsw: ",webserverdone
+
             if webserverdone == True:
                 print "shutting down http interface"
                 break
+
     except KeyboardInterrupt:
         print '^C received, shutting down server'
         server.socket.close()
 
 main = startInterfaceServer
-
