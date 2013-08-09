@@ -1198,9 +1198,9 @@ def fit_continuum(ad):
             continue
 
         bg_mean = np.mean([data[center-ybox-bgbox:center-ybox],
-                           data[center+ybox:center+ybox+bgbox]])
+                           data[center+ybox:center+ybox+bgbox]], dtype=np.float64)
 
-        ctr_mean = np.mean(data[center])
+        ctr_mean = np.mean(data[center], dtype=np.float64)
         ctr_std = np.std(data[center])
 
         #print 'mean ctr',ctr_mean,ctr_std
@@ -1223,11 +1223,11 @@ def fit_continuum(ad):
                 continue
 
             col = data[center-ybox:center+ybox,i-xbox:i+xbox]
-            col = np.mean(col,axis=1)
+            col = np.mean(col,axis=1, dtype=np.float64)
             maxflux = col[ybox]
 
             bg = np.mean([data[center-ybox-bgbox:center-ybox,i-xbox:i+xbox],
-                          data[center+ybox:center+ybox+bgbox,i-xbox:i+xbox]])
+                          data[center+ybox:center+ybox+bgbox,i-xbox:i+xbox]], dtype=np.float64)
 
             pars = (bg, maxflux, ybox, init_width)
             fit_obj = at.GaussFit(col)

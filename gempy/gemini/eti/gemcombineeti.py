@@ -65,9 +65,14 @@ class GemcombineETI(PyrafETI):
             Stdout=xcldict["Stdout"])
 
         # Execute the task using the same dict as setParam
-        # (but this time with Stderr and Stdout) 
-        gemini.gemcombine(**xcldict)
+        # (but this time with Stderr and Stdout)
+        try:
+            gemini.gemcombine(**xcldict)
+        except:
+            # catch hard crash of the primitive
+            raise Errors.OutputError("The IRAF task gemcombine failed")
         if gemini.gemcombine.status:
+            # catch graceful exit on error
             raise Errors.OutputError("The IRAF task gemcombine failed")
         else:
             log.fullinfo("The IRAF task gemcombine completed successfully")

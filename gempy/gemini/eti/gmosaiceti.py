@@ -70,8 +70,13 @@ class GmosaicETI(PyrafETI):
         # (but this time with Stderr and Stdout) 
         #from pprint import pprint
         #pprint(xcldict)
-        gemini.gmos.gmosaic(**xcldict)
+        try:
+            gemini.gmos.gmosaic(**xcldict)
+        except:
+            # catch hard crash
+            raise Errors.OutputError("The IRAF task gmos.gmosaic failed")
         if gemini.gmos.gmosaic.status:
+            # catch graceful exit upon error
             raise Errors.OutputError("The IRAF task gmos.gmosaic failed")
         else:
             log.fullinfo("The IRAF task gmos.gmosaic completed successfully")

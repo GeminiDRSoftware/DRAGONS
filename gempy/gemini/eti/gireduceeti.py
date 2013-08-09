@@ -67,8 +67,13 @@ class GireduceETI(PyrafETI):
         # (but this time with Stderr and Stdout) 
         #from pprint import pprint
         #pprint(xcldict)
-        gemini.gmos.gireduce(**xcldict)
+        try:
+            gemini.gmos.gireduce(**xcldict)
+        except:
+            # catch hard crash
+            raise Errors.OutputError("The IRAF task gmos.gireduce failed")
         if gemini.gmos.gireduce.status:
+            # catch graceful exit upon error
             raise Errors.OutputError("The IRAF task gmos.gireduce failed")
         else:
             log.fullinfo("The IRAF task gmos.gireduce completed successfully")
