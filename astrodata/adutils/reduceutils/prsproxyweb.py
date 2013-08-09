@@ -353,7 +353,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                     print "@ppw353:: Incoming request on day ...", \
                         stamp_to_opday(fromtime)
                     tdic = fstore_get(fromtime)
-                    print "@ppw356:: Recieved",len(tdic),\
+                    print "@ppw356:: Received",len(tdic),\
                         "events from fitsstore."
                     tdic.insert(0, {"msgtype"  : "cmdqueue.request",
                                     "timestamp": time.time()})
