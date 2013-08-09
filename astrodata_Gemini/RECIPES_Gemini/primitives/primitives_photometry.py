@@ -90,6 +90,11 @@ class PhotometryPrimitives(GENERALPrimitives):
         # Add the source catalog specifier to the URL
         url += "-source=%s&" % source
 
+        # This extra argument will force vizier to return all the columns from the catalog.
+        # It can be useful to turn it on when debugging. (Took me (KL) long enough to
+        # figure out how to form this query, I thought I'd leave it here for future debugging.)
+        #url += "-out.all=1&"
+
         # Loop over each input AstroData object in the input list
         adinput = rc.get_inputs_as_astrodata()
         for ad in adinput:
@@ -173,7 +178,9 @@ class PhotometryPrimitives(GENERALPrimitives):
                 # Did we get anything?
                 if(len(table.array)):
                     # Parse the votable that we got back, into arrays for each column.
-                    sdssname = table.array['SDSS8']
+                    #  WARNING: That first column name will change with every version
+                    #           of SDSS.  Annoying, but at least you are warned. (KL)
+                    sdssname = table.array['SDSS9']
                     umag = table.array['umag']
                     e_umag = table.array['e_umag']
                     gmag = table.array['gmag']
@@ -1073,8 +1080,8 @@ def _average_each_cluster( xyArray, pixApart=10.0 ):
                 break
         
         if xyClusterFlag:
-            xyMean = [np.mean( xyArray[xyArrayForMean], axis=0 ),
-                      np.mean( xyArray[xyArrayForMean], axis=1 )]
+            xyMean = [np.mean( xyArray[xyArrayForMean], axis=0 , dtype=np.float64),
+                      np.mean( xyArray[xyArrayForMean], axis=1 , dtype=np.float64)]
             newXYArray.append( xyMean[0] )
             # Almost equivalent to reverse, except for numpy
             xyArrayForMean.reverse()
@@ -1499,8 +1506,8 @@ def _profile_sources(ad):
         objcat.data.field("PROFILE_FWHM")[:] = fwhm_array
         objcat.data.field("PROFILE_EE50")[:] = e50d_array
 
-        #print "  mean FWHM %.2f" % np.mean(fwhm_array[fwhm_array!=-999])
-        #print "  mean E50D %.2f" % np.mean(e50d_array[e50d_array!=-999])
+        #print "  mean FWHM %.2f" % np.mean(fwhm_array[fwhm_array!=-999], dtype=np.float64)
+        #print "  mean E50D %.2f" % np.mean(e50d_array[e50d_array!=-999], dtype=np.float64)
 
     #elap = datetime.datetime.now() - now
     #print "time  %.2f s" % ((elap.seconds*10**6 + elap.microseconds)/10.**6)

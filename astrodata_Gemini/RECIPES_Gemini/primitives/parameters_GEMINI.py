@@ -59,8 +59,8 @@
         "userOverride"  : True, 
         "uiLevel"       : "UIBASIC",
         },
-    "source":{
-        "default"       : "sdss8",
+    "source":{  # sdss9 as of 2013.08.05 (KL)
+        "default"       : "sdss9",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,

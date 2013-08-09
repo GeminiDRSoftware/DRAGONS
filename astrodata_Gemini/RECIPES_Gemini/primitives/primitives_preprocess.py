@@ -623,7 +623,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                     raw_pixel_data = raw_pixel_data / coadds
                 
                 # Determine the mean of the raw pixel data
-                raw_mean_value = np.mean(raw_pixel_data)
+                raw_mean_value = np.mean(raw_pixel_data, dtype=np.float64)
                 log.fullinfo("The mean value of the raw pixel data in " \
                              "%s is %.8f" % (ext.filename, raw_mean_value))
                 
@@ -661,7 +661,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                 ext.data = corrected_pixel_data
                 
                 # Determine the mean of the corrected pixel data
-                corrected_mean_value = np.mean(ext.data)
+                corrected_mean_value = np.mean(ext.data, dtype=np.float64)
                 log.fullinfo("The mean value of the corrected pixel data in " \
                              "%s is %.8f" \
                              % (ext.filename, corrected_mean_value))
@@ -792,7 +792,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                 
                 # Normalise the input AstroData object. Calculate the mean
                 # value of the science extension
-                mean = np.mean(ext.data)
+                mean = np.mean(ext.data, dtype=float64)
                 # Divide the science extension by the mean value of the science
                 # extension
                 log.fullinfo("Normalizing %s[%s,%d] by dividing by the mean " \

@@ -278,7 +278,7 @@ class DisplayPrimitives(GENERALPrimitives):
                     good_data = scidata
 
                 log.stdinfo("Twilight flat counts for %s:" % ad.filename)
-                log.stdinfo("    Mean value:   %.0f" % np.mean(good_data))
+                log.stdinfo("    Mean value:   %.0f" % np.mean(good_data, dtype=np.float64))
                 log.stdinfo("    Median value: %.0f" % np.median(good_data))
 
         rc.report_output(orig_input)

@@ -176,6 +176,10 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 adoutput_list = orig_input
                 break
 
+        # ***** From KL:  Before we start measuring BG and detect sources
+        # *****        how about we check if we have the minimum required
+        # *****        number of frames!  Geez!  Trac #527
+
         enough = False
         if red and long_exposure:
             # Fringing on Cerro Pachon is generally stronger than
@@ -218,6 +222,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             adinput = rc.get_inputs_as_astrodata()
             
             enough = True
+            # ****** From KL:  This check needs to be done BEFORE we start 
+            # ****** measuring BG and detecting sources!!!  Trac #527
             if len(adinput)<3:
                 # Can't make a useful fringe frame without at least
                 # three input frames
@@ -517,7 +523,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             stat_region = central_data[yborder:-yborder,xborder:-xborder]
             
             # Get mean value
-            this_mean = np.mean(stat_region)
+            this_mean = np.mean(stat_region, dtype=np.float64)
 
             # Get relative intensity
             if first:

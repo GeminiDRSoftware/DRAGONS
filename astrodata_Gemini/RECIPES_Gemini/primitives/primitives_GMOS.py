@@ -93,7 +93,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 all_ampname = None
 
             if len(overscan)>0:
-                avg_overscan = np.mean(overscan)
+                avg_overscan = np.mean(overscan, dtype=np.float64)
             else:
                 avg_overscan = None
 
@@ -174,6 +174,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                 for ext in ad_out["DQ"]:
                     ext.data = ext.data.astype(np.int16)
                     ext.data = np.where(ext.data<0,1,ext.data)
+                    if all_ampname is not None:
+                        ext.set_key_value("AMPNAME",all_ampname,
+                                          comment=ampcomment)
                     ext.set_key_value("DETSEC",new_detsec,
                                       comment=self.keyword_comments["DETSEC"])
                     ext.set_key_value("CCDSEC",new_detsec,

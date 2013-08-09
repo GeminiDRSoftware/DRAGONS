@@ -744,7 +744,7 @@ class QAPrimitives(GENERALPrimitives):
 
                 # Get requested CC band
                 cc_warn = None
-                req_cc = ad.requested_cc()
+                req_cc = ad.requested_cc().as_pytype()
                 qad["requested"] = req_cc
 
                 if req_cc is not None:
