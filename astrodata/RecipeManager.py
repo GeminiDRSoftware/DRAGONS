@@ -2215,7 +2215,7 @@ def %(name)s(self,cfgObj):
             m = re.match("(?P<prim>.*?)\((?P<args>.*?)\)$", line)
             d = {}
             if m:
-                prim = m.group("prim")
+                prim = m.group("prim").strip()
                 args = m.group("args")
                 elems = args.split(",")
                 for elem in elems:
