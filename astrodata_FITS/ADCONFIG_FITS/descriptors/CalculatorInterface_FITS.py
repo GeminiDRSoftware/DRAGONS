@@ -60,7 +60,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "instrument",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = None )
+                return ret
         except:
             raise
     
@@ -117,7 +123,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "object",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = None )
+                return ret
         except:
             raise
     
@@ -174,7 +186,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "telescope",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = None )
+                return ret
         except:
             raise
     
@@ -231,7 +249,13 @@ class CalculatorInterface:
             else:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
-                return None
+                ret = DescriptorValue( None,
+                                       format = format, 
+                                       name = "ut_date",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = None )
+                return ret
         except:
             raise
     
