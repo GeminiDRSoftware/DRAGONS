@@ -1281,7 +1281,8 @@ help      False     show help information    """
         funs = dir(CalculatorInterface)
         descs = []
         for fun in funs:
-            if "_" != fun[0] and (fun.lower() == fun):
+            
+            if "_" != fun[0] and (fun.lower() == fun) :
                 descs.append(fun)
         return descs
         
@@ -1291,7 +1292,11 @@ help      False     show help information    """
         for fun in funs:
             # print "AD727:", repr(fun)
             try:
-                val = eval("self.%s(asList=True)" % fun)
+                member = eval("self.%s"% fun)
+                if callable(member):                
+                    val = eval("self.%s(asList=True)" % fun)
+                else:
+                    continue
             except AttributeError:
                 val = 'ERROR: No Descriptor Function Named "%s"' % fun  
             except:
