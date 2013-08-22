@@ -22,6 +22,7 @@ from astrodata.gemconstants import SCI
 from gempy.gemini import gemini_metadata_utils as gmu
 # ------------------------------------------------------------------------------
 
+
 def get_bias_level(adinput=None, estimate=True):
     if estimate:
         ret_bias_level = _get_bias_level_estimate(adinput=adinput)
