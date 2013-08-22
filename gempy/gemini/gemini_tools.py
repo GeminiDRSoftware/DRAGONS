@@ -1,26 +1,43 @@
-import os, sys
+#
+#                                                                   gempy.gemini
+#                                                                gemini_tools.py
+#                                                                        08-2013
+# ------------------------------------------------------------------------------
+# $Id$
+# ------------------------------------------------------------------------------
+__version__      = '$Rev$'[11:-2]
+__version_date__ = '$Date$'[7:-2]
+# ------------------------------------------------------------------------------
+import os
 import re
-from datetime import datetime
-from copy import deepcopy
+import sys
 import json
 import urllib2
+
 import pyfits as pf
-import numpy as np
-import tempfile
+import numpy  as np
+
+from copy import deepcopy
+from datetime import datetime
+
 import astrodata
+
 from astrodata import AstroData
 from astrodata import Errors
 from astrodata import Lookups
-from astrodata.adutils import logutils
-from astrodata.ConfigSpace import lookup_path
-from astrodata.gemconstants import SCI, VAR, DQ
-from astrodata.structuredslice import pixel_exts, bintable_exts
-from gempy.library import astrotools as at
 
+from astrodata.adutils         import logutils
+from astrodata.ConfigSpace     import lookup_path
+from astrodata.gemconstants    import SCI, VAR, DQ
+from astrodata.structuredslice import pixel_exts
+
+from gempy.library import astrotools as at
+# ------------------------------------------------------------------------------
 # Load the standard comments for header keywords that will be updated
 # in these functions
 keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
                                             "keyword_comments")
+# ------------------------------------------------------------------------------
 
 def add_objcat(adinput=None, extver=1, replace=False, columns=None):
     """
@@ -69,7 +86,7 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None):
         for ad in adinput_list:
             
             # Check if OBJCAT already exists and just update if desired
-            objcat = ad["OBJCAT",extver]
+            objcat = ad["OBJCAT", extver]
             if objcat and not replace:
                 log.fullinfo("Table already exists; updating values.")
                 for name in columns.keys():
@@ -77,10 +94,11 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None):
             else:
             
                 # Make new table: x, y, ra, dec required
-                x = columns.get("X_IMAGE",None)
-                y = columns.get("Y_IMAGE",None)
-                ra = columns.get("X_WORLD",None)
-                dec = columns.get("Y_WORLD",None)
+                x   = columns.get("X_IMAGE", None)
+                y   = columns.get("Y_IMAGE", None)
+                ra  = columns.get("X_WORLD", None)
+                dec = columns.get("Y_WORLD", None)
+
                 if x is None or y is None or ra is None or dec is None:
                     raise Errors.InputError("Columns X_IMAGE, Y_IMAGE, "\
                                             "X_WORLD, Y_WORLD must be present.")
@@ -88,35 +106,36 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None):
                 # Append columns in order of definition in sextractor params
                 table_columns = []
                 nlines = len(x.array)
+
                 for name in expected_columns:
                     if name in ["NUMBER"]:
-                        default = range(1,nlines+1)
+                        default = range(1, nlines+1)
                         format = "J"
-                    elif name in ["FLAGS","IMAFLAGS_ISO","REF_NUMBER"]:
-                        default = [-999]*nlines
+                    elif name in ["FLAGS", "IMAFLAGS_ISO", "REF_NUMBER"]:
+                        default = [-999] * nlines
                         format = "J"
                     else:
-                        default = [-999]*nlines
+                        default = [-999] * nlines
                         format = "E"
 
                     # Get column from input if present, otherwise
                     # define a new Pyfits column with sensible placeholders
                     data = columns.get(name,
-                                       pf.Column(name=name,format=format,
+                                       pf.Column(name=name, format=format,
                                                  array=default))
                     table_columns.append(data)
 
                 # Make new pyfits table
                 col_def = pf.ColDefs(table_columns)
-                tb_hdu = pf.new_table(col_def)
-                tb_ad = AstroData(tb_hdu)
-                tb_ad.rename_ext("OBJCAT",extver)
+                tb_hdu  = pf.new_table(col_def)
+                tb_ad   = AstroData(tb_hdu)
+                tb_ad.rename_ext("OBJCAT", extver)
             
                 # Replace old version or append new table to AD object
                 if objcat:
                     log.fullinfo("Replacing existing OBJCAT in %s" % 
                                  ad.filename)
-                    ad.remove(("OBJCAT",extver))
+                    ad.remove(("OBJCAT", extver))
                 ad.append(tb_ad)
             
             # Append the output AstroData object to the list of output
@@ -143,27 +162,30 @@ def array_information(adinput=None):
     # Initialize the list of dictionaries of output array numbers
     # Keys will be (extname,extver)
     array_info_list = []
+
     try:
         # Loop over each input AstroData object in the input list
         for ad in adinput_list:
-
             arrayinfo = {}
-
             # Get the number of science extensions
             nsciext = ad.count_exts(SCI)
 
             # Get the correct order of the extensions by sorting on
             # the first element in detector section
             # (raw ordering is whichever amps read out first)
+
             detsecs = ad.detector_section().as_list()
+
             if not isinstance(detsecs[0],list):
                 detsecs = [detsecs]
-            detx1 = [sec[0] for sec in detsecs]
-            ampsorder = range(1,nsciext+1)
-            orderarray = np.array(
-                zip(ampsorder,detx1),dtype=[('ext',np.int),('detx1',np.int)])
-            orderarray.sort(order='detx1')
-            if np.all(ampsorder==orderarray['ext']):
+
+            detx1      = [sec[0] for sec in detsecs]
+            ampsorder  = range(1,nsciext+1)
+            orderarray = np.array(zip(ampsorder,detx1), 
+                                  dtype=[('ext', np.int), ('detx1', np.int)])
+            orderarray.sort(order = 'detx1')
+
+            if np.all(ampsorder == orderarray['ext']):
                 in_order = True
             else:
                 ampsorder = orderarray['ext']
@@ -172,37 +194,40 @@ def array_information(adinput=None):
             # Get array sections for determining when
             # a new array is found
             arraysecs = ad.array_section().as_list()
-            if not isinstance(arraysecs[0],list):
+            if not isinstance(arraysecs[0], list):
                 arraysecs = [arraysecs]
-            if len(arraysecs)!=nsciext:
-                arraysecs*=nsciext
+
+            if len(arraysecs) != nsciext:
+                arraysecs *= nsciext
+
             arrayx1 = [sec[0] for sec in arraysecs]
 
             # Initialize these so that first extension will always
             # start a new array
-            last_detx1 = detx1[ampsorder[0]-1]-1
-            last_arrayx1 = arrayx1[ampsorder[0]-1]
+            last_detx1   = detx1[ampsorder[0]-1] - 1
+            last_arrayx1 = arrayx1[ampsorder[0] - 1]
 
-            arraynum = {}
-            amps_per_array = {}
+            arraynum  = {}
             num_array = 0
+            amps_per_array = {}
+
             for i in ampsorder:
                 sciext = ad[SCI,i]
                 this_detx1 = detx1[i-1]
                 this_arrayx1 = arrayx1[i-1]
                 
-                if (this_detx1>last_detx1 and this_arrayx1<=last_arrayx1):
+                if (this_detx1 > last_detx1 and this_arrayx1 <= last_arrayx1):
                     # New array found
                     num_array += 1
                     amps_per_array[num_array] = 1
                 else:
                     amps_per_array[num_array] += 1
                 
-                arraynum[(sciext.extname(),sciext.extver())] = num_array
+                arraynum[(sciext.extname(), sciext.extver())] = num_array
 
             # Reference extension if tiling/mosaicing all data together
             try:
-                refext = ampsorder[int((amps_per_array[2]+1)/2.0-1)
+                refext = ampsorder[int((amps_per_array[2] + 1) / 2.0 - 1)
                                    + amps_per_array[1]]
             except KeyError:
                 refext = None
@@ -222,6 +247,7 @@ def array_information(adinput=None):
         # Log the message from the exception
         log.critical(repr(sys.exc_info()[1]))
         raise
+
 
 def calc_nbiascontam(adInputs=None, biassec=None):
     """
@@ -261,24 +287,24 @@ def calc_nbiascontam(adInputs=None, biassec=None):
             # Setting the return value to be updated in the loop below    
             retvalue=0
             for ext in ad['SCI']:
-                # Retrieving current BIASSEC value                        #  THIS WHERE THE 
-                BIASSEC = ext.get_key_value('BIASSEC')                      #  bias_section()
-                # Converting the retrieved string into a integer list     #  descriptor
-                # of form [y1, y2, x1, x2] 0-based and non-inclusive      #  would be used!!!!
+                # Retrieving current BIASSEC value                    #  THIS WHERE THE 
+                BIASSEC = ext.get_key_value('BIASSEC')                #  bias_section()
+                # Converting the retrieved string into a integer list #  descriptor
+                # of form [y1, y2, x1, x2] 0-based and non-inclusive  #  would be used!!!!
                 BIASSEClist = sectionStrToIntList(BIASSEC)     #
                 # Setting the lower case biassec list to the appropriate 
                 # list in the lists of lists created above the loop
-                biasseclist = biassecIntList[ext.extver()-1]
+                biasseclist = biassecIntList[ext.extver() - 1]
                 # Ensuring both biassec's have the same vertical coords
-                if (biasseclist[0]==BIASSEClist[0]) and \
-                (biasseclist[1]==BIASSEClist[1]):
+                if (biasseclist[0] == BIASSEClist[0]) and \
+                (biasseclist[1] == BIASSEClist[1]):
                     # If overscan/bias section is on the left side of chip
-                    if biasseclist[3]<50: 
+                    if biasseclist[3] < 50: 
                         # Ensuring right X coord of both biassec's are equal
-                        if biasseclist[2]==BIASSEClist[2]: 
+                        if biasseclist[2] == BIASSEClist[2]: 
                             # Set the number of contaminating columns to the 
                             # difference between the biassec's left X coords
-                            nbiascontam = BIASSEClist[3]-biasseclist[3]
+                            nbiascontam = BIASSEClist[3] - biasseclist[3]
                         # If left X coords of biassec's don't match, set  
                         # number of contaminating columns to 4 and make a 
                         # error log message
@@ -290,10 +316,10 @@ def calc_nbiascontam(adInputs=None, biassec=None):
                     # If overscan/bias section is on the right side of chip
                     else: 
                         # Ensuring left X coord of both biassec's are equal
-                        if biasseclist[3]==BIASSEClist[3]: 
+                        if biasseclist[3] == BIASSEClist[3]: 
                             # Set the number of contaminating columns to the 
                             # difference between the biassec's right X coords
-                            nbiascontam = BIASSEClist[2]-biasseclist[2]
+                            nbiascontam = BIASSEClist[2] - biasseclist[2]
                         else:
                             log.error('left horizontal components of '+
                                       'biassec and BIASSEC did not match, '+
@@ -311,7 +337,6 @@ def calc_nbiascontam(adInputs=None, biassec=None):
                 # and set it as the value to be returned  
                 if nbiascontam > retvalue:  
                     retvalue = nbiascontam
-                    
         return retvalue
     # If all the above checks and attempts to calculate a new nbiascontam 
     # fail, make a error log message and return the value 4. so exiting 
@@ -345,15 +370,15 @@ def check_inputs_match(ad1=None, ad2=None, check_filter=True):
     if (ad1 is None) or (ad2 is None):
         log.error('Inputs ad1 and ad2 must not be None')
         raise Errors.ToolboxError('Either inputs ad1 or ad2 was None')
-    if isinstance(ad1,list):
-        if isinstance(ad2,list):
-            if len(ad1)!=len(ad2):
+    if isinstance(ad1, list):
+        if isinstance(ad2, list):
+            if len(ad1) != len(ad2):
                 log.error('Both ad1 and ad2 inputs must be lists of MATCHING'+
                           ' lengths.')
                 raise Errors.ToolboxError('There were mismatched numbers ' \
                                           'of ad1 and ad2 inputs.')
-    if isinstance(ad1,AstroData):
-        if isinstance(ad2,AstroData):
+    if isinstance(ad1, AstroData):
+        if isinstance(ad2, AstroData):
             # casting both ad1 and ad2 inputs to lists for looping later
             ad1 = [ad1]
             ad2 = [ad2]
@@ -363,24 +388,24 @@ def check_inputs_match(ad1=None, ad2=None, check_filter=True):
             raise Errors.ToolboxError('There were mismatched numbers of '+
                                'ad1 and ad2 inputs.')
     
-    for count in range(0,len(ad1)):
+    for count in range(0, len(ad1)):
         A = ad1[count]
         B = ad2[count]
-        log.fullinfo('Checking inputs '+A.filename+' and '+B.filename)
+        log.fullinfo('Checking inputs ' + A.filename+' and ' + B.filename)
         
-        if A.count_exts('SCI')!=B.count_exts('SCI'):
+        if A.count_exts('SCI') != B.count_exts('SCI'):
             log.error('Inputs have different numbers of SCI extensions.')
             raise Errors.ToolboxError('Mismatching number of SCI ' \
                                       'extensions in inputs')
         for sciA in A[SCI]:
             # grab matching SCI extensions from A's and B's
             extCount = sciA.extver()
-            sciB = B[('SCI',extCount)]
+            sciB = B[('SCI', extCount)]
             
-            log.fullinfo('Checking SCI extension '+str(extCount))
+            log.fullinfo('Checking SCI extension ' + str(extCount))
             
             # Check shape/size
-            if sciA.data.shape!=sciB.data.shape:
+            if sciA.data.shape != sciB.data.shape:
                 log.error('Extensions have different shapes')
                 raise Errors.ToolboxError('Extensions have different shape')
             
@@ -389,7 +414,8 @@ def check_inputs_match(ad1=None, ad2=None, check_filter=True):
             aY = sciA.detector_y_bin()
             bX = sciB.detector_x_bin()
             bY = sciB.detector_y_bin()
-            if (aX!=bX) or (aY!=bY):
+
+            if (aX != bX) or (aY != bY):
                 log.error('Extensions have different binning')
                 raise Errors.ToolboxError('Extensions have different binning')
         
@@ -400,8 +426,8 @@ def check_inputs_match(ad1=None, ad2=None, check_filter=True):
                     log.error('Extensions have different filters')
                     raise Errors.ToolboxError('Extensions have different ' +
                                               'filters')
-        
         log.fullinfo('Inputs match')
+    return
 
 
 def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
@@ -455,14 +481,14 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
             # binning of the x-axis and y-axis values for the science AstroData
             # object using the appropriate descriptors
             science_detector_section_dv = ad.detector_section()
-            science_data_section_dv = ad.data_section()
-            science_array_section_dv = ad.array_section()
-            science_detector_x_bin_dv = ad.detector_x_bin()
-            science_detector_y_bin_dv = ad.detector_y_bin()
+            science_data_section_dv     = ad.data_section()
+            science_array_section_dv    = ad.array_section()
+            science_detector_x_bin_dv   = ad.detector_x_bin()
+            science_detector_y_bin_dv   = ad.detector_y_bin()
             
             if (science_detector_section_dv is None or
-                science_data_section_dv is None or
-                science_array_section_dv is None or
+                science_data_section_dv   is None or
+                science_array_section_dv  is None or
                 science_detector_x_bin_dv is None or
                 science_detector_y_bin_dv is None):
                 # The descriptor functions return None if a value cannot be
@@ -473,18 +499,17 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
             # Get the associated keyword for the detector section, data
             # section and array section from the DescriptorValue (DV) object
             detector_section_keyword = science_detector_section_dv.keyword
-            data_section_keyword = science_data_section_dv.keyword
-            array_section_keyword = science_array_section_dv.keyword
+            data_section_keyword     = science_data_section_dv.keyword
+            array_section_keyword    = science_array_section_dv.keyword
             
             # Get the detector section, data section and array section values
             # for the auxiliary AstroData object using the appropriate
             # descriptors
             aux_detector_section_dv = this_aux[extname].detector_section()
-            aux_data_section_dv = this_aux[extname].data_section()
-            aux_array_section_dv = this_aux[extname].array_section()
+            aux_data_section_dv     = this_aux[extname].data_section()
+            aux_array_section_dv    = this_aux[extname].array_section()
             
             for sciext in ad[SCI]:
-                
                 # Retrieve the extension number for this extension
                 science_extver = sciext.extver()
                 
@@ -959,67 +984,67 @@ def convert_to_cal_header(adinput=None, caltype=None):
             datalabel = "%s-%03d" % (obsid,fileno)
 
             # Set class, type, object to generic defaults
-            ad.phu_set_key_value("OBSCLASS","partnerCal",
+            ad.phu_set_key_value("OBSCLASS", "partnerCal",
                                  keyword_comments["OBSCLASS"])
 
             if "fringe" in caltype:
-                ad.phu_set_key_value("OBSTYPE","FRINGE",
+                ad.phu_set_key_value("OBSTYPE", "FRINGE",
                                      keyword_comments["OBSTYPE"])
-                ad.phu_set_key_value("OBJECT","Fringe Frame",
+                ad.phu_set_key_value("OBJECT", "Fringe Frame",
                                      keyword_comments["OBJECT"])
             elif "sky" in caltype:
-                ad.phu_set_key_value("OBSTYPE","SKY",
+                ad.phu_set_key_value("OBSTYPE", "SKY",
                                      keyword_comments["OBSTYPE"])
-                ad.phu_set_key_value("OBJECT","Sky Frame",
+                ad.phu_set_key_value("OBJECT", "Sky Frame",
                                      keyword_comments["OBJECT"])
             elif "flat" in caltype:
-                ad.phu_set_key_value("OBSTYPE","FLAT",
+                ad.phu_set_key_value("OBSTYPE", "FLAT",
                                      keyword_comments["OBSTYPE"])
-                ad.phu_set_key_value("OBJECT","Flat Frame",
+                ad.phu_set_key_value("OBJECT", "Flat Frame",
                                      keyword_comments["OBJECT"])
             else:
                 raise Errors.InputError("Caltype %s not supported" % caltype)
             
             # Blank out program information
-            ad.phu_set_key_value("GEMPRGID",prgid,
+            ad.phu_set_key_value("GEMPRGID", prgid,
                                  keyword_comments["GEMPRGID"])
-            ad.phu_set_key_value("OBSID",obsid,
+            ad.phu_set_key_value("OBSID", obsid,
                                  keyword_comments["OBSID"])
-            ad.phu_set_key_value("DATALAB",datalabel,
+            ad.phu_set_key_value("DATALAB", datalabel,
                                  keyword_comments["DATALAB"])
 
             # Set release date
-            ad.phu_set_key_value("RELEASE",release,
+            ad.phu_set_key_value("RELEASE", release,
                                  keyword_comments["RELEASE"])
 
             # Blank out positional information
-            ad.phu_set_key_value("RA",0.0,keyword_comments["RA"])
-            ad.phu_set_key_value("DEC",0.0,keyword_comments["DEC"])
+            ad.phu_set_key_value("RA", 0.0, keyword_comments["RA"])
+            ad.phu_set_key_value("DEC", 0.0, keyword_comments["DEC"])
             
             # Blank out RA/Dec in WCS information in PHU if present
             if ad.phu_get_key_value("CRVAL1") is not None:
-                ad.phu_set_key_value("CRVAL1",0.0,keyword_comments["CRVAL1"])
+                ad.phu_set_key_value("CRVAL1", 0.0, keyword_comments["CRVAL1"])
             if ad.phu_get_key_value("CRVAL2") is not None:
-                ad.phu_set_key_value("CRVAL2",0.0,keyword_comments["CRVAL2"])
+                ad.phu_set_key_value("CRVAL2", 0.0, keyword_comments["CRVAL2"])
 
             # Do the same for each SCI,VAR,DQ extension
             # as well as the object name
             for ext in ad:
-                if ext.extname() not in [SCI,VAR,DQ]:
+                if ext.extname() not in [SCI, VAR, DQ]:
                     continue
                 if ext.get_key_value("CRVAL1") is not None:
-                    ext.set_key_value("CRVAL1",0.0,keyword_comments["CRVAL1"])
+                    ext.set_key_value("CRVAL1", 0.0, keyword_comments["CRVAL1"])
                 if ext.get_key_value("CRVAL2") is not None:
-                    ext.set_key_value("CRVAL2",0.0,keyword_comments["CRVAL2"])
+                    ext.set_key_value("CRVAL2", 0.0, keyword_comments["CRVAL2"])
                 if ext.get_key_value("OBJECT") is not None:
                     if "fringe" in caltype:
-                        ext.set_key_value("OBJECT","Fringe Frame",
+                        ext.set_key_value("OBJECT", "Fringe Frame",
                                           keyword_comments["OBJECT"])
                     elif "sky" in caltype:
-                        ext.set_key_value("OBJECT","Sky Frame",
+                        ext.set_key_value("OBJECT", "Sky Frame",
                                           keyword_comments["OBJECT"])
                     elif "flat" in caltype:
-                        ext.set_key_value("OBJECT","Flat Frame",
+                        ext.set_key_value("OBJECT", "Flat Frame",
                                           keyword_comments["OBJECT"])
 
             adoutput_list.append(ad)
@@ -1110,6 +1135,7 @@ def filename_updater(adinput=None, infilename='', suffix='', prefix='',
     outFileName = prefix+name+suffix+filetype
     return outFileName
 
+
 def finalise_adinput(adinput=None, timestamp_key=None, suffix=None):
     if not adinput or adinput is None:
         raise Errors.InputError()
@@ -1132,12 +1158,11 @@ def finalise_adinput(adinput=None, timestamp_key=None, suffix=None):
         if suffix is not None:
             ad.filename = filename_updater(adinput=ad, suffix=suffix,
                                            strip=True) 
-        
         # Append the output AstroData object to the list of output AstroData
         # objects 
         adoutput_list.append(ad)
-    
     return adoutput_list
+
 
 def fit_continuum(ad):
     """
@@ -1156,7 +1181,7 @@ def fit_continuum(ad):
     pixel_scale = ad.pixel_scale().as_pytype()
     
     # Set full aperture to 5 arcsec
-    ybox = int(2.5/pixel_scale)
+    ybox = int(2.5 / pixel_scale)
 
     # Average 8 unbinned columns together
     xbox = 4 / int(ad.detector_x_bin())
@@ -1165,7 +1190,7 @@ def fit_continuum(ad):
     bgbox = 8 / int(ad.detector_x_bin())
 
     # Initialize the Gaussian width to FWHM = 1.2 arcsec
-    init_width = 1.2 / (pixel_scale * (2*np.sqrt(2*np.log(2))))
+    init_width = 1.2 / (pixel_scale * (2 * np.sqrt(2 * np.log(2))))
 
     # Ignore spectrum if not >1.5*background
     s2n_bg = 1.5
@@ -1184,7 +1209,7 @@ def fit_continuum(ad):
         data = sciext.data
 
         ####here - dispersion axis
-        sumdata = np.sum(np.where(dqdata==0,data,0),axis=1)
+        sumdata = np.sum(np.where(dqdata==0, data, 0), axis=1)
         center = np.argmax(sumdata)
 
         #print 'ctr', center
@@ -1197,8 +1222,8 @@ def fit_continuum(ad):
             #print 'too low'
             continue
 
-        bg_mean = np.mean([data[center-ybox-bgbox:center-ybox],
-                           data[center+ybox:center+ybox+bgbox]], dtype=np.float64)
+        bg_mean = np.mean([data[center - ybox - bgbox:center-ybox],
+                           data[center + ybox:center + ybox + bgbox]], dtype=np.float64)
 
         ctr_mean = np.mean(data[center], dtype=np.float64)
         ctr_std = np.std(data[center])
@@ -1206,17 +1231,17 @@ def fit_continuum(ad):
         #print 'mean ctr',ctr_mean,ctr_std
         #print 'mean bg',bg_mean
 
-        if ctr_mean < s2n_bg*bg_mean:
+        if ctr_mean < s2n_bg * bg_mean:
             #print 'too faint'
             continue
-        if ctr_mean < s2n_self*ctr_std:
+        if ctr_mean < s2n_self * ctr_std:
             #print 'too noisy'
             continue
         
         fwhm_list = []
         y_list = []
         x_list = []
-        for i in range(xbox,data.shape[1]-xbox,xbox):
+        for i in range(xbox, data.shape[1]-xbox, xbox):
 
             dqcol = dqdata[center-ybox:center+ybox,i-xbox:i+xbox]
             if np.any(dqcol):
@@ -1227,7 +1252,8 @@ def fit_continuum(ad):
             maxflux = col[ybox]
 
             bg = np.mean([data[center-ybox-bgbox:center-ybox,i-xbox:i+xbox],
-                          data[center+ybox:center+ybox+bgbox,i-xbox:i+xbox]], dtype=np.float64)
+                          data[center+ybox:center+ybox+bgbox,i-xbox:i+xbox]], 
+                         dtype=np.float64)
 
             pars = (bg, maxflux, ybox, init_width)
             fit_obj = at.GaussFit(col)
@@ -1254,23 +1280,20 @@ def fit_continuum(ad):
 
         fwhm_pix = np.array(fwhm_list)
         fwhm_arcsec = pixel_scale * fwhm_pix
-        rec = np.rec.fromarrays([x_list,y_list,fwhm_pix,fwhm_arcsec],names=["x","y","fwhm","fwhm_arcsec"])
+        rec = np.rec.fromarrays([x_list,y_list,fwhm_pix,fwhm_arcsec],
+                                names=["x","y","fwhm","fwhm_arcsec"])
 
         # Clip outliers in FWHM - single 1-sigma clip if more than 3 sources.
         num_total = len(rec)
         if num_total>=3:
-
             data = rec["fwhm_arcsec"]
             mean = data.mean()
             sigma = data.std()
             rec = rec[(data<mean+sigma) & (data>mean-sigma)]
-
-        #print rec["fwhm"].mean(),rec["fwhm_arcsec"].mean()
-
         # Store data
         good_source[(SCI,extver)] = rec
-
     return good_source
+
 
 def fitsstore_report(ad, rc, metric, info_dict):
     if metric not in ["iq","zp","sb","pe"]:
@@ -1280,14 +1303,11 @@ def fitsstore_report(ad, rc, metric, info_dict):
     qareport = {}
 
     # Compose metadata
-    import astrodata
-    import os
     import getpass
     import socket
-    import sys
-    qareport["hostname"] = socket.gethostname()
-    qareport["userid"] = getpass.getuser()
-    qareport["processid"] = os.getpid()
+    qareport["hostname"]   = socket.gethostname()
+    qareport["userid"]     = getpass.getuser()
+    qareport["processid"]  = os.getpid()
     qareport["executable"] = os.path.basename(sys.argv[0])
 
     # These may need revisiting.  There doesn't seem to be a
@@ -1408,17 +1428,16 @@ def fitsstore_report(ad, rc, metric, info_dict):
         send_fitsstore_report(qareport)
     return qareport
 
+
 def send_fitsstore_report(qareport):
-    from astrodata import Lookups
     # from astrodata_Gemini/ADCONFIG_Gemini/lookups/calurl_dict.py    
     calurl_dict = Lookups.get_lookup_table("Gemini/calurl_dict", "calurl_dict")
-    
-    list = [qareport]
-    
-    req = urllib2.Request(url = calurl_dict["QAMETRICURL"], data=json.dumps(list))
+    qalist = [qareport]
+    req = urllib2.Request(url=calurl_dict["QAMETRICURL"], data=json.dumps(qalist))
     f = urllib2.urlopen(req)
     # Should do some error checking here.
     f.close()
+    return
 
 def log_message(function=None, name=None, message_type=None):
     if message_type == 'calling':
@@ -1536,6 +1555,7 @@ def mark_history(adinput=None, keyword=None, comment=None):
         for key, comm in keyword_dict.iteritems():
             update_key(adinput=ad, keyword=key, value=tlm, comment=comm,
                        extname="PHU")
+    return
 
 def obsmode_add(ad):
     """Add 'OBSMODE' keyword to input phu for IRAF routines in GMOS package
@@ -1555,10 +1575,10 @@ def obsmode_add(ad):
                 ad.phu_set_key_value("PREPARE", gprep,
                                      "UT Time stamp for GPREPARE")
         if "PROCESSED_BIAS" in types:
-            ad.history_mark(key="GBIAS",
+            mark_history(adinput=ad, keyword="GBIAS",
                             comment="Temporary key for GIREDUCE")
         if "GMOS_LS_FLAT" in types:
-            ad.history_mark(key="GSREDUCE",
+            mark_history(adinput=ad, keyword="GSREDUCE",
                 comment="Temporary key for GSFLAT")
         try:
             if "GMOS_IMAGE" in types:
@@ -1612,7 +1632,6 @@ def parse_sextractor_param():
         
         name = fields[0]
         columns.append(name)
-
     return columns
 
 def read_database(ad, database_name=None, input_name=None, output_name=None):
@@ -1646,7 +1665,6 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
         if ad["WAVECAL",extver] is not None:
             ad.remove(("WAVECAL",extver))
         ad.append(table_ad)
-
     return ad
 
 def trim_to_data_section(adinput=None):
@@ -1670,11 +1688,8 @@ def trim_to_data_section(adinput=None):
     adoutput_list = []
  
     try:
-
         for ad in adinput_list:
-
             for sciext in ad[SCI]:
-                
                 # Get matching VAR, DQ, OBJMASK planes if present
                 extver = sciext.extver()
                 varext = ad[VAR,extver]
@@ -1945,7 +1960,8 @@ def update_key_from_descriptor(adinput=None, descriptor=None, keyword=None,
         raise Errors.Error("No keyword found for descriptor %s" % descriptor)
     
     update_key(adinput=ad, keyword=key, value=dv, comment=None,
-               extname=extname) 
+               extname=extname)
+    return
 
 def validate_input(input=None):
     """
@@ -1984,3 +2000,4 @@ def write_database(ad, database_name=None, input_name=None):
         db = at.SpectralDatabase(binary_table=wavecal_table,
                                  record_name=record_name)
         db.write_to_disk(database_name=database_name)
+    return
