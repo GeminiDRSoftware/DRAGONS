@@ -25,7 +25,6 @@ from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 # ------------------------------------------------------------------------------
 
-
 class StandardizePrimitives(GENERALPrimitives):
     """
     This is the class containing all of the primitives used to standardize an
