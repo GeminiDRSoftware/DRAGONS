@@ -1,28 +1,43 @@
+#
+#                                                                     QAP Gemini
+#
+#                            RECIPES_Gemini.primitives.primitives_standardize.py
+#                                                                        08-2013
+# ------------------------------------------------------------------------------
+# $Id$
+# ------------------------------------------------------------------------------
+__version__      = '$Revision$'[11:-2]
+__version_date__ = '$Date$'[7:-2]
+# ------------------------------------------------------------------------------
 import os
 import numpy as np
-import pyfits as pf
+
 from astrodata import AstroData
 from astrodata import Errors
 from astrodata import Lookups
+
 from astrodata.adutils import logutils
+from astrodata.ConfigSpace  import lookup_path
 from astrodata.gemconstants import SCI, VAR, DQ
-from astrodata.ConfigSpace import lookup_path
+
 from gempy.gemini import gemini_tools as gt
+
 from primitives_GENERAL import GENERALPrimitives
+# ------------------------------------------------------------------------------
 
 class StandardizePrimitives(GENERALPrimitives):
     """
     This is the class containing all of the primitives used to standardize an
     AstroData object. It inherits all the primitives from the
     'GENERALPrimitives' class.
-    
     """
     astrotype = "GENERAL"
     
     def init(self, rc):
         GENERALPrimitives.init(self, rc)
         return rc
-    init.pt_hide = True
+
+    init.pt_hide = True 
     
     def addDQ(self, rc):
         """
@@ -41,7 +56,6 @@ class StandardizePrimitives(GENERALPrimitives):
                     provided, the primitive will attempt to determine an
                     appropriate BPM.
         :type bpm: string or list of strings
-        
         """
         # Instantiate the log
         log = logutils.get_logger(__name__)
@@ -234,7 +248,7 @@ class StandardizePrimitives(GENERALPrimitives):
         
         yield rc
     
-    def addMDF(self,rc):
+    def addMDF(self, rc):
         """
         This primitive is used to add an MDF extension to the input AstroData
         object. If only one MDF is provided, that MDF will be add to all input
@@ -376,8 +390,8 @@ class StandardizePrimitives(GENERALPrimitives):
             
             # Append the MDF AstroData object to the input AstroData object
             log.fullinfo("Adding the MDF %s to the input AstroData object "
-                         "%s" % (mdf.filename, ad.filename))
-            ad.append(moredata=mdf)
+                         "%s" % (mdf_ad.filename, ad.filename))
+            ad.append(moredata=mdf_ad)
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
@@ -571,26 +585,26 @@ class StandardizePrimitives(GENERALPrimitives):
             # gmos-s_bpm_EEV_11_3amp_v1_mosaic.fits
             #
             # Format binning
-            bin = "%s%s" % (detector_x_bin,detector_y_bin)
-            
-            # Check for detector type
+            binning = "%s%s" % (detector_x_bin, detector_y_bin)
             detector_type = ad.phu_get_key_value("DETTYPE")
-            if detector_type=="SDSU II CCD":
+
+            if detector_type   == "SDSU II CCD":
                 det = "EEV"
-            elif detector_type=="SDSU II e2v DD CCD42-90":
+            elif detector_type == "SDSU II e2v DD CCD42-90":
                 det = "e2v"
-            elif detector_type=="S10892-01":
+            elif detector_type == "S10892-01":
                 det = "HAM"
             else:
                 det = None
             
             # Check the number of amps used
             namps = ad.phu_get_key_value("NAMPS")
-            if namps==2:
+
+            if   namps == 2: 
                 amp = "6amp"
-            elif namps==1:
+            elif namps == 1: 
                 amp = "3amp"
-            else:
+            else: 
                 amp = None
             
             # Check whether data is mosaicked
@@ -600,6 +614,7 @@ class StandardizePrimitives(GENERALPrimitives):
                 or
                 (ad.phu_get_key_value(
                         self.timestamp_keys["tileArrays"]) is not None))
+
             if mosaicked:
                 mos = "_mosaic"
             else:
@@ -610,10 +625,11 @@ class StandardizePrimitives(GENERALPrimitives):
             ver = "v1"
             
             # Create the key
-            key = "%s_%s_%s_%s_%s%s" % (instrument,det,bin,amp,ver,mos)
+            key = "%s_%s_%s_%s_%s%s" % (instrument, det, binning, amp, ver, mos)
         
         return key
-    
+
+
     def _calculate_var(self, adinput=None, add_read_noise=False,
                        add_poisson_noise=False):
         """
@@ -633,13 +649,9 @@ class StandardizePrimitives(GENERALPrimitives):
         
         # Loop over the science extensions in the dataset
         for ext in adinput[SCI]:
-            
-            # Retrieve the extension number for this extension
             extver = ext.extver()
-            
-            # Determine the units of the pixel data in the input science
-            # extension
-            bunit = ext.get_key_value("BUNIT")
+            bunit  = ext.get_key_value("BUNIT")
+
             if bunit == "adu":
                 # Get the gain value using the appropriate descriptor. The gain
                 # is only if the units are in ADU
@@ -741,7 +753,8 @@ class StandardizePrimitives(GENERALPrimitives):
                 adinput.append(moredata=var)
         
         return adinput
-    
+
+
     def _update_dq_header(self, sci=None, dq=None, bpmname=None):
         # Add the physical units keyword
         gt.update_key(adinput=dq, keyword="BUNIT", value="bit", comment=None,
@@ -769,7 +782,8 @@ class StandardizePrimitives(GENERALPrimitives):
                               comment=dq_comment, extname=DQ)
         
         return dq
-    
+
+
     def _update_var_header(self, sci=None, var=None, bunit=None):
         # Add the physical units keyword
         if bunit is not None:
