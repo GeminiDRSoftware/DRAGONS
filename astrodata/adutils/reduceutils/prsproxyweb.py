@@ -149,7 +149,7 @@ def ymd_to_stamp(yy, mm, dd, hh=0):
     """Caller passes integers for year, month, and day. Return is
     the epoch time (sec). Year is 4 digit, eg., 2013
 
-    parameters: <int>, <int>, <int>, Year, Month, Day
+    parameters: <int>, <int>, <int> [, <int>] Year, Month, Day [,Hour]
     return:     <float>, epoch time in seconds.
     """
     return time.mktime(time.strptime("%s %s %s %s" % (yy, mm, dd, hh), "%Y %m %d %H"))
@@ -191,7 +191,7 @@ def fstore_get(timestamp):
     from fitsstore. This could be huge. Be careful passing no timestamp!
 
     parameters: <float>, time in epoch seconds
-    return:     <list>,  list of a json blob of qametrics
+    return:     <list>,  list of dicts (json) of qametrics
     """
     # Get the fitsstore query url from calurl_dict
     qurlPath     = "Gemini/calurl_dict"
