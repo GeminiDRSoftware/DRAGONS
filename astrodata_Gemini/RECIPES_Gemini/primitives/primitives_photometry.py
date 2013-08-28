@@ -33,9 +33,9 @@ class PhotometryPrimitives(GENERALPrimitives):
     
     def addReferenceCatalog(self, rc):
         """
-        Currently, the only supported source catalog is sdss8.
+        Currently, the only supported source catalog is sdss9.
 
-        Query a vizier server hosting an sdss7 catalog to get a
+        Query a vizier server hosting an sdss9 catalog to get a
         catalog of all the SDSS DR8 sources within a given radius
         of the pointing center.
 
