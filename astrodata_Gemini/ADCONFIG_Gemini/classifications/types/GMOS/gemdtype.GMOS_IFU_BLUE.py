@@ -4,6 +4,6 @@ class GMOS_IFU_BLUE(DataClassification):
     usage = ""
     parent = "GMOS_IFU"
     requirement = ISCLASS('GMOS_IFU') & \
-                  PHU(MASKNAME='(IFU-B)|(IFU-B-NS)|(g.ifu_slits_mdf)') 
+                  PHU(MASKNAME='(IFU-B)|(IFU-B-NS)|(g.ifu_slit._mdf)') 
 
 newtypes.append(GMOS_IFU_BLUE())
