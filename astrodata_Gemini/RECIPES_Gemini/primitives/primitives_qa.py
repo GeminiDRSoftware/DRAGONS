@@ -1006,6 +1006,8 @@ class QAPrimitives(GENERALPrimitives):
                                                   std_fwhm)).rjust(rlen)
                 if is_image:
                     srcStr = "%d sources used to measure IQ." % len(src)
+                    if('NON_SIDEREAL' in ad.types):
+                        srcStr += "\n WARNING - NON SIDEREAL tracking. IQ measurements will be unreliable"
                     emStr = ("Ellipticity Mean %s Sigma:" % pm).ljust(llen) + \
                             ("%.3f %s %.3f" % (mean_ellip, pm, 
                                                std_ellip)).rjust(rlen)
@@ -1057,6 +1059,9 @@ class QAPrimitives(GENERALPrimitives):
                 if is_image and mean_ellip>0.1:
                     ell_warn = "\n    "+\
                         "WARNING: high ellipticity".rjust(dlen)
+                    # Note if it is non-sidereal
+                    if('NON_SIDEREAL' in ad.types):
+                        ell_warn += "\n     - this is likely due to non-sidereal tracking"
                 else:
                     ell_warn = ""                    
 
@@ -1091,6 +1096,8 @@ class QAPrimitives(GENERALPrimitives):
                 else:
                     mean_ellip = float(mean_ellip)
                     std_ellip = float(std_ellip)
+                if('NON_SIDEREAL' in ad.types):
+                    comment.append("Observation is NON SIDEREAL, IQ measurements will be unreliable")
                     
                 if iq_band is not None:
                     band = iq_band[0]
