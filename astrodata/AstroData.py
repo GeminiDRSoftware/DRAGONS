@@ -701,7 +701,7 @@ integrates other functionalities.
                     header=header))
    
     def append(self, moredata=None, data=None, header=None, auto_number=False,\
-               extname=None, extver=None, do_deepcopy=False):
+               do_deepcopy=False):
         """
         :param moredata: either an AstroData instance, an HDUList instance, 
             or an HDU instance to add to this AstroData object.
@@ -835,12 +835,6 @@ integrates other functionalities.
         :param auto_number: auto-increment the extension version, ``EXTVER``, to fit file convention
         :type auto_number: boolean
         
-        :param extname: extension name as set in keyword ``EXTNAME`` (eg. 'SCI', 'VAR', 'DQ')
-        :type extname: string
-
-        :param extver: extension version as set in keyword ``EXTVER``
-        :type extver: int
-
         :param do_deepcopy: deepcopy the input before appending.  Might be useful
             when auto_number is True and the input comes from another AD object.
         :type do_deepcopy: boolean
@@ -879,7 +873,7 @@ integrates other functionalities.
                 md=moredata, hdul=hdulist_to_insert, hduindx=hdu_index)
         else:
             self.onehdu_work(insert=True, header=header, data=data, \
-                extname=extname, extver=extver, autonum=auto_number,\
+                autonum=auto_number,\
                 hduindx=hdu_index)
             
     def infostr(self, as_html=False, oid=False, table=False, help=False):
