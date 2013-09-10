@@ -90,6 +90,8 @@ class StandardizePrimitives(GENERALPrimitives):
             
             # Parameters specified on the command line to reduce are converted
             # to strings, including None
+            ##M What about if a user doesn't want to add a BPM at all?
+            ##M Are None's not converted to Nonetype from the command line?
             if rc["bpm"] and rc["bpm"] != "None":
                 # The user supplied an input to the bpm parameter
                 bpm = rc["bpm"]
@@ -107,30 +109,37 @@ class StandardizePrimitives(GENERALPrimitives):
                 # Get the appropriate BPM from the look up table
                 if key in all_bpm_dict:
                     bpm = lookup_path(all_bpm_dict[key])
-            
+                else:
+                    bpm = None
+                    log.warning("No BPM found for %s, no BPM will be "
+                                "included" % ad.filename)
+
             # Ensure that the BPMs are AstroData objects
-            if not isinstance(bpm, AstroData):
-                bpm_ad = AstroData(bpm)
-            
-            if bpm_ad is None:
-                log.warning("Cannot convert %s into an AstroData object, so "
-                            "no BPM will be added" % bpm)
-                
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
-                continue
-            
-            # Clip the BPM data to match the size of the input AstroData
-            # object science and pad with overscan region, if necessary
-            final_bpm = gt.clip_auxiliary_data(adinput=ad, aux=bpm_ad,
-                                               aux_type="bpm")[0]
-            
+            bpm_ad = None
+            if bpm is not None:
+                log.fullinfo("Using %s as BPM" % str(bpm))
+                if isinstance(bpm, AstroData):
+                    bpm_ad = bpm
+                else:
+                    bpm_ad = AstroData(bpm)
+                    ##M Do we want to fail here depending on context?
+                    if bpm_ad is None:
+                        log.warning("Cannot convert %s into an AstroData "
+                                    "object, no BPM will be added" % bpm)
+
+            final_bpm = None
+            if bpm_ad is not None:
+                # Clip the BPM data to match the size of the input AstroData
+                # object science and pad with overscan region, if necessary
+                final_bpm = gt.clip_auxiliary_data(adinput=ad, aux=bpm_ad,
+                                                   aux_type="bpm")[0]
+
             # Get the non-linear level and the saturation level using the
-            # appropriate descriptors
+            # appropriate descriptors - Individual values get checked in the
+            # next loop 
             non_linear_level_dv = ad.non_linear_level()
             saturation_level_dv = ad.saturation_level()
-            
+
             # Loop over each science extension in each input AstroData object
             for ext in ad[SCI]:
                 
@@ -148,77 +157,99 @@ class StandardizePrimitives(GENERALPrimitives):
                 # extension
                 non_linear_level = non_linear_level_dv.get_value(extver=extver)
                 saturation_level = saturation_level_dv.get_value(extver=extver)
-                
+
+                # To store individual arrays created for each of the DQ bit
+                # types
+                dq_bit_arrays = []
+
                 # Create an array that contains pixels that have a value of 2
                 # when that pixel is in the non-linear regime in the input
                 # science extension
-                for_dq_array = []
                 if non_linear_level is not None:
-                    log.fullinfo("Flagging pixels in the DQ extension "
-                                 "corresponding to non linear pixels in "
-                                 "%s[%s,%d] using non linear level = %d" %
-                                 (ad.filename, SCI, extver, non_linear_level))
-                    non_linear_array = np.where(
-                        ((ext.data >= non_linear_level) &
-                        (ext.data < saturation_level)), 2, 0)
+                    non_linear_array = None
+                    if saturation_level is not None:
+                        # Test the saturation level against non_linear level
+                        # They can be the same or the saturation level can be
+                        # greater than but not less than the non-linear level.
+                        # If they are the same then only flag saturated pixels
+                        # below. This just means not creating an unneccessary
+                        # intermediate array.
+                        if saturation_level > non_linear_level:
+                            log.fullinfo("Flagging pixels in the DQ extension "
+                                         "corresponding to non linear pixels "
+                                         "in %s[%s,%d] using non linear "
+                                         "level = %.2f" % (ad.filename, SCI,
+                                                           extver,
+                                                           non_linear_level))
+
+                            non_linear_array = np.where(
+                                ((ext.data >= non_linear_level) &
+                                (ext.data < saturation_level)), 2, 0)
+                            
+                        elif saturation_level < non_linear_level:
+                            log.warning("%s[%s,%d] saturation_level value is"
+                                        "less than the non_linear_level not"
+                                        "flagging non linear pixels" %
+                                        (ad.filname, SCI, extver))
+                        else:
+                            log.fullinfo("Saturation and non-linear values "
+                                         "for %s[%s,%d] are the same. Only "
+                                         "flagging saturated pixels."
+                                         % (ad.filename, SCI, extver))
+                            
+                    else:
+                        log.fullinfo("Flagging pixels in the DQ extension "
+                                     "corresponding to non linear pixels "
+                                     "in %s[%s,%d] using non linear "
+                                     "level = %.2f" % (ad.filename, SCI, extver,
+                                                       non_linear_level))
+
+                        non_linear_array = np.where(
+                            (ext.data >= non_linear_level), 2, 0)
                     
-                    for_dq_array.append(non_linear_array)
-                
+                    dq_bit_arrays.append(non_linear_array)
+
                 # Create an array that contains pixels that have a value of 4
                 # when that pixel is saturated in the input science extension
                 if saturation_level is not None:
+                    saturation_array = None
                     log.fullinfo("Flagging pixels in the DQ extension "
                                  "corresponding to saturated pixels in "
-                                 "%s[%s,%d] using saturation level = %d" %
+                                 "%s[%s,%d] using saturation level = %.2f" %
                                  (ad.filename, SCI, extver, saturation_level))
                     saturation_array = np.where(
                         ext.data >= saturation_level, 4, 0)
-                    
-                    for_dq_array.append(saturation_array)
+                    dq_bit_arrays.append(saturation_array)
                 
                 # BPMs have an EXTNAME equal to DQ
+                bpmname = None
                 if final_bpm is not None:
+                    bpm_array = None
                     bpmname = os.path.basename(final_bpm.filename)
                     log.fullinfo("Flagging pixels in the DQ extension "
                                  "corresponding to bad pixels in %s[%s,%d] "
-                                 "using the BPM %s[%s,%d]" % (
-                        ad.filename, SCI, extver, bpmname, DQ, extver))
+                                 "using the BPM %s[%s,%d]" %
+                                 (ad.filename, SCI, extver, bpmname, DQ, extver))
                     bpm_array = final_bpm[DQ, extver].data
-                    
-                    for_dq_array.append(bpm_array)
-                else:
-                    bpmname = None
+                    dq_bit_arrays.append(bpm_array)
                 
                 # Create a single DQ extension from the three arrays (BPM,
                 # non-linear and saturated)
-                if len(for_dq_array) == 0:
+                if not dq_bit_arrays:
                     # The BPM, non-linear and saturated arrays were not
                     # created. Create a single DQ array with all pixels set
                     # equal to 0 
                     log.fullinfo("The BPM, non-linear and saturated arrays "
                                  "were not created. Creating a single DQ "
                                  "array with all the pixels set equal to zero")
-                    dq_array = np.zeros(ext.data.shape).astype(dq_dtype)
-                
-                elif len(for_dq_array) == 1:
-                    # Set the single array equal to the DQ array
-                    dq_array = for_dq_array[0]
-                elif len(for_dq_array) == 2:
-                    # Sum the two arrays to create the DQ array
-                    dq_array = np.bitwise_or(for_dq_array[0], for_dq_array[1])
-                elif len(for_dq_array) == 3:
-                    # Sum the three arrays to create the DQ array
-                    tmp_array = np.bitwise_or(for_dq_array[0], for_dq_array[1])
-                    dq_array = np.bitwise_or(tmp_array, for_dq_array[2])
+                    final_dq_array = np.zeros(ext.data.shape).astype(dq_dtype)
+
                 else:
-                    raise Errors.Error("The number of elements in the list "
-                                       "of arrays (%d) cannot be handled"
-                                       % (len(for_dq_array)))
-                
-                dq_array = dq_array.astype(dq_dtype)
+                    final_dq_array = self._bitwise_OR_list(dq_bit_arrays)
+                    final_dq_array = final_dq_array.astype(dq_dtype)
                 
                 # Create a data quality AstroData object
-                dq = AstroData(data=dq_array)
+                dq = AstroData(data=final_dq_array)
                 dq.rename_ext(DQ, ver=extver)
                 dq.filename = ad.filename
                 
@@ -242,7 +273,7 @@ class StandardizePrimitives(GENERALPrimitives):
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
-        
+
         # Report the list of output AstroData objects to the reduction context
         rc.report_output(adoutput_list)
         
@@ -643,7 +674,19 @@ class StandardizePrimitives(GENERALPrimitives):
         # Get the gain and the read noise using the appropriate descriptors.
         gain_dv = adinput.gain()
         read_noise_dv = adinput.read_noise()
-        
+
+        # Only check read_noise here as gain descriptor is only used if units
+        # are in ADU
+        if read_noise_dv.is_none() and add_read_noise:
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception.
+            if hasattr(adinput, "exception_info"):
+                raise adinput.exception_info
+            else:
+                raise Errors.InputError("read_noise descriptor "
+                                        "returned None...\n%s"
+                                        % (read_noise_dv.info()))
+            
         # Set the data type of the final variance array
         var_dtype = np.dtype(np.float32)
         
@@ -654,10 +697,17 @@ class StandardizePrimitives(GENERALPrimitives):
 
             if bunit == "adu":
                 # Get the gain value using the appropriate descriptor. The gain
-                # is only if the units are in ADU
+                # is only used if the units are in ADU. Raise if gain is None
                 gain = gain_dv.get_value(extver=extver)
-                log.fullinfo("Gain for %s[%s,%d] = %f"
-                             % (adinput.filename, SCI, extver, gain))
+                if gain is not None:
+                    log.fullinfo("Gain for %s[%s,%d] = %f"
+                                 % (adinput.filename, SCI, extver, gain))
+                elif add_read_noise or add_poisson_noise:
+                    err_msg = ("Gain for %s[%s,%d] is None. Cannot calculate "
+                                "variance properly. Setting to zero."
+                                % (adinput.filename, SCI, extver))
+                    raise Errors.InputError(err_msg)
+                
                 units = "ADU"
             elif bunit == "electron" or bunit == "electrons":
                 units = "electrons"
@@ -671,23 +721,28 @@ class StandardizePrimitives(GENERALPrimitives):
                 # appropriate descriptor. The read noise is only used if
                 # add_read_noise is True
                 read_noise = read_noise_dv.get_value(extver=extver)
-                log.fullinfo("Read noise for %s[%s,%d] = %f"
-                             % (adinput.filename, SCI, extver, read_noise))
-                
-                # Determine the variance value to use when calculating the read
-                # noise component of the variance.
-                read_noise_var_value = read_noise
-                if units == "ADU":
-                    read_noise_var_value = read_noise / gain
-                
-                # Add the read noise component of the variance to a zeros array
-                # that is the same size as the pixel data in the science
-                # extension
-                log.fullinfo("Calculating the read noise component of the "
-                             "variance in %s" % units)
-                var_array_rn = np.add(
-                  np.zeros(ext.data.shape), (read_noise_var_value)**2)
-            
+                if read_noise is not None:
+                    log.fullinfo("Read noise for %s[%s,%d] = %f"
+                                 % (adinput.filename, SCI, extver, read_noise))
+                    
+                    # Determine the variance value to use when calculating the
+                    # read noise component of the variance.
+                    read_noise_var_value = read_noise
+                    if units == "ADU":
+                        read_noise_var_value = read_noise / gain
+                    
+                    # Add the read noise component of the variance to a zeros
+                    # array that is the same size as the pixel data in the
+                    # science extension
+                    log.fullinfo("Calculating the read noise component of the "
+                                 "variance in %s" % units)
+                    var_array_rn = np.add(
+                      np.zeros(ext.data.shape), (read_noise_var_value)**2)
+                else:
+                    logwarning("Read noise for %s[%s,%d] is None. Setting to "
+                               "zero" % (adinput.filename, SCI, extver))
+                    var_array_rn = np.zeros(ext.data.shape)
+                    
             if add_poisson_noise:
                 # Determine the variance value to use when calculating the
                 # poisson noise component of the variance
@@ -808,3 +863,45 @@ class StandardizePrimitives(GENERALPrimitives):
                               extname=VAR)
         
         return var
+
+
+    def _bitwise_OR_list(self, input_list=None):
+        """
+        ##M This should get moved in the trunk to a library function
+        Return a numpy array consisting of the bitwise OR combination of
+        the input numpy arrays within the input list. List entries can be the
+        None type.
+
+        :param input_list: default = None: Numpy arrays to be bitwise OR'ed
+                                           together. List can contain None
+                                           types. No check of the type of the
+                                           Numpy array is performed by this
+                                           method.
+        :type input_list: Python list
+        
+        :returns: Numpy array
+        
+        """
+        # Test input_list is a list and not empty 
+        if not isinstance(input_list, list):
+            raise Errors.InputError("input_list is not a list")
+        elif not input_list:
+            raise Errors.InputError("input_list is empty")
+
+        # Bitwise or arrays
+        return_array = None
+        for in_array in input_list:
+            if in_array is not None:
+                if return_array is None:
+                    return_array = in_array
+                else:
+                    # Let numpy catch the case where in_array is not a numpy
+                    # array
+                    return_array = np.bitwise_or(return_array, in_array)
+
+        # Test for all Nones
+        if return_array is None:
+            raise Errors.InputError("All input list values are None")
+
+        return return_array
+            
