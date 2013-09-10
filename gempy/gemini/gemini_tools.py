@@ -1946,7 +1946,7 @@ def update_key_from_descriptor(adinput=None, descriptor=None, keyword=None,
     ad = adinput_list[0]
     exec("dv = ad.%s" % descriptor)
     
-    if dv is None:
+    if dv.is_none():
         raise Errors.Error("No value found for %s descriptor in %s" %
                            (descriptor, ad.filename))
     
