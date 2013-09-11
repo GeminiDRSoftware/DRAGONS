@@ -245,11 +245,27 @@ class ADCCHandler(BaseHTTPRequestHandler):
             dirdict.dataSpider = ds
         return dirdict
 
+    # def log_request(self, code='-', size='-'):
+    #     """Log an accepted request.
+
+    #     This is called by send_response().
+
+    #     This is an override of BaseHTTPRequestHandler.log_request method.
+    #     See that class for what the method does normally.
+    #     """
+    #     if "cmdqueue.json" in self.requestline:
+    #         pass
+    #     else:
+    #         self.log_message('"%s" %s %s',
+    #                          self.requestline, str(code), str(size))
+    #     return
+
     def do_GET(self):
-        self.state = ppwstate
         global webserverdone
-        parms = parsepath(self.path)
+        self.state = ppwstate
         rim = self.informers["rim"]
+        parms = parsepath(self.path)
+        verbosity = self.informers["verbose"]
 
         try:
             if self.path == "/":
@@ -312,7 +328,8 @@ class ADCCHandler(BaseHTTPRequestHandler):
             # Metrics query employing fitsstore
 
             if parms["path"].startswith("/cmdqueue.json"):
-                self.send_response(200)
+                if verbosity:
+                    self.send_response(200)
                 self.send_header('Content-type', "application/json")
                 self.end_headers()
 
@@ -320,7 +337,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 # metrics from fitsstore.
 
                 if not rim.events_manager.event_list:
-                    print "@ppw323:: Found no events."
+                    print "@ppw323:: Found no events in QA metrics event list."
                     print "@ppw324:: Requesting current op day events, if any..."
                     rim.events_manager.event_list = fstore_get(current_op_timestamp())
                     print "@ppw326:: Received", len(rim.events_manager.event_list), "events."
@@ -341,8 +358,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
 
                 # Handle current nighttime requests ...
                 if stamp_to_opday(fromtime) == stamp_to_opday(current_op_timestamp()):
-                    print "@ppw344:: Incoming request on current op day ...", \
-                        stamp_to_opday(fromtime)
+                    if verbosity:
+                        print "@ppw344:: Incoming request on current op day ...", \
+                            stamp_to_opday(fromtime)
                     tdic = rim.events_manager.get_list(fromtime=fromtime)
                     tdic.insert(0, {"msgtype"  : "cmdqueue.request",
                                     "timestamp": time.time()})
@@ -350,8 +368,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
 
                 # Handle previous day requests
                 elif fromtime < current_op_timestamp():
-                    print "@ppw353:: Incoming request on day ...", \
-                        stamp_to_opday(fromtime)
+                    if verbosity:
+                        print "@ppw353:: Incoming request on day ...", \
+                            stamp_to_opday(fromtime)
                     tdic = fstore_get(fromtime)
                     print "@ppw356:: Received",len(tdic),\
                         "events from fitsstore."
