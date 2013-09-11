@@ -2,15 +2,16 @@
 #
 #
 #                                                                     QAP Gemini
-#
-#                                                                   autoredux.py
-#                                                                        07-2013
+#                                                                  gempy/scripts
+#                                                                  autoredux2.py
+#                                                                        09-2013
 # ------------------------------------------------------------------------------
 # $Id$
 # ------------------------------------------------------------------------------
 __version__      = '$Revision$'[11:-2]
 __version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
+# Updated to run and poll continuously across operational day boundaries.
 #
 # The param_dict (user supplied parameters) is updated to include
 # automated upload of qa metrics to fitsstore. See in launch_reduce()
@@ -34,6 +35,8 @@ import re
 import json
 import time
 import urllib2
+
+from gempy.gemini.opsdefs import GEMINI_NORTH, GEMINI_SOUTH, OBSPREF
 # ------------------------------------------------------------------------------
 def buildArgParser():
     from argparse import ArgumentParser
@@ -363,118 +366,179 @@ def launch_reduce(filepath, upload=False, recipe=None):
     return
 
 # ------------------------------------------------------------------------------
-def main():
-    args = get_args()
-    # Check for a date or file number argument
-    if len(args.n_args) == 0:
-        fakedate = None
+def date_and_fileno(nargs, gemini_date):
+    """Caller sends a list of postional arguments as supplied by the parser.
+    Returns a date string of the form 'YYYYMMDD' and file number as a <str>.
+
+    parameters: <list>, <function>, position args, callable.
+    return:     <str>, <str>,       date, filenumber
+    """
+    fakedate = gemini_date()
+    filenum  = None
+
+    if len(nargs) == 0:
         filenum  = None
-    elif len(args.n_args) == 1:
-        date_or_num = args.n_args[0]
+    elif len(nargs) == 1:
+        date_or_num = nargs[0]
         if re.match("^\d{8}$", date_or_num):
             fakedate = date_or_num
-            filenum  = None
         elif re.match("^[0-9]+([-,][0-9]+)*$", date_or_num):
             filenum  = date_or_num
-            fakedate = None
         else:
             parser.error("Bad date or file number: " + date_or_num)
-    elif len(args.n_args) == 2:
-        fakedate = args.n_args[0]
-        filenum = args.n_args[1]
+    elif len(nargs) == 2:
+        fakedate = nargs[0]
+        filenum = nargs[1]
         if not re.match("^\d{8}$", fakedate):
             parser.error("Bad date: " + fakedate)
         if not re.match("^[0-9]+([-,][0-9]+)*$", filenum):
             parser.error("Bad file number: " + filenum)
     else:
         parser.error("Wrong number of arguments")
+    return fakedate, filenum
 
-    # Before doing anything else, check for an adcc
-    is_adcc = ping_adcc()
-    if not is_adcc:
-        parser.error("No adcc found at port 8777")
-
-    # Now import astrodata and gempy stuff (doing it before this makes
-    # it take too long to get to the help/error messages)
-    from gempy.gemini import gemini_metadata_utils as gmu
-    from gempy.gemini.opsdefs import GEMINI_NORTH, GEMINI_SOUTH
-    from gempy.gemini.opsdefs import OPSDATAPATH, OPSDATAPATHBKUP, OBSPREF
-
-    if fakedate is None:
-        fakedate = gmu.gemini_date()
-
-    # Get local site
+# ------------------------------------------------------------------------------
+def get_localsite():
+    """"Returns a Gemini local_site string, one of
+    'gemini-north'
+    'gemini-south'
+    
+    parameters: <void>
+    return:     <str>
+    """
     if time.timezone / 3600 == 10:        # HST = UTC+10
         localsite = GEMINI_NORTH
-        prefix = "N"
     elif time.timezone / 3600 < 5:       # CST = UTC+4
         # Set to < 5 due to inconsitent setting of timezones due to DST in
         # Chile being extended at will by the Chilean government.
-
         localsite = GEMINI_SOUTH
-        prefix = "S"
     else:
-        print "ERROR - timezone is not HST or CST. Local site cannot " + \
+        print "ERROR - TZ not HST or CST. Local site cannot " + \
               "be determined"
         sys.exit()
 
-    # Construct the file prefix
-    prefix = prefix + fakedate + "S"
+    return localsite
 
-    # Regular expression for filenames
-    file_cre = re.compile('^' + prefix + '\d{4}' + args.suffix + '.fits$')
+# ------------------------------------------------------------------------------
+def build_prefix(date, site):
+    """Caller passes a date string of the form YYYYMMDD and the local site
+    string as returned by get_localste(). Returns a full file prefix.
 
-    # Construct the file name to start from, if desired
-    files = None
-    if filenum is not None:
+    parameters: <str>, <str>, YYYYMMDD, local site identifier
+    return:     <str>,        file prefix, eg. 'S20130907S'
+    """
+    try:
+        prefix = OBSPREF[site]
+    except KeyError:
+        print "ERROR - Unrecognized local site:", site
+        sys.exit()
+
+    return prefix + date + "S"
+
+# ------------------------------------------------------------------------------
+def get_filelist(prefix, suffix, filenum):
+    """Caller passes a string as produce by build_prefix(), a string file suffix
+    as parsed by the command line parser (i.e. args.suffix), a number string.
+
+    parameters: <str>, <str>, <str>
+    return:     <list> or <Nonetype>, <str>
+    """
+    filelist = None
+    if filenum:
         if re.match("^\d{1,4}$", filenum):
-            filenum = "%s%.4d%s.fits" % (prefix, int(filenum), args.suffix)
+            filenum = "%s%.4d%s.fits" % (prefix, int(filenum), suffix)
         else:
             nums = file_list(filenum)
-            files = ["%s%.4d%s.fits" % (prefix, num, args.suffix) for num in nums]
+            filelist = ["%s%.4d%s.fits" % (prefix, num, suffix) for num in nums]
+    return filelist, filenum
 
-    # Get directory
-    if args.directory:
-        directory = args.directory
-    else:
+
+def get_directory(directory, localsite):
+    """Caller passes a directory, which may be None, and a localsite string
+    as returned by get_localsite(). Returns a directory path for file searching.
+    If None is passed as directory, default paths in gemini.opsdef are supplied.
+
+    parameters: <str> or <Nonetype>, <str>
+    return:     <str>
+    """
+    from gempy.gemini.opsdefs import OPSDATAPATH, OPSDATAPATHBKUP
+
+    if not directory:
         if os.path.exists(OPSDATAPATH[localsite]):
             directory = OPSDATAPATH[localsite]
         elif os.path.exists(OPSDATAPATHBKUP[localsite]):
             directory = OPSDATAPATHBKUP[localsite]
         else:
             print "Cannot find %s or %s. Please specify a directory." % \
-                  (OPSDATAPATH[localsite], OPSDATAPATHBKUP[localsite])
-    directory = directory.rstrip("/") + "/"
+                (OPSDATAPATH[localsite], OPSDATAPATHBKUP[localsite])
+    return directory
 
-    # If files were specified explicitly, loop through them, then exit
-    if files is not None:
-        for new_file in files:
-            filepath = directory + new_file
-            check_and_run(filepath, args)
-        print "..."
-        sys.exit()
+# ------------------------------------------------------------------------------
+def process_explicit(directory, files, args):
+    """Caller passes a list of files and python object, on which the
+    pipeline will be called. A nominal object will be a command line parser
+    object, where command line arguments are avaible as attributes of the 
+    object. Eg., args.suffix.
 
+    parameters: >str>, <list>, <obj>, path, file list, parser object
+    return:     <void>
+    """
+    for new_file in files:
+        filepath = os.path.join(directory, new_file)
+        check_and_run(filepath, args)
+    print "..."
+    sys.exit()
+    return
+# ------------------------------------------------------------------------------
+def build_day_list(path, pattern):
+    """Build a list of files in <path> matching <pattern> 
+
+    parameters: <str>, <str> path to search, search pattern
+    return:     <list>,      matching files in path
+    """
+    days_list = []
+    day_regex = re.compile(pattern)
+    path_list = os.listdir(path)
+
+    for ffile in path_list:
+        if day_regex.match(ffile):
+            days_list.append(ffile)
+    days_list.sort()
+    return days_list
+# ------------------------------------------------------------------------------
+def main():
+    # First, check for an adcc
+    if not ping_adcc():
+        parser.error("No adcc found at port 8777")
+
+    args = get_args()
+    # Get gempy stuff now. Else, too long to get to the help/error messages)
+    from gempy.gemini.gemini_metadata_utils import gemini_date
+
+    # Check for a date or file number argument
+    fakedate, filenum = date_and_fileno(args.n_args, gemini_date)
+    localsite = get_localsite()
+    directory = get_directory(args.directory, localsite)
+    prefix    = build_prefix(fakedate, localsite)
+    files, filenum = get_filelist(prefix, args.suffix, filenum)
+
+    # If files were specified explicitly, loop through, then exit
+    if files:
+        process_explicit(directory, files, args)
+ 
     # Otherwise, enter while-loop to check for new files
-    last_index = None
+    last_index   = None
     printed_none = False
-    printed_wait = False
+    printed_wait = False    
+
+    # regex for filename
+    regex_patt = '^' + prefix + '\d{4}' + args.suffix + '.fits$'
+    file_cre   = re.compile(regex_patt)
+
     while(True):
-
-        # Get a directory listing
-        list = os.listdir(directory)
-
-        # Filter down to fits files matching the prefix and sort
-        today = []
-        for i in list:
-            if file_cre.match(i):
-                today.append(i)
-        today.sort()
-
-        # Did we find anything at all?
-        if(len(today) > 0):
-
-            # Did we just start up?
-            new_file = None
+        today = build_day_list(directory, regex_patt)
+        if(len(today) > 0):           # Any files for 'today'?
+            new_file = None           # Did we just start up?
             if last_index is None:
                 if filenum is not None:
                     try:
@@ -484,18 +548,19 @@ def main():
                         sys.exit()
                 else:
                     last_index = 0
+
                 new_file = today[last_index]
-                print "Starting from file: %s" % new_file
+                print "Starting from file: %s" % os.path.basename(new_file)
             else:
                 # Did we find something new?
-                if len(today)>last_index + 1:
+                if len(today) > last_index + 1:
                     last_index += 1
                     new_file = today[last_index]
                     printed_wait = False
 
             if new_file is not None:
-                filepath = directory + new_file
-                check_and_run(filepath, args)
+                new_file_path = os.path.join(directory, new_file)
+                check_and_run(new_file_path, args)
 
         else:
             if not printed_none:
@@ -506,16 +571,29 @@ def main():
         if last_index is None or last_index == len(today) - 1:
             # Check the date, if it is not the current one, exit -- there
             # will be no more files to process
-            check_date = gmu.gemini_date()
+            check_date = gemini_date()
             if check_date != fakedate or args.suffix != "":
-                print "...\nNo more files to check from %s\n..." % fakedate 
-                sys.exit()
+                print "...\nNo more files to check from %s." % fakedate
+                print "Operational day %s terminated at %s" % \
+                    (fakedate, time.ctime(time.time()))
+
+                fakedate, filenum = date_and_fileno(args.n_args, gemini_date)
+
+                print "Monitoring operational day %s\n..." % fakedate
+                prefix = build_prefix(fakedate, localsite)
+                regex_patt = '^' + prefix + '\d{4}' + args.suffix + '.fits$'
+                # Reset loop markers for new day.
+                last_index   = None
+                printed_none = False
+                printed_wait = False
+                #sys.exit()
             else:
                 if not printed_wait:
                     print "...\nWaiting for more files"
                     printed_wait = True
-                time.sleep(1)
+                time.sleep(3)
     return
+
 
 
 if __name__ == '__main__':

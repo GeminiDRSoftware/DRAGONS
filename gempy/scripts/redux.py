@@ -1,31 +1,41 @@
 #!/usr/bin/env python
-
+#
+#                                                                  gempy/scripts
+#                                                                       redux.py
+#                                                                        08-2013
+# ------------------------------------------------------------------------------
+# $Id$
+# ------------------------------------------------------------------------------
+__version__      = '$Revision$'[11:-2]
+__version_date__ = '$Date$'[7:-2]
+# ------------------------------------------------------------------------------
 import os
-import sys
 import re
+import sys
 import time
-import subprocess
 import datetime
+import subprocess
+
 from optparse import OptionParser
+
 from astrodata import AstroData
 from astrodata.adutils import gemutil as gu
-from gempy.gemini.opsdefs import GEMINI_NORTH, GEMINI_SOUTH, OPSDATAPATH, OPSDATAPATHBKUP, OBSPREF
 
-def main():
-    # Set usage message
+from gempy.gemini.opsdefs import GEMINI_NORTH, GEMINI_SOUTH
+from gempy.gemini.opsdefs import OPSDATAPATH, OPSDATAPATHBKUP, OBSPREF
+# ------------------------------------------------------------------------------
+def handleClArgs():
     parser = OptionParser()
     usage = parser.get_usage()[:-1] + " [date] file" + \
-  """
-
-  Given a number, redux will attempt to construct a Gemini file name from
-  the current date.  An alternate date can be specified either as an argument
-  or with the prefix (-p) option.  The default directory is the operations
-  directory; an alternate directory can be specified with the -d option.
-  Files may also be specified directly with a full directory path."""
-
+            """
+            Given a number, redux will attempt to construct a Gemini file name 
+            from the current date.  An alternate date can be specified either as 
+            an argument or with the prefix (-p) option.  The default directory 
+            is the operations directory; an alternate directory can be specified 
+            with the -d option. Files may also be specified directly with a full 
+            directory path.
+            """
     parser.set_usage(usage)
-
-    # Get command line options and arguments
     parser.add_option("-d", "--directory", action="store",
                       dest="directory", default=None,
                       help="Specify an input data directory, if not adata " + \
@@ -47,24 +57,89 @@ def main():
                       dest="stack", default=False,
                       help="Perform stacking of all previously reduced "+ \
                            "images associated with the current image")
-    (options,args) = parser.parse_args()
+    (options, args) = parser.parse_args()
+    return options, args
+# ------------------------------------------------------------------------------
+# Borrowed function from fitsstore. 
+# Direct import caused undesired messages to console.
 
-    # If cleaning desired, call superclean to clear out cache and
-    # kill old reduce and adcc processes
+def gemini_date(string):
+    """
+    A utility function for matching dates of the form YYYYMMDD.
+    Also supports today, yesterday returns the YYYYMMDD string, or '' 
+    if not a date. May need modification to make today and yesterday work 
+    usefully for Chile.
+    """
+    datecre=re.compile('^20\d\d[01]\d[0123]\d$')
+    if(datecre.match(string)):
+        return string
+    if(string == 'today'):
+        now=datetime.datetime.utcnow().date()
+        return now.strftime('%Y%m%d')
+    if(string == 'yesterday'):
+        then=datetime.datetime.utcnow() - datetime.timedelta(days=1)
+        return then.date().strftime('%Y%m%d')
+    return ''
+# ------------------------------------------------------------------------------
+# This function contains the logic necessary for full flexibility in
+# input specification
+def image_path(filenm, directory, prefix="auto", localsite=None, suffix=None):
+    imgpath = None
+    numre   = re.compile('^\d+$')
+    # If filenm is a number, use it to construct a name
+    if numre.match(filenm):
+        # Convert argument into valid file name
+        try:
+            imgpath, imgname = gu.imageName(filenm, rawpath=directory,
+                                            prefix=prefix,
+                                            suffix=suffix,
+                                            observatory=localsite, 
+                                            verbose=False)
+        except:
+            imgpath = None
+    else:
+
+        if prefix!="auto":
+            filenm = prefix + filenm
+        if suffix!=None:
+            (fn,ext) = os.path.splitext(filenm)
+            filenm = fn + suffix + ext
+
+        # Check argument to see if it is a valid file
+        if os.path.exists(filenm):
+            imgpath = filenm
+        elif os.path.exists(filenm + ".fits"):
+            imgpath = filenm + ".fits"
+        elif os.path.dirname(filenm) == "." and not os.path.exists(filenm):
+            # Check for case that current directory was explicitly
+            # specified and file does not exist -- otherwise, 
+            # it might match directory + ./ + filenm when it should
+            # fail
+            imgpath = None
+        elif os.path.exists(directory + filenm):
+            imgpath = directory + filenm
+        elif os.path.exists(directory + filenm + ".fits"):
+            imgpath = directory + filenm + ".fits"
+
+    return imgpath
+# ------------------------------------------------------------------------------
+def main():
+    options, args = handleClArgs()
+
+    # If clean, call superclean to clear out cache and kill old reduce
+    # and adcc processes.
     if options.clean:
         print "\nRestoring redux to default state:" + \
               "\nall stack and calibration associations will be lost;" + \
               "\nall temporary files will be removed.\n"
-
         subprocess.call(["superclean", "--safe"])
-        print ""
+        print
         sys.exit()
 
-
     # Get local site
-    if time.timezone / 3600 == 10:        # HST = UTC+10
+    if time.timezone / 3600 == 10:      # HST = UTC + 10
         localsite = GEMINI_NORTH
-    elif time.timezone / 3600 == 4:       # CST = UTC+4
+    elif time.timezone / 3600 == 4:     # CST = UTC + 4
         localsite = GEMINI_SOUTH
     else:
         print "ERROR - timezone is not HST or CST. Local site cannot " + \
@@ -72,18 +147,18 @@ def main():
         sys.exit()
 
     # Check arguments
-    if len(args)<1:
+    if len(args) < 1:
         print "ERROR - No input file specified"
         parser.print_help()
         sys.exit()
-    elif len(args)>2:
+    elif len(args) > 2:
         print "ERROR - Too many arguments"
         parser.print_help()
         sys.exit()
-    elif len(args)==2:
+    elif len(args) == 2:
         date = gemini_date(args[0])
-        if date!="":
-            prefix = OBSPREF[localsite]+date+"S"
+        if date != "":
+            prefix = OBSPREF[localsite] + date + "S"
         else:
             print "ERROR - Date %s not recognized." % args[0]
             parser.print_help()
@@ -121,6 +196,7 @@ def main():
             stack_filenm = os.path.basename(filenm)
         else:
             stack_filenm = filenm
+
         imgpath = image_path(stack_filenm, ".", 
                              prefix=prefix, localsite=localsite,
                              suffix="_forStack")
@@ -136,6 +212,7 @@ def main():
     else:
         imgpath = image_path(filenm, directory, 
                              prefix=prefix, localsite=localsite)
+
     if imgpath is None:
         print "\nFile %s was not found.\n" % filenm
         sys.exit()
@@ -156,6 +233,12 @@ def main():
     except:
         fp_mask = None
 
+    if "RAW" not in ad.types and "PREPARED" in ad.types:
+        print "AstroDataType 'RAW'  not found in types."
+        print "AstroDataType 'PREPARED' found in types."
+        print "\nFile %s appears to have been processed." % imgname
+        print "redux halting ..."
+        sys.exit()
     if "GMOS" not in ad.types:
         print "\nFile %s is not a GMOS file." % imgname
         print "Only GMOS longslit and images can be reduced at this time.\n"
@@ -170,14 +253,13 @@ def main():
         print "Only GMOS longslit and images can be reduced at this time.\n"
         sys.exit()
     elif (("GMOS_IMAGE" in ad.types and
-           fp_mask=="Imaging" and
-           "GMOS_DARK" not in ad.types) or
+           fp_mask=="Imaging" and 
+           "GMOS_DARK" not in ad.types) or 
           "GMOS_BIAS" in ad.types or 
-          "GMOS_IMAGE_FLAT" in ad.types or
+          "GMOS_IMAGE_FLAT" in ad.types or 
           "GMOS_LS" in ad.types):
 
-        # Test for 3-amp mode with e2vDD CCDs
-        # This mode has not been commissioned.
+        # Test for 3-amp mode with e2vDD CCDs. NOT commissioned.
         dettype = ad.phu_get_key_value("DETTYPE")
         if dettype=="SDSU II e2v DD CCD42-90":
             namps = ad.phu_get_key_value("NAMPS")
@@ -226,73 +308,6 @@ def main():
         sys.exit()
 
 
-# Borrowed this little function from fitsstore: importing directly
-# caused undesired messages to console.
-datecre=re.compile('^20\d\d[01]\d[0123]\d$')
-def gemini_date(string):
-    """
-    A utility function for matching dates of the form YYYYMMDD
-    also supports today, yesterday
-    returns the YYYYMMDD string, or '' if not a date
-    May need modification to make today and yesterday work usefully 
-    for Chile
-    """
-    if(datecre.match(string)):
-        return string
-    if(string == 'today'):
-        now=datetime.datetime.utcnow().date()
-        return now.strftime('%Y%m%d')
-    if(string == 'yesterday'):
-        then=datetime.datetime.utcnow() - datetime.timedelta(days=1)
-        return then.date().strftime('%Y%m%d')
-    return ''
-
-
-# This function contains the logic necessary for full flexibility in
-# input specification
-numre = re.compile('^\d+$')
-def image_path(filenm, directory, prefix="auto", localsite=None, suffix=None):
-
-    imgpath = None
-
-    # If filenm is a number, use it to construct a name
-    if numre.match(filenm):
-        # Convert argument into valid file name
-        try:
-            imgpath,imgname = gu.imageName(filenm, rawpath=directory,
-                                           prefix=prefix,
-                                           suffix=suffix,
-                                           observatory=localsite, 
-                                           verbose=False)
-        except:
-            imgpath = None
-    else:
-
-        if prefix!="auto":
-            filenm = prefix + filenm
-        if suffix!=None:
-            (fn,ext) = os.path.splitext(filenm)
-            filenm = fn + suffix + ext
-
-        # Check argument to see if it is a valid file
-        if os.path.exists(filenm):
-            imgpath = filenm
-        elif os.path.exists(filenm + ".fits"):
-            imgpath = filenm + ".fits"
-        elif os.path.dirname(filenm)=="." and not os.path.exists(filenm):
-            # Check for case that current directory was explicitly
-            # specified and file does not exist -- otherwise, 
-            # it might match directory + ./ + filenm when it should
-            # fail
-            imgpath = None
-        elif os.path.exists(directory + filenm):
-            imgpath = directory + filenm
-        elif os.path.exists(directory + filenm + ".fits"):
-            imgpath = directory + filenm + ".fits"
-
-    return imgpath
-
-
-if __name__=='__main__':
+if __name__ == '__main__':
     main()
 
