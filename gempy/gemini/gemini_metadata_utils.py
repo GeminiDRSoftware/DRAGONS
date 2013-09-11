@@ -1,13 +1,26 @@
-# The string module contains utilities functions that manipulate strings
-
+#
+#                                                                   gempy/gemini
+#                                                       gemini_metadata_utils.py
+#                                                                        08-2013
+# ------------------------------------------------------------------------------
+# $Id$
+# ------------------------------------------------------------------------------
+__version__      = '$Revision$'[11:-2]
+__version_date__ = '$Date$'[7:-2]
+# ------------------------------------------------------------------------------
+""" Module provides utility functions to manipulate Gemini specific metadata 
+strings. Eg., filter names, time strings, etc.
+"""
 import re
 import sys
-
+import datetime
+    
 from astrodata import Errors
 from astrodata.Descriptors import DescriptorValue
 from astrodata.structuredslice import pixel_exts, bintable_exts
-from gempy.gemini import gemini_tools as gt
 
+from gempy.gemini import gemini_tools as gt
+# ------------------------------------------------------------------------------
 def removeComponentID(instr):
     """
     Remove a component ID from a filter name
@@ -22,7 +35,6 @@ def removeComponentID(instr):
         ret_str = str(instr)
     else:
         ret_str = str(m.group("filt"))
-    
     return ret_str
 
 def sectionStrToIntList(section):
@@ -54,15 +66,19 @@ def sectionStrToIntList(section):
     return [x1, x2, y1, y2]
 
 def gemini_date():
-
-    import datetime
+    """
+    Return a date string of the form 'YYYYMMDD' for the current
+    operational date defined by a transit time at 14.00h (LT).
     
+    parameters: <void>
+    return:     <str>     date string, eg., '20130904'
+    """
     # Define transit as 14:00
     transit = datetime.time(hour=14)
     
     # Define a one day timedelta
     one_day = datetime.timedelta(days=1)
-    
+     
     # Get current time in local and UT
     lt_now = datetime.datetime.now()
     ut_now = datetime.datetime.utcnow()
@@ -89,7 +105,6 @@ def gemini_date():
             # UT date hasn't changed and it's after transit,
             # so use UT date + 1
             fake_date = (ut_now.date() + one_day).strftime("%Y%m%d")
-    
     return fake_date
 
 def parse_percentile(string):
@@ -109,7 +124,6 @@ def parse_percentile(string):
     return None
 
 def filternameFrom(filters):
-        
     # reject "open" "grism" and "pupil"
     filters2 = []
     for filt in filters:
@@ -118,12 +132,12 @@ def filternameFrom(filters):
             pass
         else:
             filters2.append(filt)
-    
+
     filters = filters2
     
     # blank means an opaque mask was in place, which of course
     # blocks any other in place filters
-    
+
     if "blank" in filters:
         filtername = "blank"
     elif len(filters) == 0:
@@ -131,7 +145,6 @@ def filternameFrom(filters):
     else:
         filters.sort()
         filtername = str("&".join(filters))
-    
     return filtername
 
 def get_key_value_dict(adinput=None, keyword=None, dict_key_extver=False):
