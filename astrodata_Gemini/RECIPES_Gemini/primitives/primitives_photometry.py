@@ -1279,7 +1279,7 @@ def _sextractor(ad=None,seeing_estimate=None):
                     break
             elif len(good_fwhm)>=1:
                 seeing_estimate = good_fwhm.mean()
-                if seeing_estimatenp.isnan(seeing_estimate) or seeing_estimate==0:
+                if np.isnan(seeing_estimate) or seeing_estimate==0:
                     seeing_estimate = None
                     break
             else:
