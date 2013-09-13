@@ -64,7 +64,6 @@ PACKAGE_DATA[PACKAGENAME].extend(glob.glob(os.path.join(RECIPENAME,'subrecipes',
 
 
 PACKAGE_DATA[PACKAGENAME].append(os.path.join(CONFIGNAME,'structures','*.py'))
-PACKAGE_DATA[PACKAGENAME].append(os.path.join(CONFIGNAME,'xmlcalibrations','*.xml'))
 for root, dirs, files in os.walk(os.path.join(CONFIGNAME,'lookups')):
     if not svndir.search(root) and len(files) > 0:
         PACKAGE_DATA[PACKAGENAME].extend( map((lambda f: os.path.join(root, f)), files) )
