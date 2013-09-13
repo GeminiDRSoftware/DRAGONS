@@ -1,0 +1,5 @@
+include ReleaseNote
+include INSTALL
+include README
+include Copyright
+recursive-include ADCONFIG_FITS *
