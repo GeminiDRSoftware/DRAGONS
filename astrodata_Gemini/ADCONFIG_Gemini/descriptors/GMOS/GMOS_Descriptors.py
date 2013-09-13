@@ -683,6 +683,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # dictionary is an ("*", EXTVER) tuple
             gain_setting_dict = gmu.get_key_value_dict(adinput=dataset,
                                                        keyword=keyword)
+
             if gain_setting_dict is not None:
                 ret_gain_setting_dict = gain_setting_dict
             else:
@@ -706,7 +707,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                         # by the CalculatorInterface. 
                         if hasattr(dataset, "exception_info"):
                             raise dataset.exception_info
-                    gain_dict = gain_dv.as_none() 
+                    gain_dict = gain_dv.as_dict()
                     
                 else:
                     for ext_name_ver, gain_orig in gain_dict.iteritems():
