@@ -62,6 +62,13 @@ new-xterm-from-mkopipe1: pipeops&gt;  autoredux
 Point browser to: http://mkopipe1:8777/qap/nighttime_metrics.html</pre>
 </div>
 <p>That&#8217;s it.</p>
+<p>At CPO, the equivalent of the above is:</p>
+<div class="highlight-python"><pre>any-terminal-on-cpocon:  telops&gt;  startqap
+
+new-xterm-from-cpopipe01:  pipeops&gt;  autoredux
+
+Point browser to:  http://cpopipe01:8777/qap/nighttime_metrics.html</pre>
+</div>
 <p>Now let&#8217;s talk about it.</p>
 <p>At night, the QA pipeline runs on the dedicated pipeline computer.  This
 helps avoid resource conflicts between the pipeline and the rest of the observing software.

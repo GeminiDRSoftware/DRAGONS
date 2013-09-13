@@ -8,7 +8,7 @@ Features and Capabilities Currently Available
 
 The list available features and capabilities will continuously grow with each
 iterative deployment.  Here we describe the features and capabilities as of
-August 2012.
+September 2013.
 
 Core QAP Infrastructure
 =======================
@@ -23,6 +23,9 @@ Core QAP Infrastructure
 
 **Nighttime QA Metrics Reporting**
    QA Metrics are being reported in a GUI.  The GUI also provides plots of metrics through the night.
+
+**QA Metrics Database**
+   QA Metrics are stored in FitsStorage for permanent records.  Staff are able to access the database at any time.
 
 Supported Instrument and Mode
 =============================
@@ -81,6 +84,12 @@ Supported Metrics Measurements
 
    * GMOS Imaging
 
+**Automatic storage of QA Metrics to database**
+   This is available for:
+   
+   * GMOS Imaging
+   
+   
 Notable features NOT INCLUDED yet
 =================================
 * GMOS Hamamatsu CCDs

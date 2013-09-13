@@ -21,6 +21,14 @@ For the impatient: ::
 
 That's it. 
 
+At CPO, the equivalent of the above is: ::
+
+   any-terminal-on-cpocon:  telops>  startqap
+   
+   new-xterm-from-cpopipe01:  pipeops>  autoredux
+   
+   Point browser to:  http://cpopipe01:8777/qap/nighttime_metrics.html
+
 Now let's talk about it.
 
 At night, the QA pipeline runs on the dedicated pipeline computer.  This 
