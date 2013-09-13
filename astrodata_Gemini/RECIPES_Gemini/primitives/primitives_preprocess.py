@@ -792,7 +792,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                 
                 # Normalise the input AstroData object. Calculate the mean
                 # value of the science extension
-                mean = np.mean(ext.data, dtype=float64)
+                mean = np.mean(ext.data, dtype=np.float64)
                 # Divide the science extension by the mean value of the science
                 # extension
                 log.fullinfo("Normalizing %s[%s,%d] by dividing by the mean " \
