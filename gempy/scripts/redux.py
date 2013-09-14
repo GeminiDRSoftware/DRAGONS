@@ -58,7 +58,8 @@ def handleClArgs():
                       help="Perform stacking of all previously reduced "+ \
                            "images associated with the current image")
     (options, args) = parser.parse_args()
-    return options, args
+    return options, args, parser
+
 # ------------------------------------------------------------------------------
 # Borrowed function from fitsstore. 
 # Direct import caused undesired messages to console.
@@ -124,7 +125,7 @@ def image_path(filenm, directory, prefix="auto", localsite=None, suffix=None):
     return imgpath
 # ------------------------------------------------------------------------------
 def main():
-    options, args = handleClArgs()
+    options, args, parser = handleClArgs()
 
     # If clean, call superclean to clear out cache and kill old reduce
     # and adcc processes.
