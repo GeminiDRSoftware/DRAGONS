@@ -310,7 +310,8 @@ class CalibrationPrimitives(GENERALPrimitives):
                 except:
                     log.warning("Unable to upload file to calibration system")
                 else:
-                    log.stdinfo("File stored in calibration system")
+                    log.stdinfo("File %s uploaded to fitsstore." % 
+                                os.path.basename(ad.filename))
             yield rc
         
         yield rc
