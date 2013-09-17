@@ -74,6 +74,25 @@ def buildArgParser():
                       help="Specify a filename suffix")
     args = parser.parse_args()
 
+    # arg value checks ...
+    if len(args.n_args) == 0:
+        pass
+    elif len(args.n_args) == 1:
+        if re.match("^\d{8}$", args.n_args[0]):
+            pass
+        elif re.match("^[0-9]+([-,][0-9]+)*$", args.n_args[0]):
+            pass
+        else:
+            parser.error("Bad date or file number: " + args.n_args[0])
+    elif len(args.n_args) == 2:
+        if not re.match("^\d{8}$", args.n_args[0]):
+            parser.error("Bad date: " + fakedate)
+        if not re.match("^[0-9]+([-,][0-9]+)*$", args.n_args[1]):
+            parser.error("Bad file number: " + args.n_args[1])
+    else:
+        parser.error("Wrong number of arguments")    
+
+    # args.n_args are okay.
     return args
 
 # ------------------------------------------------------------------------------
@@ -115,6 +134,25 @@ def buildOptParser():
 
     args, pos_args = parser.parse_args()
     args.n_args    = pos_args
+
+    # arg value checks ...
+    if len(args.n_args) == 0:
+        pass
+    elif len(args.n_args) == 1:
+        if re.match("^\d{8}$", args.n_args[0]):
+            pass
+        elif re.match("^[0-9]+([-,][0-9]+)*$", args.n_args[0]):
+            pass
+        else:
+            parser.error("Bad date or file number: " + args.n_args[0])
+    elif len(args.n_args) == 2:
+        if not re.match("^\d{8}$", args.n_args[0]):
+            parser.error("Bad date: " + fakedate)
+        if not re.match("^[0-9]+([-,][0-9]+)*$", args.n_args[1]):
+            parser.error("Bad file number: " + args.n_args[1])
+    else:
+        parser.error("Wrong number of arguments")    
+
     return args
 
 # ------------------------------------------------------------------------------
@@ -366,35 +404,29 @@ def launch_reduce(filepath, upload=False, recipe=None):
     return
 
 # ------------------------------------------------------------------------------
-def date_and_fileno(nargs, gemini_date):
-    """Caller sends a list of postional arguments as supplied by the parser.
-    Returns a date string of the form 'YYYYMMDD' and file number as a <str>.
+def date_and_fileno(nargs):
+    """Caller sends a list of postional arguments as supplied by the parser,
+    which has ensured that any supplied arguments match format criteria.
+    Returns a date string of the form 'YYYYMMDD', a file number as a <str>,
 
-    parameters: <list>, <function>, position args, callable.
-    return:     <str>, <str>,       date, filenumber
+    parameters: <list>         pos args (args.n_args)
+    return:     <str>,  <str>  date, filenumber
     """
-    fakedate = gemini_date()
+    fakedate = None
     filenum  = None
 
     if len(nargs) == 0:
-        filenum  = None
+        pass
     elif len(nargs) == 1:
         date_or_num = nargs[0]
         if re.match("^\d{8}$", date_or_num):
             fakedate = date_or_num
         elif re.match("^[0-9]+([-,][0-9]+)*$", date_or_num):
-            filenum  = date_or_num
-        else:
-            parser.error("Bad date or file number: " + date_or_num)
+            filenum = date_or_num
     elif len(nargs) == 2:
         fakedate = nargs[0]
-        filenum = nargs[1]
-        if not re.match("^\d{8}$", fakedate):
-            parser.error("Bad date: " + fakedate)
-        if not re.match("^[0-9]+([-,][0-9]+)*$", filenum):
-            parser.error("Bad file number: " + filenum)
-    else:
-        parser.error("Wrong number of arguments")
+        filenum  = nargs[1]
+
     return fakedate, filenum
 
 # ------------------------------------------------------------------------------
@@ -509,14 +541,22 @@ def build_day_list(path, pattern):
 def main():
     # First, check for an adcc
     if not ping_adcc():
-        parser.error("No adcc found at port 8777")
+        raise RuntimeError("No adcc found at port 8777")
 
     args = get_args()
     # Get gempy stuff now. Else, too long to get to the help/error messages)
     from gempy.gemini.gemini_metadata_utils import gemini_date
 
     # Check for a date or file number argument
-    fakedate, filenum = date_and_fileno(args.n_args, gemini_date)
+    # If a date has been passed, only that day is processed.
+    # Boolean 'single_day' indicates.
+    fakedate, filenum = date_and_fileno(args.n_args)
+    if fakedate:
+        single_day = True
+    else:
+        single_day = False
+        fakedate   = gemini_date()
+
     localsite = get_localsite()
     directory = get_directory(args.directory, localsite)
     prefix    = build_prefix(fakedate, localsite)
@@ -577,7 +617,11 @@ def main():
                 print "Operational day %s terminated at %s" % \
                     (fakedate, time.ctime(time.time()))
 
-                fakedate, filenum = date_and_fileno(args.n_args, gemini_date)
+                # If a date argument has been passed, stop.
+                if single_day:
+                    sys.exit("Finished processing " + fakedate)
+                else:
+                    fakedate = gemini_date() 
 
                 print "Monitoring operational day %s\n..." % fakedate
                 prefix = build_prefix(fakedate, localsite)
@@ -586,7 +630,6 @@ def main():
                 last_index   = None
                 printed_none = False
                 printed_wait = False
-                #sys.exit()
             else:
                 if not printed_wait:
                     print "...\nWaiting for more files"
