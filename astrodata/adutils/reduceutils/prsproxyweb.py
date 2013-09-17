@@ -209,19 +209,17 @@ def fstore_get(timestamp):
     return qa_data
 
 # ------------------------------------------------------------------------------
-
 rl = RecipeLibrary()
-
+# ------------------------------------------------------------------------------
 class PPWState(object):
     dirdict = None
     dataSpider = None
     displayCmdHistory = None
 
-
+# ------------------------------------------------------------------------------
 ppwstate = PPWState()
 webserverdone = False
-
-
+# ------------------------------------------------------------------------------
 class ADCCHandler(BaseHTTPRequestHandler):
     informers  = None
     dataSpider = None
@@ -245,27 +243,37 @@ class ADCCHandler(BaseHTTPRequestHandler):
             dirdict.dataSpider = ds
         return dirdict
 
-    # def log_request(self, code='-', size='-'):
-    #     """Log an accepted request.
+    def log_request(self, code='-', size='-'):
+        """Log an accepted request.
 
-    #     This is called by send_response().
+        This is called by send_response().
 
-    #     This is an override of BaseHTTPRequestHandler.log_request method.
-    #     See that class for what the method does normally.
-    #     """
-    #     if "cmdqueue.json" in self.requestline:
-    #         pass
-    #     else:
-    #         self.log_message('"%s" %s %s',
-    #                          self.requestline, str(code), str(size))
-    #     return
+        This is an override of BaseHTTPRequestHandler.log_request method.
+        See that class for what the method does normally.
+        """
+        try:
+            assert (self.informers["verbose"])
+            self.log_message('"%s" %s %s',
+                             self.requestline, str(code), str(size))
+        except AssertionError:
+            if "cmdqueue.json" in self.requestline:
+                pass
+            else:
+                self.log_message('"%s" %s %s',
+                             self.requestline, str(code), str(size))                
+        return
 
     def do_GET(self):
         global webserverdone
         self.state = ppwstate
         rim = self.informers["rim"]
         parms = parsepath(self.path)
+        msg_form  = '"%s" %s %s'
+        info_code = 203
+        fail_code = 416
+        size = "-"
         verbosity = self.informers["verbose"]
+        
 
         try:
             if self.path == "/":
@@ -328,8 +336,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
             # Metrics query employing fitsstore
 
             if parms["path"].startswith("/cmdqueue.json"):
-                if verbosity:
-                    self.send_response(200)
+                self.send_response(200)
                 self.send_header('Content-type', "application/json")
                 self.end_headers()
 
@@ -337,11 +344,23 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 # metrics from fitsstore.
 
                 if not rim.events_manager.event_list:
-                    print "@ppw323:: Found no events in QA metrics event list."
-                    print "@ppw324:: Requesting current op day events, if any..."
+                    self.log_message(msg_form, 
+                                     "Found no events in QA metrics event list.",
+                                     info_code, size)
+                    self.log_message(msg_form, 
+                                     "Requesting current OP day events @FITS store",
+                                     info_code, size)
+
                     rim.events_manager.event_list = fstore_get(current_op_timestamp())
-                    print "@ppw326:: Received", len(rim.events_manager.event_list), "events."
-                    print "@ppw327:: On QA request:", stamp_to_opday(current_op_timestamp())
+
+                    self.log_message(msg_form, 
+                                     "Received " + 
+                                     str(len(rim.events_manager.event_list)) + 
+                                     " events.", info_code, size)
+                    self.log_message(msg_form, "On QA metrics request: " +
+                                     stamp_to_opday(current_op_timestamp()),
+                                     info_code, size)
+
                     tdic = rim.events_manager.get_list()
                     tdic.insert(0, {"msgtype"  : "cmdqueue.request",
                                     "timestamp": time.time()})
@@ -359,8 +378,12 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 # Handle current nighttime requests ...
                 if stamp_to_opday(fromtime) == stamp_to_opday(current_op_timestamp()):
                     if verbosity:
-                        print "@ppw344:: Incoming request on current op day ...", \
-                            stamp_to_opday(fromtime)
+                        self.log_message(
+                            msg_form,
+                            "Incoming request on current OP day: " +
+                            stamp_to_opday(fromtime), 
+                            info_code, size)
+
                     tdic = rim.events_manager.get_list(fromtime=fromtime)
                     tdic.insert(0, {"msgtype"  : "cmdqueue.request",
                                     "timestamp": time.time()})
@@ -369,20 +392,25 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 # Handle previous day requests
                 elif fromtime < current_op_timestamp():
                     if verbosity:
-                        print "@ppw353:: Incoming request on day ...", \
-                            stamp_to_opday(fromtime)
+                        self.log_message(
+                            msg_form, 
+                            "Received request on day ..." +
+                            stamp_to_opday(fromtime), info_code, size)
+
                     tdic = fstore_get(fromtime)
-                    print "@ppw356:: Received",len(tdic),\
-                        "events from fitsstore."
+                    self.log_message(msg_form, "Received " + str(len(tdic)) + 
+                                       " events from fitsstore.", info_code, size)
+
                     tdic.insert(0, {"msgtype"  : "cmdqueue.request",
                                     "timestamp": time.time()})
                     self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
 
                 # Cannot handle the future ...
                 else:
-                    print "@ppw364:: Invalid timestamp received."
-                    print "@ppw365:: Future events not known."
-
+                    self.log_message(msg_form,"Invalid timestamp received.", 
+                                     fail_code, size)
+                    self.log_message(msg_form,"Future events not known.",
+                                     fail_code, size)
                 return
 
             # ------------------------------------------------------------------
@@ -977,7 +1005,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 #append any further directory info.
                 joinlist.append(self.path[5:])
                 fname = os.path.join(*joinlist)
-                print "QAP IF: trying to open %s" % fname
+                self.log_message(msg_form, "Loading " + \
+                                 joinlist[1] + os.path.basename(fname), 
+                                 info_code, size)
                 try:
                     f = open(fname, "r")
                     data = f.read()
