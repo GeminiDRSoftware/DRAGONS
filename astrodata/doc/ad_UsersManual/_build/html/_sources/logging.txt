@@ -20,9 +20,12 @@ get_logger()
 
 update_indent(): control indenting during recipe/primitive execution.
 
+logger mode standard: default console-> stdinfo, default to file-> fullinfo
 
 Writing to Log
 ==============
+Using the logging facility involves *getting* the logger, *configuring* the logger,
+
 ``log.<loglevel>(<message_to_log>)``
 
 default name: reduce.log
@@ -137,5 +140,3 @@ debug
        log.debug("SplotETI.recover()")
        ...
    
-
-logger mode standard: default console-> stdinfo, default to file-> fullinfo

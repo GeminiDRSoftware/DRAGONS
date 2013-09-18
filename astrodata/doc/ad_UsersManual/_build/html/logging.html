@@ -64,9 +64,11 @@ stomp:  clobber</dd>
 </dl>
 <p>get_logger()</p>
 <p>update_indent(): control indenting during recipe/primitive execution.</p>
+<p>logger mode standard: default console-&gt; stdinfo, default to file-&gt; fullinfo</p>
 </div>
 <div class="section" id="writing-to-log">
 <h2>Writing to Log<a class="headerlink" href="#writing-to-log" title="Permalink to this headline">¶</a></h2>
+<p>Using the logging facility involves <em>getting</em> the logger, <em>configuring</em> the logger,</p>
 <p><tt class="docutils literal"><span class="pre">log.&lt;loglevel&gt;(&lt;message_to_log&gt;)</span></tt></p>
 <p>default name: reduce.log</p>
 <div class="highlight-python"><pre>from astrodata.adutils import logutils
@@ -169,7 +171,6 @@ For example:</p>
 </div>
 </dd>
 </dl>
-<p>logger mode standard: default console-&gt; stdinfo, default to file-&gt; fullinfo</p>
 </div>
 </div>
 
