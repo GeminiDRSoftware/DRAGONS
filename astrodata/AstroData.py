@@ -124,6 +124,9 @@ While the ``pyfits`` and ``numpy`` objects are available to the programmer,
 ``AstroData`` provides analogous methods for most ``pyfits`` functionalities 
 which allows it to maintain the dataset  as a cohesive whole. The programmer 
 does however use the ``numpy.ndarrays`` directly for pixel manipulation.
+Simple AstroData arithmetic is also provided by the ``astrodata.adutils.arith`` 
+module which implement AstroData methods for addition, subtraction, multiplication 
+and division.
 
 In order to identify types of dataset and provide type-specific behavior,
 ``AstroData`` relies on configuration packages either in the ``PYTHONPATH`` environment
@@ -178,8 +181,8 @@ integrates other functionalities.
                     storeClobber=False, exts=None, extInsts=None,):
         """
         :param dataset: the dataset to load, either a filename (string) path
-            or URL, an
-            ``AstroData`` instance, or a ``pyfits.HDUList`` 
+            or URL, an ``AstroData`` instance, or a ``pyfits.HDUList``. If 
+            ``dataset`` is None, ``phu``, ``header``, and ``data`` will be used.
         :type dataset:  string, AstroData, HDUList
 
         :param mode: IO access mode, same as ``pyfits`` mode ("readonly", "update",
@@ -192,21 +195,21 @@ integrates other functionalities.
             at the user's command with ``ad.write()``.
         :type mode: string
         
-        :param phu: Primary Header Unit. This object is propagated to all 
-            astrodata sub-data ImageHDUs. Special handling is made for header
-            instances that are passed in as this arg., where a phu will be 
-            created and the '.header' will be assigned (ex. hdulist[0], ad.phu,
-            ad[0].hdulist[0], ad['SCI',1].hdulist[0], ad[0].phu, 
-            ad['SCI',1].phu, and all the previous with .header appended) 
+        :param phu: Primary Header Unit.  A basic PHU will be created if none
+            is provided.  If ``dataset`` is set, ``phu`` will be ignored.
         :type phu: pyfits.core.PrimaryHDU, pyfits.core.Header 
 
 
-        :param header: extension header for images (eg. ``hdulist[1].header``,
+        :param header: extension header for image (eg. ``hdulist[1].header``,
             ``ad[0].hdulist[1].header``, ``ad['SCI',1].hdulist[1].header``)
+            Only one header can be passed in, lists are not allowed.
+            If ``header`` is defined, ``data`` must also be defined.
         :type phu: pyfits.core.Header
 
         :param data: the image pixel array (eg. ``hdulist[1].data``,
             ``ad[0].hdulist[1].data``, ``ad['SCI',1].hdulist[1].data``)
+            Only one data array can be passed in, lists are not allowed.
+            If ``data`` is defined, ``header`` must also be defined.
         :type data: numpy.ndarray
         
         :param store: directory where a copy of the original file will be 
@@ -726,9 +729,13 @@ integrates other functionalities.
         :type auto_number: boolean
         
         :param extname: extension name as set in keyword ``EXTNAME`` (eg. 'SCI', 'VAR', 'DQ')
+            This is used only when ``header`` and ``data`` are used and ``moredata`` is
+            empty.
         :type extname: string
 
-        :param extver: extension version as set in keyword ``EXTVER``
+        :param extver: extension version as set in keyword ``EXTVER``.
+            This is used only when ``header`` and ``data`` are used and ``moredata`` is
+            empty.
         :type extver: int
 
         :param do_deepcopy: deepcopy the input before appending.  Might be useful
@@ -889,8 +896,7 @@ integrates other functionalities.
 
         The infostr(..) function is used to get a string ready for display
         either as plain text or HTML.  It provides AstroData-relative
-        information, unlike the pyfits-forwarded function AstroData.info(),
-        and so uses AstroData relative indexes, descriptors, and so on.  
+        information.  
         """
         if not as_html:
             hdulisttype = ""
@@ -1862,13 +1868,14 @@ help      False     show help information    """
     def is_type(self, *typenames):
         """
         :param typenames: specifies the type name to check.
-        :type typename: string
+        :type typenames: string or list of strings
         :returns: ``True`` if the given types all apply to this dataset,
             ``False`` otherwise.
         :rtype: Bool
 
         This function checks the ``AstroData`` object to see if it is the
-        given type(s) and returns True if so.
+        given type(s) and returns True if so.  If a list of types is given
+        as inputs, all the types must match the ``AstroData`` object.
         
         :note: ``AstroData.check_type(..)`` is an alias for 
             ``AstroData.is_type(..)``.
@@ -2267,8 +2274,9 @@ help      False     show help information    """
         return
     
     def info(self, oid=False, table=False, help=False):
-        """The info(..) function prints self.infostr() and 
-        is maintained for convienience and low level debugging.
+        """The info(..) function prints to the shell information regarding
+        the phu and the extensions found in an AstroData object.  It is a 
+        high-level wrappers for ``infostr(..)``
         """
         print self.infostr(oid=oid, table=table, help=help)
     

@@ -5,8 +5,9 @@ AstroData Class Reference
     
 The following is information about the ``AstroData`` class. For descriptions of
 arguments shown for the class constructor, see ``AstroData.__init__(..)``.  This
-documentation is generated from in-source docstrings. To import the
-``AstroData`` class use::
+documentation is generated in part from in-source docstrings. 
+
+To import the ``AstroData`` class use::
 
     from astrodata import AstroData
 

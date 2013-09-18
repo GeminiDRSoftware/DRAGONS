@@ -18,7 +18,7 @@ This document is intended for both new and experienced developers using
 #. Developers creating new configuration packages (types,
    descriptors, and transformations), e.g. instrument developers.
 #. Potential developers needing to understand the work involved prior
-   to development (e.g. for making proposals).
+   to development (e.g. for costing).
 #. Those trying to understand both what the system currently does,
    it's design philosophy, and where the package can or is expected to
    evolve.
@@ -54,9 +54,7 @@ The ``astrodata`` package includes only the infrastructure code, but is
 generally shipped with the ``astrodata_Gemini`` configuration package
 which contains all information and code regarding Gemini data types
 and type-specific transformations, and with the ``astrodata_FITS`` configuration
-package that contains standard FITS definitions. The astrodata package also ships
-with an auxillary package of useful functions in the form of the
-``gempy`` package.
+package that contains standard FITS definitions.
 
 The term "astrodata" in this document can refer to three somewhat
 distinct aspects of the system. There is ``AstroData`` the class, which
