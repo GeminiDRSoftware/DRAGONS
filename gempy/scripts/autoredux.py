@@ -431,7 +431,7 @@ def date_and_fileno(nargs):
 
 # ------------------------------------------------------------------------------
 def get_localsite():
-    """"Returns a Gemini local_site string, one of
+    """Returns a Gemini local_site string, one of
     'gemini-north'
     'gemini-south'
     
