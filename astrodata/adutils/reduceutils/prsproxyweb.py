@@ -152,7 +152,8 @@ def ymd_to_stamp(yy, mm, dd, hh=0):
     parameters: <int>, <int>, <int> [, <int>] Year, Month, Day [,Hour]
     return:     <float>, epoch time in seconds.
     """
-    return time.mktime(time.strptime("%s %s %s %s" % (yy, mm, dd, hh), "%Y %m %d %H"))
+    return time.mktime(time.strptime("%s %s %s %s" % (yy, mm, dd, hh), 
+                                     "%Y %m %d %H"))
 
 
 def current_op_timestamp():
@@ -178,6 +179,7 @@ def current_op_timestamp():
     timestamp = ymd_to_stamp(yy, mm, dd, hh)
     return timestamp
 
+
 #                            End Timing functions
 # ------------------------------------------------------------------------------
 # FITS Store query.
@@ -196,16 +198,19 @@ def fstore_get(timestamp):
     # Get the fitsstore query url from calurl_dict
     qurlPath     = "Gemini/calurl_dict"
     fitsstore_qa = get_lookup_table(qurlPath, "calurl_dict")['QAQUERYURL']
+    local_site   = server_time()["local_site"]
 
     if not timestamp:
         furl         = os.path.join(fitsstore_qa)
         store_handle = urllib2.urlopen(furl)
         qa_data      = json.loads(store_handle.read())   
     else:
-        date_query   = stamp_to_opday(timestamp)
-        furl         = os.path.join(fitsstore_qa, date_query)
-        store_handle = urllib2.urlopen(furl)
-        qa_data      = json.loads(store_handle.read())
+        #if local_site == 'gemini-south':
+        #    timestamp = timestamp - 86400  # push query time back a day for Pachon.
+        date_query    = stamp_to_opday(timestamp)
+        furl          = os.path.join(fitsstore_qa, date_query)
+        store_handle  = urllib2.urlopen(furl)
+        qa_data       = json.loads(store_handle.read())
     return qa_data
 
 # ------------------------------------------------------------------------------
@@ -226,6 +231,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
     dirdict    = None
     state      = None
     counter    = 0
+    stamp_register = []
     
     def address_string(self):
         host, port = self.client_address[:2]
@@ -268,12 +274,12 @@ class ADCCHandler(BaseHTTPRequestHandler):
         self.state = ppwstate
         rim = self.informers["rim"]
         parms = parsepath(self.path)
-        msg_form  = '"%s" %s %s'
-        info_code = 203
-        fail_code = 416
-        size = "-"
-        verbosity = self.informers["verbose"]
-        
+
+        # Older revisions of adcc may not supply 'verbose' key
+        try: 
+            self.informers["verbose"]
+        except KeyError: 
+            self.informers["verbose"] = True
 
         try:
             if self.path == "/":
@@ -336,81 +342,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
             # Metrics query employing fitsstore
 
             if parms["path"].startswith("/cmdqueue.json"):
-                self.send_response(200)
-                self.send_header('Content-type', "application/json")
-                self.end_headers()
-
-                # event_list = [] implies a new adcc. Request current op day 
-                # metrics from fitsstore.
-
-                if not rim.events_manager.event_list:
-                    self.log_message(msg_form, 
-                                     "Found no events in QA metrics event list.",
-                                     info_code, size)
-                    self.log_message(msg_form, 
-                                     "Requesting current OP day events @FITS store",
-                                     info_code, size)
-
-                    rim.events_manager.event_list = fstore_get(current_op_timestamp())
-
-                    self.log_message(msg_form, 
-                                     "Received " + 
-                                     str(len(rim.events_manager.event_list)) + 
-                                     " events.", info_code, size)
-                    self.log_message(msg_form, "On QA metrics request: " +
-                                     stamp_to_opday(current_op_timestamp()),
-                                     info_code, size)
-
-                    tdic = rim.events_manager.get_list()
-                    tdic.insert(0, {"msgtype"  : "cmdqueue.request",
-                                    "timestamp": time.time()})
-                    self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
-
-                # N.B. A timestamp of zero will request everything from fitsstore
-                # This could be huge. Be careful passing a cmdqueue.json request 
-                # with no timestamp.
-
-                if "timestamp" in parms:
-                    fromtime = float(parms["timestamp"][0])
-                else:
-                    fromtime = 0
-
-                # Handle current nighttime requests ...
-                if stamp_to_opday(fromtime) == stamp_to_opday(current_op_timestamp()):
-                    if verbosity:
-                        self.log_message(
-                            msg_form,
-                            "Incoming request on current OP day: " +
-                            stamp_to_opday(fromtime), 
-                            info_code, size)
-
-                    tdic = rim.events_manager.get_list(fromtime=fromtime)
-                    tdic.insert(0, {"msgtype"  : "cmdqueue.request",
-                                    "timestamp": time.time()})
-                    self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
-
-                # Handle previous day requests
-                elif fromtime < current_op_timestamp():
-                    if verbosity:
-                        self.log_message(
-                            msg_form, 
-                            "Received request on day ..." +
-                            stamp_to_opday(fromtime), info_code, size)
-
-                    tdic = fstore_get(fromtime)
-                    self.log_message(msg_form, "Received " + str(len(tdic)) + 
-                                       " events from fitsstore.", info_code, size)
-
-                    tdic.insert(0, {"msgtype"  : "cmdqueue.request",
-                                    "timestamp": time.time()})
-                    self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
-
-                # Cannot handle the future ...
-                else:
-                    self.log_message(msg_form,"Invalid timestamp received.", 
-                                     fail_code, size)
-                    self.log_message(msg_form,"Future events not known.",
-                                     fail_code, size)
+                self._handle_cmdqueue_json(rim, parms)
                 return
 
             # ------------------------------------------------------------------
@@ -467,11 +399,6 @@ class ADCCHandler(BaseHTTPRequestHandler):
                     xml += '</command>'
                 xml += "</commandQueue>"
                 self.wfile.write(xml)
-                # qwe would use peekHistory to do this safely
-                # which will be obivous if you uncomment and find cmdHistoy is no longer a 
-                # member of this class, it is instead the displayCmdHistory, a TSCmdQueue
-                # instance.
-                #self.wfile.write("\n".join(repr(self.state.rim.cmd_history[start:]).split(" ")))        
                 return 
                 
             if parms["path"] == "/recipeindex.xml":
@@ -747,32 +674,21 @@ class ADCCHandler(BaseHTTPRequestHandler):
                             r,v,w = select.select([pid.stdout],[],[],.1)
                             print "prsw112:", repr(r)
                             if len(r):
-                                # print "prsw116: reading"
-                                # stdout = pid.stdout.read()
                                 stdout = r[0].read()
                                 print "prsw487:", stdout
                                 break;
                             else:
                                 r,v,w = select.select([pid.stderr],[],[],.1)
-                                # print "prsw:ERR:112:", repr(r)
                                 if len(r):
                                     stderr = pid.stderr.read()
                                     print "prsw494:", stderr
                                     break;
 
-                        # stderr = pid.stderr.read(100)
-                        #stdout, stderr  = pid.communicate()
-                        #print "51: pid.poll()", str(pid.poll())
                         if stdout:
                             self.wfile.write(str(stdout))
                         if stderr:
-                            #self.wfile.write("</pre><b><pre>\n")
                             self.wfile.write("{"+stderr+"}")
-                            #self.wfile.write("</pre></b><pre>\n")
-                            #self.wfile.flush()
 
-                        #self.wfile.write("ERROR:"+str(stderr)+"\n")
-                        #+"\nerror:\n"+str(stderr))
                         self.wfile.flush()
                         if pid.poll()!= None:
                             self.wfile.flush()
@@ -801,9 +717,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
             
             if self.path == "/reducelist": #our dynamic content
                 self.send_response(200)
-                self.send_header('Content-type',	'text/html')
+                self.send_header('Content-type', 'text/html')
                 self.end_headers()
-                # self.wfile.write(str(self.path))
+
                 # this is the tag in head that autopolls if wanted
                 front = """
                 <html>
@@ -815,7 +731,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 %(body)s
                 <body>
                 </html>"""
-                # body onload="javascript:setTimeout(\u201clocation.reload(true);\u201d,50000);">
+
                 self.wfile.write(page)
                 if True:
                     body = ""
@@ -1005,9 +921,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 #append any further directory info.
                 joinlist.append(self.path[5:])
                 fname = os.path.join(*joinlist)
-                self.log_message(msg_form, "Loading " + \
+                self.log_message('"%s" %s %s', "Loading " + \
                                  joinlist[1] + os.path.basename(fname), 
-                                 info_code, size)
+                                 203, '-')
                 try:
                     f = open(fname, "r")
                     data = f.read()
@@ -1193,6 +1109,105 @@ class ADCCHandler(BaseHTTPRequestHandler):
             
         except :
             pass
+
+    # ------------------------------------------------------------------
+    # privitized handling cmdqueue.json requests
+    
+    def _handle_cmdqueue_json(self, rim, parms):
+        msg_form  = '"%s" %s %s'
+        info_code = 203
+        fail_code = 416
+        size = "-"
+        verbosity = self.informers["verbose"]
+
+        self.send_response(200)
+        self.send_header('Content-type', "application/json")
+        self.end_headers()
+
+        # N.B. A timestamp of zero will request everything from fitsstore
+        # This could be huge. Be careful passing GET request on cmdqueue.json
+        # with no timestamp.
+
+        if "timestamp" in parms:
+            fromtime = float(parms["timestamp"][0])
+        else:
+            fromtime = 0
+
+        # event_list = [] implies a new adcc. Request current op day 
+        # metrics from fitsstore.
+
+        if not rim.events_manager.event_list:
+            self.log_message(msg_form, "No extant RIM events.",
+                             info_code, size)
+            self.log_message(msg_form, 
+                             "Requesting current OP day events @FITS store",
+                             info_code, size)
+
+            rim.events_manager.event_list = fstore_get(current_op_timestamp())
+
+            self.log_message(msg_form, "Received " + 
+                             str(len(rim.events_manager.event_list)) + 
+                             " events.", info_code, size)
+            self.log_message(msg_form, "On QA metrics request: " +
+                             stamp_to_opday(current_op_timestamp()),
+                             info_code, size)
+
+            tdic = rim.events_manager.get_list()
+
+            tdic.insert(0, {"msgtype"  : "cmdqueue.request",
+                            "timestamp": time.time()})
+            tdic.append({"msgtype"  : "cmdqueue.request",
+                         "timestamp": time.time()})
+
+            self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
+
+        # Handle current nighttime requests ...
+        elif stamp_to_opday(fromtime) == stamp_to_opday(current_op_timestamp()):
+            if verbosity:
+                self.log_message(msg_form,"Request metrics on current OP day: "+
+                                 stamp_to_opday(fromtime), 
+                                 info_code, size)
+
+            tdic = rim.events_manager.get_list(fromtime=fromtime)
+            tdic.insert(0, {"msgtype"  : "cmdqueue.request",
+                            "timestamp": time.time()})
+
+            self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
+
+        # Handle previous day requests
+        elif fromtime < current_op_timestamp():
+            if verbosity:
+                self.log_message(msg_form, 
+                                 "Requested metrics on ... " +
+                                 stamp_to_opday(fromtime), info_code, size)
+                                
+            tdic = fstore_get(fromtime)
+
+            if verbosity:
+                self.log_message(msg_form, "Received " + str(len(tdic)) + 
+                                 " events from fitsstore.", info_code, size)
+            
+            # Append the last timestamp from the event_list. This is done
+            # to trigger the client to pinging the adcc from the last 
+            # recorded event.
+
+            if tdic:
+                tdic.append({"msgtype": "cmdqueue.request",
+                             "timestamp": rim.events_manager.event_list[-1]["timestamp"]})
+            else:
+                tdic.append({"msgtype"  : "cmdqueue.request",
+                             "timestamp": time.time()})
+
+            self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
+
+        # Cannot handle the future ...
+        else:
+            self.log_message(msg_form,"Invalid timestamp received.", 
+                             fail_code, size)
+            self.log_message(msg_form,"Future events not known.",
+                             fail_code, size)
+        return
+            
 
 
 class MTHTTPServer(ThreadingMixIn, HTTPServer):
