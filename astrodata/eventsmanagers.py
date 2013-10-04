@@ -142,7 +142,6 @@ class EventsManager:
         if type(ev) == list:
             if len(ev) == 0:
                 return # raise Error("no way")
-            print "em132: it's a list"
             evlist = ev
         else:
             evlist = [ev]
