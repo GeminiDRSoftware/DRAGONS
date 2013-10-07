@@ -1191,12 +1191,10 @@ class ADCCHandler(BaseHTTPRequestHandler):
             # to trigger the client to pinging the adcc from the last 
             # recorded event.
 
-            if tdic:
-                tdic.append({"msgtype": "cmdqueue.request",
-                             "timestamp": rim.events_manager.event_list[-1]["timestamp"]})
-            else:
-                tdic.append({"msgtype"  : "cmdqueue.request",
-                             "timestamp": time.time()})
+            tdic.insert(0, {"msgtype"  : "cmdqueue.request",
+                            "timestamp": time.time()})
+            tdic.append({"msgtype"  : "cmdqueue.request",
+                         "timestamp": time.time()})
 
             self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
 
