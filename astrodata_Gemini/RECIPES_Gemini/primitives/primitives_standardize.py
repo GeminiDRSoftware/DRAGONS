@@ -825,7 +825,7 @@ class StandardizePrimitives(GENERALPrimitives):
           "AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC", "CCDSIZE", "CCDSUM",
           "CD1_1", "CD1_2", "CD2_1", "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1",
           "CRVAL2", "CTYPE1", "CTYPE2", "DATASEC", "DETSEC", "EXPTIME", "GAIN",
-          "GAINSET", "NONLINEA", "RDNOISE", "SATLEVEL"] 
+          "GAINSET", "NONLINEA", "RDNOISE", "SATLEVEL", "LOWROW", "LOWCOL", "HIROW", "HICOL"] 
         dq_comment = "Copied from ['%s',%d]" % (SCI, sci.extver())
         
         for keyword in keywords_from_sci:
@@ -850,7 +850,7 @@ class StandardizePrimitives(GENERALPrimitives):
           "AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC", "CCDSIZE", "CCDSUM",
           "CD1_1", "CD1_2", "CD2_1", "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1",
           "CRVAL2", "CTYPE1", "CTYPE2", "DATASEC", "DETSEC", "EXPTIME", "GAIN",
-          "GAINSET", "NONLINEA", "RDNOISE", "SATLEVEL"]
+          "GAINSET", "NONLINEA", "RDNOISE", "SATLEVEL", "LOWROW", "LOWCOL", "HIROW", "HICOL"]
         var_comment = "Copied from ['%s',%d]" % (SCI, sci.extver())
         
         for keyword in keywords_from_sci:
