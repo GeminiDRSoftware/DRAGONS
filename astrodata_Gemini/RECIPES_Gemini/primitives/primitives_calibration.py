@@ -1,4 +1,5 @@
 import os
+import numpy as np
 from astrodata import AstroData
 from astrodata import Errors
 from astrodata import IDFactory
@@ -462,4 +463,90 @@ class CalibrationPrimitives(GENERALPrimitives):
         # context
         rc.report_output(adoutput_list)
         
+        yield rc
+
+    def separateLampOff(self, rc):
+        """
+        This primitive is intended to run on gcal imaging flats. 
+        It goes through the input list and figures out which ones are lamp-on
+        and which ones are lamp-off
+        """
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "separateLampOff", "starting"))
+
+        # Initialize the list of output AstroData objects
+        lampon_list = []
+        lampoff_list = []
+
+        # Loop over the input frames
+        for ad in rc.get_inputs_as_astrodata():
+            if('GCAL_IR_ON' in ad.types):
+                log.stdinfo("%s is a lamp-on flat" % ad.data_label())
+                #rc.run("addToList(purpose=lampOn)")
+                lampon_list.append(ad)
+            elif('GCAL_IR_OFF' in ad.types):
+                log.stdinfo("%s is a lamp-off flat" % ad.data_label())
+                #rc.run("addToList(purpose=lampOff)")
+                lampoff_list.append(ad)
+            else:
+                log.warning("Not a GCAL flatfield? Cannot tell if it is lamp-on or lamp-off for %s" % ad.data_label())
+
+        rc.report_output(lampon_list, stream="lampOn")
+        rc.report_output(lampoff_list, stream="lampOff")
+
+        yield rc
+
+
+    def stackLampOnLampOff(self, rc):
+        """
+        This primitive stacks the Lamp On flats and the LampOff flats, then subtracts the two stacks
+        """
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "stackLampOnLampOff", "starting"))
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Get the lamp on list, stack it, and add the stack to the lampOnStack stream
+        rc.run("showInputs(stream=lampOn)")
+        rc.run("stackFrames(stream=lampOn)")
+
+        # Get the lamp off list, stack it, and add the stack to the lampOnStack stream
+        rc.run("showInputs(stream=lampOff)")
+        rc.run("stackFrames(stream=lampOff)")
+
+        yield rc
+
+    def subtractLampOnLampOff(self, rc):
+        """
+        This primitive subtracts the lamp off stack from the lampon stack. It expects there to be only
+        one file (the stack) on each stream - call stackLampOnLampOff to do the stacking before calling this
+        """
+
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "subtractLampOnLampOff", "starting"))
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        lampon = rc.get_stream(stream="lampOn", style="AD")[0]
+        lampoff = rc.get_stream(stream="lampOff", style="AD")[0]
+
+        log.stdinfo("Lamp ON is: %s %s" % (lampon.data_label(), lampon.filename))
+        log.stdinfo("Lamp OFF is: %s %s" % (lampoff.data_label(), lampoff.filename))
+        lampon.sub(lampoff)
+        lampon.filanme = gt.filename_updater(adinput=lampon, suffix="lampOnOff")
+
+        adoutput_list.append(lampon)
+        rc.report_output(adoutput_list)
+
         yield rc

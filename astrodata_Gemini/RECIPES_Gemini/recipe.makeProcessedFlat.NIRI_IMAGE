@@ -10,7 +10,7 @@ addVAR(read_noise=True)
 #nonlinearityCorrect
 ADUToElectrons
 addVAR(poisson_noise=True)
-thermalEmissionCorrect
+lampOnLampOff
 normalizeFlat
 thresholdFlatfield
 storeProcessedFlat
