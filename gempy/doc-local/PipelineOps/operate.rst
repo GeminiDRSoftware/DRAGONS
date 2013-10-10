@@ -25,9 +25,9 @@ At CPO, the equivalent of the above is: ::
 
    any-terminal-on-cpocon:  telops>  startqap
    
-   new-xterm-from-cpopipe01:  pipeops>  autoredux
-   
    Point browser to:  http://cpopipe01:8777/qap/nighttime_metrics.html
+
+(Oct 2013: autoredux now starts automatically in the pipeline xterm at GS)
 
 Now let's talk about it.
 
