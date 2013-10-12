@@ -82,6 +82,10 @@ class NIRIPrimitives(GEMINIPrimitives):
                 gt.update_key_from_descriptor(
                   adinput=ad, descriptor="dispersion_axis()", extname="SCI")
             
+            # Convention seems to be to multiply the exposure time by coadds in prepared data
+            gt.update_key_from_descriptor(
+              adinput=ad, descriptor="exposure_time()", extname="PHU")
+
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
             
