@@ -514,10 +514,6 @@ class QAPrimitives(GENERALPrimitives):
 
                 # Need to correct the mags for the exposure time
                 et = ad.exposure_time()
-                # Need to multiply by coadds if this instrument does them,
-                # otherwise ignore
-                if ad.coadds() is not None:
-                    et *= float(ad.coadds())
 
                 # If it's a funky nod-and-shuffle imaging acquistion,
                 # then need to scale exposure time
