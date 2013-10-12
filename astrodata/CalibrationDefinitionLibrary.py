@@ -132,6 +132,7 @@ class CalibrationDefinitionLibrary(object):
                                'detector_y_bin',
                                'disperser',
                                'exposure_time',
+                               'coadds',
                                'filter_name',
                                'focal_plane_mask',
                                'gain_setting',
@@ -144,7 +145,11 @@ class CalibrationDefinitionLibrary(object):
                                'program_id',
                                'read_speed_setting',
                                'ut_datetime',
-                               'detector_roi_setting'
+                               'detector_roi_setting',
+                               'data_section',
+                               'read_mode',
+                               'well_depth_setting',
+                               'camera'
                                ]
             options = {'central_wavelength':'asMicrometers=True'}
 
