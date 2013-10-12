@@ -692,6 +692,9 @@ class PreprocessPrimitives(GENERALPrimitives):
         """
         This primitive sets the DQ '64' bit for any pixels which have a value
         <lower or >upper in the SCI plane.
+        it also sets the science plane pixel value to 1.0 for pixels which are bad
+        and very close to zero, to avoid divide by zero issues and inf values
+        in the flatfielded science data.
         """
         # Instantiate the log
         log = logutils.get_logger(__name__)
@@ -739,6 +742,13 @@ class PreprocessPrimitives(GENERALPrimitives):
 
                 log.fullinfo("ThresholdFlatfield set bit '64' for values"
                              " outside the range [%.2f,%.2f]"%(lower,upper))
+
+                # Set the sci value to 1.0 where it is less that 0.001
+                sci_data = np.where(sci_data < 0.001, 1.0, sci_data)
+                ad['SCI',extver].data=sci_data
+
+                log.fullinfo("ThresholdFlatfield set flatfield pixels to 1.0 for values below 0.001")
+
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
