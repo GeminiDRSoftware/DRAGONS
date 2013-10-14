@@ -70,7 +70,10 @@ class StandardizePrimitives(GENERALPrimitives):
         adoutput_list = []
         
         # Set the data type of the data quality array
+        # It can be uint8 for now, it will get converted up as we assign higher bit values
+        # shouldn't need to force it up to 16bpp yet.
         dq_dtype = np.dtype(np.uint8)
+        #dq_dtype = np.dtype(np.uint16)
         
         # Get the input AstroData objects
         adinput = rc.get_inputs_as_astrodata()
