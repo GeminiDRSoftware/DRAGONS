@@ -732,10 +732,11 @@ class PreprocessPrimitives(GENERALPrimitives):
                 dq_data = ad[DQ,extver].data
 
                 # Mark the unilumminated pixels with a bit '64' in the DQ plane.
+                # make sure the 64 is an int16 64 else it will promote the DQ plane to int64
                 unilum = np.where(
-                        (sci_data>upper) | (sci_data<lower), 64, 0)
+                        (sci_data>upper) | (sci_data<lower), np.int16(64), np.int16(0))
 
-                dq_data = np.bitwise_or(dq_data,unilum).astype(np.int16)
+                dq_data = np.bitwise_or(dq_data,unilum)
 
                 # Now replace the DQ data
                 ad[DQ,extver].data = dq_data
