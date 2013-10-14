@@ -735,7 +735,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                 unilum = np.where(
                         (sci_data>upper) | (sci_data<lower), 64, 0)
 
-                dq_data = np.bitwise_or(dq_data,unilum)
+                dq_data = np.bitwise_or(dq_data,unilum).astype(np.int16)
 
                 # Now replace the DQ data
                 ad[DQ,extver].data = dq_data
