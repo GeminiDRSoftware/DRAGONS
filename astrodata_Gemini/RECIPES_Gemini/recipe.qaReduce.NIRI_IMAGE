@@ -9,4 +9,10 @@ detectSources
 measureIQ(display=True)
 measureBG
 measureCCAndAstrometry
-#addToList(purpose=forStack)
+makeSky
+skyCorrect
+alignAndStack
+detectSources
+measureIQ(display=True)
+measureBG
+measureCCAndAstrometry
