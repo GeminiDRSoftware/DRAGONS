@@ -184,7 +184,7 @@ class StackPrimitives(GENERALPrimitives):
             # extension, respectively)
             if ad_output[DQ]:
                 for ext in ad_output[DQ]:
-                    ext.data = ext.data.astype(np.uint16)
+                    ext.data = ext.data.astype(np.int16)
                     
                     if bunit is not None:
                         gt.update_key(adinput=ext, keyword="BUNIT",
