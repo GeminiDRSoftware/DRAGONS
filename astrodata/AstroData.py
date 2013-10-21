@@ -880,8 +880,8 @@ integrates other functionalities.
                 md=moredata, hdul=hdulist_to_insert, hduindx=hdu_index)
         else:
             self.onehdu_work(insert=True, header=header, data=data, \
-                autonum=auto_number,\
-                hduindx=hdu_index)
+                             autonum=auto_number, \
+                             hduindx=hdu_index)
             
     def infostr(self, as_html=False, oid=False, table=False, help=False):
         """

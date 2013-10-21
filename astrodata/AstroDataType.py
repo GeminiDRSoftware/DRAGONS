@@ -689,8 +689,9 @@ newtypes.append(%(typename)s())
             oblist = []
             for ob in obs:
                 oblist.append(ob[1])
-                nodestr += '%(name)s [shape=box, style=filled, color = "grey92",URL="typedict.py#%(name)s",tooltip="%(tip)s"];\n' \
-                  % {"name":ob[1],"tip":"Primitive Set"}
+                # nodestr += '%(name)s [shape=box, style=filled, color = "grey92",URL="typedict.py#%(name)s",tooltip="%(tip)s"];\n' \
+                nodestr += '%(name)s [shape=box, style=filled, color = "grey92",URL="typedict.py?astrotype=%(name)s",tooltip="%(tip)s"];\n' \
+                    % {"name":ob[1],"tip":"Primitive Set"}
                 
             nodestr += "subgraph cluster_%(name)s { rank=same; \n" \
                 % {"name":primsetgroup,"tip":"Primitive Set"}
@@ -698,7 +699,7 @@ newtypes.append(%(typename)s())
                 nodestr += "%s;" % obname
             nodestr += "%s}\n" % primsetgroup 
             
-            nodestr += '%(name)s [shape=box, style=filled, color = "grey100",URL="typedict.py#%(name)s",tooltip="%(tip)s"];\n' \
+            nodestr += '%(name)s [shape=box, style=filled, color = "grey100",URL="typedict.py?astrotype=%(name)s",tooltip="%(tip)s"];\n' \
                   % {"name":primsetgroup,"tip":"Primitive Set"}
             linkstr += linkstr + "\t %(from)s -> %(to)s; \n" \
                             % { "from":primsetgroup, 
@@ -709,7 +710,7 @@ newtypes.append(%(typename)s())
                 linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
                     % { "from":self.parent, 
                         "to":self.name, 
-                        "url": ("typedict.py#%s" % self.name )
+                        "url": ("typedict.py?astrotype=%s" % self.name )
                     }
         elif direct == "self": # don't follow parent or childrem
             pass                    
@@ -718,7 +719,7 @@ newtypes.append(%(typename)s())
                 linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
                     % { "from":self.parent, 
                         "to":self.name, 
-                        "url": ("typedict.py#%s" % self.name )
+                        "url": ("typedict.py?astrotype=%s" % self.name )
                     }
                 links, nodes = self.parentDCO.gviz_links(direct=direct, assign_dict = assign_dict)
                 linkstr += links
@@ -735,7 +736,7 @@ newtypes.append(%(typename)s())
                     linkstr = linkstr + "\t %(from)s -> %(to)s; \n" \
                         % { "from":self.name, 
                             "to":child.name, 
-                            "url": ("typedict.py#%s" % child.name )
+                            "url": ("typedict.py?astrotype=%s" % child.name )
                         }
                     links, nodes = child.gviz_links(direct=direct, assign_dict = assign_dict)
                     linkstr += links
@@ -753,12 +754,24 @@ newtypes.append(%(typename)s())
         @return: A representation of the node  in "dot" language for graphing purposes
         @rtype: String
         """
-        nodestr = "%(name)s [shape=house, URL=\"typedict.py#%(name)s\",tooltip=\"%(tip)s\"];\n" \
+        nodestr = "%(name)s [shape=house, URL=\"typedict.py?astrotype=%(name)s\",tooltip=\"%(tip)s\"];\n" \
                   % {"name":self.name,"tip":self.usage.replace("\n", "")}
         return nodestr
     gvizNodes = gviz_node
 
-              
+    def json_typetree(self):
+        sdict = {"name":self.name,
+                
+                }
+ 
+        
+        if self.childDCOs:
+            cdict = []
+            sdict["children"]=cdict
+            for childdco in self.childDCOs:
+                cdict.append(childdco.json_typetree())
+        return sdict # self-dict
+        
 class CLAlreadyExists:
     '''
     This class exists to return a singleton of the ClassificationLibrary instance.

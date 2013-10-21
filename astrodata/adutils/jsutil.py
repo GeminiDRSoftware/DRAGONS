@@ -253,7 +253,7 @@ class BROKENJSDescriptors(JSDiv):
                    <script type="text/javascript">
                    function populateDescriptorsDiv(desmap)
                    {
-                        //alert(JSON.stringify(desmap));
+                        console.log("js256:",desmap);
                         var descmap = desmap["descriptors"]
                         buff = "<b>Descriptor Calculators within <tt>"
                                 +desmap["package"]
@@ -610,13 +610,13 @@ class JSPackageSelection(JSDiv):
             <script type="text/javascript">
             function loadPkgContent(url, name)
             {
-                //alert("here");
+                console.log("js613: here", url);
                 $(".pdk_focus").slideUp();
                 $.ajax({ url: url,
                         dataType: "json",
                         success: function(data, ts, jq)
                                  {
-                                    //alert(JSON.stringify(data));
+                                     console.log(JSON.stringify(data));
                                      populateTypesDiv(data);
                                      populateDescriptorsDiv(data);
                                      populateRecipeSystemDiv(data);
@@ -630,13 +630,15 @@ class JSPackageSelection(JSDiv):
         
         for el in self.options:
             ret += """<input type="submit" value="%(name)s" onclick="loadPkgContent('%(url)s', '%(name)s')"></input>
+                      <br/>
                    """ % {
                           "name" : el["name"], 
                           "url"  : el['url']
                          }
             
-        tret = """  <div style="padding:5px;border:solid black 1px;">
+        tret = """  <div class="adk_packages" style="padding:5px;border:solid black 1px;float:right">
+                    <u>packages</u><br/>
                     %s                    
-                    </div> <br clear="all"/>                
+                    </div>              
                 """ % ret
         return tret
