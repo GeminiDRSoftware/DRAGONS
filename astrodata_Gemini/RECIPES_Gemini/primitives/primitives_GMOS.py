@@ -40,7 +40,7 @@ class GMOSPrimitives(GEMINIPrimitives):
 
         :param interpolator: Type of interpolation function to use accross
                              the chip gaps. Options: 'linear', 'nearest',
-                             'poly3', 'poly5', 'spine3', 'sinc'
+                             'poly3', 'poly5', 'spline3', 'sinc'
         :type interpolator: string
         """
         log = logutils.get_logger(__name__)
