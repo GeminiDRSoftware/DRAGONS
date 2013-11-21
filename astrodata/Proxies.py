@@ -1,16 +1,20 @@
-import xmlrpclib
-import subprocess
-from time import sleep
-import time
 import os
-from SimpleXMLRPCServer import SimpleXMLRPCServer
+import time
 import select
 import socket
-from astrodata.adutils import logutils
+import xmlrpclib
+import subprocess
+
+from time import sleep
 from pprint import pformat
 
-log = logutils.get_logger(__name__)
+from SimpleXMLRPCServer import SimpleXMLRPCServer
 
+from astrodata.adutils import logutils
+from astrodata.Errors  import ADCCCommunicationError
+# -----------------------------------------------------------------------------
+
+log = logutils.get_logger(__name__)
 PDEB = False
 
 class ReduceCommands(object):
@@ -25,7 +29,7 @@ class ReduceCommands(object):
     def prs_ready(self):
         self.prsready = True
         reduceServer.prsready = True
-            
+
 reduceServer = None
 
 class ReduceServer(object):
@@ -45,10 +49,11 @@ class ReduceServer(object):
         findingport = True
         while(findingport):
             try:
-                # print "p44: start_listening on ", self.listenport, self.xmlrpcthread
-                server = SimpleXMLRPCServer(("localhost", self.listenport), allow_none=True, logRequests=False)
+                server = SimpleXMLRPCServer(("localhost", 
+                                             self.listenport), 
+                                            allow_none=True, 
+                                            logRequests=False)
                 findingport = False
-                # print "p47: Reduce xmlrpc listening on port %d..." % self.listenport
             except socket.error:
                 self.listenport += 1
                 
@@ -56,20 +61,18 @@ class ReduceServer(object):
         server.register_instance(self.reducecmds)
         
         try:
-            # print 'p55: started reduce xmlrpc server thread...'
-            #server.serve_forever()
             while True:
                 r,w,x = select.select([server.socket], [],[],.5)
                 if r:
                     server.handle_request()
-                # print "prsw: ",webserverdone
-                #print "P62:", str(id(self)), repr(self.finished), str(id(reduceServer)), repr(reduceServer.finished)
+
                 if self.finished == True:
-                    # print "P63: shutting down reduce xmlrpc thread"
                     break
         except KeyboardInterrupt:
             print '^C received, shutting down server'
             server.socket.close()
+        return
+
 
 def start_adcc(callerlockfile = None):
     import tempfile
@@ -83,8 +86,7 @@ def start_adcc(callerlockfile = None):
         
     else:
         clfn = callerlockfile
-        
-    
+
     from time import sleep
     racefile = ".adcc/adccinfo.py"
     logdir = ".autologs"
@@ -143,13 +145,13 @@ class PRSProxy(object):
     reducecmds = None
     xmlrpcthread = None
     reduce_server = None
-    log = None        
+    log = None
+
     def __init__(self, reduce_server = None, port = None):
             
         try:
             if port != None:
                 self.prsport = port
-            #self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, allow_none=True)
             self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, 
                                             allow_none=True,
                                             use_datetime=True)
@@ -248,9 +250,7 @@ class PRSProxy(object):
             self.prs.unregister(os.getpid())
             if (PDEB):
                 print "unregistered from the prs"
-    
-        
-            
+
     def calibration_search(self, cal_rq):
         if self.found == False:
             return None
@@ -274,18 +274,16 @@ class PRSProxy(object):
                 print "P167:", cal
             PDEB = False
             return cal
+
     def get_version(self):
         self.version = self.prs.get_version()
         return self.version
-        
+
     def display_request(self, rq):
         self.prs.display_request(rq)
         return 
-            
+
     def report_qametrics(self, event_list):
-        # print "P275:"+repr(event_list)
-        #if len(event_list) == 0:
-        #    return
         self.prs.report_qametrics_2adcc(event_list)
-        
+        return
 
