@@ -39,8 +39,8 @@ from astrodata.AstroDataType import get_classification_library
 # ------------------------------------------------------------------------------
 def buildNewParser(version):
     parser = ArgumentParser(description="_"*11 + " Gemini Observatory Recipe System Processor "
-                            " (v1.0 2011) " + "_"*10 + "\n" + "_"*19 +\
-                            " Written by GDPSG (klabrie@gemini.edu) " + "_"*19,
+                            " (v1.1 2013) " + "_"*10 + "\n" + "_"*19 +\
+                            " Written by GDPSG" + "_"*19,
                             prog="reduce2")
     parser.add_argument("-v", "--version", action='version', version='%(prog)s v'+ version)
     parser.add_argument("-d", "--displayflags", dest='displayflags', action="store_true", 
