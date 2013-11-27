@@ -1132,6 +1132,7 @@ def filename_updater(adinput=None, infilename='', suffix='', prefix='',
         (name,filetype) = os.path.splitext(phuOrigFilename)
         
     # Create output filename
+   
     outFileName = prefix+name+suffix+filetype
     return outFileName
 
