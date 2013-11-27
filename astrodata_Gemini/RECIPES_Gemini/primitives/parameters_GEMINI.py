@@ -34,6 +34,22 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "mosaicADdetectors":{
+    "suffix":{
+        "default"       : "_mosaicAD",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "tile":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "addObjectMaskToDQ":{
     "suffix":{
         "default"       : "_objectMaskAdded",
@@ -798,4 +814,46 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+"traceFootprints":
+   {"function":    # Slit Edge fitting function
+       {"default":"polynomial",
+        "recipeOverride":True,
+        "userOverride":True,
+        "type":"str",
+        "uiLevel":"UIBASIC"
+       },
+    "order":       # Order of the polynomial
+       {"default":2,
+        "recipeOverride":True,
+        "userOverride":True,
+        "type":"int",
+        "uiLevel":"UIBASIC"
+       },
+    "trace_threshold":     # Threshold in units of sigma (std deviation)
+                           # to applied to the filtered_image from the
+                           # enhance_edges function.
+       {"default":1,
+        "recipeOverride":True,
+        "userOverride":True,
+        "type":"int",
+        "uiLevel":"UIBASIC"
+       },
+     "suffix":{
+        "default"       : "_tracefootprints",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+   },
+"cutFootprints":
+     {"suffix":{
+        "default"       : "_cutfootprints",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+
 }
