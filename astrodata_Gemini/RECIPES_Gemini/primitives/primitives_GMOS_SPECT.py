@@ -1,3 +1,4 @@
+from copy import deepcopy 
 import numpy as np
 from astrodata import AstroData
 from astrodata import Errors
@@ -6,6 +7,8 @@ from astrodata.adutils.gemutil import pyrafLoader
 from primitives_GMOS import GMOSPrimitives
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import eti
+from wavecal import Wavecal
+from appwave import appwave
 
 class GMOS_SPECTPrimitives(GMOSPrimitives):
     """
@@ -19,6 +22,103 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
         GMOSPrimitives.init(self, rc)
         return rc
 
+    def determineWaveCal(self,rc):
+
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+        
+        # Define the keyword to be used for the time stamp
+        timestamp_key = self.timestamp_keys["determineWaveCalSolution"]
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "determineWaveCalSolution",
+                                 "starting"))
+                
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+
+            try:
+                wc = Wavecal(ad,linelist=   rc['linelist'],
+                                fitfunction=rc['fitfunction'],
+                                fitorder=   rc['fitorder'],
+                                match=      rc['match'],
+                                nsum=       rc['nsum'],
+                                ntmax=      rc['ntmax'],
+                                minsep=     rc['minsep'],
+                            )
+                wc.wavecal()         # Determine wave solution
+                wc.fit_image()       # Fit image
+                tbout = wc.save_wavecal_fit()  # Create a FITS BINARY table WAVECAL
+                adout = deepcopy(ad)
+                adout.append(tbout)
+            except Errors.OutputError:
+                if "qa" in rc.context:
+                    log.warning("Wavecal failed for input " + ad.filename)
+                    adoutput_list.append(ad)
+                    continue
+                else:
+                    raise Errors.ScienceError("Wavecal failed for input "+
+                                              ad.filename + ". Try interactive"+
+                                              "=True")
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=adout, keyword=timestamp_key)
+
+            # Change the filename
+            adout.filename = gt.filename_updater(
+                adinput=adout, suffix=rc["suffix"], strip=True)
+            
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(adout)
+        
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+
+        yield rc
+    
+    def appwave(self,rc):
+
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+        
+        # Define the keyword to be used for the time stamp
+        timestamp_key = self.timestamp_keys["appwave"]
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "appwave", "starting"))
+                
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+
+            appwave(ad)
+
+            adout = ad
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=adout, keyword=timestamp_key)
+
+            # Change the filename
+            adout.filename = gt.filename_updater(
+                adinput=adout, suffix=rc["suffix"], strip=True)
+            
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(adout)
+        
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+
+        yield rc
+    
     def attachWavelengthSolution(self,rc):
 
         # Instantiate the log
@@ -252,6 +352,59 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
             # Instantiate ETI and then run the task 
             gscrrej_task = eti.gscrrejeti.GscrrejETI(rc,ad)
             adout = gscrrej_task.run()
+
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=adout, keyword=timestamp_key)
+
+            # Change the filename
+            adout.filename = gt.filename_updater(
+                adinput=adout, suffix=rc["suffix"], strip=True)
+            
+            # Append the output AstroData object to the list
+            # of output AstroData objects
+            adoutput_list.append(adout)
+        
+        # Report the list of output AstroData objects to the reduction
+        # context
+        rc.report_output(adoutput_list)
+        
+        yield rc
+
+    def wcalResampleToLinearCoords(self,rc):
+
+        """ Uses the Wavecal fit_image solution
+        """
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+        
+        # Define the keyword to be used for the time stamp
+        timestamp_key = self.timestamp_keys["wcalResampleToLinearCoords"]
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "wcalResampleToLinearCoords", 
+                                 "starting"))
+                
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+
+            # Check for a wavelength solution
+            if ad["WAVECAL"] is None:
+                if "qa" in rc.context:
+                    log.warning("No wavelength solution found for %s" %
+                                ad.filename)
+
+                    adout=ad   # Don't do anything 
+                else:
+                    raise Errors.InputError("No wavelength solution found "\
+                                            "for %s" % ad.filename)
+            else:
+                # Wavelength solution found. 
+                wc = Wavecal(ad)
+                wc.read_wavecal_table()
+                adout = wc.resample_image_asAstrodata()
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=adout, keyword=timestamp_key)

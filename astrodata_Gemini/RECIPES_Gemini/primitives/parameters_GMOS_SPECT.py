@@ -17,6 +17,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "appwave":{
+    "suffix":{
+        "default"       : "_appwave",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+   },
  "attachWavelengthSolution":{
     "suffix":{
         "default"       : "_wavelengthSolution",
@@ -34,6 +43,64 @@
         "uiLevel"       : "UIBASIC",
         },
    },
+ "determineWaveCal":{
+    "suffix":{
+        "default"       : "_waveCalSolution",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "linelist":{
+        "default"       : None,
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "fitfunction":{
+        "default"       : None,
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "fitorder":{
+        "default"       : None,
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "match":{ 
+        "default"       : None,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "nsum":{
+        "default"       : None,
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "ntmax":{
+        "default"       : None,
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "minsep":{
+        "default"       : None,
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+   },
  "determineWavelengthSolution":{
     "suffix":{
         "default"       : "_wavelengthSolution",
@@ -41,7 +108,7 @@
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
-        },
+    },
     "interactive":{
         "default"       : False,
         "type"          : "bool",
@@ -62,36 +129,6 @@
  "makeFlat":{
     "suffix":{
         "default"       : "_flat",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    },
- "mosaicDetectors":{
-    "suffix":{
-        "default"       : "_mosaicked",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "tile":{
-        "default"       : False,
-        "type"          : "bool",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "interpolate_gaps":{
-        "default"       : True,
-        "type"          : "bool",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "interpolator":{
-        "default"       : "linear",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
