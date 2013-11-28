@@ -7,8 +7,8 @@ from astrodata.adutils.gemutil import pyrafLoader
 from primitives_GMOS import GMOSPrimitives
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import eti
-from wavecal import Wavecal
-from appwave import appwave
+from devel.wavecal.wavecal import Wavecal
+from devel.wavecal.appwave import appwave
 
 class GMOS_SPECTPrimitives(GMOSPrimitives):
     """
