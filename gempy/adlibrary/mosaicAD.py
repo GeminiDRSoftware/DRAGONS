@@ -60,7 +60,6 @@ class MosaicAD(Mosaic):
         extnames      - Contains all extension names in ad
         im_extnames   - All IMAGE extensions names in ad
         tab_extnames  - All BINTABLE extension names in ad
-        process_dq    - Boolean. True when transforming a DQ image data.
         associated_tab_extns
                       - List of binary extension names that have the same
                         number and values of extvers as the reference
@@ -96,7 +95,7 @@ class MosaicAD(Mosaic):
     """
 
     def __init__(self, ad, mosaic_ad_function, ref_extname='SCI',
-                 column_names='default'):
+                 column_names='default',dq_planes=False):
         """
           
          Parameters
@@ -131,6 +130,10 @@ class MosaicAD(Mosaic):
                column_names = {'OBJCAT': ('Xpix', 'Ypix', 'RA', 'DEC'),
                                'REFCAT': (None, None, 'RaRef', 'DecRef')}
 
+          :param dq_planes: 
+              (False). Boolean flag to transform bit_plane by bit_plane
+              for rotation, shifting and scaling. At this the algorithmm 
+              has a bad performance. Default value is False.
 
         """
 
@@ -160,9 +163,8 @@ class MosaicAD(Mosaic):
         self.tab_extnames = None             # All BINTABLE extensions names in AD 
         self.get_extnames()                  # Form extnames, im_extnames, 
                                              # tab_extnames.
-        self.process_dq = False              # Correcting a DQ extension for 
-                                             # shift,rot,mag.
-
+        self.dq_planes = dq_planes           # (False) Input parameter
+                                             # Transform bit_plane byt bit_plane
         self.mosaic_data_array = {}          # attribute to reference 
                                              # numpy array by extension.
                                              # Set by method set_mosaic_data() 
@@ -480,11 +482,11 @@ class MosaicAD(Mosaic):
         self.update_data(extname)
 
         # Setup attribute for transforming a DQ extension if any.
-        # We need to set process_dq here, since the base class method
+        # We need to set dq_data here, since the base class method
         # does not know about extension names.
         #
         dq_data = False
-        if extname == 'DQ':
+        if extname == 'DQ' and self.dq_planes:
              dq_data = True
 
         # Use the base method. 
