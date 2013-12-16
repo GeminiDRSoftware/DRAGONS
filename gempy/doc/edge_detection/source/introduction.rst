@@ -82,7 +82,7 @@ For internal Gemini staff please contact: Nelson Zarate at  nzarate@gemini.edu.
     # The module 'extract.py' should be in a directory accessible via
     # the environment variable PYTHONPATH.
     #
-    import extract as extr
+    from gempy.adlibrary import extract as extr
 
 - Use *AstroData* to open a FITS file
   ::

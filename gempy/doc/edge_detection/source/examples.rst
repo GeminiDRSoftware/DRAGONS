@@ -26,7 +26,7 @@ Example 1: Frame in a square
     """
     import numpy as np
     import scipy.ndimage as nd
-    import skeletonize as skel
+    from skimage.morphology import skeletonize
 
     data = np.ones((400,250),dtype=np.float32)
     data = data*20   # make the background 20
@@ -52,7 +52,7 @@ Example 1: Frame in a square
     bdata=np.where(((sdata>std) | (sdata <-std)),1,0)
 
     # Reduce the width of these edges to one pixel.
-    out = skel.skeletonize(bdata);
+    out = skeletonize(bdata)
 
     return out
 
@@ -100,7 +100,7 @@ Example 2: Find footprints.
  from astrodata import AstroData
  # The module segmentation.py needs to be in you working directory
  # or reachable via the PYTHONPATH environment variable.
- from extract import find_footprints
+ from gempy.adlibrary.extract import find_footprints
 
  gmos = 'mgS20100113S0110.fits'
  gnirs = 'data/nN20101215S0475_comb.fits'
@@ -132,7 +132,7 @@ Example 3: Generate footprint cutouts from a target spectrum.
  # table to the target spectrum in the Astrodata object.
 
  from astrodata import AstroData
- from extract import trace_footprints
+ from gempy.adlibrary.extract import trace_footprints
 
  ad = AstroData('data/nN20101215S0475_comb.fits')
 
@@ -205,7 +205,7 @@ Example 4: WCS information in cutouts images
 
 
 
-    import extract as extr
+    from gempy.adlibrary import extract as extr
     from astrodata import AstroData
     import pywcs
 

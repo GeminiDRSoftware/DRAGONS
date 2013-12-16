@@ -3,7 +3,8 @@
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
-SPHINXBUILD   = /data1/sphinx/bin/sphinx-build
+SPHINXBUILD   = /data1/Ureka/python/bin/sphinx-build
+
 PAPER         =
 
 # Internal variables.
