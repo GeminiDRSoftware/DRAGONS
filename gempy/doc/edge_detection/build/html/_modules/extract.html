@@ -1,0 +1,537 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>extract &mdash; Trace slits v0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Trace slits v0.1 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">Trace slits v0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for extract</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.ndimage</span> <span class="kn">as</span> <span class="nn">nd</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">pl</span>
+
+<span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">import</span> <span class="nn">pyfits</span> <span class="kn">as</span> <span class="nn">pf</span>
+
+<span class="kn">from</span> <span class="nn">segmentation</span> <span class="kn">import</span> <span class="n">enhance_edges</span><span class="p">,</span><span class="n">trace_edges</span><span class="p">,</span><span class="n">TraceConstraints</span><span class="p">,</span> <span class="n">_prefilter</span>
+<span class="kn">import</span> <span class="nn">segmentation</span> <span class="kn">as</span> <span class="nn">seg</span>
+<span class="kn">import</span> <span class="nn">gfit</span>
+
+<div class="viewcode-block" id="_find_edges"><a class="viewcode-back" href="../documentation.html#extract._find_edges">[docs]</a><span class="k">def</span> <span class="nf">_find_edges</span><span class="p">(</span><span class="n">ad</span><span class="p">,</span> <span class="n">function</span><span class="o">=</span><span class="s">&#39;polynomial&#39;</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">trace_threshold</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">      Input:</span>
+
+<span class="sd">      :param ad: AstroData object.</span>
+<span class="sd">      :param threshold: threshold in units of sigma to be applied in</span>
+<span class="sd">                        trace_edges()</span>
+
+<span class="sd">      Output: List of Edge objects where each object contains: </span>
+<span class="sd">        - trace:  list of tuples (x,y) with array of edge coordinates</span>
+<span class="sd">        - function    : name of the function being fit to the trace</span>
+<span class="sd">        - coefficients: array of coefficients</span>
+<span class="sd">        - order       : order of the polynomial</span>
+<span class="sd">        - evalfunction: function evaluator</span>
+<span class="sd">        - xlim        : (xmin,xmax) limits</span>
+<span class="sd">        - ylim        : (ymin,ymax) limits</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">tc</span> <span class="o">=</span> <span class="n">TraceConstraints</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span> 
+
+    <span class="c"># Prefilter image</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">_prefilter</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+
+    <span class="n">filtered_image</span> <span class="o">=</span> <span class="n">enhance_edges</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="nb">filter</span><span class="o">=</span><span class="n">tc</span><span class="o">.</span><span class="n">filter</span><span class="p">,</span><span class="n">orientation</span><span class="o">=</span><span class="n">tc</span><span class="o">.</span><span class="n">orientation</span><span class="p">)</span>
+    
+    <span class="c"># Get a list of array of tuples (x,y) for each slit edge.</span>
+    <span class="n">edges</span> <span class="o">=</span> <span class="n">trace_edges</span><span class="p">(</span><span class="n">filtered_image</span><span class="p">,</span> <span class="n">tc</span><span class="p">,</span> <span class="n">trace_threshold</span><span class="p">)</span>
+
+    <span class="c"># Fit the edges and attach returning list to edge objects</span>
+    <span class="n">_fit_edges</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">edges</span>
+
+</div>
+<div class="viewcode-block" id="_fit_edges"><a class="viewcode-back" href="../documentation.html#extract._fit_edges">[docs]</a><span class="k">def</span> <span class="nf">_fit_edges</span><span class="p">(</span><span class="n">edges</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      Fit a function to each edge.</span>
+<span class="sd">      </span>
+<span class="sd">      Input: </span>
+<span class="sd">         edges: List of Edge object with (x,y) traces</span>
+<span class="sd">      </span>
+<span class="sd">      returns:</span>
+<span class="sd">         edges: Same as input plus fit coefficients for each edge.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
+        <span class="c"># Use default edge.function, edge.order </span>
+        <span class="n">edge</span><span class="o">.</span><span class="n">fitfunction</span><span class="p">()</span>
+
+    </div>
+<span class="k">def</span> <span class="nf">_plot_fit_edges_devel</span><span class="p">(</span><span class="n">edges</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      plot the fitted edges</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">ed</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">edges</span><span class="p">):</span>
+        <span class="n">xx</span><span class="p">,</span><span class="n">yy</span> <span class="o">=</span> <span class="n">ed</span><span class="o">.</span><span class="n">trace</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;b&#39;</span><span class="p">,</span><span class="s">&#39;r&#39;</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">ed</span><span class="o">.</span><span class="n">orientation</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xx</span><span class="p">,</span><span class="n">ed</span><span class="o">.</span><span class="n">evalfunction</span><span class="p">(</span><span class="n">xx</span><span class="p">),</span><span class="n">color</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="n">pl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ed</span><span class="o">.</span><span class="n">evalfunction</span><span class="p">(</span><span class="n">yy</span><span class="p">),</span><span class="n">yy</span><span class="p">,</span><span class="n">color</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Slit"><a class="viewcode-back" href="../documentation.html#extract.Slit">[docs]</a><span class="k">class</span> <span class="nc">Slit</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">     Generates a list of slit objects, each containing a pair of edge traces.</span>
+<span class="sd">     ::</span>
+
+<span class="sd">     Slit Attributues:</span>
+
+<span class="sd">      id            integer reference number for slit</span>
+<span class="sd">      region        section of the image where the slit solution is valid,</span>
+<span class="sd">                    (x1, x2, y1, y2)   </span>
+<span class="sd">      edges         tuple of Edge object (edge_1,edge_2) defining the </span>
+<span class="sd">                    long edges of the slit.</span>
+<span class="sd">      width:        average width of the slit (calculated with the edges)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">edge_1</span><span class="p">,</span><span class="n">edge_2</span><span class="p">):</span>
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">edges</span> <span class="o">=</span> <span class="p">(</span><span class="n">edge_1</span><span class="p">,</span><span class="n">edge_2</span><span class="p">)</span>
+        <span class="n">x1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">edge_1</span><span class="o">.</span><span class="n">xlim</span><span class="o">+</span><span class="n">edge_2</span><span class="o">.</span><span class="n">xlim</span><span class="p">)</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">edge_1</span><span class="o">.</span><span class="n">xlim</span><span class="o">+</span><span class="n">edge_2</span><span class="o">.</span><span class="n">xlim</span><span class="p">)</span>
+        <span class="n">y1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">edge_1</span><span class="o">.</span><span class="n">ylim</span><span class="o">+</span><span class="n">edge_2</span><span class="o">.</span><span class="n">ylim</span><span class="p">)</span>
+        <span class="n">y2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">edge_1</span><span class="o">.</span><span class="n">ylim</span><span class="o">+</span><span class="n">edge_2</span><span class="o">.</span><span class="n">ylim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">=</span> <span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">edge_2</span><span class="o">.</span><span class="n">evalfunction</span><span class="p">(</span><span class="n">y1</span><span class="p">)</span><span class="o">-</span><span class="n">edge_1</span><span class="o">.</span><span class="n">evalfunction</span><span class="p">(</span><span class="n">y1</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Slit.setregion"><a class="viewcode-back" href="../documentation.html#extract.Slit.setregion">[docs]</a>    <span class="k">def</span> <span class="nf">setregion</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">x1</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">x2</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">y1</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">y2</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">          NOTE:: need use case for this function.</span>
+<span class="sd">              We can set this to be a little wider than</span>
+<span class="sd">              the slits edges; but how much.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+</div></div>
+<div class="viewcode-block" id="_associate_edges"><a class="viewcode-back" href="../documentation.html#extract._associate_edges">[docs]</a><span class="k">def</span> <span class="nf">_associate_edges</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">ad</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">       Associate the edges list with actual slits discribe</span>
+<span class="sd">       in the MDF extension of ad.</span>
+
+<span class="sd">       Some edges are residuals from the trace_edges algorithm</span>
+<span class="sd">       and need to be discarded assuming that the slit edges are</span>
+<span class="sd">       long continuos components.</span>
+
+<span class="sd">       Input:</span>
+<span class="sd">         Edges: List of Edge object</span>
+<span class="sd">         ad:    Astrodata Object</span>
+<span class="sd">            </span>
+<span class="sd">       Output:</span>
+<span class="sd">         slits: List of Slit objects.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">ad</span><span class="o">.</span><span class="n">dispersion_axis</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">orientation</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">edges</span> <span class="o">=</span> <span class="n">_remove_bad_x_traces</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span><span class="n">ad</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">orientation</span> <span class="o">=</span> <span class="mi">90</span>
+        <span class="n">edges</span> <span class="o">=</span> <span class="n">_remove_bad_y_traces</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span><span class="n">ad</span><span class="p">)</span>
+
+    <span class="n">slits</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">sn</span><span class="p">,</span><span class="n">k</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">edges</span><span class="p">),</span><span class="mi">2</span><span class="p">)):</span>
+        <span class="n">slit</span> <span class="o">=</span> <span class="n">Slit</span><span class="p">(</span><span class="n">sn</span><span class="p">,</span><span class="n">edges</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="n">edges</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">slits</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">slit</span><span class="p">)</span>
+        
+    <span class="k">return</span> <span class="n">slits</span>
+        </div>
+<span class="k">def</span> <span class="nf">_remove_bad_y_traces</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span><span class="n">ad</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Discard small edges traces remaining from the</span>
+<span class="sd">        trace_edges algorithm. This function has a directional</span>
+<span class="sd">        dependency in the y-axis.</span>
+<span class="sd">        Handle orientation=90  (f2,gnirs)</span>
+
+<span class="sd">        Input:</span>
+<span class="sd">          Edges: Lists of Edge object</span>
+<span class="sd">          ad:    AD object</span>
+
+<span class="sd">        Output: </span>
+<span class="sd">          edges: Final list of edges that correspond to</span>
+<span class="sd">                 the slit edges in the MDF extension.</span>
+
+<span class="sd">        IMPLEMENTATION NOTES:</span>
+
+<span class="sd">          - Edges are discarded if they are 200 pixels or less.</span>
+
+<span class="sd">          - Edges are discarded if they start beyond the startting point of the</span>
+<span class="sd">            rest of them.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">mdf</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;MDF&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">x_ccd</span> <span class="o">=</span> <span class="n">mdf</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;x_ccd&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">y_ccd</span> <span class="o">=</span> <span class="n">mdf</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;y_ccd&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">instrument</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">instrument</span><span class="p">())</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">instrument</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;f2&#39;</span><span class="p">,</span><span class="s">&#39;flam&#39;</span><span class="p">]:</span>
+        <span class="c"># SOMEHOW there are not enough slits in the x_ccd&#39;s array.</span>
+        <span class="c"># add 4 more.</span>
+        <span class="n">x_ccd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">x_ccd</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">x_ccd</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="mf">33.</span><span class="p">,</span><span class="mf">66.</span><span class="p">,</span><span class="mf">99.</span><span class="p">,</span><span class="mf">132.</span><span class="p">]))</span>
+
+    <span class="n">nslit_mdf</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_ccd</span><span class="p">)</span>   <span class="c"># this is the number of slits in the MDF</span>
+    <span class="k">if</span> <span class="n">nslit_mdf</span><span class="o">&gt;</span><span class="nb">len</span><span class="p">(</span><span class="n">edges</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s">&quot;Only&quot;</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">edges</span><span class="p">),</span><span class="s">&quot;edges out of &quot;</span><span class="p">,</span><span class="n">nslit_mdf</span><span class="p">,</span><span class="s">&quot;slits from MDF.&quot;</span>
+
+
+    <span class="c"># All edges must start near y1+sigma</span>
+    <span class="n">ymin</span> <span class="o">=</span> <span class="p">[</span><span class="n">ed</span><span class="o">.</span><span class="n">ylim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">ed</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">]</span>
+    <span class="n">ystart</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">ymin</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">ymin</span><span class="p">)</span>
+    
+    <span class="n">g</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">ed</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">edges</span><span class="p">):</span>
+        <span class="c"># edges are at least 200 pixels long in the spatial direction</span>
+        <span class="k">if</span> <span class="n">ed</span><span class="o">.</span><span class="n">ylim</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">ed</span><span class="o">.</span><span class="n">ylim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="c"># If this edges start beyond ystart, skip</span>
+        <span class="k">if</span> <span class="n">ed</span><span class="o">.</span><span class="n">ylim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">ystart</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">g</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+
+    <span class="c"># Select no more than the number of edges in the MDF</span>
+    <span class="n">ns</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">nslit_mdf</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">g</span><span class="p">))</span>
+    <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">edges</span><span class="p">)[</span><span class="n">g</span><span class="p">[:</span><span class="n">ns</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="n">edges</span>
+
+<span class="k">def</span> <span class="nf">_remove_bad_x_traces</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span><span class="n">ad</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Discard small edges traces remaining from the</span>
+<span class="sd">        trace_edges algorithm. This function has a directional</span>
+<span class="sd">        dependency in the x-axis.</span>
+<span class="sd">        Handle orientation=0  (gmos)</span>
+
+<span class="sd">        Input:</span>
+<span class="sd">          Edges: Lists of Edge object</span>
+<span class="sd">          ad:    AD object</span>
+
+<span class="sd">        Output: </span>
+<span class="sd">          edges: Final list of edges that correspond to</span>
+<span class="sd">                 the slit edges in the MDF extension.</span>
+
+<span class="sd">        IMPLEMENTATION NOTES:</span>
+
+<span class="sd">          - Edges are discarded if they are 200 pixels or less.</span>
+
+<span class="sd">          - Edges are discarded if they start beyond the startting point of the</span>
+<span class="sd">            rest of them.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">mdf</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;MDF&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">x_ccd</span> <span class="o">=</span> <span class="n">mdf</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;x_ccd&#39;</span><span class="p">)</span>
+    <span class="n">y_ccd</span> <span class="o">=</span> <span class="n">mdf</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;y_ccd&#39;</span><span class="p">)</span>
+
+    <span class="n">nslit_mdf</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_ccd</span><span class="p">)</span>   <span class="c"># this is the number of slits in the MDF</span>
+    <span class="k">if</span> <span class="n">nslit_mdf</span><span class="o">&gt;</span><span class="nb">len</span><span class="p">(</span><span class="n">edges</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s">&quot;Only&quot;</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">edges</span><span class="p">),</span><span class="s">&quot;edges out of &quot;</span><span class="p">,</span><span class="n">nslit_mdf</span><span class="p">,</span><span class="s">&quot;slits from MDF.&quot;</span>
+
+    <span class="c"># All edges must start near x1+sigma</span>
+    <span class="n">xmin</span> <span class="o">=</span> <span class="p">[</span><span class="n">ed</span><span class="o">.</span><span class="n">xlim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">ed</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">]</span>
+    <span class="n">xstart</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">xmin</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">xmin</span><span class="p">)</span>
+    
+    <span class="n">g</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">ed</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">edges</span><span class="p">):</span>
+       <span class="c"># edges are at least 200 pixels long in the spatial direction</span>
+       <span class="k">if</span> <span class="n">ed</span><span class="o">.</span><span class="n">xlim</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">ed</span><span class="o">.</span><span class="n">xlim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">200</span><span class="p">:</span>
+          <span class="k">continue</span>
+       <span class="c"># If this edges start beyond xstart, skip</span>
+       <span class="k">if</span> <span class="n">ed</span><span class="o">.</span><span class="n">xlim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">xstart</span><span class="p">:</span>
+          <span class="k">continue</span>
+
+       <span class="n">g</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+
+    <span class="c"># Select no more than the number of edges in the MDF</span>
+    <span class="n">ns</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">nslit_mdf</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">g</span><span class="p">))</span>
+    <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">edges</span><span class="p">)[</span><span class="n">g</span><span class="p">[:</span><span class="n">ns</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="n">edges</span>
+
+
+<div class="viewcode-block" id="SlitsTrace"><a class="viewcode-back" href="../documentation.html#extract.SlitsTrace">[docs]</a><span class="k">class</span> <span class="nc">SlitsTrace</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      Handle the list of slits</span>
+<span class="sd">     </span>
+<span class="sd">      Attributes:</span>
+
+<span class="sd">       slits: Slit object list.</span>
+
+<span class="sd">      Methods:</span>
+<span class="sd">        asbintable:  Creates BINTABLE</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">slits</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slits</span> <span class="o">=</span> <span class="n">slits</span>
+
+    <span class="k">def</span> <span class="nf">_plot_slits_devel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">          NOTE: This for development. For for the</span>
+<span class="sd">                public release</span>
+<span class="sd">          plot the edges in the list array self.trace</span>
+<span class="sd">          i: sequential number, can be edge number</span>
+
+<span class="sd">            Plot the slit edges using the fitting functions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">slits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slits</span>
+        <span class="n">orientation</span> <span class="o">=</span> <span class="n">slits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">orientation</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">slit</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">slits</span><span class="p">):</span>
+            <span class="n">edge1</span> <span class="o">=</span> <span class="n">slit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span> <span class="n">edge2</span> <span class="o">=</span> <span class="n">slit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">xx1</span><span class="p">,</span><span class="n">yy1</span> <span class="o">=</span> <span class="n">edge1</span><span class="o">.</span><span class="n">trace</span>
+            <span class="n">xx2</span><span class="p">,</span><span class="n">yy2</span> <span class="o">=</span> <span class="n">edge2</span><span class="o">.</span><span class="n">trace</span>
+            <span class="n">evf1</span> <span class="o">=</span> <span class="n">edge1</span><span class="o">.</span><span class="n">evalfunction</span> 
+            <span class="n">evf2</span> <span class="o">=</span> <span class="n">edge2</span><span class="o">.</span><span class="n">evalfunction</span> 
+            <span class="k">if</span> <span class="n">orientation</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">pl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xx1</span><span class="p">,</span><span class="n">evf1</span><span class="p">(</span><span class="n">xx1</span><span class="p">),</span><span class="s">&#39;b&#39;</span><span class="p">,</span><span class="n">xx2</span><span class="p">,</span><span class="n">evf2</span><span class="p">(</span><span class="n">xx2</span><span class="p">),</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span> 
+                <span class="n">pl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">evf1</span><span class="p">(</span><span class="n">yy1</span><span class="p">),</span><span class="n">yy1</span><span class="p">,</span><span class="s">&#39;b&#39;</span><span class="p">,</span><span class="n">evf2</span><span class="p">(</span><span class="n">yy1</span><span class="p">),</span><span class="n">yy1</span><span class="p">,</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+
+             
+<div class="viewcode-block" id="SlitsTrace.asbintable"><a class="viewcode-back" href="../documentation.html#extract.SlitsTrace.asbintable">[docs]</a>    <span class="k">def</span> <span class="nf">asbintable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Creates a BINTABLE object from the </span>
+<span class="sd">            slitstrace object.</span>
+<span class="sd">            </span>
+<span class="sd">            Input:</span>
+<span class="sd">               slits: list of Slit objects.</span>
+
+<span class="sd">            Output:</span>
+<span class="sd">               Returns an AD object with one BINTABLE</span>
+<span class="sd">               extension with EXTNAME=&quot;TRACESLI&quot; and EXTVER=1.</span>
+
+<span class="sd">            **Column discription**</span>
+<span class="sd">            </span>
+<span class="sd">            ::</span>
+
+<span class="sd">                &#39;id&#39;       : integer reference number for slit.</span>
+<span class="sd">                &#39;region&#39;   : (x1,x2,y1,y2), window of pixel co-ords enclosing this slit.</span>
+<span class="sd">                             The origin of these coordinates could be the lower left of the</span>
+<span class="sd">                             original image.</span>
+<span class="sd">                &#39;range1&#39;   : (x1,x2,y1,y2), range where edge_1 is valid.</span>
+<span class="sd">                             The origin of these coordinates is the lower left of the</span>
+<span class="sd">                             original image.</span>
+<span class="sd">                &#39;function1&#39;: Fit function name (default: polynomial) fitting edge_1.</span>
+<span class="sd">                &#39;coeff1&#39;   : Arrray of coefficients, high to low order, such that</span>
+<span class="sd">                             pol(x) = c1*x**2 + c2*x + c3   (for order 2).</span>
+<span class="sd">                &#39;order1&#39;   : Order or polynomial (default: 2).</span>
+<span class="sd">                &#39;range2&#39;   : ditto for edge_2.</span>
+<span class="sd">                &#39;function2&#39;: ditto for edges_2</span>
+<span class="sd">                &#39;coeff2&#39;   : ditto for edges_2</span>
+<span class="sd">                &#39;order2&#39;   : ditto for edges_2</span>
+
+<span class="sd">                &#39;cutrange1&#39;   : (x1,x2,y1,y2), range where edge_1 is valid.</span>
+<span class="sd">                                The origin of these coordinates is the lower left of the</span>
+<span class="sd">                                cutout region.</span>
+<span class="sd">                &#39;cutfunction1&#39;: Fit function name (default: polynomial).</span>
+<span class="sd">                &#39;cutcoeff1&#39;   : Arrray of coefficients, high to low order, such that</span>
+<span class="sd">                                pol(x) = c1*x**2 + c2*x + c3   (for order 2)</span>
+<span class="sd">                &#39;cutorder1&#39;   : Order or polynomial (default: 2).</span>
+<span class="sd">                &#39;cutrange2&#39;   : ditto for edge_2</span>
+<span class="sd">                &#39;cutfunction2&#39;: ditto for edge_2</span>
+<span class="sd">                &#39;cutcoeff2&#39;   : ditto for edge_2</span>
+<span class="sd">                &#39;cutorder2&#39;   : ditto for edge_2</span>
+
+<span class="sd">            TBD: Implementation::: Should &#39;region&#39; have the original width?</span>
+<span class="sd">                 Ie; NAXIS1 from the original image would be x2=NAXIS2-1 for</span>
+<span class="sd">                 a &#39;gmos&#39; image. y2=NAXIS2 for F2.</span>
+<span class="sd">            Notes:</span>
+<span class="sd">                The &#39;region&#39; tuple encloses the slit and its cutout region size</span>
+<span class="sd">                will be the tuple (NAXIS1,NAXIS2) when copied to an IMAGE</span>
+<span class="sd">                extension in a FITS file. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">slits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slits</span>
+
+        <span class="c"># Get n_coeffs&#39;. We are assuming they are the same for all</span>
+        <span class="c"># edges.</span>
+        <span class="n">n_coeff</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">slits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">coefficients</span><span class="p">)</span>
+        <span class="n">c1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;id&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;J&#39;</span><span class="p">)</span>
+        <span class="n">c2</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;region&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;4E&#39;</span><span class="p">)</span>
+        <span class="n">c3</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;range1&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;4E&#39;</span><span class="p">)</span>
+        <span class="n">c4</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;function1&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;15A&#39;</span><span class="p">)</span>
+        <span class="n">c5</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;order1&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;J&#39;</span><span class="p">)</span>
+        <span class="n">c6</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;coeff1&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%d</span><span class="s">E&#39;</span><span class="o">%</span><span class="n">n_coeff</span><span class="p">)</span>
+
+        <span class="n">c7</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;range2&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;4E&#39;</span><span class="p">)</span>
+        <span class="n">c8</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;function2&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;15A&#39;</span><span class="p">)</span>
+        <span class="n">c9</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;order2&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;J&#39;</span><span class="p">)</span>
+        <span class="n">c10</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;coeff2&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%d</span><span class="s">E&#39;</span><span class="o">%</span><span class="n">n_coeff</span><span class="p">)</span>
+
+        <span class="n">c11</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;cutrange1&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;4E&#39;</span><span class="p">)</span>
+        <span class="n">c12</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;cutfunction1&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;15A&#39;</span><span class="p">)</span>
+        <span class="n">c13</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;cutorder1&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;J&#39;</span><span class="p">)</span>
+        <span class="n">c14</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;cutcoeff1&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%d</span><span class="s">E&#39;</span><span class="o">%</span><span class="n">n_coeff</span><span class="p">)</span>
+
+        <span class="n">c15</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;cutrange2&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;4E&#39;</span><span class="p">)</span>
+        <span class="n">c16</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;cutfunction2&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;15A&#39;</span><span class="p">)</span>
+        <span class="n">c17</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;cutorder2&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;J&#39;</span><span class="p">)</span>
+        <span class="n">c18</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span> <span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;cutcoeff2&#39;</span><span class="p">,</span><span class="n">format</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%d</span><span class="s">E&#39;</span><span class="o">%</span><span class="n">n_coeff</span><span class="p">)</span>
+
+        <span class="n">nrows</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">slits</span><span class="p">)</span>
+        <span class="n">tbhdu</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">pf</span><span class="o">.</span><span class="n">ColDefs</span><span class="p">([</span><span class="n">c1</span><span class="p">,</span><span class="n">c2</span><span class="p">,</span><span class="n">c3</span><span class="p">,</span><span class="n">c4</span><span class="p">,</span><span class="n">c5</span><span class="p">,</span><span class="n">c6</span><span class="p">,</span><span class="n">c7</span><span class="p">,</span><span class="n">c8</span><span class="p">,</span><span class="n">c9</span><span class="p">,</span><span class="n">c10</span><span class="p">,</span>\
+                            <span class="n">c11</span><span class="p">,</span><span class="n">c12</span><span class="p">,</span><span class="n">c13</span><span class="p">,</span><span class="n">c14</span><span class="p">,</span><span class="n">c15</span><span class="p">,</span><span class="n">c16</span><span class="p">,</span><span class="n">c17</span><span class="p">,</span><span class="n">c18</span><span class="p">]),</span><span class="n">nrows</span><span class="o">=</span><span class="n">nrows</span><span class="p">)</span>
+        <span class="n">tb</span> <span class="o">=</span> <span class="n">tbhdu</span>    <span class="c"># an alias</span>
+
+        <span class="c"># Write data to table columns</span>
+
+        <span class="n">orientation</span> <span class="o">=</span> <span class="n">slits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">orientation</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">slit</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">slits</span><span class="p">):</span>
+            <span class="n">edge1</span> <span class="o">=</span> <span class="n">slit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span> <span class="n">edge2</span> <span class="o">=</span> <span class="n">slit</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;id&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span>        <span class="o">=</span> <span class="n">slit</span><span class="o">.</span><span class="n">id</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;region&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span>    <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">slit</span><span class="o">.</span><span class="n">region</span><span class="p">)</span>
+
+            <span class="c"># EGDE_1 DATA with respect to original image co-ords</span>
+            <span class="n">range1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">edge1</span><span class="o">.</span><span class="n">xlim</span><span class="o">+</span><span class="n">edge1</span><span class="o">.</span><span class="n">ylim</span><span class="p">)</span>  <span class="c"># (x1, x2, y1, y2)</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;range1&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span>    <span class="o">=</span> <span class="n">range1</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;function1&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">edge1</span><span class="o">.</span><span class="n">function</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;order1&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span>    <span class="o">=</span> <span class="n">edge1</span><span class="o">.</span><span class="n">order</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;coeff1&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span>    <span class="o">=</span> <span class="n">edge1</span><span class="o">.</span><span class="n">coefficients</span>
+
+            <span class="c"># EGDE_2 DATA with respect to original image co-ords</span>
+            <span class="n">range2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">edge2</span><span class="o">.</span><span class="n">xlim</span><span class="o">+</span><span class="n">edge2</span><span class="o">.</span><span class="n">ylim</span><span class="p">)</span>  <span class="c"># (x1, x2, y1, y2)</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;range2&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span>    <span class="o">=</span> <span class="n">range2</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;function2&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">edge2</span><span class="o">.</span><span class="n">function</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;order2&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span>    <span class="o">=</span> <span class="n">edge2</span><span class="o">.</span><span class="n">order</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;coeff2&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span>    <span class="o">=</span> <span class="n">edge2</span><span class="o">.</span><span class="n">coefficients</span>
+
+            <span class="c"># CUT EGDE_1 DATA with respect to cutout image co-ords</span>
+            <span class="c"># Applied offsets to range1 from slit.region(x1,y1) </span>
+            <span class="n">xlim1</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">edge1</span><span class="o">.</span><span class="n">xlim</span><span class="p">)</span>
+            <span class="n">ylim1</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">edge1</span><span class="o">.</span><span class="n">ylim</span><span class="p">)</span>
+            <span class="n">region_x1</span> <span class="o">=</span> <span class="n">slit</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">region_y1</span> <span class="o">=</span> <span class="n">slit</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;cutrange1&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span>    <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">xlim1</span><span class="o">-</span><span class="n">region_x1</span><span class="p">)</span><span class="o">+</span>\
+                                               <span class="nb">list</span><span class="p">(</span><span class="n">ylim1</span><span class="o">-</span><span class="n">region_y1</span><span class="p">)</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;cutfunction1&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">edge1</span><span class="o">.</span><span class="n">function</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;cutorder1&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span>    <span class="o">=</span> <span class="n">edge1</span><span class="o">.</span><span class="n">order</span>
+
+            <span class="c"># We offset the constant coefficient as well by region (x1 or y1)</span>
+            <span class="k">if</span> <span class="n">orientation</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="n">offset</span><span class="o">=</span><span class="n">region_y1</span>
+            <span class="k">else</span><span class="p">:</span>                <span class="n">offset</span><span class="o">=</span><span class="n">region_x1</span>
+            <span class="n">coeff1</span> <span class="o">=</span> <span class="n">edge1</span><span class="o">.</span><span class="n">coefficients</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">coeff1</span><span class="p">[</span><span class="n">edge1</span><span class="o">.</span><span class="n">order</span><span class="p">]</span> <span class="o">=</span> <span class="n">coeff1</span><span class="p">[</span><span class="n">edge1</span><span class="o">.</span><span class="n">order</span><span class="p">]</span> <span class="o">-</span> <span class="n">offset</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;cutcoeff1&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span>    <span class="o">=</span> <span class="n">coeff1</span>
+
+
+            <span class="c"># CUT EGDE_2 DATA with respect to cutout image co-ords</span>
+            <span class="c"># Applied offsets to range2 from slit.region(x1,y1) </span>
+            <span class="n">xlim2</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">edge2</span><span class="o">.</span><span class="n">xlim</span><span class="p">)</span>
+            <span class="n">ylim2</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">edge2</span><span class="o">.</span><span class="n">ylim</span><span class="p">)</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;cutrange2&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span>    <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">xlim2</span><span class="o">-</span><span class="n">region_x1</span><span class="p">)</span><span class="o">+</span>\
+                                               <span class="nb">list</span><span class="p">(</span><span class="n">ylim2</span><span class="o">-</span><span class="n">region_y1</span><span class="p">)</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;cutfunction2&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">edge2</span><span class="o">.</span><span class="n">function</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;cutorder2&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span>    <span class="o">=</span> <span class="n">edge2</span><span class="o">.</span><span class="n">order</span>
+
+            <span class="c"># We offset the constant coefficient as well by region (x1 or y1)</span>
+            <span class="n">coeff2</span> <span class="o">=</span> <span class="n">edge2</span><span class="o">.</span><span class="n">coefficients</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">coeff2</span><span class="p">[</span><span class="n">edge2</span><span class="o">.</span><span class="n">order</span><span class="p">]</span> <span class="o">=</span> <span class="n">coeff2</span><span class="p">[</span><span class="n">edge2</span><span class="o">.</span><span class="n">order</span><span class="p">]</span> <span class="o">-</span> <span class="n">offset</span>
+            <span class="n">tb</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;cutcoeff2&#39;</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span>    <span class="o">=</span> <span class="n">coeff2</span>
+
+        <span class="c"># Add comment to TTYPE card</span>
+        <span class="n">hdr</span> <span class="o">=</span> <span class="n">tb</span><span class="o">.</span><span class="n">header</span>
+        <span class="n">hdr</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s">&#39;TTYPE2&#39;</span><span class="p">,</span><span class="n">hdr</span><span class="p">[</span><span class="s">&#39;TTYPE2&#39;</span><span class="p">],</span>
+                  <span class="n">comment</span><span class="o">=</span><span class="s">&#39;(x1,y1,x2,y2): slit window of pixel co-ords.&#39;</span><span class="p">)</span>
+        <span class="n">hdr</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s">&#39;TTYPE3&#39;</span><span class="p">,</span><span class="n">hdr</span><span class="p">[</span><span class="s">&#39;TTYPE3&#39;</span><span class="p">],</span> <span class="n">comment</span><span class="o">=</span><span class="s">&#39;type of fitting function.&#39;</span><span class="p">)</span>
+        <span class="n">hdr</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s">&#39;TTYPE4&#39;</span><span class="p">,</span><span class="n">hdr</span><span class="p">[</span><span class="s">&#39;TTYPE4&#39;</span><span class="p">],</span> <span class="n">comment</span><span class="o">=</span><span class="s">&#39;Number of coefficients.&#39;</span><span class="p">)</span>
+        <span class="n">hdr</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s">&#39;TTYPE5&#39;</span><span class="p">,</span><span class="n">hdr</span><span class="p">[</span><span class="s">&#39;TTYPE5&#39;</span><span class="p">],</span> 
+             <span class="n">comment</span><span class="o">=</span><span class="s">&#39;Coeff array: c[0]*x**3 + c[1]*x**2+ c[2]*x+c[3]&#39;</span><span class="p">)</span>
+        <span class="n">hdr</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s">&#39;TTYPE6&#39;</span><span class="p">,</span><span class="n">hdr</span><span class="p">[</span><span class="s">&#39;TTYPE6&#39;</span><span class="p">],</span> 
+             <span class="n">comment</span><span class="o">=</span><span class="s">&#39;(x1,y1,x2,y2): Edge fit window definition.&#39;</span><span class="p">)</span>
+        <span class="n">tb</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="n">hdr</span>
+
+        <span class="c"># Create an AD object with this</span>
+        <span class="n">tabad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="n">tbhdu</span><span class="p">)</span>
+        <span class="n">tabad</span><span class="o">.</span><span class="n">rename_ext</span><span class="p">(</span><span class="s">&quot;TRACESLI&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        
+        <span class="k">return</span> <span class="n">tabad</span>
+</pre></div></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">Trace slits v0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Gemini Observatory.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

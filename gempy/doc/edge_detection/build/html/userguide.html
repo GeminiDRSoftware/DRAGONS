@@ -1,0 +1,161 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>UserGuide &mdash; Edge Detection 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Edge Detection 0.1 documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="index.html">Edge Detection 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="userguide">
+<h1>UserGuide<a class="headerlink" href="#userguide" title="Permalink to this headline">¶</a></h1>
+<ul>
+<li><p class="first"><strong>Edge Detection</strong> scripts consists of 2 user callable functions or
+ULFs, namely <em>trace_slits</em> and <em>cut_slits</em>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># import the module containing the functions.</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">gempy.science</span> <span class="kn">import</span> <span class="n">extract</span> <span class="k">as</span> <span class="n">extr</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span> <span class="nn">astrodata.adutils</span> <span class="kn">import</span> <span class="n">gemLog</span>
+
+<span class="o">&gt;&gt;&gt;</span> <span class="n">log</span><span class="o">=</span><span class="n">gemLog</span><span class="o">.</span><span class="n">createGeminiLog</span><span class="p">()</span>     <span class="c"># Global variable needed by the ULF&#39;s</span>
+
+    <span class="c"># TEST DATA</span>
+    <span class="c"># Input data has been prepared and combined.</span>
+    <span class="c"># This is a GNIRS XDIS FLAT exposure. It is in the</span>
+    <span class="c"># SVN/test_data/edge_detection directory along with</span>
+    <span class="c"># fS20100220S0035_comb.fits  (F2)</span>
+    <span class="c"># nN20101215S0475_comb.fits (GMOS MOS)</span>
+
+<span class="o">&gt;&gt;&gt;</span> <span class="n">ad</span><span class="o">=</span><span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;/mydata/nN20101215S0475_comb.fits&#39;</span><span class="p">)</span>
+
+    <span class="c"># Trace_slits takes a prepared FLAT image and produces a</span>
+    <span class="c"># bintable extension TRACESLI in adout.</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">adout</span> <span class="o">=</span> <span class="n">extr</span><span class="o">.</span><span class="n">trace_slits</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+
+    <span class="c"># list information about each unit in the output ad object.</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">adout</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>             <span class="c"># adout is a list of ad objects</span>
+
+    <span class="c"># Use this output and cut the regions containing slits.</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">ad_slits</span> <span class="o">=</span> <span class="n">extr</span><span class="o">.</span><span class="n">cut_slits</span><span class="p">(</span><span class="n">adout</span><span class="p">)</span>
+
+    <span class="c"># Write out a FITS file in the working directory with the name</span>
+    <span class="c"># &#39;my_cuts.fits&#39;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">ad_slits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="s">&#39;my_cuts.fits&#39;</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">ad_slits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">write</span><span class="p">()</span>
+
+    <span class="c"># NOTE: When displaying the IMAGE extension containing</span>
+            <span class="n">cuts</span><span class="p">,</span> <span class="n">these</span> <span class="n">will</span> <span class="n">show</span> <span class="n">thin</span> <span class="n">stripes</span> <span class="n">on</span> <span class="n">the</span> <span class="n">areas</span>
+            <span class="n">outside</span> <span class="n">the</span> <span class="n">slits</span><span class="o">.</span> <span class="n">These</span> <span class="n">are</span> <span class="n">temporary</span> <span class="ow">and</span> <span class="n">are</span> <span class="n">meant</span> <span class="n">to</span>
+            <span class="n">show</span> <span class="n">the</span> <span class="n">extension</span> <span class="n">of</span> <span class="n">the</span> <span class="n">zerout</span> <span class="n">procedure</span><span class="o">.</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Primitives</strong>. <em>trace_slits</em> and <em>cut_slits</em> are wrapped in primitives
+for use in recipes.</p>
+<blockquote>
+<div><p><strong>traceSlits</strong></p>
+<p>Input is the astrodata object with the SCI extension containing the
+Flat spectroscopic exposure. The input filename must be already
+<em>prepared</em> and the SCI extension must have the <em>dispaxis</em> keyword.</p>
+<p>Output is a copy of the input astrodata object with the Bintable
+appended. The extension EXTNAME is &#8216;TRACESLI&#8217; and EXTVER is 1.</p>
+<p><strong>cutSlits</strong></p>
+<p>Input is the AD object result in <em>traceSlits</em>; this should have
+the extension TRACESLI. <em>cutSlits</em> output is an AD object with
+a list of SCI,DQ,VAR extensions.</p>
+</div></blockquote>
+</li>
+<li><dl class="first docutils">
+<dt><strong>Recipe</strong>. A recipe can have both primitives in order or just</dt>
+<dd><p class="first"><em>traceSlits</em>. For example:</p>
+<div class="last highlight-python"><pre>File: recipe.traceslits
+
+traceSlits
+cutslits
+showOutputs</pre>
+</div>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/userguide.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="index.html">Edge Detection 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2010, Gemini Observatory.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

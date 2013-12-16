@@ -1,0 +1,328 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>trace_slits &mdash; Edge Detection 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Edge Detection 0.1 documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">Edge Detection 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="trace-slits">
+<h1>trace_slits<a class="headerlink" href="#trace-slits" title="Permalink to this headline">¶</a></h1>
+<p><strong>trace_slits</strong> is a ULF to create a BINTABLE extension containing information
+about the slit edges of an spectroscopic flat.</p>
+<span class="target" id="module-extract"></span><dl class="function">
+<dt id="extract.trace_slits">
+<tt class="descclassname">extract.</tt><tt class="descname">trace_slits</tt><big>(</big><em>adinput=None</em>, <em>function='polynomial'</em>, <em>order=2</em>, <em>trace_threshold=1.0</em>, <em>debug=False</em><big>)</big><a class="headerlink" href="#extract.trace_slits" title="Permalink to this definition">¶</a></dt>
+<dd><p>ULF</p>
+<p>This user level function finds the slits edges
+of spectroscopic flats, creates a BINTABLE hdu with this information
+and appends it to the output AstroData object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>adinput</strong> &#8211; Input Astrodata object to have a BINTABLE extension added</li>
+<li><strong>function</strong> (<em>Default is &#8216;polynomial&#8217;.</em>) &#8211; Name of the fitting function to use.</li>
+<li><strong>order</strong> (<em>Default is 2</em>) &#8211; Degree of the polynomial.</li>
+<li><strong>trace_threshold</strong> (<em>Default is 1.</em>) &#8211; Threshold in units of sigma to applied to the
+filtered image.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Return adoutput:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body"><p class="first last">Output Astrodata object containing an hdu named TRACESLI</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="extract._fit_edges">
+<tt class="descclassname">extract.</tt><tt class="descname">_fit_edges</tt><big>(</big><em>edges</em><big>)</big><a class="headerlink" href="#extract._fit_edges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit a function to each edge.</p>
+<dl class="docutils">
+<dt>Input: </dt>
+<dd>edges: List of Edge object with (x,y) traces</dd>
+<dt>returns:</dt>
+<dd>edges: Same as input plus fit coefficients for each edge.</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="extract.Slit">
+<em class="property">class </em><tt class="descclassname">extract.</tt><tt class="descname">Slit</tt><big>(</big><em>id</em>, <em>edge_1</em>, <em>edge_2</em><big>)</big><a class="headerlink" href="#extract.Slit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a list of slit objects, each containing a pair of edge traces.</p>
+<div class="highlight-python"><pre>Slit attributes:
+
+ id:     integer reference number for slit
+ region: section of the image where the slit solution is valid, (x1, x2, y1, y2)   
+ edges:  tuple of Edge object (edge_1,edge_2) defining the 
+         long edges of the slit.
+ width:  average width of the slit (calculated with the edges)</pre>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="extract.SlitsTrace">
+<em class="property">class </em><tt class="descclassname">extract.</tt><tt class="descname">SlitsTrace</tt><big>(</big><em>slits</em><big>)</big><a class="headerlink" href="#extract.SlitsTrace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle the list of slits</p>
+<p>Attributes:</p>
+<blockquote>
+<div>slits: Slit object list.</div></blockquote>
+<dl class="docutils">
+<dt>Methods:</dt>
+<dd>asbintable:  Creates BINTABLE</dd>
+</dl>
+<dl class="method">
+<dt id="extract.SlitsTrace.asbintable">
+<tt class="descname">asbintable</tt><big>(</big><big>)</big><a class="headerlink" href="#extract.SlitsTrace.asbintable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a BINTABLE object from the 
+slitstrace object.</p>
+<dl class="docutils">
+<dt>Input:</dt>
+<dd>self.slits: list of Slit objects.</dd>
+<dt>Output:</dt>
+<dd>AD: HDU astrodata object with TRACESLI bintable extension.</dd>
+</dl>
+<p><strong>Column discription</strong></p>
+<div class="highlight-python"><pre>'id'       : integer reference number for slit.
+'region'   : (x1,x2,y1,y2), window of pixel co-ords enclosing this slit.
+             The origin of these coordinates could be the lower left of the
+             original image.
+'range1'   : (x1,x2,y1,y2), range where edge_1 is valid.
+             The origin of these coordinates is the lower left of the
+             original image.
+'function1': Fit function name (default: polynomial) fitting edge_1.
+'coeff1'   : Arrray of coefficients, high to low order, such that
+             pol(x) = c1*x**2 + c2*x + c3   (for order 2).
+'order1'   : Order or polynomial (default: 2).
+'range2'   : ditto for edge_2.
+'function2': ditto for edges_2
+'coeff2'   : ditto for edges_2
+'order2'   : ditto for edges_2
+
+'cutrange1'   : (x1,x2,y1,y2), range where edge_1 is valid.
+                The origin of these coordinates is the lower left of the
+                cutout region.
+'cutfunction1': Fit function name (default: polynomial).
+'cutcoeff1'   : Arrray of coefficients, high to low order, such that
+                pol(x) = c1*x**2 + c2*x + c3   (for order 2)
+'cutorder1'   : Order or polynomial (default: 2).
+'cutrange2'   : ditto for edge_2
+'cutfunction2': ditto for edge_2
+'cutcoeff2'   : ditto for edge_2
+'cutorder2'   : ditto for edge_2</pre>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-segmentation"></span><dl class="class">
+<dt id="segmentation.Edge">
+<em class="property">class </em><tt class="descclassname">segmentation.</tt><tt class="descname">Edge</tt><big>(</big><em>x_array=</em><span class="optional">[</span><span class="optional">]</span>, <em>y_array=</em><span class="optional">[</span><span class="optional">]</span><big>)</big><a class="headerlink" href="#segmentation.Edge" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="segmentation.Edge.fitfunction">
+<tt class="descname">fitfunction</tt><big>(</big><big>)</big><a class="headerlink" href="#segmentation.Edge.fitfunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call the actual fit function defined with 
+self.setfunction or use the default function if not.</p>
+<dl class="docutils">
+<dt>Input: </dt>
+<dd>Attribute Edge object having the trace attribute set.</dd>
+<dt>Output attributes:</dt>
+<dd>coefficients: Fitting coefficients.
+xlim:    (xmin,xmax)
+ylim:    (ymin,ymax)
+evalfunction: function to evaluate.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="segmentation.Edge.setfunction">
+<tt class="descname">setfunction</tt><big>(</big><em>function</em><big>)</big><a class="headerlink" href="#segmentation.Edge.setfunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set a fitting function name.
+Use this before call to self.fitfunction</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="segmentation.Edge.setorder">
+<tt class="descname">setorder</tt><big>(</big><em>order</em><big>)</big><a class="headerlink" href="#segmentation.Edge.setorder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set a fitting function name.
+Use this before call to self.fitfunction</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="cut-slits">
+<h1>cut_slits<a class="headerlink" href="#cut-slits" title="Permalink to this headline">¶</a></h1>
+<p><strong>cut_slits</strong> is a ULF to create slit cuts as IMAGE extension in the output AD
+from information stored in the &#8216;TRACESLI&#8217; bintable extension of the input AD.</p>
+<span class="target" id="module-extract"></span><dl class="class">
+<dt id="extract.CutList">
+<em class="property">class </em><tt class="descclassname">extract.</tt><tt class="descname">CutList</tt><big>(</big><em>ad</em>, <em>debug=False</em><big>)</big><a class="headerlink" href="#extract.CutList" title="Permalink to this definition">¶</a></dt>
+<dd><p>CutList provides information from the input TRACESLI table
+and the headers of the AD object to create list of cuts via
+the class Cut.</p>
+<div class="highlight-python"><pre>Input:
+  self.ad:  AD object containing the extension 'TRACESLI'
+            created by the ULF 'trace_slit'.
+  debug:    Display and plot. If True it will display on DS9 the cuts
+            performed with the enclosed slit. The slits
+            will have the edges highlighted to show
+            how good the tracing was. It also shows
+            the cut and the edges on a plot.</pre>
+</div>
+<dl class="method">
+<dt id="extract.CutList.cut_regions">
+<tt class="descname">cut_regions</tt><big>(</big><big>)</big><a class="headerlink" href="#extract.CutList.cut_regions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loop through the records of the TRACESLI table creating
+one Cut object per iteration setting the data,dq,and var sections. 
+Then it appends each object to a list of cuts.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="extract.CutList.as_astrodata">
+<tt class="descname">as_astrodata</tt><big>(</big><big>)</big><a class="headerlink" href="#extract.CutList.as_astrodata" title="Permalink to this definition">¶</a></dt>
+<dd><p>With each cut object in the cut_list having the SCI,DQ,VAR set,
+form an hdu and append it to adout.  Update keywords EXTNAME= &#8216;SCI&#8217;, 
+EXTVER=&lt;slit#&gt;, CCDSEC, DISPAXIS, CUTSECT, CUTORDER in the header
+and reset WCS information if there was a WCS in the input AD header.</p>
+<div class="highlight-python"><pre>Input:
+   self.cut_list: List of Cut objects.
+   self.adout:    Output AD object with MDF and
+                  TRACESLI extensions.
+Output:
+   adout: contains the appended HDUs.</pre>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="extract.Cut">
+<em class="property">class </em><tt class="descclassname">extract.</tt><tt class="descname">Cut</tt><big>(</big><em>cutsListInstance</em><big>)</big><a class="headerlink" href="#extract.Cut" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cut provides functionality to cut rectangular sections containing a
+slit from the SCI frame and clear the area outside the slit.
+Respective DQ and VAR sections are also cut.</p>
+<dl class="method">
+<dt id="extract.Cut.cut_out">
+<tt class="descname">cut_out</tt><big>(</big><em>rec</em>, <em>science</em>, <em>dq</em>, <em>var</em><big>)</big><a class="headerlink" href="#extract.Cut.cut_out" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cut a region enclosing a slit. Each cut is defined by &#8216;region&#8217;
+and the slit in it is defined by the edges fitting functions.
+The science section is zero out between the rectangle borders
+and the slit edge. The DQ section is bitwise ORed with 1.</p>
+<div class="highlight-python"><pre>Input: 
+  rec:     TRACESLI record
+  science: SCI entire frame.
+  dq:      DQ entire frame. Value is None if not available.
+  var:     VAR entire frame. Value is None if not available.
+
+Output:
+  self: Cut object with sci_data, dq_data, var_data cuts.</pre>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="design-docs">
+<h1>Design docs<a class="headerlink" href="#design-docs" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference download internal" href="_downloads/traceslits.pdf"><tt class="xref download docutils literal"><span class="pre">Traceslit</span> <span class="pre">design</span> <span class="pre">is</span> <span class="pre">here</span></tt></a></p>
+<p><a class="reference download internal" href="_downloads/cutslit.pdf"><tt class="xref download docutils literal"><span class="pre">The</span> <span class="pre">cutslit</span> <span class="pre">design</span> <span class="pre">is</span> <span class="pre">here</span></tt></a></p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">trace_slits</a></li>
+<li><a class="reference internal" href="#cut-slits">cut_slits</a></li>
+<li><a class="reference internal" href="#design-docs">Design docs</a></li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/documentation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">Edge Detection 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2010, Gemini Observatory.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

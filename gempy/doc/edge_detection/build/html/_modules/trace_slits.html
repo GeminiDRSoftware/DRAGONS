@@ -1,0 +1,195 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>trace_slits &mdash; Trace slits v0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Trace slits v0.1 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">Trace slits v0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for trace_slits</h1><div class="highlight"><pre>
+<span class="c"># This module contains user level functions related to finding the slits edges</span>
+<span class="c"># of spectroscopic flats.</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pyfits</span> <span class="kn">as</span> <span class="nn">pf</span>
+
+<span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">Errors</span>
+<span class="kn">from</span> <span class="nn">astrodata.adutils</span> <span class="kn">import</span> <span class="n">gemLog</span>
+<span class="kn">from</span> <span class="nn">gempy</span> <span class="kn">import</span> <span class="n">geminiTools</span> <span class="k">as</span> <span class="n">gt</span>
+
+<span class="kn">import</span> <span class="nn">extract</span> <span class="kn">as</span> <span class="nn">extr</span>
+
+<div class="viewcode-block" id="trace_slits"><a class="viewcode-back" href="../documentation.html#trace_slits.trace_slits">[docs]</a><span class="k">def</span> <span class="nf">trace_slits</span><span class="p">(</span><span class="n">adinput</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">function</span><span class="o">=</span><span class="s">&#39;polynomial&#39;</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">trace_threshold</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This user level function (ulf) is used to find the slits edges</span>
+<span class="sd">    of spectroscopic flats, create a BINTABLE hdu with this information</span>
+<span class="sd">    ad append it to the adoutput AstroData object.</span>
+
+<span class="sd">    :param adinput: Astrodata inputs to have a BINTABLE extension added</span>
+<span class="sd">    :type adinput: Astrodata</span>
+<span class="sd">    :param function: Name of the fitting function to use.</span>
+<span class="sd">    :type function: Default is &#39;polynomial&#39;.</span>
+<span class="sd">    :param order: Degree os the polynomial.</span>
+<span class="sd">    :type order: int. default is 2</span>
+<span class="sd">    :param trace_threshold: Threshold in units of sigma to applied to the</span>
+<span class="sd">                            filtered image.</span>
+<span class="sd">    :type trace_threshold: int. Default is 1.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># Instantiate the log. This needs to be done outside of the try block,</span>
+    <span class="c"># since the log object is used in the except block</span>
+    <span class="n">log</span> <span class="o">=</span> <span class="n">gemLog</span><span class="o">.</span><span class="n">getGeminiLog</span><span class="p">(</span><span class="n">logLevel</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+    <span class="c"># The validate_input function ensures that the input is not None and</span>
+    <span class="c"># returns a list containing one or more AstroData objects</span>
+    <span class="n">adinput</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">validate_input</span><span class="p">(</span><span class="n">adinput</span><span class="o">=</span><span class="n">adinput</span><span class="p">)</span>
+
+    <span class="c"># Define the keyword to be used for the time stamp for this user level</span>
+    <span class="c"># function.</span>
+    <span class="n">keyword</span> <span class="o">=</span> <span class="s">&quot;TRACESLI&quot;</span>
+
+    <span class="c"># Initialize the list of output AstroData objects</span>
+    <span class="n">adoutput_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c"># Loop over each input AstroData object in the input list</span>
+        <span class="k">for</span> <span class="n">ad</span> <span class="ow">in</span> <span class="n">adinput</span><span class="p">:</span>
+
+            <span class="c"># Check whether the my_science_step user level function has been</span>
+            <span class="c"># run previously</span>
+            <span class="k">if</span> <span class="n">ad</span><span class="o">.</span><span class="n">phu_get_key_value</span><span class="p">(</span><span class="n">keyword</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">Errors</span><span class="o">.</span><span class="n">InputError</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="o">+</span><span class="s">&quot; has already been &quot;</span><span class="o">+</span>\
+                                        <span class="s">&quot;processed by &#39;trace_slits&#39;.&quot;</span><span class="p">)</span>
+
+            <span class="c"># Check that is prepared flat.</span>
+            <span class="k">if</span>  <span class="ow">not</span> <span class="s">&quot;PREPARED&quot;</span> <span class="ow">in</span> <span class="n">ad</span><span class="o">.</span><span class="n">types</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">Errors</span><span class="o">.</span><span class="n">InputError</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="o">+</span><span class="s">&quot; has not been prepared.&quot;</span><span class="p">)</span>
+            <span class="k">if</span>  <span class="n">ad</span><span class="o">.</span><span class="n">observation_type</span><span class="p">()</span> <span class="o">!=</span> <span class="s">&#39;FLAT&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">Errors</span><span class="o">.</span><span class="n">InputError</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">filename</span><span class="o">+</span><span class="s">&quot; is not FLAT.&quot;</span><span class="p">)</span>
+
+            <span class="c"># Make a copy</span>
+
+            <span class="n">nad</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+            <span class="c"># Find edges in the image, return a list of Edge objects</span>
+            <span class="n">edges</span> <span class="o">=</span> <span class="n">extr</span><span class="o">.</span><span class="n">_find_edges</span><span class="p">(</span><span class="n">nad</span><span class="p">,</span> <span class="n">function</span><span class="o">=</span><span class="n">function</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span>
+                                        <span class="n">trace_threshold</span><span class="o">=</span><span class="n">trace_threshold</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Returning from _find_edges; returning&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">edges</span><span class="p">))</span><span class="o">+</span><span class="s">&#39; edges.&#39;</span><span class="p">)</span>
+
+            <span class="c"># Clean for bad edges in the list and cross-check with the</span>
+            <span class="c"># ad[&#39;MDF&#39;] data.</span>
+            <span class="n">slits</span> <span class="o">=</span> <span class="n">extr</span><span class="o">.</span><span class="n">_associate_edges</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">nad</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Returning from __associate_edges; returning&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">slits</span><span class="p">))</span><span class="o">+</span>\
+                            <span class="s">&#39; slits.&#39;</span><span class="p">)</span>
+
+            <span class="c"># Create a slitTrace object.</span>
+            <span class="n">st</span> <span class="o">=</span> <span class="n">extr</span><span class="o">.</span><span class="n">SlitsTrace</span><span class="p">(</span><span class="n">slits</span><span class="p">)</span>
+
+            <span class="c"># Use the slit information to prepare BINTABLE format.</span>
+            <span class="c"># tb_adout is of type AD</span>
+            <span class="n">tb_adout</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">asbintable</span><span class="p">()</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Returning from SlitsTrace.asbintable.&#39;</span><span class="p">)</span>
+            
+            <span class="c"># Append to the input AD object</span>
+            <span class="n">nad</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tb_adout</span><span class="p">)</span>
+
+            <span class="c"># Add the appropriate time stamps to the PHU</span>
+            <span class="n">gt</span><span class="o">.</span><span class="n">mark_history</span><span class="p">(</span><span class="n">adinput</span><span class="o">=</span><span class="n">nad</span><span class="p">,</span> <span class="n">keyword</span><span class="o">=</span><span class="n">keyword</span><span class="p">)</span>
+
+            <span class="c"># Append the output AstroData object to the list of output</span>
+            <span class="c"># AstroData objects</span>
+            <span class="n">adoutput_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nad</span><span class="p">)</span>
+
+    <span class="k">except</span><span class="p">:</span>
+        <span class="c"># Log the message from the exception</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="k">raise</span>
+
+    <span class="c"># Return the list of output AstroData objects</span>
+    <span class="k">return</span> <span class="n">adoutput_list</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">Trace slits v0.1 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Gemini Observatory.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
