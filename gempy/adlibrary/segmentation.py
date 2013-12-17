@@ -3,7 +3,6 @@ import operator
 import numpy as np
 import scipy.ndimage as nd
 
-from astrodata import AstroData
 from gempy.library import gfit
 import pyfits as pf
 from matplotlib import pyplot as pl
@@ -526,6 +525,13 @@ class EdgeDetector(object):
         slitlengths = self.slitlengths
 
         middle_dispersion = self.footprints_median_dispersion
+        ny,nx = self.image.shape
+
+        # If this value is larger than nx then just take the middle.
+        # This can happen if the user is looking for footprint on one
+        # GMOS extension rather than the whole mosaicked image.
+        if middle_dispersion > nx:
+            middle_dispersion = nx/2
 
         # r1 and r2 are the positions in the dispersion direction
         # marking the section to collapse.
