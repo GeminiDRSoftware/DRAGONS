@@ -17,15 +17,6 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "appwave":{
-    "suffix":{
-        "default"       : "_appwave",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-   },
  "determineWavelengthSolution":{
     "suffix":{
         "default"       : "_wavelengthSolution",
