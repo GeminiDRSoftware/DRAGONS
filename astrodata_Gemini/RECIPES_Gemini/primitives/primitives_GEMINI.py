@@ -16,7 +16,7 @@ from primitives_standardize import StandardizePrimitives
 from gempy.adlibrary.mosaicAD import MosaicAD
 from gempy.gemini.gemMosaicFunction import gemini_mosaic_function
 
-from devel.edge_detection.extract import trace_footprints,cut_footprints
+from gempy.adlibrary.extract import trace_footprints,cut_footprints
 
 from devel.wavecal.wavecal import Wavecal
 from devel.wavecal.applyApproxWaveCal import applyApproxWaveCal
