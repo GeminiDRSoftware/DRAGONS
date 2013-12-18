@@ -7,6 +7,11 @@ from gempy.library import gfit
 import pyfits as pf
 from matplotlib import pyplot as pl
 
+try:
+   from skimage.morphology import skeletonize
+except ImportError:
+   from gempy.library.skeletonize import skeletonize
+
 allowed_functions = ['polynomial','legendre','chebyshev']
 
 def print_timing(func):
@@ -143,7 +148,6 @@ def _plot_edges_dev(edges):
             pl.plot(x,y,['b','r'][np.mod(i,2)]) 
 
 
-from skimage.morphology import skeletonize
 
 # Module variable
 allowed_filter_kernels = ['sobel']    # More filter can be added in the future
