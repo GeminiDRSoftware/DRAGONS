@@ -171,7 +171,7 @@ class ConfigSpace(object):
         
         packagemask = {}
         for path in self.wholepath:
-            #p rint "CS128:", path, str(os.path.abspath(path) !=  os.path.abspath(os.getcwd()))
+            #print "CS128:", path, str(os.path.abspath(path) !=  os.path.abspath(os.getcwd()))
             if  os.path.abspath(path) !=  os.path.abspath(os.getcwd()):
                 if os.path.isdir(path):
                             # print "ISADIR"

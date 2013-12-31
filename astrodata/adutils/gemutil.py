@@ -583,11 +583,8 @@ def rename_hdu(name=None, ver=None, hdu=None):
     if type(name) == tuple:
         ver = name[1]
         name = name[0]
-    #if ver == None:
-    #    ver = 1
+
     nheader = hdu.header
-    if new_pyfits_version:
-        nheader.update  = nheader.set
     kafter = "GCOUNT"
     if nheader.get("TFIELDS"): 
         kafter = "TFIELDS"
@@ -595,11 +592,19 @@ def rename_hdu(name=None, ver=None, hdu=None):
         if not "EXTNAME" in nheader:
             raise Errors.gemutilError("name is None and EXTNAME not in header")
         if ver:
-            nheader.update("extver", ver, "added by AstroData", after="EXTNAME")
+            if new_pyfits_version:
+                hdu.update_ext_name(name,after=kafter)
+            else:
+                nheader.update("extver", ver, "added by AstroData", after="EXTNAME")
     else:
-        nheader.update("extname", name, "added by AstroData", after=kafter)
-        if ver:
-            nheader.update("extver", ver, "added by AstroData", after="EXTNAME")
+        if new_pyfits_version:
+            hdu.update_ext_name(name, "added by AstroData", after=kafter)
+            if ver:
+                hdu.update_ext_version(ver, "added by AstroData", after="EXTNAME")
+        else:
+            nheader.update("extname", name, "added by AstroData", after=kafter)
+            if ver:
+                nheader.update("extver", ver, "added by AstroData", after="EXTNAME")
     hdu.name = name
     if ver:
         hdu._extver = ver

@@ -95,7 +95,8 @@ try:
     # @@DEPRECATED remove --usercal flag below, was old name
     parser.add_option("--override_cal", "--usercal", dest="user_cals", default=None, type="string",
                       help="Add calibration to User Calibration Service of this format:"
-                            "'-usercal=CALTYPE_1:CALFILEPATH_1,...,CALTYPE_N:CALFILEPATH_N'")
+                            "'--usercal=CALTYPE_1:CALFILEPATH_1,...,CALTYPE_N:CALFILEPATH_N', "
+                            "EXAMPLE: --override_cal=processed_arc:/home/nzarate/wcal/gsN20011112S064_arc.fits ")
     parser.add_option("--writeInt", dest='writeInt', default=False, 
                       action="store_true", help="write intermediate outputs"
                       " (UNDER CONSTRUCTION)")   

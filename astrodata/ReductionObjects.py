@@ -235,8 +235,8 @@ class ReductionObject(object):
                 if rc == None:
                     raise ReductionExcept(
                             "Primitive '%s' returned None for rc on yield\n" % primname)
+ 
                 rcmd = rc.pop_return_command()
-                
                 if rcmd == "return_from_recipe":
                     rc.terminate_primitive()
                     break

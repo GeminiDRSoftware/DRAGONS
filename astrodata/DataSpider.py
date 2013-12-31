@@ -117,6 +117,7 @@ class DataSpider(object):
         """
         Recursively walk a given directory and put type information to stdout
         """
+
         global verbose
         global debug
         global batchno
@@ -143,22 +144,24 @@ class DataSpider(object):
             if opti:
                 print "Doing an os.walk"
         for root,dirn,files in walkfunc(directory):
-            #verbose = True
+            verbose = True
             if opti:
                 print "Analyzing:", root
             dirnum += 1
             if (verbose) :
-                print "root:", root 
-                print "dirn:", dirn
+                print "DS90:",root,dirn,files
+                #print "root:", root 
+                #print "dirn:", dirn
                 
-            if verbose:
-                print "DS92:",root, repr(dirn), repr(file)
+            #if verbose:
+            #    print "DS92:",root, repr(dirn), repr(file)
             if (".svn" not in root):
                 width = 10
                 ## !!!!!
                 ## !!!!! CREATE THE LINE WRITTEN FOR EACH DIRECTORY RECURSED !!!!!
                 ## !!!!!
                 fullroot = os.path.abspath(root)
+                print 'DS91:',fullroot
                 if root == ".":
                     rootln = "\n${NORMAL}${BOLD}directory: ${NORMAL}. ("+fullroot + ")${NORMAL}"
                 else:
@@ -351,7 +354,7 @@ class DataSpider(object):
                             # show descriptors                            
                             if (showDescriptors != None):
                                 sdl = showDescriptors.split(",")
-                                # print "DS320:", repr(sdl)
+                                print "DS320:", repr(sdl)
                                 # print ol
                                 # get maxlen
                                 if "err" in sdl:
@@ -495,9 +498,9 @@ class DataSpider(object):
         onlylist = only.split(",")
         if (verbose):
             print "onlylist:",repr(onlylist)
-        
-        verbose = False
-        ldebug = False
+        print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DATA SPI' 
+        verbose = True
+        ldebug = True
         dirnum = 0
         if stayTop == True:
             walkfunc  = shallow_walk
