@@ -1,0 +1,30 @@
+``AstroData`` -- References modules
+===================================
+
+.. automodule:: AstroData
+  :members: 
+
+``AstroData`` -- Class
+===========================
+
+.. autoclass:: AstroData
+  :members: open, close, setHeader
+
+``AstroDataType`` -- Astro Data Type
+====================================
+
+.. automodule:: AstroDataType
+  :members:
+
+``Calculator``
+--------------
+
+.. automodule:: Calculator
+  :members:
+
+``CalibrationDefinitionLibrary``
+--------------------------------
+
+.. automodule:: CalibrationDefinitionLibrary
+  :members:
+

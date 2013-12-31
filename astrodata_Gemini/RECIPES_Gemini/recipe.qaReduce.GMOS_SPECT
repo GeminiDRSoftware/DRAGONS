@@ -3,18 +3,18 @@
 # image.
 
 prepare
-addDQ
-addVAR(read_noise=True)
-overscanCorrect
-biasCorrect
-ADUToElectrons
-addVAR(poisson_noise=True)
-measureIQ(display=True)
-rejectCosmicRays
-flatCorrect
-mosaicDetectors
+#addDQ
+#addVAR(read_noise=True)
+#overscanCorrect
+#biasCorrect
+#ADUToElectrons
+#addVAR(poisson_noise=True)
+#measureIQ(display=True)
+#rejectCosmicRays
+#flatCorrect
+mosaicADdetectors
 getProcessedArc
 attachWavelengthSolution
-resampleToLinearCoords
-skyCorrectFromSlit
-measureIQ(display=True)
+#wcalResampleToLinearCoords
+#skyCorrectFromSlit
+#measureIQ(display=True)
