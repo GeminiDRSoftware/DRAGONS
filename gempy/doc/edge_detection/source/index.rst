@@ -1,3 +1,4 @@
+.. _ingempydoc:
 
 Edge Detection User Manual
 ============================

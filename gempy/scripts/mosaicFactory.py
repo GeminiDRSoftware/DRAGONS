@@ -13,6 +13,7 @@
 __version__      = '$Revision: 4197 $'[11:-2]
 __version_date__ = '$Date: 2013-07-09 14:42:54 -0400 (Tue, 09 Jul 2013) $'[7:-2]
 __author__       = "k.r. anderson, <kanderso@gemini.edu>"
+#__mods__  : Imports edits to gempy location
 # ------------------------------------------------------------------------------
 # This module provides the MosaicFactory class and command line interface to 
 # receive a list of files to process with gemini_python mosaic package,currently
@@ -143,8 +144,8 @@ class MosaicFactory(object):
         return:     <void>
         """
         try:
-            from mosaicAD import MosaicAD
-            from gemMosaicFunction import gemini_mosaic_function
+            from gempy.adlibrary.mosaicAD import MosaicAD
+            from gempy.gemini.gemMosaicFunction import gemini_mosaic_function
         except ImportError:
             self._add_mosaic_path()
             from mosaicAD import MosaicAD
