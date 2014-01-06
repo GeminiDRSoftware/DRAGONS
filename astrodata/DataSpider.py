@@ -144,7 +144,7 @@ class DataSpider(object):
             if opti:
                 print "Doing an os.walk"
         for root,dirn,files in walkfunc(directory):
-            verbose = True
+            verbose = False
             if opti:
                 print "Analyzing:", root
             dirnum += 1
@@ -161,7 +161,8 @@ class DataSpider(object):
                 ## !!!!! CREATE THE LINE WRITTEN FOR EACH DIRECTORY RECURSED !!!!!
                 ## !!!!!
                 fullroot = os.path.abspath(root)
-                print 'DS91:',fullroot
+                if verbose:
+                    print 'DS91:',fullroot
                 if root == ".":
                     rootln = "\n${NORMAL}${BOLD}directory: ${NORMAL}. ("+fullroot + ")${NORMAL}"
                 else:
@@ -354,7 +355,8 @@ class DataSpider(object):
                             # show descriptors                            
                             if (showDescriptors != None):
                                 sdl = showDescriptors.split(",")
-                                print "DS320:", repr(sdl)
+                                if verbose:
+                                    print "DS320:", repr(sdl)
                                 # print ol
                                 # get maxlen
                                 if "err" in sdl:
