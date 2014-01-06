@@ -13,15 +13,12 @@ __version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
 # Updated to run and poll continuously across operational day boundaries.
 #
-# The param_dict (user supplied parameters) is updated to include
-# automated upload of qa metrics to fitsstore. See in launch_reduce()
+# Prior to Rev.4416, user parameter 'upload_metrics' was always passed as True.
+# Now, autoredux provides a command line argument to toggle this value:
 #
-#  param_dict = {"filepath":filepath,
-#                "parameters":{"clobber":True,
-#                              "upload_metrics":True  <-- always upload
-#                             },
-#                "options":options,
-#               }
+#  -n, --noqa,  Do not upload QA metrics to FITSStore
+#
+# Default behaviour is to upload. User must toggle for no QA metric upload.
 #
 # * NOTE: argparse is used if available, but falls back to optparse, which is
 #   depracated in 2.7. The get_args() function returns "args" in either case.
@@ -55,23 +52,30 @@ def buildArgParser():
     parser = ArgumentParser(usage=usage)
 
     parser.add_argument("n_args", metavar="YYYYMMDD or filenumbers",nargs="*")
-    parser.add_argument("-r", "--recipe", action="store",
-                      dest="recipe", default=None,
-                      help="Specify an alternate processing recipe")
-    parser.add_argument("-d", "--directory", action="store",
-                      dest="directory", default=None,
-                      help="Specify a data directory. Default is ops "\
-                           "directory.")
+
+    parser.add_argument("-r", "--recipe", action="store", dest="recipe", 
+                        default=None,
+                        help="Specify an alternate processing recipe")
+
+    parser.add_argument("-d", "--directory", action="store", dest="directory", 
+                        default=None, 
+                        help="Data location. Default OPS directory.")
+
     parser.add_argument("-c", "--calibrations", action="store_true",
-                      dest="calibrations", default=False,
-                      help="Reduce calibration files (eg. biases and flats).")
-    parser.add_argument("-u", "--upload", action="store_true",
-                      dest="upload", default=False,
-                      help="Upload any generated calibrations to the " + \
-                           "calibration service")
-    parser.add_argument("-s", "--suffix", action="store",
-                      dest="suffix", default="",
-                      help="Specify a filename suffix")
+                        dest="calibrations", default=False,
+                        help="Reduce calibration files (eg. biases, flats).")
+
+    parser.add_argument("-u", "--upload", action="store_true", dest="upload", 
+                        default=False, 
+                        help="Upload generated calibrations")
+
+    parser.add_argument("-n", "--noqa", action="store_true", dest="noqa",
+                        help="Do not upload QA metrics to FITSStore.")
+
+    parser.add_argument("-s", "--suffix", action="store", dest="suffix", 
+                        default="", 
+                        help="Specify a filename suffix")
+
     args = parser.parse_args()
 
     # arg value checks ...
@@ -114,23 +118,29 @@ def buildOptParser():
     parser.set_usage(usage)
 
     # Get options
-    parser.add_option("-r", "--recipe", action="store",
-                      dest="recipe", default=None,
+    parser.add_option("-r", "--recipe", action="store", dest="recipe", 
+                      default=None,
                       help="Specify an alternate processing recipe")
-    parser.add_option("-d", "--directory", action="store",
-                      dest="directory", default=None,
+
+    parser.add_option("-d", "--directory", action="store", dest="directory", 
+                      default=None,
                       help="Specify a data directory. Default is ops "\
                            "directory.")
-    parser.add_option("-c", "--calibrations", action="store_true",
+
+    parser.add_option("-c", "--calibrations", action="store_true", 
                       dest="calibrations", default=False,
                       help="Reduce calibration files (eg. biases and flats).")
-    parser.add_option("-u", "--upload", action="store_true",
-                      dest="upload", default=False,
+
+    parser.add_option("-u", "--upload", action="store_true", dest="upload", 
+                      default=False,
                       help="Upload any generated calibrations to the " + \
                            "calibration service")
-    parser.add_option("-s", "--suffix", action="store",
-                      dest="suffix", default="",
-                      help="Specify a filename suffix")
+
+    parser.add_option("-n", "--noqa", action="store_true", dest="noqa",
+                        help="Do not upload QA metrics to FITSStore.")
+
+    parser.add_option("-s", "--suffix", action="store", dest="suffix", 
+                      default="", help="Specify a filename suffix")
 
     args, pos_args = parser.parse_args()
     args.n_args    = pos_args
@@ -203,9 +213,10 @@ def file_list(str_list):
 def check_and_run(filepath, options=None):
     new_file = os.path.basename(filepath)
     if options is not None:
-        cal = options.calibrations
-        upl = options.upload
-        rec = options.recipe
+        cal  = options.calibrations
+        upl  = options.upload
+        rec  = options.recipe
+        noqa = options.noqa
 
     print "..."
     
@@ -217,12 +228,12 @@ def check_and_run(filepath, options=None):
                                             calibrations=cal)
             if gmi:
                 print "Reducing %s, %s" % (new_file, reason1)
-                launch_reduce(filepath, upload=upl, recipe=rec)
+                launch_reduce(filepath, noqa, upload=upl, recipe=rec)
             else:
                 gmls, reason2 = check_gmos_longslit(filepath)
                 if gmls:
                     print "Reducing %s, %s" % (new_file, reason2)
-                    launch_reduce(filepath, upload=True, recipe=rec)
+                    launch_reduce(filepath, noqa, upload=True, recipe=rec)
                 else:
                     if reason2 == reason1:
                         print "Ignoring %s, %s" % (new_file, reason1)
@@ -368,11 +379,18 @@ def check_gmos_longslit(filepath):
         return False, reason
 
 # ------------------------------------------------------------------------------
-def launch_reduce(filepath, upload=False, recipe=None):
+def launch_reduce(filepath, noqa, upload=False, recipe=None):
+    if noqa:
+        print "Received a noqa signal, no upload of QA metrics"
+        up_metrics = False
+    else:
+        up_metrics = True
+
     if upload:
         context = "QA,upload"
     else:
         context = "QA"
+
     if recipe is not None:
         options = {"context":context,
                    "loglevel":"stdinfo",
@@ -384,7 +402,7 @@ def launch_reduce(filepath, upload=False, recipe=None):
     # QA metrics uploaded to fitsstore with 'upload_metrics' param
     param_dict = {"filepath":filepath,
                   "parameters":{"clobber":True,
-                                "upload_metrics":True
+                                "upload_metrics": up_metrics
                             },
                   "options":options,
                  }
@@ -544,6 +562,7 @@ def main():
         raise RuntimeError("No adcc found at port 8777")
 
     args = get_args()
+
     # Get gempy stuff now. Else, too long to get to the help/error messages)
     from gempy.gemini.gemini_metadata_utils import gemini_date
 
