@@ -10,17 +10,32 @@ __version__      = '$Revision$'[11:-2]
 __version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
 # Exported ReduceInstanceManager from adcc.
-
 import xmlrpclib
 
 from copy   import copy
 from socket import error as socketError
+
+try:
+    from PIL import Image
+except ImportError:
+    print "Cannot import PIL"
+
+from numpy  import uint32
 
 from astrodata import AstroData
 from astrodata.StackKeeper import StackKeeper
 from astrodata.eventsmanagers import EventsManager
 from astrodata.adutils.reduceutils.CmdQueue import TSCmdQueue
 from astrodata.adutils.reduceutils.CacheManager import get_cache_dir, put_cache_file
+# ------------------------------------------------------------------------------
+def numpy2im(ad):
+    if isinstance(ad, AstroData):
+        data = ad.hdulist[1].data
+    else:
+        data = ad        
+    newdata = uint32(data)
+    im = Image.fromarray(newdata, mode="I")
+    return im
 
 
 class ReduceInstanceManager(object):
@@ -121,7 +136,7 @@ class ReduceInstanceManager(object):
                     top = data[where(data>(1.25*mean))].mean()
                     print "adcc142: top =",top
                     for sci in ad["SCI"]:
-                        data = numpy.uint32(deepcopy(sci.data))
+                        data = uint32(deepcopy(sci.data))
                         if False:
                             mean = data.mean()
                             bottom = data[where(data<mean)].mean()
