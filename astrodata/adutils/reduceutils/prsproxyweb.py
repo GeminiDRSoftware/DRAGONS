@@ -205,8 +205,6 @@ def fstore_get(timestamp):
         store_handle = urllib2.urlopen(furl)
         qa_data      = json.loads(store_handle.read())   
     else:
-        #if local_site == 'gemini-south':
-        #    timestamp = timestamp - 86400  # push query time back a day for Pachon.
         date_query    = stamp_to_opday(timestamp)
         furl          = os.path.join(fitsstore_qa, date_query)
         store_handle  = urllib2.urlopen(furl)
@@ -990,7 +988,6 @@ class ADCCHandler(BaseHTTPRequestHandler):
             self.end_headers()
             
             reduce_params = json.loads(pdict)
-            print ">>>> reduce params::",reduce_params
             if reduce_params.has_key("filepath"):
                 fp = reduce_params["filepath"]
             else:
@@ -1045,7 +1042,6 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 os.remove(loglink)
             os.symlink(reducelog, loglink)
 
-            print "****** cmdlist:::::: ",cmdlist
             # Call reduce
             pid = subprocess.call( cmdlist,
                                    stdout = f,
