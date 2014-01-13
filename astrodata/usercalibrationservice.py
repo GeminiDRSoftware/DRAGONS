@@ -1,19 +1,28 @@
+#
+#                                                                     QAP Gemini
+#
+#                                                                     astrodata/
+#                                                      usercalibrationservice.py
+#                                                                   -- DPD Group
+# ------------------------------------------------------------------------------
+# $Id$
+# ------------------------------------------------------------------------------
+__version__      = '$Revision$'[11:-3]
+__version_date__ = '$Date$'[7:-3]
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
 class UserCalibrationService(object):
-    user_cal_dict = None
     
     def __init__(self):
         self.user_cal_dict = {}
     
-    def add_calibration(self, caltype = None, cal_file = None):
+    def add_calibration(self, caltype=None, cal_file=None):
         self.user_cal_dict.update({caltype:cal_file})
+        return
         
-    def get_calibration(self, caltype = None):
-        # print "ucs11:", self.user_cal_dict
-        if caltype in self.user_cal_dict:
-            calfilename = self.user_cal_dict[caltype]
-        else:
-            calfilename = None
-        return calfilename
-    
+    def get_calibration(self, caltype=None):
+        return self.user_cal_dict.get(caltype)
+
 user_cal_service = UserCalibrationService()
 
