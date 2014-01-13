@@ -1,5 +1,5 @@
 #
-#                                                                     QAP Gemini
+#                                                                  gemini_python
 #
 #                                                                     astrodata/
 #                                                      usercalibrationservice.py
