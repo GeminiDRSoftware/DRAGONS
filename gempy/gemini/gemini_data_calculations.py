@@ -19,7 +19,7 @@ __version_date__ = '$Date$'[7:-2]
     _get_static_bias_level
     _get_static_bias_level_for_ext
 
-The functions work as a cascade, where callers only need to call get_bias_level()
+The functions work as a cascade, where callers need only call get_bias_level()
 """
 from time import strptime
 from datetime import datetime
