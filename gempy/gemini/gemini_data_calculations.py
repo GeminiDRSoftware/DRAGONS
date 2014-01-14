@@ -1,8 +1,8 @@
 #
-#                                                                     QAP Gemini
+#                                                                  gemini_python
 #
-#                                       gempy.gemini.gemini_data_calculations.py
-#                                                                        08-2013
+#                                                                   gempy.gemini
+#                                                    gemini_data_calculations.py
 # ------------------------------------------------------------------------------
 # $Id$
 # ------------------------------------------------------------------------------
@@ -11,7 +11,16 @@ __version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
 # The gemini_data_calculations module contains functions that calculate values
 # from Gemini data
+"""Functions provided:
 
+    get_bias_level
+    _get_bias_level
+    _get_bias_level_estimate
+    _get_static_bias_level
+    _get_static_bias_level_for_ext
+
+The functions work as a cascade, where callers only need to call get_bias_level()
+"""
 from time import strptime
 from datetime import datetime
 
