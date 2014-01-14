@@ -1,6 +1,18 @@
+#
+#                                                                  gemini_python
+#
+#                                                                   gempy.gemini
+#                                                           gemMosaicFunction.py
+# ------------------------------------------------------------------------------
+# $Id$
+# ------------------------------------------------------------------------------
+__version__      = '$Revision$'[11:-3]
+__version_date__ = '$Date$'[7:-3]
+# ------------------------------------------------------------------------------
 import numpy as np
-from gempy.library.mosaic import MosaicData, MosaicGeometry
+
 from astrodata import Lookups
+from gempy.library.mosaic import MosaicData, MosaicGeometry
 
 def gemini_mosaic_function(ad, ref_extname='SCI'):
     """ 
