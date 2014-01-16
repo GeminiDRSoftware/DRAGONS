@@ -20,7 +20,7 @@ class CmdQueueError(Exception):
     """Exception for Command Queue module"""
     pass
         
-class TSCmdQueue:
+class TSCmdQueue(object):
     """Thread Safe Command Queue"""
     def __init__(self):
         self.q = []
