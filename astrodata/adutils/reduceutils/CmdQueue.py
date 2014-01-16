@@ -1,32 +1,27 @@
-from threading import RLock
-import cPickle
+#
+#                                                                  gemini_python
+#
+#                                                  astrodata.adutils.reduceutils
+#                                                                    CmdQueue.py
+#                                                                   -- DPD Group
+# ------------------------------------------------------------------------------
+# $Id$
+# ------------------------------------------------------------------------------
+__version__      = '$Revision$'[11:-3]
+__version_date__ = '$Date$'[7:-3]
+# ------------------------------------------------------------------------------
 import os
+import cPickle
 
-class CQExcept:
-    """This class is an exception class for the Thread Safe Commands Queue module"""
-    
-    def __init__(self, msg="Exception Raised in AstroData system"):
-        """This constructor accepts a string C{msg} argument
-        which will be printed out by the default exception 
-        handling system, or which is otherwise available to whatever code
-        does catch the exception raised.
-        
-        :param: msg: a string description about why this exception was thrown
-        
-        :type: msg: string
-        """
-        self.message = msg
-    def __str__(self):
-        """This string operator allows the default exception handling to
-        print the message associated with this exception.
-        :returns: string representation of this exception, the self.message member
-        :rtype: string"""
-        return self.message
+from threading import RLock
+# ------------------------------------------------------------------------------
+
+class CmdQueueError(Exception):
+    """Exception for Command Queue module"""
+    pass
         
 class TSCmdQueue:
     """Thread Safe Command Queue"""
-    q = None
-    lock = None
     def __init__(self):
         self.q = []
         self.lock = RLock()
@@ -34,66 +29,65 @@ class TSCmdQueue:
         
     def dump(self):
         self.lock.acquire()
-        print "CQ37L: dump"
         cqfile = open("cqfile.pkl", "w")
-        cPickle.dump(self.q)
+        cPickle.dump(self.q, cqfile)
         cqfile.close()
         self.lock.release()
-        
+        return
+
     def load(self):
         self.lock.acquire()
-        print "CQ44L: load"
         if os.path.exists("cqfile.pkl"):
             cqfile = open("cqfile.pkl", "r")
             self.q = cPickle.load(cqfile)
             cqfile.close()
         self.lock.release()
-        
+        return
+
     def addCmd(self, cmd, **kwargs):
         self.lock.acquire()
-        print "CQ53L:\n"*20, repr(cmd), repr(kwargs)
         if type(cmd) == dict:
             cmddict = cmd
         elif type(cmd) == str:
             cmddict = {cmd:kwargs}
         else:
-            lock.release()
-            raise CQExcept("cmd argument must be given as string or dict.")
+            self.lock.release()
+            raise CmdQueueError("cmd argument must be a string or dict.")
         self.q.append(cmddict)
         self.dump()
-        self.lock.release()  
-    
-    def clearOld(self, cmdNum = None, date = None):
+        self.lock.release()
+        return
+
+    def clearOld(self, cmdNum=None, date=None):
         """
         clearOld(...) deletes old commands by date or cmdNum
         """
         if cmdNum and date:
-            CQExcept("cmdNum and date are mutually exclusive options, pick one.")
+            raise CmdQueueError("Call with one of cmdNum OR data.")
         if not cmdNum and not date:
-            raise CQExcept("either cmdNum or date must be set.")
-        
-      
+            raise CmdQueueError("either cmdNum or date must be set.")
+        return
+
     def peekSince(self, cmdNum = None, date = None):
         """
         peekSince(...) grabs a copy of the queue from a given cmdNum or date.
         The command must possess one of these qualities
         """
         if cmdNum and date:
-            CQExcept("cmdNum and date are mutually exclusive options, pick one.")
+            raise CmdQueueError("Call with one of cmdNum OR data.")
         if not cmdNum and not date:
-            CQExcept("Either cmdNum or date must be set.")
+            raise CmdQueueError("Either cmdNum or date must be set.")
             
         self.lock.acquire()
         retary = []
-        print "CQ67:\n\n", repr(self.q)
         for cmddict in reversed(self.q):
-            print "CQ69:", repr(cmddict)
             cmds = cmddict.keys()
             if len(cmds)>1:
-                raise CQExcept("got multiple commands in single cmddict")
+                raise CmdQueueError("got multiple commands in single cmddict")
             else:
                 cmd = cmds[0]
                 cmdbody = cmddict[cmd]
+
             if cmdNum != None:
                 print "CQ64:\npeek inclusive of cmdNum =", cmdNum, cmdbody["cmdNum"]
                 if "cmdNum" in cmdbody:
@@ -102,6 +96,7 @@ class TSCmdQueue:
                     else:
                         self.lock.release()
                         return retary
+
             if date:
                 if "timestamp" in cmddict:
                     if cmddict["timestamp"] >= date:
@@ -109,10 +104,8 @@ class TSCmdQueue:
                     else:
                         self.lock.release()
                         return retary
-        # note this means all the commands were sent
-        # note also the lock has to be released in each of the possible return paths
-        self.lock.release()
 
-        return retary        
-            
-        
+        # note this means all the commands were sent
+        # lock has to be released in each of the possible return paths
+        self.lock.release()
+        return retary
