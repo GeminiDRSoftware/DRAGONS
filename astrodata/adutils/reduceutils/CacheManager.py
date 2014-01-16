@@ -1,10 +1,21 @@
+#
+#                                                                  gemini_python
+#
+#                                                  astrodata.adutils.reduceutils
+#                                                                CacheManager.py
+#                                                                   -- DPD Group
+# ------------------------------------------------------------------------------
+# $Id$
+# ------------------------------------------------------------------------------
+__version__      = '$Revision$'[11:-3]
+__version_date__ = '$Date$'[7:-3]
+# ------------------------------------------------------------------------------
 import os
-class CacheMan:
-    caches = {  "adcc": ".adcc",
-                "adcc.display": ".adcc/display_cache",}
-    fileIndex = None
-    
+
+class CacheManager(object):
     def __init__(self):
+        self.caches = { "adcc": ".adcc",
+                        "adcc.display": ".adcc/display_cache",}
         self.fileIndex = {}
 
     def getCache(self, key):
@@ -13,20 +24,22 @@ class CacheMan:
             if not os.path.exists(tdir):
                 os.makedirs(tdir)
         return tdir
+
     def putFile(self, key, filepath):
         self.fileIndex.update({key:filepath})
+        return
         
     def getFile(self, key):
-        print "CM20:", repr(self.fileIndex)
-        return self.fileIndex[key]
+        return self.fileIndex.get(key)
 
-cm = CacheMan()
+cm = CacheManager()
 def get_cache_dir(key):
     tdir = cm.getCache(key)
     return tdir
 
 def put_cache_file(key, filepath):
     cm.putFile(key, filepath)
+    return
     
 def get_cache_file(key):
     return cm.getFile(key)
