@@ -433,6 +433,8 @@ class FilteredStdout(object):
             # ()()()()()()()()()()()()()()
             # WRITING MAIN LINE OUT
             (x,y) = getTerminalSize()
+            if x == 0: x = 120
+            if y == 0: y = 28
             if termlog:
                 termlog.write("(wid,height)+prefixclen+linelen: "+str((x,y))+"+"+str(prefixclen)+"+"+str(len(cleanlines[i])))
             # note, this should us the length prefix clean!
