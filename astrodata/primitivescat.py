@@ -14,7 +14,7 @@ class PrimitivesCatalog(object):
     def __init__(self):
         self.catdict = {}
         
-    def add_primitive_set(self, package, primsetEntry = None, primsetPath = None):
+    def add_primitive_set(self, package, primsetEntry=None, primsetPath=None):
         pdict = {}
         self.catdict.update({primsetEntry : pdict})
         pdict.update({"package":package, "path":primsetPath})
