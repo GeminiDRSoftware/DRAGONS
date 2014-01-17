@@ -1,7 +1,8 @@
 #
-#                                                        gemini_python/astrodata
-#                                                   astrodata.structuredslice.py
-#                                                                        08-2013
+#                                                                 gemini_python 
+#
+#                                                                      astrodata
+#                                                             structuredslice.py
 # ------------------------------------------------------------------------------
 # $Id$
 # ------------------------------------------------------------------------------
