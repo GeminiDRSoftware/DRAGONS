@@ -1,85 +1,171 @@
+#
+#                                                                  gemini_python
+#
+#                                                                      astrodata
+#                                                                 mkcalciface.py
+# ------------------------------------------------------------------------------
+# $Id$
+# ------------------------------------------------------------------------------
+__version__      = '$Rev$'[11:-3]
+__version_date__ = '$Date$'[7:-3]
+# ------------------------------------------------------------------------------
+import re
 from datetime import datetime
 from astrodata import Errors
-
-from astrodata.ConfigSpace import CALCIFACEMARKER, DDLISTMARKER
+# ------------------------------------------------------------------------------
 CALCIFACECLASSMARKER = "CalculatorInterface"
-
-import re
-class DescriptorDescriptor:
-    name = None
-    pytype = None
-    
-    thunkfuncbuff = """
-    def %(name)s(self, format=None, **args):
-        \"\"\"%(description)s\"\"\"
-        try:
-            self._lazyloadCalculator()
-            keydict = self.descriptor_calculator._specifickey_dict
-            key = \"key_%(name)s\"
-            #print \"mkCI22:\",key, repr(keydict)
-            #print \"mkCI23:\", key in keydict
-            keyword = None
-            if key in keydict.keys():
-                keyword = keydict[key]
+# ------------------------------------------------------------------------------
+function_buffer = """
+def %(name)s(self, format=None, **args):
+    \"\"\"%(description)s\"\"\"
+    try:
+        self._lazyloadCalculator()
+        keydict = self.descriptor_calculator._specifickey_dict
+        key = \"key_%(name)s\"
+        #print \"mkCI22:\",key, repr(keydict)
+        #print \"mkCI23:\", key in keydict
+        keyword = None
+        if key in keydict.keys():
+            keyword = keydict[key]
                 
             #print hasattr(self.descriptor_calculator, \"%(name)s\")
-            if not hasattr(self.descriptor_calculator, \"%(name)s\"):
-                if keyword is not None:
-                    retval = self.phu_get_key_value(keyword)
-                    if retval is None:
-                        if hasattr(self, \"exception_info\"):
-                            raise Errors.DescriptorError(self.exception_info)
-                else:
-                    msg = (\"Unable to find an appropriate descriptor \"
-                           \"function or a default keyword for %(name)s\")
-                    raise Errors.DescriptorError(msg)
+        if not hasattr(self.descriptor_calculator, \"%(name)s\"):
+            if keyword is not None:
+                retval = self.phu_get_key_value(keyword)
+                if retval is None:
+                    if hasattr(self, \"exception_info\"):
+                        raise Errors.DescriptorError(self.exception_info)
             else:
-                try:
-                    retval = self.descriptor_calculator.%(name)s(self, **args)
-                except Exception as e:
-                    raise Errors.DescriptorError(e)
+                msg = (\"Unable to find an appropriate descriptor \"
+                       \"function or a default keyword for %(name)s\")
+                raise Errors.DescriptorError(msg)
+        else:
+            try:
+                retval = self.descriptor_calculator.%(name)s(self, **args)
+            except Exception as e:
+                raise Errors.DescriptorError(e)
             
-            %(pytypeimport)s
-            ret = DescriptorValue( retval, 
+        %(pytypeimport)s
+        ret = DescriptorValue( retval, 
+                               format = format, 
+                               name = \"%(name)s\",
+                               keyword = keyword,
+                               ad = self,
+                               pytype = %(pytype)s )
+        return ret
+        
+    except Errors.DescriptorError:
+        if self.descriptor_calculator.throwExceptions == True:
+            raise
+        else:
+            if not hasattr(self, \"exception_info\"):
+                setattr(self, \"exception_info\", sys.exc_info()[1])
+            ret = DescriptorValue( None,
                                    format = format, 
                                    name = \"%(name)s\",
                                    keyword = keyword,
                                    ad = self,
-                                   pytype = %(pytype)s )
+                                   pytype = None )
             return ret
-        
-        except Errors.DescriptorError:
-            if self.descriptor_calculator.throwExceptions == True:
-                raise
-            else:
-                if not hasattr(self, \"exception_info\"):
-                    setattr(self, \"exception_info\", sys.exc_info()[1])
-                ret = DescriptorValue( None,
-                                       format = format, 
-                                       name = \"%(name)s\",
-                                       keyword = keyword,
-                                       ad = self,
-                                       pytype = None )
-                return ret
-        except:
-            raise
     """
-    
+
+Wholeout = """import sys
+from astrodata import Descriptors
+from astrodata.Descriptors import DescriptorValue
+from astrodata import Errors
+
+class CalculatorInterface:
+
+    descriptor_calculator = None
+%(descriptors)s
+# UTILITY FUNCTIONS, above are descriptor thunks            
+    def _lazyloadCalculator(self, **args):
+        '''Function to put at top of all descriptor members
+        to ensure the descriptor is loaded.  This way we avoid
+        loading it if it is not needed.'''
+        if self.descriptor_calculator is None:
+            self.descriptor_calculator = Descriptors.get_calculator(self, **args)
+"""
+
+# ------------------------------------------------------------------------------
+def get_calculator_interface():
+    """Combination of making and getting calc iface objects
+    """
+    from astrodata.ConfigSpace import ConfigSpace
+
+    calcIfaces = []
+    for cil_el in ConfigSpace.calc_iface_list:
+        ifType = cil_el[0]
+        ifFile = cil_el[1]
+                
+        if ifType == "CALCIFACE":
+            cib = open(ifFile)
+            d = globals()
+            exec(cib, d)
+            for key in d:
+                if re.match(CALCIFACECLASSMARKER, key):
+                    calcIfaces.append(d[key])
+                    break;           # get the first, one per module
+        if ifType == "DDLIST":
+            cib = open(ifFile)
+            cibsrc = cib.read()
+            cib.close()
+            d = {"DescriptorDescriptor":DD, 
+                 "DD":DD,
+                 "datetime":datetime
+                }
+            ddlist = eval(cibsrc, d)
+
+            try:
+                cisrc = mk_calc_iface_body(ddlist)
+            except Errors.BadConfiguration as bc:
+                bc.add_msg("FATAL CONFIG ERROR: %s" % ifFile)
+                raise bc
+
+            exec(cisrc, d)
+            for key in d:
+                if re.match(CALCIFACECLASSMARKER, key):
+                    calcIfaces.append(d[key])
+            
+    CalculatorInterfaceClass = ComplexCalculatorInterface
+    for calcIface in calcIfaces:
+        CalculatorInterfaceClass.__bases__ += (calcIface, )
+    return CalculatorInterfaceClass
+                
+# ------------------------------------------------------------------------------    
+def mk_calc_iface_body(ddlist):
+    out = ""
+    for dd in ddlist:
+        try:
+            out += dd.funcbody()
+        except Errors.BadConfiguration as bc:
+            bc.add_msg("Problem with ddlist item #%d" % ddlist.index(dd))
+            raise bc
+
+    finalout = wholeout % {"descriptors": out}
+    return finalout
+
+# ------------------------------------------------------------------------------
+class ComplexCalculatorInterface(object):
+    pass
+
+# ------------------------------------------------------------------------------
+class DescriptorDescriptor:
+
     def __init__(self, name=None, pytype=None):
-        self.name = name
-        if pytype:
-            self.pytype = pytype
+        self.name   = name
+        self.pytype = pytype
 
     def funcbody(self):
         if self.pytype:
             pytypestr = self.pytype.__name__
         else:
             pytypestr = "None"
+
         if pytypestr == "datetime":
             pti = "from datetime import datetime"
         else:
             pti = ""
-        #print "mkC150:", pti
 
         if self.pytype:
             rtype = self.pytype.__name__
@@ -88,8 +174,10 @@ class DescriptorDescriptor:
             if rtype == 'int':
                 rtype = 'integer'
         else:
-            raise Errors.BadConfiguration("'DD' Declaration for '%s' needs pytype defined." % self.name)   
-        # Use the docstring defined in the docstrings module, if it exists
+            raise Errors.BadConfiguration("'DD' for '%s' needs a pytype" % 
+                                          self.name)
+
+        # Use docstring defined in docstrings mod.
         use_docstrings = False
         try:
             from docstrings import docstrings
@@ -113,99 +201,9 @@ class DescriptorDescriptor:
                    "        ") % {'name':self.name, 'rtype':rtype}
             description = doc
         
-        ret = self.thunkfuncbuff % {'name':self.name,
-                                    'pytypeimport': pti,
-                                    'pytype': pytypestr,
-                                    'description':description}
+        ret = function_buffer % {'name':         self.name,
+                                 'pytypeimport': pti,
+                                 'pytype':       pytypestr,
+                                 'description':  description}
         return ret
-        
 DD = DescriptorDescriptor
-        
-wholeout = """import sys
-from astrodata import Descriptors
-from astrodata.Descriptors import DescriptorValue
-from astrodata import Errors
-
-class CalculatorInterface:
-
-    descriptor_calculator = None
-%(descriptors)s
-# UTILITY FUNCTIONS, above are descriptor thunks            
-    def _lazyloadCalculator(self, **args):
-        '''Function to put at top of all descriptor members
-        to ensure the descriptor is loaded.  This way we avoid
-        loading it if it is not needed.'''
-        if self.descriptor_calculator is None:
-            self.descriptor_calculator = Descriptors.get_calculator(self, **args)
-"""
-
-class ComplexCalculatorInterface():
-    pass
-
-def get_calculator_interface():
-    """Combination of making and getting calc iface objects
-    """
-    from astrodata.ConfigSpace import ConfigSpace
-    #p rint "mci239:", repr(ConfigSpace.calc_iface_list)
-    calcIfaces = []
-    for cil_el in ConfigSpace.calc_iface_list:
-        ifType = cil_el[0]
-        ifFile = cil_el[1]
-        
-        #p rint "mk150:", ifType, ifFile
-                
-        if ifType == "CALCIFACE":
-            # print CALCIFACEMARKER
-            cib = open(ifFile)
-            d = globals()
-            exec(cib, d)
-            for key in d:
-                # print "key",key
-                if re.match(CALCIFACECLASSMARKER, key):
-                    #print "ADDING a calc iface"
-                    calcIfaces.append(d[key])
-                    break; # just get the first one, only one per module
-        if ifType == "DDLIST":
-            cib = open(ifFile)
-            cibsrc = cib.read()
-            cib.close()
-            d = {"DescriptorDescriptor":DD, 
-                 "DD":DD,
-                 "datetime":datetime
-                }
-            ddlist = eval(cibsrc, d)
-            #p rint "mkcal172:"
-            try:
-                cisrc = mk_calc_iface_body(ddlist)
-            except Errors.BadConfiguration as bc:
-                bc.add_msg("FATAL CONFIG ERROR: %s" % ifFile)
-                raise bc          
-            exec(cisrc,d)
-            for key in d:
-                if re.match(CALCIFACECLASSMARKER, key):
-                    calcIfaces.append(d[key])
-            
-    CalculatorInterfaceClass = ComplexCalculatorInterface
-    for calcIface in calcIfaces:
-        # print "mcif183:", repr(calcIface)
-        CalculatorInterfaceClass.__bases__ += (calcIface, )
-    # note prints will wreck the output which is generally pipes from stdout to a string which is evaled
-    # print "mkcalc182:"+repr(CalculatorInterfaceClass)
-    return CalculatorInterfaceClass
-                
-            
-def get_calc_iface_body():
-    pass
-    
-def mk_calc_iface_body(ddlist):
-    out = ""
-    for dd in ddlist:
-        try:
-            out += dd.funcbody()
-        except Errors.BadConfiguration as bc:
-            bc.add_msg("Problem with ddlist item #%d"% ddlist.index(dd))
-            raise bc
-
-    finalout = wholeout % {"descriptors": out}
-
-    return finalout
