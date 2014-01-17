@@ -104,7 +104,7 @@ def re_header_keys(rekey, header):
        retset = None
     return retset
 
-class AstroData(object, CalculatorInterface):
+class AstroData(CalculatorInterface):
     """
 The AstroData class abstracts datasets stored in MEF files
 and provides uniform interfaces for working on datasets from different
