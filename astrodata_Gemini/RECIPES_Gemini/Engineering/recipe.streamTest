@@ -1,5 +1,0 @@
-forwardStream(to_stream=BIGSTREAM)
-simpleStreamTest(stream=BIGSTREAM)
-change(stream="flat")
-# clearStream(stream=BIGSTREAM)
-showOutputs()
