@@ -1,3 +1,5 @@
+# This parameter file contains the parameters related to the primitives located
+# in the primitives_GMOS_SPECT.py file, in alphabetical order.
 {"addDQ":{
     "suffix":{
         "default"       : "_dqAdded",
