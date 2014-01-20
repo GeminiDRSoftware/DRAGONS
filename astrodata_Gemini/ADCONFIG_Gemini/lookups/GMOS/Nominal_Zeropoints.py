@@ -66,27 +66,30 @@ nominal_zeropoints = {
 
     #
     # GMOS-S
-    # Updated values using mean of 2013-09-02 values from website above.
-    # CCD1 and CCD3 values not recoreded - changed to have the same relative
-    # value to CCD2 as previous values. - MS (2013-09-04)
-    ('EEV 2037-06-03', 'u'): 24.809,
-    ('EEV 8194-19-04', 'u'): 24.786,
-    ('EEV 8261-07-04', 'u'): 24.814,
-    ('EEV2037-06-03EEV8194-19-04EEV8261-07-04', 'u'): 24.796,
-    ('EEV 2037-06-03', 'g'): 28.331,
-    ('EEV 8194-19-04', 'g'): 28.340,
-    ('EEV 8261-07-04', 'g'): 28.371,
-    ('EEV2037-06-03EEV8194-19-04EEV8261-07-04', 'g'): 28.340,
-    ('EEV 2037-06-03', 'r'): 28.371,
-    ('EEV 8194-19-04', 'r'): 28.361,
-    ('EEV 8261-07-04', 'r'): 28.396,
-    ('EEV2037-06-03EEV8194-19-04EEV8261-07-04', 'r'): 28.361,
-    ('EEV 2037-06-03', 'i'): 27.941,
-    ('EEV 8194-19-04', 'i'): 27.946,
-    ('EEV 8261-07-04', 'i'): 27.980,
-    ('EEV2037-06-03EEV8194-19-04EEV8261-07-04', 'i'): 27.946,
-    ('EEV 2037-06-03', 'z'): 27.819,
-    ('EEV 8194-19-04', 'z'): 26.828,
-    ('EEV 8261-07-04', 'z'): 27.858,
-    ('EEV2037-06-03EEV8194-19-04EEV8261-07-04', 'z'): 26.828,
+    # Updated values using mean of 2014-01 values from website above.
+    # CCD1 and CCD3 values not recorded - changed to have the same relative
+    # value to CCD2 as previous values. Given the large differences in z
+    # band, there is probably a substantial systematic uncertainty due to
+    # the fact that the measured stars are not all on CCD2, which merits
+    # further discussion with the IS. - JT (2014-01-20)
+    ('EEV 2037-06-03', 'u'): 24.662,
+    ('EEV 8194-19-04', 'u'): 24.639,
+    ('EEV 8261-07-04', 'u'): 24.667,
+    ('EEV2037-06-03EEV8194-19-04EEV8261-07-04', 'u'): 24.639,
+    ('EEV 2037-06-03', 'g'): 28.194,
+    ('EEV 8194-19-04', 'g'): 28.203,
+    ('EEV 8261-07-04', 'g'): 28.234,
+    ('EEV2037-06-03EEV8194-19-04EEV8261-07-04', 'g'): 28.203,
+    ('EEV 2037-06-03', 'r'): 28.296,
+    ('EEV 8194-19-04', 'r'): 28.286,
+    ('EEV 8261-07-04', 'r'): 28.321,
+    ('EEV2037-06-03EEV8194-19-04EEV8261-07-04', 'r'): 28.286,
+    ('EEV 2037-06-03', 'i'): 27.844,
+    ('EEV 8194-19-04', 'i'): 27.849,
+    ('EEV 8261-07-04', 'i'): 27.883,
+    ('EEV2037-06-03EEV8194-19-04EEV8261-07-04', 'i'): 27.849,
+    ('EEV 2037-06-03', 'z'): 27.709,
+    ('EEV 8194-19-04', 'z'): 26.718,
+    ('EEV 8261-07-04', 'z'): 27.748,
+    ('EEV2037-06-03EEV8194-19-04EEV8261-07-04', 'z'): 26.718,
 }
