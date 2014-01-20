@@ -68,10 +68,9 @@ nominal_zeropoints = {
     # GMOS-S
     # Updated values using mean of 2014-01 values from website above.
     # CCD1 and CCD3 values not recorded - changed to have the same relative
-    # value to CCD2 as previous values. Given the large differences in z
-    # band, there is probably a substantial systematic uncertainty due to
-    # the fact that the measured stars are not all on CCD2, which merits
-    # further discussion with the IS. - JT (2014-01-20)
+    # value to CCD2 as previous values. Until individual chip measurements
+    # are available there will be small systematic offsets due to the
+    # measured stars not all being on CCD2. - JT (2014-01-20)
     ('EEV 2037-06-03', 'u'): 24.662,
     ('EEV 8194-19-04', 'u'): 24.639,
     ('EEV 8261-07-04', 'u'): 24.667,
