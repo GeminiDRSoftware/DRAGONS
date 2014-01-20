@@ -1,5 +1,5 @@
 # This parameter file contains the parameters related to the primitives located
-# in the primitives_GEMINI.py file, in alphabetical order.
+# in the primitives_GENERAL.py file, in alphabetical order.
 {"add":{
     "suffix":{
         "default"       : "_added",
