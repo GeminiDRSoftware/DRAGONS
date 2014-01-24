@@ -95,4 +95,28 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+"addReferenceCatalog":{
+    "suffix":{
+        "default"       : "_refcatAdded",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "radius":{
+        # in degrees; default is 2 arcmin
+        "default"       : 0.033,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "source":{  
+        "default"       : "2mass",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
 }
