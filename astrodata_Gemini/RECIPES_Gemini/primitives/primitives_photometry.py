@@ -5,6 +5,7 @@ import subprocess
 import numpy as np
 import pyfits as pf
 import pywcs
+from copy import deepcopy
 from astrodata import AstroData
 from astrodata import Errors
 from astrodata import Lookups
@@ -12,6 +13,7 @@ from astrodata.adutils import gemLog
 from astrodata.ConfigSpace import lookup_path
 from gempy.library import astrotools as at
 from gempy.gemini import gemini_tools as gt
+from gempy.gemini.gemini_catalog_client import get_fits_table
 from primitives_GENERAL import GENERALPrimitives
 
 # Define the earliest acceptable SExtractor version
@@ -33,17 +35,18 @@ class PhotometryPrimitives(GENERALPrimitives):
     
     def addReferenceCatalog(self, rc):
         """
-        Currently, the only supported source catalog is sdss9.
+        This primitive calls the gemini_catalog_client module to
+        query a catalog server and construct a fits table containing
+        the catalog data.
 
-        Query a vizier server hosting an sdss9 catalog to get a
-        catalog of all the SDSS DR8 sources within a given radius
-        of the pointing center.
+        That module will query either gemini catalog servers or
+        vizier. Currently, sdss9 and 2mass (point source catalog)
+        are supported.
 
-        Append the catalog as a FITS table with extenstion name
-        'REFCAT', containing the following columns:
+        For example, with sdss9, the FITS table has the following columns:
 
         - 'Id'       : Unique ID. Simple running number
-        - 'Name'     : SDSS catalog source name
+        - 'Cat-id'   : SDSS catalog source name
         - 'RAJ2000'  : RA as J2000 decimal degrees
         - 'DEJ2000'  : Dec as J2000 decimal degrees
         - 'umag'     : SDSS u band magnitude
@@ -57,8 +60,14 @@ class PhotometryPrimitives(GENERALPrimitives):
         - 'zmag'     : SDSS z band magnitude
         - 'e_zmag'   : SDSS z band magnitude error estimage
 
-        :param source: Source catalog to query. This used as the catalog
-                       name on the vizier server
+        With 2mass, the first 4 columns are the same, but the photometry
+        columns reflect the J H and K bands.
+
+        This primitive then adds the fits table catalog to the Astrodata
+        object as 'REFCAT'
+
+        :param source: Source catalog to query, as defined in the
+                       gemini_catalog_client module
         :type source: string
 
         :param radius: The radius of the cone to query in the catalog, 
@@ -83,18 +92,6 @@ class PhotometryPrimitives(GENERALPrimitives):
         source = rc["source"]
         radius = rc["radius"]
 
-        # Get the Vizier server URL
-        url = Lookups.get_lookup_table(
-            "Gemini/refcat_dict", "refcat_dict")['VIZIER']
-
-        # Add the source catalog specifier to the URL
-        url += "-source=%s&" % source
-
-        # This extra argument will force vizier to return all the columns from the catalog.
-        # It can be useful to turn it on when debugging. (Took me (KL) long enough to
-        # figure out how to form this query, I thought I'd leave it here for future debugging.)
-        #url += "-out.all=1&"
-
         # Loop over each input AstroData object in the input list
         adinput = rc.get_inputs_as_astrodata()
         for ad in adinput:
@@ -118,117 +115,36 @@ class PhotometryPrimitives(GENERALPrimitives):
                 else:
                     raise
 
-            log.fullinfo("Calling Vizier at %s" % url)
+            log.fullinfo("Querying %s for reference catalog" % source)
             import warnings
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
 
-                # Try importing; break the outer loop if it doesn't work
-                try:
-                    import vo.conesearch as vocs
-                    import vo.table
-                except ImportError:
-                    try:
-                        import astropy.vo.conesearch as vocs
-                        
-                    except ImportError:
-                        log.critical("Problem importing the vo module. This isn't going to work")
-                        adoutput_list = adinput
-                        break
-
-                # Try the query; go to the next input if it fails
-                try:
-                    table = vocs.conesearch(catalog_db=url, ra=ra, dec=dec, sr=radius, pedantic=False, verb=2, verbose=False)
-                except:
-                    log.warning("Vizier query failed for %s" % ad.filename)
-                    adoutput_list.append(ad)
-                    continue
+                # Get the fits table HDU
+                tb_hdu = get_fits_table(source, ra, dec, radius)
 
             # Loop through the science extensions
             for sciext in ad['SCI']:
                 extver = sciext.extver()
 
-                ra = sciext.ra().as_pytype()
-                dec = sciext.dec().as_pytype()
-
-                # See the note above - moved this to outside the loop, at least for now
-                # Query the vizier server, get the votable
-                # Catch and ignore the warning about DEFINITIONS element being deprecated in VOTable 1.1
-                #log.fullinfo("Calling Vizier at %s" % url)
-                #import warnings
-                #with warnings.catch_warnings():
-                    #warnings.simplefilter("ignore")
-                    #try:
-                        #import vo.conesearch
-                        #import vo.table
-                        #table = vo.conesearch.conesearch(catalog_db=url, ra=ra, dec=dec, sr=radius, pedantic=False, verb=2, verbose=False)
-                    #except:
-                        #log.critical("Problem importing the vo module. This isn't going to work")
-                        #adoutput_list = adinput
-                        #problem = True
-                        #break
-                        
-                if len(table.array)==0:
+                # See the note above - the actual fetch is moved this to outside the loop, at least for now
+                if(tb_hdu is None):
                     log.stdinfo("No reference catalog sources found "\
                                 "for %s['SCI',%d]" % (ad.filename, extver))
                     continue
                 else:
-                    log.stdinfo("Found %d reference catalog sources for %s['SCI',%d]" % (len(table.array), ad.filename, extver))
+                    log.stdinfo("Found %d reference catalog sources for %s['SCI',%d]" % (len(tb_hdu.data), ad.filename, extver))
 
-                # Did we get anything?
-                if(len(table.array)):
-                    # Parse the votable that we got back, into arrays for each column.
-                    #  WARNING: That first column name will change with every version
-                    #           of SDSS.  Annoying, but at least you are warned. (KL)
-                    sdssname = table.array['SDSS9']
-                    umag = table.array['umag']
-                    e_umag = table.array['e_umag']
-                    gmag = table.array['gmag']
-                    e_gmag = table.array['e_gmag']
-                    rmag = table.array['rmag']
-                    e_rmag = table.array['e_rmag']
-                    imag = table.array['imag']
-                    e_imag = table.array['e_imag']
-                    zmag = table.array['zmag']
-                    e_zmag = table.array['e_zmag']
-                    ra = table.array['RAJ2000']
-                    dec = table.array['DEJ2000']
-
-                    # Create a running id number
-                    refid=range(1, len(sdssname)+1)
-
-                    # Make the pyfits columns and table
-                    c1 = pf.Column(name="Id",format="J",array=refid)
-                    c2 = pf.Column(name="Name", format="24A", array=sdssname)
-                    c3 = pf.Column(name="RAJ2000",format="D",unit="deg",array=ra)
-                    c4 = pf.Column(name="DEJ2000",format="D",unit="deg",array=dec)
-                    c5 = pf.Column(name="umag",format="E",array=umag)
-                    c6 = pf.Column(name="e_umag",format="E",array=e_umag)
-                    c7 = pf.Column(name="gmag",format="E",array=gmag)
-                    c8 = pf.Column(name="e_gmag",format="E",array=e_gmag)
-                    c9 = pf.Column(name="rmag",format="E",array=rmag)
-                    c10 = pf.Column(name="e_rmag",format="E",array=e_rmag)
-                    c11 = pf.Column(name="imag",format="E",array=imag)
-                    c12 = pf.Column(name="e_imag",format="E",array=e_imag)
-                    c13 = pf.Column(name="zmag",format="E",array=zmag)
-                    c14 = pf.Column(name="e_zmag",format="E",array=e_zmag)
-                    col_def = pf.ColDefs([c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14])
-                    tb_hdu = pf.new_table(col_def)
-
-                    # Add comments to the REFCAT header to describe it.
-                    tb_hdu.header.add_comment('Source catalog derived from the %s catalog on vizier' % table.name)
-                    tb_hdu.header.add_comment('Vizier Server queried: %s' % url)
-                    for fieldname in ('RAJ2000', 'DEJ2000', 'umag', 'e_umag', 'gmag', 'e_gmag', 'rmag', 'e_rmag', 'imag', 'e_imag', 'zmag', 'e_zmag'):
-                        tb_hdu.header.add_comment('UCD for field %s is: %s' % (fieldname, table.get_field_by_id(fieldname).ucd))
-
-                    tb_ad = AstroData(tb_hdu)
+                if(tb_hdu):
+                    tb_ad = deepcopy(AstroData(tb_hdu))
                     tb_ad.rename_ext('REFCAT', extver)
 
-                    if(ad['REFCAT',extver]):
+                    if(ad['REFCAT', extver]):
                         log.fullinfo("Replacing existing REFCAT in %s" % ad.filename)
                         ad.remove(('REFCAT', extver))
                     else:
                         log.fullinfo("Adding REFCAT to %s" % ad.filename)
+
                     ad.append(tb_ad)
 
             # Match the object catalog against the reference catalog
@@ -536,11 +452,12 @@ def _match_objcat_refcat(adinput=None):
         # Loop over each input AstroData object in the input list
         for ad in adinput_list:
             filter_name = ad.filter_name(pretty=True).as_pytype()
-            if filter_name in ['u', 'g', 'r', 'i', 'z']:
+            filter_name = filter_name.lower()
+            if filter_name in ['u', 'g', 'r', 'i', 'z', 'j', 'h', 'k']:
                 magcolname = filter_name+'mag'
-                magerrcolname = 'e_'+filter_name+'mag'
+                magerrcolname = filter_name+'mag_err'
             else:
-                log.warning("Filter %s is not in SDSS - will not be able to flux calibrate" % filter_name)
+                log.warning("Filter %s is not in catalogs - will not be able to flux calibrate" % filter_name)
                 magcolname = None
                 magerrcolname = None
 
@@ -568,13 +485,13 @@ def _match_objcat_refcat(adinput=None):
                         # FIXME - need to address the wraparound problem here
                         # if we straddle ra = 360.00 = 0.00
 
-                        initial = 15.0/3600.0 # 15 arcseconds in degrees
+                        initial = 10.0/3600.0 # 10 arcseconds in degrees
                         final = 0.5/3600.0 # 0.5 arcseconds in degrees
 
                         (oi, ri) = at.match_cxy(xx,sx,yy,sy, firstPass=initial, delta=final, log=log)
     
                         # If too few matches, assume the match was bad
-                        if len(oi)<4:
+                        if len(oi)<2:
                             oi = []
 
                         log.stdinfo("Matched %d objects in ['OBJCAT',%d] against ['REFCAT',%d]" % (len(oi), extver, extver))
