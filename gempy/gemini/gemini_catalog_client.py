@@ -1,3 +1,14 @@
+#
+#                                                                  gemini_python
+#
+#                                                                   gempy.gemini
+#                                                       gemini_catalog_client.py
+# ------------------------------------------------------------------------------
+# $Id$
+# ------------------------------------------------------------------------------
+__version__      = '$Revision$'[11:-2]
+__version_date__ = '$Date$'[7:-2]
+# ------------------------------------------------------------------------------
 """
 This gemini_catalog_client module contains code to access various catalogs
 on various catalog servers, providing a common interface to the caller,
@@ -10,10 +21,22 @@ priority ordered list of servers if the primary server appears to be down.
 - It will handle this even if the secondard servers have the catalog in
 question in a different format to the primary.
 """
-
-import vo.conesearch
+# ------------------------------------------------------------------------------
 import pyfits
 
+try:
+    from vo.conesearch import conesearch as vo_conesearch
+except ImportError:
+    try:
+        from astropy.vo.client.conesearch import conesearch as vo_conesearch
+        from astropy.vo.client.vos_catalog import VOSError
+    except ImportError:
+        raise ImportError("Unable to find VO definitions.")
+
+# ------------------------------------------------------------------------------
+# Used  to determine the function signature of the imported conesearch function
+function_defaults = vo_conesearch.func_defaults
+# ------------------------------------------------------------------------------
 
 def get_fits_table(catalog, ra, dec, sr, server=None):
     """
@@ -43,15 +66,14 @@ def get_fits_table(catalog, ra, dec, sr, server=None):
     }
 
     # Check catalog given is valid
-    if(catalog not in cat_servers.keys()):
+    if catalog not in cat_servers.keys():
         raise "Invalid Catalog"
 
-
     # Check server if given is valid
-    if(server and server not in cat_servers[catalog]):
+    if server and server not in cat_servers[catalog]:
         raise "Invalid Server"
 
-    if(server):
+    if server:
         cat_servers[catalog] = [server]
 
     fits_table = None
@@ -59,8 +81,8 @@ def get_fits_table(catalog, ra, dec, sr, server=None):
         fits_table = get_fits_table_from_server(catalog, server, ra, dec, sr)
         if(fits_table):
             break
-
     return fits_table
+
 
 def get_fits_table_from_server(catalog, server, ra, dec, sr):
     """
@@ -137,17 +159,34 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
     cols = cat_cols[catalog]
     server_cols = server_colmap[server]
 
-    #print "catalog: %s" % catalog
-    #print "server: %s" % server
-    #print "url: %s" % url
-    #print "cols       : %s" % cols
-    #print "server_cols: %s" % server_cols
-    #print "\n\n"
+    # print "RA, Dec, radius:", ra, dec, sr
+    # print "catalog: %s" % catalog
+    # print "server: %s" % server
+    # print "url: %s" % url
+    # print "cols       : %s" % cols
+    # print "server_cols: %s" % server_cols
+    # print "\n\n"
 
     # turn on verbose for debug to stdout. 
     # Need verb=3 to get the right cols from vizier
-    table = vo.conesearch.conesearch(catalog_db=url, ra=ra, dec=dec, sr=sr, 
-                                     pedantic=False, verb=3, verbose=False)
+
+    # The following phrase is implemented to handle differing function 
+    # signatures and return behaviours of vo conesearch function. Under 
+    # astropy, conesearch throws a VOSError exception on no results. Which
+    # seems a bit extreme. See the import phrase at top.
+
+    if len(function_defaults) == 6:
+        table = vo_conesearch(catalog_db=url, ra=ra, dec=dec, sr=sr, 
+                              pedantic=False, verb=3, verbose=False)
+    elif len(function_defaults) == 1:
+        try:
+            table = vo_conesearch((ra,dec), sr, verb=3, catalog_db=url,
+                                  pedantic=False, verbose=False)
+        except VOSError:
+            print "VO conesearch produced no results"
+            return None
+    else:
+        raise SyntaxError("Unrecognized function signature")
 
     # Did we get any results?
     if(table.is_empty() or len(table.array) == 0):
