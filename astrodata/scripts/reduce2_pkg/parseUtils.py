@@ -1,116 +1,192 @@
 #
-#                                                                     QAP Gemini
+#                                                                  gemini_python
 #
+#                                                        astrodata.(reduceutils)
 #                                                                  parseUtils.py
-#                                                               Kenneth Anderson
-#                                                                        06-2013
-#                                                            kanderso@gemini.edu
 # ------------------------------------------------------------------------------
-
 # $Id$
 # ------------------------------------------------------------------------------
-__version__      = '$Revision$'[11:-2]
-__version_date__ = '$Date$'[7:-2]
-__author__       = "k.r. anderson, <kanderso@gemini.edu>"
+__version__      = '$Revision$'[11:-3]
+__version_date__ = '$Date$'[7:-3]
 # ------------------------------------------------------------------------------
-# This cli parser employs argparse instead of depracated optparse.
+# This cli parser employs argparse rather than the depracated optparse.
 #
 # kra 04-06-13
 #
-#
-# N.B. argparse chokes when type="string" is used to specify variable type.
-# raising a ValueError:
-#
-# raise ValueError('%r is not callable' % (type_func,))
-# ValueError: 'string' is not callable
-# 
-# Since all values default as strings, especially through the command line,
-# specifying type="string" is redundant. These type specifiers are removed.
+# This module provides upgraded reduce command line argument handling, employing
+# the ArgumentParser "fromfile" facility, customized "action" classes, and a 
+# customized help formatter, the ReduceHelpFormatter class.
 # ------------------------------------------------------------------------------
 import os
-import sys
 import re
+import sys
+
 from argparse import ArgumentParser
+from argparse import HelpFormatter
 
 from astrodata import RecipeManager
 from astrodata.adutils import gemLog, strutil
 from astrodata.AstroDataType import get_classification_library
 
+#Do not know where 'reduceActions' is going to be yet ...
+from reduceActions import PosArgAction
+from reduceActions import BooleanAction 
+from reduceActions import ParameterAction
+from reduceActions import CalibrationAction
+from reduceActions import UnitaryArgumentAction
+
+# ------------------------------------------------------------------------------
+class ReduceHelpFormatter(HelpFormatter):
+    """ReduceHelpFormatter class overrides default help formatting on customized 
+    reduce actions.
+    """
+    def _format_args(self, action, default_metavar):
+        get_metavar = self._metavar_formatter(action, default_metavar)
+        if action.nargs is None:
+            result = '%s' % get_metavar(1)
+        elif isinstance(action, BooleanAction):
+            result = ''
+        elif isinstance(action, PosArgAction):
+            result = '%s [%s ...]' % get_metavar(2)
+        elif isinstance(action, UnitaryArgumentAction):
+            result = '%s' % get_metavar(1)
+        elif isinstance(action, ParameterAction):
+            result = '%s [%s ...]' % get_metavar(2)
+        elif isinstance(action, CalibrationAction):
+            result = '%s [%s ...]' % get_metavar(2)
+        else:
+            formats = ['%s' for _ in range(action.nargs)]
+            result = ' '.join(formats) % get_metavar(action.nargs)
+        return result
+
+# ------------------------------------------------------------------------------
+class ReduceArgumentParser(ArgumentParser):
+    """
+    Converts an argument line from a user param file into an actual argument,
+    yields to the calling parser.
+    """
+    def convert_arg_line_to_args(self, arg_line):
+        if not arg_line.startswith("#"):
+            for arg in arg_line.split():
+                if not arg.strip():
+                    continue
+                if arg.strip().startswith("#"):
+                    break
+                yield arg
+
 # ------------------------------------------------------------------------------
 def buildNewParser(version):
-    parser = ArgumentParser(description="_"*11 + " Gemini Observatory Recipe System Processor "
-                            " (v1.1 2013) " + "_"*10 + "\n" + "_"*19 +\
-                            " Written by GDPSG" + "_"*19,
-                            prog="reduce2")
-    parser.add_argument("-v", "--version", action='version', version='%(prog)s v'+ version)
-    parser.add_argument("-d", "--displayflags", dest='displayflags', action="store_true", 
-                        default=False, help="display all parsed option flags.")
-    parser.add_argument('files', metavar='fitsfile', nargs = "*",
-                        help="fitsfile [fitsfile ...] or @file containing a list of fits files.")
-    parser.add_argument("-c", "--paramfile", dest="paramfile", default=None,
-                        help="specify parameter file")
-    parser.add_argument("-i", "--intelligence", dest='intelligence', default=False,
-                        action="store_true", help="Endow recipe system with "
-                        "intelligence to perform operations faster and smoother")
-    parser.add_argument("-m", "--monitor", dest="bMonitor", action="store_true",
+    parser = ReduceArgumentParser(description="_"*11 + 
+                                  " Gemini Observatory Recipe System Processor "
+                                  " (v1.1 2013) " + "_"*10 + "\n" + "_"*30 +\
+                                  " Written by GDPSG " + "_"*29, prog="reduce2",
+                                  formatter_class=ReduceHelpFormatter,
+                                  fromfile_prefix_chars='@')
+
+    parser.add_argument("-v", "--version", action='version',
+                        version='%(prog)s v'+ version)
+
+    parser.add_argument("-d", "--displayflags", dest='displayflags',
                         default=False,
+                        nargs='*', action=BooleanAction,
+                        help="display all parsed option flags.")
+
+    parser.add_argument('files', metavar='fitsfile', nargs = "*",
+                        action=PosArgAction,
+                        help="fitsfile [fitsfile ...] ")
+
+    parser.add_argument("-i", "--intelligence", dest='intelligence', nargs="*",
+                        default=False, action=BooleanAction, 
+                        help="Endow recipe system with intelligence to perform "
+                        "operations faster and smoother")
+
+    parser.add_argument("-m", "--monitor", dest="bMonitor", default=False,
+                        nargs="*", action=BooleanAction,
                         help="Open TkInter window to monitor progress of "
                         "execution (NOTE: One window will open per recipe run)")
+
     parser.add_argument("-p", "--param", dest="userparam", default=None,
-                        help="Set a parameter from the command line. The form '-p' "
-                        "paramname=val' sets the parameter in the reduction context "
-                        "such that all primitives will 'see' it.  The form: '-p "
-                        "ASTROTYPE:primitivename:paramname=val', sets the parameter "
-                        "such that it applies only when the current reduction type "
-                        "(type of current reference image) is 'ASTROTYPE' and the "
-                        "primitive is 'primitivename'. Multiple settings can appear "
-                        "separated by commas, but no whitespace in the setting (i.e."
-                        "'param=val,param2=val2', not 'param=val, param2=val2')")
+                        nargs="*", action=ParameterAction,
+                        help="Set a parameter from the command line. The form  "
+                        "'-p par=val' sets the parameter in the reduction context "
+                        "such that all primitives will 'see' it.  The form: "
+                        "'-p ASTROTYPE:primitivename:par=val', sets the "
+                        "parameter such that it applies only when the current "
+                        "reduction type (type of current reference image) "
+                        "is 'ASTROTYPE' and the primitive is 'primitivename'. "
+                        "Separate par/val pairs by whitespace: "
+                        "(eg. '-p par1=val1 par2=val2')")
+
     parser.add_argument("--context", dest="running_contexts", default=None,
+                        nargs="*", action=UnitaryArgumentAction,
                         help="provides general 'context name' for primitives"
-                        "sensitive to context.")
+                        " sensitive to context.")
+
     parser.add_argument("-r", "--recipe", dest="recipename", default=None,
+                        nargs="*", action=UnitaryArgumentAction,
                         help="specify which recipe to run by name")
+
     parser.add_argument("-t", "--astrotype", dest="astrotype", default=None,
-                        help="Run a recipe based on astrotype (either overrides the"
-                        " default type, or begins without initial input, eg. "
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="Run a recipe based on astrotype (either overrides"
+                        " default type, or begins without initial input. Eg. "
                         "recipes that begin with primitives that acquire data)")
+
     ##@@FIXME: This next option should not be put into the package
-    parser.add_argument("-x", "--rtf-mode", dest="rtf", default=False, 
-                        action="store_true", help="only used for rtf")
-    parser.add_argument("--throw_descriptor_exceptions", dest = "throwDescriptorExceptions", 
-                        default=False, action = "store_true", 
-                        help="debug mode, throws exceptions when Descriptors fail")
+    parser.add_argument("--rtf-mode", dest="rtf", default=False,
+                        nargs="*", action=BooleanAction,
+                        help="Use rtf mode.")
+
+    parser.add_argument("--throw_descriptor_exceptions", 
+                        dest = "throwDescriptorExceptions", default=False,
+                        nargs="*", action=BooleanAction,
+                        help="Throw exceptions when Descriptors fail")
+
     parser.add_argument("--addprimset", dest="primsetname", default = None,
-                        help="add user supplied primitives to reduction")
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="add user supplied primitives to reduction."
+                        "A primitives module or path to a primitives module.")
+
     parser.add_argument("--calmgr", dest="cal_mgr", default=None,
                         help="calibration manager url overides lookup table")
+
     parser.add_argument("--force-height", dest="forceHeight", default=None,
                         help="force height of terminal output")
+
     parser.add_argument("--force-width", dest="forceWidth", default=None,
                         help="force width of terminal output")
+
     parser.add_argument("--invoked", dest="invoked", default=False, 
-                        action="store_true", help="tell user reduce invoked by adcc")
-    parser.add_argument("--logmode", dest="logmode", default="standard", 
-                        help="Set logging mode (standard, "
-                        "console, debug, null)")
+                        nargs="*", action=BooleanAction,
+                        help="tell user reduce invoked by adcc")
+
+    parser.add_argument("--logmode", dest="logmode", default="standard",
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="Set logging mode (standard, console, debug, null)")
+
     parser.add_argument("--logfile", dest="logfile", default="reduce.log",
+                        nargs="*", action=UnitaryArgumentAction,
                         help="name of log (default = 'reduce.log')") 
+
     parser.add_argument("--loglevel", dest="loglevel", default="stdinfo", 
+                        nargs="*", action=UnitaryArgumentAction,
                         help="Set the verbose level for console "
                         "logging; (critical, error, warning, status, stdinfo, "
                         "fullinfo, debug)")
-    parser.add_argument("--showcolors", dest="show_colors", default=False, 
-                        action="store_true", help="Shows available colors based "
-                        "on terminal setting (used for debugging color issues)")
-    parser.add_argument("--override_cal", dest="user_cals", default=None,
-                        help="Add calibration to User Calibration Service of this format:"
-                        "'-usercal=CALTYPE_1:CALFILEPATH_1,...,CALTYPE_N:CALFILEPATH_N'")
-    parser.add_argument("--writeInt", dest='writeInt', default=False, 
-                        action="store_true", help="write intermediate outputs"
-                        " (UNDER CONSTRUCTION)")   
+
+    parser.add_argument("--usercal",dest="user_cals", default=None,
+                        nargs="*", action=CalibrationAction,
+                        help="Add calibration to User Calibration Service. "
+                        "'--usercal=CALTYPE_1:CAL_PATH_1 CALTYPE_N:CAL_PATH_N' "
+                        "Eg., --usercal=processed_arc:wcal/gsN20011112S064_arc.fits ")
+
+    parser.add_argument("--writeInt", dest='writeInt', default=False,
+                        nargs="*", action=BooleanAction,
+                        help="Write intermediate outputs (UNDER CONSTRUCTION)")
+
     parser.add_argument("--suffix", dest='suffix', default=None,
-                        help="Suffix to add to filenames written at end of reduction.")    
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="Add 'suffix' to filenames at end of reduction.")    
     return parser
 
 # --------------------------- Emulation functions -------------------------------
@@ -378,23 +454,31 @@ def command_line(parser, args, log):
                         log.error("Badly formatted parameter file (%s)" \
                             "\n  Line #%d: %s""" % (args.paramfile, i, pline))
                         abortBadParamfile(log, plines)
-                        # sys.exit(1) # abortBAdParamfile calls sys.exit(1)
+
                     key = keyval[0].strip()
                     val = keyval[1].strip()
                     if val[0] == "'" or val[0] == '"':
                         val = val[1:]
+
                     if val[-1] == "'" or val[-1] == '"':
                         val = val[0:-1]
+
                     if primname and not astrotype:
-                        log.error("Badly formatted parameter file (%s)" \
-                            '\n  The primitive name is set to "%s", but the astrotype is not set' \
-                            "\n  Line #%d: %s" % (args.paramfile, primname, i, pline[:-1]))
+                        log.error("Badly formatted parameter file (%s)" 
+                                  "\n  The primitive name is set to %s, "
+                                  "but the astrotype is not set "
+                                  "\n  Line #%d: %s" % 
+                                  (args.paramfile, primname, i, pline[:-1]))
                         abortBadParamfile(log, plines)
+
                     if not primname and astrotype:
-                        log.error("Badly formatted parameter file (%s)" \
-                            '\n  The astrotype is set to "%s", but the primitive name is not set' \
-                            "\n  Line #%d: %s" % (args.paramfile, astrotype, i, pline))
+                        log.error("Badly formatted parameter file (%s)"
+                                  "\n  The astrotype is set to %s, "
+                                  "but the primitive name is not set "
+                                  "\n  Line #%d: %s" % 
+                                  (args.paramfile, astrotype, i, pline))
                         abortBadParamfile(log, plines)
+
                     if not primname and not astrotype:
                         gparms.update({key:val})
                     else:
@@ -404,10 +488,6 @@ def command_line(parser, args, log):
         # parameter file ups and gparms
         pfups = ups
         pfgparms = gparms
-
-    if args.show_colors:
-        print dir(filteredstdout.term)
-        sys.exit(0)
 
     try:
         assert(args.files or args.astrotype)
