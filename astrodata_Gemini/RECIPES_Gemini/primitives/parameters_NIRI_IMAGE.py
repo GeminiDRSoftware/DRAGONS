@@ -29,7 +29,6 @@
         "uiLevel"       : "UIBASIC",
         },
     },
-},
 "separateSky":{
     "all_on_sky":{
         "default"       : "True",
@@ -38,4 +37,5 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    },
 }
