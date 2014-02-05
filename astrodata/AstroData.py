@@ -2219,6 +2219,7 @@ help      False     show help information    """
             raise Errors.AstroDataError("No keyword value provided")
         
         # Check to see whether the keyword is already in the extension
+        history_comment = None
         original_value = ext.header.get(keyword)
         
         if original_value is None:
