@@ -14,6 +14,8 @@ import re
 import sys
 import json
 import urllib2
+import math
+import numbers
 
 import pyfits as pf
 import numpy  as np
@@ -1965,11 +1967,22 @@ def update_key_from_descriptor(adinput=None, descriptor=None, keyword=None,
                extname=extname)
     return
 
-def validate_input(input=None):
+def validate_input(input=None, dtype=None):
     """
     The validate_input helper function is used to validate the input value to
-    the input parameter. If input is None, an exception is raised. This
-    function returns a list containing one or more inputs.
+    the input parameter.
+
+    :param input: An input object or list of objects. If None, an exception
+         is raised.
+    :type input: any
+
+    :param dtype: Acceptable type(s) for the input objects. If None, no check
+         is made, otherwise an error is raised unless all input elements have
+         one of the required types.
+    :type dtype: type or tuple of types
+
+    :returns: A list containing one or more inputs
+    :rtype: list
     """
     # If the input is None, raise an exception
     if input is None:
@@ -1982,6 +1995,12 @@ def validate_input(input=None):
     # If the input is an empty list, raise an exception
     if len(input) == 0:
         raise Errors.InputError("The input cannot be an empty list")
+
+    # Complain if the list elements aren't all of a specified type:
+    if dtype is not None:
+        if not all(isinstance(element, dtype) for element in input):
+            raise Errors.InputError("Input list elements should be of " + \
+                "%s" % str(dtype))
     
     # Now, input is a list that contains one or more inputs
     return input
@@ -2003,3 +2022,274 @@ def write_database(ad, database_name=None, input_name=None):
                                  record_name=record_name)
         db.write_to_disk(database_name=database_name)
     return
+
+
+class ExposureGroup:
+    """
+    An ExposureGroup object maintains a record of AstroData instances that
+    are spatially associated with the same general nod position or dither
+    group, along with their co-ordinates and other properties of the group.
+
+    This object can be interrogated as to whether a given set of co-ordinates
+    are within the same field of view as the centroid of an existing group
+    and therefore on the same source. It can then be instructed to incorporate
+    a point into the group if appropriate, providing a simple agglomerative
+    clustering algorithm.
+    """
+
+    # The reason this class isn't built on a more universal version that
+    # doesn't require AstroData is that it's currently unclear what the API
+    # at that level should look like -- it would probably be most useful to
+    # pass around nddata instances rather than lists or dictionaries but
+    # that's not even well defined within AstroPy yet.
+
+    def __init__(self, adinputs, frac_FOV=1.0):
+
+        """
+        :param adinputs: an exposure list from which to initialize the group
+            (currently may not be empty)
+        :type adinputs: list of AstroData instances
+
+        :param frac_FOV: proportion by which to scale the area in which
+            points are considered to be within the same field, for tweaking
+            the results in borderline cases (eg. to avoid co-adding target
+            positions right at the edge of the field).
+        :type frac_FOV: float
+        """
+
+        # Make sure we have a non-empty input list of AstroData instances:
+        adinputs = validate_input(input=adinputs, dtype=AstroData)
+
+        # Make sure the field scaling is valid:
+        if not isinstance(frac_FOV, numbers.Number) or frac_FOV < 0.:
+            raise Errors.InputError('frac_FOV must be >= 0.')
+
+        # Initialize members:
+        self._frac_FOV = frac_FOV
+        self.members = {}
+        self.group_cen = (0., 0.)
+        self.add_members(adinputs)
+
+        # Use the first list element as a reference for getting the
+        # instrument properties:
+        ref_ad = adinputs[0]
+
+        # Ultimately we'd like to replace this with something like a
+        # descriptor so that we don't need a list of instruments here (that's
+        # why there are duplicate methods below instead of subclassing).
+        if ref_ad.is_type('F2'):
+            self._in_field = self._in_f2_field
+        else:
+            raise Errors.InputError('unsupported instrument in %s' % ref_ad)
+
+    def in_field(self, position):
+        """
+        Determine whether or not a point falls within the same field of view
+        as the centre of the existing group.
+
+        :param position: A tuple of co-ordinates or AstroData instance to
+            compare with the centroid of the set of existing group members.
+        :type position: tuple, list, AstroData
+
+        :returns: Whether or not the input point is within the field of view
+            (adjusted by the frac_FOV specified when creating the group).
+        :rtype: boolean
+        """
+
+        # If we got an AstroData instance, convert it to the co-ordinates we
+        # want to check:
+        if isinstance(position, AstroData):
+            # This is a slightly convoluted way to look up information but
+            # get_offset_dict is going to go away anyway. Always returns dict.
+            position = get_offset_dict([position])[position]
+
+        # Make sure the set of co-ordinates is valid:
+        if not isinstance(position, (list, tuple)) or \
+           not all(isinstance(x, numbers.Number) for x in position):
+            raise Errors.InputError('parameter position should be a ' + \
+                'co-ordinate tuple or AstroData instance')
+
+        # Check for consistent dimensionality before trying to subtract
+        # co-ordinates (but should always be 2 in practice):
+        if len(position) != len(self.group_cen):
+            raise Errors.InputError('points to group must have the ' + \
+                'same number of co-ords')
+
+        # Check co-ordinates WRT the group centre & field of view as
+        # appropriate for the instrument:
+        return self._in_field(position, self.group_cen, self._frac_FOV)
+
+    def _in_f2_field(self, position, reference, frac_FOV=1.0):
+
+        # TO DO: This will need changing to decimal degrees once we pass
+        # absolute co-ordinates?
+        return math.sqrt(sum([(x-r)**2 for x, r in zip(position,reference)])) \
+             < frac_FOV * 180.
+
+    def __len__(self):
+        return len(self.members)
+
+    def __repr__(self):
+        return str(self.list())
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            # A Python dictionary equality seems to take care of comparing
+            # groups nicely, irrespective of ordering:
+            return self.members == other.members
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def list(self):
+        """
+        List the AstroData instances associated with this group.
+
+        :returns: Exposure list
+        :rtype: list of AstroData instances
+        """
+
+        return self.members.keys()
+
+    def add_members(self, adinputs):
+
+        """
+        Add one or more new points to the group.
+
+        :param adinputs: A list of AstroData instances to add to the group
+            membership. 
+        :type adinputs: AstroData, list of AstroData instances
+        """
+
+        # Make sure we have a non-empty input list of AstroData instances:
+        adinputs = validate_input(input=adinputs, dtype=AstroData)
+
+        # How many points were there previously and will there be now?
+        ngroups = self.__len__()
+        ntot = ngroups + len(adinputs)
+
+        # This will be replaced by a descriptor that looks up the RA/Dec
+        # of the field centre:
+        addict = get_offset_dict(adinputs)
+
+        # Complain sensibly if we didn't get valid co-ordinates:
+        for ad in addict:
+            for coord in addict[ad]:
+                if not isinstance(coord, numbers.Number):
+                    raise Errors.InputError('non-numeric co-ordinate %s ' \
+                        % coord + 'from %s' % ad)
+
+        # Add the new points to the group list:
+        self.members.update(addict)
+
+        # Update the group centroid to account for the new points:
+        new_vals = addict.values()
+        newsum = [sum(axvals) for axvals in zip(*new_vals)]
+        self.group_cen = [(cval * ngroups + nval) / ntot \
+          for cval, nval in zip(self.group_cen, newsum)]
+
+def group_exposures(adinputs, frac_FOV=1.0):
+
+    """
+    Sort a list of AstroData instances into dither groups around common
+    nod positions, according to their WCS offsets.
+
+    :param adinputs: A list of exposures to sort into groups.
+    :type adinputs: list of AstroData instances
+
+    :param frac_FOV: proportion by which to scale the area in which
+        points are considered to be within the same field, for tweaking
+        the results in borderline cases (eg. to avoid co-adding target
+        positions right at the edge of the field).
+    :type frac_FOV: float
+
+    :returns: One group of exposures per identified nod position.
+    :rtype: tuple of ExposureGroup instances
+    """
+
+    # In principle divisive clustering algorithms have the best chance of
+    # robust separation because of their top-down view of the problem.
+    # However, an agglomerative algorithm is probably more practical to
+    # implement here in the first instance, given that we can try to
+    # constrain the problem using the known field size and remembering the
+    # one-at-a-time case where the full list isn't available up front.
+
+    # The FOV gives us a pretty good idea what's close enough to the base
+    # position to be considered on-source, but it may not be enough on its
+    # own to provide a threshold for intermediate nod distances for F2 given
+    # IQ problems towards the edges of the field. OTOH intermediate offsets
+    # are generally difficult to achieve anyway due to guide probe limits
+    # when the instrumental FOV is comparable to that of the telescope.
+
+    groups = []
+
+    # Iterate over the input exposures:
+    for ad in adinputs:
+
+        # Should this pointing be associated with an existing group?
+        found = False
+        for group in groups:
+            if group.in_field(ad):
+                group.add_members(ad)
+                found = True
+                break
+
+        # If unassociated, start a new group:
+        if not found:
+            groups.append(ExposureGroup(ad, frac_FOV=frac_FOV))
+            # if debug: print 'New group', groups[-1]
+
+    # Here this simple algorithm could be made more robust for borderline
+    # spacing (a bit smaller than the field size) by merging clusters that
+    # have members within than the threshold after initial agglomeration.
+    # This is an odd use case that's hard to classify automatically anyway
+    # but the grouping info. might be more useful later, when stacking.
+
+    # if debug: print 'Groups are', groups
+
+    return tuple(groups)
+
+# Since the following function will go away after redefining RA & Dec
+# descriptors appropriately, I've put it here instead of in
+# gemini_metadata_utils to avoid creating an import that's circular WRT
+# existing imports and might later hang around causing trouble.
+def get_offset_dict(adinputs=None):
+    """
+    The get_offset_dict() function extracts a dictionary of co-ordinate offset
+    tuples from a list of Gemini datasets, one per input AstroData instance.
+    What's currently Gemini-specific is that POFFSET & QOFFSET header keywords
+    are used; this could be abstracted via a descriptor once we decide how to
+    do so generically (accounting for the need to know slit axes sometimes).
+    
+    :param adinputs: the AstroData objects
+    :type adinput: list of AstroData
+    
+    :rtype: dictionary
+    :return: a dictionary whose keys are the AstroData instances and whose
+        values are tuples of (POFFSET, QOFFSET).
+
+    """
+    offsets = {}
+
+    # # Instantiate the log.
+    # log = logutils.get_logger(__name__)
+
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more inputs
+    adinput_list = validate_input(input=adinputs, dtype=AstroData)
+
+    # Loop over AstroData instances:
+    for ad in adinputs:
+
+        # Get the offsets from the primary header:
+        poff = ad.phu_get_key_value('POFFSET')
+        qoff = ad.phu_get_key_value('QOFFSET')
+        # name = ad.get_filename()
+        name = ad  # store a direct reference
+
+        offsets[name] = (poff, qoff)
+
+    return offsets
+
