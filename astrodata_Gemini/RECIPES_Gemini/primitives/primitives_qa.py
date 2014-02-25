@@ -1402,35 +1402,38 @@ def _iq_band(adinput=None,fwhm=None):
         count=0
         for ad in adinput_list:
 
-            wfs = ad.wavefront_sensor().as_pytype()
+            # The IQ bands used to depend on the WFS, but no more.
+            # Now it's only the waveband that matters.  The lookup
+            # table reflects this change.  Note that the lookup table
+            # should be checked against the webpage from time to time
+            # to ensure that they match.
+            
             waveband = ad.wavelength_band().as_pytype()
 
             # default value for iq band
             iq = None
 
-            # check that ad has valid WFS, band
-            if wfs is not None and waveband is not None:
-                if waveband in iqConstraints.keys():
-                    if wfs in iqConstraints[waveband].keys():
+            # check that ad has valid waveband
+            if waveband is not None and waveband in iqConstraints.keys():
 
-                        # get limits for this observation
-                        iq20 = iqConstraints[waveband][wfs]["20"]
-                        iq70 = iqConstraints[waveband][wfs]["70"]
-                        iq85 = iqConstraints[waveband][wfs]["85"]
+                # get limits for this observation
+                iq20 = iqConstraints[waveband]["20"]
+                iq70 = iqConstraints[waveband]["70"]
+                iq85 = iqConstraints[waveband]["85"]
 
-                        # get iq band
-                        if fwhm_list[count]<iq20:
-                            iq = (20,None,iq20)
-                            #iq="IQ20 (<%.2f arcsec)" % iq20
-                        elif fwhm_list[count]<iq70:
-                            iq = (70,iq20,iq70)
-                            #iq="IQ70 (%.2f-%.2f arcsec)" % (iq20,iq70)
-                        elif fwhm_list[count]<iq85:
-                            iq = (85,iq70,iq85)
-                            #iq="IQ85 (%.2f-%.2f arcsec)" % (iq70,iq85)
-                        else:
-                            iq = (100,iq85,None)
-                            #iq="IQAny (>%.2f arcsec)" % iq85
+                # get iq band
+                if fwhm_list[count]<iq20:
+                    iq = (20,None,iq20)
+                    #iq="IQ20 (<%.2f arcsec)" % iq20
+                elif fwhm_list[count]<iq70:
+                    iq = (70,iq20,iq70)
+                    #iq="IQ70 (%.2f-%.2f arcsec)" % (iq20,iq70)
+                elif fwhm_list[count]<iq85:
+                    iq = (85,iq70,iq85)
+                    #iq="IQ85 (%.2f-%.2f arcsec)" % (iq70,iq85)
+                else:
+                    iq = (100,iq85,None)
+                    #iq="IQAny (>%.2f arcsec)" % iq85
             
             # Append the iq band tuple to the output
             # Return value is (percentile, lower bound, upper bound)
