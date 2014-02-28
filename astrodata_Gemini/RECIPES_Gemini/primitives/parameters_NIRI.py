@@ -49,6 +49,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "measureBG":{
+    "remove_bias":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        }
+    },
  "measureIQ":{
     "suffix":{
         "default"       : "_iqMeasured",
