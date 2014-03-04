@@ -16,7 +16,7 @@ __version_date__ = '$Date$'[7:-3]
 __version__ = '2.0'
 # ------------------------------------------------------------------------------
 """
-This module (reduce3) provides a functionalized interface to running the core 
+This module (reduce2) provides a functionalized interface to running the core 
 processing of the reduce pipeline. This core functionality is provided by the 
 imported coreReduce module. 
 
@@ -26,8 +26,8 @@ function that can be called with an 'args' parameter.
 Eg.,
 
 >>> args = [defined by ArgumentParser or ProxyInterface]
->>> import reduce3
->>> reduce3.main(args)
+>>> import reduce2
+>>> reduce2.main(args)
 
 In the above example, 'args' is one of 
 
@@ -75,7 +75,7 @@ ProxyInterface:
 
 At which point, the caller would then call main()
 
->>> reduce3.main(args)
+>>> reduce2.main(args)
 
 When run from the command line, the program exits with an appropriate
 exit status.
