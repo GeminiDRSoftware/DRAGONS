@@ -45,7 +45,8 @@ from astrodata.adutils.reduceutils.reduceInstanceManager import ReduceInstanceMa
 def buildArgParser():
     from argparse import ArgumentParser
 
-    parser = ArgumentParser(description="This is the proxy to PRS functionality, "+\
+    parser = ArgumentParser(description="Automated Data Communication Center (ADCC)."
+                            "\n\nThis is the proxy to PRS functionality, "
                             "also invoked locally, e.g. for calibration requests.")
 
     parser.add_argument("-v", "--verbose", 
@@ -54,9 +55,9 @@ def buildArgParser():
 
     parser.add_argument("-i", "--invoked", 
                         dest = "invoked", action="store_true",
-                        help = "Used by processes that invoke prsproxy, so "+\
-                        "that PRS proxy knows when to exit. If not present, "+\
-                        "the prsproxy registers itself and will only exit by "+\
+                        help = "Used by processes that invoke adcc, so "
+                        "that PRS proxy knows when to exit. If not present, "
+                        "the adcc registers itself and will only exit by "
                         "user control (or by os-level signal).")
 
     parser.add_argument("--startup-report", 
@@ -65,32 +66,32 @@ def buildArgParser():
 
     parser.add_argument("--preload", 
                         dest = "preload", action="store_true",
-                        help = "Useful in proxy mode, where some information "+\
-                        "otherwise produced during the first relevant request "+\
+                        help = "Useful in proxy mode, where some information "
+                        "otherwise produced during the first relevant request "
                         "is prepared prior to starting the HTTPServer.")
 
     parser.add_argument("--reload", 
                         dest = "reload", action="store_true",
-                        help = "Just like --preload, but uses last, cached "+\
+                        help = "Just like --preload, but uses last, cached "
                         "(pickled) directory scan.")
 
     parser.add_argument("-r", "--reduce-port", 
                         dest = "reduceport", default=54530, type=int,
-                        help="Option informs prsproxy of the port on which "+\
+                        help="Option informs adcc of the port on which "
                         "reduce listens for xmlrpc commands.")
 
     parser.add_argument("-p", "--reduce-pid", 
                         dest ="reducepid", default=None, type=int,
-                        help = "Option informs prsproxy of the reduce "+\
+                        help = "Option informs adcc of the reduce "
                         "application's PID.")
 
     parser.add_argument("-l", "--listen-port", 
                         dest = "listenport", default=53530, type=int,
-                        help="prsproxy listener port for the xmlrpc server.")
+                        help="adcc listener port for the xmlrpc server.")
 
     parser.add_argument("-w", "--http-port", 
                         dest = "httpport", default=8777, type=int,
-                        help="Response port for the web interface. "+\
+                        help="Response port for the web interface. "
                         "i.e. http://localhost:<http-port>/")
 
     args = parser.parse_args()
@@ -101,7 +102,8 @@ def buildOptParser():
     from optparse import OptionParser
 
     parser = OptionParser()
-    parser.set_description("This is the proxy to PRS functionality, also invoked "+\
+    parser.set_description("Automated Data Communication Center "
+                           "This is the proxy to PRS functionality, also invoked "
                            "locally, e.g. for calibration requests.")
 
     parser.add_option("-v", "--verbose", 
@@ -110,9 +112,9 @@ def buildOptParser():
 
     parser.add_option("-i", "--invoked", 
                       dest = "invoked", action = "store_true",
-                      help = "Used by processes that invoke prsproxy, so "+\
-                      "that PRS proxy knows when to exit. If not present, the "+\
-                      "prsproxy registers itself and will only exit by user "+\
+                      help = "Used by processes that invoke adcc, so "+\
+                      "that PRS proxy knows when to exit. If not present, the "
+                      "adcc registers itself and will only exit by user "
                       "control (or by os-level signal).")
 
     parser.add_option("--startup-report", 
@@ -121,29 +123,29 @@ def buildOptParser():
 
     parser.add_option("--preload", 
                       dest="preload", action="store_true",
-                      help = "Useful in proxy mode, where some information "+\
-                      "otherwise produced during the first relevant request "+\
+                      help = "Useful in proxy mode, where some information "
+                      "otherwise produced during the first relevant request "
                       "is prepared prior to starting the HTTPServer.")
 
     parser.add_option("--reload", 
                       dest="reload", action="store_true",
-                      help = "Just like --preload, but uses last, cached "+\
+                      help = "Just like --preload, but uses last, cached "
                       "(pickled) directory scan.")
 
     parser.add_option("-r", "--reduce-port", 
                       dest = "reduceport", default=54530, type="int",
-                      help="When invoked by reduce, this is used to inform "+\
-                      "the prsproxy of the port on which reduce listens for "+\
+                      help="When invoked by reduce, this is used to inform "
+                      "the adcc of the port on which reduce listens for "
                       "xmlrpc commands.")
 
     parser.add_option("-p", "--reduce-pid", 
                       dest ="reducepid", default=None, type="int",
-                      help = "When invoked by reduce, this option is used to "+\
-                      "inform the prsproxy of the reduce application's PID.")
+                      help = "When invoked by reduce, this option is used to "
+                      "inform the adcc of the reduce application's PID.")
 
     parser.add_option("-l", "--listen-port", 
                       dest = "listenport", default=53530, type="int", 
-                      help="prsproxy listener port for the xmlrpc "+\
+                      help="adcc listener port for the xmlrpc "+\
                       "server.")
 
     parser.add_option("-w", "--http-port", 
@@ -172,9 +174,9 @@ def getPersistDir(dirtitle = "adcc"):
 
 def writeADCCSR(filename, vals=None):
     if filename == None:
-        print "adcc93: no filename for sr"
+        print "adcc177: no filename for sr"
         filename = ".adcc/adccReport"
-    print "adcc95: startup report going to", filename
+    print "adcc179: startup report going to", filename
     sr = open(filename, "w+")
     if vals == None:
         sr.write("ADCC ALREADY RUNNING\n")
@@ -190,8 +192,8 @@ def get_args():
     return args
 
 def get_version():
-    version = [("PRSProxy","0.2")]
-    print "prsproxy version:", repr(version)
+    version = [("ADCC","0.2")]
+    print "adcc version:", repr(version)
     return version
 
 # ----------------------------- END UTILITY FUNCS ------------------------------
@@ -241,14 +243,14 @@ clfn = args.adccsrn
 adccdir = getPersistDir()
 
 if os.path.exists(racefile):
-    print "ADCC307: adcc already has lockfile"
+    print "adcc246: adcc already has lockfile"
     from astrodata.Proxies import PRSProxy
-    adcc = PRSProxy.get_adcc(check_once = True)
+    adcc = PRSProxy.get_adcc(check_once=True)
     if adcc == None:
-        print "ADCC311: no adcc running, clearing lockfile"
+        print "adcc250: no adcc running, clearing lockfile"
         os.remove(racefile)
     else:
-        print "ADCC314: adcc instance found running, halting"
+        print "adcc253: adcc instance found running, halting"
         adcc.unregister()
         writeADCCSR(clfn)
         sys.exit()
@@ -258,7 +260,7 @@ findingPort = True
 while findingPort:
     try:
         server = SimpleXMLRPCServer(("localhost", args.listenport), allow_none=True)
-        print "PRS Proxy listening on port %d..." % args.listenport
+        print "ADCC listening on port %d..." % args.listenport
         findingPort = False
     except socket.error:
         args.listenport += 1
@@ -268,10 +270,10 @@ vals = {"xmlrpc_port": args.listenport,
         "http_port"  : args.httpport,
         "pid"        : os.getpid() }
 
-#write racefile and ADCC Startup Report
-ports = file(racefile, "w")
-ports.write(repr(vals))
-ports.close()
+# Write racefile and ADCC Startup Report
+with open(racefile, "w") as ports:
+    ports.write(repr(vals))
+
 writeADCCSR(clfn, vals=vals)
 
 server.register_function(get_version, "get_version")
@@ -283,35 +285,31 @@ rim = ReduceInstanceManager(args.reduceport)
 server.register_instance(rim)
 
 if args.preload:
-    print "adcc: scanning current directory tree"
+    print "adcc288: scanning current directory tree"
     from astrodata.DataSpider import DataSpider
     ds = DataSpider(".")
     dirdict = ds.datasetwalk()
     persistpath = os.path.join(getPersistDir(), "dataspider_cache.pkl")
-    ddf = open(persistpath, "w")
-    pickle.dump(dirdict, ddf)
-    ddf.close()
-    print "adcc: done scanning current directory tree"
+    with open(persistpath, "w") as ddf:
+        pickle.dump(dirdict, ddf)
+    print "adcc295: done scanning current directory tree"
 else:
     ds = None
     dirdict = None
     
 if args.reload:
     from astrodata.DataSpider import DataSpider
-    print "prsproxy: reloading result of previous scan of directory tree"
+    print "adcc302: reloading result of previous scan of directory tree"
     ds = DataSpider(".")
     persistpath = os.path.join(getPersistDir(), "dataspider_cache.pkl")
-    ddf = open(persistpath)
-    dirdict = pickle.load(ddf)
-    ddf.close()
+    with open(persistpath) as ddf:
+        dirdict = pickle.load(ddf)
 
 # server.serve_forever(
 # start webinterface
 
 webinterface = True
-
 if (webinterface):
-    #import multiprocessing
     if ds and dirdict:
         web = Thread(None, prsproxyweb.main, "webface", 
                     kwargs = {"port": args.httpport,
@@ -324,7 +322,6 @@ if (webinterface):
                     kwargs = {"port":args.httpport,
                               "rim":rim,
                               "verbose": args.verbosity})
-
     web.start()
     
 outerloopdone = False
@@ -334,40 +331,27 @@ while True:
     try:
         while True:
             r, w, x = select.select([server.socket], [], [], 0.5)
-
             if r:
                 server.handle_request() 
 
             if prsproxyweb.webserverdone:
-                print "prsproxy exiting due to command vie http interface"
-                print "number of reduce instances abandoned:", rim.numinsts
+                print "\nadcc: exiting due to command vie http interface"
+                print "adcc: %d reduce instances abandoned:" % rim.numinsts
                 outerloopdone = True
                 break
 
             if (args.invoked and rim.finished):
-                print "prsproxy exiting, no reduce instances to serve."
+                print "adcc exiting, no reduce instances to serve."
                 outerloopdone = True
                 prsproxyweb.webserverdone = True
                 break
 
     except KeyboardInterrupt:
-        if rim.numinsts > 0:
-            # note: save reduce pide (pass in register) and 
-            #       and check if pids are running!
-            print "\nprsproxy: %d instances of reduce running" % rim.numinsts
-            #below allows exit anyway
+            print "\nadcc: exiting due to Ctrl-C"
+            print "adcc: %d instance(s) abandoned" % rim.numinsts
             outerloopdone = True
             prsproxyweb.webserverdone = True
             break
-
-        else:
-            print "\nprsproxy: exiting due to Ctrl-C"
-            # this directly breaks from the outer loop but outerloopdone for clarity
-            outerloopdone = True
-            prsproxyweb.webserverdone = True
-            # not needed os.kill(os.getpid(), signal.SIGTERM)
-            break
-
 
 if os.path.exists(racefile):
     os.remove(racefile)
