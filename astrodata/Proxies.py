@@ -1,3 +1,13 @@
+#
+#                                                                  gemini_python
+#
+#                                                                     Proxies.py
+# ------------------------------------------------------------------------------
+# $Id$
+# ------------------------------------------------------------------------------
+__version__      = '$Rev$'[11:-2]
+__version_date__ = '$Date$'[7:-2]
+# ------------------------------------------------------------------------------
 import os
 import time
 import select
@@ -5,24 +15,72 @@ import socket
 import xmlrpclib
 import subprocess
 
+from sys import stdout
 from time import sleep
-from pprint import pformat
 
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 
 from astrodata.adutils import logutils
 from astrodata.Errors  import ADCCCommunicationError
 # -----------------------------------------------------------------------------
-
 log = logutils.get_logger(__name__)
-PDEB = False
+reduceServer = None
 
+# -----------------------------------------------------------------------------
+def start_adcc(callerlockfile=None):
+    import tempfile
+    
+    if callerlockfile is None:
+        clf = tempfile.NamedTemporaryFile("w", prefix="clf4pid" + str(os.getpid()))
+        clfn = clf.name
+        clf.close()
+    else:
+        clfn = callerlockfile
+
+    logdir = ".autologs"
+    if not os.path.exists(logdir):
+        os.mkdir(logdir)
+    logname = os.path.join(logdir, "adcc-reducelog-%d-%s" % 
+                           (os.getpid(), str(time.time())))
+                          
+    prsout = open(logname, "w")
+    loglink = "adcclog-latest"
+
+    if os.path.exists(loglink):
+        os.remove(loglink)
+    # print "creating %s -> %s" % (logname, loglink)
+    os.symlink(logname, loglink)
+    
+    prsargs = ["adcc",
+                "--invoked",
+                "--reduce-pid", "%d" % os.getpid(),
+                "--startup-report", clfn
+               ]
+
+    aproc = subprocess.Popen(prsargs, 
+                           stdout=prsout, 
+                           stderr=subprocess.STDOUT
+                           )
+
+    # wait for adccinfo, unless there is a lockfile, we'll trust it,
+    # deal later with a dead host.
+    if True:
+        while not os.path.exists(clfn):
+            # print "P69:waiting for", clfn, aproc.pid
+            sleep(1)
+
+    if os.path.exists(clfn):
+        os.remove(clfn)
+
+    return aproc
+
+# -----------------------------------------------------------------------------
 class ReduceCommands(object):
     prsready = False
-    reduce_server = None
     
-    def __init__(self, reduce_server):
+    def __init__(self, reduce_server=None):
         self.reduce_server = reduce_server
+
     def get_version(self):
         return [("ReduceXMLRPS", "0.1")]
 
@@ -30,14 +88,14 @@ class ReduceCommands(object):
         self.prsready = True
         reduceServer.prsready = True
 
-reduceServer = None
 
 class ReduceServer(object):
+    finished     = False
+    prsready     = False
+    reducecmds   = None
+    listenport   = 54530    
     xmlrpcthread = None
-    listenport = 54530    
-    reducecmds = None
-    finished = False
-    prsready = False
+
     def __init__(self):
         global reduceServer
         from threading import Thread
@@ -46,7 +104,9 @@ class ReduceServer(object):
         reduceServer = self
         
     def start_listening(self):
-        findingport = True
+        adcc_report  = 'adcclog-latest'
+        findingport  = True
+
         while(findingport):
             try:
                 server = SimpleXMLRPCServer(("localhost", 
@@ -56,10 +116,9 @@ class ReduceServer(object):
                 findingport = False
             except socket.error:
                 self.listenport += 1
-                
+
         self.reducecmds = ReduceCommands(self)
         server.register_instance(self.reducecmds)
-        
         try:
             while True:
                 r,w,x = select.select([server.socket], [],[],.5)
@@ -74,205 +133,114 @@ class ReduceServer(object):
         return
 
 
-def start_adcc(callerlockfile = None):
-    import tempfile
-    import os
-    
-    if callerlockfile == None:
-        
-        clf = tempfile.NamedTemporaryFile("w", prefix = "clf4pid"+str(os.getpid()))
-        clfn = clf.name
-        clf.close()
-        
-    else:
-        clfn = callerlockfile
-
-    from time import sleep
-    racefile = ".adcc/adccinfo.py"
-    logdir = ".autologs"
-    if not os.path.exists(logdir):
-        os.mkdir(logdir)
-    logname = os.path.join( ".autologs",
-                            "adcc-reducelog-%d-%s" % 
-                                    (
-                                    os.getpid(),
-                                    str(time.time())
-                                    )
-                          )
-                          
-    prsout = open(logname, "w")
-                  
-    loglink = "adcclog-latest"
-    if os.path.exists(loglink):
-        os.remove(loglink)
-    # print "creating %s -> %s" % (logname, loglink)
-    os.symlink(logname, loglink)
-    
-    prsargs = ["adcc",
-                "--invoked",
-                #"--reduce-port", "%d" % reduceServer.listenport,
-                "--reduce-pid", "%d" % os.getpid(),
-                "--startup-report", clfn,
-                ]
-
-    pid = subprocess.Popen( prsargs, 
-                            stdout = prsout, 
-                            stderr = subprocess.STDOUT #prserr,
-                            ).pid
-
-    # wait for adccinfo, unless there is a lockfile, we'll trust it and deal later
-    # with a dead host.
-    if True: # not os.path.exists(racefile):
-        while not os.path.exists(clfn):
-            #print "P123:waiting for", clfn, pid
-            sleep(1)
-        
-    if os.path.exists(clfn):
-        os.remove(clfn)
-    return pid
-                                        
 class PRSProxy(object):
     # the xmlrpc interface is saved
     _class_prs = None
-    prs = None
-    found = False
-    version = None
-    finished = False
-    registered = False
-    
-    prsport = 53530
-    httpport = None
-    reducecmds = None
-    xmlrpcthread = None
-    reduce_server = None
-    log = None
 
-    def __init__(self, reduce_server = None, port = None):
-            
+    def __init__(self, reduce_server=None, port=53530):
+        self.prs = None
+        self.log = None
+
+        self.found = False
+        self.prsport = port
+        self.version  = None
+        self.finished  = False
+        self.registered = False
+        
+        self.httpport = None
+        self.reducecmds = None
+        self.xmlrpcthread = None
+        self.reduce_server = reduce_server
+
         try:
-            if port != None:
-                self.prsport = port
             self.prs = xmlrpclib.ServerProxy("http://localhost:%d" % self.prsport, 
                                             allow_none=True,
                                             use_datetime=True)
-            self.reduce_server = reduce_server
-            PRSProxy._class_prs = self # .prs
-            self.found = True
         except socket.error:
-            self.found = False
             raise ADCCCommunicationError("Socket Error")
-        
+
+        self.found = True
+        PRSProxy._class_prs = self
+ 
+    def __del__(self):
+        if hasattr(self.prs,"found"):
+            self.prs.unregister(os.getpid())
+
     @classmethod
-    def get_adcc(cls, reduce_server = None, check_once = False):
+    def get_adcc(cls, reduce_server=None, check_once=False):
         # note: the correct ADCC will store it's info in .adcc/adccinfo.py
         racefile = ".adcc/adccinfo.py"
-        if not os.path.exists(racefile):
-            if check_once == True:
-                return None
-            raise ADCCCommunicationError("SYSTEM ERROR: ADCC not found after attempt to start")
-        infof = file(racefile)
-        infos = infof.read()
-        infof.close()
-        info = eval(infos)
 
-        import sys
-        if  type(cls._class_prs) != type(None):
-            proxy = cls._class_prs
-            start = False
+        if not os.path.exists(racefile):
+            if check_once is True:
+                return None
+            comm_err = "SYSTEM ERROR: ADCC not found after attempt to start"
+            raise ADCCCommunicationError(comm_err)
+
+        with open(racefile) as rfile:
+            info = eval(rfile.read())
+
+        if (cls._class_prs) is not None:
             return cls._class_prs
                     
+        found    = False
         newProxy = None
-
-        found = False
-        newProxy = PRSProxy(reduce_server = reduce_server, port = info["xmlrpc_port"])
+        newProxy = PRSProxy(reduce_server=reduce_server, port=info["xmlrpc_port"])
         newProxy.httpport = info["http_port"]
         newProxy.localCalUrl = "http://localhost:%s/calsearch.xml" % newProxy.httpport
-        if not found:           
+
+        if not found:
             log.info("reduce-->adcc?")
+
         while(not found):
             try:
                 newProxy.version = newProxy.get_version()
+                newProxy.found = True
                 found = True
 
-                if (PDEB):
-                    print "P102: newProxy id", id(newProxy), newProxy.found
-                    print "P100: checking for proxy up"
-
-                # After this version call, we know it's up, we keep this
-                # proxy, and start listening for commands
-                if PDEB:
-                    print "P109: setting found equal true"
-                newProxy.found = True
-                if PDEB:
-                    print "P111: about to register"
                 if reduce_server:
                     details =  {"port":reduce_server.listenport}
                 else:
                     details = {}
                 newProxy.register( details)
-                if PDEB:
-                    print "P120: Proxy found"
+
             except socket.error:
                 newProxy.found = False
-                sys.stdout.write(".")
+                stdout.write(".")
                 sleep(.1)
                 if check_once:
                     newProxy = None
                     break
-                # try again
         log.info("reduce--><--adcc") 
-
         return newProxy
-        
+
     def unregister(self):
-        # print "P262 self.registered=", repr(self.registered)
         if self.registered:
             self.prs.unregister(os.getpid())
             self.registered=False
-            log.info("Unregistering with adcc (P229)")
+            log.info("Unregistering with adcc (P243)")
         else:
-            log.warning("P231: not registering with adcc due to exception.")
-            
+            log.warning("P245: not registering with adcc due to exception.")
+        return
+
     def register(self, details = None):
         self.prs.register(os.getpid(), details)
         self.registered = True
-        # print "P275 self.registered=", repr(self.registered)
-        
-    def __del__(self):
-        # raise " no "
-        # print "P262: deleting proxy\n"*20
-        import traceback
-        if (PDEB):
-            print "P153: self.found =",self.found, id(self)
-        if hasattr(self.prs,"found"):
-            if (PDEB):
-                print "about to unregister from found prs"
-            self.prs.unregister(os.getpid())
-            if (PDEB):
-                print "unregistered from the prs"
+        return
 
     def calibration_search(self, cal_rq):
         if self.found == False:
             return None
         else:
-            PDEB = False
             calrqdict = cal_rq.as_dict()
-            if (PDEB):
-                print "P261:"+pformat(calrqdict)
-                print "P262:", repr(calrqdict)
-            
             try:
                 cal = self.prs.calibration_search(calrqdict)
             except:
-                print "P267: Calibration search fault"
+                print "P265: Calibration search fault"
                 import traceback
                 traceback.print_exc()
                 log.error("P268: EXCEPTION from ADCC, no calibration to return")
-                
                 return None
-            if (PDEB):
-                print "P167:", cal
-            PDEB = False
             return cal
 
     def get_version(self):
