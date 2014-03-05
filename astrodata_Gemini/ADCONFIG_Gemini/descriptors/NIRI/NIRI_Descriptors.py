@@ -288,6 +288,102 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_dv = DescriptorValue(ret_gain, name="gain", ad=dataset)
         
         return ret_dv
+
+    def group_id(self, dataset, **args):
+        # For NIRI image data, the group id contains the read_mode,
+        # well_depth_setting, detector_section.
+        # In addition flats, twilights and camera have the pretty version of the
+        # filter_name included. For science data the pretty version of the
+        # observation_id, filter_name and the camera are also included.
+        #
+        # Currently for spectroscopic data the disperser and focal_plane_mask is
+        # included too
+
+        # Descriptors used for all image types
+        unique_id_descriptor_list_all = ["read_mode", "well_depth_setting",
+                                         "detector_section"]
+                                         
+
+        # List to format descriptor calls using 'pretty=True' parameter
+        call_pretty_version_list = ["filter_name", "disperser",
+                                    "focal_plane_mask"]
+
+        # Descriptors to be returned as an ordered list using descriptor
+        # 'as_list' method.
+        convert_to_list_list = ["detector_section"]
+
+        # Other descriptors required for spectra 
+        required_spectra_descriptors = ["disperser", "focal_plane_mask"]
+        if "SPECT" in dataset.types:
+            unique_id_descriptor_list_all.extend(required_spectra_descriptors)
+
+        # Additional descriptors required for each frame type
+        dark_id = ["exposure_time", "coadds"]
+        flat_twilight_id = ["filter_name", "camera"]
+        science_id = ["observation_id", "filter_name", "camera"]
+
+        # This is used for imaging flats and twilights to distinguish between
+        # the two type
+        additional_item_to_include = None
+        
+        # Update the list of descriptors to be used depending on image type
+        ## This requires updating to cover all spectral types
+        ## Possible updates to the classification system will make this usable
+        ## at the Gemini level
+        data_types = dataset.types
+        if "NIRI_DARK" in  data_types:
+            id_descriptor_list = dark_id
+        elif "NIRI_IMAGE_FLAT" in data_types:
+            id_descriptor_list = flat_twilight_id
+            additional_item_to_include = "NIRI_IMAGE_FLAT"
+        elif "NIRI_IMAGE_TWILIGHT" in data_types:
+            id_descriptor_list = flat_twilight_id
+            additional_item_to_include = "NIRI_IMAGE_TWILIGHT"            
+        else:
+            id_descriptor_list = science_id
+
+        # Add in all of the common descriptors required
+        id_descriptor_list.extend(unique_id_descriptor_list_all)
+
+        # Form the group_id
+        descriptor_object_string_list = []
+        for descriptor in id_descriptor_list:
+            # Prepare the descriptor call
+            if descriptor in call_pretty_version_list:
+                end_parameter = "(pretty=True)"
+            else:
+                end_parameter = "()"
+            descriptor_call = ''.join([descriptor, end_parameter])
+
+            # Call the descriptor
+            exec ("descriptor_object = dataset.{0}".format(descriptor_call))
+
+            # Check for a returned descriptor value object with a None value
+            if descriptor_object.is_none():
+                # The descriptor functions return None if a value cannot be found
+                # and stores the exception info. Re-raise the exception. It
+                # will be dealt with by the CalculatorInterface.
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
+
+            # In some cases require the information as a list
+            if descriptor in convert_to_list_list:
+                descriptor_object = descriptor_object.as_list()
+
+            # Convert DV value to a string and store
+            descriptor_object_string_list.append(str(descriptor_object))
+
+        # Add in any none descriptor related information
+        if additional_item_to_include is not None:
+            descriptor_object_string_list.append(additional_item_to_include)
+            
+        # Create the final group_id string
+        ret_group_id = '_'.join(descriptor_object_string_list)            
+
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_group_id, name="group_id", ad=dataset)
+        
+        return ret_dv
     
     niriSpecDict = None
     
