@@ -1140,8 +1140,10 @@ def filename_updater(adinput=None, infilename='', suffix='', prefix='',
     return outFileName
 
 
-def finalise_adinput(adinput=None, timestamp_key=None, suffix=None):
-    if not adinput or adinput is None:
+def finalise_adinput(adinput=None, timestamp_key=None, suffix=None,
+                     allow_empty=False):
+
+    if adinput is None or (not allow_empty and not adinput):
         raise Errors.InputError()
     elif not isinstance(adinput, list):
         adinput_list = [adinput]
