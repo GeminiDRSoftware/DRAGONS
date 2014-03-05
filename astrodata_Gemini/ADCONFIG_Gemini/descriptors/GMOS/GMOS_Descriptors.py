@@ -755,11 +755,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     def group_id(self, dataset, **args):
         # For GMOS image data, the group id contains the detector_x_bin,
         # detector_y_bin, amp_read_area, gain_setting and read_speed_setting.
-        # In additon flats and twillights have the pretty version of the
+        # In addition flats and twilights have the pretty version of the
         # filter_name included. Also, for science data the pretty version of
         # the filter_name and the observation_id are also included.
-
-        # Currently for spectoscopic data the grating is included too.
+        #
+        # Currently for spectroscopic data the grating is included too.
 
         # Descriptors used for all frame types
         unique_id_descriptor_list_all = ["detector_x_bin", "detector_y_bin",
@@ -775,29 +775,30 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Other descriptors required for spectra 
         required_spectra_descriptors = ["disperser"]
 
-        ##M This will probably require more thought in the future for spectral
-        ##M flats and twilights. Possibly even if it's required...
+        ## This will probably require more thought in the future for spectral
+        ## flats and twilights. Possibly even if it's required...
         if "SPECT" in dataset.types:
             unique_id_descriptor_list_all.extend(required_spectra_descriptors)
 
         # Additional descriptors required for each frame type
         bias_id = []
         dark_id = ["exposure_time"]
-        flat_twlight_id = ["filter_name"]
+        flat_twilight_id = ["filter_name"]
         science_id = ["observation_id", "filter_name"]
 
         # Update the list of descriptors to be used depending on image type
-        ##M This requires updating to cover all spectral types
-        ##M Possible updates to the classification system will make this usable
-        ##M at the gemini level
+        #
+        ## This requires updating to cover all spectral types
+        ## Possible updates to the classification system will make this usable
+        ## at the Gemini level
         data_types = dataset.types
-        if "GMOS_BIAS" in  data_types:
+        if "GMOS_BIAS" in data_types:
             id_descriptor_list = bias_id
-        elif "GMOS_DARK" in  data_types:
+        elif "GMOS_DARK" in data_types:
             id_descriptor_list = dark_id
         elif ("GMOS_IMAGE_FLAT" in data_types or
               "GMOS_IMAGE_TWILIGHT" in data_types):
-            id_descriptor_list = flat_twlight_id
+            id_descriptor_list = flat_twilight_id
         else:
             id_descriptor_list = science_id
 
@@ -805,7 +806,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         id_descriptor_list.extend(unique_id_descriptor_list_all)
 
         # Form the group_id
-        dv_object_string_list = []
+        descriptor_dv_string_list = []
         for descriptor in id_descriptor_list:
             # Prepare the descriptor call
             if descriptor in call_pretty_version_list:
@@ -815,10 +816,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             descriptor_call = ''.join([descriptor, end_parameter])
 
             # Call the descriptor
-            exec ("dv_object = dataset.{0}".format(descriptor_call))
+            exec ("descriptor_dv = dataset.{0}".format(descriptor_call))
 
             # Check for a returned descriptor value object with a None value
-            if dv_object.is_none():
+            if descriptor_dv.is_none():
                 # The descriptor functions return None if a value cannot be found
                 # and stores the exception info. Re-raise the exception. It
                 # will be dealt with by the CalculatorInterface.
@@ -827,13 +828,13 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
 
             # In some cases require the information as a list
             if descriptor in convert_to_list_list:
-                dv_object = dv_object.as_list()
+                descriptor_dv = descriptor_dv.as_list()
 
             # Convert DV value to a string and store
-            dv_object_string_list.append(str(dv_object))
+            descriptor_dv_string_list.append(str(descriptor_dv))
 
         # Create the final group_id string
-        ret_group_id = '_'.join(dv_object_string_list)            
+        ret_group_id = '_'.join(descriptor_dv_string_list)            
 
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_group_id, name="group_id", ad=dataset)
@@ -1087,10 +1088,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     def read_mode(self, dataset, **args):
         # There are currently four ways to set the read mode for the GMOS
         # instruments' detector, which are determined by the gain setting and
-        # the read speed seeting.
+        # the read speed setting.
 
         # Read mode name mapping: key=read_mode; value=[gain_setting,
         #                                               read_speed_setting]
+        ## Move this to a look up table?
         read_mode_mapping_dict = {"Normal": ["low", "slow"],
                                   "Bright": ["low", "fast"],
                                   "Acquisition": ["high", "fast"],
@@ -1110,6 +1112,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
 
+        # Obtain the read mode from the look up table.
         read_mode_dvs_strings = [str(dv) for dv in read_mode_dvs]
         for key, value in read_mode_mapping_dict.iteritems():
             if read_mode_dvs_strings == value:
