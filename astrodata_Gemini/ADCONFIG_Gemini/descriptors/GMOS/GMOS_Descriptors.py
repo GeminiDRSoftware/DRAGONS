@@ -753,58 +753,93 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_dv
     
     def group_id(self, dataset, **args):
-        # For GMOS data, the group id contains the detector_x_bin,
-        # detector_y_bin and amp_read_area in addition to the observation id.
-        # Get the observation id, the binning of the x-axis and y-axis and the
-        # amp_read_area values using the appropriate descriptors.
-        observation_id_dv = dataset.observation_id()
-        detector_x_bin_dv = dataset.detector_x_bin()
-        detector_y_bin_dv = dataset.detector_y_bin()
-        amp_read_area_dv = dataset.amp_read_area()
-        
-        if (observation_id_dv.is_none() or detector_x_bin_dv.is_none() or
-            detector_x_bin_dv.is_none() or amp_read_area_dv.is_none()):
-            # The descriptor functions return None if a value cannot be found
-            # and stores the exception info. Re-raise the exception. It will be
-            # dealt with by the CalculatorInterface.
-            if hasattr(dataset, "exception_info"):
-                raise dataset.exception_info
-        
-        # Return the amp_read_area as an ordered list
-        amp_read_area_list = amp_read_area_dv.as_list()
-        
-        # For all data other than data with an AstroData type of GMOS_BIAS, the
-        # group id contains the filter_name. Also, for data with an AstroData
-        # type of GMOS_BIAS and GMOS_IMAGE_FLAT, the group id does not contain
-        # the observation id. 
-        if "GMOS_BIAS" in dataset.types:
-            ret_group_id = "%s_%s_%s" % (
-                detector_x_bin_dv, detector_y_bin_dv, amp_read_area_list)
+        # For GMOS image data, the group id contains the detector_x_bin,
+        # detector_y_bin, amp_read_area, gain_setting and read_speed_setting.
+        # In additon flats and twillights have the pretty version of the
+        # filter_name included. Also, for science data the pretty version of
+        # the filter_name and the observation_id are also included.
+
+        # Currently for spectoscopic data the grating is included too.
+
+        # Descriptors used for all frame types
+        unique_id_descriptor_list_all = ["detector_x_bin", "detector_y_bin",
+                                         "read_mode", "amp_read_area"]
+
+        # List to format descriptor calls using 'pretty=True' parameter
+        call_pretty_version_list = ["filter_name", "disperser"]
+
+        # Descriptors to be returned as an ordered list using descriptor
+        # 'as_list' method.
+        convert_to_list_list = ["amp_read_area"]
+
+        # Other descriptors required for spectra 
+        required_spectra_descriptors = ["disperser"]
+
+        ##M This will probably require more thought in the future for spectral
+        ##M flats and twilights. Possibly even if it's required...
+        if "SPECT" in dataset.types:
+            unique_id_descriptor_list_all.extend(required_spectra_descriptors)
+
+        # Additional descriptors required for each frame type
+        bias_id = []
+        dark_id = ["exposure_time"]
+        flat_twlight_id = ["filter_name"]
+        science_id = ["observation_id", "filter_name"]
+
+        # Update the list of descriptors to be used depending on image type
+        ##M This requires updating to cover all spectral types
+        ##M Possible updates to the classification system will make this usable
+        ##M at the gemini level
+        data_types = dataset.types
+        if "GMOS_BIAS" in  data_types:
+            id_descriptor_list = bias_id
+        elif "GMOS_DARK" in  data_types:
+            id_descriptor_list = dark_id
+        elif ("GMOS_IMAGE_FLAT" in data_types or
+              "GMOS_IMAGE_TWILIGHT" in data_types):
+            id_descriptor_list = flat_twlight_id
         else:
-            # Get the filter name using the appropriate descriptor
-            filter_name_dv = dataset.filter_name(pretty=True)
-            
-            if filter_name_dv.is_none():
-                # The descriptor functions return None if a value cannot be
-                # found and stores the exception info. Re-raise the exception.
-                # It will be dealt with by the CalculatorInterface.
+            id_descriptor_list = science_id
+
+        # Add in all of the common descriptors required
+        id_descriptor_list.extend(unique_id_descriptor_list_all)
+
+        # Form the group_id
+        dv_object_string_list = []
+        for descriptor in id_descriptor_list:
+            # Prepare the descriptor call
+            if descriptor in call_pretty_version_list:
+                end_parameter = "(pretty=True)"
+            else:
+                end_parameter = "()"
+            descriptor_call = ''.join([descriptor, end_parameter])
+
+            # Call the descriptor
+            exec ("dv_object = dataset.{0}".format(descriptor_call))
+
+            # Check for a returned descriptor value object with a None value
+            if dv_object.is_none():
+                # The descriptor functions return None if a value cannot be found
+                # and stores the exception info. Re-raise the exception. It
+                # will be dealt with by the CalculatorInterface.
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
-            
-            if "GMOS_IMAGE_FLAT" in dataset.types:
-                ret_group_id = "%s_%s_%s_%s" % (
-                    detector_x_bin_dv, detector_y_bin_dv, filter_name_dv,
-                    amp_read_area_list)
-            else:
-                ret_group_id = "%s_%s_%s_%s_%s" % (
-                    observation_id_dv, detector_x_bin_dv, detector_y_bin_dv,
-                    filter_name_dv, amp_read_area_list)
-        
+
+            # In some cases require the information as a list
+            if descriptor in convert_to_list_list:
+                dv_object = dv_object.as_list()
+
+            # Convert DV value to a string and store
+            dv_object_string_list.append(str(dv_object))
+
+        # Create the final group_id string
+        ret_group_id = '_'.join(dv_object_string_list)            
+
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_group_id, name="group_id", ad=dataset)
         
         return ret_dv
-    
+
     def nod_count(self, dataset, **args):
         # The number of nod and shuffle cycles can only be obtained from nod
         # and shuffle data
@@ -1050,9 +1085,46 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_dv
     
     def read_mode(self, dataset, **args):
-        # For GMOS data, raise an exception if the read_mode descriptor called,
-        # since it is not relevant for GMOS data.
-        raise Errors.ExistError()
+        # There are currently four ways to set the read mode for the GMOS
+        # instruments' detector, which are determined by the gain setting and
+        # the read speed seeting.
+
+        # Read mode name mapping: key=read_mode; value=[gain_setting,
+        #                                               read_speed_setting]
+        read_mode_mapping_dict = {"Normal": ["low", "slow"],
+                                  "Bright": ["low", "fast"],
+                                  "Acquisition": ["high", "fast"],
+                                  "Engineering": ["high", "slow"],
+                                  }
+
+        # Required descriptors
+        read_mode_descriptors = ["gain_setting", "read_speed_setting"]
+        read_mode_dvs = []
+        for descriptor_name in read_mode_descriptors:
+            exec ("read_mode_dvs.append(dataset.{0}())".format(descriptor_name))
+
+        if any(dv.is_none() for dv in read_mode_dvs):
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+
+        read_mode_dvs_strings = [str(dv) for dv in read_mode_dvs]
+        for key, value in read_mode_mapping_dict.iteritems():
+            if read_mode_dvs_strings == value:
+                read_mode_string = key
+                break
+        else:
+            raise Errors.TableKeyError("{0!s} is not a valid value in the {2} "
+                                       "dictionary: {3!r}".format(
+                    read_mode_dvs_strings, "read_mode_mapping_dict",
+                    read_mode_mapping_dict))
+
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(read_mode_string, name="read_mode",
+                                 ad=dataset)
+        return ret_dv
     
     def read_noise(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
