@@ -184,11 +184,11 @@ def buildParser(version):
                         "logging; (critical, error, warning, status, stdinfo, "
                         "fullinfo, debug)")
 
-    parser.add_argument("--usercal", dest="user_cals", default=None,
+    parser.add_argument("--override_cal", dest="user_cals", default=None,
                         nargs="*", action=CalibrationAction,
                         help="Add calibration to User Calibration Service. "
-                        "'--usercal=CALTYPE_1:CAL_PATH_1 CALTYPE_N:CAL_PATH_N' "
-                        "Eg., --usercal=processed_arc:wcal/gsN20011112S064_arc.fits ")
+                        "'--override_cal CALTYPE_1:CAL_PATH_1 CALTYPE_N:CAL_PATH_N' "
+                        "Eg., --override_cal processed_arc:wcal/gsN20011112S064_arc.fits ")
 
     parser.add_argument("--writeInt", dest='writeInt', default=False,
                         nargs="*", action=BooleanAction,

@@ -150,6 +150,9 @@ class CoreReduce(object):
         DisplayRequest
         ImageQualityRequest
         """
+        # add any user calibration overrides ...
+        add_service(self.user_cals)
+
         # if astrotype is unspecified, first file in group is type reference
         # for types used to load the recipe and primitives
         if self.astrotype:

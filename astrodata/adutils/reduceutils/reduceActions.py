@@ -20,7 +20,7 @@ Action classes provided:
     BooleanAction         - optional switches
     UnitaryArgumentAction - single value options
     ParameterAction       - user parameters (-p, --param)
-    CalibrationAction     - user calibration services (--usercal)
+    CalibrationAction     - user calibration services (--override_cal)
 
 Becuase of requirements on the reduce interface, any new reduce options should
 specify one of these actions in the add_argument() call. But only one (1)
