@@ -56,7 +56,7 @@
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
-        }
+        },
     },
  "measureIQ":{
     "suffix":{
@@ -88,6 +88,23 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "associateSky":{
+    "time":{
+        "default"       : 900.,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "distance":{
+        "default"       : 1.,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+
+},
  "separateSky":{
     "suffix":{
         "default"       : "_skySeparated",

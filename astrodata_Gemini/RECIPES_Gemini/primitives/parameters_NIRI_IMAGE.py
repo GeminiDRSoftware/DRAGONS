@@ -29,13 +29,4 @@
         "uiLevel"       : "UIBASIC",
         },
     },
-"separateSky":{
-    "all_on_sky":{
-        "default"       : "True",
-        "type"          : "bool",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    },
 }

@@ -278,7 +278,7 @@ class StackPrimitives(GENERALPrimitives):
             # Retrieve the list of sky AstroData objects associated with the
             # input science AstroData object
             origname = ad_science.phu_get_key_value("ORIGNAME")
-            if origname in sky_dict:
+            if sky_dict and (origname in sky_dict):
                 adr_sky_list = sky_dict[origname]
                 
                 if not adr_sky_list:

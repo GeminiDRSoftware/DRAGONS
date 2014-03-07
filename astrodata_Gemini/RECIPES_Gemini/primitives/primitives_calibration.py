@@ -538,15 +538,23 @@ class CalibrationPrimitives(GENERALPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
 
-        lampon = rc.get_stream(stream="lampOn", style="AD")[0]
-        lampoff = rc.get_stream(stream="lampOff", style="AD")[0]
+        lampon_list = rc.get_stream(stream="lampOn", style="AD")
+        lampoff_list = rc.get_stream(stream="lampOff", style="AD")
 
-        log.stdinfo("Lamp ON is: %s %s" % (lampon.data_label(), lampon.filename))
-        log.stdinfo("Lamp OFF is: %s %s" % (lampoff.data_label(), lampoff.filename))
-        lampon.sub(lampoff)
-        lampon.filanme = gt.filename_updater(adinput=lampon, suffix="lampOnOff")
+        if((len(lampon_list) > 0) and (len(lampoff_list) > 0)):
+            lampon = lampon_list[0]
+            lampoff = lampoff_list[0]
+ 
 
-        adoutput_list.append(lampon)
+            log.stdinfo("Lamp ON is: %s %s" % (lampon.data_label(), lampon.filename))
+            log.stdinfo("Lamp OFF is: %s %s" % (lampoff.data_label(), lampoff.filename))
+            lampon.sub(lampoff)
+            lampon.filanme = gt.filename_updater(adinput=lampon, suffix="lampOnOff")
+
+            adoutput_list.append(lampon)
+
+        else:
+            log.warning("Cannot subtract lamp on - lamp off flats as do not have some of each")
+
         rc.report_output(adoutput_list)
-
         yield rc

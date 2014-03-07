@@ -167,13 +167,17 @@ class PreprocessPrimitives(GENERALPrimitives):
             # and updating the filename.
             if ad_science_list:
                 ad_science_output_list = gt.finalise_adinput(
-                  adinput=ad_science_list, timestamp_key=timestamp_key,
-                  suffix=suffix)
+                    adinput=ad_science_list, timestamp_key=timestamp_key,
+                    suffix=suffix)
+            else:
+                ad_science_output_list = []
             
             if ad_sky_list:
                 ad_sky_output_list = gt.finalise_adinput(
-                  adinput=ad_sky_list, timestamp_key=timestamp_key,
-                  suffix=suffix)
+                    adinput=ad_sky_list, timestamp_key=timestamp_key,
+                    suffix=suffix)
+            else:
+                ad_sky_output_list = []
         else:
             # Initialize the dictionary that will contain the association
             # between the science AstroData objects and the sky AstroData
@@ -201,7 +205,8 @@ class PreprocessPrimitives(GENERALPrimitives):
                     # Set the list of sky AstroDataRecord objects for this
                     # science AstroData object equal to the input list of sky
                     # AstroDataRecord objects
-                    adr_sky_list = RCR.AstroDataRecord(ad_sky_list)
+                    for ad_sky in ad_sky_list:
+                        adr_sky_list.append(RCR.AstroDataRecord(ad_sky))
                     
                     # Update the dictionary with the list of sky
                     # AstroDataRecord objects associated with this science
@@ -231,20 +236,15 @@ class PreprocessPrimitives(GENERALPrimitives):
                             # Get the distance of the science and sky AstroData
                             # objects using the x_offset and y_offset
                             # descriptors
-                            ad_science_distance = math.sqrt(
-                              ad_science.x_offset()**2 +
-                              ad_science.y_offset()**2)
-                            
-                            ad_sky_distance = math.sqrt(
-                              ad_sky.x_offset()**2 + ad_sky.y_offset()**2)
+                            delta_x = ad_science.x_offset() - ad_sky.x_offset()
+                            delta_y = ad_science.y_offset() - ad_sky.y_offset()
+                            delta_sky = math.sqrt(delta_x**2 + delta_y**2)
                             
                             # Select only those sky AstroData objects that are
                             # greater than "distance" arcsec away from the
                             # science AstroData object
-                            if (abs(ad_science_distance - ad_sky_distance) >
-                                rc["distance"]):
-                                adr_sky_list.append(
-                                  RCR.AstroDataRecord(ad_sky))
+                            if (delta_sky > rc["distance"]):
+                                adr_sky_list.append(RCR.AstroDataRecord(ad_sky))
                     
                     # Update the dictionary with the list of sky
                     # AstroDataRecord objects associated with this science
@@ -856,6 +856,10 @@ class PreprocessPrimitives(GENERALPrimitives):
                 ad_science_output_list = gt.finalise_adinput(
                   adinput=ad_input_list, timestamp_key=timestamp_key,
                   suffix=suffix)
+
+            # Create an empty sky list so that the code that references it
+            # later doesn't crash
+            ad_sky_output_list = []
         else:
             # Initialize the lists of science and sky AstroData objects
             ad_science_list = []
