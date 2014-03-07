@@ -175,7 +175,7 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
     # astropy, conesearch throws a VOSError exception on no results. Which
     # seems a bit extreme. See the import phrase at top.
 
-    if len(function_defaults) == 6:
+    if len(function_defaults) == 7:
         table = vo_conesearch(catalog_db=url, ra=ra, dec=dec, sr=sr, 
                               pedantic=False, verb=3, verbose=False)
     elif len(function_defaults) == 1:
