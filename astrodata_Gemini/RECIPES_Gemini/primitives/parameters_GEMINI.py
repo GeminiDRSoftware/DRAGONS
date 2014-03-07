@@ -852,7 +852,7 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-   },
+    },
 "cutFootprints":
      {"suffix":{
         "default"       : "_cutfootprints",
@@ -862,16 +862,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
-"approximateWaveCal":
-     {"suffix":{
-        "default"       : "_approximateWaveCal",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    },
- "attachWavelengthSolution":{
+"attachWavelengthSolution":{
     "suffix":{
         "default"       : "_wavelengthSolution",
         "type"          : "str",
@@ -887,72 +878,5 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-   },
- "determineWaveCal":{
-    "suffix":{
-        "default"       : "_waveCalSolution",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "linelist":{
-        "default"       : None,
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "fitfunction":{
-        "default"       : None,
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "fitorder":{
-        "default"       : None,
-        "type"          : "int",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "match":{ 
-        "default"       : None,
-        "type"          : "float",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "nsum":{
-        "default"       : None,
-        "type"          : "int",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "ntmax":{
-        "default"       : None,
-        "type"          : "int",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "minsep":{
-        "default"       : None,
-        "type"          : "int",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-   },
- "wcalResampleToLinearCoords":{
-    "suffix":{
-        "default"       : "_wcalResampleToLinearCoords",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-   },
+    },
 }
