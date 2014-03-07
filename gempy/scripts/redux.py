@@ -230,7 +230,7 @@ def main():
         sys.exit()
 
     try:
-        fp_mask = ad.focal_plane_mask()
+        fp_mask = ad.focal_plane_mask().as_pytype()
     except:
         fp_mask = None
 
@@ -240,25 +240,37 @@ def main():
         print "\nFile %s appears to have been processed." % imgname
         print "redux halting ..."
         sys.exit()
-    if "GMOS" not in ad.types:
-        print "\nFile %s is not a GMOS file." % imgname
-        print "Only GMOS longslit and images can be reduced at this time.\n"
+    
+    # Good grief!  This is a messy way to do things.  I'll just try to add 
+    # NIRI to this GMOS-centric piece of "logic".  Badly needs to be 
+    # rewritten. KL March 2014
+    # I also remove the GMOS Longslit stuff since, well, we don't support
+    # it yet!
+ 
+    if "GMOS" not in ad.types and "NIRI" not in ad.types:
+        print "\nFile %s is neither a GMOS or a NIRI file." % imgname
+        print "Only GMOS and NIRI images can be reduced at this time.\n"
         sys.exit()
     elif "GMOS_DARK" in ad.types:
         print "\nFile %s is a GMOS dark." % imgname
-        print "Only GMOS longslit and images can be reduced at this time.\n"
+        print "Only GMOS images can be reduced at this time.\n"
         sys.exit()
     elif ("GMOS_IMAGE" in ad.types and
           fp_mask!="Imaging"):
         print "\nFile %s is a slit image." % imgname
-        print "Only GMOS longslit and images can be reduced at this time.\n"
+        print "Only GMOS images can be reduced at this time.\n"
+        sys.exit()
+    elif ("NIRI_IMAGE" in ad.types and 
+          not re.compile('-cam_').findall(fp_mask)):
+        print "\nFile %s is a slit image." % imgname
+        print "Only NIRI images can be reduced at this time.\n"
         sys.exit()
     elif (("GMOS_IMAGE" in ad.types and
            fp_mask=="Imaging" and 
            "GMOS_DARK" not in ad.types) or 
           "GMOS_BIAS" in ad.types or 
-          "GMOS_IMAGE_FLAT" in ad.types or 
-          "GMOS_LS" in ad.types):
+          "GMOS_IMAGE_FLAT" in ad.types): # or 
+          #"GMOS_LS" in ad.types):
 
         # Test for 3-amp mode with e2vDD CCDs. NOT commissioned.
         dettype = ad.phu_get_key_value("DETTYPE")
@@ -270,7 +282,15 @@ def main():
                 print "Please set the GMOS CCD Readout Characteristics " \
                       "to use 6 amplifiers.\n"
                 sys.exit()
+        
+        OK_launch_reduce = True
 
+    elif "NIRI_IMAGE" in ad.types:
+        OK_launch_reduce = True
+    else:
+        OK_launch_reduce = False
+
+    if OK_launch_reduce:
         print "\nBeginning reduction for file %s, %s\n" % (imgname,
                                                            ad.data_label()) 
         if options.upload:
@@ -283,6 +303,17 @@ def main():
             "GMOS_BIAS" not in ad.types and 
             "GMOS_IMAGE_FLAT" not in ad.types and
             recipe is not None):
+            reduce_cmd = ["reduce",
+                          "-r", recipe,
+                          "--context",context,
+                          "--loglevel","stdinfo",
+                          "--logfile","gemini.log",
+                          "-p", "clobber=True",
+                          imgpath]
+        elif ("NIRI_IMAGE" in ad.types and
+              "NIRI_DARK" not in ad.types and
+              "NIRI_IAMGE FLAT" not in ad.types and
+              recipe is not None):
             reduce_cmd = ["reduce",
                           "-r", recipe,
                           "--context",context,
@@ -305,7 +336,7 @@ def main():
 
     else:
         print "\nFile %s is not a supported type." % imgname
-        print "Only GMOS longslit and images can be reduced at this time.\n"
+        print "Only GMOS and NIRI images can be reduced at this time.\n"
         sys.exit()
 
 

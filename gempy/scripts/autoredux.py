@@ -224,21 +224,34 @@ def check_and_run(filepath, options=None):
         print "Checking %s" % new_file
         ok = verify_file(filepath)
         if(ok):
-            gmi, reason1 = check_gmos_image(filepath,
-                                            calibrations=cal)
-            if gmi:
-                print "Reducing %s, %s" % (new_file, reason1)
-                launch_reduce(filepath, noqa, upload=upl, recipe=rec)
+            supported, reasons = check_supported_data(filepath, cal)
+            
+            if supported:
+                print "Reducing %s" % (new_file)
+                for reason in reasons:
+                    print ", %s" % (reason)
+                launch_reduce(filepath, noaa, upload=upl, recipe=rec)
             else:
-                gmls, reason2 = check_gmos_longslit(filepath)
-                if gmls:
-                    print "Reducing %s, %s" % (new_file, reason2)
-                    launch_reduce(filepath, noqa, upload=True, recipe=rec)
-                else:
-                    if reason2 == reason1:
-                        print "Ignoring %s, %s" % (new_file, reason1)
-                    else:
-                        print "Ignoring %s, %s, %s" % (new_file, reason1, reason2)
+                print "Ignoring %s" % (new_file)
+                for reason in reasons:
+                    print ", %s" % (reason)
+            
+            
+#             gmi, reason1 = check_gmos_image(filepath,
+#                                             calibrations=cal)
+#             if gmi:
+#                 print "Reducing %s, %s" % (new_file, reason1)
+#                 launch_reduce(filepath, noqa, upload=upl, recipe=rec)
+#             else:
+#                 gmls, reason2 = check_gmos_longslit(filepath)
+#                 if gmls:
+#                     print "Reducing %s, %s" % (new_file, reason2)
+#                     launch_reduce(filepath, noqa, upload=True, recipe=rec)
+#                 else:
+#                     if reason2 == reason1:
+#                         print "Ignoring %s, %s" % (new_file, reason1)
+#                     else:
+#                         print "Ignoring %s, %s, %s" % (new_file, reason1, reason2)
 
         else:
             print "Ignoring %s, not a valid fits file" % new_file
@@ -280,14 +293,52 @@ def verify_file(filepath):
     return ok
 
 # ------------------------------------------------------------------------------
-def check_gmos_image(filepath, calibrations=False):
+def check_supported_data(filepath, calibrations=False):
     from astrodata import AstroData
-    reason = "GMOS image"
+    
+    reasons = []
     try:
         ad = AstroData(filepath)
     except:
-        reason = "can't load file"
-        return False, reason
+        reasons.append("Unable to load file.")
+        return False, reasons
+    
+    if "GMOS" in ad.types:
+        # just mimicing what was implemented, I don't understand the purpose
+        # of this logic structure.  I don't know why the reason of check_gmos_image
+        # needs to be added to the reason of check_gmos_longslit. KL March 2014
+        #
+        # ... in fact I can confirm that this logic is broken.
+        gmi, reason = check_gmos_image(ad, calibrations=calibrations)
+        reasons.append(reason)
+        if gmi:
+            return gmi, reasons
+        else:
+            gmls, reason = check_gmos_longslit(ad)
+            reasons.append(reason)
+            #return gmls, reasons
+            # deactivate GMOS longslit  KL March 2014  (why the heck was it ever
+            #        activated?  We don't support GMOS LS yet.)
+            return False, reasons
+        
+    elif "NIRI" in ad.types:
+        niri_image, reason = check_niri_image(ad, calibrations=calibrations)
+        reasons.append(reason)
+        return niri_image, reasons
+
+    else:
+        return False, "Unsupported data type."
+        
+
+# ------------------------------------------------------------------------------
+def check_gmos_image(ad, calibrations=False):
+    #from astrodata import AstroData
+    reason = "GMOS image"
+    #try:
+    #    ad = AstroData(filepath)
+    #except:
+    #    reason = "can't load file"
+    #    return False, reason
     
     try:
         fp_mask = ad.focal_plane_mask().as_pytype()
@@ -304,6 +355,9 @@ def check_gmos_image(filepath, calibrations=False):
         reason = "GMOS bias"
         return False, reason
     elif "GMOS_IMAGE_FLAT" in ad.types and not calibrations:
+        # KL - that doesn't work well.  If calibration is true,
+        # you don't get to know that it's a flat, you just get
+        # that it's an image.
         reason = "GMOS flat"
         return False, reason
     elif ("GMOS_IMAGE" in ad.types and
@@ -333,15 +387,15 @@ def check_gmos_image(filepath, calibrations=False):
         return False, reason
 
 # ------------------------------------------------------------------------------
-def check_gmos_longslit(filepath):
-    from astrodata import AstroData
+def check_gmos_longslit(ad):
+    #from astrodata import AstroData
     reason = "GMOS longslit"
 
-    try:
-        ad = AstroData(filepath)
-    except:
-        reason = "can't load file"
-        return False, reason
+    #try:
+    #    ad = AstroData(filepath)
+    #except:
+    #    reason = "can't load file"
+    #    return False, reason
     
     try:
         fp_mask = ad.focal_plane_mask().as_pytype()
@@ -377,6 +431,55 @@ def check_gmos_longslit(filepath):
     else:
         reason = "not GMOS longslit"
         return False, reason
+
+# ------------------------------------------------------------------------------
+def check_niri_image(ad, calibrations=False):
+    # From what I understand, calibrations controls whether we
+    # want autoredux to reduce calibration files.
+    # The argument should be renamed to "do_calibrations" or something.
+    #
+    # For the record, while I'm mimicking the check_gmos functions because
+    # we need to deploy asap, I find this whole data checking inefficient,
+    # cumbersome, and there must be a better way to do this.
+    #
+    # - KL March 2014
+    
+    import re
+        
+    # check whether this is a through-slit image
+    try:
+        fp_mask = ad.focal_plane_mask().as_pytype()
+    except:
+        fp_mask = None
+    
+    if "NIRI" not in ad.types:
+        reason = "not NIRI"
+        return False, reason
+    elif "NIRI_DARK" in ad.types:
+        reason = "NIRI dark"
+        if calibrations:
+            return True, reason
+        else:
+            return False, reason
+    elif "NIRI_IMAGE_FLAT" in ad.types:
+        reason = "NIRI FLAT"
+        if calibrations:
+            return True, reason
+        else:
+            return False, reason
+    elif "NIRI_IMAGE" in ad.types:
+        if re.compile('-cam_').findall(fp_mask):
+            # fp_mask is in the 'cam'era setting
+            reason = "NIRI Image"
+            return True, reason
+        else:
+            # fp_mask is a slit
+            reason = "NIRI slit image"
+            return False, reason
+    else:
+        reason = "not NIRI image"
+        return False, reason
+
 
 # ------------------------------------------------------------------------------
 def launch_reduce(filepath, noqa, upload=False, recipe=None):
