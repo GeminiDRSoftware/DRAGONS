@@ -1,33 +1,48 @@
 #
 #                                                                  gemini_python
 #
-#                                                                  coreReduce.py
+#                                                  astrodata.adutils.reduceutils
+#                                                                  CoreReduce.py
 # ------------------------------------------------------------------------------
 # $Id$
 # ------------------------------------------------------------------------------
-__version__      = '$Rev$'[11:-3]
-__version_date__ = '$Date$'[7:-3]
+__version__      = '$Revision$'[11:-2]
+__version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
-# coreReduce -- provides 
+# This will provide Reduce() as a class.
 #
-# class CoreReduce
-# class ProxyInterface
+# Reduce
+## class Reduce
+## class _ProxyInterface
 # ------------------------------------------------------------------------------
 import os
 import re
 import sys
+import signal
 import traceback
+from   time import sleep
 
+from astrodata import Proxies
 from astrodata import Errors
 from astrodata import Lookups
-from astrodata import RecipeManager
 
+from astrodata.AstroData import AstroData
+
+from astrodata.RecipeManager import RecipeLibrary
+from astrodata.RecipeManager import RecipeExcept
 from astrodata.RecipeManager import ReductionContext
+
+from astrodata.ReductionObjects import ReductionExcept
 from astrodata.ReductionObjects import command_clause
 
 from astrodata.adutils import logutils
 from astrodata.adutils.terminal import IrafStdout
 from astrodata.usercalibrationservice import user_cal_service
+
+from astrodata.gdpgutil   import cluster_by_groupid
+from astrodata.debugmodes import set_descriptor_throw
+
+import parseUtils
 
 from caches import cachedirs
 from caches import stkindfile
@@ -38,70 +53,50 @@ PKG_type   = "Gemini"       # moved out of lookup_table call
 irafstdout = IrafStdout()   # fout = filteredstdout
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
-# ------------------------------------------------------------------------------
-
-def set_caches():
-    cachedict = {}
-    for cachedir in cachedirs:
-        if not os.path.exists(cachedir):                        
-            os.mkdir(cachedir)
-        cachename = os.path.basename(cachedir)
-        if cachename[0].startswith("."):
-            cachename = cachename[1:]
-        cachedict.update({cachename:cachedir})
-    return cachedict
-
-
-def add_service(user_cals):
-    """
-    Add a user calibration service to the global user_calibration_service
-    namespace.
-    
-    parameter(s): <str>, from args.user_cals
-    return:       <void>
-    """
-    #N.B. If a user_cal is passed that does not contain a ':', i.e.
-    # like CALTYPE:CALFILE, this phrase passes silently. Should it?
-    if user_cals:
-        for user_cal in user_cals:
-            ucary = user_cal.split(":")
-            if len(ucary)>1:
-                caltype = ucary[0]
-                calname = ucary[1]
-                user_cal_service.add_calibration(caltype, calname)
-    return
 
 # ------------------------------------------------------------------------------
-class CoreReduce(object):
+def start_proxy_servers():
+    adcc_proc = None
+    pprox     = Proxies.PRSProxy.get_adcc(check_once=True)
+    if not pprox:
+        adcc_proc = Proxies.start_adcc()
+
+    # launch xmlrpc interface for control and communication
+    reduceServer = Proxies.ReduceServer()
+    prs = Proxies.PRSProxy.get_adcc(reduce_server=reduceServer)
+    return (adcc_proc, reduceServer, prs)
+
+# ------------------------------------------------------------------------------
+class Reduce(object):
     """
-    The CoreReduce class encapsulates the core processing to be done by reduce.
-    This comprises configuring the run space for a dataset list (infiles)
-    passed to the constuctor, determining the appropriate recipe(s), and 
-    executing the recipe(s) on the configured ReductionObject instance (ro).
-    The dataset list (infiles) is a list of AstroData objects.
+    The Reduce class encapsulates the core processing to be done by reduce.
+    The constructor may receive one (1) parameter, which will be an instance
+    of a parse_args call on a reduce-defined ArgumentParser object. As with
+    all constructors, an instance of this class is returned.
 
-    parameters: <list>, <inst>, <log>, <RecipeLibrary>, <Proxy>
-    return:     <instance>, CoreReduce instance.
-
-    <list>          list of AstroData instances
-    <inst>          Namespace or ProxyInterface instance
-    <log>           logging.logger object used throughout reduce
-    <RecipeLibrary> RecipeLibrary instance, the unfortunately named 'rl'
-    <Proxy>         Proxy Server instance on the adcc.
+    parameters: <instance>, optional ArgumentParser.parse_args() instance
+    return:     <instance>, Reduce instance
 
     The class provides one (1) public method, runr(), the only call needed to
-    run reduce on the supplied inputs and parameters.
+    run reduce on the supplied argument set.
     """
-    def __init__(self, infiles, args, rl):
-        self.infiles = infiles
+    def __init__(self, args=None):
+        if args is None:
+            args = _ProxyInterface()
+
+        self.rl  = None
+
+        self.files = args.files
         self.reclist = None
         self.recdict = None
+        self.infiles = None
+
+        self.user_params  = None
+        self.globalParams = None
 
         self.astrotype    = args.astrotype
         self.recipename   = args.recipename
         self.primsetname  = args.primsetname
-        self.user_params  = None
-        self.globalParams = None
 
         self.rtf       = args.rtf
         self.cal_mgr   = args.cal_mgr
@@ -112,15 +107,11 @@ class CoreReduce(object):
         self.logfile   = args.logfile
         self.logmode   = args.logmode
         self.loglevel  = args.loglevel
-        self.logindent = args.logindent
+        self.logindent = logutils.SW
 
-        self.log = log
-        self.rl  = rl
-
-        if hasattr(args, "user_params"):
-            self.user_params = args.user_params
-        if hasattr(args, "globalParams"):
-            self.globalParams = args.globalParams
+        upar, gpar = parseUtils.set_user_params(args.userparam)
+        self.user_params  = upar
+        self.globalParams = gpar
 
         self.intelligence = args.intelligence
         self.running_contexts = args.running_contexts
@@ -129,18 +120,27 @@ class CoreReduce(object):
 
     # ----------------------------------------------------------------------
     # configure the run space; execute recipe(s).
-    def runr(self, command_clause):
-        """This method configures the run space for the input astrotypes.
-        If no user-specified recipe, this fetches applicable recipes, 
-        and executes those recipes. Caller passes a 'command_clause' function,
-        nominally this will be command_clause() as defined by in
-        ReductionObjects.
+    def runr(self, command_clause=command_clause):
+        """
+        This the one (1) public method on class Reduce. It configures the
+        run space for execution of reduce on an argument set supplied
+        to the constructor or after a user has set a Reduce instance's
+        attributes to appropriate values.
+
+        If no user-specified recipe, i.e. args.recipename or self.recipename
+        is None, nominal operation fetches applicable recipes and executes
+        those recipes. Caller *may* pass a 'command_clause' function as a
+        parameter to this method. But this is ill-advised unless the employment
+        of a 'command_clause' like function is well understood.
+        
+        Nominally, a caller will call this method with no parameter, and
+        the ReductionObjects defined command_clause() function will be used.
 
         parameters: <func>, function*, command_clause, from ReductionObjects
         return:     <void>
 
-        * Presumably, other defined 'command_clause' functions could be substitued 
-        for the ReductionObjects command_clause() function. Currently, 
+        * Presumably, other defined 'command_clause' functions could be used
+        for the ReductionObjects command_clause() function. Currently,
         command_clause(), as defined in ReductionObjects.py, handles various
         requests made on the ReductionObject, i.e. the 'ro' instance:
 
@@ -150,11 +150,211 @@ class CoreReduce(object):
         DisplayRequest
         ImageQualityRequest
         """
-        # add any user calibration overrides ...
-        add_service(self.user_cals)
+        red_msg  = ("Unable to get ReductionObject for type %s" % self.astrotype)
+        rec_msg  = ("Recipe exception: Recipe not found")
 
-        # if astrotype is unspecified, first file in group is type reference
-        # for types used to load the recipe and primitives
+        def __shutdown_proxy(msg):
+            if adcc_proc.poll() is None:
+                log.stdinfo("Force terminate adcc proxy ...")
+                adcc_proc.send_signal(signal.SIGINT)
+                adcc_exit = adcc_proc.wait()
+            else:
+                adcc_exit = adcc_proc.wait()
+
+            log.stdinfo("adcc terminated on status: %s" % str(adcc_exit))
+            log.stdinfo(str(msg))
+            return
+
+
+        self._configure_run_space()
+
+        # validate input, convert files to ad objects, start proxy servers
+        valid_inputs = self._check_files()
+        allinputs    = self._convert_inputs(valid_inputs)
+        adcc_proc, reduceServer, prs = start_proxy_servers()
+        xstat = 0
+
+        i = 0
+        nof_ad_sets = len(allinputs)
+        for infiles in allinputs:
+            i += 1
+            log.stdinfo("Starting Reduction on set #%d of %d" % (i, nof_ad_sets))
+            title = "  Processing dataset(s):\n"
+            title += "\n".join("\t" + ad.filename for ad in infiles)
+            log.stdinfo("\n" + title + "\n")
+
+            try:
+                self._run_reduce(infiles)
+            except KeyboardInterrupt:
+                xstat = signal.SIGINT
+                reduceServer.finished = True
+                prs.registered = False
+                log.error("\trunr() recieved event: SIGINT")
+                log.stdinfo("\tCaught Ctrl-C event.")
+                log.stdinfo("\texit code:\t\t%d" % xstat)
+                break
+            except IOError, err:
+                xstat = signal.SIGIO
+                log.error(str(err))
+                break
+            except Errors.RecipeNotFoundError, err:
+                xstat = signal.SIGIO
+                log.error(rec_msg)
+                log.error(str(err))
+            except RecipeExcept, err:
+                xstat = signal.SIGIO
+                log.error(rec_msg)
+                log.error(str(err))
+            except ReductionExcept, err:
+                xstat = signal.SIGABRT
+                log.error(red_msg)
+                break
+            except Exception, err:
+                xstat = signal.SIGQUIT
+                log.error(str(err))
+                break
+
+        msg = "reduce completed. exit status %d" % xstat
+        log.stdinfo("Shutting down proxy servers ...")
+        reduceServer.finished = True
+        if prs.registered:
+            prs.unregister()
+        sleep(1)
+        __shutdown_proxy(msg)
+        return xstat
+
+    # ----------------------------- prive --------------------------------------
+    def _configure_run_space(self):
+        self._signal_invoked()
+        self._add_cal_services()
+        self.rl = RecipeLibrary()
+        set_descriptor_throw(self.throwDescriptorExceptions)
+        return
+
+    def _signal_invoked(self):
+        opener = "reduce started in adcc mode (--invoked)"
+        if self.invoked:
+            log.fullinfo("."*len(opener))
+            log.fullinfo(opener)
+            log.fullinfo("."*len(opener))
+            sys.stdout.flush()
+        return
+
+    def _add_cal_services(self):
+        """
+        Add user calibration services to the global user_calibration_service
+        namespace.
+        
+        parameter(s): <void>
+        return:       <void>
+        """
+        #N.B. If a user_cal is passed that does not contain ':', i.e.
+        # like CALTYPE:CALFILE, this phrase passes silently. Should it?
+        if self.user_cals:
+            for user_cal in self.user_cals:
+                ucary = user_cal.split(":")
+                if len(ucary)>1:
+                    caltype = ucary[0]
+                    calname = ucary[1]
+                    user_cal_service.add_calibration(caltype, calname)
+        return
+
+    def _convert_inputs(self, inputs):
+        if self.intelligence:
+            typeIndex = cluster_by_groupid(inputs)
+            # If super intelligence, it would determine ordering. Now, recipes in
+            # simple order, (i.e. the order of values()).
+            allinputs = typeIndex.values()
+        else:
+            nl = []
+            for inp in inputs:
+                try:
+                    ad = AstroData(inp)
+                    ad.filename = os.path.basename(ad.filename)
+                    ad.mode = "readonly"
+                except Errors.AstroDataError, err:
+                    log.warning(err)
+                    log.warning("Can't Load Dataset: %s" % inp)
+                    continue
+                nl.append(ad)
+            try:
+                assert(nl)
+                allinputs = [nl]
+            except AssertionError:
+                msg = "No AstroData objects were created."
+                log.warning(msg)
+                raise IOError(msg)
+        return allinputs
+
+
+    def _check_files(self):
+        """
+        Sanity check on submitted files. Class version of the parseUtils function.
+        
+        parameters: <void>, other than instance
+        return:     <list>, list of 'good' input fits datasets.
+        """
+        try:
+            assert(self.files or self.astrotype)
+        except AssertionError:
+            log.info("Either file(s) OR an astrotype is required;"
+                     "-t or --astrotype.")
+            log.error("NO INPUT FILE or ASTROTYPE specified")
+            log.stdinfo("type 'reduce -h' for usage information")
+            raise IOError("NO INPUT FILE or ASTROTYPE specified")
+
+        input_files = []
+        bad_files   = []
+
+        for image in self.files:
+            if not os.access(image, os.R_OK):
+                log.error('Cannot read file: '+str(image))
+                bad_files.append(image)
+            else:
+                input_files.append(image)
+
+        try:
+            assert(bad_files)
+            log.stdinfo("Got a badList ... %s" % bad_files)
+            err = "\n\t".join(bad_files)
+            log.error("Some files not found or cannot be loaded:\n\t%s" % err)
+            try:
+                assert(input_files)
+                found = "\n\t".join(input_files)
+                log.stdinfo("These datasets were found and loaded:\n\t%s" % found)
+            except AssertionError:
+                log.error("Caller passed no valid input files")
+                raise IOError("No valid files passed.")
+        except AssertionError:
+            log.stdinfo("All submitted files appear valid")
+
+        return input_files
+
+    def _set_caches(self):
+        cachedict = {}
+        for cachedir in cachedirs:
+            if not os.path.exists(cachedir):
+                os.mkdir(cachedir)
+            cachename = os.path.basename(cachedir)
+            if cachename[0].startswith("."):
+                cachename = cachename[1:]
+            cachedict.update({cachename:cachedir})
+        return cachedict
+
+    def _run_reduce(self, infiles):
+        """
+        Run reduce on a passed list of input datasets. These datasets have been
+        converted to AstroData objects and grouped by AstroDataType, via 
+        _convert_inputs().
+
+        parameters: <list>, list of astrodata instances
+        return:     <void>
+        """
+
+        # If astrotype is None, first file in group is used as the type
+        # reference to load the recipe and primitives, i.e. infiles[0]
+        self.infiles  = infiles
+
         if self.astrotype:
             ro = self.rl.retrieve_reduction_object(astrotype=self.astrotype)
             types = [self.astrotype]
@@ -168,7 +368,7 @@ class CoreReduce(object):
         if self.recipename:
             self.reclist = [self.recipename]          # force user recipe
             recdict = {"all": [self.recipename]}
-            self.log.info("A recipe was specified:")
+            log.info("A recipe was specified:")
         else:
             if self.astrotype:
                 self.reclist = self.rl.get_applicable_recipes(astrotype=self.astrotype,
@@ -180,13 +380,13 @@ class CoreReduce(object):
                 recdict = self.rl.get_applicable_recipes(self.infiles[0], collate=True)
 
         if recdict:
-            self.log.info("Recipe(s) found by dataset type:")
+            log.info("Recipe(s) found by dataset type:")
             for typ, recs in recdict.items():
-                self.log.info("  for type: %s" % typ)
-                [self.log.info("    %s" % rec) for rec in recs]
+                log.info("  for type: %s" % typ)
+                [log.info("    %s" % rec) for rec in recs]
         else:
             msg = "No recipes found for types: " + repr(types)
-            self.log.error(msg)
+            log.error(msg)
             raise Errors.RecipeNotFoundError(msg)
             
         for recipe in self.reclist:
@@ -194,38 +394,10 @@ class CoreReduce(object):
         
         return
 
-
-    def write_context_log(self, co=None, rl=None, bReportHistory=False):
-        co_log =  open("context.log", "w")
-        if co:
-            co_log.write(co.report(showall=True))
-        else:
-            co_log.write("rc null after exception, no report")
-            co_log.write(traceback.format_exc())
-            co_log.close()
-
-        log.fullinfo("------------------------------------------------")
-        log.fullinfo("Debug information written to context.log. Please")
-        log.fullinfo("provide this log when reporting this problem.")
-        log.fullinfo("------------------------------------------------")
-        if (bReportHistory):
-            if co:
-                co.report_history()
-            rl.report_history()
-        if co: 
-            co.is_finished(True)
-        return 
-
-    # ----------------------------- prive --------------------------------------
-    # exec_recipe functional
-
+    # exec_recipe
     def _exec_recipe(self, rec, ro):
         co = ReductionContext()
         co = self._configure_context(co, ro)
-
-        #raise StopIteration, "Halting ..."
-        #print "exec_recipe() @L313:", co.report(internal_dict=True)
-
         ro.init(co)
 
         if self.primsetname:
@@ -264,14 +436,14 @@ class CoreReduce(object):
                 else:
                     self.rl.load_and_bind_recipe(ro, rec, dataset=self.infiles[0])
             except RecipeExcept, x:
-                traceback.print_exc()
-                print "INSTRUCTION MIGHT BE A MISPELLED PRIMITIVE OR RECIPE NAME"
-                msg = "name of recipe unknown" 
+                log.error("INSTRUCTION MAY BE A MISPELLED PRIMITIVE OR RECIPE NAME")
+                msg = "name of recipe unknown"
                 if hasattr(x, "name"):
                     msg = '"%s" is not a known recipe or primitive name' % x.name
-                    print "-"*len(msg)
-                    print msg
-                    print "-"*len(msg)
+                log.error("-"*len(msg))
+                log.error(msg)
+                log.error("-"*len(msg))
+                raise RecipeExcept(msg)
         # ---------------------------------------------------- #
         # COMMAND LOOP
         # ---------------------------------------------------- #
@@ -285,6 +457,9 @@ class CoreReduce(object):
             print "Shutting down the Context object"
             co.is_finished(True)
             raise KeyboardInterrupt
+        except Exception:
+            self.__write_context_log(co)
+            co.is_finished(True)
         return
 
 
@@ -307,7 +482,7 @@ class CoreReduce(object):
         co.update({'logindent': self.logindent})
 
         co.set_cache_file("stackIndexFile", stkindfile)
-        cachedict = set_caches()
+        cachedict = self._set_caches()
         [co.update({name:path}) for (name, path) in cachedict.items()]
         co.update({"cachedict":cachedict})
 
@@ -338,8 +513,29 @@ class CoreReduce(object):
 
         return co
 
+    def _write_context_log(self, co=None, bReportHistory=False):
+        co_log =  open("context.log", "w")
+        if co:
+            co_log.write(co.report(showall=True))
+        else:
+            co_log.write("rc null after exception, no report")
+            co_log.write(traceback.format_exc())
+            co_log.close()
 
-class ProxyInterface(object):
+        log.fullinfo("------------------------------------------------")
+        log.fullinfo("Debug information written to context.log. Please")
+        log.fullinfo("provide this log when reporting this problem.")
+        log.fullinfo("------------------------------------------------")
+        if (bReportHistory):
+            if co:
+                co.report_history()
+            self.rl.report_history()
+        if co: 
+            co.is_finished(True)
+        return
+
+
+class _ProxyInterface(object):
     """
     A Proxy class to mimic an ArgumentParser Namespace instance. This allows
     a caller to programmatically spoof command line arguments without using
@@ -393,7 +589,6 @@ class ProxyInterface(object):
         self.logfile   = 'reduce.log'
         self.loglevel  = 'stdinfo'
         self.logmode   = 'standard'
-        self.logindent = 3
         self.suffix    = None
 
         self.forceWidth  = None
