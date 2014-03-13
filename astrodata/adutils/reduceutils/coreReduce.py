@@ -11,9 +11,7 @@ __version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
 # This will provide Reduce() as a class.
 #
-# Reduce
-## class Reduce
-## class _ProxyInterface
+# class Reduce
 # ------------------------------------------------------------------------------
 import os
 import re
@@ -82,7 +80,7 @@ class Reduce(object):
     """
     def __init__(self, args=None):
         if args is None:
-            args = _ProxyInterface()
+            args = parseUtils.buildParser(__version__).parse_args()
 
         self.rl  = None
 
@@ -248,7 +246,7 @@ class Reduce(object):
         parameter(s): <void>
         return:       <void>
         """
-        #N.B. If a user_cal is passed that does not contain ':', i.e.
+        # N.B. If a user_cal is passed that does not contain ':', i.e.
         # like CALTYPE:CALFILE, this phrase passes silently. Should it?
         if self.user_cals:
             for user_cal in self.user_cals:
@@ -533,70 +531,3 @@ class Reduce(object):
         if co: 
             co.is_finished(True)
         return
-
-
-class _ProxyInterface(object):
-    """
-    A Proxy class to mimic an ArgumentParser Namespace instance. This allows
-    a caller to programmatically spoof command line arguments without using
-    the reduce command line interface or the need to instantiate an 
-    ArgumentParser object. ProxyInterface provides the same set of arguments
-    and defaults defined by the parseUtils.buildParser() function.
-
-    The ProxyInterface class provides the same interface to a reduce 
-    command line argument set, namely, argument values are accessed as 
-    instance attributes. I.e.
-
-    >>> args.astrotype
-    'GMOS_IMAGE'
-    >>> args.recipename
-    'qareduce'
-
-    The caller instantiates ProxyInterface() object, and then can set argument
-    values as needed.
-
-    Eg.,
-
-    >>> args = ProxyInterface()
-    >>> print args.recipename
-    None
-    >>> args.recipename = 'recipe.test_recipe'
-    >>> args.astrotype = 'GMOS_SPECT'
-    >>> print args.recipename
-    recipe.test_recipe
-    >>> print args.astrotype
-    GMOS_SPECT
-
-    The caller can then pass this args object to the reduce API. 
-    (details to follow)
-    """
-    def __init__(self):
-        self.files = []           # input filenames, <list>
-
-        # types, recipes, primitives, contexts
-        self.astrotype    = None
-        self.recipename   = None
-        self.primsetname  = None
-        self.intelligence = False
-        self.running_contexts =	None
-
-        # calibration, parameters
-        self.cal_mgr   = None
-        self.user_cals = None
-        self.userparam = None
-
-        # files, modes, handles
-        self.logfile   = 'reduce.log'
-        self.loglevel  = 'stdinfo'
-        self.logmode   = 'standard'
-        self.suffix    = None
-
-        self.forceWidth  = None
-        self.forceHeight = None
-
-        # runtime flags
-        self.rtf      = False
-        self.invoked  = False
-        self.bMonitor = False
-        self.writeInt = False
-        self.throwDescriptorExceptions =  False
