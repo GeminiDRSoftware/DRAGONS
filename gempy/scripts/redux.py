@@ -287,6 +287,8 @@ def main():
 
     elif "NIRI_IMAGE" in ad.types:
         OK_launch_reduce = True
+    elif "NIRI_DARK" in ad.types:
+        OK_launch_reduce = True
     else:
         OK_launch_reduce = False
 
