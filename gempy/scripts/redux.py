@@ -312,7 +312,7 @@ def main():
                           imgpath]
         elif ("NIRI_IMAGE" in ad.types and
               "NIRI_DARK" not in ad.types and
-              "NIRI_IAMGE FLAT" not in ad.types and
+              "NIRI_IMAGE_FLAT" not in ad.types and
               recipe is not None):
             reduce_cmd = ["reduce",
                           "-r", recipe,
