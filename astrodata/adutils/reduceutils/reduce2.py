@@ -99,7 +99,8 @@ def main(args):
         log.error("main() recieved signal SIGINT, Ctrl-C")
     except Exception as err:
         estat = SIGQUIT
-        log.error("reduce.main() recieved an unhandled exception")
+        log.error("main() caught exception:")
+        log.error(type(err))
         log.error(str(err))
 
     log.stdinfo("reduce exited on status %d" % estat)
