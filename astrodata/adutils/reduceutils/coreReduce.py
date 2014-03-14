@@ -153,6 +153,9 @@ class Reduce(object):
         xstat   = 0
 
         def __shutdown_proxy(msg):
+            if adcc_proc is None:
+                log.stdinfo("ADCC is running externally. No proxies to close")
+                return
             if adcc_proc.poll() is None:
                 log.stdinfo("Force terminate adcc proxy ...")
                 adcc_proc.send_signal(signal.SIGINT)
