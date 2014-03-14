@@ -66,7 +66,7 @@ exit status.
 """
 import sys
 
-from signal import SIGINT, SIGQUIT
+from signal import SIGTERM
 # ---------------------------- Package Import ----------------------------------
 from astrodata.adutils import logutils
 
@@ -94,12 +94,9 @@ def main(args):
     r_reduce = Reduce(args)
     try:
         estat = r_reduce.runr()
-    except KeyboardInterrupt:
-        estat = SIGINT
-        log.error("main() recieved signal SIGINT, Ctrl-C")
     except Exception as err:
-        estat = SIGQUIT
-        log.error("main() caught exception:")
+        estat = SIGTERM
+        log.error("main() caught unhandled exception:")
         log.error(type(err))
         log.error(str(err))
 

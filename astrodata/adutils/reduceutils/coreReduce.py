@@ -148,8 +148,9 @@ class Reduce(object):
         DisplayRequest
         ImageQualityRequest
         """
-        red_msg  = ("Unable to get ReductionObject for type %s" % self.astrotype)
-        rec_msg  = ("Recipe exception: Recipe not found")
+        red_msg = ("Unable to get ReductionObject for type %s" % self.astrotype)
+        rec_msg = ("Recipe exception: Recipe not found")
+        xstat   = 0
 
         def __shutdown_proxy(msg):
             if adcc_proc.poll() is None:
@@ -159,20 +160,31 @@ class Reduce(object):
             else:
                 adcc_exit = adcc_proc.wait()
 
-            log.stdinfo("adcc terminated on status: %s" % str(adcc_exit))
+            log.stdinfo("  adcc terminated on status: %s" % str(adcc_exit))
             log.stdinfo(str(msg))
             return
-
 
         self._configure_run_space()
 
         # validate input, convert files to ad objects, start proxy servers
-        valid_inputs = self._check_files()
-        allinputs    = self._convert_inputs(valid_inputs)
-        adcc_proc, reduceServer, prs = start_proxy_servers()
-        xstat = 0
+        try:
+            valid_inputs = self._check_files()
+        except IOError, err:
+            xstat = signal.SIGIO
+            log.error("IOError raised in __check_files()")
+            log.error(str(err))
+            return xstat
 
+        try:
+            adcc_proc, reduceServer, prs = start_proxy_servers()
+        except Errors.ADCCCommunicationError, err:
+            xstat = signal.SIGSYS
+            log.error("ADCCCommunicationError raised in start_proxy_servers()")
+            log.error(str(err))
+            return xstat
+            
         i = 0
+        allinputs   = self._convert_inputs(valid_inputs)
         nof_ad_sets = len(allinputs)
         for infiles in allinputs:
             i += 1
@@ -187,9 +199,9 @@ class Reduce(object):
                 xstat = signal.SIGINT
                 reduceServer.finished = True
                 prs.registered = False
-                log.error("\trunr() recieved event: SIGINT")
-                log.stdinfo("\tCaught Ctrl-C event.")
-                log.stdinfo("\texit code:\t\t%d" % xstat)
+                log.error("runr() recieved event: SIGINT")
+                log.error("Caught Ctrl-C event.")
+                log.error("exit code: %d" % xstat)
                 break
             except IOError, err:
                 xstat = signal.SIGIO
@@ -212,7 +224,7 @@ class Reduce(object):
                 log.error(str(err))
                 break
 
-        msg = "reduce completed. exit status %d" % xstat
+        msg = "reduce terminated on status: %d" % xstat
         log.stdinfo("Shutting down proxy servers ...")
         reduceServer.finished = True
         if prs.registered:
@@ -310,7 +322,6 @@ class Reduce(object):
                 bad_files.append(image)
             else:
                 input_files.append(image)
-
         try:
             assert(bad_files)
             log.stdinfo("Got a badList ... %s" % bad_files)
@@ -325,7 +336,6 @@ class Reduce(object):
                 raise IOError("No valid files passed.")
         except AssertionError:
             log.stdinfo("All submitted files appear valid")
-
         return input_files
 
     def _set_caches(self):
