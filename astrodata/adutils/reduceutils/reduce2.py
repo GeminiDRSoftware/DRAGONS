@@ -25,44 +25,34 @@ function that can be called with an 'args' parameter.
 
 Eg.,
 
->>> args = ArgumentParser.parse_args()
-    OR
->>> args = parseUtils.buildParser(version).parse_args() # reduce-specific parser
+Get "args' from the defined reduce parser:
+
+>>> args = parseUtils.buildParser(version).parse_args()
 >>> import reduce2
 >>> reduce2.main(args)
 
 In the above example, 'args' is
 
--- argparse Namespace instance, delivered via the command line.
+-- argparse Namespace instance
 
-An undefined parser will simply return an empty Namespace instance, which can 
-then be populated. Use of the parseUtils function buildParser will get the
-caller a fully defined reduce Namespace instance, values for which can be
-then be adjusted as desired.
+Use of the parseUtils function buildParser will get the caller a fully defined 
+reduce Namespace instance, values for which can be then be adjusted as desired.
 
 Eg.,
-
-ArgumentParser:
---------------
->>> args = argparse.ArgumentParser().parse_args()
->>> args
-Namespace()
->>> args.logfile = 'reduce.log'
->>> args.logfile
-'reduce.log'
 
 parseUtils.buildParser:
 ----------------------
 >>> args = parseUtils.buildParser(version).parse_args()
 >>> args.logfile
 'reduce.log'
+>>> args.files
+[]
+>>> args.files.append('some_fits_file.fits')
 
-At which point, the caller would then call main()
+Once 'args' attributes have been appropriately set, the caller then simply 
+calls main():
 
 >>> reduce2.main(args)
-
-When run from the command line, the program exits with an appropriate
-exit status.
 """
 import sys
 
