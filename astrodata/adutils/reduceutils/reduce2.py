@@ -87,7 +87,7 @@ def main(args):
         log.error(type(err))
         log.error(str(err))
 
-    log.stdinfo("reduce exited on status %d" % estat)
+    log.stdinfo("reduce exited     on status: %d" % estat)
     return (estat)
 
 # --------------------------------------------------------------------------
