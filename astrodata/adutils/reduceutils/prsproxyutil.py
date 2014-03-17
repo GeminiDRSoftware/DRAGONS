@@ -71,12 +71,12 @@ def calibration_search(rq, fullResult=False):
     import datetime
 
     calserv_msg = None
-    print "\n@ppu80: calibration_search() ...\n"
+    print "\n@ppu074: calibration_search() ..."
 
     if "descriptors" in rq and "ut_datetime" in rq["descriptors"]:
         utc = rq["descriptors"]["ut_datetime"]
         pyutc = datetime.datetime.strptime(utc.value, "%Y%m%dT%H:%M:%S")
-        print "@ppu85: OBS UT Date Time:", pyutc
+        print "@ppu079: OBS UT Date Time:", pyutc
         rq["descriptors"].update({"ut_datetime":pyutc} )
     
     # if rq has "calurl_dict" use it!!!
@@ -95,39 +95,38 @@ def calibration_search(rq, fullResult=False):
     token = ""             # used for GETs, we're using the post method
     rqurl = None
 
-    print "@ppu104: CALMGR:     ", CALMGR
-    print "@ppu105: LOCALCALMGR:", LOCALCALMGR
+    print "@ppu098: CALMGR:     ", CALMGR
+    print "@ppu099: LOCALCALMGR:", LOCALCALMGR
 
     if source == "central" or source == "all":
         rqurl = join(CALMGR, CALTYPEDICT[rq['caltype']])
-        print "ppu109: CENTRAL SEARCH: rqurl is "+ rqurl
+        print "@ppu103: CENTRAL SEARCH: " + rqurl
 
-    print "@ppu111: source: ", source
     if source == 'local' or (rqurl == None and source == "all"):
         rqurl = LOCALCALMGR % { "httpport": 8777,
                                 "caltype":  CALTYPEDICT[rq['caltype']],
                                 } # "tokenstr":tokenstr}
-        print "@ppu116: LOCAL SEARCH: rqurl is " + rqurl
+        print "@ppu116: LOCAL SEARCH: " + rqurl
 
     rqurl = rqurl + "/%s" % rq["filename"]
-    #print "prs113:", pprint.pformat(rq)
+
     ### send request
     sequence = [("descriptors", rq["descriptors"]), ("types", rq["types"])]
     postdata = urllib.urlencode(sequence)
     response = "CALIBRATION_NOT_FOUND"
 
     try:
-        print "@ppu126: Request URL: ", rqurl
+        print "@ppu119: REQUEST: ", rqurl
         calRQ = urllib2.Request(rqurl)
         if source == "local":
             u = urllib2.urlopen(calRQ, postdata)
         else:
             u = urllib2.urlopen(calRQ, postdata)
         response = u.read()
-        print "@ppu133:", response
+        print "@ppu126: RESPONSE: ", response
     except urllib2.HTTPError, error:
         calserv_msg = error.read()
-        print "ppu136:HTTPError- server returns:", error.read()
+        print "@ppu129: HTTPError- server returns:", error.read()
         import traceback
         traceback.print_exc()
         return (None, calserv_msg)
@@ -163,5 +162,5 @@ def calibration_search(rq, fullResult=False):
     #print "prs70:", calurlel.data
     
     #@@TODO: test only 
-    print "prspu171:", repr(calurlel.data)
+    print "@ppu165: ", repr(calurlel.data)
     return (calurlel.data, calurlmd5.data)

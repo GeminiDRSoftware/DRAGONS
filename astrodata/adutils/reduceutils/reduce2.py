@@ -54,14 +54,14 @@ calls main():
 
 >>> reduce2.main(args)
 """
-import sys
-
-from signal import SIGTERM
 # ---------------------------- Package Import ----------------------------------
+import sys
+from   signal import SIGTERM
+
 from astrodata.adutils import logutils
 
 import parseUtils
-from coreReduce import Reduce
+from   coreReduce import Reduce
 # ------------------------------------------------------------------------------
 def main(args):
     """
@@ -71,17 +71,14 @@ def main(args):
     return:     <int>,   exit code
     """
     global log
-    # --------------------------------------------------------------------------
-    # exit status
-    estat    = 0
-
+    estat = 0
     logutils.config(mode=args.logmode,
                     console_lvl=args.loglevel,
                     file_name=args.logfile)
-
     log = logutils.get_logger(__name__)
     log.stdinfo("\t\t\t--- reduce, v%s ---" % __version__)
     r_reduce = Reduce(args)
+
     try:
         estat = r_reduce.runr()
     except Exception as err:
@@ -104,8 +101,6 @@ if __name__ == "__main__":
             print item
         sys.exit()
 
-    # Deal with argparse structures, which are different than optparse 
-    # implementation. astrotype, recipename, etc. are now lists.
-    args   = parseUtils.normalize_args(args)
-
+    # Deal with argparse structures that are different than optparse 
+    args = parseUtils.normalize_args(args)
     sys.exit(main(args))
