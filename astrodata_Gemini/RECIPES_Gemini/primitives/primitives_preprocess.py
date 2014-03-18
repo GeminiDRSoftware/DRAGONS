@@ -829,6 +829,46 @@ class PreprocessPrimitives(GENERALPrimitives):
         yield rc
 
     def separateSky(self, rc):
+
+        """
+        Given a set of input exposures, sort them into separate but
+        possibly-overlapping streams of on-target and sky frames. This is
+        achieved by dividing the data into distinct pointing/dither groups,
+        applying a set of rules to classify each group as target(s) or sky
+        and optionally overriding those classifications with user guidance
+        (up to and including full manual specification of both lists).
+
+        If all exposures are found to be on source then both output streams
+        will replicate the input. Where a dataset appears in both lists, a
+        separate copy (TBC: copy-on-write?) is made in the sky list to avoid
+        subsequent operations on one of the output lists affecting the other.
+
+        The following optional parameters are accepted, in addition to those
+        common to other primitives:
+
+        :param frac_FOV: Proportion by which to scale the instrumental field
+            of view when determining whether points are considered to be
+            within the same field, for tweaking borderline cases (eg. to avoid
+            co-adding target positions right at the edge of the field).
+        :type frac_FOV: float
+
+        :param ref_obj: Exposure filenames (as read from disk, without any
+            additional suffixes appended) to be considered object/on-target
+            exposures, as overriding guidance for any automatic classification.
+        :type ref_obj: string with comma-separated names
+
+        :param ref_sky: Exposure filenames to be considered sky exposures, as
+            overriding guidance for any automatic classification.
+        :type ref_obj: string with comma-separated names
+
+        :returns: Separate object and sky streams containing AstroData objects
+
+        Any existing OBJFRAME or SKYFRAME flags in the input meta-data will
+        also be respected as input (unless overridden by ref_obj/ref_sky) and
+        these same keywords are set in the output, along with a group number
+        with which each exposure is associated (EXPGROUP).
+        """
+
         # Instantiate the log
         log = logutils.get_logger(__name__)
         
@@ -843,71 +883,267 @@ class PreprocessPrimitives(GENERALPrimitives):
         
         # This primitive requires at least two input AstroData objects
         ad_input_list = rc.get_inputs_as_astrodata()
-        
-        if len(ad_input_list) < 2:
-            log.warning("Cannot separate sky frames, since at least two "
-                        "input AstroData objects are required for "
-                        "separateSky")
-            
-            # Add the input AstroData objects to the output science AstroData
-            # object list without further processing, after adding the
-            # appropriate time stamp to the PHU and updating the filename.
-            if ad_input_list:
-                ad_science_output_list = gt.finalise_adinput(
-                  adinput=ad_input_list, timestamp_key=timestamp_key,
-                  suffix=suffix)
 
-            # Create an empty sky list so that the code that references it
-            # later doesn't crash
-            ad_sky_output_list = []
-        else:
-            # Initialize the lists of science and sky AstroData objects
-            ad_science_list = []
-            ad_sky_list = []
-            
-            # Loop over each input AstroData object in the input list
+        # Allow tweaking what size of offset, as a fraction of the field
+        # dimensions, is considered to move a target out of the field in
+        # gt.group_exposures(). If we want to check this parameter value up
+        # front I'm assuming the infrastructure will do that at some point.
+        frac_FOV = rc["frac_FOV"]
+
+        # Get optional user-specified lists of object or sky filenames, to
+        # assist with classifying groups as one or the other. Currently
+        # primitive parameters have no concept of lists so we parse a string
+        # argument here. As of March 2014 this only works with "reduce2":
+        ref_obj = rc["ref_obj"].split(',')
+        ref_sky = rc["ref_sky"].split(',')
+        if ref_obj == ['']: ref_obj = []
+        if ref_sky == ['']: ref_sky = []
+
+        # Loop over input AstroData objects and extract their filenames, for
+        # 2-way comparison with any ref_obj/ref_sky list(s) supplied by the
+        # user. This could go into a support function but should become fairly
+        # trivial once we address the issues noted below.
+        filenames = {}
+        for ad in ad_input_list:
+
+            # For the time being we directly look up the filename provided
+            # for this exposure (without whatever pipeline suffixes happen
+            # to have been added during prior processing steps) in order to
+            # match the ref_obj & ref_sky parameters, due to some bug in
+            # what the AstroData API is returning (related to Trac #446):
+            base_name = ad.phu_get_key_value("ORIGNAME")
+
+            # Strip any .fits extension from the name we want to refer to.
+            # Having this buried in the code should be harmless even if we
+            # support other file types later, as I'm told the intention is
+            # to remove the file extension from ORIGNAME anyway, which will
+            # turn this into a no-op. That change also means we couldn't
+            # safely strip .* here anyway. Once this ORIGNAME change
+            # happens, the following 2 lines can be removed:
+            if base_name.endswith(".fits"):
+                base_name = base_name[:-5]
+
+            filenames[ad] = base_name
+
+        # Warn the user if they referred to non-existent input file(s):
+        missing = [name for name in ref_obj if name not in filenames.values()]
+        missing.extend([name for name in ref_sky \
+                       if name not in filenames.values()])
+
+        if missing:
+            log.warning("Failed to find the following file(s), specified "\
+                "via ref_obj/ref_sky parameters, in the input:")
+
+            for name in missing:
+                log.warning("  %s" % name)
+
+        # Loop over input AstroData objects and apply any overriding sky/object
+        # classifications based on user-supplied or guiding information:
+        for ad in ad_input_list:            
+
+            # Get the corresponding filename, determined above:
+            base_name = filenames[ad]
+
+            # Remember any pre-existing classifications so we can point them
+            # out if the user requests something different this time:
+            if ad.phu_get_key_value("OBJFRAME"):
+                obj = True
+            else:
+                obj = False
+            if ad.phu_get_key_value("SKYFRAME"):
+                sky = True
+            else:
+                sky = False
+
+            # If the user specified manually that this file is object and/or
+            # sky, note that in the metadata (alongside any existing flags):
+            if base_name in ref_obj and not obj:
+                if sky:
+                    log.warning("%s previously classified as SKY; added" \
+                      " OBJECT as requested" % base_name)
+                ad.phu_set_key_value("OBJFRAME", "TRUE")
+
+            if base_name in ref_sky and not sky:
+                if obj:
+                    log.warning("%s previously classified as OBJECT; added" \
+                      " SKY as requested" % base_name)
+                ad.phu_set_key_value("SKYFRAME", "TRUE")
+
+            # If the exposure is unguided, classify it as sky unless the
+            # user has specified otherwise (in which case we loudly point
+            # out the anomaly but do as requested).
+            #
+            # Although this descriptor naming may not always be ideal for
+            # non-Gemini applications, it is our AstroData convention for
+            # determining whether an exposure is guided or not.
+            if ad.wavefront_sensor().is_none():
+
+                # Old Gemini data are missing the guiding keywords but
+                # the descriptor then returns None, which is indistinguishable
+                # from an unguided exposure (Trac #416). Even phu_get_key_value
+                # fails to make this distinction. Whatever we do here (eg.
+                # using dates to figure out whether the keywords should be
+                # present), it is bound to be Gemini-specific until the
+                # behaviour of descriptors is fixed.
+                if 'PWFS1_ST' in ad.phu.header and \
+                   'PWFS2_ST' in ad.phu.header and \
+                   'OIWFS_ST' in ad.phu.header:
+
+                    # The exposure was really unguided:
+                    if ad.phu_get_key_value("OBJFRAME"):
+                        log.warning("Exp. %s manually flagged as " \
+                            "on-target but unguided!" % base_name)
+                    else:
+                        log.fullinfo("Treating %s as sky since it's unguided" \
+                          % base_name)
+                        ad.phu_set_key_value("SKYFRAME", "TRUE")
+
+                # (else can't determine guiding state reliably so ignore it)
+
+        # Analyze the spatial clustering of exposures and attempt to sort them
+        # into dither groups around common nod positions.
+        groups = gt.group_exposures(ad_input_list, frac_FOV=frac_FOV)
+        ngroups = len(groups)
+
+        log.fullinfo("Identified %d group(s) of exposures" % ngroups)
+
+        # Loop over the nod groups identified above, record which group each
+        # exposure belongs to, propagate any already-known classification(s)
+        # to other members of the same group and determine whether everything
+        # is finally on source and/or sky:
+        haveobj = False; havesky = False
+        allobj = True; allsky = True
+        for group, num in zip(groups, range(ngroups)):
+            adlist = group.list()
+            obj = False; sky = False
+            for ad in adlist:
+                ad.phu_set_key_value("EXPGROUP", num)
+                if ad.phu_get_key_value("OBJFRAME"): obj = True
+                if ad.phu_get_key_value("SKYFRAME"): sky = True
+                # if obj and sky: break  # no: need to record all group nums
+            if obj:
+                haveobj = True
+                for ad in adlist:
+                    ad.phu_set_key_value("OBJFRAME", "TRUE")
+            else:
+                allobj = False
+            if sky:
+                havesky = True
+                for ad in adlist:
+                    ad.phu_set_key_value("SKYFRAME", "TRUE")
+            else:
+                allsky = False
+
+        # If we now have object classifications but no sky, or vice versa,
+        # make whatever reasonable inferences we can about the others:
+        if haveobj and not havesky:
             for ad in ad_input_list:
-                
-                # If the all_on_source parameter is equal to yes, all the input
-                # on-source AstroData objects can be used as a sky frame
-                if rc["all_on_source"]:
-                    ad_science_list.append(ad)
-                    adsky = deepcopy(ad)
-                    ad_sky_list.append(adsky)
-                
-                # If any of the input AstroData objects contain a "SKYFRAME"
-                # keyword, that input can be used as a sky frame
-                elif ad.phu_get_key_value("SKYFRAME"):
-                    log.fullinfo("%s can be used as a sky frame" % ad.filename)
-                    
-                    # Append the input AstroData object to the list of sky
-                    # AstroData objects
-                    ad_sky_list.append(ad)
-                
+                if allobj or not ad.phu_get_key_value("OBJFRAME"):
+                    ad.phu_set_key_value("SKYFRAME", "TRUE")
+        elif havesky and not haveobj:
+            for ad in ad_input_list:
+                if allsky or not ad.phu_get_key_value("SKYFRAME"):
+                    ad.phu_set_key_value("OBJFRAME", "TRUE")
+
+        # If all the exposures are still unclassified at this point, we
+        # couldn't decide which groups are which based on user input or guiding
+        # so use the distance from the target or failing that assume everything
+        # is on source but warn the user about it if there's more than 1 group:
+        if not haveobj and not havesky:
+
+            ngroups = len(groups)
+
+            # With 2 groups, the one closer to the target position must be
+            # on source and the other is presumably sky. For Gemini data, the
+            # former, on-source group should be the one with smaller P/Q.
+            # TO DO: Once we update ExposureGroup to use RA & Dec descriptors
+            # instead of P & Q, this will need changing to subtract the target
+            # RA & Dec explicitly. For non-Gemini data where the target RA/Dec
+            # are unknown, we'll have to skip this bit and proceed to assuming
+            # everything is on source unless given better information.
+            if ngroups == 2:
+
+                log.fullinfo("Treating 1 group as object & 1 as sky, based " \
+                  "on target proximity")
+
+                dsq0 = sum([x**2 for x in groups[0].group_cen])
+                dsq1 = sum([x**2 for x in groups[1].group_cen])
+                if dsq1 < dsq0:
+                    order = ["SKYFRAME", "OBJFRAME"]
                 else:
-                    # Automatically determine the sky frames. For now, assume
-                    # everything else is science. 
-                    
-                    # Append the input AstroData object to the list of science
-                    # AstroData objects
-                    ad_science_list.append(ad)
+                    order = ["OBJFRAME", "SKYFRAME"]
+
+                for group, key in zip(groups, order):
+                    adlist = group.list()
+                    for ad in adlist:
+                        ad.phu_set_key_value(key, "TRUE")
+
+            # For more or fewer than 2 groups, we just have to assume that
+            # everything is on target, for lack of better information. With
+            # only 1 group, this should be a sound assumption, otherwise we
+            # warn the user.
+            else:
+                if ngroups > 1:
+                    log.warning("Unable to determine which of %d detected " \
+                        "groups are sky/object -- assuming they are all on " \
+                        "target AND usable as sky" % ngroups)
+                else:
+                    log.fullinfo("Treating a single group as both object & sky")
+
+                for ad in ad_input_list:
+                    ad.phu_set_key_value("OBJFRAME", "TRUE")
+                    ad.phu_set_key_value("SKYFRAME", "TRUE")
+
+        # It's still possible for some exposures to be unclassified at this
+        # point if the user has identified some but not all of several groups
+        # manually (or that's what's in the headers). We can't do anything
+        # sensible to rectify that, so just discard the unclassified ones and
+        # complain about it.
+        missing = []
+        for ad in ad_input_list:
+            if not ad.phu_get_key_value("OBJFRAME") and \
+               not ad.phu_get_key_value("SKYFRAME"):
+                missing.append(filenames[ad])
+        if missing:
+            log.warning("ignoring the following input file(s), which could " \
+              "not be classified as object or sky after applying incomplete " \
+              "prior classifications from the input:")
+            for name in missing:
+                log.warning("  %s" % name)
+
+        # Construct object & sky lists from the classifications stored above
+        # in exposure meta-data, making a complete copy of the input for any
+        # duplicate entries (it is hoped this won't require additional memory
+        # once memory mapping is used appropriately):
+        ad_science_list = []
+        ad_sky_list = []
+        for ad in ad_input_list:
+            on_source = ad.phu_get_key_value("OBJFRAME")
+            if on_source:
+                ad_science_list.append(ad)
+            if ad.phu_get_key_value("SKYFRAME"):
+                if on_source:
+                    ad_sky_list.append(deepcopy(ad))
+                else:
+                    ad_sky_list.append(ad)
+
+        log.stdinfo("Science frames:")
+        for ad_science in ad_science_list:
+            log.stdinfo("  %s" % ad_science.filename)
             
-            log.stdinfo("Science frames:")
-            for ad_science in ad_science_list:
-                log.stdinfo("  %s" % ad_science.filename)
+        log.stdinfo("Sky frames:")
+        for ad_sky in ad_sky_list:
+            log.stdinfo("  %s" % ad_sky.filename)
             
-            log.stdinfo("Sky frames:")
-            for ad_sky in ad_sky_list:
-                log.stdinfo("  %s" % ad_sky.filename)
+        # Add the appropriate time stamp to the PHU and update the filename
+        # of the science and sky AstroData objects 
+        ad_science_output_list = gt.finalise_adinput(
+          adinput=ad_science_list, timestamp_key=timestamp_key,
+          suffix=suffix, allow_empty=True)
             
-            # Add the appropriate time stamp to the PHU and update the filename
-            # of the science and sky AstroData objects 
-            ad_science_output_list = gt.finalise_adinput(
-              adinput=ad_science_list, timestamp_key=timestamp_key,
-              suffix=suffix)
-            
-            ad_sky_output_list = gt.finalise_adinput(
-              adinput=ad_sky_list, timestamp_key=timestamp_key, suffix=suffix)
+        ad_sky_output_list = gt.finalise_adinput(
+          adinput=ad_sky_list, timestamp_key=timestamp_key, suffix=suffix,
+          allow_empty=True)
                
         # Report the list of output sky AstroData objects to the sky stream in
         # the reduction context

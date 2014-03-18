@@ -572,9 +572,23 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-    "all_on_source":{
-        "default"       : False,
-        "type"          : "bool",
+    "ref_obj":{
+        "default"       : "",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "ref_sky":{
+        "default"       : "",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "frac_FOV":{
+        "default"       : 0.9,
+        "type"          : "float",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
