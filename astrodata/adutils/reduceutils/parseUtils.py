@@ -337,6 +337,8 @@ def set_user_params(userparams):
         for upar in userparams:
             tmp = upar.split("=")
             spec, val = tmp[0].strip(), tmp[1].strip()
+            if val == 'None':
+                val = None
             if ":" in spec:
                 typ, prim, param = spec.split(":")
                 up = UserParam(typ, prim, param, val)
@@ -345,7 +347,6 @@ def set_user_params(userparams):
                 up = UserParam(None, None, spec, val)
                 ups.append(up)
                 gparms.update({spec:val})
-
         [fups.add_user_param(up) for up in ups]
     else:
         pass
