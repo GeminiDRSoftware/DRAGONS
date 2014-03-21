@@ -1128,9 +1128,7 @@ class ReductionContext(dict):
             
             rets += "\n\nStep History (self.stephistory):\n"
             rets += "    " + "-"*41 + "\n\n"
-            rets += "Feature deprecated until memory issue is resolved \
-(callen@gemini.edu)"
-            
+            rets += "Feature deprecated until memory issue is resolved"
             """
             shkeys = self.stephistory.keys()
             shkeys.sort()
