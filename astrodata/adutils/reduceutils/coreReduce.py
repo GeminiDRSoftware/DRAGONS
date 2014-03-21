@@ -167,9 +167,9 @@ class Reduce(object):
             log.stdinfo(str(msg))
             return
 
+        # AFTER validation checks, _check_files(), _convert_inputs(),
+        # start proxy servers
         self._configure_run_space()
-
-        # validate input, convert files to ad objects, start proxy servers
         try:
             valid_inputs = self._check_files()
         except IOError, err:
@@ -178,6 +178,9 @@ class Reduce(object):
             log.error(str(err))
             return xstat
 
+        allinputs   = self._convert_inputs(valid_inputs)
+        nof_ad_sets = len(allinputs)
+
         try:
             adcc_proc, reduceServer, prs = start_proxy_servers()
         except Errors.ADCCCommunicationError, err:
@@ -185,10 +188,8 @@ class Reduce(object):
             log.error("ADCCCommunicationError raised in start_proxy_servers()")
             log.error(str(err))
             return xstat
-            
+
         i = 0
-        allinputs   = self._convert_inputs(valid_inputs)
-        nof_ad_sets = len(allinputs)
         for infiles in allinputs:
             i += 1
             log.stdinfo("Starting Reduction on set #%d of %d" % (i, nof_ad_sets))
@@ -221,6 +222,10 @@ class Reduce(object):
             except ReductionExcept, err:
                 xstat = signal.SIGABRT
                 log.error(red_msg)
+                break
+            except Errors.PrimitiveError, err:
+                xstat = signal.SIGABRT
+                log.error(err)
                 break
             except Exception, err:
                 xstat = signal.SIGQUIT
@@ -286,8 +291,12 @@ class Reduce(object):
                     ad.filename = os.path.basename(ad.filename)
                     ad.mode = "readonly"
                 except Errors.AstroDataError, err:
-                    log.warning(err)
                     log.warning("Can't Load Dataset: %s" % inp)
+                    log.warning(err)
+                    continue
+                except ValueError, err:
+                    log.warning("Can't Load Dataset: %s" % inp)
+                    log.warning(err)
                     continue
                 nl.append(ad)
             try:
@@ -468,9 +477,18 @@ class Reduce(object):
             print "Shutting down the Context object"
             co.is_finished(True)
             raise KeyboardInterrupt
-        except Exception:
-            self.__write_context_log(co)
+        except Errors.PrimitiveError, err:
+            self._write_context_log(co)
             co.is_finished(True)
+            raise Errors.PrimitiveError(err)
+        except Errors.InputError, err:
+            self._write_context_log(co)
+            co.is_finished(True)
+            raise IOError(err)
+        except Exception:
+            self._write_context_log(co)
+            co.is_finished(True)
+            raise
         return
 
 
