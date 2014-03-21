@@ -1,0 +1,1 @@
+Search.setIndex({objects:{},terms:{reduc:0,index:0,search:0,welcom:0,modul:0,manual:0,indic:0,content:0,user:0,tabl:0,document:0,page:0},objtypes:{},titles:["Welcome to Reduce Users Manual&#8217;s documentation!"],objnames:{},filenames:["index"]})
