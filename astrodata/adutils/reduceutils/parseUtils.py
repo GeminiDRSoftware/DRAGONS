@@ -326,6 +326,10 @@ def set_user_params(userparams):
     is typed, it must be fully typed, i.e. <adtype>:<primitive>:par=value.
     See the reduce usage for -p --param.
 
+    Note: The testing on 'val' for the specific values of 'None', 'True', and
+    'False' are to ensure that, rather than strings, actual types Nonetype and 
+    booleans are set as parameter values.
+
     parameters: <list>, <fileobj>, args.userparams, log file.
     return:     <tuple>, (UserParams obj, <dict>)
     """
@@ -339,6 +343,11 @@ def set_user_params(userparams):
             spec, val = tmp[0].strip(), tmp[1].strip()
             if val == 'None':
                 val = None
+            elif val == 'True':
+                val = True
+            elif val == 'False':
+                val = False
+
             if ":" in spec:
                 typ, prim, param = spec.split(":")
                 up = UserParam(typ, prim, param, val)
@@ -347,6 +356,7 @@ def set_user_params(userparams):
                 up = UserParam(None, None, spec, val)
                 ups.append(up)
                 gparms.update({spec:val})
+
         [fups.add_user_param(up) for up in ups]
     else:
         pass
