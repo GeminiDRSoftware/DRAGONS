@@ -40,6 +40,9 @@ from gempy.library import astrotools as at
 # in these functions
 keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
                                             "keyword_comments")
+
+# Initialize pointing_in_field() caching of FOV table look-ups:
+_FOV_lookup = None
 # ------------------------------------------------------------------------------
 
 def add_objcat(adinput=None, extver=1, replace=False, columns=None):
@@ -2076,21 +2079,18 @@ class ExposureGroup:
         # instrument properties:
         ref_ad = adinputs[0]
 
-        # Ultimately we'd like to replace this with something like a
-        # descriptor so that we don't need a list of instruments here (that's
-        # why there are duplicate methods below instead of subclassing).
-        if ref_ad.is_type('F2'):
-            self._in_field = self._in_f2_field
-        else:
-            raise Errors.InputError('unsupported instrument in %s' % ref_ad)
+        # Here we used to define self._pointing_in_field, pointing to the
+        # instrument-specific back-end function, but that's been moved to a
+        # separate function in this module since it may be generally useful.
 
-    def in_field(self, position):
+    def pointing_in_field(self, position):
         """
         Determine whether or not a point falls within the same field of view
-        as the centre of the existing group.
+        as the centre of the existing group (using the function of the same
+        name).
 
-        :param position: A tuple of co-ordinates or AstroData instance to
-            compare with the centroid of the set of existing group members.
+        :param position: An AstroData instance to compare with the centroid
+          of the set of existing group members.
         :type position: tuple, list, AstroData
 
         :returns: Whether or not the input point is within the field of view
@@ -2098,35 +2098,10 @@ class ExposureGroup:
         :rtype: boolean
         """
 
-        # If we got an AstroData instance, convert it to the co-ordinates we
-        # want to check:
-        if isinstance(position, AstroData):
-            # This is a slightly convoluted way to look up information but
-            # get_offset_dict is going to go away anyway. Always returns dict.
-            position = get_offset_dict([position])[position]
-
-        # Make sure the set of co-ordinates is valid:
-        if not isinstance(position, (list, tuple)) or \
-           not all(isinstance(x, numbers.Number) for x in position):
-            raise Errors.InputError('parameter position should be a ' + \
-                'co-ordinate tuple or AstroData instance')
-
-        # Check for consistent dimensionality before trying to subtract
-        # co-ordinates (but should always be 2 in practice):
-        if len(position) != len(self.group_cen):
-            raise Errors.InputError('points to group must have the ' + \
-                'same number of co-ords')
-
         # Check co-ordinates WRT the group centre & field of view as
         # appropriate for the instrument:
-        return self._in_field(position, self.group_cen, self._frac_FOV)
-
-    def _in_f2_field(self, position, reference, frac_FOV=1.0):
-
-        # TO DO: This will need changing to decimal degrees once we pass
-        # absolute co-ordinates?
-        return math.sqrt(sum([(x-r)**2 for x, r in zip(position,reference)])) \
-             < frac_FOV * 180.
+        return pointing_in_field(position, self.group_cen,
+                                 frac_FOV=self._frac_FOV)
 
     def __len__(self):
         return len(self.members)
@@ -2192,6 +2167,8 @@ class ExposureGroup:
         self.group_cen = [(cval * ngroups + nval) / ntot \
           for cval, nval in zip(self.group_cen, newsum)]
 
+
+
 def group_exposures(adinputs, frac_FOV=1.0):
 
     """
@@ -2233,7 +2210,7 @@ def group_exposures(adinputs, frac_FOV=1.0):
         # Should this pointing be associated with an existing group?
         found = False
         for group in groups:
-            if group.in_field(ad):
+            if group.pointing_in_field(ad):
                 group.add_members(ad)
                 found = True
                 break
@@ -2253,12 +2230,114 @@ def group_exposures(adinputs, frac_FOV=1.0):
 
     return tuple(groups)
 
+
+def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=None):
+
+    """
+    Determine whether two telescope pointings fall within each other's
+    instrumental field of view, such that point(s) at the centre(s) of one
+    exposure's aperture(s) will still fall within the same aperture(s) of
+    the other exposure or reference position.
+
+    For direct imaging, this is the same question as "is point 1 within the
+    field at pointing 2?" but for multi-object spectroscopy neither position
+    at which the telescope pointing is defined will actually illuminate the
+    detector unless it happens to coincide with a target aperture.
+
+    This function has no knowledge of actual target position(s) within the
+    field, providing accurate results for centred target(s) with the default
+    frac_FOV=1.0. This should only be of concern in borderline cases where
+    exposures are offset by approximately the width of the field.
+
+    :param pos: Exposure defining the position & instrumental field of view
+      to check.
+    :type pos: AstroData instance
+
+    :param refpos: Reference position/exposure (currently assumed to be
+      Gemini p/q co-ordinates, but we intend to change that to RA/Dec).
+    :type refpos: AstroData instance or tuple of floats
+
+    :param frac_FOV: Proportion by which to scale the field size in order to
+      adjust whether borderline points are considered within its boundaries.
+    :type frac_FOV: float
+
+    :param frac_slit: If defined, the maximum deviation from the slit centre
+      that's still considered to be within the field, as a fraction of the
+      slit's half-width. If None, the value of frac_FOV is used instead. For
+      direct images this parameter is ignored.
+    :type frac_slit: float
+
+    :returns: Whether or not the pointing falls within the field (after
+      adjusting for frac_FOV & frac_slit). 
+    :rtype: boolean
+    """
+
+    # This function needs an AstroData instance rather than just 2
+    # co-ordinate tuples and a PA in order to look up the instrument for
+    # which the field of view is defined and so that the back-end function
+    # can distinguish between focal plane masks and access instrument-
+    # specific MDF tables for MOS.
+
+    # Use the first argument for looking up the instrument, since that's
+    # the one that's always an AstroData instance because the reference point
+    # doesn't always correspond to a single exposure.
+    inst = str(pos.instrument())
+
+    # To keep the back-end functions simple, always pass them a dictionary
+    # for the reference position (at least for now). All these checks add ~4%
+    # in overhead for imaging.
+    if isinstance(refpos, AstroData):
+        pointing = (refpos.phu_get_key_value('POFFSET'),
+                    refpos.phu_get_key_value('QOFFSET'))
+    else:
+        if not isinstance(refpos, (list, tuple)) or \
+           not all(isinstance(x, numbers.Number) for x in refpos):
+            raise Errors.InputError('Parameter refpos should be a ' + \
+                'co-ordinate tuple or AstroData instance')
+        # Currently the comparison is always 2D since we're explicitly
+        # looking up POFFSET & QOFFSET:
+        if len(refpos) != 2:
+            raise Errors.InputError('Points to group must have the ' + \
+                    'same number of co-ords')
+        pointing = refpos
+
+    # Use a single scaling for slit length & width if latter unspecified:
+    if frac_slit is None:
+        frac_slit = frac_FOV
+
+    # These values are cached in order to avoid the multiple-second overhead of
+    # reading and evaling a look-up table when there are repeated queries for
+    # the same instrument. Instead of private global variables we could use a
+    # function-like class here, but that would make the API rather convoluted
+    # in this simple case.
+    global _FOV_lookup, _FOV_pointing_in_field
+
+    # Look up the back-end implementation for the appropriate instrument,
+    # or use the previously-cached one. Currently we have to hard-wire the
+    # name "Gemini" because that's how AD configuration packages work :-(.
+    FOV_lookup = "Gemini/" + inst + "/FOV"
+    if FOV_lookup != _FOV_lookup:
+        try:
+            _FOV_pointing_in_field = Lookups.get_lookup_table(FOV_lookup,
+              "pointing_in_field")
+        except NameError:
+            raise NameError("FOV.pointing_in_field() function not " \
+              "implemented for %s" % inst)
+        _FOV_lookup = FOV_lookup
+
+    # Execute it & return the results:
+    return _FOV_pointing_in_field(pos, pointing, frac_FOV=frac_FOV,
+                                  frac_slit=frac_slit)
+
+
 # Since the following function will go away after redefining RA & Dec
 # descriptors appropriately, I've put it here instead of in
 # gemini_metadata_utils to avoid creating an import that's circular WRT
 # existing imports and might later hang around causing trouble.
 def get_offset_dict(adinputs=None):
     """
+    (To be deprecated)
+
     The get_offset_dict() function extracts a dictionary of co-ordinate offset
     tuples from a list of Gemini datasets, one per input AstroData instance.
     What's currently Gemini-specific is that POFFSET & QOFFSET header keywords

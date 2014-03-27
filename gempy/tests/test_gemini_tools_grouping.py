@@ -14,6 +14,7 @@ def offdict_to_adlist(offdict):
         a.phu.header['INSTRUME'] = 'F2'
         a.phu.header['OBSERVAT'] = 'Gemini-South'
         a.phu.header['TELESCOP'] = 'Gemini-South'
+        a.phu.header['MOSPOS'] = 'Open'
         a.phu.header['POFFSET'] = offdict[item][0]
         a.phu.header['QOFFSET'] = offdict[item][1]
         a.filename = item
