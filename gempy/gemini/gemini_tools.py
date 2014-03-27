@@ -2320,7 +2320,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=None):
         try:
             _FOV_pointing_in_field = Lookups.get_lookup_table(FOV_lookup,
               "pointing_in_field")
-        except NameError:
+        except (IOError, NameError):
             raise NameError("FOV.pointing_in_field() function not " \
               "implemented for %s" % inst)
         _FOV_lookup = FOV_lookup
