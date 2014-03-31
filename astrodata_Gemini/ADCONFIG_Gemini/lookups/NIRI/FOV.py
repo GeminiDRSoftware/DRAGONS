@@ -86,7 +86,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
         # # Look up the slit length & offset here.
 
         # # Tuple of (adjusted) field extent in each direction (assumes p,q):
-        # dist = (frac_slit*width*scale, frac_FOV*length)
+        # dist = (frac_slit*0.5*width*scale, frac_FOV*length)
 
         # # Is the position within the field boundaries along both/all axes?
         # return all([abs(x-r-o) < d for x, r, d, o in \
