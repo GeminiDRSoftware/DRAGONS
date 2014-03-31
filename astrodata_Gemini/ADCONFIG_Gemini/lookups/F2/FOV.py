@@ -34,10 +34,29 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     # TO DO: References to the field size will need changing to decimal
     # degrees once we pass absolute co-ordinates?
 
+    # TO DO: The following is used because as of r4619, the pixel_scale()
+    # descriptor slows us down by 50x for some reason (and prepare has
+    # already updated the header from the descriptor anyway so it doesn't
+    # need recalculating here). The first branch of this condition can be
+    # removed once pixel_scale() is improved or has the same check has
+    # been added to it:
+    if ad.is_type('PREPARED'):
+        scale = ad.phu_get_key_value('PIXSCALE')
+    else:
+        scale = ad.pixel_scale()
+
+    # GeMS truncates the FOV to 2' and since there are currently no AO
+    # type classifications, use the pixel scale that we just looked up to
+    # figure out whether the AO field applies or not:
+    with_gems = (scale < 0.1)
+
     # Imaging:
     if ad.is_type('F2_IMAGE'):
+
+        dist = 60. if with_gems else 183.
+
         return math.sqrt(sum([(x-r)**2 for x, r in zip(position,refpos)])) \
-             < frac_FOV * 183.
+             < frac_FOV * dist
 
     # Long slit:
     elif ad.is_type('F2_LS'):
@@ -49,20 +68,13 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
         except (AttributeError, TypeError, ValueError):
             raise ValueError("Failed to parse width for F2 slit (%s)" % mask)
 
-        # TO DO: The following is used because as of r4619, the pixel_scale()
-        # descriptor slows down in_field() by 50x for some reason (and prepare
-        # has already updated the header from the descriptor anyway so it
-        # doesn't need recalculating here). The first branch of this condition
-        # can be removed once pixel_scale() is improved or has the same check
-        # has been added to it:
-        if ad.is_type('PREPARED'):
-            scale = ad.phu_get_key_value('PIXSCALE')
-        else:
-            scale = ad.pixel_scale()
+        # TO DO: This first number should be correct but the Web page doesn't
+        # confirm it, so check with the instrument team:
+        dist = 60. if with_gems else 131.5
 
         # Tuple of (adjusted) field extent in each direction (assumes p,q):
         # The slit length is from the Web page, under long-slit spectroscopy.
-        dist = (frac_slit*width*scale, frac_FOV*131.5)
+        dist = (frac_slit*0.5*width*scale, frac_FOV*dist)
 
         # Is the position within the field boundaries along both/all axes?
         return all([abs(x-r) < d for x, r, d in zip(position,refpos,dist)])
@@ -83,6 +95,6 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
 
     # Some engineering observation or bad mask value etc.:
     else:
-        raise ValueError("Can't determine FOV for unrecognized F2 mask " \
-          "(%s)" % str(ad.focal_plane_mask()))
+        raise ValueError("Can't determine FOV for unrecognized F2 config " \
+          "(%s, %s)" % (str(ad.focal_plane_mask()), str(ad.disperser())))
 
