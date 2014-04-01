@@ -38,17 +38,17 @@ from gempy.gemini.opsdefs import GEMINI_NORTH, GEMINI_SOUTH, OBSPREF
 def buildArgParser():
     from argparse import ArgumentParser
 
-    usage = "autoredux [-h] [-r RECIPE] [-d DIRECTORY] [-c] [-u] [-s SUFFIX]\n"\
-            "\t\t [YYYYMMDD] [filenumbers]\n\n"\
-            "With no arguments, this will reduce all files in the ops\n"\
-            "directory matching the current date. If a date is given\n"\
-            "it will reduce all files from the selected date. If a single\n"\
-            "file number is given, it will start reducing at that file.\n"\
-            "If multiple file numbers are given as a range or a comma\n"\
-            "separated list (eg. 1-10,42-46), only those files will be\n"\
-            "reduced.\n\nPLEASE NOTE: the adcc must be started in the desired\n"\
-            "output directory before launching autoredux.\n"\
-            "To start the adcc, type 'adcc'.\n"
+    usage =("autoredux [-h] [-r RECIPE] [-d DIRECTORY] [-c] [-u] [-n]\n"
+    "\t\t[-s SUFFIX] [YYYYMMDD] [filenumbers]\n\n"
+    "With no arguments, this will reduce all files in the ops\n"
+    "directory matching the current date. If a date is given\n"
+    "it will reduce all files from the selected date. If a single\n"
+    "file number is given, it will start reducing at that file.\n"
+    "If multiple file numbers are given as a range or a comma\n"
+    "separated list (eg. 1-10,42-46), only those files will be\n"
+    "reduced.\n\nPLEASE NOTE: the adcc must be started in the desired\n"
+    "output directory before launching autoredux.\n"
+    "To start the adcc, type 'adcc'.\n")
     parser = ArgumentParser(usage=usage)
 
     parser.add_argument("n_args", metavar="YYYYMMDD or filenumbers",nargs="*")
@@ -225,34 +225,15 @@ def check_and_run(filepath, options=None):
         ok = verify_file(filepath)
         if(ok):
             supported, reasons = check_supported_data(filepath, cal)
-            
             if supported:
                 print "Reducing %s" % (new_file)
                 for reason in reasons:
                     print ", %s" % (reason)
-                launch_reduce(filepath, noaa, upload=upl, recipe=rec)
+                launch_reduce(filepath, noqa, upload=upl, recipe=rec)
             else:
                 print "Ignoring %s" % (new_file)
                 for reason in reasons:
                     print ", %s" % (reason)
-            
-            
-#             gmi, reason1 = check_gmos_image(filepath,
-#                                             calibrations=cal)
-#             if gmi:
-#                 print "Reducing %s, %s" % (new_file, reason1)
-#                 launch_reduce(filepath, noqa, upload=upl, recipe=rec)
-#             else:
-#                 gmls, reason2 = check_gmos_longslit(filepath)
-#                 if gmls:
-#                     print "Reducing %s, %s" % (new_file, reason2)
-#                     launch_reduce(filepath, noqa, upload=True, recipe=rec)
-#                 else:
-#                     if reason2 == reason1:
-#                         print "Ignoring %s, %s" % (new_file, reason1)
-#                     else:
-#                         print "Ignoring %s, %s, %s" % (new_file, reason1, reason2)
-
         else:
             print "Ignoring %s, not a valid fits file" % new_file
     else:
