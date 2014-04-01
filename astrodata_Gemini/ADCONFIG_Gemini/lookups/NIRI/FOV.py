@@ -43,7 +43,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     if ad.is_type('PREPARED'):
         scale = ad.phu_get_key_value('PIXSCALE')
     else:
-        scale = ad.pixel_scale()
+        scale = ad.pixel_scale().get_value()
 
     # Imaging:
     if ad.is_type('NIRI_IMAGE'):
