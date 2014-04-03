@@ -989,7 +989,11 @@ class QAPrimitives(GENERALPrimitives):
 
                 # Get IQ constraint band corresponding to
                 # the corrected FWHM number
-                iq_band = _iq_band(adinput=ad,fwhm=corr)[0]
+                is_AO = ad.phu_get_key_value('AOFOLD') == 'IN'
+                if is_AO:
+                    iq_band = None
+                else:
+                    iq_band = _iq_band(adinput=ad,fwhm=corr)[0]
 
                 # Format output for printing or logging
                 llen = 32
@@ -1034,7 +1038,10 @@ class QAPrimitives(GENERALPrimitives):
                     iqStr = ("IQ range for %s-band:"%wvband).ljust(llen)+\
                             iq.rjust(rlen)
                 else:
-                    iqStr = "(IQ band could not be determined)"
+                    if is_AO:
+                        iqStr = "(Delivered IQ band does not apply to AO observations)"
+                    else:
+                        iqStr = "(IQ band could not be determined)"
 
                 # Get requested IQ band
                 req_iq = ad.requested_iq()
@@ -1094,8 +1101,10 @@ class QAPrimitives(GENERALPrimitives):
                 else:
                     mean_ellip = float(mean_ellip)
                     std_ellip = float(std_ellip)
-                if('NON_SIDEREAL' in ad.types):
+                if 'NON_SIDEREAL' in ad.types:
                     comment.append("Observation is NON SIDEREAL, IQ measurements will be unreliable")
+                if is_AO:
+                    comment.append("AO observation.  Delivered IQ band is meaningless.")
                     
                 if iq_band is not None:
                     band = iq_band[0]
