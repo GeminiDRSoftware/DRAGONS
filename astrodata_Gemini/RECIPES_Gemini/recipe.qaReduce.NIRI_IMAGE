@@ -13,6 +13,9 @@ addToList(purpose=forSky)
 getList(purpose=forSky)
 makeSky
 skyCorrect
+detectSources
+measureIQ(display=True)
+measureCCAndAstrometry
 alignAndStack
 detectSources
 measureIQ(display=True)
