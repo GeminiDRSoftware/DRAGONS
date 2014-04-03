@@ -76,6 +76,10 @@ def buildArgParser():
                         default="", 
                         help="Specify a filename suffix")
 
+    parser.add_argument("--noskip_backlog", action="store_false", dest="skip_backlog",
+                        default=True,
+                        help="Do not skip ahead to latest file to avoid backlog")
+
     args = parser.parse_args()
 
     # arg value checks ...
@@ -141,6 +145,11 @@ def buildOptParser():
 
     parser.add_option("-s", "--suffix", action="store", dest="suffix", 
                       default="", help="Specify a filename suffix")
+    
+    parser.add_option("--noskip_backlog", action="store_false", dest="skip_backlog",
+                        default=True,
+                        help="Do not skip ahead to latest file to avoid backlog")
+
 
     args, pos_args = parser.parse_args()
     args.n_args    = pos_args
@@ -225,6 +234,7 @@ def check_and_run(filepath, options=None):
         ok = verify_file(filepath)
         if(ok):
             supported, reasons = check_supported_data(filepath, cal)
+            
             if supported:
                 print "Reducing %s" % (new_file)
                 for reason in reasons:
@@ -308,7 +318,7 @@ def check_supported_data(filepath, calibrations=False):
         return niri_image, reasons
 
     else:
-        return False, "Unsupported data type."
+        return False, ["Unsupported data type."]
         
 
 # ------------------------------------------------------------------------------
@@ -656,6 +666,9 @@ def main():
     fakedate, filenum = date_and_fileno(args.n_args)
     if fakedate:
         single_day = True
+        # skipping to last dataset when all datasets already there doesn't
+        # make much sense
+        args.skip_backlog = False
     else:
         single_day = False
         fakedate   = gemini_date()
@@ -678,6 +691,10 @@ def main():
     regex_patt = '^' + prefix + '\d{4}' + args.suffix + '.fits$'
     file_cre   = re.compile(regex_patt)
 
+    
+    # BEFORE modifying this file monitoring algorithm, contact
+    # Kathleen, she has a new, more sane logic flow.  Flow charts
+    # for both this non-sense and the new proposed flow available.
     while(True):
         today = build_day_list(directory, regex_patt)
         if(len(today) > 0):           # Any files for 'today'?
@@ -697,7 +714,12 @@ def main():
             else:
                 # Did we find something new?
                 if len(today) > last_index + 1:
-                    last_index += 1
+                    if args.skip_backlog:
+                        # skip ahead to the last file
+                        last_index = len(today) - 1
+                    else:
+                        last_index += 1
+                        
                     new_file = today[last_index]
                     printed_wait = False
 
