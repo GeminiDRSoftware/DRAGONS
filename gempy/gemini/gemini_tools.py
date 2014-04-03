@@ -1441,7 +1441,11 @@ def fitsstore_report(ad, rc, metric, info_dict):
     # Add qametric dictionary into qareport
     qareport["qametric"] = qametric_list
     
-    if (rc["upload_metrics"]):
+    # rc returns a string, not a boolean when adcc makes the call to reduce
+    # as triggered by the url /runreduce call.
+    # I suspect that rc will return a boolean when reduce is called from the 
+    # command line.
+    if rc["upload_metrics"] == 'True' or rc["upload_metrics"] == True:  
         send_fitsstore_report(qareport)
     return qareport
 
