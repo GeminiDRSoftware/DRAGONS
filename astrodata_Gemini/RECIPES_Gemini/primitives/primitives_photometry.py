@@ -1091,8 +1091,10 @@ def _sextractor(ad=None,seeing_estimate=None):
     
         problem = False
         for i in iter:
-
-            if seeing_estimate is None:
+            # this horrible hack doesn't use the seeing estimate from the previous
+            # pass if the seeing is less than 0.2 - ie niri AO.
+            # Might be better to make it say 4*pixel_scale rather than hard wired
+            if (seeing_estimate is None) or (seeing_estimate < 0.2):
                 # use default seeing estimate for a first pass
                 sx_cmd = ["sex",
                           scitmpfn,

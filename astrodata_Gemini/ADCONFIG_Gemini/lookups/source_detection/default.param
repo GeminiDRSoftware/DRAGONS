@@ -52,6 +52,7 @@ CLASS_STAR
 ISOAREA_IMAGE # Number of pixels covered by object.
 FLAGS # Sextractor detection flags
 IMAFLAGS_ISO # DQ values from data over area of object
+NIMAFLAGS_ISO # number of pixles with DQ values from data over area of object
 #
 # Background flux level
 BACKGROUND

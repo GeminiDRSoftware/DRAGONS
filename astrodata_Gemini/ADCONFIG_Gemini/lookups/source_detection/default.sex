@@ -27,6 +27,8 @@ CLEAN_PARAM      1.0            # Cleaning efficiency
  
 MASK_TYPE        CORRECT        # type of detection MASKing: can be one of
                                 # NONE, BLANK or CORRECT
+
+FLAG_TYPE        OR             # IMAFLAGS_ISO set to bitwise OR of DQ values
  
 #------------------------------ Photometry -----------------------------------
  

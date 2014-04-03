@@ -138,8 +138,10 @@ class QAPrimitives(GENERALPrimitives):
                         flags = objcat.data["FLAGS"]
                         dqflag = objcat.data["IMAFLAGS_ISO"]
                         if not np.all(dqflag==-999):
-                            flags |= dqflag
-                        good_bg = bg[flags==0]
+                            myflags = flags | dqflag
+                        else:
+                            myflags = flags
+                        good_bg = bg[myflags==0]
 
                         if len(good_bg)<3:
                             log.fullinfo("No good background values in "\
