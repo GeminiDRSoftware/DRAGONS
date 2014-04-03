@@ -12,12 +12,13 @@ Contents:
    :maxdepth: 2
 
    intro
+   pkgcontent
+   coding
    flows
    ADtypes
    recipes
    primitives
    tests
-
 
 Indices and tables
 ==================
