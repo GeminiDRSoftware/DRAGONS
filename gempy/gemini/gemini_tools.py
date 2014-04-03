@@ -843,6 +843,7 @@ def clip_sources(ad):
 
         sxflag = objcat.data.field("FLAGS")
         dqflag = objcat.data.field("IMAFLAGS_ISO")
+        ndqflag = objcat.data.field("NIMAFLAGS_ISO")
         class_star = objcat.data.field("CLASS_STAR")
         area = objcat.data.field("ISOAREA_IMAGE")
         flux = objcat.data.field("FLUX_AUTO")
@@ -878,9 +879,16 @@ def clip_sources(ad):
         # Source is good if not flagged in DQ plane
         # Ignore criterion if all undefined (-999)
         if not np.all(dqflag==-999):
-            flags |= dqflag
+            is_odd=np.mod(dqflag, 2)
+            modified_dqflag=np.where(is_odd, 0, dqflag)
+            flags |= modified_dqflag
 
-        # Use flag=0 to find good data
+        # Ignore source that hae too many flagged pixels in them
+        if not np.all(ndqflag==-999):
+            toobadflags = np.where(ndqflag > 4, 1, 0)
+            flags |= toobadflags
+
+        # Use flags=0 to find good data
         good = (flags==0)
         rec = np.rec.fromarrays(
             [x[good],y[good],
