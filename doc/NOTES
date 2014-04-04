@@ -1,8 +1,0 @@
-
-astrodata/__init__.py needed to be commented out for all
-the imports; otherwise I got:
-
-   module not found messages
-
-
-
