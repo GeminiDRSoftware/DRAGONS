@@ -1,0 +1,53 @@
+\BOOKMARK [0][-]{chapter.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.1.1}{What is AstroData?}{chapter.1}% 2
+\BOOKMARK [1][-]{section.1.2}{Installing AstroData}{chapter.1}% 3
+\BOOKMARK [1][-]{section.1.3}{AstroData Support}{chapter.1}% 4
+\BOOKMARK [0][-]{chapter.2}{Tutorial}{}% 5
+\BOOKMARK [1][-]{section.2.1}{Open and Access MEF Files}{chapter.2}% 6
+\BOOKMARK [1][-]{section.2.2}{Operate on MEF Files}{chapter.2}% 7
+\BOOKMARK [1][-]{section.2.3}{Create and Update MEF Files}{chapter.2}% 8
+\BOOKMARK [1][-]{section.2.4}{Writing a Python Function using AstroData}{chapter.2}% 9
+\BOOKMARK [0][-]{chapter.3}{Input and Output Operations}{}% 10
+\BOOKMARK [1][-]{section.3.1}{Open Existing MEF Files}{chapter.3}% 11
+\BOOKMARK [1][-]{section.3.2}{Update Existing MEF Files}{chapter.3}% 12
+\BOOKMARK [1][-]{section.3.3}{Create New MEF Files}{chapter.3}% 13
+\BOOKMARK [0][-]{chapter.4}{MEF Structure Mapping}{}% 14
+\BOOKMARK [1][-]{section.4.1}{File Structure Definitions}{chapter.4}% 15
+\BOOKMARK [1][-]{section.4.2}{Gemini Data Structure}{chapter.4}% 16
+\BOOKMARK [1][-]{section.4.3}{Using Structures}{chapter.4}% 17
+\BOOKMARK [1][-]{section.4.4}{Adding New Structure}{chapter.4}% 18
+\BOOKMARK [0][-]{chapter.5}{AstroDataTypes}{}% 19
+\BOOKMARK [1][-]{section.5.1}{What are AstroDataTypes}{chapter.5}% 20
+\BOOKMARK [1][-]{section.5.2}{Using AstroDataTypes}{chapter.5}% 21
+\BOOKMARK [1][-]{section.5.3}{Creating New AstroDataTypes}{chapter.5}% 22
+\BOOKMARK [0][-]{chapter.6}{FITS Headers}{}% 23
+\BOOKMARK [1][-]{section.6.1}{AstroData Descriptors}{chapter.6}% 24
+\BOOKMARK [1][-]{section.6.2}{Accessing Headers}{chapter.6}% 25
+\BOOKMARK [1][-]{section.6.3}{Updating and Adding Headers}{chapter.6}% 26
+\BOOKMARK [1][-]{section.6.4}{Adding Descriptors Definitions for New Instruments}{chapter.6}% 27
+\BOOKMARK [0][-]{chapter.7}{Pixel Data}{}% 28
+\BOOKMARK [1][-]{section.7.1}{Operate on the Pixel Data}{chapter.7}% 29
+\BOOKMARK [1][-]{section.7.2}{Arithmetic on AstroData Objects}{chapter.7}% 30
+\BOOKMARK [1][-]{section.7.3}{Variance}{chapter.7}% 31
+\BOOKMARK [1][-]{section.7.4}{Display}{chapter.7}% 32
+\BOOKMARK [1][-]{section.7.5}{Useful tools from the Numpy and SciPy Modules}{chapter.7}% 33
+\BOOKMARK [1][-]{section.7.6}{Using the AstroData Data Quality Plane}{chapter.7}% 34
+\BOOKMARK [1][-]{section.7.7}{Manipulate Data Sections}{chapter.7}% 35
+\BOOKMARK [1][-]{section.7.8}{Work on Data Cubes}{chapter.7}% 36
+\BOOKMARK [1][-]{section.7.9}{Plot Data}{chapter.7}% 37
+\BOOKMARK [0][-]{chapter.8}{Table Data}{}% 38
+\BOOKMARK [1][-]{section.8.1}{Read from a FITS Table}{chapter.8}% 39
+\BOOKMARK [1][-]{section.8.2}{Create a FITS Table}{chapter.8}% 40
+\BOOKMARK [1][-]{section.8.3}{Operate on a FITS Table}{chapter.8}% 41
+\BOOKMARK [0][-]{chapter.9}{Log Utility}{}% 42
+\BOOKMARK [1][-]{section.9.1}{The Astrodata Log Utility}{chapter.9}% 43
+\BOOKMARK [1][-]{section.9.2}{Writing to Log}{chapter.9}% 44
+\BOOKMARK [1][-]{section.9.3}{Log Levels}{chapter.9}% 45
+\BOOKMARK [0][-]{chapter.10}{Dataset Validation}{}% 46
+\BOOKMARK [1][-]{section.10.1}{File Structure Validation}{chapter.10}% 47
+\BOOKMARK [0][-]{chapter.11}{Advanced Topics}{}% 48
+\BOOKMARK [1][-]{section.11.1}{Creating a New Configuration Module}{chapter.11}% 49
+\BOOKMARK [1][-]{section.11.2}{Adding Support for a New Instrument}{chapter.11}% 50
+\BOOKMARK [0][-]{chapter.12}{Other Topics}{}% 51
+\BOOKMARK [0][-]{chapter.13}{List of Standard Descriptors}{}% 52
+\BOOKMARK [0][-]{chapter.14}{Indices and tables}{}% 53
