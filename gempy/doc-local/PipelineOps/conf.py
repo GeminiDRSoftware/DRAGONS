@@ -25,7 +25,7 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = []
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.pngmath', 'sphinx.ext.ifconfig', 'sphinx.ext.viewcode']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -178,7 +178,7 @@ htmlhelp_basename = 'QAPipelineOperationdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'QAPipelineOperation.tex', u'QA Pipeline Operation Documentation',
+  ('index', 'QAPipelineOperation.tex', u'QA Pipeline Operation Manual',
    u'Kathleen Labrie', 'manual'),
 ]
 
@@ -211,6 +211,15 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'qapipelineoperation', u'QA Pipeline Operation Documentation',
+    ('index', 'qapipelineoperation', u'QA Pipeline Operation Manual',
      [u'Kathleen Labrie'], 1)
 ]
+
+# Activate the todos
+todo_include_todos=True
+
+# Adding style in order to have the todos show up in a red box.
+def setup(app):
+   app.add_stylesheet('todo-styles.css')
+
+
