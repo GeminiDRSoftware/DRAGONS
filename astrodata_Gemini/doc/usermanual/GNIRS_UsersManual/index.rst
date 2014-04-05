@@ -1,12 +1,11 @@
-.. GNIRS Users Manual documentation master file, created by
+.. GNIRS Users Manual master file, created by
    sphinx-quickstart on Fri Apr  4 10:18:16 2014.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
+   Manually edited by KL Fri Apr 4 2014
 
-Welcome to GNIRS Users Manual's documentation!
-==============================================
-
-Contents:
+GNIRS Users Manual
+==================
 
 .. toctree::
    :maxdepth: 2
@@ -19,4 +18,6 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. todolist::
 

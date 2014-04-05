@@ -183,7 +183,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'GSAOIProgrammersManual.tex', u'GSAOI Programmer\'s Manual Documentation',
+  ('index', 'GSAOIProgrammersManual.tex', u'GSAOI Programmer\'s Manual',
    u'Mark Simpson', 'manual'),
 ]
 
@@ -213,7 +213,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'gsaoiprogrammersmanual', u'GSAOI Programmer\'s Manual Documentation',
+    ('index', 'gsaoiprogrammersmanual', u'GSAOI Programmer\'s Manual',
      [u'Mark Simpson'], 1)
 ]
 
@@ -227,7 +227,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'GSAOIProgrammersManual', u'GSAOI Programmer\'s Manual Documentation',
+  ('index', 'GSAOIProgrammersManual', u'GSAOI Programmer\'s Manual',
    u'Mark Simpson', 'GSAOIProgrammersManual', 'One line description of project.',
    'Miscellaneous'),
 ]
@@ -244,3 +244,12 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'http://docs.python.org/': None}
+
+# Activate the todos
+todo_include_todos=True
+
+# Adding style in order to have the todos show up in a red box.
+def setup(app):
+   app.add_stylesheet('todo-styles.css')
+
+
