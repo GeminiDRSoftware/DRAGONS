@@ -1,5 +1,0 @@
-.. definitions:
-
-***********
-Definitions
-***********

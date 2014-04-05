@@ -1,5 +1,0 @@
-.. parameters:
-
-**********
-Parameters
-**********
