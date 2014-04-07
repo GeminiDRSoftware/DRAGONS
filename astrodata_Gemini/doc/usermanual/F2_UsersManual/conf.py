@@ -178,12 +178,13 @@ latex_elements = {
 
 # Additional stuff for the LaTeX preamble.
 #'preamble': '',
+'preamble': '\usepackage{appendix} \setcounter{tocdepth}{0}',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Flamingos2UsersManual.tex', u'Flamingos 2 Users Manual',
+  ('index-latex', 'Flamingos2UsersManual.tex', u'Flamingos 2 Users Manual',
    u'Kathleen Labrie', 'manual'),
 ]
 

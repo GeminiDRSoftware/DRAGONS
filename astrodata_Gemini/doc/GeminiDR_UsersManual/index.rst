@@ -8,6 +8,7 @@ Gemini Data Reduction Users Manual
 ==================================
 
 .. toctree::
+   :numbered:
    :maxdepth: 2
 
 

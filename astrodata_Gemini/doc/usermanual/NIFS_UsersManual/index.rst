@@ -8,6 +8,7 @@ NIFS Users Manual
 =================
 
 .. toctree::
+   :numbered:
    :maxdepth: 2
 
 

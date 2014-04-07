@@ -178,12 +178,13 @@ latex_elements = {
 
 # Additional stuff for the LaTeX preamble.
 #'preamble': '',
+'preamble': '\usepackage{appendix} \setcounter{tocdepth}{0}',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'GHOSUsersManual.tex', u'GHOS Users Manual',
+  ('index-latex', 'GHOSUsersManual.tex', u'GHOS Users Manual',
    u'Kathleen Labrie', 'manual'),
 ]
 

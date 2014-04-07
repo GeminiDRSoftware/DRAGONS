@@ -8,6 +8,7 @@ NIRI Users Manual
 =================
 
 .. toctree::
+   :numbered:
    :maxdepth: 2
 
 

@@ -8,6 +8,7 @@ GMOS Programmer's Manual
 ========================
 
 .. toctree::
+   :numbered:
    :maxdepth: 2
 
    intro

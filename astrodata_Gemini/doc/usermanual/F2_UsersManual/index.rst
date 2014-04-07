@@ -8,6 +8,7 @@ Flamingos 2 Users Manual
 ========================
 
 .. toctree::
+   :numbered:
    :maxdepth: 2
 
 
