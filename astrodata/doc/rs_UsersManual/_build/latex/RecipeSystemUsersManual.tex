@@ -10,10 +10,10 @@
 \usepackage{longtable}
 \usepackage{sphinx}
 \usepackage{multirow}
+\usepackage{appendix} \setcounter{tocdepth}{0}
 
-
-\title{RecipeSystem Users Manual Documentation}
-\date{April 04, 2014}
+\title{RecipeSystem Users Manual}
+\date{April 07, 2014}
 \release{0.9.0}
 \author{Kathleen Labrie}
 \newcommand{\sphinxlogo}{}
@@ -111,7 +111,7 @@
 
 \maketitle
 \tableofcontents
-\phantomsection\label{index::doc}
+\phantomsection\label{index-latex::doc}
 
 
 
@@ -147,27 +147,16 @@ This is to test ``importing'' the \code{reduce} manual material into the RecipeS
 \label{customize:adding-and-modifying-recipes}
 
 \section{Writing and Using your own Primitive}
-\label{customize:writing-and-using-your-own-primitive}
+\label{customize:writing-and-using-your-own-primitive}% Set up the appendix mode and modify the LaTeX toc behavior
+\appendix
+\noappendicestocpagenum
+\addappheadtotoc
 
 \chapter{List of all recipes}
-\label{listrecipes::doc}\label{listrecipes:list-of-all-recipes}
+\label{appendices/appendix_listrecipes::doc}\label{appendices/appendix_listrecipes:list-of-all-recipes}
 
 \chapter{List of all primitives}
-\label{listprimitives::doc}\label{listprimitives:list-of-all-primitives}
-
-\chapter{Indices and tables}
-\label{index:indices-and-tables}\begin{itemize}
-\item {} 
-\emph{genindex}
-
-\item {} 
-\emph{modindex}
-
-\item {} 
-\emph{search}
-
-\end{itemize}
-
+\label{appendices/appendix_listprimitives::doc}\label{appendices/appendix_listprimitives:list-of-all-primitives}
 
 
 \renewcommand{\indexname}{Index}

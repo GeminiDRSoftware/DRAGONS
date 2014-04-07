@@ -10,7 +10,7 @@
 \usepackage{longtable}
 \usepackage{sphinx}
 \usepackage{multirow}
-
+\usepackage{appendix} \setcounter{tocdepth}{0}
 
 \title{RecipeSystem Programmer's Manual}
 \date{April 07, 2014}
@@ -111,7 +111,7 @@
 
 \maketitle
 \tableofcontents
-\phantomsection\label{index::doc}
+\phantomsection\label{index-latex::doc}
 
 
 
@@ -131,27 +131,16 @@
 \label{rsUI:recipesystem-user-interfaces}\label{rsUI::doc}
 
 \chapter{Calibrations Association and Handling}
-\label{calib:calibrations-association-and-handling}\label{calib::doc}
+\label{calib:calibrations-association-and-handling}\label{calib::doc}% Set up the appendix mode and modify the LaTeX toc behavior
+\appendix
+\noappendicestocpagenum
+\addappheadtotoc
 
 \chapter{RecipeSystem Design Notes}
-\label{design::doc}\label{design:recipesystem-design-notes}
+\label{appendices/appendix_design::doc}\label{appendices/appendix_design:recipesystem-design-notes}
 
 \chapter{RecipeSystem API}
-\label{api::doc}\label{api:recipesystem-api}
-
-\chapter{Indices and tables}
-\label{index:indices-and-tables}\begin{itemize}
-\item {} 
-\emph{genindex}
-
-\item {} 
-\emph{modindex}
-
-\item {} 
-\emph{search}
-
-\end{itemize}
-
+\label{appendices/appendix_api::doc}\label{appendices/appendix_api:recipesystem-api}
 
 
 \renewcommand{\indexname}{Index}

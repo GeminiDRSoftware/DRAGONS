@@ -9,6 +9,6 @@
 \contentsline {chapter}{\numberline {6}Customizing the Data Processing}{11}{chapter.6}
 \contentsline {section}{\numberline {6.1}Adding and Modifying Recipes}{11}{section.6.1}
 \contentsline {section}{\numberline {6.2}Writing and Using your own Primitive}{11}{section.6.2}
-\contentsline {chapter}{\numberline {7}List of all recipes}{13}{chapter.7}
-\contentsline {chapter}{\numberline {8}List of all primitives}{15}{chapter.8}
-\contentsline {chapter}{\numberline {9}Indices and tables}{17}{chapter.9}
+\contentsline {chapter}{Appendices}{}{section*.3}
+\contentsline {chapter}{\numberline {A}List of all recipes}{13}{appendix.A}
+\contentsline {chapter}{\numberline {B}List of all primitives}{15}{appendix.B}

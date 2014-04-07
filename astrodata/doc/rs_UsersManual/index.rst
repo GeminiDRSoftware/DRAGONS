@@ -8,6 +8,7 @@ RecipeSystem Users Manual
 =========================
 
 .. toctree::
+   :numbered:
    :maxdepth: 2
 
    intro
@@ -16,8 +17,15 @@ RecipeSystem Users Manual
    usage
    reduce
    customize
-   listrecipes
-   listprimitives
+
+Appendices
+----------
+
+.. toctree::
+   :maxdepth: 1
+   
+   appendices/appendix_listrecipes
+   appendices/appendix_listprimitives
    
 
 Indices and tables

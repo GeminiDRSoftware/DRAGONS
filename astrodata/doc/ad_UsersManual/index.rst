@@ -8,6 +8,7 @@ AstroData User's Manual
 =======================
 
 .. toctree::
+   :numbered:
    :maxdepth: 2
    
    intro

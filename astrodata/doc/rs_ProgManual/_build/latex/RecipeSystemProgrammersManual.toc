@@ -5,6 +5,6 @@
 \contentsline {chapter}{\numberline {4}RecipeSystem Package Structure and Content}{7}{chapter.4}
 \contentsline {chapter}{\numberline {5}RecipeSystem User Interfaces}{9}{chapter.5}
 \contentsline {chapter}{\numberline {6}Calibrations Association and Handling}{11}{chapter.6}
-\contentsline {chapter}{\numberline {7}RecipeSystem Design Notes}{13}{chapter.7}
-\contentsline {chapter}{\numberline {8}RecipeSystem API}{15}{chapter.8}
-\contentsline {chapter}{\numberline {9}Indices and tables}{17}{chapter.9}
+\contentsline {chapter}{Appendices}{}{section*.3}
+\contentsline {chapter}{\numberline {A}RecipeSystem Design Notes}{13}{appendix.A}
+\contentsline {chapter}{\numberline {B}RecipeSystem API}{15}{appendix.B}

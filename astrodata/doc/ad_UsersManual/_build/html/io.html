@@ -8,10 +8,11 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Input and Output Operations &mdash; AstroData Users Manual 0.9.0 documentation</title>
+    <title>3. Input and Output Operations &mdash; AstroData Users Manual 0.9.0 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/todo-styles.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -26,8 +27,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="AstroData Users Manual 0.9.0 documentation" href="index.html" />
-    <link rel="next" title="MEF Structure Mapping" href="structure.html" />
-    <link rel="prev" title="Tutorial" href="tutorial.html" /> 
+    <link rel="next" title="4. MEF Structure Mapping" href="structure.html" />
+    <link rel="prev" title="2. Tutorial" href="tutorial.html" /> 
   </head>
   <body>
     <div class="related">
@@ -37,10 +38,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="structure.html" title="MEF Structure Mapping"
+          <a href="structure.html" title="4. MEF Structure Mapping"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="tutorial.html" title="Tutorial"
+          <a href="tutorial.html" title="2. Tutorial"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
       </ul>
@@ -52,9 +53,9 @@
           <div class="body">
             
   <div class="section" id="input-and-output-operations">
-<h1>Input and Output Operations<a class="headerlink" href="#input-and-output-operations" title="Permalink to this headline">¶</a></h1>
+<h1>3. Input and Output Operations<a class="headerlink" href="#input-and-output-operations" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="open-existing-mef-files">
-<h2>Open Existing MEF Files<a class="headerlink" href="#open-existing-mef-files" title="Permalink to this headline">¶</a></h2>
+<h2>3.1. Open Existing MEF Files<a class="headerlink" href="#open-existing-mef-files" title="Permalink to this headline">¶</a></h2>
 <p>An AstroData object can be created from the name of the file on disk or from
 PyFITS HDUList.  An existing MEF file can be open as an AstroData object
 in <tt class="docutils literal"><span class="pre">readonly</span></tt>, <tt class="docutils literal"><span class="pre">update</span></tt>, or <tt class="docutils literal"><span class="pre">append</span></tt> mode.  The default is <tt class="docutils literal"><span class="pre">readonly</span></tt>.</p>
@@ -76,7 +77,7 @@ check the structure, and then close it:</p>
 </div>
 </div>
 <div class="section" id="update-existing-mef-files">
-<h2>Update Existing MEF Files<a class="headerlink" href="#update-existing-mef-files" title="Permalink to this headline">¶</a></h2>
+<h2>3.2. Update Existing MEF Files<a class="headerlink" href="#update-existing-mef-files" title="Permalink to this headline">¶</a></h2>
 <p>To update an existing MEF file, it must have been opened in the <tt class="docutils literal"><span class="pre">update</span></tt> mode.  Then a collection
 of methods can be applied to the AstroData object.  Here we give examples on how to append an
 extension, how to insert an extension, how to remove an extension, and how to replace an extension.
@@ -203,12 +204,12 @@ Finally we show how to write the updated AstroData object to disk as MEF file.</
 </div>
 </div>
 <div class="section" id="create-new-mef-files">
-<h2>Create New MEF Files<a class="headerlink" href="#create-new-mef-files" title="Permalink to this headline">¶</a></h2>
+<h2>3.3. Create New MEF Files<a class="headerlink" href="#create-new-mef-files" title="Permalink to this headline">¶</a></h2>
 <p>The method <tt class="docutils literal"><span class="pre">write</span></tt> is use to write to disk a new MEF file from an AstroData
 object.  Here we show two ways to build that new AstroData object and create
 a MEF file, in memory or on disk, from that AstroData object.</p>
 <div class="section" id="create-new-copy-of-mef-files">
-<h3>Create New Copy of MEF Files<a class="headerlink" href="#create-new-copy-of-mef-files" title="Permalink to this headline">¶</a></h3>
+<h3>3.3.1. Create New Copy of MEF Files<a class="headerlink" href="#create-new-copy-of-mef-files" title="Permalink to this headline">¶</a></h3>
 <p>Let us consider the case where you already have a MEF file on disk and you want
 to work on it and write the modified MEF to a new file.</p>
 <p>Here we open a file, make a copy, and write a new MEF file on disk:</p>
@@ -238,7 +239,7 @@ copy still point to the same location in memory.</p>
 This also means that you have doubled the memory footprint.</p>
 </div>
 <div class="section" id="create-new-mef-files-from-scratch">
-<h3>Create New MEF Files from Scratch<a class="headerlink" href="#create-new-mef-files-from-scratch" title="Permalink to this headline">¶</a></h3>
+<h3>3.3.2. Create New MEF Files from Scratch<a class="headerlink" href="#create-new-mef-files-from-scratch" title="Permalink to this headline">¶</a></h3>
 <p>Another use case is creating a new MEF files when none existed before. The
 pixel data needs to be created as a numpy ndarray.  The header must be created
 as pyfits header.</p>
@@ -275,12 +276,12 @@ as pyfits header.</p>
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Input and Output Operations</a><ul>
-<li><a class="reference internal" href="#open-existing-mef-files">Open Existing MEF Files</a></li>
-<li><a class="reference internal" href="#update-existing-mef-files">Update Existing MEF Files</a></li>
-<li><a class="reference internal" href="#create-new-mef-files">Create New MEF Files</a><ul>
-<li><a class="reference internal" href="#create-new-copy-of-mef-files">Create New Copy of MEF Files</a></li>
-<li><a class="reference internal" href="#create-new-mef-files-from-scratch">Create New MEF Files from Scratch</a></li>
+<li><a class="reference internal" href="#">3. Input and Output Operations</a><ul>
+<li><a class="reference internal" href="#open-existing-mef-files">3.1. Open Existing MEF Files</a></li>
+<li><a class="reference internal" href="#update-existing-mef-files">3.2. Update Existing MEF Files</a></li>
+<li><a class="reference internal" href="#create-new-mef-files">3.3. Create New MEF Files</a><ul>
+<li><a class="reference internal" href="#create-new-copy-of-mef-files">3.3.1. Create New Copy of MEF Files</a></li>
+<li><a class="reference internal" href="#create-new-mef-files-from-scratch">3.3.2. Create New MEF Files from Scratch</a></li>
 </ul>
 </li>
 </ul>
@@ -289,10 +290,10 @@ as pyfits header.</p>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="tutorial.html"
-                        title="previous chapter">Tutorial</a></p>
+                        title="previous chapter">2. Tutorial</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="structure.html"
-                        title="next chapter">MEF Structure Mapping</a></p>
+                        title="next chapter">4. MEF Structure Mapping</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/io.txt"
@@ -322,10 +323,10 @@ as pyfits header.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="structure.html" title="MEF Structure Mapping"
+          <a href="structure.html" title="4. MEF Structure Mapping"
              >next</a> |</li>
         <li class="right" >
-          <a href="tutorial.html" title="Tutorial"
+          <a href="tutorial.html" title="2. Tutorial"
              >previous</a> |</li>
         <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
       </ul>

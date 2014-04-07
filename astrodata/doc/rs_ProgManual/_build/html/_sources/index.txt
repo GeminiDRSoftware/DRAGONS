@@ -8,6 +8,7 @@ RecipeSystem Programmer's Manual
 ================================
 
 .. toctree::
+   :numbered:
    :maxdepth: 2
 
    intro
@@ -16,8 +17,15 @@ RecipeSystem Programmer's Manual
    pkgstructure
    rsUI
    calib
-   design
-   api
+
+Appendices
+----------
+
+.. toctree::
+   :maxdepth: 1
+   
+   appendices/appendix_design
+   appendices/appendix_api
 
 
 Indices and tables

@@ -8,10 +8,11 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>FITS Headers &mdash; AstroData Users Manual 0.9.0 documentation</title>
+    <title>6. FITS Headers &mdash; AstroData Users Manual 0.9.0 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/todo-styles.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -26,8 +27,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="AstroData Users Manual 0.9.0 documentation" href="index.html" />
-    <link rel="next" title="Pixel Data" href="data.html" />
-    <link rel="prev" title="AstroDataTypes" href="types.html" /> 
+    <link rel="next" title="7. Pixel Data" href="data.html" />
+    <link rel="prev" title="5. AstroDataTypes" href="types.html" /> 
   </head>
   <body>
     <div class="related">
@@ -37,10 +38,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="data.html" title="Pixel Data"
+          <a href="data.html" title="7. Pixel Data"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="types.html" title="AstroDataTypes"
+          <a href="types.html" title="5. AstroDataTypes"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
       </ul>
@@ -52,9 +53,9 @@
           <div class="body">
             
   <div class="section" id="fits-headers">
-<h1>FITS Headers<a class="headerlink" href="#fits-headers" title="Permalink to this headline">¶</a></h1>
+<h1>6. FITS Headers<a class="headerlink" href="#fits-headers" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="astrodata-descriptors">
-<h2>AstroData Descriptors<a class="headerlink" href="#astrodata-descriptors" title="Permalink to this headline">¶</a></h2>
+<h2>6.1. AstroData Descriptors<a class="headerlink" href="#astrodata-descriptors" title="Permalink to this headline">¶</a></h2>
 <p>AstroData Descriptors provide a &#8220;header keyword-to-concept&#8221; mapping that allows one to
 access header information in a consistent manner, regardless of which instrument the
 dataset is from.  The mapping is coded in a configuration package that is provided
@@ -84,7 +85,7 @@ Gemini instrument, or for another observatory, Descriptors and AstrodataTypes wi
 coded.  That&#8217;s a more advanced topic addressed elsewhere. (KL?? ref to last section of this page)</p>
 </div>
 <div class="section" id="accessing-headers">
-<h2>Accessing Headers<a class="headerlink" href="#accessing-headers" title="Permalink to this headline">¶</a></h2>
+<h2>6.2. Accessing Headers<a class="headerlink" href="#accessing-headers" title="Permalink to this headline">¶</a></h2>
 <p>Whenever possible the Descriptors should be used to get information from the headers.  This
 allows for maximum re-use of the code as it will work on any datasets with an AstroDataTypes.
 Here are a few examples using Descriptors:</p>
@@ -153,7 +154,7 @@ objects.  The name and version of an extension is obtained this way:</p>
 </div>
 </div>
 <div class="section" id="updating-and-adding-headers">
-<h2>Updating and Adding Headers<a class="headerlink" href="#updating-and-adding-headers" title="Permalink to this headline">¶</a></h2>
+<h2>6.3. Updating and Adding Headers<a class="headerlink" href="#updating-and-adding-headers" title="Permalink to this headline">¶</a></h2>
 <p>Header cards can be updated or added to header.  As for the access to the headers, the PHU
 have their own methods, different from the extension, but essentially doing the same thing.
 To write to a PHU use the <tt class="docutils literal"><span class="pre">phu_set_key_value()</span></tt> method.  To write to the header of an
@@ -194,7 +195,7 @@ version in an AstroData data object, or a MEF files for that matter, can lead
 to strange problems.</p>
 </div>
 <div class="section" id="adding-descriptors-definitions-for-new-instruments">
-<h2>Adding Descriptors Definitions for New Instruments<a class="headerlink" href="#adding-descriptors-definitions-for-new-instruments" title="Permalink to this headline">¶</a></h2>
+<h2>6.4. Adding Descriptors Definitions for New Instruments<a class="headerlink" href="#adding-descriptors-definitions-for-new-instruments" title="Permalink to this headline">¶</a></h2>
 <p>(refer to Emma&#8217;s document.)</p>
 </div>
 </div>
@@ -207,21 +208,21 @@ to strange problems.</p>
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">FITS Headers</a><ul>
-<li><a class="reference internal" href="#astrodata-descriptors">AstroData Descriptors</a></li>
-<li><a class="reference internal" href="#accessing-headers">Accessing Headers</a></li>
-<li><a class="reference internal" href="#updating-and-adding-headers">Updating and Adding Headers</a></li>
-<li><a class="reference internal" href="#adding-descriptors-definitions-for-new-instruments">Adding Descriptors Definitions for New Instruments</a></li>
+<li><a class="reference internal" href="#">6. FITS Headers</a><ul>
+<li><a class="reference internal" href="#astrodata-descriptors">6.1. AstroData Descriptors</a></li>
+<li><a class="reference internal" href="#accessing-headers">6.2. Accessing Headers</a></li>
+<li><a class="reference internal" href="#updating-and-adding-headers">6.3. Updating and Adding Headers</a></li>
+<li><a class="reference internal" href="#adding-descriptors-definitions-for-new-instruments">6.4. Adding Descriptors Definitions for New Instruments</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="types.html"
-                        title="previous chapter">AstroDataTypes</a></p>
+                        title="previous chapter">5. AstroDataTypes</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="data.html"
-                        title="next chapter">Pixel Data</a></p>
+                        title="next chapter">7. Pixel Data</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/headers.txt"
@@ -251,10 +252,10 @@ to strange problems.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="data.html" title="Pixel Data"
+          <a href="data.html" title="7. Pixel Data"
              >next</a> |</li>
         <li class="right" >
-          <a href="types.html" title="AstroDataTypes"
+          <a href="types.html" title="5. AstroDataTypes"
              >previous</a> |</li>
         <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
       </ul>
