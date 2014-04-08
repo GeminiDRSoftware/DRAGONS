@@ -1,6 +1,6 @@
 .. issueslimitations:
 
-.. _GMOS_Issues_Limitations:
+.. _NIRI_Issues_Limitations:
 
 **********************
 Issues and Limitations

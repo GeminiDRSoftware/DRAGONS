@@ -151,19 +151,19 @@
 \contentsline {subsubsection}{Algorithm}{22}{subsubsection*.61}
 \contentsline {subsubsection}{Issues and Limitations}{22}{subsubsection*.62}
 \contentsline {chapter}{\numberline {12}NIRI Users Manual}{23}{chapter.12}
-\contentsline {section}{\numberline {12.1}Overview of GMOS and its Data}{23}{section.12.1}
+\contentsline {section}{\numberline {12.1}Overview of NIRI and its Data}{23}{section.12.1}
 \contentsline {subsection}{\numberline {12.1.1}Description of the Instrument}{23}{subsection.12.1.1}
 \contentsline {subsection}{\numberline {12.1.2}Description of the Data}{23}{subsection.12.1.2}
-\contentsline {section}{\numberline {12.2}Recipes for GMOS}{23}{section.12.2}
+\contentsline {section}{\numberline {12.2}Recipes for NIRI}{23}{section.12.2}
 \contentsline {subsection}{\numberline {12.2.1}Typical Processing Flows}{23}{subsection.12.2.1}
 \contentsline {subsection}{\numberline {12.2.2}Other Processing Flows}{23}{subsection.12.2.2}
-\contentsline {section}{\numberline {12.3}Tips and Tricks for Processing GMOS}{23}{section.12.3}
+\contentsline {section}{\numberline {12.3}Tips and Tricks for Processing NIRI}{23}{section.12.3}
 \contentsline {subsection}{\numberline {12.3.1}Some title depending on content}{23}{subsection.12.3.1}
 \contentsline {subsubsection}{Example}{24}{subsubsection*.63}
 \contentsline {subsection}{\numberline {12.3.2}Some other topic}{24}{subsection.12.3.2}
 \contentsline {subsubsection}{Example}{24}{subsubsection*.64}
 \contentsline {section}{\numberline {12.4}Issues and Limitations}{24}{section.12.4}
-\contentsline {section}{\numberline {12.5}Primitives for GMOS}{24}{section.12.5}
+\contentsline {section}{\numberline {12.5}Primitives for NIRI}{24}{section.12.5}
 \contentsline {subsection}{\numberline {12.5.1}Primitive \#1 (alphabetical)}{24}{subsection.12.5.1}
 \contentsline {subsubsection}{Purpose}{24}{subsubsection*.65}
 \contentsline {subsubsection}{Inputs and Outputs}{24}{subsubsection*.66}

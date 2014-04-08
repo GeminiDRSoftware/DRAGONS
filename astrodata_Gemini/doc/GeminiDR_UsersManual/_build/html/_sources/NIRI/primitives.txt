@@ -1,10 +1,10 @@
 .. primitives:
 
-.. _GMOS_Primitives:
+.. _NIRI_Primitives:
 
-**************************
-Primitives for GMOS
-**************************
+*******************
+Primitives for NIRI
+*******************
 
 .. toctree::
    :numbered:
