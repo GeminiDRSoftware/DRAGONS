@@ -1,6 +1,6 @@
 .. primitive2:
 
-.. _GMOS_Primitive_2:
+.. _NIRI_Primitive_2:
 
 Primitive #2  (alphabetical)
 ============================

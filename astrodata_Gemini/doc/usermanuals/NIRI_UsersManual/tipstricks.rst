@@ -1,14 +1,14 @@
 .. tipstricks:
 
-.. _GMOS_Tips_Tricks:
+.. _NIRI_Tips_Tricks:
 
-******************************************
-Tips and Tricks for Processing GMOS
-******************************************
+***********************************
+Tips and Tricks for Processing NIRI
+***********************************
 
 Some title depending on content
 ===============================
-Describe the quirks of GMOS data, give tips
+Describe the quirks of NIRI data, give tips
 and tricks, what to watch for.  Screenshots are encourages.
 
 Example

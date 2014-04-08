@@ -1,10 +1,10 @@
 .. instrument:
 
-.. _GMOS_Instrument_Overview:
+.. _NIRI_Instrument_Overview:
 
-************************************
-Overview of GMOS and its Data
-************************************
+*****************************
+Overview of NIRI and its Data
+*****************************
 
 Description of the Instrument
 =============================

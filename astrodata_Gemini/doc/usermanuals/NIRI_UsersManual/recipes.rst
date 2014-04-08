@@ -1,10 +1,10 @@
 .. recipes:
 
-.. _GMOS_Recipes_and_Flows:
+.. _NIRI_Recipes_and_Flows:
 
-***********************
-Recipes for GMOS
-***********************
+****************
+Recipes for NIRI
+****************
 
 Typical Processing Flows
 ========================
