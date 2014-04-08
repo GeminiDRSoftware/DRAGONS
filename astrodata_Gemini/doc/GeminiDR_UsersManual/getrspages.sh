@@ -4,7 +4,10 @@ sourcedir='../../../../astrodata/doc/rs_UsersManual'
 
 if [ ! -e conf.py ]; then
     ln -s ${sourcedir}/*.rst .
-    ln -s ${sourcedir}/appendices .
+    mkdir appendices
+    cd appendices
+    ln -s ../${sourcedir}/appendices/*.rst .
+    cd ..
     rm index.rst
     rm index-latex.rst
 else
