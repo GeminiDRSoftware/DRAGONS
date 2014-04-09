@@ -180,6 +180,11 @@ integrates other functionalities.
                     phu=None, header=None, data=None, store=None, 
                     storeClobber=False, exts=None, extInsts=None,):
         """
+        The AstroData constructor constructs an in-memory representation of a
+        dataset. If given a filename it uses ``pyfits`` to open the dataset, reads
+        the header and detects applicable types. Binary data, such as pixel
+        data, is left on disk until referenced.
+
         :param dataset: the dataset to load, either a filename (string) path
             or URL, an ``AstroData`` instance, or a ``pyfits.HDUList``. If 
             ``dataset`` is None, ``phu``, ``header``, and ``data`` will be used.
@@ -249,10 +254,6 @@ integrates other functionalities.
             is also set, ``extInsts`` is ignored.
         :type extInsts: list of pyfits.HDU objects
 
-        The AstroData constructor constructs an in-memory representation of a
-        dataset. If given a filename it uses ``pyfits`` to open the dataset, reads
-        the header and detects applicable types. Binary data, such as pixel
-        data, is left on disk until referenced.
         """
         
         # not actually sure we should open right away, but 
@@ -840,7 +841,14 @@ integrates other functionalities.
         :type header: pyfits.Header
 
         :param auto_number: auto-increment the extension version, ``EXTVER``, to fit file convention
+            If set to True, this will override the 'extver' and 'extname' arguments settings.
         :type auto_number: boolean
+        
+        :param extname: extension name (eg. 'SCI', 'VAR', 'DQ')
+        :type extname: string
+        
+        :param extver: extension version (eg. 1, 2, 3)
+        :type extver: integer
         
         :param do_deepcopy: deepcopy the input before appending.  Might be useful
             when auto_number is True and the input comes from another AD object.
@@ -1122,15 +1130,14 @@ help      False     show help information    """
     def get_data(self):
         """
         :return: data array associated with the single extension
-        :rtype: pyfits.ndarray
+        :rtype: numpy.ndarray
 
         The ``get_data(..)`` member is the function behind the property-style
         "data" member and returns appropriate HDU's data member(s) specifically
         for the case in which the ``AstroData`` instance has ONE HDU (in addition to
         the PHU). This allows a single-extension ``AstroData``, such as ``AstroData``
         generates through iteration,  to be used as though it simply is just the
-        one extension, e.g. allowing ``ad.data`` to be used in place of the more
-        esoteric and ultimately more dangerous ``ad[0].data``. One
+        one extension. One
         is dealing with single extension ``AstroData`` instances when iterating over
         the ``AstroData`` extensions and when picking out an extension by integer
         or tuple indexing, e.g.::
@@ -1195,12 +1202,15 @@ help      False     show help information    """
             (note: The PHU is not considered an extension in this case)
         
         The ``get_header(..)`` function returns the header member for Single-HDU
-        ``AstroData`` instances (which are those that have only one extension plus
-        PHU). This case  can be assured when iterating over extensions using
-        ``AstroData``, e.g.::
+        ``AstroData`` instances, if extension is None (which are those that have 
+        only one extension plus PHU). This case  can be assured when iterating over 
+        extensions using ``AstroData``, e.g.::
         
             for ad in dataset[SCI]: 
                 ...
+        
+        Otherwise, the extension can be specified.  Either way, only one header 
+        for one extension is returned.
         """
         if extension == None:
             hdl = self.get_hdulist()
@@ -1234,11 +1244,16 @@ help      False     show help information    """
             than one extension exists. 
 
         The ``set_header(..)`` function sets the extension header member for single
-        extension (which are those that have only one extension plus PHU). This
-        case  is assured when iterating over extensions using ``AstroData``, e.g.:
+        extension, if extension is None (which are those that have only one extension 
+        plus PHU). This case  is assured when iterating over extensions using 
+        ``AstroData``, e.g.:
 
             for ad in dataset[SCI]: 
                 ...
+        
+        Otherwise, the extension can be specified.  Either way, only one header 
+        for one extension is operated upon.
+        
         """
         if extension == None:
             hdl = self.get_hdulist()
@@ -1498,7 +1513,7 @@ help      False     show help information    """
         :param ver: New 'EXTVER' for the given extension
         :type ver: int
         
-        :param force: ???  Default=True
+        :param force: Will update even on subdata, or shared hdulist.  Default=True
         :type force: boolean
 
         Note: This member only works on single extension ``AstroData`` instances.
@@ -1731,8 +1746,9 @@ help      False     show help information    """
         The get_types(..) function returns a list of type names, where type 
         names are as always, strings. It is possible to 'prune' the list so
         that only leaf nodes are returned, which is useful when leaf
-        nodes take precedence such
-        as for descriptors.
+        nodes take precedence such as for descriptors.
+        
+        KL: Please add definition of "leaf node".
         
         Note: types are divided into two categories, one intended for types
         which represent processing status (i.e. RAW vs PREPARED), and another
@@ -2064,9 +2080,7 @@ help      False     show help information    """
 
         The get_key_value(..) function is used to get the value associated
         with a given key in the data-header unit of a single-HDU
-        AstroData instance (such as returned by iteration). The value argument
-        will be converted to string, so it must have a string operator member
-        function or be passed in as string. 
+        AstroData instance (such as returned by iteration).
         
         :note: 
         
@@ -2106,6 +2120,9 @@ help      False     show help information    """
         The set_key_value(..) function is used to set the value (and optionally
         the comment) associated
         with a given key in the data-header of a single-HDU AstroData instance.
+        The value argument
+        will be converted to string, so it must have a string operator member
+        function or be passed in as string. 
                 
         :note: 
         
@@ -2386,11 +2403,14 @@ help      False     show help information    """
     sub.__doc__ = arith.sub.__doc__
     
 # SERVICE FUNCTIONS and FACTORIES
-def correlate(*iary):
+def correlate(*iarray):
     """
-    :param iary: A list of AstroData instances for which a correlation dictionary
+    
+    WARNING!!!! The code is not doing what the docstring claim.  - KL Apr 2014
+    
+    :param iarray: A list of AstroData instances for which a correlation dictionary
         will be constructed.
-    :type iary: list of AstroData instance
+    :type iarary: list of AstroData instance
     :returns: a list of tuples containing correlated extensions from the arguments. 
     :rtype: list of tuples
 
@@ -2412,12 +2432,12 @@ def correlate(*iary):
     :info: to appear in the list, all the given arguments must have an extension
         with the given (EXTNAME,EXTVER) for that tuple.
     """
-    numinputs = len(iary)
+    numinputs = len(iarray)
     if numinputs < 1:
         raise Errors.AstroDataError("Inputs for correlate method < 1")
     outlist = []
     outrow = []
-    baseGD = iary[0]
+    baseGD = iarray[0]
     for extinbase in baseGD:
         try:
             extname = extinbase.header["EXTNAME"]
@@ -2429,7 +2449,7 @@ def correlate(*iary):
             extver  = 0
         outrow = [extinbase]
         #print "gd610: (%s,%d)" % (extname,extver)
-        for gd in iary[1:]:
+        for gd in iarray[1:]:
             correlateExt = gd[(extname, extver)]
             # print "gd622: " + str(correlateExt.info())
             #print "gd614: %s" % str(correlateExt)
@@ -2445,13 +2465,13 @@ def correlate(*iary):
             outlist.append(outrow)
     return outlist    
 
-def prep_output(input_ary=None, name=None, clobber=False):
+def prep_output(input_array=None, name=None, clobber=False):
     """
-    :param input_ary: The input array from which propagated content (such as
+    :param input_array: The input array from which propagated content (such as
         the  source PHU) will be taken. Note: the zero-th element in the list
         is  used as the reference dataset for PHU or other items which require
         a particular reference.
-    :type input_ary: list of AstroData Instances
+    :type input_array: list of AstroData Instances
     
     :param name: File name to use for returned AstroData, optional.
     
@@ -2470,7 +2490,7 @@ def prep_output(input_ary=None, name=None, clobber=False):
         binary table Mask Definition tables (MDF).        
     :rtype: AstroData
 
-    ..info: File will not have been written to disk by ``prep_output(..)``.
+    :info: File will not have been written to disk by ``prep_output(..)``.
     
     The ``prep_output(..)`` function creates a new ``AstroData`` object ready for
     appending output information (e.g. ``ad.append(..)``).  While you can also
@@ -2493,20 +2513,20 @@ def prep_output(input_ary=None, name=None, clobber=False):
     
     +  Ensures that all standard headers are in place in the new file, using the
        configuration .
-    +  Copy the PHU of the reference image (``input_ary[0]``). 
+    +  Copy the PHU of the reference image (``input_array[0]``). 
     +  Propagate associated information such as the MDF in the case of a MOS 
        observation, configurable by the Astrodata Structures system. 
     """ 
-    if input_ary == None: 
+    if input_array == None: 
         raise Errors.AstroDataError("prep_output input is None") 
         return None
-    if type(input_ary) != list:
-        iary = [input_ary]
+    if type(input_array) != list:
+        iarray = [input_array]
     else:
-        iary = input_ary
+        iarray = input_array
     
-    #get PHU from input_ary[0].hdulist
-    hdl = iary[0].get_hdulist()
+    #get PHU from input_array[0].hdulist
+    hdl = iarray[0].get_hdulist()
     outphu = copy(hdl[0])
     outphu.header = outphu.header.copy()
         
@@ -2518,7 +2538,7 @@ def prep_output(input_ary=None, name=None, clobber=False):
     retgd = AstroData(newhdulist, mode = "update")
     
     # Ensuring the prepared output has the __origFilename private variable
-    retgd._AstroData__origFilename = input_ary._AstroData__origFilename
+    retgd._AstroData__origFilename = input_array._AstroData__origFilename
     if name != None:
         if os.path.exists(name):
             if clobber == False:
