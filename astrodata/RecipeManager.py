@@ -245,7 +245,7 @@ class ReductionContext(dict):
         dict of "local parameters" which are available to the current primitive \
         only, which are also tested by the ``__contains__(..)`` member.
         These parameters will generally be those passed in as arguments
-        to a primitive call from a recipe.
+        to a primitive call from a recipe and from the parameter set.
         """
         if thing in self._localparms:
             return True
@@ -651,6 +651,7 @@ class ReductionContext(dict):
         ``get_inputs(..)`` gets the current input datasets from the current stream. You cannot
         choose the stream, use ``get_stream(..)`` for that.  To report modified
         datasets back to the stream use ``report_output(..)``.
+        
         """
         if style==None:
             return self.inputs
@@ -671,8 +672,9 @@ class ReductionContext(dict):
         
     def get_stream(self, stream=MAINSTREAM, empty=False, style = None):
         """
-        :param stream: A string name for the stream in question.  
-            To use the standard stream do not set.
+        :param stream: A string name for the stream in question.  The default 
+            stream is referred to as "main".  Do not reset the stream argument
+            if you simply want to use the default/"main" stream.
         :type stream: str
         :param empty: Controls if the stream is
             emptied, defaults to "False".
@@ -814,7 +816,7 @@ class ReductionContext(dict):
         version of this list will be retrieved.
         
         :note: "get_stack" calls get_list but takes a "purpose" to which it adds
-               a stackingID as a suffix to the list identifier.
+               a stackID as a suffix to the list identifier.
         
         """
         cachefile = self.get_cache_file("stackIndexFile")
@@ -1425,14 +1427,14 @@ class ReductionContext(dict):
         
         return retstr
         
-    def report_output(self, inp, stream=None, load=True):
+    def report_output(self, input, stream=None, load=True):
         """
-        :param inp: The inputs to report (add to the given or current stream).
+        :param input: The inputs to report (add to the given or current stream).
             Input can be a string (filename), an AstroData instance, or a list of
             strings and/or AstroData instances.  Each individual dataset is
             wrapped in an AstroDataRecord and stored in the current stream.
-        :type inp: str, AstroData instance, or list
-        :param stream: If not specified the default ("main") stream is used.
+        :type input: str, AstroData instance, or list
+        :param stream: If not specified the current stream is used.
             When specified the named stream is created if necessary.
         :type stream: str
         :param load: A boolean (default: True) which specifies whether string
@@ -1464,12 +1466,12 @@ class ReductionContext(dict):
         if stream not in self.outputs:
             self.outputs.update({stream:[]})
             
-        if type(inp) == str:
-            self.outputs[stream].append(AstroDataRecord(inp, self.display_id, load=load))
-        elif isinstance(inp, AstroData):
-            self.outputs[stream].append(AstroDataRecord(inp))
-        elif type(inp) == list:
-            for temp in inp:
+        if type(input) == str:
+            self.outputs[stream].append(AstroDataRecord(input, self.display_id, load=load))
+        elif isinstance(input, AstroData):
+            self.outputs[stream].append(AstroDataRecord(input))
+        elif type(input) == list:
+            for temp in input:
                 # This is a good way to check if IRAF failed.
                 
                 if type(temp) == tuple:
@@ -1620,18 +1622,21 @@ class ReductionContext(dict):
         self.add_rq(iqReq)
     rq_iqput = rq_iq
         
-    def rq_stack_get(self, purpose = ""):
+    def rq_stack_get(self, purpose = None):
         """
-        :param purpose: The purpose is a string prepended to the stackingID
+        :param purpose: The purpose is a string prepended to the stackID
                         used to identify the list (see ``get_list(..)``).
+                        The default is None and will behave like an 
+                        empty string.  Examples of 
+                        purpose strings include: 'forStack', 'forSky'.
         :type purpose: string
         
-        The stackingID (see IDFactory module) is used to identify the list.
+        The stackID (see IDFactory module) is used to identify the list.
         The first input in the rc.inputs list is used as the reference image 
         to generate  
-        the stackingID portion of the list identifier.
+        the stackID portion of the list identifier.
         
-        The stackingID function in IDFactory is meant to produce identical
+        The stackID function in IDFactory is meant to produce identical
         stacking identifiers for different images which can/should be stacked 
         together, e.g. based
         on program ID and/or other details.  Again, see IDFactory for the
@@ -1641,6 +1646,8 @@ class ReductionContext(dict):
             to the id to allow adaptation in the future if identifer construction
             methods change.
         """
+        if purpose is None:
+            purpose = ""
         ver = "1_0"
         # Not sure how version stuff is going to be done. This version stuff is temporary.
         for orig in self.get_inputs_as_astrodata():
@@ -1653,8 +1660,8 @@ class ReductionContext(dict):
     def rq_stack_update(self, purpose = None):
         '''
         :param purpose: The purpose argument is a string prefixed to the
-            generated stackingID.  This allows two images which would
-            produce identical stackingIDs to go in different lists,
+            generated stackID.  This allows two images which would
+            produce identical stackIDs to go in different lists,
             i.e. such as a fringe frame which might be prepended with
             "fringe" as the purpose.
             
@@ -1662,7 +1669,7 @@ class ReductionContext(dict):
         
         This function creates requests to update a stack list with the files
         in the current rc.inputs list.  Each will go in a stack based on its
-        own stackingID (prepended with "purpose").
+        own stackID (prepended with "purpose").
         
         :note: this function places a message on an outbound message queue
             which will not be sent until the next "yield", allowing the
@@ -1707,7 +1714,8 @@ class ReductionContext(dict):
         :type id: string
         :param files: A list of filenames to add to the list.
         :type files: list of strings
-        :param cachefile: Filename to use to store the list.
+        :param cachefile: Filename to use to store the list.  There are
+            no restrictions on the name used.
         :type cachefile: string
         
         The caller is expected to supply ``cachefile``, which in principle
