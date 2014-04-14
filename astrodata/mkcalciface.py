@@ -69,7 +69,7 @@ def %(name)s(self, format=None, **args):
             return ret
     """
 
-Wholeout = """import sys
+wholeout = """import sys
 from astrodata import Descriptors
 from astrodata.Descriptors import DescriptorValue
 from astrodata import Errors
