@@ -142,14 +142,18 @@ class PreprocessPrimitives(GENERALPrimitives):
         ad_science_list = rc.get_inputs_as_astrodata()
         
         if rc["sky"]:
-            # Use the list of sky frames provided by the user
-            ad_sky_list = []
-            for sky in rc["sky"]:
-                if not isinstance(sky, AstroData):
-                    sky = AstroData(sky)
+            if not isinstance(rc["sky"], list):
+                ad_sky_list = [rc["sky"]]
+            else:
+                ad_sky_list = rc["sky"]
                 
-                # Create a list of sky AstroDataRecord objects
-                ad_sky_list.append(sky)
+            # Convert filenames to AD instances if necessary
+            tmp_list = []
+            for sky in ad_sky_list:
+                if type(sky) is not AstroData:
+                    sky = AstroData(sky)
+                tmp_list.append(sky)
+            ad_sky_list = tmp_list
         else:
             # The seperateSky primitive puts the sky AstroData objects in the
             # sky stream. The get_stream function returns a list of AstroData
