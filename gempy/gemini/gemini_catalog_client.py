@@ -25,19 +25,21 @@ question in a different format to the primary.
 import pyfits
 
 try:
-    from vo.conesearch import conesearch as vo_conesearch
+    from astropy.vo.client.conesearch import conesearch as vo_conesearch
+    from astropy.vo.client.vos_catalog import VOSError
 except ImportError:
     try:
-        from astropy.vo.client.conesearch import conesearch as vo_conesearch
-        from astropy.vo.client.vos_catalog import VOSError
+        from vo.conesearch import conesearch as vo_conesearch
     except ImportError:
         raise ImportError("Unable to find VO definitions.")
 
+from astrodata.adutils import logutils
 # ------------------------------------------------------------------------------
 # Used  to determine the function signature of the imported conesearch function
 function_defaults = vo_conesearch.func_defaults
 # ------------------------------------------------------------------------------
-
+log = logutils.get_logger(__name__)
+# ------------------------------------------------------------------------------
 def get_fits_table(catalog, ra, dec, sr, server=None):
     """
     This function returns a QAP style REFCAT in the form of a pyfits
@@ -175,22 +177,28 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
     # astropy, conesearch throws a VOSError exception on no results. Which
     # seems a bit extreme. See the import phrase at top.
 
-    if len(function_defaults) == 7:
-        table = vo_conesearch(catalog_db=url, ra=ra, dec=dec, sr=sr, 
-                              pedantic=False, verb=3, verbose=False)
-    elif len(function_defaults) == 1:
+    if len(function_defaults) == 1:            # astropy vo services
         try:
             table = vo_conesearch((ra,dec), sr, verb=3, catalog_db=url,
                                   pedantic=False, verbose=False)
         except VOSError:
-            print "VO conesearch produced no results"
+            log.stdinfo("VO conesearch produced no results")
             return None
+
+    elif len(function_defaults) == 6:          # vo v0.7.2
+        table = vo_conesearch(catalog_db=url, ra=ra, dec=dec, sr=sr, 
+                              pedantic=False, verb=3)
+
+    elif len(function_defaults) == 7:          # vo v1.03
+        table = vo_conesearch(catalog_db=url, ra=ra, dec=dec, sr=sr,
+                              pedantic=False, verb=3, verbose=False)
+
     else:
         raise SyntaxError("Unrecognized function signature")
 
     # Did we get any results?
     if(table.is_empty() or len(table.array) == 0):
-        print "No results returned"
+        log.stdinfo("No results returned")
         return None
 
     # It turns out to be not viable to use UCDs to select the columns,
