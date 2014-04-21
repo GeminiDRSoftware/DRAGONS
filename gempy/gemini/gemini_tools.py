@@ -1373,16 +1373,16 @@ def fitsstore_report(ad, rc, metric, info_dict):
             primdata = info_dict[key]
 
             # Numbers from iqdata
-            iq["fwhm"] = iqdata["fwhm_arcsec"].mean()
-            iq["fwhm_std"] = iqdata["fwhm_arcsec"].std()
-            iq["isofwhm"] = iqdata["isofwhm_arcsec"].mean()
-            iq["isofwhm_std"] = iqdata["isofwhm_arcsec"].std()
-            iq["ee50d"] = iqdata["ee50d_arcsec"].mean()
-            iq["ee50d_std"] = iqdata["ee50d_arcsec"].std()
-            iq["elip"] = iqdata["ellipticity"].mean()
-            iq["elip_std"] = iqdata["ellipticity"].std()
-            iq["pa"] = iqdata["pa"].mean()
-            iq["pa_std"] = iqdata["pa"].std()
+            iq["fwhm"] = float(iqdata["fwhm_arcsec"].mean())
+            iq["fwhm_std"] = float(iqdata["fwhm_arcsec"].std())
+            iq["isofwhm"] = float(iqdata["isofwhm_arcsec"].mean())
+            iq["isofwhm_std"] = float(iqdata["isofwhm_arcsec"].std())
+            iq["ee50d"] = float(iqdata["ee50d_arcsec"].mean())
+            iq["ee50d_std"] = float(iqdata["ee50d_arcsec"].std())
+            iq["elip"] = float(iqdata["ellipticity"].mean())
+            iq["elip_std"] = float(iqdata["ellipticity"].std())
+            iq["pa"] = float(iqdata["pa"].mean())
+            iq["pa_std"] = float(iqdata["pa"].std())
             iq["nsamples"] = iqdata.size
 
             # Values produced by the measureIQ primitive
@@ -2178,7 +2178,6 @@ class ExposureGroup:
         newsum = [sum(axvals) for axvals in zip(*new_vals)]
         self.group_cen = [(cval * ngroups + nval) / ntot \
           for cval, nval in zip(self.group_cen, newsum)]
-
 
 
 def group_exposures(adinputs, frac_FOV=1.0):
