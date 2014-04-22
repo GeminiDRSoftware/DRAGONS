@@ -236,14 +236,12 @@ def check_and_run(filepath, options=None):
             supported, reasons = check_supported_data(filepath, cal)
             
             if supported:
-                print "Reducing %s" % (new_file)
-                for reason in reasons:
-                    print ", %s" % (reason)
+                print "Reducing %s%s" % (new_file, "," if reasons else ""), \
+                    ", ".join(reasons)
                 launch_reduce(filepath, noqa, upload=upl, recipe=rec)
             else:
-                print "Ignoring %s" % (new_file)
-                for reason in reasons:
-                    print ", %s" % (reason)
+                print "Ignoring %s%s" % (new_file, "," if reasons else ""), \
+                    ", ".join(reasons)
         else:
             print "Ignoring %s, not a valid fits file" % new_file
     else:
