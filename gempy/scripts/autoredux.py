@@ -268,16 +268,14 @@ def verify_file(filepath):
 
         fv_check = fv.fitsverify(filepath)
 
-        if (fv_check[0] == False):
-            ok = False
-        elif (int(fv_check[2]) > 0):
+        if (fv_check is None or fv_check[0] == False or int(fv_check[2]) > 0):
             ok = False
         else:
             ok = True
 
         if (tries == 0):
-            print "ERROR: File %s never did pass fitsverify:\n%s" % \
-                  (filepath, fv_check[3])
+            print "ERROR: File %s never did pass fitsverify%s" % \
+                  (filepath, "." if fv_check is None else ":\n"+fv_check[3])
 
         if not ok:
             time.sleep(1)
