@@ -230,6 +230,9 @@ class Reduce(object):
             except Exception, err:
                 xstat = signal.SIGQUIT
                 log.error(str(err))
+                log.error("PROBLEM ON PROCESSING ONE SET OF FILES:\n\t%s \n%s"
+                          %(",".join([inp.filename for inp in infiles]),
+                            traceback.format_exc()))
                 break
 
         msg = "reduce terminated on status: %d" % xstat
@@ -543,13 +546,20 @@ class Reduce(object):
         return co
 
     def _write_context_log(self, co=None, bReportHistory=False):
+        """ Write a context report in the event of a non-specific
+        exception.
+
+        parameters: <ReductionContext object>, <bool>
+        return:     <void>
+        """
         co_log =  open("context.log", "w")
         if co:
             co_log.write(co.report(showall=True))
         else:
             co_log.write("rc null after exception, no report")
-            co_log.write(traceback.format_exc())
-            co_log.close()
+
+        co_log.write(traceback.format_exc())
+        co_log.close()
 
         log.fullinfo("------------------------------------------------")
         log.fullinfo("Debug information written to context.log. Please")
