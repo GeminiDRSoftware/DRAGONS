@@ -811,7 +811,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 
             # Use mult from the arith toolbox to perform the scaling of 
             # the fringe frame
-            scaled_fringe = fringe.mult(scale)
+            scaled_fringe = fringe.mult(float(scale))
             
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=scaled_fringe, keyword=timestamp_key)
