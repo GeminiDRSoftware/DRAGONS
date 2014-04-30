@@ -1,6 +1,7 @@
 # This module contains functions that perform numpy operations on the input
 # dataset
 
+import numbers
 import numpy as np
 import astrodata
 from astrodata import Errors
@@ -68,7 +69,7 @@ def determine_inputs(input_a=None, input_b=None):
     # If input_b is a single float or a single integer, create a dictionary
     # where the key of the dictionary is an EXTVER integer for each science
     # extension and the value is the single float or single integer
-    elif isinstance(input_b, float) or isinstance(input_b, int):
+    elif isinstance(input_b, (numbers.Number, np.number)):
         
         return_value = {}
         for ext in input_a[SCI]:
