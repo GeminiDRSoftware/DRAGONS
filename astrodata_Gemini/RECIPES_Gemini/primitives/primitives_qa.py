@@ -538,6 +538,8 @@ class QAPrimitives(GENERALPrimitives):
                                 (ad.filename,extver))
                     continue
 
+                zps_type = type(refmags[0]) 
+
                 zps = refmags - mags - nom_at_ext
 
                 # Is this mathematically correct? These are logarithmic
@@ -567,6 +569,18 @@ class QAPrimitives(GENERALPrimitives):
                 
                 # Discard the None values we just patched in
                 zps = zps[np.flatnonzero(zps)]
+                # While all the elements in zps are now 'float', the
+                # array dtype remains 'object'.  (Note that the type
+                # is set to 'object' by np.where because of the 'None's
+                # that are being put in zps.)  It is not clear why the
+                # array stays of dtype 'object' once the 'None's are gone.
+                # When something similar is done from the Python interactive
+                # shell, once the 'None's are gone, the array dtype gets
+                # automatically set to np.float64.
+                # All this is important because zps.mean() will fail later
+                # if zps is dtype 'object' and the elements are Python
+                # 'float's.
+                zps = np.asarray(zps, dtype=zps_type)
                 zperrs = zperrs[np.flatnonzero(zperrs)]
                 ids = ids[np.flatnonzero(ids)]
 
