@@ -165,6 +165,31 @@ class StackPrimitives(GENERALPrimitives):
                 gain_dict[key] /= len(ad_input_list)
                 read_noise_dict[key] = math.sqrt(read_noise_dict[key])
             
+            # Preserve the input dtype for the data quality extension
+            dq_dtypes_list = []
+            for ad in ad_input_list:
+                if ad[DQ]:
+                    for ext in ad[DQ]:
+                        dq_dtypes_list.append(ext.data.dtype)
+
+            if dq_dtypes_list:
+                unique_dq_dtypes = set(dq_dtypes_list)
+                unique_dq_dtypes_list = [dtype for dtype in unique_dq_dtypes]
+                if len(unique_dq_dtypes_list) == 1:
+                    # The input data quality extensions have the same dtype
+                    dq_dtype = unique_dq_dtypes_list[0]
+                elif len(unique_dq_dtypes_list) == 2:
+                    dq_dtype = np.promote_types(unique_dq_dtypes_list[0],
+                                                unique_dq_dtypes_list[1])
+                else:
+                    # The input data quality extensions have more than two
+                    # different dtypes. Since np.promote_types only accepts two
+                    # dtypes as input, for now, just use uint16 in this case
+                    # (when gemcombine is replaced with a python function, the
+                    # combining of the DQ extension can be handled correctly by
+                    # numpy).
+                    dq_dtype = np.dtype(np.uint16)
+            
             # Instantiate ETI and then run the task 
             gemcombine_task = eti.gemcombineeti.GemcombineETI(rc)
             ad_output = gemcombine_task.run()
@@ -184,7 +209,7 @@ class StackPrimitives(GENERALPrimitives):
             # extension, respectively)
             if ad_output[DQ]:
                 for ext in ad_output[DQ]:
-                    ext.data = ext.data.astype(np.int16)
+                    ext.data = ext.data.astype(dq_dtype)
                     
                     if bunit is not None:
                         gt.update_key(adinput=ext, keyword="BUNIT",
