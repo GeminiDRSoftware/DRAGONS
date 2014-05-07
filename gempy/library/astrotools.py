@@ -6,6 +6,8 @@ import math
 import numpy as np
 import scipy.optimize as opt
 
+import warnings
+
 def rasextodec(string):
     """
     Convert hh:mm:ss.sss to decimal degrees
@@ -381,8 +383,13 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
                     r.append(k)
                             
         dax,day = map(np.asarray, (dax,day))
-        mx = np.median(dax); stdx = np.std(dax)
-        my = np.median(day); stdy = np.std(day)
+        # When dax and/or day are empty, np.median and np.std issue a 
+        # RuntimeWarning.  We are suppressing that warning.  NaN are 
+        # returned when median and std are applied to an empty array.
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            mx = np.median(dax); stdx = np.std(dax)
+            my = np.median(day); stdy = np.std(day)
             
         return np.asarray(g),np.asarray(r),mx,my,stdx,stdy 
 
