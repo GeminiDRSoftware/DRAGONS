@@ -1,14 +1,21 @@
 #
 #                                                                  gemini_python
 #
-#                                                         test_AstroDataAPI.py
+#                                                           test_AstroDataAPI.py
 # ------------------------------------------------------------------------------
 # $Id$
 # ------------------------------------------------------------------------------
 __version__      = '$Revision$'[11:-2]
 __version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
-""" Initial AstroData API tests """
+""" Initial AstroData API tests. 
+
+    To run theses tests w/ pytest:
+
+    $ py.test [-v] -rxX
+
+      -v is verbose. See pytest help for more options.
+"""
 import os
 import sys
 import pytest
