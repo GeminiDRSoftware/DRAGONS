@@ -433,6 +433,10 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         
         # Get the value of the exposure time keyword from the header of the PHU
         exposure_time = dataset.phu_get_key_value(keyword)
+
+        # Make broken negative exposure times act like the header is missing
+        if (exposure_time < 0):
+            exposure_time = None
         
         if exposure_time is None:
             # The phu_get_key_value() function returns None if a value cannot
