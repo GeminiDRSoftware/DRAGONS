@@ -575,7 +575,7 @@ integrates other functionalities.
         else:
             return False
 
-    def moredata_check(self, md=None, append=False, insert=False, \
+    def moredata_check(self, md=None, append=False, insert=False,
                        replace=False, index=None):
         if isinstance(md, AstroData):
             return md.hdulist
@@ -589,23 +589,22 @@ integrates other functionalities.
                     return False
                 elif insert or replace:
                     if not index:
-                        raise Errors.AstroDataError(\
-                            "index required to insert")
+                        raise Errors.AstroDataError("index required to insert")
                     else:
                         if replace:
                             self.remove(index)
-                        self.hdulist.insert(i + 1, md)
+                        self.hdulist.insert(index + 1, md)
                         print "WARNING: Inserting unknown HDU type"
                         return False
             except:
                 raise Errors.AstroDataError(\
                    "cannot operate on pyfits instance " + repr(md))
         else:
-            raise Errors.AstroDataError(\
+            raise Errors.AstroDataError(
                 "The 'moredata' argument is of an unsupported type")
 
 
-    def moredata_work(self, append=False, insert=False, autonum=False, \
+    def moredata_work(self, append=False, insert=False, autonum=False,
                       md=None, hduindx=None, hdul=None): 
         """
         create a master table out of the host and update the EXTVER 
