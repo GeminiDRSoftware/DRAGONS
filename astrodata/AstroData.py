@@ -597,7 +597,7 @@ integrates other functionalities.
                         print "WARNING: Inserting unknown HDU type"
                         return False
             except:
-                raise Errors.AstroDataError(\
+                raise Errors.AstroDataError(
                    "cannot operate on pyfits instance " + repr(md))
         else:
             raise Errors.AstroDataError(
@@ -1399,47 +1399,26 @@ help      False     show help information    """
             self.hdulist = pyfits.HDUList(sublist)
             # print "AD559:", self.hdulist[1].header["EXTVER"]
         
-        elif type(source) == pyfits.HDUList:
-            self.hdulist = source
-        elif self.ishdu(source):
-            phu = pyfits.PrimaryHDU()
-            self.hdulist= pyfits.HDUList([phu, source])
+        elif isinstance(source, pyfits.HDUList) or self.ishdu(source):
+            self.hdulist = self._check_for_simple_fits_file(source)
         else:
-            if source == None:
+            if source is None:
                 phu = pyfits.PrimaryHDU()
                 self.hdulist = pyfits.HDUList([phu])
-            else:
-                if not os.path.exists(source):
-                    raise IOError("Cannot open '%s'" % source)
-                self.filename = source
-                self.__origFilename = source
-                try:
-                    self.hdulist = pyfits.open(self.filename, mode=mode)
-                    self.mode = mode
-                    if len(self.hdulist) == 1:   # This is a single FITS
-                        hdu = self.hdulist[0]
-                        nhdu = pyfits.PrimaryHDU()
-                        hdulist = pyfits.HDUList([nhdu])
-                        imagehdu = pyfits.ImageHDU(header=hdu.header, \
-                            data=hdu.data)
-                        hdulist.append(imagehdu)
-                        self.hdulist=hdulist
-                        kafter = "GCOUNT"
-                        if not kafter in hdu.header:
-                            kafter = None
-                        if hdu.header.get("TFIELDS"): 
-                            kafter = "TFIELDS"
+            elif not os.path.exists(source):
+                raise IOError("Cannot open '%s'" % source)
 
-                        _pyfits_update_compatible(hdu)
-                        hdu.header.update("EXTNAME", "SCI", \
-                            "ad1364: added by AstroData", after=kafter)
-
-		    #print "AD591:", self.hdulist[1].header["EXTNAME"]
-                    #print "AD543: opened with pyfits", len(self.hdulist)
-                except IOError:
-                    print "CAN'T OPEN %s, mode=%s" % (self.filename, mode)
-                    raise
-
+            self.filename = source
+            self.__origFilename = source
+            try:
+                source = pyfits.open(self.filename, mode=mode)
+            except IOError:
+                raise IOError ("Cannot open {0}, mode={1}".format(
+                                self.filename, mode))
+                
+            self.hdulist = self._check_for_simple_fits_file(source)
+            self.mode = mode
+                    
         if len(self.hdulist):
             try:
                 self.discover_types()
@@ -1455,8 +1434,8 @@ help      False     show help information    """
             hdul = self.hdulist
             namedext = False
             for hdu in hdul[1:]:
-    	        #print "AD1036:",hdu.name
-                if hdu.name or ("extname" in hdu.header): 
+                #print "AD1036:",hdu.name
+                if hdu.name or ("EXTNAME" in hdu.header): 
                     namedext = True
                     #print "AD1040: Named", hdu.header["extname"]
                 else:
@@ -2385,6 +2364,145 @@ help      False     show help information    """
             origFilename = phuOrigFilename
         return origFilename
     
+    def _check_for_simple_fits_file(self, source):
+        """
+        Check for a simple fits file, e.g., as a HDU instance or as HDUList.
+
+        If `source` is a simple FITS image the header is copied to the PHU and
+        the input appended to the HDUList containing the new PHU.
+
+        If `source` is a simple FITS table the header is copied
+        to the PHU and the input appended to the HDUList containing the new
+        PHU.
+
+        If `source` is a PHU with data a new PHU is created and a new ImageHDU
+        is created from the header and data from `source` and both are
+        returned as a PHUList.
+
+        If `source` is a PHUList of length greater than 1 and the first
+        extension contains data, an AstroDataError is raised.
+
+        If `source` is a PHUList of length greater than 1 and the first
+        extension doesn't contain data, a check that the first extension in
+        `source` is a PrimaryHDU is made. If the first extension is not a
+        PrimaryPHU and doesn't contain data a new HDUList is returned with the
+        first extension converted to a PrimaryHDU.
+
+        If `source` is a valid MEF HDUList, `source` is returned untouched.
+
+        `source`: pyfits.HDU, pyfits.HDUList
+
+                  Input HDU or HDUList to check for simple FITS and / or
+                  PrimaryHDU
+
+        returns: pyfits.HDUList
+
+                 HDUList with PrimaryHDU as first extension. If `source`[0] or
+                 just `source` contained data the data are appended to the
+                 HDUList.
+
+        Raises: AstroDataError
+
+        """
+        is_hdulist = False
+        if isinstance(source, pyfits.HDUList):
+            # Extract the first extension and flag that it is an HDUList
+            is_hdulist = True
+            first_extension = source[0]
+        else:
+            first_extension = source
+
+        # Chcek if the first extension has data
+        if first_extension.data is not None:
+            #TODO: Possibly update these to be PyFITS isimage etc, tests?
+            __HDUS_TO_MANIPULATE__ = (pyfits.PrimaryHDU,
+                                      pyfits.ImageHDU,
+                                      pyfits.TableHDU,
+                                      pyfits.BinTableHDU)
+
+            if isinstance(first_extension, __HDUS_TO_MANIPULATE__):
+                # If the length of the source is greater than one and the first
+                # extension in the list has data raise an exception. Only
+                # perform this check if source is an HDUList
+                if is_hdulist and len(source) > 1:
+                    raise Errors.AstroDataError("PHU contains data and "
+                                                "HDUList has length %d" %
+                                                len(source))
+
+                # Single extension or HDUList of length 1 supplied
+                header = copy(first_extension.header)
+
+                # Check if first_extension is a PrimaryHDU; set the data
+                # value to decide whether to append source or create a new
+                # HDU from source
+                if isinstance(first_extension, pyfits.PrimaryHDU):
+                    data = copy(first_extension.data)
+                else:
+                    data = None
+
+                # Create PrimaryHDU with copy of input hedear even if it
+                # was a PrimrayHDU
+                hdu = pyfits.PrimaryHDU(header=header)
+
+                # Create HDUList
+                dataset = pyfits.HDUList(hdu)
+
+                # Reset hdu variable
+                if data is not None:
+                    # Data is only not None if input was a Primary HDU
+                    # If data and/or header is None, pyfits will allow it
+                    hdu = pyfits.ImageHDU(data=data, header=header)
+                else:
+                    # Just append the input source
+                    hdu = first_extension
+
+                dataset.append(hdu)
+
+                # Add the EXTNAME keyword
+                # TODO:
+                # This has been left for compatibility. There should only be
+                # one function that does this - MS
+                if "EXTNAME" not in hdu.header:
+                    kafter = "GCOUNT"
+                    if not kafter in hdu.header:
+                        kafter = None
+                    if hdu.header.get("TFIELDS"):
+                        kafter = "TFIELDS"
+
+                    _pyfits_update_compatible(hdu)
+                    hdu.header.update("EXTNAME", "SCI",
+                                      "ad4549: added by AstroData", after=kafter)
+
+        else:
+            # Source or first extension of source doesn't have data associated
+            # with it.
+
+            # Check first_extension is a PrimaryHDU. Create a PrimaryHDU if not
+            first_extension_was_phu = True
+            if not isinstance(first_extension, pyfits.PrimaryHDU):
+                first_extension_was_phu = False
+                first_extension = pyfits.PrimaryHDU(
+                                      header=first_extension.header)
+
+            # first_extesnion is a PrimaryHDU by this point
+
+            if not is_hdulist:
+                # An HDU with no data has been supplied
+                # Form the HDUList
+                dataset = pyfits.HDUList(first_extension)
+            elif not first_extension_was_phu:
+                # An HDUList has been supplied and the the first extension
+                # doesn't have data associated with it but wasn't a PrimaryHDU
+
+                # Update first extension to be a PrimaryHDU
+                dataset = copy(source)
+                dataset[0] = first_extension
+            else:
+                # HDUList supplied and first extension is a PHU.
+                dataset = source
+
+        return dataset
+
     def div(self, denominator):
         return arith.div(self,denominator)
     div.__doc__ = arith.div.__doc__
