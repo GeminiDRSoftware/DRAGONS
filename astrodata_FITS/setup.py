@@ -73,12 +73,12 @@ for root, dirs, files in os.walk(os.path.join(CONFIGNAME,'descriptors')):
 # DATA_DIRS and DATA_FILES
 DATA_FILES = []
 
-#DOC_DIR = os.path.join('share','astrodata_FITS','RECIPES_FITS')
-#for root, dirs, files in os.walk(os.path.join('RECIPES_FITS','doc')):
-#    if not svndir.search(root) and len(files) > 0:
-#        dest = root.split('/',2)[2] if len(root.split('/',2)) > 2 else ""
-#        DOC_FILES = map((lambda f: os.path.join(root,f)), files)
-#        DATA_FILES.append( (os.path.join(DOC_DIR,dest), DOC_FILES) )
+DOC_DIR = os.path.join('share','astrodata_FITS','RECIPES_FITS')
+for root, dirs, files in os.walk(os.path.join('RECIPES_FITS','doc')):
+    if not svndir.search(root) and len(files) > 0:
+        dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
+        DOC_FILES = map((lambda f: os.path.join(root,f)), files)
+        DATA_FILES.append( (os.path.join(DOC_DIR,dest), DOC_FILES) )
 
 
 # SCRIPTS

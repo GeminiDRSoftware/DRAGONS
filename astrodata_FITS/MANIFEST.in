@@ -3,3 +3,4 @@ include INSTALL
 include README
 include Copyright
 recursive-include ADCONFIG_FITS *
+recursive-include doc *
