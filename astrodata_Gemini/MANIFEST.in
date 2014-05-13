@@ -3,6 +3,6 @@ include INSTALL
 include README
 include Copyright
 global-include RECIPES_Gemini/recipe.*
-recursive-include RECIPES_Gemini/doc *
+recursive-include doc *
 prune Engineering
 recursive-include ADCONFIG_Gemini *

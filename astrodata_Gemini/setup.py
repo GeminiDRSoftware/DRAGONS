@@ -79,13 +79,12 @@ for root, dirs, files in os.walk(os.path.join(CONFIGNAME,'classifications')):
 # DATA_DIRS and DATA_FILES
 DATA_FILES = []
 
-DOC_DIR = os.path.join('share','astrodata_Gemini','RECIPES_Gemini')
-for root, dirs, files in os.walk(os.path.join('RECIPES_Gemini','doc')):
+DOC_DIR = os.path.join('share','astrodata_Gemini')
+for root, dirs, files in os.walk('doc'):
     if not svndir.search(root) and len(files) > 0:
-        dest = root.split('/',2)[2] if len(root.split('/',2)) > 2 else ""
+        dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
         DOC_FILES = map((lambda f: os.path.join(root,f)), files)
         DATA_FILES.append( (os.path.join(DOC_DIR,dest), DOC_FILES) )
-
 
 # SCRIPTS
 SCRIPTS = []
