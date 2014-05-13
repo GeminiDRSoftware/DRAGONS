@@ -31,11 +31,13 @@ from astrodata.Errors    import SingleHDUMemberExcept
 #
 # TESTFILEs are located under gemini_python/test_data/astrodata_bench/
 # TESTURL specifies a non-extistent file, but request on a actual service.
-TESTFILE  = '../../../test_data/astrodata_bench/GS_GMOS_IMAGE.fits'  # 3 'SCI'
-TESTFILE2 = '../../../test_data/astrodata_bench/GS_GMOS_IMAGE_2.fits'# 1 'SCI'
+TESTFILE  = '../../../test_data/astrodata_bench/GS_GMOS_IMAGE.fits'    # 3 'SCI'
+TESTFILE2 = '../../../test_data/astrodata_bench/GS_GMOS_IMAGE_2.fits'  # 1 'SCI'
+TESTPHU   = '../../../test_data/astrodata_bench/GN_GNIRS_IMAGE_PHU.fits'  # PHU
 TESTURL   = 'http://fits/file/GS_GMOS_IMAGE.fits'
 KNOWNTYPE = 'GMOS_IMAGE'
 KNOWNSTAT = 'GMOS_RAW'
+PHUTYPE   = 'GNIRS_IMAGE'
 NULLTYPES = ['UNPREPARED', 'RAW']
 BADFILE   = 'FOO.fits'
 
@@ -69,7 +71,7 @@ def test_constructor_2():
 def test_constructor_3():
     """ Non-existant file """
     with pytest.raises(IOError):
-        AstroData(BADFILE)
+        AstroData(dataset=BADFILE)
 
 def test_constructor_4():
     """ dataset as bad URL """
@@ -106,6 +108,21 @@ def test_constructor_10():
     ad = AstroData(dataset=TESTFILE)
     sub_ad = AstroData(ad, extInsts=extenstion_list)
     assert len(sub_ad) == 2
+
+def test_constructor_11():
+    """ Simple FITS, PHU only """
+    with pytest.raises(AssertionError):
+        assert AstroData(dataset=TESTPHU)
+
+def test_constructor_12():
+    """ Simple FITS, PHU only """
+    ad = AstroData(dataset=TESTPHU)
+    assert isinstance(ad, AstroData)
+
+def test_constructor_13():
+    """ Simple FITS, PHU only """
+    ad = AstroData(dataset=TESTPHU)
+    assert len(ad) == 0
 
 # ==============================================================================
 # Slice Operator
@@ -278,6 +295,16 @@ def test_attr_hdulist_3():
     ad = AstroData(TESTFILE)
     assert ad.hdulist[1].verify_checksum() == hdu1.verify_checksum()
 
+def test_attr_hdulist_4():
+    """ PHU Only dataset """
+    ad = AstroData(TESTPHU)
+    assert hasattr(ad, 'hdulist')
+
+def test_attr_hdulist_5():
+    """ PHU Only dataset """
+    ad = AstroData(TESTPHU)
+    assert len(ad.hdulist) == 1
+
 #   @property phu
 def test_attr_phu_1():
     """ getter """
@@ -294,6 +321,16 @@ def test_attr_phu_3():
     ad = AstroData(TESTFILE)
     ad.phu = phu
     assert ad.phu == phu
+
+def test_attr_phu_4():
+    """ PHU Only dataset """
+    ad = AstroData(TESTPHU)
+    assert hasattr(ad, 'phu')
+
+def test_attr_phu_5():
+    """ PHU Only dataset """
+    ad = AstroData(TESTPHU)
+    assert ad.phu == ad.hdulist[0]
 
 # ==============================================================================
 # File Operations
@@ -476,6 +513,16 @@ def test_attr_types_3():
 def test_attr_types_4():
     ad = AstroData()
     assert ad.types == NULLTYPES
+
+def test_attr_types_5():
+    """ Simple FITS, PHU only """
+    ad = AstroData(TESTPHU)
+    assert isinstance(ad.types, list)
+
+def test_attr_types_6():
+    """ Simple FITS, PHU only """
+    ad = AstroData(TESTPHU)
+    assert PHUTYPE in ad.types
 
 #   type()
 @xfail(reason="TO BE IMPLEMENTED")
