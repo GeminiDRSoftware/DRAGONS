@@ -18,7 +18,7 @@ import gdpgutil
 from gdpgutil import inherit_index
 import ReductionObjects
 import IDFactory as idFac # id hashing functions
-from Errors import ReduceError
+from Errors import ReduceError, AstroDataError
 from gdpgutil import pick_config
 from ParamObject import PrimitiveParameter
 from astrodata.adutils import gemLog
@@ -1965,18 +1965,22 @@ class RecipeLibrary(object):
             close_if_name(gd, bnc)
             
 
-    def get_applicable_recipes(self, dataset= None, 
-                                     astrotype = None, 
-                                     collate=False,
-                                     prune = False):
+    def get_applicable_recipes(self, dataset=None, astrotype=None, 
+                               collate=False, prune=False):
         """
         Get list of recipes associated with all the types that apply to this dataset.
         """
-        if dataset != None and astrotype != None:
-            raise RecipeExcept("get_applicable_recipes cannot have dataset and astrotype set")
-        if dataset == None and astrotype == None:
-            raise RecipeExcept("get_applicable_recipes must have either a dataset or explicit astrotype set")
+        if not dataset and dataset is not None:
+            raise AstroDataError("Passed dataset appears to have no data extensions")
+
+        if dataset and astrotype:
+            raise RecipeExcept("Cannot pass both dataset and astrotype.")
+
+        if dataset is None and astrotype is None:
+            raise RecipeExcept("Must pass one (1) of dataset or astrotype.")
+
         byfname = False
+
         if dataset:
             if  type(dataset) == str:
                 astrod = AstroData(dataset)
@@ -1990,32 +1994,25 @@ class RecipeLibrary(object):
             types = astrod.get_types(prune=True)
         else:
             types = [astrotype]
+
         # look up recipes, fill list
         reclist = []
         recdict = {}
-        # print "RM1785:@@",types
         for typ in types:
-            if False:
-                if typ in centralAstroTypeRecipeIndex.keys():
-                        recnames = centralAstroTypeRecipeIndex[typ]
-                        
-            
             recnames = inherit_index(typ, centralAstroTypeRecipeIndex)
             if recnames:
                 reclist.extend(recnames[1])
                 recdict.update({recnames[0]: recnames[1]})
         reclist = list(set(reclist))
-        #print "RM:1798",repr(recdict)
 
-        # if we opened the file we close it
+        # if  open file, close it
         if byfname:
             astrod.close()
         
-        if collate == False:
-            return reclist
-        else:
+        if collate:
             return recdict
-        
+        return reclist
+
     def recipe_index(self, as_xml = False):
         cri = centralRecipeIndex
         
