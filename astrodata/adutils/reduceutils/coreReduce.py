@@ -207,6 +207,10 @@ class Reduce(object):
                 log.error("Caught Ctrl-C event.")
                 log.error("exit code: %d" % xstat)
                 break
+            except Errors.AstroDataError, err:
+                xstat = signal.SIGABRT
+                log.error(str(err))
+                break                
             except IOError, err:
                 xstat = signal.SIGIO
                 log.error(str(err))
