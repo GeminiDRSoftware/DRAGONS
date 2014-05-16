@@ -6,39 +6,49 @@ Log Utility
 
 The Astrodata Log Utility
 =========================
-Astrodata uses a logging utility based on the Python logging facility.  
-astrodata/adutils/logutils.py
-creates logfile, default name reduce.log
+Astrodata uses a logging utility based on the Python logging facility. 
 
-config() method
-   mode: standard, stream, null, debug
-   consolve_lvl: controls the console logging level
-   file_name: logfile name (default=reduce.log)
-   stomp:  clobber
+.. todo::
+   write the astrodata log utility section.
 
-get_logger()
+.. note::
+   ``astrodata/adutils/logutils.py``
+   creates logfile, default name reduce.log
 
-update_indent(): control indenting during recipe/primitive execution.
+   config() method
+      mode: standard, stream, null, debug
+      consolve_lvl: controls the console logging level
+      file_name: logfile name (default=reduce.log)
+      stomp:  clobber
 
-logger mode standard: default console-> stdinfo, default to file-> fullinfo
+   get_logger()
+
+   update_indent(): control indenting during recipe/primitive execution.
+
+   logger mode standard: default console-> stdinfo, default to file-> fullinfo
 
 Writing to Log
 ==============
-Using the logging facility involves *getting* the logger, *configuring* the logger,
 
-``log.<loglevel>(<message_to_log>)``
+.. todo::
+   write the section about writing to log
 
-default name: reduce.log
+.. note::
+   Using the logging facility involves *getting* the logger, *configuring* the logger,
+
+   ``log.<loglevel>(<message_to_log>)``
+
+   default name: reduce.log
 
 ::
 
-  from astrodata.adutils import logutils
+   from astrodata.adutils import logutils
   
-  log = logutils.get_logger(__name__)
+   log = logutils.get_logger(__name__)
 
-  ??
-  log = self.log
-  self.log.stdinfo()
+   ??
+   log = self.log
+   self.log.stdinfo()
 
 In primitives, call logger "once at the top"
 

@@ -1,5 +1,7 @@
 .. data:
 
+.. _data:
+
 **********
 Pixel Data
 **********
@@ -11,7 +13,7 @@ can be done on the pixel data stored in the AstroData object.  Examples include 
 plotting, etc.  Please refer to numpy documentation for details on what it offers.  In this chapter, we will 
 present some typical examples.
 
-But first, here's how one accesses the data array stored in an AstroData object::
+But first, here's how one accesses the data array stored in an AstroData object. ::
 
   from astrodata import AstroData
   
@@ -59,7 +61,7 @@ When using the AstroData arithmetic, all the science (EXTNAME='SCI') frames are
 operated on.
 
 The AstroData arithmetic methods can be stringed together.  Note that because
-the calculations are done "in-place", operator precedence cannot be respected. ::
+the calculations are done "in-place", **operator precedence cannot be respected**. ::
 
    ad.add(5).mult(10).sub(5)
    # means:  ad = ((ad + 5) * 10) - 5
@@ -207,8 +209,8 @@ developing an interactive task.
 Start a display tool, like DS9 or ximtool. Then try the commands below.::
 
   from astrodata import AstroData
-  from numdisplay import display
-  from numdisplay import readcursor
+  from stsci.numdisplay import display
+  from stsci.numdisplay import readcursor
   
   ad = AstroData('N20110313S0188.fits')
   
@@ -251,7 +253,7 @@ get the reader started in her exploration of ``numpy`` and ``scipy``.
   import numpy as np
   import numpy.ma as ma
   import scipy.ndimage.filters as filters
-  from numdisplay import display
+  from stsci.numdisplay import display
   
   ad = AstroData('N20110313S0188.fits')
   data = ad['SCI',2].data
@@ -274,12 +276,12 @@ get the reader started in her exploration of ``numpy`` and ``scipy``.
   # mask_extreme contains the "mask" returned by masked_outside()
   stddev = data.std()
   mean = data.mean()
-  mask_extreme = ma.masked_outside(data, mean-3*stddev, mean+3*stddev).mask
+  mask_extremes = ma.masked_outside(data, mean-3*stddev, mean+3*stddev).mask
   
   # ma.array() applies the mask to data.
   # The compressed() method converts the masked data into a ndarray on
   # which we can run .mean().
-  clipped_mean = ma.array(data, mask=mask_extreme).compressed().mean()
+  clipped_mean = ma.array(data, mask=mask_extremes).compressed().mean()
   
   # Another common image operation is the filtering of an image.
   # To gaussian filter an image, use scipy.ndimage.filters.gaussian_filter.
@@ -295,17 +297,23 @@ get the reader started in her exploration of ``numpy`` and ``scipy``.
   # object you would do:
   ad['SCI',2].data = conv_data
 
+The world of ``numpy``, ``scipy``, and the new ``astropy`` is rich and vast.
+The reader should refer to those packages' documentation to learn more.
 
 Using the AstroData Data Quality Plane
 ======================================
-TO BE WRITTEN -> transform DQ plane into a numpy mask and do statistics
+.. todo::
+   Write examples that use the DQ plane.  Eg. transform DQ plane in a numpy mask
+   and do statistics.
+
 
 Manipulate Data Sections
 ========================
 Sections of the data array can be accessed and processed.  It is important to
 note here that when indexing a numpy array, the left most number refers to the
-highest dimension's axis.  Also important, is to remember that the numpy arrays
-are 0-indexed, not 1-indexed like in Fortran and IRAF.  For example, in a 2-D 
+highest dimension's axis (eg. in IRAF sections are in (x,y) format, in Python
+they are in (y,x) format). Also important is to remember that the numpy arrays
+are 0-indexed, not 1-indexed like in Fortran or IRAF.  For example, in a 2-D 
 numpy array, the pixel position (x,y) = (50,75) would be accessed as data[74,49].
 
 Here are some examples using data sections.::
@@ -351,10 +359,13 @@ functions, data sections, numpy 0-based arrays, and numpy statistics function me
 Work on Data Cubes
 ==================
 
+.. todo::
+   write some intro to the data cube section and example
+   
 ::
 
   from astrodata import AstroData
-  from numdisplay import display
+  from stsci.numdisplay import display
   from pylab import *
   
   adcube = AstroData('gmosifu_cube.fits')

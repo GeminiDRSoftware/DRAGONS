@@ -53,14 +53,13 @@
           <div class="body">
             
   <div class="section" id="input-and-output-operations">
-<h1>3. Input and Output Operations<a class="headerlink" href="#input-and-output-operations" title="Permalink to this headline">¶</a></h1>
+<span id="io"></span><h1>3. Input and Output Operations<a class="headerlink" href="#input-and-output-operations" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="open-existing-mef-files">
 <h2>3.1. Open Existing MEF Files<a class="headerlink" href="#open-existing-mef-files" title="Permalink to this headline">¶</a></h2>
-<p>An AstroData object can be created from the name of the file on disk or from
-PyFITS HDUList.  An existing MEF file can be open as an AstroData object
-in <tt class="docutils literal"><span class="pre">readonly</span></tt>, <tt class="docutils literal"><span class="pre">update</span></tt>, or <tt class="docutils literal"><span class="pre">append</span></tt> mode.  The default is <tt class="docutils literal"><span class="pre">readonly</span></tt>.</p>
-<p><em>(KL: why would anyone want to create an AD from another AD??!!)</em>
-<em>(KL: what&#8217;s the deal with store and storeClobber?  Incomprehensible.)</em></p>
+<p>An AstroData object can be created from the name of the file on disk, a URL,
+or from PyFITS HDUList or HDU instance.  An existing MEF file can be open as
+an AstroData object in <tt class="docutils literal"><span class="pre">readonly</span></tt>, <tt class="docutils literal"><span class="pre">update</span></tt>, or <tt class="docutils literal"><span class="pre">append</span></tt> mode.
+The default is <tt class="docutils literal"><span class="pre">readonly</span></tt>.</p>
 <p>Here is a very simple example on how to open a file in <tt class="docutils literal"><span class="pre">readonly</span></tt> mode,
 check the structure, and then close it:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
@@ -78,12 +77,14 @@ check the structure, and then close it:</p>
 </div>
 <div class="section" id="update-existing-mef-files">
 <h2>3.2. Update Existing MEF Files<a class="headerlink" href="#update-existing-mef-files" title="Permalink to this headline">¶</a></h2>
-<p>To update an existing MEF file, it must have been opened in the <tt class="docutils literal"><span class="pre">update</span></tt> mode.  Then a collection
-of methods can be applied to the AstroData object.  Here we give examples on how to append an
-extension, how to insert an extension, how to remove an extension, and how to replace an extension.
-Then we show how do basic arithmetics on the pixel data and the headers in a loop.  Manipulations
-of the pixel data and of the headers are covered in more details in later sections (?? and ??, respectively).
-Finally we show how to write the updated AstroData object to disk as MEF file.</p>
+<p>To update an existing MEF file, it must have been opened in the <tt class="docutils literal"><span class="pre">update</span></tt> mode.
+Then a collection of methods can be applied to the AstroData object.  Here we give
+examples on how to append an extension, how to insert an extension, and how to remove
+an extension.  Then we show how to do basic
+arithmetics on the pixel data and how to use the headers in a loop.  Manipulations of the
+pixel data and of the headers are covered in more details in later sections
+(<a class="reference internal" href="data.html#data"><em>Section 7 - Pixel Data</em></a> and <a class="reference internal" href="headers.html#headers"><em>Section 6 - FITS Headers</em></a>, respectively).  Finally we show how to write the updated AstroData
+object to disk as MEF file.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
 
 <span class="c"># Open the file to update</span>
@@ -107,7 +108,7 @@ Finally we show how to write the updated AstroData object to disk as MEF file.</
 <span class="c">#          adread, one either does the deepcopy before the</span>
 <span class="c">#          call to append, or set the do_deepcopy argument</span>
 <span class="c">#          to True, as we do here.</span>
-<span class="n">ad</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_extension</span><span class="p">,</span><span class="n">auto_number</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">do_deepcopy</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_extension</span><span class="p">,</span> <span class="n">auto_number</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">do_deepcopy</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="n">ad</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
 
 <span class="c"># Insert an extension between two already existing extensions.</span>
@@ -161,12 +162,6 @@ Finally we show how to write the updated AstroData object to disk as MEF file.</
 <span class="n">ad</span><span class="o">.</span><span class="n">remove</span><span class="p">((</span><span class="s">&#39;VAR&#39;</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
 <span class="n">ad</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
 
-<span class="c"># Here is how to replace an extension.</span>
-<span class="c"># Let&#39;s replace extension (&#39;SCI&#39;,2) with the (&#39;SCI&#39;,2) extension from adread.</span>
-
-<span class="c">##### .replace() is broken.  Will add example when it&#39;s fixed.</span>
-
-
 <span class="c"># Finally, let&#39;s write this modified AstroData object to disk as a MEF file.</span>
 <span class="c"># The input MEF was open in update mode.  If no file name is provide to the</span>
 <span class="c"># write command, the file will be overwritten.  To write to a new file,</span>
@@ -179,7 +174,8 @@ Finally we show how to write the updated AstroData object to disk as MEF file.</
 <span class="c"># is specified.</span>
 
 <span class="c"># The pixel data and header data obviously can be accessed and modified.</span>
-<span class="c"># More on pixel data manipulation in ???.  More on header manipulation in ???</span>
+<span class="c"># More on pixel data manipulation in :ref:`data`.  More on header manipulation</span>
+<span class="c"># in :ref:`headers`</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
@@ -202,6 +198,10 @@ Finally we show how to write the updated AstroData object to disk as MEF file.</
 <span class="n">adread</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </pre></div>
 </div>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Clean up the I/O example on updating MEF.  Cosmetic.</p>
+</div>
 </div>
 <div class="section" id="create-new-mef-files">
 <h2>3.3. Create New MEF Files<a class="headerlink" href="#create-new-mef-files" title="Permalink to this headline">¶</a></h2>
@@ -220,14 +220,15 @@ to work on it and write the modified MEF to a new file.</p>
 <span class="n">ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>Since in Python and when working with AstroData objects, the memory can be
+<p>Since in Python, and when working with AstroData objects, the memory can be
 shared between variables, it is sometimes necessary to create a &#8220;true&#8221; copy
 of an AstroData object to keep us from modifying the original.</p>
 <p>By using <tt class="docutils literal"><span class="pre">deepcopy</span></tt> on an AstroData object the copy is a true copy, it has
 its own memory allocation.  This allows one to modify the copy while leave the
 original AstroData intact.  This feature is useful when an operation requires
 both the modified and the original AstroData object since by design a simple
-copy still point to the same location in memory.</p>
+copy still point to the same location in memory. Use carefully however, your
+memory usage can grow rapidly if you over-use.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 
@@ -244,7 +245,7 @@ This also means that you have doubled the memory footprint.</p>
 pixel data needs to be created as a numpy ndarray.  The header must be created
 as pyfits header.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
-<span class="kn">import</span> <span class="nn">pyfits</span> <span class="kn">as</span> <span class="nn">pf</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span> <span class="k">as</span> <span class="n">pf</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
 <span class="c"># Create an empty header.  AstroData will take care of adding the minimal</span>
@@ -253,7 +254,7 @@ as pyfits header.</p>
 
 <span class="c"># Create a pixel data array.  Fill it with whatever values you need.</span>
 <span class="c"># Here we just create a fill gradient.</span>
-<span class="n">new_data</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1000.</span><span class="p">,</span> <span class="mi">2048</span><span class="o">*</span><span class="mi">1024</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2048</span><span class="p">,</span><span class="mi">1024</span><span class="p">)</span>
+<span class="n">new_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1000.</span><span class="p">,</span> <span class="mi">2048</span><span class="o">*</span><span class="mi">1024</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2048</span><span class="p">,</span><span class="mi">1024</span><span class="p">)</span>
 
 <span class="c"># Create an AstroData object and give it a filename</span>
 <span class="n">new_ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">new_data</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">new_header</span><span class="p">)</span>

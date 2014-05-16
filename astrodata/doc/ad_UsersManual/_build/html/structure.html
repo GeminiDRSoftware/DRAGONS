@@ -53,13 +53,33 @@
           <div class="body">
             
   <div class="section" id="mef-structure-mapping">
-<h1>4. MEF Structure Mapping<a class="headerlink" href="#mef-structure-mapping" title="Permalink to this headline">¶</a></h1>
+<span id="structure"></span><h1>4. MEF Structure Mapping<a class="headerlink" href="#mef-structure-mapping" title="Permalink to this headline">¶</a></h1>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Structures are not fully implemented in astrodata.</p>
+</div>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">The structure section needs to be written, but since the functionality
+is not available, other than the SCI,VAR,DQ model, this is not a priority.</p>
+</div>
 <div class="section" id="file-structure-definitions">
 <h2>4.1. File Structure Definitions<a class="headerlink" href="#file-structure-definitions" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="gemini-data-structure">
 <h2>4.2. Gemini Data Structure<a class="headerlink" href="#gemini-data-structure" title="Permalink to this headline">¶</a></h2>
-<p>(SCI, VAR, DQ, MDF)</p>
+<p>Raw Gemini data are Multi-Extension FITS that contains only the scientific
+pixel data.  The extensions are not named (EXTNAME) or versioned (EXTVER).</p>
+<p>When the raw data is &#8220;prepared&#8221;, the science extensions are named &#8220;SCI&#8221;
+(ie. EXTNAME keyword set to &#8220;SCI&#8221;) and versioned with an index (ie.
+EXTVER keyword set to 1 ... N, N being the number of extensions the MEF
+contains).</p>
+<p>As early as possible, the variance plane and the data quality plane will
+be calculated and added.  Those planes are named &#8220;VAR&#8221; and &#8220;DQ&#8221;, and
+receive an EXTVER value corresponding to their respective &#8220;SCI&#8221; extension.</p>
+<p>For spectroscopic observation, a Mask Definition File, a FITS table, is attached to the
+data and the extension is named &#8220;MDF&#8221;, with version number 1.</p>
+<p>Those version names are implied when an AstroData object is created.</p>
 </div>
 <div class="section" id="using-structures">
 <h2>4.3. Using Structures<a class="headerlink" href="#using-structures" title="Permalink to this headline">¶</a></h2>

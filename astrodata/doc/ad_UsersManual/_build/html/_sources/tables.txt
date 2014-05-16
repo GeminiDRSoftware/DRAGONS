@@ -51,7 +51,7 @@ Creating a FITS table is mostly a matter of creating the columns, name and data.
 The name is a string, the data is stored in a ``numpy`` array.::
 
   from astrodata import AstroData
-  import pyfits as pf
+  from astropy.io import fits as pf
   import numpy as np
   
   # Create the input data
@@ -150,7 +150,8 @@ modify a FITS table.::
 
   # Add/Delete row
   #  Adding and deleting rows requires the creation of a new table
-  #  of the correct, new size.
+  #  of the correct, new size.  (KL: It is a bit odd that rows cannot
+  #  be easily appended at least.)
   #
   #  Add 2 new entries to table2.  Only 'SNR_ID' and 'pabeta' will be 
   #  added as those are the columns already present in table2.
@@ -177,3 +178,7 @@ modify a FITS table.::
   # Change the 'pabeta' value for source S002 in table2
   rowindex = np.where(table2.data.field('SNR_ID') == 'S002')[0][0]
   table2.data.field('pabeta')[rowindex] = 888.
+
+.. todo::
+   Can those table manipulations be simplified with the astropy Table module?
+     

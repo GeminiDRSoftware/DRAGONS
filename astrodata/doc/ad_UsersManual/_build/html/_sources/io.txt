@@ -1,5 +1,7 @@
 .. io:
 
+.. _io:
+
 ***************************
 Input and Output Operations
 ***************************
@@ -7,12 +9,10 @@ Input and Output Operations
 Open Existing MEF Files
 =======================
 
-An AstroData object can be created from the name of the file on disk or from 
-PyFITS HDUList.  An existing MEF file can be open as an AstroData object 
-in ``readonly``, ``update``, or ``append`` mode.  The default is ``readonly``.
-
-*(KL: why would anyone want to create an AD from another AD??!!)*
-*(KL: what's the deal with store and storeClobber?  Incomprehensible.)*
+An AstroData object can be created from the name of the file on disk, a URL,
+or from PyFITS HDUList or HDU instance.  An existing MEF file can be open as 
+an AstroData object in ``readonly``, ``update``, or ``append`` mode.  
+The default is ``readonly``.
 
 Here is a very simple example on how to open a file in ``readonly`` mode, 
 check the structure, and then close it::
@@ -30,15 +30,16 @@ To open the file in a mode other than ``readonly``, specify the value of the
 
   
 
-
 Update Existing MEF Files
 =========================
-To update an existing MEF file, it must have been opened in the ``update`` mode.  Then a collection
-of methods can be applied to the AstroData object.  Here we give examples on how to append an 
-extension, how to insert an extension, how to remove an extension, and how to replace an extension.
-Then we show how do basic arithmetics on the pixel data and the headers in a loop.  Manipulations
-of the pixel data and of the headers are covered in more details in later sections (?? and ??, respectively).
-Finally we show how to write the updated AstroData object to disk as MEF file. ::
+To update an existing MEF file, it must have been opened in the ``update`` mode.  
+Then a collection of methods can be applied to the AstroData object.  Here we give 
+examples on how to append an extension, how to insert an extension, and how to remove 
+an extension.  Then we show how to do basic 
+arithmetics on the pixel data and how to use the headers in a loop.  Manipulations of the 
+pixel data and of the headers are covered in more details in later sections 
+(:ref:`Section 7 - Pixel Data <data>` and :ref:`Section 6 - FITS Headers <headers>`, respectively).  Finally we show how to write the updated AstroData 
+object to disk as MEF file. ::
 
    from astrodata import AstroData
    
@@ -63,7 +64,7 @@ Finally we show how to write the updated AstroData object to disk as MEF file. :
    #          adread, one either does the deepcopy before the
    #          call to append, or set the do_deepcopy argument
    #          to True, as we do here.
-   ad.append(new_extension,auto_number=True,do_deepcopy=True)
+   ad.append(new_extension, auto_number=True, do_deepcopy=True)
    ad.info()
    
    # Insert an extension between two already existing extensions.
@@ -116,13 +117,7 @@ Finally we show how to write the updated AstroData object to disk as MEF file. :
    # Removing extension ['VAR',5]
    ad.remove(('VAR',5))
    ad.info()
-   
-   # Here is how to replace an extension.
-   # Let's replace extension ('SCI',2) with the ('SCI',2) extension from adread.
-   
-   ##### .replace() is broken.  Will add example when it's fixed.
-   
-   
+      
    # Finally, let's write this modified AstroData object to disk as a MEF file.
    # The input MEF was open in update mode.  If no file name is provide to the
    # write command, the file will be overwritten.  To write to a new file, 
@@ -135,7 +130,8 @@ Finally we show how to write the updated AstroData object to disk as MEF file. :
    # is specified.
 
    # The pixel data and header data obviously can be accessed and modified.
-   # More on pixel data manipulation in ???.  More on header manipulation in ???
+   # More on pixel data manipulation in :ref:`data`.  More on header manipulation 
+   # in :ref:`headers` 
    
    import numpy as np
    
@@ -157,6 +153,8 @@ Finally we show how to write the updated AstroData object to disk as MEF file. :
    ad.close()
    adread.close()
 
+.. todo::
+   Clean up the I/O example on updating MEF.  Cosmetic.
 
 Create New MEF Files
 ====================
@@ -179,7 +177,7 @@ Here we open a file, make a copy, and write a new MEF file on disk::
   ad.write('newfile2.fits')
   ad.close()
 
-Since in Python and when working with AstroData objects, the memory can be
+Since in Python, and when working with AstroData objects, the memory can be
 shared between variables, it is sometimes necessary to create a "true" copy
 of an AstroData object to keep us from modifying the original.
   
@@ -187,7 +185,8 @@ By using ``deepcopy`` on an AstroData object the copy is a true copy, it has
 its own memory allocation.  This allows one to modify the copy while leave the 
 original AstroData intact.  This feature is useful when an operation requires 
 both the modified and the original AstroData object since by design a simple 
-copy still point to the same location in memory. ::
+copy still point to the same location in memory. Use carefully however, your
+memory usage can grow rapidly if you over-use. ::
 
    from astrodata import AstroData
    from copy import deepcopy
@@ -207,7 +206,7 @@ pixel data needs to be created as a numpy ndarray.  The header must be created
 as pyfits header. :: 
 
    from astrodata import AstroData
-   import pyfits as pf
+   from astropy.io import fits as pf
    import numpy as np
    
    # Create an empty header.  AstroData will take care of adding the minimal
@@ -216,7 +215,7 @@ as pyfits header. ::
    
    # Create a pixel data array.  Fill it with whatever values you need.
    # Here we just create a fill gradient.
-   new_data = numpy.linspace(0., 1000., 2048*1024).reshape(2048,1024)
+   new_data = np.linspace(0., 1000., 2048*1024).reshape(2048,1024)
    
    # Create an AstroData object and give it a filename
    new_ad = AstroData(data=new_data, header=new_header)

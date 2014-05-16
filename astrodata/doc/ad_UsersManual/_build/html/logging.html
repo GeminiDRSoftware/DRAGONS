@@ -56,8 +56,14 @@
 <h1>9. Log Utility<a class="headerlink" href="#log-utility" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="the-astrodata-log-utility">
 <h2>9.1. The Astrodata Log Utility<a class="headerlink" href="#the-astrodata-log-utility" title="Permalink to this headline">¶</a></h2>
-<p>Astrodata uses a logging utility based on the Python logging facility.
-astrodata/adutils/logutils.py
+<p>Astrodata uses a logging utility based on the Python logging facility.</p>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">write the astrodata log utility section.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p><tt class="docutils literal"><span class="pre">astrodata/adutils/logutils.py</span></tt>
 creates logfile, default name reduce.log</p>
 <dl class="docutils">
 <dt>config() method</dt>
@@ -68,13 +74,21 @@ stomp:  clobber</dd>
 </dl>
 <p>get_logger()</p>
 <p>update_indent(): control indenting during recipe/primitive execution.</p>
-<p>logger mode standard: default console-&gt; stdinfo, default to file-&gt; fullinfo</p>
+<p class="last">logger mode standard: default console-&gt; stdinfo, default to file-&gt; fullinfo</p>
+</div>
 </div>
 <div class="section" id="writing-to-log">
 <h2>9.2. Writing to Log<a class="headerlink" href="#writing-to-log" title="Permalink to this headline">¶</a></h2>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<p class="last">write the section about writing to log</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
 <p>Using the logging facility involves <em>getting</em> the logger, <em>configuring</em> the logger,</p>
 <p><tt class="docutils literal"><span class="pre">log.&lt;loglevel&gt;(&lt;message_to_log&gt;)</span></tt></p>
-<p>default name: reduce.log</p>
+<p class="last">default name: reduce.log</p>
+</div>
 <div class="highlight-python"><pre>from astrodata.adutils import logutils
 
 log = logutils.get_logger(__name__)

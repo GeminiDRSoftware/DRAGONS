@@ -13,7 +13,7 @@
 \usepackage{appendix} \setcounter{tocdepth}{0}
 
 \title{AstroData Users Manual}
-\date{April 07, 2014}
+\date{May 14, 2014}
 \release{0.9.0}
 \author{Kathleen Labrie}
 \newcommand{\sphinxlogo}{}
@@ -120,24 +120,46 @@
 
 \section{What is AstroData?}
 \label{intro:what-is-astrodata}
-(use language a scientist will comprehend.  then either refer to the programmer's reference
+\begin{notice}{note}{Todo}
+
+Describe AstroData in a language that astronomer will comprehend.
+\end{notice}
+
+\begin{notice}{note}{Note:}
+For the TODO: use language a scientist will comprehend.  then either refer to the programmer's reference
 or add a section clearly advertised to programmers.  the idea is that we don't want to lose
 the scientists, but if some readers are more technically oriented we also want to make sure
-they get the info they are after.)
+they get the info they are after.
+\end{notice}
 
 
 \section{Installing AstroData}
 \label{intro:installing-astrodata}
-(pre-requisites, build, install, configure)
+\begin{notice}{note}{Todo}
+
+List pre-requisites. Instructions how to build, install, configure. Both `astrodata' and `gemini\_python'.
+\end{notice}
+
+\begin{notice}{note}{Note:}
+examples require numpy, scipy, stsci.numdisplay, astropy.  installing Ureka takes care of that.
+\end{notice}
 
 
 \section{AstroData Support}
 \label{intro:astrodata-support}
-(online webpage, gemini helpdesk)
+\begin{notice}{note}{Todo}
+
+Refer to online webpages (once they exist).  Refer to Gemini helpdesk system for help.
+\end{notice}
 
 
 \chapter{Tutorial}
-\label{tutorial::doc}\label{tutorial:tutorial}
+\label{tutorial::doc}\label{tutorial:tutorial}\label{tutorial:id1}
+\begin{notice}{note}{Todo}
+
+Create a tutorial that shows how to do typical things an astronomer might want do.
+\end{notice}
+
 
 \section{Open and Access MEF Files}
 \label{tutorial:open-and-access-mef-files}
@@ -154,16 +176,14 @@ from astrodata import AstroData
 \label{tutorial:writing-a-python-function-using-astrodata}
 
 \chapter{Input and Output Operations}
-\label{io:input-and-output-operations}\label{io::doc}
+\label{io:input-and-output-operations}\label{io::doc}\label{io:io}
 
 \section{Open Existing MEF Files}
 \label{io:open-existing-mef-files}
-An AstroData object can be created from the name of the file on disk or from
-PyFITS HDUList.  An existing MEF file can be open as an AstroData object
-in \code{readonly}, \code{update}, or \code{append} mode.  The default is \code{readonly}.
-
-\emph{(KL: why would anyone want to create an AD from another AD??!!)}
-\emph{(KL: what's the deal with store and storeClobber?  Incomprehensible.)}
+An AstroData object can be created from the name of the file on disk, a URL,
+or from PyFITS HDUList or HDU instance.  An existing MEF file can be open as
+an AstroData object in \code{readonly}, \code{update}, or \code{append} mode.
+The default is \code{readonly}.
 
 Here is a very simple example on how to open a file in \code{readonly} mode,
 check the structure, and then close it:
@@ -186,12 +206,14 @@ To open the file in a mode other than \code{readonly}, specify the value of the
 
 \section{Update Existing MEF Files}
 \label{io:update-existing-mef-files}
-To update an existing MEF file, it must have been opened in the \code{update} mode.  Then a collection
-of methods can be applied to the AstroData object.  Here we give examples on how to append an
-extension, how to insert an extension, how to remove an extension, and how to replace an extension.
-Then we show how do basic arithmetics on the pixel data and the headers in a loop.  Manipulations
-of the pixel data and of the headers are covered in more details in later sections (?? and ??, respectively).
-Finally we show how to write the updated AstroData object to disk as MEF file.
+To update an existing MEF file, it must have been opened in the \code{update} mode.
+Then a collection of methods can be applied to the AstroData object.  Here we give
+examples on how to append an extension, how to insert an extension, and how to remove
+an extension.  Then we show how to do basic
+arithmetics on the pixel data and how to use the headers in a loop.  Manipulations of the
+pixel data and of the headers are covered in more details in later sections
+({\hyperref[data:data]{\emph{Section 7 - Pixel Data}}} and {\hyperref[headers:headers]{\emph{Section 6 - FITS Headers}}}, respectively).  Finally we show how to write the updated AstroData
+object to disk as MEF file.
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{k+kn}{from} \PYG{n+nn}{astrodata} \PYG{k+kn}{import} \PYG{n}{AstroData}
@@ -217,7 +239,7 @@ Finally we show how to write the updated AstroData object to disk as MEF file.
 \PYG{c}{\PYGZsh{}          adread, one either does the deepcopy before the}
 \PYG{c}{\PYGZsh{}          call to append, or set the do\PYGZus{}deepcopy argument}
 \PYG{c}{\PYGZsh{}          to True, as we do here.}
-\PYG{n}{ad}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{new\PYGZus{}extension}\PYG{p}{,}\PYG{n}{auto\PYGZus{}number}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{,}\PYG{n}{do\PYGZus{}deepcopy}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
+\PYG{n}{ad}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{n}{new\PYGZus{}extension}\PYG{p}{,} \PYG{n}{auto\PYGZus{}number}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{,} \PYG{n}{do\PYGZus{}deepcopy}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
 \PYG{n}{ad}\PYG{o}{.}\PYG{n}{info}\PYG{p}{(}\PYG{p}{)}
 
 \PYG{c}{\PYGZsh{} Insert an extension between two already existing extensions.}
@@ -271,12 +293,6 @@ Finally we show how to write the updated AstroData object to disk as MEF file.
 \PYG{n}{ad}\PYG{o}{.}\PYG{n}{remove}\PYG{p}{(}\PYG{p}{(}\PYG{l+s}{'}\PYG{l+s}{VAR}\PYG{l+s}{'}\PYG{p}{,}\PYG{l+m+mi}{5}\PYG{p}{)}\PYG{p}{)}
 \PYG{n}{ad}\PYG{o}{.}\PYG{n}{info}\PYG{p}{(}\PYG{p}{)}
 
-\PYG{c}{\PYGZsh{} Here is how to replace an extension.}
-\PYG{c}{\PYGZsh{} Let's replace extension ('SCI',2) with the ('SCI',2) extension from adread.}
-
-\PYG{c}{\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{} .replace() is broken.  Will add example when it's fixed.}
-
-
 \PYG{c}{\PYGZsh{} Finally, let's write this modified AstroData object to disk as a MEF file.}
 \PYG{c}{\PYGZsh{} The input MEF was open in update mode.  If no file name is provide to the}
 \PYG{c}{\PYGZsh{} write command, the file will be overwritten.  To write to a new file,}
@@ -289,7 +305,8 @@ Finally we show how to write the updated AstroData object to disk as MEF file.
 \PYG{c}{\PYGZsh{} is specified.}
 
 \PYG{c}{\PYGZsh{} The pixel data and header data obviously can be accessed and modified.}
-\PYG{c}{\PYGZsh{} More on pixel data manipulation in ???.  More on header manipulation in ???}
+\PYG{c}{\PYGZsh{} More on pixel data manipulation in :ref:{}`data{}`.  More on header manipulation}
+\PYG{c}{\PYGZsh{} in :ref:{}`headers{}`}
 
 \PYG{k+kn}{import} \PYG{n+nn}{numpy} \PYG{k+kn}{as} \PYG{n+nn}{np}
 
@@ -311,6 +328,11 @@ Finally we show how to write the updated AstroData object to disk as MEF file.
 \PYG{n}{ad}\PYG{o}{.}\PYG{n}{close}\PYG{p}{(}\PYG{p}{)}
 \PYG{n}{adread}\PYG{o}{.}\PYG{n}{close}\PYG{p}{(}\PYG{p}{)}
 \end{Verbatim}
+
+\begin{notice}{note}{Todo}
+
+Clean up the I/O example on updating MEF.  Cosmetic.
+\end{notice}
 
 
 \section{Create New MEF Files}
@@ -335,7 +357,7 @@ Here we open a file, make a copy, and write a new MEF file on disk:
 \PYG{n}{ad}\PYG{o}{.}\PYG{n}{close}\PYG{p}{(}\PYG{p}{)}
 \end{Verbatim}
 
-Since in Python and when working with AstroData objects, the memory can be
+Since in Python, and when working with AstroData objects, the memory can be
 shared between variables, it is sometimes necessary to create a ``true'' copy
 of an AstroData object to keep us from modifying the original.
 
@@ -343,7 +365,8 @@ By using \code{deepcopy} on an AstroData object the copy is a true copy, it has
 its own memory allocation.  This allows one to modify the copy while leave the
 original AstroData intact.  This feature is useful when an operation requires
 both the modified and the original AstroData object since by design a simple
-copy still point to the same location in memory.
+copy still point to the same location in memory. Use carefully however, your
+memory usage can grow rapidly if you over-use.
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{k+kn}{from} \PYG{n+nn}{astrodata} \PYG{k+kn}{import} \PYG{n}{AstroData}
@@ -365,7 +388,7 @@ as pyfits header.
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{k+kn}{from} \PYG{n+nn}{astrodata} \PYG{k+kn}{import} \PYG{n}{AstroData}
-\PYG{k+kn}{import} \PYG{n+nn}{pyfits} \PYG{k+kn}{as} \PYG{n+nn}{pf}
+\PYG{k+kn}{from} \PYG{n+nn}{astropy.io} \PYG{k+kn}{import} \PYG{n}{fits} \PYG{k}{as} \PYG{n}{pf}
 \PYG{k+kn}{import} \PYG{n+nn}{numpy} \PYG{k+kn}{as} \PYG{n+nn}{np}
 
 \PYG{c}{\PYGZsh{} Create an empty header.  AstroData will take care of adding the minimal}
@@ -374,7 +397,7 @@ as pyfits header.
 
 \PYG{c}{\PYGZsh{} Create a pixel data array.  Fill it with whatever values you need.}
 \PYG{c}{\PYGZsh{} Here we just create a fill gradient.}
-\PYG{n}{new\PYGZus{}data} \PYG{o}{=} \PYG{n}{numpy}\PYG{o}{.}\PYG{n}{linspace}\PYG{p}{(}\PYG{l+m+mf}{0.}\PYG{p}{,} \PYG{l+m+mf}{1000.}\PYG{p}{,} \PYG{l+m+mi}{2048}\PYG{o}{*}\PYG{l+m+mi}{1024}\PYG{p}{)}\PYG{o}{.}\PYG{n}{reshape}\PYG{p}{(}\PYG{l+m+mi}{2048}\PYG{p}{,}\PYG{l+m+mi}{1024}\PYG{p}{)}
+\PYG{n}{new\PYGZus{}data} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{linspace}\PYG{p}{(}\PYG{l+m+mf}{0.}\PYG{p}{,} \PYG{l+m+mf}{1000.}\PYG{p}{,} \PYG{l+m+mi}{2048}\PYG{o}{*}\PYG{l+m+mi}{1024}\PYG{p}{)}\PYG{o}{.}\PYG{n}{reshape}\PYG{p}{(}\PYG{l+m+mi}{2048}\PYG{p}{,}\PYG{l+m+mi}{1024}\PYG{p}{)}
 
 \PYG{c}{\PYGZsh{} Create an AstroData object and give it a filename}
 \PYG{n}{new\PYGZus{}ad} \PYG{o}{=} \PYG{n}{AstroData}\PYG{p}{(}\PYG{n}{data}\PYG{o}{=}\PYG{n}{new\PYGZus{}data}\PYG{p}{,} \PYG{n}{header}\PYG{o}{=}\PYG{n}{new\PYGZus{}header}\PYG{p}{)}
@@ -387,14 +410,39 @@ as pyfits header.
 
 
 \chapter{MEF Structure Mapping}
-\label{structure:mef-structure-mapping}\label{structure::doc}
+\label{structure:mef-structure-mapping}\label{structure::doc}\label{structure:structure}
+\begin{notice}{warning}{Warning:}
+Structures are not fully implemented in astrodata.
+\end{notice}
+
+\begin{notice}{note}{Todo}
+
+The structure section needs to be written, but since the functionality
+is not available, other than the SCI,VAR,DQ model, this is not a priority.
+\end{notice}
+
 
 \section{File Structure Definitions}
 \label{structure:file-structure-definitions}
 
 \section{Gemini Data Structure}
 \label{structure:gemini-data-structure}
-(SCI, VAR, DQ, MDF)
+Raw Gemini data are Multi-Extension FITS that contains only the scientific
+pixel data.  The extensions are not named (EXTNAME) or versioned (EXTVER).
+
+When the raw data is ``prepared'', the science extensions are named ``SCI''
+(ie. EXTNAME keyword set to ``SCI'') and versioned with an index (ie.
+EXTVER keyword set to 1 ... N, N being the number of extensions the MEF
+contains).
+
+As early as possible, the variance plane and the data quality plane will
+be calculated and added.  Those planes are named ``VAR'' and ``DQ'', and
+receive an EXTVER value corresponding to their respective ``SCI'' extension.
+
+For spectroscopic observation, a Mask Definition File, a FITS table, is attached to the
+data and the extension is named ``MDF'', with version number 1.
+
+Those version names are implied when an AstroData object is created.
 
 
 \section{Using Structures}
@@ -404,12 +452,19 @@ as pyfits header.
 \label{structure:adding-new-structure}
 
 \chapter{AstroDataTypes}
-\label{types:astrodatatypes}\label{types::doc}
+\label{types:astrodatatypes}\label{types::doc}\label{types:types}
 
 \section{What are AstroDataTypes}
 \label{types:what-are-astrodatatypes}
-(explain what they are. data type \& data processing status. classification based on headers only.
-explain how to install the Gemini types.)
+\begin{notice}{note}{Todo}
+
+write a straightforward explanation of what AstroDataTypes are.
+\end{notice}
+
+\begin{notice}{note}{Note:}
+For the TODO: explain what they are. data type \& data processing status.
+classification based on headers only.  explain how to install the Gemini types.)
+\end{notice}
 
 
 \section{Using AstroDataTypes}
@@ -421,9 +476,6 @@ from astrodata import AstroData
 
 ad = AstroData('N20111124S0203.fits')
 
-if ad.is\_type('GMOS\_IMAGING'):
-    \# do special steps for GMOS\_IMAGING type data
-
 if 'GMOS\_IMAGING' in ad.types:
     \# do special steps for GMOS\_IMAGING type data
 \end{Verbatim}
@@ -431,24 +483,42 @@ if 'GMOS\_IMAGING' in ad.types:
 The attribute \code{ad.types} returns a list of all the AstroDataTypes associated with the dataset.
 It can be useful when interactively exploring the various types associated with a dataset, or
 when there's a need to write all the types to the screen or to a file, for logging purposes, for example.
-Use at your discretion based on your need.
 
-``Data Types'' are referred to as \emph{Typology} in the AstroDataTypes code.  ``Data Processing Status'' are
-referred to as \emph{Status}.  There are two additional attributes that might be useful if those two
-concepts need to be addressed separately:  \code{ad.typesStatus} and \code{ad.typesTypology}.  They
-are used exactly the same way as \code{ad.types}.
+\begin{notice}{warning}{Warning:}
+We are in the process of improving the AstroData API.  Currently,
+``Data Types'' are referred to as \emph{Typology} in the AstroDataTypes code.  ``Data Processing Status''
+are referred to as \emph{Status}.  There are two additional attributes that might be useful if those
+two concepts need to be addressed separately:  \code{ad.typesStatus} and \code{ad.typesTypology}.
+They are used exactly the same way as \code{ad.types}.
 
-??? ad.refresh\_types()
+WARNING:  \emph{Do not use typesStatus or typesTypology}, we getting rid of them and sorting the mess.
+\end{notice}
+
+If a primitive changes the AstroDataTypes, it is necessary to let the system know about it.
+The method \code{refresh\_types()} takes care of that.  This is used mostly when the processing
+status needs to be changed, for example once the raw data has been standardized, it's processing
+status becomes ``PREPARED''.  This is an important processing status other primitives will check.:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{n}{ad}\PYG{o}{.}\PYG{n}{refresh\PYGZus{}types}\PYG{p}{(}\PYG{p}{)}
+\end{Verbatim}
 
 
 \section{Creating New AstroDataTypes}
 \label{types:creating-new-astrodatatypes}
-(refer to programmer's manual, but give some idea of what needs to be done
-and the basic principles)
+\begin{notice}{note}{Todo}
+
+Primer on creating new AstroDataTypes.
+\end{notice}
+
+\begin{notice}{note}{Note:}
+refer to programmer's manual, but give some idea of what needs to be done
+and the basic principles
+\end{notice}
 
 
 \chapter{FITS Headers}
-\label{headers::doc}\label{headers:fits-headers}
+\label{headers:headers}\label{headers::doc}\label{headers:fits-headers}
 
 \section{AstroData Descriptors}
 \label{headers:astrodata-descriptors}
@@ -462,6 +532,13 @@ one would need to know which specific keyword or set of keywords to look at.  On
 concept of ``filter'' is coded in a Descriptor, one now only needs to call the \code{filtername}
 Descriptor.
 
+\begin{notice}{note}{Note:}
+Of course, if the Descriptors have not been configured
+for the data's AstroDataType or if the AstroDataType for the data is not defined, the
+Descriptors will not work.  In that case, it is nevertheless possible to access the
+header information directly.  This is also shown later in this chapter.
+\end{notice}
+
 To get the list of descriptors available for an AstroData object:
 
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -470,6 +547,11 @@ To get the list of descriptors available for an AstroData object:
 \PYG{n}{ad} \PYG{o}{=} \PYG{n}{AstroData}\PYG{p}{(}\PYG{l+s}{'}\PYG{l+s}{N20111124S0203.fits}\PYG{l+s}{'}\PYG{p}{)}
 \PYG{n}{ad}\PYG{o}{.}\PYG{n}{all\PYGZus{}descriptor\PYGZus{}names}\PYG{p}{(}\PYG{p}{)}
 \end{Verbatim}
+
+\begin{notice}{warning}{Warning:}
+\code{all\_descriptor\_names()} will be replaced by the \code{descriptors} properties in
+the new AstroData API.
+\end{notice}
 
 Most Descriptor names are readily understood, but one can get a short description of
 what the Descriptor refers to by call the Python help function, for example:
@@ -485,7 +567,7 @@ the Gemini software are found in the \code{ADCONFIG\_Gemini} package, part of \c
 As a user reducing Gemini data or coding for existing Gemini data, all you need to do is make
 sure that astrodata\_FITS and astrodata\_Gemini have been installed.  If you are coding for a new
 Gemini instrument, or for another observatory, Descriptors and AstrodataTypes will need to be
-coded.  That's a more advanced topic addressed elsewhere. (KL?? ref to last section of this page)
+coded.  That's a more advanced topic addressed elsewhere ({\hyperref[advanced:advanced]{\emph{Advanced Topics}}}).
 
 
 \section{Accessing Headers}
@@ -526,7 +608,7 @@ to get the value of a specific header keyword:
 \PYG{n}{aofold\PYGZus{}position} \PYG{o}{=} \PYG{n}{ad}\PYG{o}{.}\PYG{n}{phu\PYGZus{}get\PYGZus{}key\PYGZus{}value}\PYG{p}{(}\PYG{l+s}{'}\PYG{l+s}{AOFOLD}\PYG{l+s}{'}\PYG{p}{)}
 
 \PYG{c}{\PYGZsh{} Get keyword value from a specific extension}
-\PYG{n}{naxis2} \PYG{o}{=} \PYG{n}{ad}\PYG{o}{.}\PYG{n}{ext\PYGZus{}get\PYGZus{}key\PYGZus{}value}\PYG{p}{(}\PYG{p}{(}\PYG{l+s}{'}\PYG{l+s}{SCI}\PYG{l+s}{'}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{)}\PYG{p}{,} \PYG{l+s}{'}\PYG{l+s}{NAXIS2}\PYG{l+s}{'}\PYG{p}{)}
+\PYG{n}{naxis2} \PYG{o}{=} \PYG{n}{ad}\PYG{p}{[}\PYG{l+s}{'}\PYG{l+s}{SCI}\PYG{l+s}{'}\PYG{p}{,}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{o}{.}\PYG{n}{get\PYGZus{}key\PYGZus{}value}\PYG{p}{(}\PYG{l+s}{'}\PYG{l+s}{NAXIS2}\PYG{l+s}{'}\PYG{p}{)}
 
 \PYG{c}{\PYGZsh{} Get keyword value from an extension when there's only one extension}
 \PYG{c}{\PYGZsh{} This happens, for example, when looping through multiple extensions.}
@@ -537,7 +619,7 @@ to get the value of a specific header keyword:
 
 Multi-extension FITS files, MEF, have this concept of naming and versioning the extensions.
 The header keywords controlling name and version are \code{EXTNAME} and \code{EXTVER}.  AstroData
-uses that concept extensively.  See ??? for information on the typical structure of AstroData
+uses that concept extensively.  See {\hyperref[structure:structure]{\emph{MEF Structure Mapping}}} for information on the typical structure of AstroData
 objects.  The name and version of an extension is obtained this way:
 
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -564,14 +646,19 @@ To get a whole header from an AstroData object, one would do:
 \PYG{n}{ad}\PYG{o}{.}\PYG{n}{close}\PYG{p}{(}\PYG{p}{)}
 \end{Verbatim}
 
+\begin{notice}{warning}{Warning:}
+The \code{get\_headers()} method will be replaced with the \code{headers} property in the
+new AstroData API.
+\end{notice}
+
 
 \section{Updating and Adding Headers}
 \label{headers:updating-and-adding-headers}
 Header cards can be updated or added to header.  As for the access to the headers, the PHU
 have their own methods, different from the extension, but essentially doing the same thing.
 To write to a PHU use the \code{phu\_set\_key\_value()} method.  To write to the header of an
-extension, use the \code{ext\_set\_key\_values()}.  The difference is that one has to specify the
-extension ID in the latter case.
+extension, use the \code{set\_key\_values()}.  The difference is that one has to specify the
+extension ID in the latter case, or already be working on an extension.
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{k+kn}{from} \PYG{n+nn}{astrodata} \PYG{k+kn}{import} \PYG{n}{AstroData}
@@ -585,16 +672,14 @@ extension ID in the latter case.
 \PYG{c}{\PYGZsh{} Modify a header card in the second extension}
 \PYG{c}{\PYGZsh{}  The arguments are *extension*, *keyword*, *value*, *comment*.  The comment}
 \PYG{c}{\PYGZsh{}  is optional.  If a comment already exists, it will be left untouched.}
-\PYG{n}{ad}\PYG{o}{.}\PYG{n}{ext\PYGZus{}set\PYGZus{}key\PYGZus{}value}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,}\PYG{l+s}{'}\PYG{l+s}{GAIN}\PYG{l+s}{'}\PYG{p}{,}\PYG{l+m+mf}{5.}\PYG{p}{)}
+\PYG{n}{ad}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{o}{.}\PYG{n}{set\PYGZus{}key\PYGZus{}value}\PYG{p}{(}\PYG{l+s}{'}\PYG{l+s}{GAIN}\PYG{l+s}{'}\PYG{p}{,}\PYG{l+m+mf}{5.}\PYG{p}{)}
 
 \PYG{c}{\PYGZsh{} The extension can also be specified by name and version.}
-\PYG{n}{ad}\PYG{o}{.}\PYG{n}{ext\PYGZus{}set\PYGZus{}key\PYGZus{}value}\PYG{p}{(}\PYG{p}{(}\PYG{l+s}{'}\PYG{l+s}{SCI}\PYG{l+s}{'}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{p}{,} \PYG{l+s}{'}\PYG{l+s}{GAIN}\PYG{l+s}{'}\PYG{p}{,} \PYG{l+m+mf}{10.}\PYG{p}{)}
+\PYG{n}{ad}\PYG{p}{[}\PYG{l+s}{'}\PYG{l+s}{SCI}\PYG{l+s}{'}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{o}{.}\PYG{n}{set\PYGZus{}key\PYGZus{}value}\PYG{p}{(}\PYG{l+s}{'}\PYG{l+s}{GAIN}\PYG{l+s}{'}\PYG{p}{,} \PYG{l+m+mf}{10.}\PYG{p}{)}
 
-\PYG{c}{\PYGZsh{} A utility method also exists for use in astrodata objects that contain}
-\PYG{c}{\PYGZsh{} only one extension.  This is particularly useful when looping through}
-\PYG{c}{\PYGZsh{} the extensions.  There's no need to specify the extension number since}
-\PYG{c}{\PYGZsh{} there's only one.  The arguments are *keyword*, *value*, *comment*, with}
-\PYG{c}{\PYGZsh{} comment being optional.}
+\PYG{c}{\PYGZsh{} When looping through the extensions, there's no need to specify the extension}
+\PYG{c}{\PYGZsh{} number since there's only one.  The arguments are *keyword*, *value*, *comment*,}
+\PYG{c}{\PYGZsh{} with comment being optional.}
 \PYG{k}{for} \PYG{n}{extension} \PYG{o+ow}{in} \PYG{n}{ad}\PYG{p}{[}\PYG{l+s}{'}\PYG{l+s}{SCI}\PYG{l+s}{'}\PYG{p}{]}\PYG{p}{:}
     \PYG{n}{extension}\PYG{o}{.}\PYG{n}{set\PYGZus{}key\PYGZus{}value}\PYG{p}{(}\PYG{l+s}{'}\PYG{l+s}{TEST}\PYG{l+s}{'}\PYG{p}{,}\PYG{l+m+mi}{9}\PYG{p}{,} \PYG{l+s}{'}\PYG{l+s}{This is a test.}\PYG{l+s}{'}\PYG{p}{)}
 \end{Verbatim}
@@ -613,11 +698,18 @@ to strange problems.
 
 \section{Adding Descriptors Definitions for New Instruments}
 \label{headers:adding-descriptors-definitions-for-new-instruments}
-(refer to Emma's document.)
+\begin{notice}{note}{Todo}
+
+Primer on Descriptor definitions for new instrument.
+\end{notice}
+
+\begin{notice}{note}{Note:}
+refer to Emma's document for complete instructions
+\end{notice}
 
 
 \chapter{Pixel Data}
-\label{data::doc}\label{data:pixel-data}
+\label{data:data}\label{data::doc}\label{data:pixel-data}
 
 \section{Operate on the Pixel Data}
 \label{data:operate-on-the-pixel-data}
@@ -626,7 +718,7 @@ can be done on the pixel data stored in the AstroData object.  Examples include 
 plotting, etc.  Please refer to numpy documentation for details on what it offers.  In this chapter, we will
 present some typical examples.
 
-But first, here's how one accesses the data array stored in an AstroData object:
+But first, here's how one accesses the data array stored in an AstroData object.
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{k+kn}{from} \PYG{n+nn}{astrodata} \PYG{k+kn}{import} \PYG{n}{AstroData}
@@ -679,7 +771,7 @@ When using the AstroData arithmetic, all the science (EXTNAME='SCI') frames are
 operated on.
 
 The AstroData arithmetic methods can be stringed together.  Note that because
-the calculations are done ``in-place'', operator precedence cannot be respected.
+the calculations are done ``in-place'', \textbf{operator precedence cannot be respected}.
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{n}{ad}\PYG{o}{.}\PYG{n}{add}\PYG{p}{(}\PYG{l+m+mi}{5}\PYG{p}{)}\PYG{o}{.}\PYG{n}{mult}\PYG{p}{(}\PYG{l+m+mi}{10}\PYG{p}{)}\PYG{o}{.}\PYG{n}{sub}\PYG{p}{(}\PYG{l+m+mi}{5}\PYG{p}{)}
@@ -839,8 +931,8 @@ Start a display tool, like DS9 or ximtool. Then try the commands below.:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{k+kn}{from} \PYG{n+nn}{astrodata} \PYG{k+kn}{import} \PYG{n}{AstroData}
-\PYG{k+kn}{from} \PYG{n+nn}{numdisplay} \PYG{k+kn}{import} \PYG{n}{display}
-\PYG{k+kn}{from} \PYG{n+nn}{numdisplay} \PYG{k+kn}{import} \PYG{n}{readcursor}
+\PYG{k+kn}{from} \PYG{n+nn}{stsci.numdisplay} \PYG{k+kn}{import} \PYG{n}{display}
+\PYG{k+kn}{from} \PYG{n+nn}{stsci.numdisplay} \PYG{k+kn}{import} \PYG{n}{readcursor}
 
 \PYG{n}{ad} \PYG{o}{=} \PYG{n}{AstroData}\PYG{p}{(}\PYG{l+s}{'}\PYG{l+s}{N20110313S0188.fits}\PYG{l+s}{'}\PYG{p}{)}
 
@@ -885,7 +977,7 @@ get the reader started in her exploration of \code{numpy} and \code{scipy}.
 \PYG{k+kn}{import} \PYG{n+nn}{numpy} \PYG{k+kn}{as} \PYG{n+nn}{np}
 \PYG{k+kn}{import} \PYG{n+nn}{numpy.ma} \PYG{k+kn}{as} \PYG{n+nn}{ma}
 \PYG{k+kn}{import} \PYG{n+nn}{scipy.ndimage.filters} \PYG{k+kn}{as} \PYG{n+nn}{filters}
-\PYG{k+kn}{from} \PYG{n+nn}{numdisplay} \PYG{k+kn}{import} \PYG{n}{display}
+\PYG{k+kn}{from} \PYG{n+nn}{stsci.numdisplay} \PYG{k+kn}{import} \PYG{n}{display}
 
 \PYG{n}{ad} \PYG{o}{=} \PYG{n}{AstroData}\PYG{p}{(}\PYG{l+s}{'}\PYG{l+s}{N20110313S0188.fits}\PYG{l+s}{'}\PYG{p}{)}
 \PYG{n}{data} \PYG{o}{=} \PYG{n}{ad}\PYG{p}{[}\PYG{l+s}{'}\PYG{l+s}{SCI}\PYG{l+s}{'}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{o}{.}\PYG{n}{data}
@@ -908,12 +1000,12 @@ get the reader started in her exploration of \code{numpy} and \code{scipy}.
 \PYG{c}{\PYGZsh{} mask\PYGZus{}extreme contains the "mask" returned by masked\PYGZus{}outside()}
 \PYG{n}{stddev} \PYG{o}{=} \PYG{n}{data}\PYG{o}{.}\PYG{n}{std}\PYG{p}{(}\PYG{p}{)}
 \PYG{n}{mean} \PYG{o}{=} \PYG{n}{data}\PYG{o}{.}\PYG{n}{mean}\PYG{p}{(}\PYG{p}{)}
-\PYG{n}{mask\PYGZus{}extreme} \PYG{o}{=} \PYG{n}{ma}\PYG{o}{.}\PYG{n}{masked\PYGZus{}outside}\PYG{p}{(}\PYG{n}{data}\PYG{p}{,} \PYG{n}{mean}\PYG{o}{-}\PYG{l+m+mi}{3}\PYG{o}{*}\PYG{n}{stddev}\PYG{p}{,} \PYG{n}{mean}\PYG{o}{+}\PYG{l+m+mi}{3}\PYG{o}{*}\PYG{n}{stddev}\PYG{p}{)}\PYG{o}{.}\PYG{n}{mask}
+\PYG{n}{mask\PYGZus{}extremes} \PYG{o}{=} \PYG{n}{ma}\PYG{o}{.}\PYG{n}{masked\PYGZus{}outside}\PYG{p}{(}\PYG{n}{data}\PYG{p}{,} \PYG{n}{mean}\PYG{o}{-}\PYG{l+m+mi}{3}\PYG{o}{*}\PYG{n}{stddev}\PYG{p}{,} \PYG{n}{mean}\PYG{o}{+}\PYG{l+m+mi}{3}\PYG{o}{*}\PYG{n}{stddev}\PYG{p}{)}\PYG{o}{.}\PYG{n}{mask}
 
 \PYG{c}{\PYGZsh{} ma.array() applies the mask to data.}
 \PYG{c}{\PYGZsh{} The compressed() method converts the masked data into a ndarray on}
 \PYG{c}{\PYGZsh{} which we can run .mean().}
-\PYG{n}{clipped\PYGZus{}mean} \PYG{o}{=} \PYG{n}{ma}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{n}{data}\PYG{p}{,} \PYG{n}{mask}\PYG{o}{=}\PYG{n}{mask\PYGZus{}extreme}\PYG{p}{)}\PYG{o}{.}\PYG{n}{compressed}\PYG{p}{(}\PYG{p}{)}\PYG{o}{.}\PYG{n}{mean}\PYG{p}{(}\PYG{p}{)}
+\PYG{n}{clipped\PYGZus{}mean} \PYG{o}{=} \PYG{n}{ma}\PYG{o}{.}\PYG{n}{array}\PYG{p}{(}\PYG{n}{data}\PYG{p}{,} \PYG{n}{mask}\PYG{o}{=}\PYG{n}{mask\PYGZus{}extremes}\PYG{p}{)}\PYG{o}{.}\PYG{n}{compressed}\PYG{p}{(}\PYG{p}{)}\PYG{o}{.}\PYG{n}{mean}\PYG{p}{(}\PYG{p}{)}
 
 \PYG{c}{\PYGZsh{} Another common image operation is the filtering of an image.}
 \PYG{c}{\PYGZsh{} To gaussian filter an image, use scipy.ndimage.filters.gaussian\PYGZus{}filter.}
@@ -930,18 +1022,26 @@ get the reader started in her exploration of \code{numpy} and \code{scipy}.
 \PYG{n}{ad}\PYG{p}{[}\PYG{l+s}{'}\PYG{l+s}{SCI}\PYG{l+s}{'}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{o}{.}\PYG{n}{data} \PYG{o}{=} \PYG{n}{conv\PYGZus{}data}
 \end{Verbatim}
 
+The world of \code{numpy}, \code{scipy}, and the new \code{astropy} is rich and vast.
+The reader should refer to those packages' documentation to learn more.
+
 
 \section{Using the AstroData Data Quality Plane}
 \label{data:using-the-astrodata-data-quality-plane}
-TO BE WRITTEN -\textgreater{} transform DQ plane into a numpy mask and do statistics
+\begin{notice}{note}{Todo}
+
+Write examples that use the DQ plane.  Eg. transform DQ plane in a numpy mask
+and do statistics.
+\end{notice}
 
 
 \section{Manipulate Data Sections}
 \label{data:manipulate-data-sections}
 Sections of the data array can be accessed and processed.  It is important to
 note here that when indexing a numpy array, the left most number refers to the
-highest dimension's axis.  Also important, is to remember that the numpy arrays
-are 0-indexed, not 1-indexed like in Fortran and IRAF.  For example, in a 2-D
+highest dimension's axis (eg. in IRAF sections are in (x,y) format, in Python
+they are in (y,x) format). Also important is to remember that the numpy arrays
+are 0-indexed, not 1-indexed like in Fortran or IRAF.  For example, in a 2-D
 numpy array, the pixel position (x,y) = (50,75) would be accessed as data{[}74,49{]}.
 
 Here are some examples using data sections.:
@@ -990,9 +1090,14 @@ functions, data sections, numpy 0-based arrays, and numpy statistics function me
 
 \section{Work on Data Cubes}
 \label{data:work-on-data-cubes}
+\begin{notice}{note}{Todo}
+
+write some intro to the data cube section and example
+\end{notice}
+
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{k+kn}{from} \PYG{n+nn}{astrodata} \PYG{k+kn}{import} \PYG{n}{AstroData}
-\PYG{k+kn}{from} \PYG{n+nn}{numdisplay} \PYG{k+kn}{import} \PYG{n}{display}
+\PYG{k+kn}{from} \PYG{n+nn}{stsci.numdisplay} \PYG{k+kn}{import} \PYG{n}{display}
 \PYG{k+kn}{from} \PYG{n+nn}{pylab} \PYG{k+kn}{import} \PYG{o}{*}
 
 \PYG{n}{adcube} \PYG{o}{=} \PYG{n}{AstroData}\PYG{p}{(}\PYG{l+s}{'}\PYG{l+s}{gmosifu\PYGZus{}cube.fits}\PYG{l+s}{'}\PYG{p}{)}
@@ -1125,7 +1230,7 @@ The name is a string, the data is stored in a \code{numpy} array.:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{k+kn}{from} \PYG{n+nn}{astrodata} \PYG{k+kn}{import} \PYG{n}{AstroData}
-\PYG{k+kn}{import} \PYG{n+nn}{pyfits} \PYG{k+kn}{as} \PYG{n+nn}{pf}
+\PYG{k+kn}{from} \PYG{n+nn}{astropy.io} \PYG{k+kn}{import} \PYG{n}{fits} \PYG{k}{as} \PYG{n}{pf}
 \PYG{k+kn}{import} \PYG{n+nn}{numpy} \PYG{k+kn}{as} \PYG{n+nn}{np}
 
 \PYG{c}{\PYGZsh{} Create the input data}
@@ -1226,7 +1331,8 @@ modify a FITS table.:
 
 \PYG{c}{\PYGZsh{} Add/Delete row}
 \PYG{c}{\PYGZsh{}  Adding and deleting rows requires the creation of a new table}
-\PYG{c}{\PYGZsh{}  of the correct, new size.}
+\PYG{c}{\PYGZsh{}  of the correct, new size.  (KL: It is a bit odd that rows cannot}
+\PYG{c}{\PYGZsh{}  be easily appended at least.)}
 \PYG{c}{\PYGZsh{}}
 \PYG{c}{\PYGZsh{}  Add 2 new entries to table2.  Only 'SNR\PYGZus{}ID' and 'pabeta' will be}
 \PYG{c}{\PYGZsh{}  added as those are the columns already present in table2.}
@@ -1255,6 +1361,11 @@ modify a FITS table.:
 \PYG{n}{table2}\PYG{o}{.}\PYG{n}{data}\PYG{o}{.}\PYG{n}{field}\PYG{p}{(}\PYG{l+s}{'}\PYG{l+s}{pabeta}\PYG{l+s}{'}\PYG{p}{)}\PYG{p}{[}\PYG{n}{rowindex}\PYG{p}{]} \PYG{o}{=} \PYG{l+m+mf}{888.}
 \end{Verbatim}
 
+\begin{notice}{note}{Todo}
+
+Can those table manipulations be simplified with the astropy Table module?
+\end{notice}
+
 
 \chapter{Log Utility}
 \label{logging::doc}\label{logging:log-utility}
@@ -1262,7 +1373,14 @@ modify a FITS table.:
 \section{The Astrodata Log Utility}
 \label{logging:the-astrodata-log-utility}
 Astrodata uses a logging utility based on the Python logging facility.
-astrodata/adutils/logutils.py
+
+\begin{notice}{note}{Todo}
+
+write the astrodata log utility section.
+\end{notice}
+
+\begin{notice}{note}{Note:}
+\code{astrodata/adutils/logutils.py}
 creates logfile, default name reduce.log
 \begin{description}
 \item[{config() method}] \leavevmode
@@ -1278,15 +1396,23 @@ get\_logger()
 update\_indent(): control indenting during recipe/primitive execution.
 
 logger mode standard: default console-\textgreater{} stdinfo, default to file-\textgreater{} fullinfo
+\end{notice}
 
 
 \section{Writing to Log}
 \label{logging:writing-to-log}
+\begin{notice}{note}{Todo}
+
+write the section about writing to log
+\end{notice}
+
+\begin{notice}{note}{Note:}
 Using the logging facility involves \emph{getting} the logger, \emph{configuring} the logger,
 
 \code{log.\textless{}loglevel\textgreater{}(\textless{}message\_to\_log\textgreater{})}
 
 default name: reduce.log
+\end{notice}
 
 \begin{Verbatim}[commandchars=\\\{\}]
 from astrodata.adutils import logutils
@@ -1406,9 +1532,25 @@ For example:
 
 \section{File Structure Validation}
 \label{validation:file-structure-validation}
+\begin{notice}{note}{Todo}
+
+Write the validation chapter.  Actually, first figure out what is supposed to be in this chapter.
+\end{notice}
+
 
 \chapter{Advanced Topics}
-\label{advanced:advanced-topics}\label{advanced::doc}
+\label{advanced:advanced-topics}\label{advanced::doc}\label{advanced:advanced}
+\begin{notice}{note}{Todo}
+
+write the advance topics chapter.  Eg. basics on how to create a new configuration
+module, basics on how to add support for a new instrument.
+\end{notice}
+
+\begin{notice}{note}{Note:}
+There is info in Craig's Programmer's manual but it isn't that clear.  For now
+though, that's all we have.
+\end{notice}
+
 
 \section{Creating a New Configuration Module}
 \label{advanced:creating-a-new-configuration-module}
@@ -1418,12 +1560,148 @@ For example:
 
 \chapter{Other Topics}
 \label{other:other-topics}\label{other::doc}
+\begin{notice}{note}{Note:}
+placeholder, just in case.
+\end{notice}
+
 
 \chapter{List of Standard Descriptors}
 \label{descriptors:list-of-standard-descriptors}\label{descriptors::doc}
-(this should be an appendix)
+\begin{notice}{note}{Note:}
+this should be an appendix
+\end{notice}
 
-List the descriptors that we have and give a definition.
+\begin{notice}{note}{Note:}
+The idea is to provide an automatically generated list of all
+the allowed/required descriptors, along with a short definition.
+\end{notice}
+
+\begin{notice}{note}{Todo}
+
+Find a way to generate the list of descriptors for this page.
+\end{notice}
+
+\begin{notice}{note}{Todo}
+
+Create a tutorial that shows how to do typical things an astronomer might want do.
+\end{notice}
+
+(The {\hyperref[tutorial:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/tutorial.rst, line 9.)
+
+\begin{notice}{note}{Todo}
+
+The structure section needs to be written, but since the functionality
+is not available, other than the SCI,VAR,DQ model, this is not a priority.
+\end{notice}
+
+(The {\hyperref[structure:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/structure.rst, line 12.)
+
+\begin{notice}{note}{Todo}
+
+write a straightforward explanation of what AstroDataTypes are.
+\end{notice}
+
+(The {\hyperref[types:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/types.rst, line 12.)
+
+\begin{notice}{note}{Todo}
+
+Primer on creating new AstroDataTypes.
+\end{notice}
+
+(The {\hyperref[types:index-1]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/types.rst, line 55.)
+
+\begin{notice}{note}{Todo}
+
+Primer on Descriptor definitions for new instrument.
+\end{notice}
+
+(The {\hyperref[headers:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/headers.rst, line 170.)
+
+\begin{notice}{note}{Todo}
+
+write the astrodata log utility section.
+\end{notice}
+
+(The {\hyperref[logging:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/logging.rst, line 11.)
+
+\begin{notice}{note}{Todo}
+
+write the section about writing to log
+\end{notice}
+
+(The {\hyperref[logging:index-1]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/logging.rst, line 33.)
+
+\begin{notice}{note}{Todo}
+
+write the advance topics chapter.  Eg. basics on how to create a new configuration
+module, basics on how to add support for a new instrument.
+\end{notice}
+
+(The {\hyperref[advanced:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/advanced.rst, line 9.)
+
+\begin{notice}{note}{Todo}
+
+Find a way to generate the list of descriptors for this page.
+\end{notice}
+
+(The {\hyperref[descriptors:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/descriptors.rst, line 14.)
+
+\begin{notice}{note}{Todo}
+
+Write the validation chapter.  Actually, first figure out what is supposed to be in this chapter.
+\end{notice}
+
+(The {\hyperref[validation:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/validation.rst, line 10.)
+
+\begin{notice}{note}{Todo}
+
+Write examples that use the DQ plane.  Eg. transform DQ plane in a numpy mask
+and do statistics.
+\end{notice}
+
+(The {\hyperref[data:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/data.rst, line 305.)
+
+\begin{notice}{note}{Todo}
+
+write some intro to the data cube section and example
+\end{notice}
+
+(The {\hyperref[data:index-1]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/data.rst, line 362.)
+
+\begin{notice}{note}{Todo}
+
+Describe AstroData in a language that astronomer will comprehend.
+\end{notice}
+
+(The {\hyperref[intro:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/intro.rst, line 9.)
+
+\begin{notice}{note}{Todo}
+
+List pre-requisites. Instructions how to build, install, configure. Both `astrodata' and `gemini\_python'.
+\end{notice}
+
+(The {\hyperref[intro:index-1]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/intro.rst, line 20.)
+
+\begin{notice}{note}{Todo}
+
+Refer to online webpages (once they exist).  Refer to Gemini helpdesk system for help.
+\end{notice}
+
+(The {\hyperref[intro:index-2]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/intro.rst, line 28.)
+
+\begin{notice}{note}{Todo}
+
+Clean up the I/O example on updating MEF.  Cosmetic.
+\end{notice}
+
+(The {\hyperref[io:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/io.rst, line 156.)
+
+\begin{notice}{note}{Todo}
+
+Can those table manipulations be simplified with the astropy Table module?
+\end{notice}
+
+(The {\hyperref[tables:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/tables.rst, line 182.)
 
 
 

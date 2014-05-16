@@ -100,7 +100,7 @@ get information out of a FITS table.:</p>
 <p>Creating a FITS table is mostly a matter of creating the columns, name and data.
 The name is a string, the data is stored in a <tt class="docutils literal"><span class="pre">numpy</span></tt> array.:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
-<span class="kn">import</span> <span class="nn">pyfits</span> <span class="kn">as</span> <span class="nn">pf</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span> <span class="k">as</span> <span class="n">pf</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
 <span class="c"># Create the input data</span>
@@ -198,7 +198,8 @@ modify a FITS table.:</p>
 
 <span class="c"># Add/Delete row</span>
 <span class="c">#  Adding and deleting rows requires the creation of a new table</span>
-<span class="c">#  of the correct, new size.</span>
+<span class="c">#  of the correct, new size.  (KL: It is a bit odd that rows cannot</span>
+<span class="c">#  be easily appended at least.)</span>
 <span class="c">#</span>
 <span class="c">#  Add 2 new entries to table2.  Only &#39;SNR_ID&#39; and &#39;pabeta&#39; will be</span>
 <span class="c">#  added as those are the columns already present in table2.</span>
@@ -226,6 +227,10 @@ modify a FITS table.:</p>
 <span class="n">rowindex</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">table2</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;S002&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 <span class="n">table2</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;pabeta&#39;</span><span class="p">)[</span><span class="n">rowindex</span><span class="p">]</span> <span class="o">=</span> <span class="mf">888.</span>
 </pre></div>
+</div>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Can those table manipulations be simplified with the astropy Table module?</p>
 </div>
 </div>
 </div>

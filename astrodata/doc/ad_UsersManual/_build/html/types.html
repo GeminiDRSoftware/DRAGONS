@@ -53,11 +53,18 @@
           <div class="body">
             
   <div class="section" id="astrodatatypes">
-<h1>5. AstroDataTypes<a class="headerlink" href="#astrodatatypes" title="Permalink to this headline">¶</a></h1>
+<span id="types"></span><h1>5. AstroDataTypes<a class="headerlink" href="#astrodatatypes" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="what-are-astrodatatypes">
 <h2>5.1. What are AstroDataTypes<a class="headerlink" href="#what-are-astrodatatypes" title="Permalink to this headline">¶</a></h2>
-<p>(explain what they are. data type &amp; data processing status. classification based on headers only.
-explain how to install the Gemini types.)</p>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">write a straightforward explanation of what AstroDataTypes are.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For the TODO: explain what they are. data type &amp; data processing status.
+classification based on headers only.  explain how to install the Gemini types.)</p>
+</div>
 </div>
 <div class="section" id="using-astrodatatypes">
 <h2>5.2. Using AstroDataTypes<a class="headerlink" href="#using-astrodatatypes" title="Permalink to this headline">¶</a></h2>
@@ -66,26 +73,40 @@ explain how to install the Gemini types.)</p>
 
 ad = AstroData('N20111124S0203.fits')
 
-if ad.is_type('GMOS_IMAGING'):
-    # do special steps for GMOS_IMAGING type data
-
 if 'GMOS_IMAGING' in ad.types:
     # do special steps for GMOS_IMAGING type data</pre>
 </div>
 <p>The attribute <tt class="docutils literal"><span class="pre">ad.types</span></tt> returns a list of all the AstroDataTypes associated with the dataset.
 It can be useful when interactively exploring the various types associated with a dataset, or
-when there&#8217;s a need to write all the types to the screen or to a file, for logging purposes, for example.
-Use at your discretion based on your need.</p>
-<p>&#8220;Data Types&#8221; are referred to as <em>Typology</em> in the AstroDataTypes code.  &#8220;Data Processing Status&#8221; are
-referred to as <em>Status</em>.  There are two additional attributes that might be useful if those two
-concepts need to be addressed separately:  <tt class="docutils literal"><span class="pre">ad.typesStatus</span></tt> and <tt class="docutils literal"><span class="pre">ad.typesTypology</span></tt>.  They
-are used exactly the same way as <tt class="docutils literal"><span class="pre">ad.types</span></tt>.</p>
-<p>??? ad.refresh_types()</p>
+when there&#8217;s a need to write all the types to the screen or to a file, for logging purposes, for example.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>We are in the process of improving the AstroData API.  Currently,
+&#8220;Data Types&#8221; are referred to as <em>Typology</em> in the AstroDataTypes code.  &#8220;Data Processing Status&#8221;
+are referred to as <em>Status</em>.  There are two additional attributes that might be useful if those
+two concepts need to be addressed separately:  <tt class="docutils literal"><span class="pre">ad.typesStatus</span></tt> and <tt class="docutils literal"><span class="pre">ad.typesTypology</span></tt>.
+They are used exactly the same way as <tt class="docutils literal"><span class="pre">ad.types</span></tt>.</p>
+<p class="last">WARNING:  <em>Do not use typesStatus or typesTypology</em>, we getting rid of them and sorting the mess.</p>
+</div>
+<p>If a primitive changes the AstroDataTypes, it is necessary to let the system know about it.
+The method <tt class="docutils literal"><span class="pre">refresh_types()</span></tt> takes care of that.  This is used mostly when the processing
+status needs to be changed, for example once the raw data has been standardized, it&#8217;s processing
+status becomes &#8220;PREPARED&#8221;.  This is an important processing status other primitives will check.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ad</span><span class="o">.</span><span class="n">refresh_types</span><span class="p">()</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="creating-new-astrodatatypes">
 <h2>5.3. Creating New AstroDataTypes<a class="headerlink" href="#creating-new-astrodatatypes" title="Permalink to this headline">¶</a></h2>
-<p>(refer to programmer&#8217;s manual, but give some idea of what needs to be done
-and the basic principles)</p>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<p class="last">Primer on creating new AstroDataTypes.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">refer to programmer&#8217;s manual, but give some idea of what needs to be done
+and the basic principles</p>
+</div>
 </div>
 </div>
 

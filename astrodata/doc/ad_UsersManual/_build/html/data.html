@@ -53,14 +53,14 @@
           <div class="body">
             
   <div class="section" id="pixel-data">
-<h1>7. Pixel Data<a class="headerlink" href="#pixel-data" title="Permalink to this headline">¶</a></h1>
+<span id="data"></span><h1>7. Pixel Data<a class="headerlink" href="#pixel-data" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="operate-on-the-pixel-data">
 <h2>7.1. Operate on the Pixel Data<a class="headerlink" href="#operate-on-the-pixel-data" title="Permalink to this headline">¶</a></h2>
 <p>The pixel data is stored as a numpy ndarray.  This means that anything that can be done with numpy on a ndarray
 can be done on the pixel data stored in the AstroData object.  Examples include arithmetic, statistics, display,
 plotting, etc.  Please refer to numpy documentation for details on what it offers.  In this chapter, we will
 present some typical examples.</p>
-<p>But first, here&#8217;s how one accesses the data array stored in an AstroData object:</p>
+<p>But first, here&#8217;s how one accesses the data array stored in an AstroData object.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
 
 <span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
@@ -108,7 +108,7 @@ to the output appropriately.</p>
 <p>When using the AstroData arithmetic, all the science (EXTNAME=&#8217;SCI&#8217;) frames are
 operated on.</p>
 <p>The AstroData arithmetic methods can be stringed together.  Note that because
-the calculations are done &#8220;in-place&#8221;, operator precedence cannot be respected.</p>
+the calculations are done &#8220;in-place&#8221;, <strong>operator precedence cannot be respected</strong>.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">ad</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">mult</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
 <span class="c"># means:  ad = ((ad + 5) * 10) - 5</span>
 <span class="c"># not: ad = ad + (5 * 10) - 5</span>
@@ -252,8 +252,8 @@ The module also has a function to read the position the cursor, which can be use
 developing an interactive task.</p>
 <p>Start a display tool, like DS9 or ximtool. Then try the commands below.:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
-<span class="kn">from</span> <span class="nn">numdisplay</span> <span class="kn">import</span> <span class="n">display</span>
-<span class="kn">from</span> <span class="nn">numdisplay</span> <span class="kn">import</span> <span class="n">readcursor</span>
+<span class="kn">from</span> <span class="nn">stsci.numdisplay</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="kn">from</span> <span class="nn">stsci.numdisplay</span> <span class="kn">import</span> <span class="n">readcursor</span>
 
 <span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
 
@@ -294,7 +294,7 @@ get the reader started in her exploration of <tt class="docutils literal"><span 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">numpy.ma</span> <span class="kn">as</span> <span class="nn">ma</span>
 <span class="kn">import</span> <span class="nn">scipy.ndimage.filters</span> <span class="kn">as</span> <span class="nn">filters</span>
-<span class="kn">from</span> <span class="nn">numdisplay</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="kn">from</span> <span class="nn">stsci.numdisplay</span> <span class="kn">import</span> <span class="n">display</span>
 
 <span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
 <span class="n">data</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
@@ -317,12 +317,12 @@ get the reader started in her exploration of <tt class="docutils literal"><span 
 <span class="c"># mask_extreme contains the &quot;mask&quot; returned by masked_outside()</span>
 <span class="n">stddev</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
 <span class="n">mean</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-<span class="n">mask_extreme</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">masked_outside</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mean</span><span class="o">-</span><span class="mi">3</span><span class="o">*</span><span class="n">stddev</span><span class="p">,</span> <span class="n">mean</span><span class="o">+</span><span class="mi">3</span><span class="o">*</span><span class="n">stddev</span><span class="p">)</span><span class="o">.</span><span class="n">mask</span>
+<span class="n">mask_extremes</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">masked_outside</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mean</span><span class="o">-</span><span class="mi">3</span><span class="o">*</span><span class="n">stddev</span><span class="p">,</span> <span class="n">mean</span><span class="o">+</span><span class="mi">3</span><span class="o">*</span><span class="n">stddev</span><span class="p">)</span><span class="o">.</span><span class="n">mask</span>
 
 <span class="c"># ma.array() applies the mask to data.</span>
 <span class="c"># The compressed() method converts the masked data into a ndarray on</span>
 <span class="c"># which we can run .mean().</span>
-<span class="n">clipped_mean</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask_extreme</span><span class="p">)</span><span class="o">.</span><span class="n">compressed</span><span class="p">()</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">clipped_mean</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask_extremes</span><span class="p">)</span><span class="o">.</span><span class="n">compressed</span><span class="p">()</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
 
 <span class="c"># Another common image operation is the filtering of an image.</span>
 <span class="c"># To gaussian filter an image, use scipy.ndimage.filters.gaussian_filter.</span>
@@ -339,17 +339,24 @@ get the reader started in her exploration of <tt class="docutils literal"><span 
 <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">conv_data</span>
 </pre></div>
 </div>
+<p>The world of <tt class="docutils literal"><span class="pre">numpy</span></tt>, <tt class="docutils literal"><span class="pre">scipy</span></tt>, and the new <tt class="docutils literal"><span class="pre">astropy</span></tt> is rich and vast.
+The reader should refer to those packages&#8217; documentation to learn more.</p>
 </div>
 <div class="section" id="using-the-astrodata-data-quality-plane">
 <h2>7.6. Using the AstroData Data Quality Plane<a class="headerlink" href="#using-the-astrodata-data-quality-plane" title="Permalink to this headline">¶</a></h2>
-<p>TO BE WRITTEN -&gt; transform DQ plane into a numpy mask and do statistics</p>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Write examples that use the DQ plane.  Eg. transform DQ plane in a numpy mask
+and do statistics.</p>
+</div>
 </div>
 <div class="section" id="manipulate-data-sections">
 <h2>7.7. Manipulate Data Sections<a class="headerlink" href="#manipulate-data-sections" title="Permalink to this headline">¶</a></h2>
 <p>Sections of the data array can be accessed and processed.  It is important to
 note here that when indexing a numpy array, the left most number refers to the
-highest dimension&#8217;s axis.  Also important, is to remember that the numpy arrays
-are 0-indexed, not 1-indexed like in Fortran and IRAF.  For example, in a 2-D
+highest dimension&#8217;s axis (eg. in IRAF sections are in (x,y) format, in Python
+they are in (y,x) format). Also important is to remember that the numpy arrays
+are 0-indexed, not 1-indexed like in Fortran or IRAF.  For example, in a 2-D
 numpy array, the pixel position (x,y) = (50,75) would be accessed as data[74,49].</p>
 <p>Here are some examples using data sections.:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
@@ -393,8 +400,12 @@ functions, data sections, numpy 0-based arrays, and numpy statistics function me
 </div>
 <div class="section" id="work-on-data-cubes">
 <h2>7.8. Work on Data Cubes<a class="headerlink" href="#work-on-data-cubes" title="Permalink to this headline">¶</a></h2>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<p class="last">write some intro to the data cube section and example</p>
+</div>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
-<span class="kn">from</span> <span class="nn">numdisplay</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="kn">from</span> <span class="nn">stsci.numdisplay</span> <span class="kn">import</span> <span class="n">display</span>
 <span class="kn">from</span> <span class="nn">pylab</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="n">adcube</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;gmosifu_cube.fits&#39;</span><span class="p">)</span>

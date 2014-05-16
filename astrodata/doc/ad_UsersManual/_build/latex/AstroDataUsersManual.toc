@@ -12,7 +12,7 @@
 \contentsline {section}{\numberline {3.1}Open Existing MEF Files}{5}{section.3.1}
 \contentsline {section}{\numberline {3.2}Update Existing MEF Files}{5}{section.3.2}
 \contentsline {section}{\numberline {3.3}Create New MEF Files}{7}{section.3.3}
-\contentsline {subsection}{\numberline {3.3.1}Create New Copy of MEF Files}{7}{subsection.3.3.1}
+\contentsline {subsection}{\numberline {3.3.1}Create New Copy of MEF Files}{8}{subsection.3.3.1}
 \contentsline {subsection}{\numberline {3.3.2}Create New MEF Files from Scratch}{8}{subsection.3.3.2}
 \contentsline {chapter}{\numberline {4}MEF Structure Mapping}{9}{chapter.4}
 \contentsline {section}{\numberline {4.1}File Structure Definitions}{9}{section.4.1}
@@ -22,10 +22,10 @@
 \contentsline {chapter}{\numberline {5}AstroDataTypes}{11}{chapter.5}
 \contentsline {section}{\numberline {5.1}What are AstroDataTypes}{11}{section.5.1}
 \contentsline {section}{\numberline {5.2}Using AstroDataTypes}{11}{section.5.2}
-\contentsline {section}{\numberline {5.3}Creating New AstroDataTypes}{11}{section.5.3}
+\contentsline {section}{\numberline {5.3}Creating New AstroDataTypes}{12}{section.5.3}
 \contentsline {chapter}{\numberline {6}FITS Headers}{13}{chapter.6}
 \contentsline {section}{\numberline {6.1}AstroData Descriptors}{13}{section.6.1}
-\contentsline {section}{\numberline {6.2}Accessing Headers}{13}{section.6.2}
+\contentsline {section}{\numberline {6.2}Accessing Headers}{14}{section.6.2}
 \contentsline {section}{\numberline {6.3}Updating and Adding Headers}{15}{section.6.3}
 \contentsline {section}{\numberline {6.4}Adding Descriptors Definitions for New Instruments}{15}{section.6.4}
 \contentsline {chapter}{\numberline {7}Pixel Data}{17}{chapter.7}
@@ -45,11 +45,11 @@
 \contentsline {chapter}{\numberline {9}Log Utility}{29}{chapter.9}
 \contentsline {section}{\numberline {9.1}The Astrodata Log Utility}{29}{section.9.1}
 \contentsline {section}{\numberline {9.2}Writing to Log}{29}{section.9.2}
-\contentsline {section}{\numberline {9.3}Log Levels}{29}{section.9.3}
-\contentsline {chapter}{\numberline {10}Dataset Validation}{31}{chapter.10}
-\contentsline {section}{\numberline {10.1}File Structure Validation}{31}{section.10.1}
-\contentsline {chapter}{\numberline {11}Advanced Topics}{33}{chapter.11}
-\contentsline {section}{\numberline {11.1}Creating a New Configuration Module}{33}{section.11.1}
-\contentsline {section}{\numberline {11.2}Adding Support for a New Instrument}{33}{section.11.2}
-\contentsline {chapter}{\numberline {12}Other Topics}{35}{chapter.12}
-\contentsline {chapter}{\numberline {13}List of Standard Descriptors}{37}{chapter.13}
+\contentsline {section}{\numberline {9.3}Log Levels}{30}{section.9.3}
+\contentsline {chapter}{\numberline {10}Dataset Validation}{33}{chapter.10}
+\contentsline {section}{\numberline {10.1}File Structure Validation}{33}{section.10.1}
+\contentsline {chapter}{\numberline {11}Advanced Topics}{35}{chapter.11}
+\contentsline {section}{\numberline {11.1}Creating a New Configuration Module}{35}{section.11.1}
+\contentsline {section}{\numberline {11.2}Adding Support for a New Instrument}{35}{section.11.2}
+\contentsline {chapter}{\numberline {12}Other Topics}{37}{chapter.12}
+\contentsline {chapter}{\numberline {13}List of Standard Descriptors}{39}{chapter.13}
