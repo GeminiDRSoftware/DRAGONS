@@ -37,8 +37,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for airmass")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'airmass'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.airmass(self, **args)
@@ -108,8 +108,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for amp_read_area")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'amp_read_area'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.amp_read_area(self, **args)
@@ -177,8 +177,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for array_name")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'array_name'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.array_name(self, **args)
@@ -256,8 +256,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for array_section")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'array_section'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.array_section(self, **args)
@@ -319,8 +319,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for azimuth")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'azimuth'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.azimuth(self, **args)
@@ -382,8 +382,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for camera")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'camera'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.camera(self, **args)
@@ -446,8 +446,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for cass_rotator_pa")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'cass_rotator_pa'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.cass_rotator_pa(self, **args)
@@ -520,8 +520,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for central_wavelength")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'central_wavelength'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.central_wavelength(self, **args)
@@ -583,8 +583,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for coadds")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'coadds'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.coadds(self, **args)
@@ -647,8 +647,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for data_label")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'data_label'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.data_label(self, **args)
@@ -726,8 +726,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for data_section")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'data_section'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.data_section(self, **args)
@@ -795,8 +795,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for decker")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'decker'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.decker(self, **args)
@@ -858,8 +858,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for dec")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'dec'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.dec(self, **args)
@@ -927,8 +927,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for detector_name")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'detector_name'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.detector_name(self, **args)
@@ -993,8 +993,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for detector_roi_setting")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'detector_roi_setting'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.detector_roi_setting(self, **args)
@@ -1059,8 +1059,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for detector_rois_requested")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'detector_rois_requested'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.detector_rois_requested(self, **args)
@@ -1138,8 +1138,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for detector_section")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'detector_section'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.detector_section(self, **args)
@@ -1208,8 +1208,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for detector_x_bin")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'detector_x_bin'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.detector_x_bin(self, **args)
@@ -1278,8 +1278,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for detector_y_bin")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'detector_y_bin'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.detector_y_bin(self, **args)
@@ -1347,8 +1347,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for disperser")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'disperser'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.disperser(self, **args)
@@ -1417,8 +1417,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for dispersion_axis")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'dispersion_axis'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.dispersion_axis(self, **args)
@@ -1496,8 +1496,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for dispersion")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'dispersion'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.dispersion(self, **args)
@@ -1559,8 +1559,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for elevation")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'elevation'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.elevation(self, **args)
@@ -1628,8 +1628,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for exposure_time")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'exposure_time'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.exposure_time(self, **args)
@@ -1705,8 +1705,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for filter_name")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'filter_name'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.filter_name(self, **args)
@@ -1774,8 +1774,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for focal_plane_mask")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'focal_plane_mask'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.focal_plane_mask(self, **args)
@@ -1843,8 +1843,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for gain")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'gain'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.gain(self, **args)
@@ -1912,8 +1912,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for gain_setting")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'gain_setting'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.gain_setting(self, **args)
@@ -1981,8 +1981,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for grating")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'grating'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.grating(self, **args)
@@ -2045,8 +2045,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for group_id")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'group_id'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.group_id(self, **args)
@@ -2108,8 +2108,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for local_time")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'local_time'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.local_time(self, **args)
@@ -2171,8 +2171,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for lyot_stop")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'lyot_stop'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.lyot_stop(self, **args)
@@ -2241,8 +2241,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for mdf_row_id")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'mdf_row_id'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.mdf_row_id(self, **args)
@@ -2305,8 +2305,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for nod_count")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'nod_count'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.nod_count(self, **args)
@@ -2369,8 +2369,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for nod_pixels")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'nod_pixels'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.nod_pixels(self, **args)
@@ -2434,8 +2434,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for nominal_atmospheric_extinction")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'nominal_atmospheric_extinction'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.nominal_atmospheric_extinction(self, **args)
@@ -2503,8 +2503,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for nominal_photometric_zeropoint")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'nominal_photometric_zeropoint'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.nominal_photometric_zeropoint(self, **args)
@@ -2567,8 +2567,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for non_linear_level")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'non_linear_level'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.non_linear_level(self, **args)
@@ -2631,8 +2631,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for observation_class")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'observation_class'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.observation_class(self, **args)
@@ -2694,8 +2694,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for observation_epoch")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'observation_epoch'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.observation_epoch(self, **args)
@@ -2758,8 +2758,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for observation_id")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'observation_id'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.observation_id(self, **args)
@@ -2822,8 +2822,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for observation_type")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'observation_type'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.observation_type(self, **args)
@@ -2901,8 +2901,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for overscan_section")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'overscan_section'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.overscan_section(self, **args)
@@ -2964,8 +2964,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for pixel_scale")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'pixel_scale'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.pixel_scale(self, **args)
@@ -3033,8 +3033,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for prism")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'prism'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.prism(self, **args)
@@ -3097,8 +3097,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for program_id")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'program_id'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.program_id(self, **args)
@@ -3166,8 +3166,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for pupil_mask")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'pupil_mask'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.pupil_mask(self, **args)
@@ -3230,8 +3230,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for qa_state")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'qa_state'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.qa_state(self, **args)
@@ -3293,8 +3293,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for ra")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'ra'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.ra(self, **args)
@@ -3357,8 +3357,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for raw_bg")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'raw_bg'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.raw_bg(self, **args)
@@ -3421,8 +3421,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for raw_cc")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'raw_cc'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.raw_cc(self, **args)
@@ -3485,8 +3485,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for raw_iq")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'raw_iq'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.raw_iq(self, **args)
@@ -3549,8 +3549,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for raw_wv")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'raw_wv'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.raw_wv(self, **args)
@@ -3616,8 +3616,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for read_mode")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'read_mode'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.read_mode(self, **args)
@@ -3685,8 +3685,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for read_noise")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'read_noise'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.read_noise(self, **args)
@@ -3749,8 +3749,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for read_speed_setting")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'read_speed_setting'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.read_speed_setting(self, **args)
@@ -3813,8 +3813,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for requested_bg")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'requested_bg'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.requested_bg(self, **args)
@@ -3877,8 +3877,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for requested_cc")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'requested_cc'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.requested_cc(self, **args)
@@ -3941,8 +3941,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for requested_iq")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'requested_iq'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.requested_iq(self, **args)
@@ -4005,8 +4005,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for requested_wv")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'requested_wv'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.requested_wv(self, **args)
@@ -4074,8 +4074,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for saturation_level")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'saturation_level'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.saturation_level(self, **args)
@@ -4143,8 +4143,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for slit")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'slit'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.slit(self, **args)
@@ -4234,8 +4234,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for ut_datetime")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'ut_datetime'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.ut_datetime(self, **args)
@@ -4297,8 +4297,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for ut_time")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'ut_time'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.ut_time(self, **args)
@@ -4362,8 +4362,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for wavefront_sensor")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'wavefront_sensor'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.wavefront_sensor(self, **args)
@@ -4425,8 +4425,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for wavelength_band")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'wavelength_band'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.wavelength_band(self, **args)
@@ -4495,8 +4495,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for wavelength_reference_pixel")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'wavelength_reference_pixel'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.wavelength_reference_pixel(self, **args)
@@ -4559,8 +4559,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for well_depth_setting")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'well_depth_setting'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.well_depth_setting(self, **args)
@@ -4622,8 +4622,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for x_offset")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'x_offset'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.x_offset(self, **args)
@@ -4685,8 +4685,8 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for y_offset")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'y_offset'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.y_offset(self, **args)
