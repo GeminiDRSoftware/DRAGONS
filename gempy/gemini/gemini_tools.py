@@ -487,16 +487,19 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
             # binning of the x-axis and y-axis values for the science AstroData
             # object using the appropriate descriptors
             science_detector_section_dv = ad.detector_section()
-            science_data_section_dv     = ad.data_section()
-            science_array_section_dv    = ad.array_section()
-            science_detector_x_bin_dv   = ad.detector_x_bin()
-            science_detector_y_bin_dv   = ad.detector_y_bin()
+            science_data_section_dv = ad.data_section()
+            science_array_section_dv = ad.array_section()
+            science_detector_x_bin_dv = ad.detector_x_bin()
+            science_detector_y_bin_dv = ad.detector_y_bin()
+
+            used_descriptors = [science_detector_section_dv,
+                                science_data_section_dv,
+                                science_array_section_dv,
+                                science_detector_x_bin_dv,
+                                science_detector_y_bin_dv]
             
-            if (science_detector_section_dv is None or
-                science_data_section_dv   is None or
-                science_array_section_dv  is None or
-                science_detector_x_bin_dv is None or
-                science_detector_y_bin_dv is None):
+            if any([used_descriptor.is_none() for used_descriptor in
+                    used_descriptors]):
                 # The descriptor functions return None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
                 if hasattr(dataset, "exception_info"):
@@ -1965,7 +1968,7 @@ def update_key_from_descriptor(adinput=None, descriptor=None, keyword=None,
     
     # Determine the value of the descriptor
     ad = adinput_list[0]
-    exec("dv = ad.%s" % descriptor)
+    dv = eval("ad.%s" % descriptor)
     
     if dv.is_none():
         raise Errors.Error("No value found for %s descriptor in %s" %
