@@ -541,7 +541,7 @@ class DescriptorValue(object):
             if type(val) != self.pytype:
                 val = self.as_pytype()
                 
-        #myfuncname = whocalledme()
+        myfuncname = whocalledme()
         
         if isinstance(other, DescriptorValue):
             other = other.as_pytype()
