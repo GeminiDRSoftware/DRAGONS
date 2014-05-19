@@ -11,7 +11,8 @@ __version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
 # The gemini_data_calculations module contains functions that calculate values
 # from Gemini data
-"""Functions provided:
+"""
+Functions provided:
 
     get_bias_level
     _get_bias_level
@@ -20,6 +21,7 @@ __version_date__ = '$Date$'[7:-2]
     _get_static_bias_level_for_ext
 
 The functions work as a cascade, where callers need only call get_bias_level()
+
 """
 from time import strptime
 from datetime import datetime
@@ -30,10 +32,19 @@ from astrodata import Lookups
 from astrodata.gemconstants import SCI
 from gempy.gemini import gemini_metadata_utils as gmu
 # ------------------------------------------------------------------------------
-
-
 def get_bias_level(adinput=None, estimate=True):
-    if estimate:
+    # Temporarily only do this for GMOS data. It would be better if we could do
+    # checks on oberving band / type (e.g., OPTICAL / IR) and have this
+    # function call an appropriate function. This is in place due to the call
+    # to the function from the primitives_qa module - MS 2014-05-14 see
+    # Trac #683 
+    __ALLOWED_TYPES__ = ["GMOS"]
+    if not set(__ALLOWED_TYPES__).issubset(adinput.types):
+        msg = "{0}.{1} only works for {2} data".format(__name__,
+                                                       "get_bias_level",
+                                                       __ALLOWED_TYPES__)
+        raise NotImplementedError(msg)
+    elif estimate:
         ret_bias_level = _get_bias_level_estimate(adinput=adinput)
     else:
         ret_bias_level = _get_bias_level(adinput=adinput)
@@ -71,11 +82,18 @@ def _get_bias_level(adinput=None):
         # appropriate descriptor.
 
         detector_name_dv = adinput.detector_name(pretty=True)
-        
-        if detector_name_dv   == "EEV":       nbiascontam = 4
-        elif detector_name_dv == "e2vDD":     nbiascontam = 5
-        elif detector_name_dv == "Hamamastu": nbiascontam = 4
-        else: nbiascontam = 4
+
+        if detector_name_dv.is_none():
+            raise adinput.exception_info
+
+        if detector_name_dv == "EEV":
+            nbiascontam = 4
+        elif detector_name_dv == "e2vDD":
+            nbiascontam = 5
+        elif detector_name_dv == "Hamamastu":
+            nbiascontam = 4
+        else:
+            nbiascontam = 4
         
         for extver, overscan_section in overscan_section_dict.iteritems():
             
@@ -122,8 +140,7 @@ def _get_bias_level_estimate(adinput=None):
     # pixel data extension as a dictionary where the key of the dictionary is
     # an EXTVER integer
     keyword_value_dict = gmu.get_key_value_dict(adinput=adinput, 
-                                                keyword=["OVERSCAN", "RAWBIAS"], 
-                                                dict_key_extver=True)
+            keyword=["OVERSCAN", "RAWBIAS"], dict_key_extver=True)
     overscan_value_dict = keyword_value_dict["OVERSCAN"]
     raw_bias_level_dict = keyword_value_dict["RAWBIAS"]
     
@@ -205,8 +222,8 @@ def _get_static_bias_level(adinput=None):
     
     # Get the static bias level lookup table
     gmosampsBias, gmosampsBiasBefore20060831 = Lookups.get_lookup_table(
-        "Gemini/GMOS/GMOSAmpTables", "gmosampsBias",
-        "gmosampsBiasBefore20060831")
+            "Gemini/GMOS/GMOSAmpTables", "gmosampsBias",
+            "gmosampsBiasBefore20060831")
     
     # Get the UT date, read speed setting and gain setting values using the
     # appropriate descriptors
