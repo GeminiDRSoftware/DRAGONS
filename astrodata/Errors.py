@@ -50,6 +50,13 @@ class DescriptorsError(Error):
     """
     message = "Exception raised in Descriptors.py"
 
+class DescriptorInfrastructureError(Error):
+    """
+    For general exception raised when there is an issue with the descriptor
+    infrastructure.
+    """
+    message = "General Descriptor Infrastructure Error"
+
 class DescriptorValueError(Error):
     pass
 
