@@ -3,7 +3,7 @@ from astrodata import Descriptors
 from astrodata.Descriptors import DescriptorValue
 from astrodata import Errors
 
-class CalculatorInterface:
+class CalculatorInterface(object):
 
     descriptor_calculator = None
 
@@ -22,13 +22,10 @@ class CalculatorInterface:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
             key = "key_instrument"
-            #print "mkCI22:",key, repr(keydict)
-            #print "mkCI23:", key in keydict
             keyword = None
-            if key in keydict.keys():
+            if key in keydict:
                 keyword = keydict[key]
-                
-            #print hasattr(self.descriptor_calculator, "instrument")
+
             if not hasattr(self.descriptor_calculator, "instrument"):
                 if keyword is not None:
                     retval = self.phu_get_key_value(keyword)
@@ -37,23 +34,23 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for instrument")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'instrument'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.instrument(self, **args)
                 except Exception as e:
                     raise Errors.DescriptorError(e)
+
             
-            
-            ret = DescriptorValue( retval, 
-                                   format = format, 
+            ret = DescriptorValue( retval,
+                                   format = format,
                                    name = "instrument",
                                    keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
-        
+
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
@@ -61,7 +58,7 @@ class CalculatorInterface:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
                 ret = DescriptorValue( None,
-                                       format = format, 
+                                       format = format,
                                        name = "instrument",
                                        keyword = keyword,
                                        ad = self,
@@ -69,7 +66,7 @@ class CalculatorInterface:
                 return ret
         except:
             raise
-    
+
     def object(self, format=None, **args):
         """
         Return the object value
@@ -85,13 +82,10 @@ class CalculatorInterface:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
             key = "key_object"
-            #print "mkCI22:",key, repr(keydict)
-            #print "mkCI23:", key in keydict
             keyword = None
-            if key in keydict.keys():
+            if key in keydict:
                 keyword = keydict[key]
-                
-            #print hasattr(self.descriptor_calculator, "object")
+
             if not hasattr(self.descriptor_calculator, "object"):
                 if keyword is not None:
                     retval = self.phu_get_key_value(keyword)
@@ -100,23 +94,23 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for object")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'object'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.object(self, **args)
                 except Exception as e:
                     raise Errors.DescriptorError(e)
+
             
-            
-            ret = DescriptorValue( retval, 
-                                   format = format, 
+            ret = DescriptorValue( retval,
+                                   format = format,
                                    name = "object",
                                    keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
-        
+
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
@@ -124,7 +118,7 @@ class CalculatorInterface:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
                 ret = DescriptorValue( None,
-                                       format = format, 
+                                       format = format,
                                        name = "object",
                                        keyword = keyword,
                                        ad = self,
@@ -132,7 +126,7 @@ class CalculatorInterface:
                 return ret
         except:
             raise
-    
+
     def telescope(self, format=None, **args):
         """
         Return the telescope value
@@ -148,13 +142,10 @@ class CalculatorInterface:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
             key = "key_telescope"
-            #print "mkCI22:",key, repr(keydict)
-            #print "mkCI23:", key in keydict
             keyword = None
-            if key in keydict.keys():
+            if key in keydict:
                 keyword = keydict[key]
-                
-            #print hasattr(self.descriptor_calculator, "telescope")
+
             if not hasattr(self.descriptor_calculator, "telescope"):
                 if keyword is not None:
                     retval = self.phu_get_key_value(keyword)
@@ -163,23 +154,23 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for telescope")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'telescope'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.telescope(self, **args)
                 except Exception as e:
                     raise Errors.DescriptorError(e)
+
             
-            
-            ret = DescriptorValue( retval, 
-                                   format = format, 
+            ret = DescriptorValue( retval,
+                                   format = format,
                                    name = "telescope",
                                    keyword = keyword,
                                    ad = self,
                                    pytype = str )
             return ret
-        
+
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
@@ -187,7 +178,7 @@ class CalculatorInterface:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
                 ret = DescriptorValue( None,
-                                       format = format, 
+                                       format = format,
                                        name = "telescope",
                                        keyword = keyword,
                                        ad = self,
@@ -195,7 +186,7 @@ class CalculatorInterface:
                 return ret
         except:
             raise
-    
+
     def ut_date(self, format=None, **args):
         """
         Return the ut_date value
@@ -211,13 +202,10 @@ class CalculatorInterface:
             self._lazyloadCalculator()
             keydict = self.descriptor_calculator._specifickey_dict
             key = "key_ut_date"
-            #print "mkCI22:",key, repr(keydict)
-            #print "mkCI23:", key in keydict
             keyword = None
-            if key in keydict.keys():
+            if key in keydict:
                 keyword = keydict[key]
-                
-            #print hasattr(self.descriptor_calculator, "ut_date")
+
             if not hasattr(self.descriptor_calculator, "ut_date"):
                 if keyword is not None:
                     retval = self.phu_get_key_value(keyword)
@@ -226,23 +214,23 @@ class CalculatorInterface:
                             raise Errors.DescriptorError(self.exception_info)
                 else:
                     msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for ut_date")
-                    raise Errors.DescriptorError(msg)
+                           "function or a default keyword for 'ut_date'")
+                    raise Errors.DescriptorInfrastructureError(msg)
             else:
                 try:
                     retval = self.descriptor_calculator.ut_date(self, **args)
                 except Exception as e:
                     raise Errors.DescriptorError(e)
-            
+
             from datetime import datetime
-            ret = DescriptorValue( retval, 
-                                   format = format, 
+            ret = DescriptorValue( retval,
+                                   format = format,
                                    name = "ut_date",
                                    keyword = keyword,
                                    ad = self,
                                    pytype = datetime )
             return ret
-        
+
         except Errors.DescriptorError:
             if self.descriptor_calculator.throwExceptions == True:
                 raise
@@ -250,7 +238,7 @@ class CalculatorInterface:
                 if not hasattr(self, "exception_info"):
                     setattr(self, "exception_info", sys.exc_info()[1])
                 ret = DescriptorValue( None,
-                                       format = format, 
+                                       format = format,
                                        name = "ut_date",
                                        keyword = keyword,
                                        ad = self,
@@ -258,8 +246,8 @@ class CalculatorInterface:
                 return ret
         except:
             raise
-    
-# UTILITY FUNCTIONS, above are descriptor thunks            
+
+    # UTILITY FUNCTIONS, above are descriptor function buffers
     def _lazyloadCalculator(self, **args):
         '''Function to put at top of all descriptor members
         to ensure the descriptor is loaded.  This way we avoid
