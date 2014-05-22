@@ -9,7 +9,7 @@
 __version__      = '$Revision$'[11:-2]
 __version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
-# This will provide Reduce() as a class.
+# Provides reduce functionlity as a class, Reduce
 #
 # class Reduce
 # ------------------------------------------------------------------------------
