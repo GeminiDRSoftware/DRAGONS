@@ -210,7 +210,7 @@ MetricsViewer.prototype = {
 	    overlay: [],
 	    series_labels: [""],
 	    series_colors: [""],
-	    bg_color: "white",
+	    bg_color: "#3b4d69", //"#7487a5", //"white",
 	    title: "",
 	    ut: false,
 	    ut_offset: this.utc_offset,
@@ -337,7 +337,7 @@ MetricsViewer.prototype = {
 
 	// These colors were tested for distinctiveness under common
 	// color-blindness conditions at http://newmanservices.com/colorblind
-	iq_options.series_colors = ["#3F35EA","#566AF5","#5C84FF","#9AB3FF",
+	iq_options.series_colors = ["#86C7FF","#566AF5","#5C84FF","#9AB3FF",
 				    "#9CCF31","#C9E198","#F7E908","#F7F2A1",
 				    "#CE0000","#E64B4B","#86C7FF","#B9DFFF"];
 	this.iq_plot = new TimePlot($("#iq_plot_wrapper"),"iqplot",iq_options);
@@ -357,14 +357,19 @@ MetricsViewer.prototype = {
 
 	// BG Plot
 	var bg_options = $.extend(true,{},options);
-	bg_options.ymin = 17.0;
+	bg_options.ymin = 12.0;
 	bg_options.ymax = 24.0;
 	bg_options.title = "Sky Brightness";
 	bg_options.invert_yaxis = true;
 	bg_options.yaxis_label = "Sky Brightness (mag/arcsec^2)";
 	bg_options.series_labels = ["u","g","r","i","z"];
-	bg_options.series_colors = ["#86C7FF","#5C84FF","#FF9E00",
-				    "#F7E908","#3F35EA"];
+
+	bg_options.series_colors = ["#86C7FF","#8cef70","#FF9E00",
+				    "#F7E908","#ce0606"];
+
+	// bg_options.series_colors = ["#86C7FF","#5C84FF","#FF9E00",
+	//	    "#F7E908","#3F35EA"];
+
 	bg_options.overlay = [ //u
 	                       [{y:21.66,name:"BG20",color:'#888'},
 	                        {y:19.49,name:"BG50",color:'#888'},

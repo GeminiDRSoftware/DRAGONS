@@ -6,7 +6,7 @@
 # ------------------------------------------------------------------------------
 # $Id$
 # ------------------------------------------------------------------------------
-__version__  = '$Rev$'[11:-3]
+__version__  = '$Rev$'[6:-1]
 __version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
 #
@@ -125,6 +125,7 @@ class Swap(object):
         self.pymods = []
         self.pkg_paths = []
         self.full_paths = []
+        self.swap_summary = ()
         
         self.package  = args.pkg
         self.auto_run = args.auto
@@ -267,6 +268,8 @@ class Swap(object):
         User confirmation is required to execute the swap unless 
         -a, --auto has been specified.
         """
+        nmods  = 0
+        nswaps = 0
         self._echo_header()
         for mod in self.pymods:
             mod_test = basename(mod)
@@ -276,19 +279,32 @@ class Swap(object):
             chunks = mod.split('/')
             pretty_path = join(chunks[-4], chunks[-3], chunks[-2], chunks[-1])
             match_lines = self._search_for_execute(mod, self.cur_str, self.new_str)
+            nmods += 1
             if match_lines:
                 print Faces.YELLOW + "------------" + Faces.END
                 for line_set in match_lines:
                     print Faces.BOLD + chunks[-1] + Faces.END, line_set[1]
                     print Faces.BOLD + chunks[-1] + Faces.END, line_set[3]
-                    if self.auto:
+                    if self.auto_run:
+                        nswaps += 1
                         self._execute_swap(mod, line_set)
                     else:
                         if self._confirm_swap(mod, line_set[0] + 1):
+                            nswaps += 1
                             print "Swap confirmed."
                             self._execute_swap(mod, line_set)
                         else:
                             continue
+        if nswaps and nmods:
+            self.swap_summary = (nswaps, nmods)
+        return
+
+    def summarize(self):
+        if self.swap_summary:
+            swaps. mods = self.swap_summary
+            print Faces.YELLOW + "------------" + Faces.END
+            print "\n%s swap(s) executed in %s module(s)" % (str(swaps), str(mods))
+            print "\tNote: does not include user edits that may have occurred."
         return
 
     # ------------------------------ prive -------------------------------------
@@ -458,6 +474,7 @@ def main(args):
         swap.report()
     else:
         swap.report_and_execute()
+        swap.summarize()
     return
 
 

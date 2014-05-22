@@ -928,7 +928,7 @@ try:
 
                         if reduceServer:
                             #print "r855:", str(id(Proxies.reduceServer)), repr(Proxies.reduceServer.finished)
-                            Proxies.reduceServer.finished=True
+                            reduceServer.finished=True
                         #if co: co.persist_cal_index(calindfile)
                         if (bReportHistory):
                             if co: co.report_history()
@@ -1024,30 +1024,6 @@ try:
                              traceback.format_exc()))
             else:
                 log.warning("No input files %s" % traceback.format_exc())
-        if False:
-            if useTK and currentReductionNum == numReductions:
-                try:
-                    cw.done()
-                    cw.mainWindow.after_cancel(cw.pcqid)
-                    if True: #cw.killed == True:
-                        raw_input("Press Enter to Close Monitor Windows:")
-                    # After ID print cw.pcqid
-                    cw.mainWindow.quit()
-                except:
-                    cw.mainWindow.quit()    
-                    raise
-
-            if (generate_pycallgraphs):
-                pycallgraph.make_dot_graph("recipman-callgraph.png")
-
-            while (False):
-                from time import sleep
-                for th in threading.enumerate():
-                    print str(th)
-                #sleep(5.)
-            # print co.report_history()
-            # main()
-            # don't leave the terminal in another color/mode, that's rude
 except SystemExit:
     log.error("SYSTEM EXIT: see log for more information")
     raise

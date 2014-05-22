@@ -1,5 +1,6 @@
+/* Darker palette --kra */
 body {
-    background-color: #F2F2F2;
+    background-color: #bcbaba;
     color: black;
     font: normal normal 12px Verdana, Geneva, Arial, Helvetica, sans-serif;
     margin: 10px;
@@ -7,7 +8,7 @@ body {
 }
 
 #message_wrapper {
-    background-color: white;
+    background-color: #b3bcbc;
     border-left: 1px solid black;
     border-right: 1px solid black;
     border-bottom: 1px solid black;
@@ -52,7 +53,7 @@ body {
 }
 
 #table_wrapper {
-    background-color: white;
+    background-color: #b3bcbc;
     border: 1px solid black;
     border-top-right-radius: 6px;
     -moz-box-shadow: 2px 0px 2px #888;
@@ -74,7 +75,7 @@ thead.fixed_header th {
 }
 
 tbody.scroll_body {
-    background-color: white;
+    background-color: #b3baad;
     border-bottom: 1px solid #B0B0B0;
 }
 
@@ -133,10 +134,11 @@ div.label {
     float:left;
 }
 .highlight {
-    background-color: #86C7FF!important;
+    background-color: #ffd187
+    /*background-color: #86C7FF!important;*/
 }
 .even {
-    background-color: #D3EBFF;
+    background-color: #d9dde0;
 }
 th.ui-draggable {
     cursor: move;
@@ -155,7 +157,7 @@ th.ui-droppable.hover {
 }
 
 #plot_wrapper {
-    background-color: white;
+    background-color: #9da8b2;
     border-left: 1px solid black;
     border-right: 1px solid black;
     border-bottom: 1px solid black;
@@ -223,7 +225,7 @@ td.jqplot-series-hidden div.jqplot-table-legend-swatch {
 }
 
 #controls_wrapper {
-    background-color: #D3EBFF;
+    background-color: #b3bcbc;
     border-left: 1px solid black;
     border-right: 1px solid black;
     border-bottom: 1px solid black;

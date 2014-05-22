@@ -14,7 +14,7 @@ if (curpath in sys.path):
     sys.path.remove(curpath)
 # print repr(sys.path)
 
-opti = False
+opti = True
 if opti:
     print "Starting Main Imports"
 # import pdb
