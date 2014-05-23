@@ -513,9 +513,9 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
-        if abs(biasvolt + 0.3) < 0.1:
+        if abs(0.3 - abs(biasvolt)) < 0.1:
             well_depth_setting = "Shallow"
-        elif abs(biasvolt + 0.6) < 0.1:
+        elif abs(0.6 - abs(biasvolt)) < 0.1:
             well_depth_setting = "Deep"
         else:
             well_depth_setting = "Invalid"
