@@ -23,23 +23,61 @@ __version_date__ = '$Date$'[7:-2]
 # Faces will show highlights on terminal out, but will look a mess in log
 # (escape chars, color codes). more the log to get highlighting text.
 #
+# $ swapper -h
 # usage: swapper [-h] [-a] [-b BRANCH] [-c] [-m MODULE] [-p PKG] [-r]
+#                [-u USERPATH]
 #                ostring nstring
-
+#
 # positional arguments:
-#   ostring     <old_string>
-#   nstring     <new_string>
+#   ostring      <old_string>
+#   nstring      <new_string>
 
 # optional arguments:
-#   -h, --help  show this help message and exit
-#   -a, --auto  Execute swaps without user confirmation. Default is False. User
-#               must request auto execute
-#   -b BRANCH   Execute swaps in <branch> of gemini_python. Default is 'trunk.'
-#   -c          Switch on color high lighting. Default is Off.
-#   -m MODULE   Execute swaps in <module> only. Default is all.
-#   -p PKG      Execute swaps in <package>. Default is 'Gemini'.
-#   -r          Report potential swaps only. Default is 'False'.
+#   -h, --help   show this help message and exit
+#   -a, --auto   Execute swaps without user confirmation. Default is False. User
+#                must request auto execute
+#   -b BRANCH    Execute swaps in <branch> of gemini_python. Default is 'trunk.'
+#   -c           Switch on color high lighting. Default is Off.
+#   -m MODULE    Execute swaps in <module> only. Default is all.
+#   -p PKG       Execute swaps in <package>. Default is 'Gemini'.
+#   -r           Report potential swaps only. Default is 'False'.
+#   -u USERPATH  Use this path to build search paths. Default is None. Without
+#                -u, search under $GEM.
 # ------------------------------------------------------------------------------
+desc = """
+Description:
+  swapper replaces string literals that occur within predefined gemini_python 
+  packages. By default, these packages are specifically, 
+
+    astrodata/
+    astrodata_Gemini/ 
+    gempy/
+
+  A user may specify that a different 'astrodata_X' package is searched rather 
+  than the default 'astrodata_Gemini' (see -p option).
+
+  Search paths are based upon an environment variable, $GEM, OR on the path
+  passed with the '-u USERPATH' option. $GEM defines a path to a user's 
+  gemini_python installation as pulled from the GDPSG repository, and which
+  nominally contains the 'branches' and 'trunk' directories as they appear 
+  in the gemini_python repo. I.e.,
+
+    export GEM=/user/path/to/gemini_python
+
+  which shall contain
+
+    branches/
+    trunk/
+
+  The critical paths are 'branches' and 'trunk'. 'branches' need only be 
+  present if a branch is specified by the user (-b option). Other repo 
+  directories need not be present, as they are not considered in the search. 
+  If a user has a non-standard or partial gemini_python installation, or has 
+  otherwise changed the above organisation, the -u option should be used to 
+  pass the location of this code base to swapper. If -u is passed, search 
+  packages should be directly under this path and any -b option will be ignored.
+"""
+
 import os
 import sys
 import glob
@@ -49,8 +87,10 @@ import subprocess
 
 from time import strftime
 from shutil import copyfile
-from argparse import ArgumentParser
 from os.path import basename, exists, join
+from argparse import ArgumentParser
+from argparse import ArgumentTypeError
+from argparse import RawDescriptionHelpFormatter
 
 from astrodata.adutils import logutils
 # ------------------------------------------------------------------------------
@@ -60,7 +100,8 @@ log = logutils.get_logger(__name__)
 
 # ------------------------------------------------------------------------------
 def handleCLArgs():
-    parser = ArgumentParser()
+    parser = ArgumentParser(description=desc,
+                            formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('ostring', help="<old_string>")
     parser.add_argument('nstring', help="<new_string>")
 
@@ -86,7 +127,11 @@ def handleCLArgs():
 
     parser.add_argument("-r", dest="report", action="store_true",
                         help="Report potential swaps only."
-                        " Default is 'False'.")    
+                        " Default is 'False'.")
+
+    parser.add_argument("-u", dest="userpath", default=None,
+                        help="Use this path to build search paths."
+                        " Default is None. Without -u, search under $GEM. ")
 
     args = parser.parse_args()
     return args
@@ -118,7 +163,11 @@ class Swap(object):
         
         # Get the gemini_python location. Users should define $GEM
         # set up with report only flag. TBR
-        self.GEM    = os.environ['GEM']
+        try:
+            self.GEM = os.environ['GEM']
+        except KeyError:
+            self.GEM = None
+
         self.pif    = "PIF"
         self.config = "ADCONFIG"
         self.recipe = "RECIPES"
@@ -132,6 +181,7 @@ class Swap(object):
         self.branch   = args.branch
         self.focus    = args.module
         self.colorize = args.color
+        self.userpath = args.userpath
         self.cur_str  = args.ostring
         self.new_str  = args.nstring
 
@@ -217,14 +267,12 @@ class Swap(object):
         """
         astro_paths = self.search_set['astro_paths']
         gemp_paths  = self.search_set['gemp_paths']
-        gem_path    = self.GEM
-        if self.branch is 'trunk':
-            branch_path = self.branch
-        else:
-            branch_path = join('branches', self.branch)
+        gem_path    = self._determine_gem_path()
+        branch_path = self._determine_branch_path()
 
         if not exists(join(gem_path, branch_path)):
-            raise SystemExit("Specified branch " + self.branch + " cannot be found.")
+            msg = "Branch '" + self.branch + "' cannot be found."
+            raise SystemExit(msg)
 
         for path in astro_paths:
             self.full_paths.append(join(gem_path, branch_path, path))
@@ -311,11 +359,41 @@ class Swap(object):
     def _echo_header(self):
         astro_pkg = "astrodata_" + self.package
         print "\n", basename(__file__) , "\tr" + __version__
-        print "Searching\t",Faces.BOLD + "gemini_python ...\n" + Faces.END
-        print "BRANCH: \t", Faces.BOLD + self.branch + Faces.END
+
+        if self.userpath:
+            print "USERPATH\t",Faces.BOLD + self.userpath + Faces.END
+            print "BRANCH: \t", Faces.BOLD + "None" + Faces.END
+        elif self.GEM:
+            print "Searching\t",Faces.BOLD + "gemini_python ..." + Faces.END
+            print "BRANCH: \t", Faces.BOLD + self.branch + Faces.END
         print "PACKAGE:\t", Faces.BOLD + astro_pkg + Faces.END
         print
         return
+
+    def _determine_gem_path(self):
+        """ Build the instance gem_path variable. """
+        gem_path = None
+        if not self.userpath and not self.GEM:
+            msg = "Specify -u USERPATH or define $GEM. -h for help."
+            raise SystemExit(msg)
+
+        # Override gem_path if userpath has been specified.
+        if self.userpath:
+            gem_path = self.userpath
+        else:
+            gem_path = self.GEM
+
+        return gem_path
+
+    def _determine_branch_path(self):
+        """ Build an appropriate branch path. """
+        if self.userpath:
+            branch_path = ""
+        elif self.branch is 'trunk':
+            branch_path = self.branch
+        else:
+            branch_path = join('branches', self.branch)
+        return branch_path
 
     def _get_py_modules(self, path):
         """ Return a list of python modules in the passed path.
