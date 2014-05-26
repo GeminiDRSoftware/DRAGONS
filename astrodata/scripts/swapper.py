@@ -50,11 +50,15 @@ Description:
   packages. By default, these packages are specifically, 
 
     astrodata/
+    astrodata_FITS
     astrodata_Gemini/ 
     gempy/
 
   A user may specify that a different 'astrodata_X' package is searched rather 
-  than the default 'astrodata_Gemini' (see -p option).
+  than the default 'astrodata_Gemini' (see -p option). The 'astrodata_FITS'
+  package is fixed and present within gemini_python. It provides neither recipes
+  nor primitives and provides only a limited set of generic descriptors.
+  astrodata_FITS/ is searched if present, but is not presumed to exist.
 
   Search paths are based upon an environment variable, $GEM, OR on the path
   passed with the '-u USERPATH' option. $GEM defines a path to a user's 
@@ -89,7 +93,6 @@ from time import strftime
 from shutil import copyfile
 from os.path import basename, exists, join
 from argparse import ArgumentParser
-from argparse import ArgumentTypeError
 from argparse import RawDescriptionHelpFormatter
 
 from astrodata.adutils import logutils
@@ -304,7 +307,9 @@ class Swap(object):
         for path in self.pkg_paths:
             self.full_paths.append(join(gem_path, branch_path, path))
         for path in self.fits_paths:
-            self.full_paths.append(join(gem_path, branch_path, path))
+            fpath = join(gem_path, branch_path, path)
+            if exists(fpath):
+                self.full_paths.append(fpath)
         return
 
     def set_searchable_mods(self):
