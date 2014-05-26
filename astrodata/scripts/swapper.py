@@ -169,10 +169,12 @@ class Swap(object):
             self.GEM = None
 
         self.pif    = "PIF"
+        self.fits   = "FITS"
         self.config = "ADCONFIG"
         self.recipe = "RECIPES"
         self.pymods = []
-        self.pkg_paths = []
+        self.pkg_paths  = []
+        self.fits_paths = []
         self.full_paths = []
         self.swap_summary = ()
         
@@ -190,6 +192,7 @@ class Swap(object):
         ppif     = self.pif    + "_" + self.package
         adconfig = self.config + "_" + self.package
         recipes  = self.recipe + "_" + self.package
+        adfits   = self.config + "_" + "FITS"
         
         self.search_set = {"astro_paths": ['astrodata', 'astrodata/adutils', 
                                            'astrodata/adutils/reduceutils',
@@ -198,6 +201,8 @@ class Swap(object):
                            "gemp_paths": [ 'gempy/adlibrary', 'gempy/gemini',
                                            'gempy/gemini/eti', 'gempy/library',
                                            'gempy/scripts'
+                                       ],
+                           "fits_paths": [ join(adfits, 'descriptors')
                                        ],
                            "pkg_paths": [ join(recipes, 'primitives'),
                                           join(adconfig,'structures'),
@@ -258,6 +263,24 @@ class Swap(object):
             self.pkg_paths.append(join('astrodata_' + self.package, path))
         return
 
+    def set_fits_paths(self):
+        """ Configure list of paths for the generic astrodata_FITS.
+        Currently, there is only one code directory under astrodata_FITS,
+        which is ADCONFIG_FITS/descriptors.
+
+        parameters: <void>
+        return:     <void>
+        
+        Eg., 
+        >>> self.set_fits_paths()
+        >>> paths[0]
+        'astrodata_FITS/ADCONFIG_FITS/descriptors'
+        """
+        package_paths = self.search_set['fits_paths']
+        for path in package_paths:
+            self.fits_paths.append(join('astrodata_' + self.fits, path))
+        return
+
     def set_full_paths(self):
         """ Sets the instance var 'full_paths' with the fulls paths
         for the search, as defined by .setup_search()
@@ -279,6 +302,8 @@ class Swap(object):
         for path in gemp_paths:
             self.full_paths.append(join(gem_path, branch_path, path))
         for path in self.pkg_paths:
+            self.full_paths.append(join(gem_path, branch_path, path))
+        for path in self.fits_paths:
             self.full_paths.append(join(gem_path, branch_path, path))
         return
 
@@ -546,6 +571,7 @@ def main(args):
     swap = Swap(args)
     swap.setup_search()
     swap.set_pkg_paths()
+    swap.set_fits_paths()
     swap.set_full_paths()
     swap.set_searchable_mods()
     if args.report:
