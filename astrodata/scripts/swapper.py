@@ -96,10 +96,6 @@ from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 
 from astrodata.adutils import logutils
-# ------------------------------------------------------------------------------
-# Comfig the logger. Logger is module level.
-logutils.config(file_name="swap.log")
-log = logutils.get_logger(__name__)
 
 # ------------------------------------------------------------------------------
 def handleCLArgs():
@@ -119,6 +115,13 @@ def handleCLArgs():
     parser.add_argument("-c", dest="color", action="store_true",
                         help="Switch on color high lighting."
                         " Default is Off.")
+
+    parser.add_argument("-d", dest="doc", action="store_true",
+                        help="Turn on swapper code commenting.")
+
+    parser.add_argument("-l", dest="logname", default="swap.log",
+                        help="Set the logfile name."
+                        " Default is 'swap.log'.")
 
     parser.add_argument("-m", dest="module", default=None,
                         help="Execute swaps in <module> only."
@@ -181,6 +184,7 @@ class Swap(object):
         self.full_paths = []
         self.swap_summary = ()
         
+        self.doc      = args.doc
         self.package  = args.pkg
         self.auto_run = args.auto
         self.branch   = args.branch
@@ -334,9 +338,9 @@ class Swap(object):
             pretty_path = join(chunks[-4], chunks[-3], chunks[-2], chunks[-1])
             match_lines = self._search_and_report(mod, self.cur_str)
             if match_lines:
-                print Faces.YELLOW + "------------" + Faces.END
+                log.stdinfo(Faces.YELLOW + "------------" + Faces.END)
                 for line in match_lines:
-                    print Faces.BOLD + chunks[-1] + Faces.END, line
+                    log.stdinfo(Faces.BOLD + chunks[-1] + Faces.END + line)
         return
 
     def report_and_execute(self):
@@ -359,17 +363,17 @@ class Swap(object):
             match_lines = self._search_for_execute(mod, self.cur_str, self.new_str)
             nmods += 1
             if match_lines:
-                print Faces.YELLOW + "------------" + Faces.END
+                log.stdinfo(Faces.YELLOW + "------------" + Faces.END)
                 for line_set in match_lines:
-                    print Faces.BOLD + chunks[-1] + Faces.END, line_set[1]
-                    print Faces.BOLD + chunks[-1] + Faces.END, line_set[3]
+                    log.stdinfo(Faces.BOLD + chunks[-1] + Faces.END + line_set[1])
+                    log.stdinfo(Faces.BOLD + chunks[-1] + Faces.END + line_set[3])
                     if self.auto_run:
                         nswaps += 1
                         self._execute_swap(mod, line_set)
                     else:
                         if self._confirm_swap(mod, line_set[0] + 1):
                             nswaps += 1
-                            print "Swap confirmed."
+                            log.stdinfo("Swap confirmed.")
                             self._execute_swap(mod, line_set)
                         else:
                             continue
@@ -380,24 +384,24 @@ class Swap(object):
     def summarize(self):
         if self.swap_summary:
             swaps. mods = self.swap_summary
-            print Faces.YELLOW + "------------" + Faces.END
-            print "\n%s swap(s) executed in %s module(s)" % (str(swaps), str(mods))
-            print "\tNote: does not include user edits that may have occurred."
+            log.stdinfo(Faces.YELLOW + "------------" + Faces.END)
+            log.stdinfo("\n%s swap(s) executed in %s module(s)" % 
+                        (str(swaps), str(mods)))
+            log.stdinfo("\tNote: does not include user edits that may have occurred.")
         return
 
     # ------------------------------ prive -------------------------------------
     def _echo_header(self):
         astro_pkg = "astrodata_" + self.package
-        print "\n", basename(__file__) , "\tr" + __version__
+        log.stdinfo("\n" + basename(__file__) + "\tr" + __version__)
 
         if self.userpath:
-            print "USERPATH\t",Faces.BOLD + self.userpath + Faces.END
-            print "BRANCH: \t", Faces.BOLD + "None" + Faces.END
+            log.stdinfo("USERPATH\t" + Faces.BOLD + self.userpath + Faces.END)
+            log.stdinfo("BRANCH: \t" + Faces.BOLD + "None" + Faces.END)
         elif self.GEM:
-            print "Searching\t",Faces.BOLD + "gemini_python ..." + Faces.END
-            print "BRANCH: \t", Faces.BOLD + self.branch + Faces.END
-        print "PACKAGE:\t", Faces.BOLD + astro_pkg + Faces.END
-        print
+            log.stdinfo("Searching\t" + Faces.BOLD + "gemini_python ..." + Faces.END)
+            log.stdinfo("BRANCH: \t" + Faces.BOLD + self.branch + Faces.END)
+            log.stdinfo("PACKAGE:\t" + Faces.BOLD + astro_pkg + Faces.END + "\n")
         return
 
     def _determine_gem_path(self):
@@ -553,11 +557,15 @@ class Swap(object):
         return:     <void>
         """
         lineno   = line_set[0] + 1
-        comment  = "  # Changed by swapper, " + strftime("%d %b %Y") + "\n"
+        if self.doc:
+            comment  = " # Changed by swapper, " + strftime("%d %b %Y") + "\n"
+        else:
+            comment = ""
         new_line = line_set[2] + comment
 
-        print "Executing swap in module: ", basename(mod)
-        print Faces.CYAN + "New line @L" + str(lineno) + ":: " + Faces.END + new_line
+        log.stdinfo("Executing swap in module: " +  basename(mod))
+        log.stdinfo(Faces.CYAN + "New line @L" + str(lineno) + ":: " + 
+                    Faces.END + new_line)
         for line in fileinput.input(mod, inplace=1, backup=".bak"):
             if fileinput.filelineno() == lineno:
                 line = new_line
@@ -586,8 +594,10 @@ def main(args):
         swap.summarize()
     return
 
-
 # ____________________
 if __name__ == "__main__":
     args = handleCLArgs()
+    # Comfig the logger.
+    logutils.config(file_name=args.logname)
+    log = logutils.get_logger(__name__)
     sys.exit(main(args))
