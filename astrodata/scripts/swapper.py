@@ -24,20 +24,22 @@ __version_date__ = '$Date$'[7:-2]
 # (escape chars, color codes). more the log to get highlighting text.
 #
 # $ swapper -h
-# usage: swapper [-h] [-a] [-b BRANCH] [-c] [-m MODULE] [-p PKG] [-r]
-#                [-u USERPATH]
+# usage: swapper [-h] [-a] [-b BRANCH] [-c] [-d] [-l LOGNAME] [-m MODULE]
+#                [-p PKG] [-r] [-u USERPATH]
 #                ostring nstring
 #
 # positional arguments:
 #   ostring      <old_string>
 #   nstring      <new_string>
-
+#
 # optional arguments:
 #   -h, --help   show this help message and exit
 #   -a, --auto   Execute swaps without user confirmation. Default is False. User
 #                must request auto execute
 #   -b BRANCH    Execute swaps in <branch> of gemini_python. Default is 'trunk.'
 #   -c           Switch on color high lighting. Default is Off.
+#   -d           Document line changes w/ swapper comments.
+#   -l LOGNAME   Set the logfile name. Default is 'swap.log'.
 #   -m MODULE    Execute swaps in <module> only. Default is all.
 #   -p PKG       Execute swaps in <package>. Default is 'Gemini'.
 #   -r           Report potential swaps only. Default is 'False'.
