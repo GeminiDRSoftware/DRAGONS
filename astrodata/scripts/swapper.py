@@ -117,7 +117,7 @@ def handleCLArgs():
                         " Default is Off.")
 
     parser.add_argument("-d", dest="doc", action="store_true",
-                        help="Turn on swapper code commenting.")
+                        help="Document line changes w/ swapper comments.")
 
     parser.add_argument("-l", dest="logname", default="swap.log",
                         help="Set the logfile name."
