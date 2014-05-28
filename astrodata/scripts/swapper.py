@@ -385,7 +385,7 @@ class Swap(object):
 
     def summarize(self):
         if self.swap_summary:
-            swaps. mods = self.swap_summary
+            swaps, mods = self.swap_summary
             log.stdinfo(Faces.YELLOW + "------------" + Faces.END)
             log.stdinfo("\n%s swap(s) executed in %s module(s)" % 
                         (str(swaps), str(mods)))
@@ -395,7 +395,7 @@ class Swap(object):
     # ------------------------------ prive -------------------------------------
     def _echo_header(self):
         astro_pkg = "astrodata_" + self.package
-        log.stdinfo("\n" + basename(__file__) + "\tr" + __version__)
+        log.stdinfo("\n" + basename(__file__) + " \tr" + __version__)
 
         if self.userpath:
             log.stdinfo("USERPATH\t" + Faces.BOLD + self.userpath + Faces.END)
@@ -562,7 +562,7 @@ class Swap(object):
         if self.doc:
             comment  = " # Changed by swapper, " + strftime("%d %b %Y") + "\n"
         else:
-            comment = ""
+            comment = "\n"
         new_line = line_set[2] + comment
 
         log.stdinfo("Executing swap in module: " +  basename(mod))
