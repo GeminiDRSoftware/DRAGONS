@@ -398,7 +398,8 @@ class Swap(object):
         log.stdinfo("\n" + basename(__file__) + " \tr" + __version__)
 
         if self.userpath:
-            log.stdinfo("USERPATH\t" + Faces.BOLD + self.userpath + Faces.END)
+            upath = os.path.abspath(self.userpath)
+            log.stdinfo("USERPATH\t" + Faces.BOLD + upath + Faces.END)
             log.stdinfo("BRANCH: \t" + Faces.BOLD + "None" + Faces.END)
         elif self.GEM:
             log.stdinfo("Searching\t" + Faces.BOLD + "gemini_python ..." + Faces.END)
