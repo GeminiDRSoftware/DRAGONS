@@ -415,10 +415,9 @@ class Swap(object):
 
         # Override gem_path if userpath has been specified.
         if self.userpath:
-            gem_path = self.userpath
+            gem_path = os.path.abspath(self.userpath)
         else:
-            gem_path = self.GEM
-
+            gem_path = os.path.abspath(self.GEM)
         return gem_path
 
     def _determine_branch_path(self):
