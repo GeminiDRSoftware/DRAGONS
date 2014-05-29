@@ -172,7 +172,7 @@ class Swap(object):
         # Get the gemini_python location. Users should define $GEM
         # set up with report only flag. TBR
         try:
-            self.GEM = os.environ['GEM']
+            self.GEM = os.path.abspath(os.environ['GEM'])
         except KeyError:
             self.GEM = None
 
@@ -192,9 +192,12 @@ class Swap(object):
         self.branch   = args.branch
         self.focus    = args.module
         self.colorize = args.color
-        self.userpath = args.userpath
         self.cur_str  = args.ostring
         self.new_str  = args.nstring
+        if args.userpath:
+            self.userpath = os.path.abspath(args.userpath)
+        else:
+            self.userpath = args.userpath
 
     # paths in a package
     def setup_search(self):
@@ -330,18 +333,26 @@ class Swap(object):
         Report *only* matches found in modules. Called when user specifies
         -r switch.
         """
+        new_head = ""
         self._echo_header()
         for mod in self.pymods:
             mod_test = basename(mod)
             if self.focus and not mod_test == self.focus:
                 continue
             match_lines = []
-            chunks = mod.split('/')
+            fpath, tail  = os.path.split(mod)
+            if self.userpath:
+                head = fpath.split(self.userpath)[-1]
+            else:
+                head = fpath.split(self.branch)[-1]
             match_lines = self._search_and_report(mod, self.cur_str)
             if match_lines:
-                log.stdinfo(Faces.YELLOW + "------------" + Faces.END)
+                if head != new_head:
+                    new_head = head
+                    log.stdinfo(Faces.YELLOW + "\n------------" + Faces.END)
+                    log.stdinfo("@ " + Faces.DARKCYAN + new_head + ":" + Faces.END)
                 for line in match_lines:
-                    log.stdinfo(Faces.BOLD + chunks[-1] + Faces.END + line)
+                    log.stdinfo(Faces.BOLD + tail + Faces.END + line)
         return
 
     def report_and_execute(self):
@@ -353,20 +364,29 @@ class Swap(object):
         """
         nmods  = 0
         nswaps = 0
+        new_head = ""
         self._echo_header()
         for mod in self.pymods:
             mod_test = basename(mod)
             if self.focus and not mod_test == self.focus:
                 continue
             match_lines = []
-            chunks = mod.split('/')
+            fpath, tail  = os.path.split(mod)
+            if self.userpath:
+                head = fpath.split(self.userpath)[-1]
+            else:
+                head = fpath.split(self.branch)[-1]
+            
             match_lines = self._search_for_execute(mod, self.cur_str, self.new_str)
             nmods += 1
             if match_lines:
-                log.stdinfo(Faces.YELLOW + "------------" + Faces.END)
+                if head != new_head:
+                    new_head = head
+                    log.stdinfo(Faces.YELLOW + "\n------------" + Faces.END)
+                    log.stdinfo("@ " + Faces.DARKCYAN + new_head + ":" + Faces.END)
                 for line_set in match_lines:
-                    log.stdinfo(Faces.BOLD + chunks[-1] + Faces.END + line_set[1])
-                    log.stdinfo(Faces.BOLD + chunks[-1] + Faces.END + line_set[3])
+                    log.stdinfo(Faces.BOLD + tail + Faces.END + line_set[1])
+                    log.stdinfo(Faces.BOLD + tail + Faces.END + line_set[3])
                     if self.auto_run:
                         nswaps += 1
                         self._execute_swap(mod, line_set)
@@ -396,8 +416,7 @@ class Swap(object):
         log.stdinfo("\n" + basename(__file__) + " \tr" + __version__)
 
         if self.userpath:
-            upath = os.path.abspath(self.userpath)
-            log.stdinfo("USERPATH\t" + Faces.BOLD + upath + Faces.END)
+            log.stdinfo("USERPATH\t" + Faces.BOLD + self.userpath + Faces.END)
             log.stdinfo("BRANCH: \t" + Faces.BOLD + "None" + Faces.END)
         elif self.GEM:
             log.stdinfo("Searching\t" + Faces.BOLD + "gemini_python ..." + Faces.END)
@@ -414,9 +433,9 @@ class Swap(object):
 
         # Override gem_path if userpath has been specified.
         if self.userpath:
-            gem_path = os.path.abspath(self.userpath)
+            gem_path = self.userpath
         else:
-            gem_path = os.path.abspath(self.GEM)
+            gem_path = self.GEM
         return gem_path
 
     def _determine_branch_path(self):
