@@ -337,7 +337,6 @@ class Swap(object):
                 continue
             match_lines = []
             chunks = mod.split('/')
-            pretty_path = join(chunks[-4], chunks[-3], chunks[-2], chunks[-1])
             match_lines = self._search_and_report(mod, self.cur_str)
             if match_lines:
                 log.stdinfo(Faces.YELLOW + "------------" + Faces.END)
@@ -361,7 +360,6 @@ class Swap(object):
                 continue
             match_lines = []
             chunks = mod.split('/')
-            pretty_path = join(chunks[-4], chunks[-3], chunks[-2], chunks[-1])
             match_lines = self._search_for_execute(mod, self.cur_str, self.new_str)
             nmods += 1
             if match_lines:
