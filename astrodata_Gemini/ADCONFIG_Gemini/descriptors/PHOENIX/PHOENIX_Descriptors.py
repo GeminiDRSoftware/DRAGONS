@@ -4,6 +4,7 @@ from astrodata import Descriptors
 from astrodata import Lookups
 from astrodata.Calculator import Calculator
 from astrodata.Descriptors import DescriptorValue
+from gempy.gemini import gemini_metadata_utils as gmu
 from gempy.library import astrotools
 
 from PHOENIX_Keywords import PHOENIX_KeyDict
@@ -57,7 +58,7 @@ class PHOENIX_DescriptorCalc(GEMINI_DescriptorCalc):
             stripID = True
         if stripID:
             # Return the stripped filter name string
-            ret_filter_name = string.removeComponentID(filter_name)
+            ret_filter_name = gmu.removeComponentID(filter_name)
         else:
             # Return the filter name string
             ret_filter_name = str(filter_name)
