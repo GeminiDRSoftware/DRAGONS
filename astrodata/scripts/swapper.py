@@ -12,6 +12,7 @@ __version_date__ = '$Date$'[7:-2]
 #
 #    functional tasks
 #
+
 # -- switchable search trunk, either 'trunk' or a passed 'branch'
 # -- sift through each module, searching for input 'string'
 # -- report each found line, showing current current line
@@ -100,8 +101,9 @@ from argparse import RawDescriptionHelpFormatter
 from astrodata.adutils import logutils
 
 # ------------------------------------------------------------------------------
+version = "1.0 (r" + __version__.strip() +")"
 def handleCLArgs():
-    parser = ArgumentParser(description=desc,
+    parser = ArgumentParser(description=desc, prog='swapper',
                             formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('ostring', help="<old_string>")
     parser.add_argument('nstring', help="<new_string>")
@@ -140,6 +142,9 @@ def handleCLArgs():
     parser.add_argument("-u", dest="userpath", default=None,
                         help="Use this path to build search paths."
                         " Default is None. Without -u, search under $GEM. ")
+
+    parser.add_argument("-v", '--version', action='version', 
+                        version='%(prog)s ' + version)  
 
     args = parser.parse_args()
     return args
