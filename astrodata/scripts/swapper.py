@@ -370,21 +370,23 @@ class Swap(object):
         nmods  = 0
         nswaps = 0
         new_head = ""
+        current_mod = None
         self._echo_header()
         for mod in self.pymods:
             mod_test = basename(mod)
             if self.focus and not mod_test == self.focus:
                 continue
             match_lines = []
-            fpath, tail  = os.path.split(mod)
+            fpath, tail = os.path.split(mod)
+
             if self.userpath:
                 head = fpath.split(self.userpath)[-1]
             else:
                 head = fpath.split(self.branch)[-1]
-            
+
             match_lines = self._search_for_execute(mod, self.cur_str, self.new_str)
-            nmods += 1
             if match_lines:
+                current_mod = mod
                 if head != new_head:
                     new_head = head
                     log.stdinfo(Faces.YELLOW + "\n------------" + Faces.END)
@@ -393,10 +395,17 @@ class Swap(object):
                     log.stdinfo(Faces.BOLD + tail + Faces.END + line_set[1])
                     log.stdinfo(Faces.BOLD + tail + Faces.END + line_set[3])
                     if self.auto_run:
+                        if current_mod == mod:
+                            nmods  += 1
                         nswaps += 1
                         self._execute_swap(mod, line_set)
                     else:
                         if self._confirm_swap(mod, line_set[0] + 1):
+                            if current_mod == mod:
+                                pass
+                            else:
+                                current_mod = mod
+                                nmods += 1
                             nswaps += 1
                             log.stdinfo("Swap confirmed.")
                             self._execute_swap(mod, line_set)
@@ -412,7 +421,7 @@ class Swap(object):
             log.stdinfo(Faces.YELLOW + "------------" + Faces.END)
             log.stdinfo("\n%s swap(s) executed in %s module(s)" % 
                         (str(swaps), str(mods)))
-            log.stdinfo("\tNote: does not include user edits that may have occurred.")
+            log.stdinfo("\tNote: User edits are not tallied")
         return
 
     # ------------------------------ prive -------------------------------------
@@ -532,7 +541,7 @@ class Swap(object):
         """ Build electric line, high lighting various parts.
 
         parameters: <str>, <int>, <int>, <str>, <str> 
-                    line, string index start, end, old string, new string
+                    line, lineno, str index start, end, old str, new str
         return:     <str>, string with highlighting escape chars.
         """
         line = line.replace(ostring, nstring)
