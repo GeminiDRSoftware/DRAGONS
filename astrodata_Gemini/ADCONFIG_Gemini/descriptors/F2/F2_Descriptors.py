@@ -298,7 +298,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             for ext in dataset[pixel_exts]:
                 # Update the dictionary with the pixel_scale value
                 pixel_scale_dict.update(
-                    {(ext.extname(), ext.extver): pixel_scale})
+                    {(ext.extname(), ext.extver()): pixel_scale})
             
             # Instantiate the DescriptorValue (DV) object
             dv = DescriptorValue(pixel_scale_dict)
