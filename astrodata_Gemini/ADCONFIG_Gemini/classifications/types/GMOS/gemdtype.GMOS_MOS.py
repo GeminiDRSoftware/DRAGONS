@@ -7,7 +7,7 @@ class GMOS_MOS(DataClassification):
     requirement = AND([  ISCLASS("GMOS_SPECT"),
                          PHU(MASKTYP="1"),
                          PHU({"{prohibit}MASKNAME": ".*arcsec"}),
-                         PHU({"{prohibit}MASKNAME": "IFU*"})  ])
+                         PHU({"{prohibit}MASKNAME": "IFU*"}),
                          PHU({"{prohibit}MASKNAME": "focus*"})  ])
 
 newtypes.append(GMOS_MOS())
