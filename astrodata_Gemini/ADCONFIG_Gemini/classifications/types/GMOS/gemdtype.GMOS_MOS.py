@@ -8,5 +8,6 @@ class GMOS_MOS(DataClassification):
                          PHU(MASKTYP="1"),
                          PHU({"{prohibit}MASKNAME": ".*arcsec"}),
                          PHU({"{prohibit}MASKNAME": "IFU*"})  ])
+                         PHU({"{prohibit}MASKNAME": "focus*"})  ])
 
 newtypes.append(GMOS_MOS())
