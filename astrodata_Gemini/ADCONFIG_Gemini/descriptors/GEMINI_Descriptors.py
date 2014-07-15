@@ -279,6 +279,36 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         
         return ret_dv
     
+    def camera(self, dataset, stripID=False, pretty=False, **args):
+        """
+        Return the camera name, stripping the ID and making pretty as appropriate
+        """
+
+        keyword = self.get_descriptor_key("key_camera")
+        camera = dataset.phu_get_key_value(keyword)
+
+        if camera is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+
+        if pretty:
+            stripID = True
+        if stripID:
+            # Return the camera string with the component ID stripped
+            ret_camera = gmu.removeComponentID(camera)
+        else:
+            # Return the decker string
+            ret_camera = str(camera)
+
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_camera, name="camera", ad=dataset)
+
+        return ret_dv
+
+
     def detector_roi_setting(self, dataset, **args):
         # For instruments that do not support setting the ROI, return "Fixed"
         ret_detector_roi_setting = "Fixed"
