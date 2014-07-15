@@ -32,7 +32,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # GNIRS contains two dispersers - the grating and the prism. Get the
         # grating and the prism values using the appropriate descriptors
         grating = dataset.grating(stripID=stripID, pretty=pretty).as_pytype()
-        prism = dataset.prism(stripID=stripID, pretty=pretty)
+        prism = dataset.prism(stripID=stripID, pretty=pretty).as_pytype()
         
         if grating is None or prism is None:
             # The descriptor functions return None if a value cannot be found
@@ -41,20 +41,12 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
-        if stripID:
-            if pretty and prism.startswith("MIR"):
-                # Return the stripped and pretty disperser string. If the
-                # prism is a mirror, don't list it in the pretty disperser. 
-                disperser = gmu.removeComponentID(grating)
-            else:
-                # Return the stripped disperser string
-                disperser = "%s&%s" % (gmu.removeComponentID(grating),
-                                       gmu.removeComponentID(prism))
+        # Return the disperser string
+        # If the "prism" is the "MIRror" then don't include it
+        if prism.startswith('MIR'):
+            ret_disperser = str(grating)
         else:
-            # Return the disperser string
-            disperser = "%s&%s" % (grating, prism)
-        
-        ret_disperser = str(disperser)
+            ret_disperser = "%s&%s" % (grating, prism)
         
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_disperser, name="disperser", ad=dataset)
