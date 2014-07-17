@@ -261,7 +261,7 @@ class Structure(object):
                             #print "S220:", id(ppart), ppart.extension()
                             #print "S221:", arrayBy, arrayBy(ppart.extension())
                             hduignore.append(hdu)
-                            self.arrayToken = arrayBy(AstroData(hdu))
+                            #self.arrayToken = arrayBy(AstroData(hdu))
                         else:
                             if len(ppfound) == 0:
                                 # found failure, add part
