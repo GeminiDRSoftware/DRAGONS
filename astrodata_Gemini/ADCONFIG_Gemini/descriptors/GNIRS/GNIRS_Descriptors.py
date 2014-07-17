@@ -458,6 +458,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         of metal, which is on a slide - the mechanism simply slides the slide
         along to put the right slit in the beam. Thus all the slits have the
         same component ID as they're they same physical component.
+
+        Note that in the ~2010 rebuild, the slit names were changed to remove
+        the space - ie "1.00 arcsec" -> "1.00arcsec"
+        So here, we remove the space all the time for consistency.
         """
         # Determine the slit keyword from the global keyword dictionary
         keyword = self.get_descriptor_key("key_slit")
@@ -471,6 +475,8 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
+
+        slit = slit.replace(' ', '')
         
         if stripID or pretty:
             ret_slit = gmu.removeComponentID(slit)
