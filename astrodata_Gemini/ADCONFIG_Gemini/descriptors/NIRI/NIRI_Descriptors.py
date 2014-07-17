@@ -176,7 +176,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         if data_section == [0, 768, 0, 768]:
             roi_setting = "Central768"
         if data_section == [0, 1024, 0, 1024]:
-            roi_setting = "FullFrame"
+            roi_setting = "Full Frame"
         
         ret_roi_setting = roi_setting
         
