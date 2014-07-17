@@ -170,13 +170,13 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         
         # The data_section list uses 0-based, non-inclusive indexing
         if data_section == [0, 256, 0, 256]:
-            roi_setting = "Central 256"
+            roi_setting = "Central256"
         if data_section == [0, 512, 0, 512]:
-            roi_setting = "Central 512"
+            roi_setting = "Central512"
         if data_section == [0, 768, 0, 768]:
-            roi_setting = "Central 768"
+            roi_setting = "Central768"
         if data_section == [0, 1024, 0, 1024]:
-            roi_setting = "Full Frame"
+            roi_setting = "FullFrame"
         
         ret_roi_setting = roi_setting
         
