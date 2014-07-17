@@ -301,22 +301,14 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # + is a literal "+"
         # prism is the actual prism name
         # nnnn is the 4 digit component ID.
-        cre = re.compile("([LBSR]*\+)*([A-Z]*)(_G)(\d+)")
+        # The change from the old style is the camer prefix, which we drop here
+        cre = re.compile("([LBSR]*\+)*([A-Z]*_G\d+)")
         m = cre.match(prism)
         if m:
-            parts = m.groups()
-            # parts is a tuple containing four elements, where the first
-            # element is optional (i.e., it could be None). Contruct the
-            # appropriate prism name.
-            if parts[0] is not None:
-                ret_prism = "%s%s%s%s" % (
-                  parts[0], parts[1], parts[2], parts[3])
-            else:
-                ret_prism = "%s%s%s" % (parts[1], parts[2], parts[3])
-            if stripID or pretty:
+            ret_prism = m.group(2)
+
+        if stripID or pretty:
                 ret_prism = gmu.removeComponentID(ret_prism)
-        else:
-            ret_prism = prism
         
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_prism, name="prism", ad=dataset)
