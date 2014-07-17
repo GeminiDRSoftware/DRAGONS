@@ -57,7 +57,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # For GNIRS, the focal plane mask is the combination of the slit
         # mechanism and the decker mechanism. Get the slit and the decker
         # values using the appropriate descriptors
-        slit = dataset.slit(stripID=stripID, pretty=pretty)
+        slit = dataset.slit(stripID=stripID, pretty=pretty).as_pytype()
         decker = dataset.decker(stripID=stripID, pretty=pretty).as_pytype()
         
         if slit is None or decker is None:
@@ -67,6 +67,11 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
+        # Sometimes (2010 rebuild?) we see "Acquisition" and sometimes "Acq"
+        # In both slit and decker. Make them all consistent.
+        slit = slit.replace('Acquisition', 'Acq')
+        decker = decker.replace('Acquisition', 'Acq')
+
         if pretty:
             # Disregard the decker if it's in long slit mode
             if "Long" in decker:
@@ -74,6 +79,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             # Append XD to the slit name if the decker is in XD mode
             elif "XD" in decker:
                 focal_plane_mask = "%s%s" % (slit, "XD")
+            elif "IFU" in slit and "IFU" in decker:
+                focal_plane_mask = "IFU"
+            elif "Acq" in slit and "Acq" in decker:
+                focal_plane_mask = "Acq"
             else:
                 focal_plane_mask = "%s&%s" % (slit, decker)
         else:
