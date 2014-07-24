@@ -807,7 +807,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 for ccd in range(1,num_ccd+1):
                     if tile_all:
                         key = 1
-                        if ccd!=2:
+                        if num_ccd > 1 and ccd!=2:
                             startextn += amps_per_ccd[ccd]
                             continue
                     else:
