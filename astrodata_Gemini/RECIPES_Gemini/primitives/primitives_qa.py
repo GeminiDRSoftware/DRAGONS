@@ -78,19 +78,8 @@ class QAPrimitives(GENERALPrimitives):
                 if np.any(overscan) or biasim or darkim:
                     bias_level = None
                 else:
-                    try:
-                        # Get the bias level
-                        bias_level = gdc.get_bias_level(adinput=ad,
-                                                        estimate=False)
-                    except NotImplementedError:
-                        # This except is here until there is a type or somesuch
-                        # to test whether it is a appropriate to call the
-                        # function in the try clause. Possibly replace these
-                        # checks with a function that can be a bit more
-                        # observing band or instrument specific
-                        # MS - 2014-05-18
-                        log.fullinfo(sys.exc_info()[1])
-                        bias_level = None
+                    # Get the bias level
+                    bias_level = gdc.get_bias_level(adinput=ad, estimate=False)
 
                     if bias_level is None:
                         log.warning("Bias level not found for %s; " \
@@ -906,21 +895,9 @@ class QAPrimitives(GENERALPrimitives):
                                          "from data; no approximate "\
                                          "correction will be performed")
                         else:
-                            try:
-                                # Get the bias level
-                                bias_level = gdc.get_bias_level(adinput=ad,
-                                                                estimate=False)
-                            except NotImplementedError:
-                                # This except is here until there is a type or
-                                # somesuch to test whether it is a appropriate
-                                # to call the function in the try
-                                # clause. Possibly replace these checks with a
-                                # function that can be a bit more observing
-                                # band or instrument specific
-                                # MS - 2014-05-18
-                                log.fullinfo(sys.exc_info()[1])
-                                bias_lebel = None
-                                
+                            # Get the bias level
+                            bias_level = gdc.get_bias_level(adinput=ad,
+                                                            estimate=False)
                             if bias_level is None:
                                 log.warning("Bias level not found for %s; " \
                                             "approximate bias will not be "\
@@ -1016,7 +993,7 @@ class QAPrimitives(GENERALPrimitives):
                 #mean_fwhm /= 1.08
 
                 airmass = ad.airmass()
-                if airmass is None:
+                if airmass.is_none():
                     log.warning("Airmass not found, not correcting to zenith")
                     corr = mean_fwhm
                     corr_std = std_fwhm
@@ -1053,7 +1030,7 @@ class QAPrimitives(GENERALPrimitives):
                 else:
                     srcStr = "Spectrum centered at row %d used to measure IQ." % \
                              np.mean(src["y"])                             
-                if airmass is not None:
+                if not airmass.is_none():
                     csStr = (
                         "Zenith-corrected FWHM (AM %.2f):"%airmass).ljust(llen) + \
                         ("%.3f %s %.3f arcsec" % (corr,pm,corr_std)).rjust(rlen)

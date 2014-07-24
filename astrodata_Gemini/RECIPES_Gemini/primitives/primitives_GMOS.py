@@ -14,6 +14,10 @@ from primitives_GEMINI import GEMINIPrimitives
 from gempy.gemini import eti
 import time
 
+##M Temporary fix
+from gempy.gemini.gmoss_fix_headers import correct_headers
+
+
 class GMOSPrimitives(GEMINIPrimitives):
     """
     This is the class containing all of the primitives for the GMOS level of
@@ -225,7 +229,14 @@ class GMOSPrimitives(GEMINIPrimitives):
             # Standardize the headers of the input AstroData object. Update the
             # keywords in the headers that are specific to GMOS.
             log.status("Updating keywords that are specific to GMOS")
-            
+
+            ##M Some of the header keywords are wrong for certain types of
+            ##M Hamamatsu data. This is temporary fix until GMOS-S DC is fixed
+            if ad.detector_name(pretty=True).as_pytype() == "Hamamatsu":
+                log.status("Fixing headers for Hamamatsu data")
+                # Updates in place
+                correct_headers(ad.hdulist)
+
             # Pixel scale
             gt.update_key_from_descriptor(
               adinput=ad, descriptor="pixel_scale()", extname="pixel_exts")
@@ -632,7 +643,6 @@ class GMOSPrimitives(GEMINIPrimitives):
             if len(ccdsecs)!=nsciext:
                 ccdsecs*=nsciext
             ccdx1 = [sec[0] for sec in ccdsecs]
-
 
             # Now, get the number of extensions per ccd
 
