@@ -193,7 +193,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             pretty_detector_name_dict = {
                 "SDSU II CCD": "EEV",
                 "SDSU II e2v DD CCD42-90": "e2vDD",
-                "S10892-01": "Hamamatsu",
+                "S10892": "Hamamatsu",
                 }
             
             # Determine the type of the detector keyword from the global
@@ -208,7 +208,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             if detector_type in pretty_detector_name_dict:
                 ret_detector_name = pretty_detector_name_dict[detector_type]
             else:
-                raise Errors.TableKeyError()
+                errmsg = ("'{0}' key not found in "
+                          "{1}".format(detector_type,
+                                       "pretty_detector_name_dict"))
+                                                          
+                raise Errors.TableKeyError(errmsg)
         else:
             # Return the name of the detectory
             ret_detector_name = detector_name
@@ -1197,7 +1201,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
             old_ut_date = datetime(2006, 8, 31, 0, 0)
-            
             # Determine the name of the detector amplifier keyword (ampname)
             # from the global keyword dictionary 
             keyword = self.get_descriptor_key("key_ampname")
@@ -1277,7 +1280,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the lookup table containing the saturation values by amplifier
         gmosThresholds = Lookups.get_lookup_table(
             "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
-        
+
         # The hard limit for saturation is the controller digitization limit
         controller_limit = 65535
         
@@ -1319,6 +1322,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Get the name of the detector, the gain and the binning of the x-axis
         # and y-axis values using the appropriate descriptors
         detector_name_dv = dataset.detector_name(pretty=True)
+
         gain_dv = dataset.gain()
         detector_x_bin_dv = dataset.detector_x_bin()
         detector_y_bin_dv = dataset.detector_y_bin()
@@ -1334,7 +1338,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Determine the bin factor. If the bin factor is great than 2, the
         # saturation level will be equal to the controller digitization limit.
         bin_factor = detector_x_bin_dv * detector_y_bin_dv
-        
+
         for extver, ampname in ampname_dict.iteritems():
             gain = gain_dv.get_value(extver=extver)
             
@@ -1359,7 +1363,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                  bin_factor <= 2)):
                 # Calculate the bias level
                 bias_level = gdc.get_bias_level(adinput=dataset, estimate=True)
-            
             # Correct the controller limit for bias level and units
             processed_limit = controller_limit
             if not data_contains_bias:
@@ -1386,7 +1389,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 else:
                     # This error condition will be hit for all mosaicked
                     # or tiled data
-                    raise Errors.TableKeyError()
+                    errmsg = ("'{0}' key not found "
+                              "in '{1}'".format(ampname, "gmosThresholds"))
+                    raise Errors.TableKeyError(errmsg)
                 
                 # Correct the saturation level for binning
                 saturation = saturation * bin_factor
@@ -1445,3 +1450,4 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_dv = DescriptorValue(ret_wavelength_band, name="wavelength_band",
                                  ad=dataset)
         return ret_dv
+
