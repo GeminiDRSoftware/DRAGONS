@@ -647,11 +647,11 @@ def build_day_list(path, pattern):
     return days_list
 # ------------------------------------------------------------------------------
 def main():
-    # First, check for an adcc
+    args = get_args()
+
+    # Now, check for an adcc
     if not ping_adcc():
         raise RuntimeError("No adcc found at port 8777")
-
-    args = get_args()
 
     # Get gempy stuff now. Else, too long to get to the help/error messages)
     from gempy.gemini.gemini_metadata_utils import gemini_date
