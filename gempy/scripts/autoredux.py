@@ -79,6 +79,9 @@ def buildArgParser():
     parser.add_argument("--noskip_backlog", action="store_false", dest="skip_backlog",
                         default=True,
                         help="Do not skip ahead to latest file to avoid backlog")
+    parser.add_argument("--quiet", action="store_true", dest="quiet",
+                        default=False,
+                        help="Run quietly without stdout or display.")
 
     args = parser.parse_args()
 
@@ -149,6 +152,9 @@ def buildOptParser():
     parser.add_option("--noskip_backlog", action="store_false", dest="skip_backlog",
                         default=True,
                         help="Do not skip ahead to latest file to avoid backlog")
+    parser.add_option("--quiet", action="store_true", dest="quiet",
+                      default=False,
+                      help="Run quietly without stdout or display.")
 
 
     args, pos_args = parser.parse_args()
@@ -222,34 +228,41 @@ def file_list(str_list):
 def check_and_run(filepath, options=None):
     new_file = os.path.basename(filepath)
     if options is not None:
-        cal  = options.calibrations
-        upl  = options.upload
-        rec  = options.recipe
-        noqa = options.noqa
+        cal   = options.calibrations
+        upl   = options.upload
+        rec   = options.recipe
+        noqa  = options.noqa
+        quiet = options.quiet
 
-    print "..."
+    if not quiet:
+        print "..."
     
     if os.path.exists(filepath):
-        print "Checking %s" % new_file
-        ok = verify_file(filepath)
+        if not quiet:
+            print "Checking %s" % new_file
+        ok = verify_file(filepath, quiet=quiet)
         if(ok):
             supported, reasons = check_supported_data(filepath, cal)
             
             if supported:
-                print "Reducing %s%s" % (new_file, "," if reasons else ""), \
-                    ", ".join(reasons)
-                launch_reduce(filepath, noqa, upload=upl, recipe=rec)
+                if not quiet:
+                    print "Reducing %s%s" % (new_file, "," if reasons else ""), \
+                        ", ".join(reasons)
+                launch_reduce(filepath, noqa, upload=upl, recipe=rec, quiet=quiet)
             else:
-                print "Ignoring %s%s" % (new_file, "," if reasons else ""), \
-                    ", ".join(reasons)
+                if not quiet:
+                    print "Ignoring %s%s" % (new_file, "," if reasons else ""), \
+                        ", ".join(reasons)
         else:
-            print "Ignoring %s, not a valid fits file" % new_file
+            if not quiet:
+                print "Ignoring %s, not a valid fits file" % new_file
     else:
-        print "Ignoring %s, does not exist" % new_file
+        if not quiet:
+            print "Ignoring %s, does not exist" % new_file
     return
 
 # ------------------------------------------------------------------------------
-def verify_file(filepath):
+def verify_file(filepath, quiet=False):
     from gempy.library import fitsverify as fv
     # Repeatedly Fits verify it until it passes
     tries = 10
@@ -272,8 +285,9 @@ def verify_file(filepath):
             ok = True
 
         if (tries == 0):
-            print "ERROR: File %s never did pass fitsverify%s" % \
-                  (filepath, "." if fv_check is None else ":\n"+fv_check[3])
+            if not quiet:
+                print "ERROR: File %s never did pass fitsverify%s" % \
+                    (filepath, "." if fv_check is None else ":\n"+fv_check[3])
 
         if not ok:
             time.sleep(1)
@@ -469,9 +483,10 @@ def check_niri_image(ad, calibrations=False):
 
 
 # ------------------------------------------------------------------------------
-def launch_reduce(filepath, noqa, upload=False, recipe=None):
+def launch_reduce(filepath, noqa, upload=False, recipe=None, quiet=False):
     if noqa:
-        print "Received a noqa signal, no upload of QA metrics"
+        if not quiet:
+            print "Received a noqa signal, no upload of QA metrics"
         up_metrics = False
     else:
         up_metrics = True
@@ -481,18 +496,32 @@ def launch_reduce(filepath, noqa, upload=False, recipe=None):
     else:
         context = "QA"
 
-    if recipe is not None:
-        options = {"context":context,
-                   "loglevel":"stdinfo",
-                   "recipe": recipe}
+    if quiet:
+        logmode = "quiet"
+        nodisplay = True
     else:
-        options = {"context":context,
-                   "loglevel":"stdinfo",}
+        logmode = "standard"
+        nodisplay = False
+
+    options = {"context":context,
+               "loglevel":"stdinfo",
+               "logmode":logmode
+              }
+    
+    if recipe is not None:
+        options["recipe"] = recipe
 
     # QA metrics uploaded to fitsstore with 'upload_metrics' param
+    #
+    # Re: ignore.  When we switch to the new reduce, the setting
+    # should be "display:ignore":quiet and nodisplay variable removed.
+    # Here the global setting works because only display has that
+    # parameter anyway.  The specific setting is not supported in 
+    # the old reduce.
     param_dict = {"filepath":filepath,
                   "parameters":{"clobber":True,
-                                "upload_metrics": up_metrics
+                                "upload_metrics": up_metrics,
+                                "ignore":nodisplay
                             },
                   "options":options,
                  }
@@ -505,7 +534,8 @@ def launch_reduce(filepath, noqa, upload=False, recipe=None):
         u = urllib2.urlopen(rq, postdata)
     except urllib2.HTTPError, error:
         contens = error.read()
-        print contens
+        if not quiet:
+            print contens
         sys.exit()
     u.read()
     u.close()
@@ -554,7 +584,7 @@ def get_localsite():
         localsite = GEMINI_SOUTH
     else:
         print "ERROR - TZ not HST or CST. Local site cannot " + \
-              "be determined"
+            "be determined"
         sys.exit()
 
     return localsite
@@ -593,7 +623,7 @@ def get_filelist(prefix, suffix, filenum):
     return filelist, filenum
 
 
-def get_directory(directory, localsite):
+def get_directory(directory, localsite, quiet=False):
     """Caller passes a directory, which may be None, and a localsite string
     as returned by get_localsite(). Returns a directory path for file searching.
     If None is passed as directory, default paths in gemini.opsdef are supplied.
@@ -609,8 +639,9 @@ def get_directory(directory, localsite):
         elif os.path.exists(OPSDATAPATHBKUP[localsite]):
             directory = OPSDATAPATHBKUP[localsite]
         else:
-            print "Cannot find %s or %s. Please specify a directory." % \
-                (OPSDATAPATH[localsite], OPSDATAPATHBKUP[localsite])
+            if not quiet:
+                print "Cannot find %s or %s. Please specify a directory." % \
+                    (OPSDATAPATH[localsite], OPSDATAPATHBKUP[localsite])
     return directory
 
 # ------------------------------------------------------------------------------
@@ -648,6 +679,8 @@ def build_day_list(path, pattern):
 # ------------------------------------------------------------------------------
 def main():
     args = get_args()
+    
+    quiet = args.quiet
 
     # Now, check for an adcc
     if not ping_adcc():
@@ -670,7 +703,7 @@ def main():
         fakedate   = gemini_date()
 
     localsite = get_localsite()
-    directory = get_directory(args.directory, localsite)
+    directory = get_directory(args.directory, localsite, quiet=quiet)
     prefix    = build_prefix(fakedate, localsite)
     files, filenum = get_filelist(prefix, args.suffix, filenum)
 
@@ -700,13 +733,15 @@ def main():
                     try:
                         last_index = today.index(filenum)
                     except ValueError:
-                        print "File %s not found" % filenum
+                        if not quiet:
+                            print "File %s not found" % filenum
                         sys.exit()
                 else:
                     last_index = 0
 
                 new_file = today[last_index]
-                print "Starting from file: %s" % os.path.basename(new_file)
+                if not quiet:
+                    print "Starting from file: %s" % os.path.basename(new_file)
             else:
                 # Did we find something new?
                 if len(today) > last_index + 1:
@@ -725,7 +760,8 @@ def main():
 
         else:
             if not printed_none:
-                print "No files with the prefix: %s" % prefix
+                if not quiet:
+                    print "No files with the prefix: %s" % prefix
                 printed_none = True
 
         # Wait 1 second before looping again if working on the last file
@@ -734,9 +770,10 @@ def main():
             # will be no more files to process
             check_date = gemini_date()
             if check_date != fakedate or args.suffix != "":
-                print "...\nNo more files to check from %s." % fakedate
-                print "Operational day %s terminated at %s" % \
-                    (fakedate, time.ctime(time.time()))
+                if not quiet:
+                    print "...\nNo more files to check from %s." % fakedate
+                    print "Operational day %s terminated at %s" % \
+                        (fakedate, time.ctime(time.time()))
 
                 # If a date argument has been passed, stop.
                 if single_day:
@@ -744,7 +781,8 @@ def main():
                 else:
                     fakedate = gemini_date() 
 
-                print "Monitoring operational day %s\n..." % fakedate
+                if not quiet:
+                    print "Monitoring operational day %s\n..." % fakedate
                 prefix = build_prefix(fakedate, localsite)
                 regex_patt = '^' + prefix + '\d{4}' + args.suffix + '.fits$'
                 # Reset loop markers for new day.
@@ -753,7 +791,8 @@ def main():
                 printed_wait = False
             else:
                 if not printed_wait:
-                    print "...\nWaiting for more files"
+                    if not quiet:
+                        print "...\nWaiting for more files"
                     printed_wait = True
                 time.sleep(3)
     return

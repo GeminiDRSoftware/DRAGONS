@@ -57,6 +57,9 @@ def handleClArgs():
                       dest="stack", default=False,
                       help="Perform stacking of all previously reduced "+ \
                            "images associated with the current image")
+    parser.add_option("-q", "--quiet", action="store_true",
+                      dest="quiet", default=False,
+                      help="Do not output to screen, send only to log.")
     (options, args) = parser.parse_args()
     return options, args, parser
 
@@ -169,6 +172,13 @@ def main():
     else:
         filenm = args[0]
 
+    # set quiet options
+    logmode = "standard"
+    nodisplay = "False"
+    if options.quiet:
+        logmode = "quiet"
+        nodisplay = "True"
+    
     # Get file prefix from user; otherwise, use auto    
     prefix = "auto"
     if options.prefix:
@@ -310,7 +320,8 @@ def main():
                           "--context",context,
                           "--loglevel","stdinfo",
                           "--logfile","gemini.log",
-                          "-p", "clobber=True",
+                          "--logmode",logmode,
+                          "-p", "clobber=True,ignore="+nodisplay,
                           imgpath]
         elif ("NIRI_IMAGE" in ad.types and
               "NIRI_DARK" not in ad.types and
@@ -321,7 +332,8 @@ def main():
                           "--context",context,
                           "--loglevel","stdinfo",
                           "--logfile","gemini.log",
-                          "-p", "clobber=True",
+                          "--logmode",logmode,
+                          "-p", "clobber=True,ignore="+nodisplay,
                           imgpath]
         else:
             # Otherwise call reduce with auto-selected reduction recipe
@@ -329,7 +341,8 @@ def main():
                           "--context",context,
                           "--loglevel","stdinfo",
                           "--logfile","gemini.log",
-                          "-p", "clobber=True",
+                          "--logmode",logmode,
+                          "-p", "clobber=True,ignore="+nodisplay,
                           imgpath]
             
         subprocess.call(reduce_cmd)
