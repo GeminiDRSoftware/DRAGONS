@@ -82,7 +82,7 @@ try:
                       action="store_true", help="tell user reduce invoked by adcc")
     parser.add_option("--logmode", dest="logmode", default="standard", 
                       type="string", help="Set logging mode (standard, "
-                      "console, debug, null)")
+                      "console, quiet, debug, null)")
     parser.add_option("--logfile", dest="logfile", default="reduce.log", 
                       type='string', help="name of log (default = 'reduce.log')") 
     parser.add_option("--loglevel", dest="loglevel", default="stdinfo", 
