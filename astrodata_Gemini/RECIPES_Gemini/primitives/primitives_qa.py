@@ -1431,7 +1431,8 @@ def _iq_band(adinput=None,fwhm=None):
             # Now it's only the waveband that matters.  The lookup
             # table reflects this change.  Note that the lookup table
             # should be checked against the webpage from time to time
-            # to ensure that they match.
+            # to ensure that they match.  ('cause they don't tell us
+            # when they change it...)
             
             waveband = ad.wavelength_band().as_pytype()
 
