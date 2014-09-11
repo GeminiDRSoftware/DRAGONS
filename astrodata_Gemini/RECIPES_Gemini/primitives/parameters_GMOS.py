@@ -15,6 +15,13 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    "ignore":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       :"UIBASIC"
+        },
     "remove_bias":{
         "default"       : True,
         "type"          : "bool",

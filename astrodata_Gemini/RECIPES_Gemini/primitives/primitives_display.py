@@ -38,6 +38,7 @@ class DisplayPrimitives(GENERALPrimitives):
         log.debug(gt.log_message("primitive", "display", "starting"))
         
         # Get parameters from RC
+        ignore = rc["ignore"]
         threshold = rc["threshold"]
         remove_bias = rc["remove_bias"]
 
@@ -45,6 +46,15 @@ class DisplayPrimitives(GENERALPrimitives):
         adinput = rc.get_inputs_as_astrodata()
         orig_input = adinput
         deepcopied = False
+        
+        # This allows one to control whether the images are displayed
+        # or not without having to change the recipe.  To turn off
+        # the display primitive in a recipe from reduce: 
+        # -p display:ignore=True
+        if ignore:
+            log.warning("display turned off per user request")
+            rc.report_output(orig_input)
+            yield rc 
 
         # Threshold and bias parameters only make sense for SCI extension;
         # turn it off for others
