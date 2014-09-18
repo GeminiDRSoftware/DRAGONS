@@ -1,4 +1,4 @@
-from astrodata.Calculator import Calculator
+from astrodata.Descriptors import Calculator
 from FITS_Keywords import FITS_KeyDict
 
 class FITS_DescriptorCalc(Calculator):
