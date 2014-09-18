@@ -1,13 +1,11 @@
 import os
 
-from datetime import datetime
-# from astrodata import Descriptors
+from datetime  import datetime
 
 class ReductionObjectRequest(object):
-    '''
-    The parent of all Requests which contains members prevalent to all requests
-    (i.e. timestamp).
-    '''
+    """ The parent of all Requests which contains members prevalent to all 
+    requests (i.e. timestamp).
+    """
     def __init__(self):
         self.ver = None
         self.timestamp = datetime.now()
@@ -18,11 +16,10 @@ class ReductionObjectRequest(object):
         return tempStr
 
 class CalibrationRequest(ReductionObjectRequest):
-    '''
-    The structure that stores the calibration parameters from the xml 
-    calibration file.
-    It is used by the control loop to be added to the request queue.
-    '''
+    """ The structure that stores the calibration parameters from the xml 
+    calibration file. It is used by the control loop to be added to the 
+    request queue.
+    """
     filename = None
     identifiers = {}
     criteria = {}
@@ -38,14 +35,28 @@ class CalibrationRequest(ReductionObjectRequest):
                     priorities={}, caltype=None , source = 'all', ad = None):
                     
         super(CalibrationRequest, self).__init__()
-        self.filename = None#filename
-        self.identifiers = {}#identifiers
-        self.criteria = {}#criteria
-        self.priorities = {}#priorities
-        self.caltype = None#caltype
+        self.filename = None     #filename
+        self.identifiers = {}    #identifiers
+        self.criteria = {}       #criteria
+        self.priorities = {}     #priorities
+        self.caltype = None      #caltype
         self.source = source
         self.ad = ad
         
+    def __str__(self):
+        tempStr = super(CalibrationRequest, self).__str__()
+        tempStr = tempStr + '''filename: %(name)s
+Identifiers: %(id)s
+   Criteria: %(crit)s
+ Priorities: %(pri)s
+Descriptors: %(des)s
+      Types: %(types)s
+'''% {'name':str(self.filename), 'id':str(self.identifiers), \
+              'crit':str(self.criteria), 'pri':str(self.priorities),
+              "des":repr(self.descriptors),
+              "types":repr(self.types)}
+        return tempStr
+
     def as_dict(self):
         retd = {}
         retd.update({'filename': self.filename,
@@ -67,27 +78,13 @@ class CalibrationRequest(ReductionObjectRequest):
         self.descriptors = params["descriptors"] if "descriptors" in params else None
         self.types = params["types"] if "types" in params else None
         self.ad = params["ad"] if "types" in params else None
-        
-        
-    def __str__(self):
-        tempStr = super(CalibrationRequest, self).__str__()
-        tempStr = tempStr + '''filename: %(name)s
-Identifiers: %(id)s
-   Criteria: %(crit)s
- Priorities: %(pri)s
-Descriptors: %(des)s
-      Types: %(types)s
-'''% {'name':str(self.filename), 'id':str(self.identifiers), \
-              'crit':str(self.criteria), 'pri':str(self.priorities),
-              "des":repr(self.descriptors),
-              "types":repr(self.types)}
-        return tempStr
+        return
+
 
 class DisplayRequest(ReductionObjectRequest):
-    '''
-    The request to display a list of fits files.
-    '''
-    #disID - display_id - displayList
+    """ The request to display a list of fits files. """
+    from astrodata import IDFactory
+
     def __init__(self, dis_id=None, dis_list=[]):
         super(DisplayRequest, self).__init__()
         self.disID = dis_id
@@ -109,14 +106,14 @@ class DisplayRequest(ReductionObjectRequest):
             filedict = {}
             f.update({os.path.basename(i.filename): filedict })
             filedict.update({'filename':i.filename})
-            filedict.update({'display_id':i.ad.display_id()})
+            filedict.update({'display_id':IDFactory.generate_stackable_id(i.ad)})
         return d
 
+
 class GetStackableRequest(ReductionObjectRequest):
-    '''
-    The request to get the stackable list. (More of a PRS issue as updating
+    """ The request to get the stackable list. (More of a PRS issue as updating
     the stack already does this.)
-    '''
+    """
     def __init__(self, stk_id=None):
         super(GetStackableRequest, self).__init__()
         self.stk_id = stk_id
@@ -126,11 +123,11 @@ class GetStackableRequest(ReductionObjectRequest):
         tempStr = tempStr + 'ID: ' + str(self.stk_id)
         return tempStr
 
+
 class ImageQualityRequest(ReductionObjectRequest):
-    '''
-    A request to publish image quality metrics to the message bus or in the
-    case of stand-alone mode, display overlays, etc. (Demo)
-    '''
+    """ A request to publish image quality metrics to the message bus 
+    or in the case of stand-alone mode, display overlays, etc. (Demo)
+    """
     def __init__( self, ad, ell_mean, ell_sigma, fwhm_mean, fwhm_sigma ):
         from astrodata import Descriptors
         
@@ -166,10 +163,11 @@ PixelScale:         %(pixs)s''' % {'name':self.filename,
         tempStr = tempStr + super(ImageQualityRequest, self).__str__()
         return tempStr
 
+
 class UpdateStackableRequest(ReductionObjectRequest):
-    '''
-    Contains all relevant information to request updating the stackable index.
-    '''
+    """ Contains all relevant information to request updating the 
+    stackable index.
+    """
     def __init__(self, stk_id=None, stk_list=[]):
         super(UpdateStackableRequest, self).__init__()
         self.stk_id = stk_id

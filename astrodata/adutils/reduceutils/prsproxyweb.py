@@ -18,14 +18,11 @@ import os
 import json
 import time
 import select
-import pprint
 import urllib2
 import urlparse
 import datetime
 import subprocess
-from copy import copy
 
-from xml.dom import minidom
 from SocketServer import ThreadingMixIn
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
@@ -33,44 +30,7 @@ from astrodata import AstroData
 from astrodata.Lookups import get_lookup_table
 from astrodata.RecipeManager import RecipeLibrary
 
-# try:
-#     from fitsstore.GeminiMetadataUtils import *
-# except:
-#     print "Cannot import GeminiMetadataUtils from FITSSTORE"
-
 # ------------------------------------------------------------------------------
-
-class PRec():
-    _buff = ""
-    uri = "localhost:8777"
-    method = "GET"
-    def __init__(self, pdict=None, method="GET"):
-        self._pdict = pdict
-        self.method = method
-
-    def write(self, string):
-        self._buff += string
-        return
-
-    def read(self):
-        return self._pdict
-
-    def log_error(self, msg):
-        print "PRec:log_error:", msg
-        return
-
-# ------------------------------------------------------------------------------
-
-def flattenParms(parms):
-    for parmkey in parms:
-        if (hasattr(parms[parmkey], "__getitem__") 
-            and not type(parms[parmkey]) == str
-            and not parmkey == "orderby"):
-            parms.update({parmkey:parms[parmkey][0]})
-    return
-
-# ------------------------------------------------------------------------------
-
 def parsepath(path):
     """A better parsepath w/ urlparse.
 
@@ -86,7 +46,6 @@ def parsepath(path):
 
 # ------------------------------------------------------------------------------
 #                                Timing functions
-
 def server_time():
     """Return a dictionary of server timing quantities related to current time.
     This dict will be returned to a call on the server, /rqsite.json (See
@@ -182,8 +141,7 @@ def current_op_timestamp():
 
 #                            End Timing functions
 # ------------------------------------------------------------------------------
-# FITS Store query.
-
+#   FITS Store query.
 def fstore_get(timestamp):
     """Open a url on fitsstore/qaforgui/ with the passed timestamp.
     timestamp is in epoch seconds, which is converted here to a 
@@ -198,7 +156,6 @@ def fstore_get(timestamp):
     # Get the fitsstore query url from calurl_dict
     qurlPath     = "Gemini/calurl_dict"
     fitsstore_qa = get_lookup_table(qurlPath, "calurl_dict")['QAQUERYURL']
-    local_site   = server_time()["local_site"]
 
     if not timestamp:
         furl         = os.path.join(fitsstore_qa)
@@ -214,38 +171,21 @@ def fstore_get(timestamp):
 # ------------------------------------------------------------------------------
 rl = RecipeLibrary()
 # ------------------------------------------------------------------------------
-class PPWState(object):
-    dirdict = None
-    dataSpider = None
-    displayCmdHistory = None
-
-# ------------------------------------------------------------------------------
-ppwstate = PPWState()
 webserverdone = False
 # ------------------------------------------------------------------------------
 class ADCCHandler(BaseHTTPRequestHandler):
+    """ADCC services request handler.
+    """
     informers  = None
     dataSpider = None
     dirdict    = None
     state      = None
     counter    = 0
     stamp_register = []
-    
+
     def address_string(self):
         host, port = self.client_address[:2]
         return host
-
-    def getDirdict(self):
-        if self.state.dirdict == None:
-            from astrodata.DataSpider import DataSpider
-            ds = self.state.dataSpider = DataSpider(".")
-            dirdict = self.state.dirdict = ds.datasetwalk()
-            dirdict.dataSpider = ds
-        else:
-            ds = self.state.dataSpider
-            dirdict = self.state.dirdict
-            dirdict.dataSpider = ds
-        return dirdict
 
     def log_request(self, code='-', size='-'):
         """Log an accepted request.
@@ -257,19 +197,19 @@ class ADCCHandler(BaseHTTPRequestHandler):
         """
         try:
             assert (self.informers["verbose"])
-            self.log_message('"%s" %s %s',
-                             self.requestline, str(code), str(size))
+            self.log_message('"%s" %s %s', self.requestline, 
+                             str(code), str(size))
         except AssertionError:
             if "cmdqueue.json" in self.requestline:
                 pass
             else:
-                self.log_message('"%s" %s %s',
-                             self.requestline, str(code), str(size))                
+                self.log_message('"%s" %s %s', self.requestline, 
+                                 str(code), str(size))
         return
 
     def do_GET(self):
+        """Defined ADCC services on GET requests."""
         global webserverdone
-        self.state = ppwstate
         rim = self.informers["rim"]
         parms = parsepath(self.path)
 
@@ -280,629 +220,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
             self.informers["verbose"] = True
 
         try:
-            if self.path == "/":
-                page = """
-                <html>
-                <head>
-                </head>
-                <body>
-                <h4>prsproxy engineering interface</h4>
-                <ul>
-                <li><a href="/engineering">Engeering Interface</a></li>
-                <li><a href="qap/engineering.html">Engeering AJAX App</a></li>
-                <li><a href="datadir">Data Directory View</a></li>
-                <li><a href="killprs">Kill this server</a> (%(numinsts)d """ +\
-                    """copies ofreduce registered)</li>
-                </ul>
-                <body>
-                </html>"""
-                page % {"numinsts":rim.numinsts}
-                self.send_response(200)
-                self.send_header("content-type", "text-html")
-                self.end_headers()
-                self.wfile.write(page)
-                return
-                
-            if parms["path"].startswith("/rqlog.json"):
-                self.send_response(200)
-                self.send_header('Content-type', "application/json")
-                self.end_headers()
-                
-                if "file" in parms:
-                    logfile = parms["file"][0]
-                    print logfile
-                    if not os.path.exists(logfile):
-                        msg = "Log file not available"
-                    else:
-                        f = open(logfile, "r")      
-                        msg = f.read()
-                        f.close()
-                else:
-                    msg = "No log file available"
-
-                tdic = {"log":msg}
-
-                self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
-                return
- 
-           # ------------------------------------------------------------------
-           # Server time
-
-            if parms["path"].startswith("/rqsite.json"):
-                self.send_response(200)
-                self.send_header('Content-type', "application/json")
-                self.end_headers()
-                tdic = server_time()
-                self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
-                return
-
-            # ------------------------------------------------------------------
-            # Metrics query employing fitsstore
-
-            if parms["path"].startswith("/cmdqueue.json"):
-                self._handle_cmdqueue_json(rim, parms)
-                return
-
-            # ------------------------------------------------------------------
-            
-            if parms["path"].startswith("/cmdqueue.xml"):
-                self.send_response(200)
-                self.send_header('Content-type','text/xml')
-                self.end_headers()
-                
-                if "lastcmd" in parms:
-                    start = int(parms["lastcmd"][0])+1
-                else:
-                    start = 0   
-                elist = self.state.rim.displayCmdHistory.peekSince(cmdNum=start)
-                print "prsw 200:", repr(elist)
-                xml = '<commandQueue lastCmd="%d">' % (start-1)
-                for cmd in elist:
-                    # this is because there should be only one top key
-                    #   in the cmd dict
-                    cmdname = cmd.keys()[0] 
-                                            
-                    cmdbody = cmd[cmdname]
-                    xml += '<command name="%s">' % cmdname
-                    
-                    if "files" in cmdbody:
-                    
-                        basenames = cmdbody["files"].keys()
-                        for basename in basenames:
-                            fileitem = cmdbody["files"][basename]
-                            if "url" not in fileitem or fileitem["url"] == None:
-                                url = "None"
-                            else:
-                                url = fileitem["url"]
-                            xml += """<file basename="%(basename)s"
-                            url = "%(url)s"
-                            cmdnum = "%(cn)d"/>""" % {
-                                "basename": basename,
-                                "url": "" if "file" not in fileitem else fileitem["url"],
-                                "cn":int(cmdbody["cmdNum"])}
-                                            
-                            # now any extension in the extdict
-                            if "extdict" in fileitem:
-                                extdict = fileitem["extdict"]
-                                for name in extdict.keys():
-                                    xml += """\n<file basename="%(basename)s"
-                                             url="%(url)s"
-                                             ext="%(ext)s"
-                                             cmdnum="%(cn)d"/>""" % {
-                                            "basename": basename,
-                                            "ext": name,
-                                            "url": extdict[name],
-                                            "cn":int(cmdbody["cmdNum"])}
- 
-                    xml += '</command>'
-                xml += "</commandQueue>"
-                self.wfile.write(xml)
-                return 
-                
-            if parms["path"] == "/recipeindex.xml":
-                self.send_response(200)
-                self.send_header('Content-type', 'text/xml')
-                self.end_headers()
-                
-                self.wfile.write(rl.getRecipeIndex(as_xml=True))
-                return
-             
-            if parms["path"].startswith("/summary"):
-                from fitsstore.FitsStorageWebSummary.Summary import summary
-                from fitsstore.FitsStorageWebSummary.Selection import getselection
-                
-                selection = getselection({})
-                
-                rec =  PRec()
-                summary(rec, "summary", selection, [], links=False)
-                buff = rec._buff
-                self.send_response(200)
-                self.send_header("Content-type", "text/html")
-                self.end_headers()
-                self.wfile.write(buff)
-                return
-                
-            if parms["path"].startswith("/calmgr"):
-                from FitsStorageWebSummary.Selection import getselection
-                from FitsStorageWebSummary.CalMGR import calmgr
-                things = parms["path"].split("/")[2:]
-                # print "ppw457:"+ repr(things)
-                self.send_response(200)
-                self.send_header('Content-type', 'text/xml')
-                self.end_headers()
-                
-                # Parse the rest of the URL.
-                selection=getselection(things)
-            
-                # If we want other arguments like order by
-                # we should parse them here
-                req = PRec()
-                retval = calmgr(req, selection)
-                print "-------\n"*3,"ppw469:", req._buff
-                self.wfile.write(req._buff)
-                return 
-                
-            if parms["path"] == "/calsearch.xml":
-                import searcher
-                cparms = {}
-                cparms.update(parms)
-                print "pproxy466:"+repr(cparms)
-                if "datalab" in parms:
-                    cparms.update({"datalab":parms["datalab"][0]})
-                if "filename" in parms:
-                    print "ppw481:", repr(parms["filename"])
-                    cparms.update({"filename":parms["filename"][0]})
-                if "caltype" in parms:
-                    cparms.update({"caltype":parms["caltype"][0]})
-                else:
-                    cparms.update({"caltype":"processed_bias"})
-                    
-                buff = searcher.search(cparms)
-                self.send_response(200)
-                self.send_header('Content-type', 'text/xml')
-                self.end_headers()
-                
-                self.wfile.write(buff)
-                return 
-                
-            if parms["path"].startswith("/globalcalsearch.xml"):
-                from prsproxyutil import calibration_search
-                flattenParms(parms)
-                resultb = None
-                resultf = None
-                
-                if "caltype" in parms:
-                    caltype = parms["caltype"]
-                    if caltype == "processed_bias" or caltype == "all":
-                        parms.update({"caltype":"processed_bias"})
-                        resultb = calibration_search(parms, fullResult=True)
-                    if caltype == "processed_flat" or caltype == "all":
-                        parms.update({"caltype":"processed_flat"})
-                        resultf = calibration_search(parms, fullResult = True)
-                
-                if caltype == "all":
-                    try:
-                        domb = minidom.parseString(resultb)
-                        domf = minidom.parseString(resultf)
-                    except:
-                        return None # can't parse input... no calibration
-                    calnodefs = domf.getElementsByTagName("calibration")
-                    if len(calnodefs) > 0:
-                        calnodef = calnodefs[0]
-                    else:
-                        calnodef = None
-                    calnodebs = domb.getElementsByTagName("dataset")
-                    if len(calnodebs) > 0:
-                        calnodeb = calnodebs[0]
-                    
-                    #print calnodef.toxml()
-                    #print calnodeb.toxml()
-                    # domb.importNode(calnodef, True)
-                    if calnodef and calnodeb:
-                        calnodeb.appendChild(calnodef)
-                    elif calnodef:
-                        result=domb.toxml()                        
-                    else:
-                        result=domb.toxml()
-                    result = domb.toxml()
-                
-                print "prsw207:", result
-                self.send_response(200)
-                self.send_response(200)
-                self.send_header('Content-type', 'text/xml')
-                self.end_headers()
-                
-                self.wfile.write(result)
-                return
-                
-            if parms["path"] == "/recipecontent":
-                if "recipe" in parms:
-                    recipe = parms["recipe"][0]
-                    content = rl.retrieve_recipe(recipe)
-                    self.send_response(200)
-                    self.send_header('Content-type', 'text/plain')
-                    self.end_headers()
-
-                    self.wfile.write(content)
-                    return
-
-            if parms["path"] == "/adinfo":
-                self.send_response(200)
-                self.send_header('Content-type', 'text/html')
-                self.end_headers()
-
-                if "filename" not in parms:
-                    return "Error: Need Filename Parameter"
-                if "filename" in parms:
-                    try:
-                        ad = AstroData(parms["filename"][0])
-                    except:
-                        self.wfile.write("Can't use AstroData to open %s" % parms["filename"])
-                        return
-                    if "fullpage" in parms:
-                        self.wfile.write("<html><body>")
-                    if "fullpage" not in parms:
-                    # defaults to false
-                        self.wfile.write("<b>Name</b>: %s \n" % os.path.basename(ad.filename))
-                        self.wfile.write("<br/><b>Path</b>: %s \n" % os.path.abspath(ad.filename))
-                        self.wfile.write("<br/><b>Types</b>: %s\n" % ", ".join(ad.types))
-                        recdict = rl.get_applicable_recipes(ad, collate=True)
-                        keys = recdict.keys()
-                        keys.sort()
-                        for key in keys:
-                            recname = recdict[key]                        
-                            self.wfile.write("<br/><b>Default Recipe(s)</b>:%s "+\
-                                             "(<i>due to type</i>: %s)" % (recname, key))
-                        alldesc = ad.all_descriptors()
-                        self.wfile.write("<br/><b>Descriptors</b>:\n")
-                        self.wfile.write('<table style="margin-left:4em">\n')
-                        adkeys = alldesc.keys()
-                        adkeys.sort()
-                        self.wfile.flush()
-                        for desc in adkeys:
-                            value = str(alldesc[desc])
-                            if "ERROR" in value:
-                                value = '<span style="color:red">' + value + '</span>'
-                            self.wfile.write("<tr><td>%s</td><td>%s</td></tr>\n" % (desc, value))
-                            self.wfile.flush()
-                        self.wfile.write("</table>")
-                    if "fullpage" in parms:
-                        self.wfile.write("</body></html>")
-                return
-                
-            if parms["path"] == "/recipes.xml":
-                self.send_response(200)
-                self.send_header('Content-type', 'text/xml')
-                self.end_headers()
-                self.wfile.write(rl.list_recipes(as_xml = True) )
-                return
-
-            if parms["path"] == "/reduceconfigs.xml":
-                import glob
-                rcfgs = glob.glob("./*.rcfg")
-                self.send_response(200)
-                self.send_header('Content-type', 'text/xml')
-                self.end_headers()
-                retxml = '<?xml version="1.0" encoding="UTF-8" ?>\n'
-                retxml += "<reduceconfigs>\n"
-                for rcfg in rcfgs:
-                    retxml += """\t<reduceconfig name="%s"/>\n""" % rcfg
-                retxml += "</reduceconfigs>\n"
-                self.wfile.write(retxml)
-                return
-
-            if parms["path"].startswith("/datadir.xml"):
-                dirdict = self.getDirdict()
-                ds = dirdict.dataSpider
-                xml = dirdict.as_xml()
-                
-                self.send_response(200)
-                self.send_header('Content-type', 'text/xml')
-                self.end_headers()
-                
-                self.wfile.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
-                self.wfile.write("<datasetDict>\n")
-                self.wfile.write(xml)
-                self.wfile.write("</datasetDict>")
-                self.wfile.flush()
-                return
-
-            if parms["path"] == "/runreduce":
-                self.send_response(200)
-                self.send_header('Content-type', 'text/html')
-                self.end_headers()
-                self.wfile.write("<html><head></head><body>\n")
-                from StringIO import StringIO
-                rout = StringIO()
-                cmdlist = ["reduce", "--invoked", "--verbose=6"]
-                cmdlist.extend(parms["p"])
-                
-                logdir = ".autologs"
-                if not os.path.exists(logdir):
-                    os.mkdir(logdir)
-
-                reducelog = os.path.join(logdir, 
-                                         "reduce-addcinvokedlog-%d%s" % (
-                                             os.getpid(), str(time.time())
-                                         ))
-                f = open(reducelog, "w")
-                
-                loglink = "reducelog-latest"
-                if os.path.exists(loglink):
-                    os.remove(loglink)
-                os.symlink(reducelog, loglink)
-                            
-                # WARNING, this call had used Popen and selected on the 
-                # subprocess.PIPE... now uses call there is kruft remaining 
-                # (may move it back to old style soon but there was a bug)
-
-                print "adcc running: \n\t" + " ".join(cmdlist)
-                pid = subprocess.call( cmdlist,
-                                        stdout = f,
-                                        stderr = f)
-                
-                self.wfile.write('<b style="font-size=150%">REDUCTION STARTED</b>')
-                self.wfile.write("<pre>")
-                # self.wfile.flush()
-                f.close()
-                f = open(reducelog, "r")      
-                txt = f.read()
-                # pretty the text
-                ptxt = txt
-                if (True): # make pretty
-                    ptxt = re.sub("STARTING RECIPE:(.*)\n", 
-                                  '<b>STARTING RECIPE:</b><span style="color:blue">\g<1></span>\n', ptxt)
-                    ptxt = re.sub("STARTING PRIMITIVE:(.*)\n", 
-                                  '<i>STARTING PRIMITIVE:</i><span style="color:green">\g<1></span>\n', ptxt)
-                    ptxt = re.sub("ENDING PRIMITIVE:(.*)\n", 
-                                  '<i>ENDING PRIMITIVE:</i>  <span style="color:green">\g<1></span>\n', ptxt)
-                    ptxt = re.sub("ENDING RECIPE:(.*)\n", 
-                                  '<b>ENDING RECIPE:</b>  <span style="color:blue">\g<1></span>\n', ptxt)
-                    ptxt = re.sub("(STATUS|INFO|FULLINFO|WARNING|CRITICAL|ERROR)(.*?)-(.*?)-", 
-                                  '<span style="font-size:70%">\g<1>\g<2>-\g<3>- </span>', ptxt)
-
-                self.wfile.write(ptxt) # f.read())
-                f.close()
-                try:
-                    while False:
-                        error = False
-                        while(True):
-                            stdout = None
-                            stderr = None
-                            r,v,w = select.select([pid.stdout],[],[],.1)
-                            print "prsw112:", repr(r)
-                            if len(r):
-                                stdout = r[0].read()
-                                print "prsw487:", stdout
-                                break;
-                            else:
-                                r,v,w = select.select([pid.stderr],[],[],.1)
-                                if len(r):
-                                    stderr = pid.stderr.read()
-                                    print "prsw494:", stderr
-                                    break;
-
-                        if stdout:
-                            self.wfile.write(str(stdout))
-                        if stderr:
-                            self.wfile.write("{"+stderr+"}")
-
-                        self.wfile.flush()
-                        if pid.poll()!= None:
-                            self.wfile.flush()
-                            break
-                except:
-                    print "PRSW516 EMERGENCY:"
-                    
-                self.wfile.write("</pre>")
-                
-                if False:
-                    r,v,x = select.select([pid.stderr], [], [], .1)
-                    if len(r):
-                        stderr = pid.stderr.read()
-                    else:
-                        stderr = None
-                # stderr = pid.stderr.read(100)
-                    if stderr != None:
-                        self.wfile.write("<b><pre>\n")
-                        self.wfile.write(str(stderr))
-                        self.wfile.write("</pre></b>")
-                self.wfile.write('<b style="font-size=150%">REDUCTION ENDED</b>')
-                self.wfile.write("\n</body></html>")
-                self.wfile.flush()
-
-                return
-            
-            if self.path == "/reducelist": #our dynamic content
-                self.send_response(200)
-                self.send_header('Content-type', 'text/html')
-                self.end_headers()
-
-                # this is the tag in head that autopolls if wanted
-                front = """
-                <html>
-                <head>
-                    <meta http-equiv="refresh" content="2" />
-                </head>
-                <body>"""
-                page = front + """
-                %(body)s
-                <body>
-                </html>"""
-
-                self.wfile.write(page)
-                if True:
-                    body = ""
-                    body += "<b>date</b>: %s<br/>\n" \
-                            % datetime.datetime.now().strftime("%A, %Y-%m-%d %H:%M:%S")
-                    body += "<u>Reduce Instances</u><br/>\n"
-                    body += "n.o. instances: %d\n" % rim.numinsts 
-                    body += "<ul>"
-                    rdict = copy(rim.reducedict)
-                    rpids = rim.reducedict.keys()
-                    for rpid in rpids:
-                        body += "<li>client pid = %d at port %d</li>\n" \
-                                % (rpid, rdict[rpid]["port"])
-                    body += "</ul>"
-                    self.wfile.write(page % {"body":body})
-                    self.wfile.flush()
-                return 
-
-            if self.path == "/killprs":
-                import datetime
-                self.send_response(200)
-                self.send_header('Content-type', 'text/html')
-                self.end_headers()
-                self.wfile.write("Killed this prsproxy instance, pid = %d at %s" \
-                                 %(os.getpid(), str(datetime.datetime.now())))
-                webserverdone = True
-                return
-            
-            if self.path.startswith("/displaycache"):
-                from CacheManager import get_cache_dir, get_cache_file
-                
-                path = os.path.split(self.path)
-                print "prsw 569:", self.path
-                if len (path)>1:
-                    slot = path[-1]
-                    tfile = get_cache_file(slot)
-                    
-                    try:
-                        f = open(tfile)
-                    except:
-                        return
-                    self.send_response(200)
-                    self.send_header('Content-type', 'image/png')
-                    self.end_headers()
-
-                    while True:
-                        t = f.read(102400)
-                        if t == "":
-                            self.wfile.flush()
-                            break
-                        self.wfile.write(t)
-                return
-
-            if self.path.startswith("/fullheader"):
-                realpath = self.path.split('/')
-                realpath = realpath[1:]
-                
-                dirdict = self.getDirdict()
-                print "prsw514:", repr(realpath)
-                
-                name = realpath[-1]
-                fname = dirdict.get_full_path(name)
-                ad = AstroData(fname)
-
-                self.send_response(200)
-                self.send_header('Content-type', 'text/html')
-                self.end_headers()
-        
-                self.wfile.write("<html><body>\n")
-                self.wfile.write('<h2>%s</h2>\n' % name)
-                self.wfile.write(ad.infostr(as_html=True))
-                alld = ad.all_descriptors()
-                self.wfile.write(
-                        """
-                        <table cellspacing="2px">
-                        <COLGROUP align="right" />
-                        <COLGROUP align="left" />
-                        <thead>
-                        <tr>
-                        <td style="background-color:grey">Descriptor</td>
-                        <td style="background-color:grey">Value</td>
-                        </tr>
-                        </thead>
-                        """)
-                alldkeys = alld.keys()
-                alldkeys.sort()
-                for dname in alldkeys:
-                    
-                    if type(alld[dname]) == str and "ERROR" in alld[dname]:
-                        redval = '<span  style="color:red">'+str(alld[dname])+"</span>"
-                        dval = redval
-                    else:
-                        # print "ppw864:",type(alld[dname])
-                        if not alld[dname].collapse_value():
-                            import pprint
-                            dval = """<pre>%s</pre> """ \
-                                   % pprint.pformat(alld[dname].dict_val, indent=4, width=80)
-                        else:
-                            dval = str(alld[dname])
-                    self.wfile.write("""
-                        <tr>
-                        <td style="text-align:right;border-bottom:solid grey 1px">
-                        %(dname)s =
-                        </td>
-                        <td style="border-bottom:solid grey 1px">
-                        %(value)s
-                        </td>
-                        </tr>
-                        """ % { "dname":dname,
-                                "value":dval})
-                self.wfile.write("</table>")
-                self.wfile.write("</body></html>\n")
-                                
-                return
-                
-            if self.path.startswith("/htmldocs"):
-                import FitsStorage
-                realpath = self.path.split('/')
-                realpath = realpath[1:]
-                dirname = os.path.dirname(FitsStorage.__file__)
-                fname = os.path.join(dirname, "htmldocroot", *realpath)
-                #print "psrw456: %s\n" % repr(fname)*10
-                fnamelocal = os.path.join(
-                                os.path.dirname(fname),
-                                "FS_LOCALMODE_"+os.path.basename(fname)
-                                )
-                if os.path.exists(fnamelocal):
-                    fname = fnamelocal
-                try:
-                    f = open(fname, "r")
-                    data = f.read()
-                    print repr(data)
-                    f.close()
-                except IOError:
-                    data = "<b>NO SUCH RESOURCE FOUND</b>"
-                self.send_response(200)
-                if fname.endswith(".css"):
-                    self.send_header('Content-type', "text/css")
-                elif fname.endswith(".png"):
-                    self.send_header('Content-type', "image/png")
-                else:
-                    self.send_header('Content-type', 'text/html')
-                self.end_headers()
-                self.wfile.write(data)
-                return
-                
-            if self.path.startswith("/cmd_queue"):
-                self.counter += 1
-                data = str(self.counter)
-                self.send_response(200)
-                self.send_header('Content-type', 'text/html')
-                self.end_headers()
-                self.wfile.write(data)
-                return 
-                
-            if self.path.startswith("/engineering"):
-                self.send_response(200)
-                self.send_header('Content-type', 'text/html')
-                self.end_headers()
-                
-                if "rim" in ADCCHandler.informers:
-                    rim = ADCCHandler.informers["rim"]
-                    evman = rim.events_manager
-                    import pprint
-                    data = "<u>Events</u><br/><pre>"
-                    data += "num events: %d\n" % len(evman.event_list)
-                    for mevent in evman.event_list:
-                        data += pprint.pformat(mevent)
-                        data += "------------------------------\n"
-                    data += "</pre>"
-                    self.wfile.write(data)
-                return
-                
+            # First test for an html request on the QAP nighttime_metrics 
+            # page. 
+            # I.e.  <localhost>:<port>/qap/nighttime_metrics.html
             if self.path.startswith("/qap"):
                 if ".." in self.path:
                     self.send_response(200)
@@ -928,6 +248,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
                     f.close()
                 except IOError:
                     data = "<b>NO SUCH RESOURCE AVAILABLE</b>"
+
                 self.send_response(200)
                 if  self.path.endswith(".js"):
                     self.send_header('Content-type', 'text/javascript')
@@ -937,36 +258,98 @@ class ADCCHandler(BaseHTTPRequestHandler):
                     self.send_header('Content-type', "image/png")
                 else:
                     self.send_header('Content-type', 'text/html')
+
                 self.end_headers()
                 self.wfile.write(data)
-                return 
-            else:
-                print "not qap"    
-            if self.path == "/":
-                self.path = "/KitchenSink.html"
+                return
+
+            # ------------------------------------------------------------------
+            # The vast majority of HTTP client GET requests will be on the 
+            # cmdqueue service. Handle first.
+            if parms["path"].startswith("/cmdqueue.json"):
+                self._handle_cmdqueue_json(rim, parms)
+
+            # ------------------------------------------------------------------
+            # Server time
+            # Queried by metrics client
+            elif parms["path"].startswith("/rqsite.json"):
+                self.send_response(200)
+                self.send_header('Content-type', "application/json")
+                self.end_headers()
+                tdic = server_time()
+                self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
+
+           # ------------------------------------------------------------------
+           # Queried by metrics client
+            elif parms["path"].startswith("/rqlog.json"):
+                self.send_response(200)
+                self.send_header('Content-type', "application/json")
+                self.end_headers()
                 
-            dirname = os.path.dirname(__file__)
-            fname = os.path.join(dirname, "pyjamaface/prsproxygui/output", *(self.path[1:]))
-            
-            try:
-                f = open(fname, "r")
-                data = f.read()
-                f.close()
-            except IOError:
-                data = "<b>NO SUCH RESOURCE FOUND</b>"
+                if "file" in parms:
+                    logfile = parms["file"][0]
+                    print logfile
+                    if not os.path.exists(logfile):
+                        msg = "Log file not available"
+                    else:
+                        f = open(logfile, "r")      
+                        msg = f.read()
+                        f.close()
+                else:
+                    msg = "No log file available"
+
+                tdic = {"log":msg}
+
+                self.wfile.write(json.dumps(tdic, sort_keys=True, indent=4))
+
+            # ------------------------------------------------------------------
+            elif parms["path"] == "/":
+                page = """
+                <html>
+                <head>
+                </head>
+                <body>
+                <h4>prsproxy engineering interface</h4>
+                <ul>
+                <li><a href="/engineering">Engeering Interface</a></li>
+                <li><a href="qap/engineering.html">Engeering AJAX App</a></li>
+                <li><a href="datadir.xml">Data Directory View</a></li>
+                <li><a href="killprs">Kill this server</a> (%(numinsts)d """ +\
+                    """copies of reduce registered)</li>
+                </ul>
+                <body>
+                </html>"""
+                self.send_response(200)
+                self.send_header("content-type", "text-html")
+                self.end_headers()
+                self.wfile.write(page % {"numinsts":rim.numinsts})
+ 
+            # ------------------------------------------------------------------
+            elif self.path.startswith("/engineering"):
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
                 
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            self.wfile.write(data)
-            return 
+                if "rim" in ADCCHandler.informers:
+                    rim = ADCCHandler.informers["rim"]
+                    evman = rim.events_manager
+                    import pprint
+                    data = "<u>Events</u><br/><pre>"
+                    data += "num events: %d\n" % len(evman.event_list)
+                    for mevent in evman.event_list:
+                        data += pprint.pformat(mevent)
+                        data += "\n------------------------------\n"
+                    data += "</pre>"
+                    self.wfile.write(data)
         except IOError:
-            raise
-            print "handling IOError"
+            print "Caught IOError"
             self.send_error(404,'File Not Found: %s' % self.path)
-     
+            raise
+        return
+
 
     def do_POST(self):
+        """Defined ADCC services on POST requests."""
         global webserverdone
         parms = parsepath(self.path)
         vlen = int(self.headers["Content-Length"])
@@ -974,9 +357,6 @@ class ADCCHandler(BaseHTTPRequestHandler):
         pdict = head
         
         if parms["path"].startswith("/runreduce"):
-            import time
-            import json
-
             # Get events manager
             evman = None
             if "rim" in ADCCHandler.informers:
@@ -992,10 +372,12 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 fp = reduce_params["filepath"]
             else:
                 fp = None
+
             if reduce_params.has_key("options"):
                 opt = reduce_params["options"]
             else:
                 opt = None
+
             if reduce_params.has_key("parameters"):
                 prm = reduce_params["parameters"]
             else:
@@ -1004,17 +386,17 @@ class ADCCHandler(BaseHTTPRequestHandler):
             cmdlist = ["reduce", "--invoked"]
             if opt is not None:
                 for key in opt:
-                    cmdlist.extend(["--"+str(key),str(opt[key])])
+                    cmdlist.extend(["--" + str(key), str(opt[key])])
             if prm is not None:
                 prm_str = ""
                 for key in prm:
-                    prm_str += str(key)+"="+str(prm[key])+","
-                if prm_str!="":
+                    prm_str += str(key) + "=" + str(prm[key]) + ","
+                if prm_str:
                     prm_str = prm_str.rstrip(",")
-                cmdlist.extend(["-p",prm_str])
+                cmdlist.extend(["-p", prm_str])
+
             if fp is not None:
                 cmdlist.append(str(fp))
-
                 # Check that file can be opened
                 try:
                     ad = AstroData(fp)
@@ -1025,38 +407,38 @@ class ADCCHandler(BaseHTTPRequestHandler):
                 # Report reduction status
                 self.wfile.write("Reducing %s\n" % fp)
                 self.wfile.write("Command: %s\n" % " ".join(cmdlist))
-                evman.append_event(ad,"status",{"current":"reducing",
-                                                "logfile":None},
+                evman.append_event(ad, "status", 
+                                   {"current":"reducing" , "logfile":None},
                                    msgtype="reduce_status")
 
             # Send reduce log to hidden directory
             logdir = ".autologs"
             if not os.path.exists(logdir):
                 os.mkdir(logdir)
-            reducelog = os.path.join(
-                logdir, "reduce-addcinvokedlog-%d%s" % (
-                    os.getpid(), str(time.time())))
+
+            reducelog = os.path.join(logdir, "reduce-addcinvokedlog-%d%s" % \
+                                     (os.getpid(), str(time.time())))
+
             f = open(reducelog, "w")
             loglink = "reducelog-latest"
             if os.path.exists(loglink):
                 os.remove(loglink)
+
             os.symlink(reducelog, loglink)
 
             # Call reduce
-            pid = subprocess.call( cmdlist,
-                                   stdout = f,
-                                   stderr = f)
-            f.close()
+            pid = subprocess.call(cmdlist, stdout=f, stderr=f)
 
+            f.close()
             # Report finished status
             if fp is not None:
-                if pid==0:
-                    evman.append_event(ad,"status",
+                if pid == 0:
+                    evman.append_event(ad, "status",
                                        {"current":"reduction finished",
                                         "logfile":reducelog},
                                        msgtype="reduce_status")
                 else:
-                    evman.append_event(ad,"status",
+                    evman.append_event(ad, "status",
                                        {"current":"reduction ERROR",
                                         "logfile":reducelog},
                                        msgtype="reduce_status")
@@ -1065,53 +447,16 @@ class ADCCHandler(BaseHTTPRequestHandler):
             f = open(reducelog, "r")      
             txt = f.read()
             f.close()
-
             self.wfile.write(txt)
             self.wfile.flush()
-            
             return
 
-        if parms["path"].startswith("/calmgr"):
-            from FitsStorageWebSummary.Selection import getselection
-            from FitsStorageWebSummary.CalMGR import calmgr
-            things = parms["path"].split("/")[2:-1]
-            print "ppwDOPOST:"+ repr(things)
-            self.send_response(200)
-            self.send_header('Content-type', 'text/xml')
-            self.end_headers()
-                
-            # Parse the rest of the URL.
-            selection=getselection(things)
-            
-            # If we want other arguments like order by
-            # we should parse them here
-            # print "PPW1125:"+repr(pdict)
-            req = PRec(pdict=pdict, method="POST")
-            retval = calmgr(req, selection)
-            print "ppw1128::::"*3, req._buff                
-            self.wfile.write(req._buff)
-            return 
-
-        global rootnode
-        try:
-            ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
-            if ctype == 'multipart/form-data':
-                query=cgi.parse_multipart(self.rfile, pdict)
-            self.send_response(301)
-            
-            self.end_headers()
-            upfilecontent = query.get('upfile')
-            print "filecontent", upfilecontent[0]
-            self.wfile.write("<HTML>POST OK.<BR><BR>");
-            self.wfile.write(upfilecontent[0]);
-            
-        except :
-            pass
-
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # privitized handling cmdqueue.json requests
     
     def _handle_cmdqueue_json(self, rim, parms):
+        """Handle HTTP client GET requests on service: cmdqueue.json
+        """
         msg_form  = '"%s" %s %s'
         info_code = 203
         fail_code = 416
@@ -1162,7 +507,7 @@ class ADCCHandler(BaseHTTPRequestHandler):
         # Handle current nighttime requests ...
         elif stamp_to_opday(fromtime) == stamp_to_opday(current_op_timestamp()):
             if verbosity:
-                self.log_message(msg_form,"Request metrics on current OP day: "+
+                self.log_message(msg_form, "Request metrics on current OP day: "+
                                  stamp_to_opday(fromtime), 
                                  info_code, size)
 
@@ -1198,9 +543,9 @@ class ADCCHandler(BaseHTTPRequestHandler):
 
         # Cannot handle the future ...
         else:
-            self.log_message(msg_form,"Invalid timestamp received.", 
+            self.log_message(msg_form, "Invalid timestamp received.", 
                              fail_code, size)
-            self.log_message(msg_form,"Future events not known.",
+            self.log_message(msg_form, "Future events not known.",
                              fail_code, size)
         return
             
@@ -1212,42 +557,29 @@ class MTHTTPServer(ThreadingMixIn, HTTPServer):
 
 def startInterfaceServer(port=8777, **informers):
     import socket
-
     try:
         # important to set prior to any instantiations of ADCCHandler
         ADCCHandler.informers = informers
-        
-        if "dirdict" in informers:
-            ppwstate.dirdict = informers["dirdict"]
-
-        if "dataSpider" in informers:
-            ppwstate.dataSpider = informers["dataSpider"]
-
-        if "rim" in informers:
-            ppwstate.rim = informers["rim"]
-
         # e.g. below by the HTTPServer class
         findingPort = True
         while findingPort:
             try:
-                print "starting httpserver on port ...", port,
+                print "Starting HTTP server on port %s ... " % str(port)
                 server = MTHTTPServer(('', port), ADCCHandler)
                 findingPort = False
             except socket.error:
                 print "failed, port taken"
                 port += 1
                 
-        print "started"
-        #server.serve_forever()
+        print "Started  HTTP server on port %s" % str(port)
         while True:
             r, w, x = select.select([server.socket], [], [], .5)
             if r:
                 server.handle_request()
 
             if webserverdone == True:
-                print "shutting down http interface"
+                print "shutting down HTTP interface"
                 break
-
     except KeyboardInterrupt:
         print '^C received, shutting down server'
         server.socket.close()

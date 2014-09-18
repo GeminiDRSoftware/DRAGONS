@@ -55,9 +55,11 @@ calls main():
 >>> reduce2.main(args)
 """
 # ---------------------------- Package Import ----------------------------------
+import os
 import sys
 from   signal import SIGTERM
 
+from astrodata import __version__ as ad_version
 from astrodata.adutils import logutils
 
 import parseUtils
@@ -72,13 +74,21 @@ def main(args):
     """
     global log
     estat = 0
-    logutils.config(mode=args.logmode,
-                    console_lvl=args.loglevel,
-                    file_name=args.logfile)
     log = logutils.get_logger(__name__)
-    log.stdinfo("\t\t\t--- reduce, v%s ---" % __version__)
-    r_reduce = Reduce(args)
+    try:
+        assert log.root.handlers
+        log.stdinfo("Resetting logger for application: reduce")
+        log.root.handlers = []
+        logutils.config(mode=args.logmode, console_lvl=args.loglevel,
+                        file_name=args.logfile)
+        log = logutils.get_logger(__name__)
+        log.stdinfo("Logging configured for application: reduce")
+    except AssertionError:
+        pass
 
+    log.stdinfo("\t\t\t--- reduce, v%s ---" % __version__)
+    log.stdinfo("\t\tRunning under astrodata Version "+ ad_version)
+    r_reduce = Reduce(args)
     try:
         estat = r_reduce.runr()
     except Exception as err:

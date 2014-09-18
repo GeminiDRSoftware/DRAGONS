@@ -21,7 +21,7 @@ def generate_md5_file( filename, version = "1_0"):
     
 def generate_fingerprint( dataset, version = "1_0"):
     h = hashlib.md5()
-    fullid = repr(dataset.types)+repr(dataset.all_descriptors())
+    fullid = repr(dataset.types)+repr(dataset.descriptors)
     h.update(fullid)
     return h.hexdigest()
     
@@ -101,7 +101,7 @@ def generate_display_id( dataset, version ):
         phu = pf.getheader(dataset)
         ID = version + "_" + phu['OBSID'] + "_" + phu['OBJECT'] 
     elif type(dataset) == AstroData:
-        ID = version + "_" + dataset.phuValue('OBSID') + "_" + dataset.phuValue('OBJECT')
+        ID = version + "_" + dataset.phu_get_key_value('OBSID') + "_" + dataset.phu_get_key_value('OBJECT')
     return ID
     # return shaObj.hexdigest()
 

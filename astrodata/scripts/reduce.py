@@ -159,7 +159,7 @@ try:
     from astrodata.AstroDataType import get_classification_library
     from astrodata.RecipeManager import ReductionContext
     from astrodata.RecipeManager import RecipeLibrary
-    from astrodata.RecipeManager import RecipeExcept
+    from astrodata.RecipeManager import RecipeError
     from astrodata.StackKeeper import StackKeeper
     from astrodata.ReductionObjectRequests import CalibrationRequest,\
             UpdateStackableRequest, GetStackableRequest, DisplayRequest,\
@@ -654,7 +654,7 @@ try:
             # for the types that are used to load the recipe and primitives
 
             if (options.astrotype == None):
-                types = infiles[0].get_types()
+                types = infiles[0].types
             else:
                 types = [options.astrotype]
 
@@ -1005,7 +1005,7 @@ try:
             log.error("Recipe not found for " + ",".join([ inp.filename 
                                                             for inp in infiles]))
             log.error(str(rnf))
-        except RecipeExcept, x:
+        except RecipeError, x:
             # print "r995:", str(dir(x))
             traceback.print_exc()
             print "INSTRUCTION MIGHT BE A MISPELLED PRIMITIVE OR RECIPE NAME"

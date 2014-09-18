@@ -53,7 +53,7 @@ class EventsManager:
         # Make the metadata dictionary.  Start with the items that
         # do not come from descriptors
 
-        mtd_dict = {"raw_filename": ad.filename, "types": ad.get_types(),}
+        mtd_dict = {"raw_filename": ad.filename, "types": ad.types,}
 
         for mtd_name, desc_name in descriptor_dict.iteritems():
             if options.has_key(desc_name):

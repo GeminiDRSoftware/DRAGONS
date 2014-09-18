@@ -7,7 +7,7 @@ from astrodata import AstroData
 from astrodata.RecipeManager import RecipeLibrary, ReductionContext
 from astrodata import ReductionObjects # to stuff module level, should use func
 from astrodata.ReductionObjects import command_clause
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from astrodata import Proxies
 
 

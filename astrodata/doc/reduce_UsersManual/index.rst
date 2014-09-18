@@ -10,8 +10,12 @@
 .. toctree::
    :maxdepth: 2
 
-   test
-
+   intro
+   userenv
+   interfaces
+   supptools
+   discuss
+   ack
 
 Indices and tables
 ==================
@@ -21,4 +25,3 @@ Indices and tables
 * :ref:`search`
 
 .. todolist::
-

@@ -58,21 +58,16 @@ if heaptrack:
     print "HEAPTRACKFILE CREATIONS: heap.log\n"*5
     heaptrackfile = open("heap.log", "w+")
 
-class ReductionExcept:
+class ReductionError(Exception):
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
     """
-    def __init__(self, msg="Exception Raised by ReductionObject"):
-        """This constructor takes a message to print to the user."""
-        self.message = msg
-    def __str__(self):
-        """This str conversion member returns the message given by the user (or the default message)
-        when the exception is not caught."""
-        return self.message
-        
-class IterationError(ReductionExcept):
     pass
-    
+
+class IterationError(ReductionError):
+    pass
+
+
 class ReductionObject(object):
 
     recipeLib = None
@@ -171,7 +166,7 @@ class ReductionObject(object):
             msg = "There is no recipe or primitive named \"%s\" in  %s" % \
                 (primname, str(repr(self)))
             self.curPrimName = prevprimname
-            raise ReductionExcept(msg)
+            raise ReductionError(msg)
         
         # set type of prim for logging
         btype = primset.btype
@@ -233,7 +228,7 @@ class ReductionObject(object):
                 # @@.....: and it is in run, which caps the yields which must
                 # @@.....: call the command clause.
                 if rc == None:
-                    raise ReductionExcept(
+                    raise ReductionError(
                             "Primitive '%s' returned None for rc on yield\n" % primname)
  
                 rcmd = rc.pop_return_command()
@@ -318,7 +313,7 @@ class ReductionObject(object):
             paramdict0 = newprimset.param_dict
         for primset in primsetary:
             if primset.param_dict != paramdict0:
-                raise ReductionExcept("ParamDict not coherent")
+                raise ReductionError("ParamDict not coherent")
         paramdict0.update(newprimset.param_dict)
         newprimset.param_dict = paramdict0               
         
@@ -335,11 +330,11 @@ class ReductionObject(object):
             return
             
         if primset.astrotype == None:
-            raise ReductionExcept("Primitive Set astrotype is None, fatal error, corrupt configuration")
+            raise ReductionError("Primitive Set astrotype is None, fatal error, corrupt configuration")
         if primset.btype == "RECIPE":
             if hasattr(primset,"param_dict") and primset.param_dict != None:
                 print repr(primset.param_dict)
-                raise ReductionExcept("Primitive btype=RECIPE should not have a param_dict")
+                raise ReductionError("Primitive btype=RECIPE should not have a param_dict")
             primset.param_dict = {}
         if not self.primDict.has_key(primset.astrotype):
             if add_to_front:
@@ -359,7 +354,7 @@ class ReductionObject(object):
         primset = None
         if self.curPrimType != self.primstype_order[0]:
             print "RO355:", self.curPrimType, self.primstype_order
-            raise ReductionExcept("curPrimType does not equal primstype_order[0], unexpected")
+            raise ReductionError("curPrimType does not equal primstype_order[0], unexpected")
         for atype in self.primstype_order:
             primset =  self.get_prim_set_for_type(primname, astrotype = atype)
             if primset:
@@ -390,7 +385,7 @@ class ReductionObject(object):
 
                 # If it's still not there, raise an error
                 if atype not in self.primDict.keys():
-                    raise ReductionExcept("Could not add primitive set "\
+                    raise ReductionError("Could not add primitive set "\
                                           "for astrotype %s" % atype)
 
             # Get all the primitive sets for this type
@@ -496,7 +491,7 @@ def command_clause(ro, coi):
     global log
     
     if log==None:
-        log = gemLog.getGeminiLog()
+        log = logutils.get_logger(__name__)
         
     coi.process_cmd_req()
     while (coi.paused):
@@ -569,7 +564,7 @@ def command_clause(ro, coi):
                                 str(fn))
                     # this is not fatal because perhaps there isn't a calibration
                     # the system checks both the local and central source
-                    # raise RecipeExcept("CALIBRATION for %s NOT FOUND, FATAL" % fn)
+                    # raise RecipeError("CALIBRATION for %s NOT FOUND, FATAL" % fn)
                     #break
                     continue
                 log.info("found calibration (url): " + calurl)
@@ -623,7 +618,7 @@ def command_clause(ro, coi):
                     ad = None
                     errstr = "Could not retrieve %s" % calurl
                     log.error(errstr)
-                    #@@TODO: should this raise? raise ReductionExcept(errstr)
+                    #@@TODO: should this raise? raise ReductionError(errstr)
                 if ad:
                     coi.add_cal(sci_ad, typ, ad.filename)
             # adcc handles this now: coi.persist_cal_index()

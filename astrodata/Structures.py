@@ -1,6 +1,6 @@
 # The Structure system includes two main classes
 import os, sys, re
-from astrodata.data import AstroData
+from astrodata.AstroData import AstroData
 
 from ConfigSpace import config_walk
 from Requirements import *
@@ -261,7 +261,9 @@ class Structure(object):
                             #print "S220:", id(ppart), ppart.extension()
                             #print "S221:", arrayBy, arrayBy(ppart.extension())
                             hduignore.append(hdu)
+                            #print repr(arrayBy)
                             #self.arrayToken = arrayBy(AstroData(hdu))
+                            #print "Structures @L265:: arrayToken:", self.arrayToken
                         else:
                             if len(ppfound) == 0:
                                 # found failure, add part
@@ -690,7 +692,7 @@ def apply_structure_by_type(dataset = None, stype = None):
         if type(stype) == list:
             types = stype
     else:
-        types = dataset.get_types()
+        types = dataset.types
     applied = 0
     for typ in types:
         # see if there is a structure

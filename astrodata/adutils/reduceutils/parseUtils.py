@@ -6,7 +6,7 @@
 # ------------------------------------------------------------------------------
 # $Id$
 # ------------------------------------------------------------------------------
-__version__      = '$Revision$'[11:-2]  # Changed by swapper, 22 May 2014
+__version__      = '$Revision$'[11:-2]
 __version_date__ = '$Date$'[7:-3]
 # ------------------------------------------------------------------------------
 # This cli parser employs argparse rather than the depracated optparse.
@@ -30,18 +30,13 @@ from argparse import HelpFormatter
 from astrodata.RecipeManager import UserParam, UserParams
 from astrodata.AstroDataType import get_classification_library
 
-from astrodata.adutils import logutils
-from astrodata.adutils import gemLog, strutil
+from astrodata.adutils import strutil
 
-#Do not know where 'reduceActions' is going to be yet ...
 from reduceActions import PosArgAction
 from reduceActions import BooleanAction 
 from reduceActions import ParameterAction
 from reduceActions import CalibrationAction
 from reduceActions import UnitaryArgumentAction
-
-# ------------------------------------------------------------------------------
-log = logutils.get_logger(__name__)
 
 # ------------------------------------------------------------------------------
 class ReduceHelpFormatter(HelpFormatter):
@@ -95,23 +90,50 @@ def buildParser(version):
                         version='%(prog)s v'+ version)
 
     parser.add_argument("-d", "--displayflags", dest='displayflags',
-                        default=False,
-                        nargs='*', action=BooleanAction,
-                        help="display all parsed option flags.")
+                        default=False, nargs='*', action=BooleanAction,
+                        help="display all parsed option flags and exit.")
 
     parser.add_argument('files', metavar='fitsfile', nargs = "*",
                         action=PosArgAction, default=[],
                         help="fitsfile [fitsfile ...] ")
 
-    parser.add_argument("-i", "--intelligence", dest='intelligence', nargs="*",
-                        default=False, action=BooleanAction, 
-                        help="Endow recipe system with intelligence to perform "
-                        "operations faster and smoother")
+    parser.add_argument("--addprimset", dest="primsetname", default=None,
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="add user supplied primitives to reduction;"
+                        "path to a primitives module.")
 
-    parser.add_argument("-m", "--monitor", dest="bMonitor", default=False,
+    parser.add_argument("--calmgr", dest="cal_mgr", default=None,
+                        help="calibration manager url overides lookup table")
+
+    parser.add_argument("--context", dest="running_contexts", default=None,
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="Use <context> for primitives sensitive to "
+                        "context. Eg., --context QA")
+
+    parser.add_argument("--invoked", dest="invoked", default=False, 
                         nargs="*", action=BooleanAction,
-                        help="Open TkInter window to monitor progress of "
-                        "execution (NOTE: One window will open per recipe run)")
+                        help="Report that reduce was invoked by adcc")
+
+    parser.add_argument("--logmode", dest="logmode", default="standard",
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="Set log mode: 'standard', 'console', 'quiet', "
+                        "'debug', or 'null'.")
+
+    parser.add_argument("--logfile", dest="logfile", default="reduce.log",
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="name of log (default is 'reduce.log')")
+
+    parser.add_argument("--loglevel", dest="loglevel", default="stdinfo", 
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="Set the verbose level for console "
+                        "logging; (critical, error, warning, status, stdinfo, "
+                        "fullinfo, debug)")
+
+    parser.add_argument("--override_cal", dest="user_cals", default=None,
+                        nargs="*", action=CalibrationAction,
+                        help="Add calibration to User Calibration Service. "
+                        "' --override_cal CALTYPE:CAL_PATH' "
+                        "Eg., --override_cal processed_arc:wcal/gsTest_arc.fits ")
 
     parser.add_argument("-p", "--param", dest="userparam", default=None,
                         nargs="*", action=ParameterAction,
@@ -125,11 +147,6 @@ def buildParser(version):
                         "Separate par/val pairs by whitespace: "
                         "(eg. '-p par1=val1 par2=val2')")
 
-    parser.add_argument("--context", dest="running_contexts", default=None,
-                        nargs="*", action=UnitaryArgumentAction,
-                        help="provides general 'context name' for primitives"
-                        " sensitive to context.")
-
     parser.add_argument("-r", "--recipe", dest="recipename", default=None,
                         nargs="*", action=UnitaryArgumentAction,
                         help="specify which recipe to run by name")
@@ -139,64 +156,15 @@ def buildParser(version):
                         help="Run a recipe based on astrotype (either overrides"
                         " default type, or begins without initial input. Eg. "
                         "recipes that begin with primitives that acquire data)")
-
-    ##@@FIXME: This next option should not be put into the package
-    parser.add_argument("--rtf-mode", dest="rtf", default=False,
-                        nargs="*", action=BooleanAction,
-                        help="Use rtf mode.")
+ 
+    parser.add_argument("--suffix", dest='suffix', default=None,
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="Add 'suffix' to filenames at end of reduction.")
 
     parser.add_argument("--throw_descriptor_exceptions", 
                         dest = "throwDescriptorExceptions", default=False,
                         nargs="*", action=BooleanAction,
                         help="Throw exceptions when Descriptors fail")
-
-    parser.add_argument("--addprimset", dest="primsetname", default = None,
-                        nargs="*", action=UnitaryArgumentAction,
-                        help="add user supplied primitives to reduction."
-                        "A primitives module or path to a primitives module.")
-
-    parser.add_argument("--calmgr", dest="cal_mgr", default=None,
-                        help="calibration manager url overides lookup table")
-
-    parser.add_argument("--force-height", dest="forceHeight", default=None,
-                        nargs="*", action=UnitaryArgumentAction,
-                        help="force height of terminal output")
-
-    parser.add_argument("--force-width", dest="forceWidth", default=None,
-                        nargs="*", action=UnitaryArgumentAction,
-                        help="force width of terminal output")
-
-    parser.add_argument("--invoked", dest="invoked", default=False, 
-                        nargs="*", action=BooleanAction,
-                        help="tell user reduce invoked by adcc")
-
-    parser.add_argument("--logmode", dest="logmode", default="standard",
-                        nargs="*", action=UnitaryArgumentAction,
-                        help="Set log mode (standard, console, debug, null)")
-
-    parser.add_argument("--logfile", dest="logfile", default="reduce.log",
-                        nargs="*", action=UnitaryArgumentAction,
-                        help="name of log (default = 'reduce.log')") 
-
-    parser.add_argument("--loglevel", dest="loglevel", default="stdinfo", 
-                        nargs="*", action=UnitaryArgumentAction,
-                        help="Set the verbose level for console "
-                        "logging; (critical, error, warning, status, stdinfo, "
-                        "fullinfo, debug)")
-
-    parser.add_argument("--override_cal", dest="user_cals", default=None,
-                        nargs="*", action=CalibrationAction,
-                        help="Add calibration to User Calibration Service. "
-                        "'--override_cal CALTYPE_1:CAL_PATH_1 CALTYPE_N:CAL_PATH_N' "
-                        "Eg., --override_cal processed_arc:wcal/gsN20011112S064_arc.fits ")
-
-    parser.add_argument("--writeInt", dest='writeInt', default=False,
-                        nargs="*", action=BooleanAction,
-                        help="Write intermediate outputs (UNDER CONSTRUCTION)")
-
-    parser.add_argument("--suffix", dest='suffix', default=None,
-                        nargs="*", action=UnitaryArgumentAction,
-                        help="Add 'suffix' to filenames at end of reduction.")    
     return parser
 
 # --------------------------- Emulation functions ------------------------------
@@ -230,9 +198,9 @@ def insert_option_value(parser, args, option, value):
 def show_parser_options(parser, args):
     all_opts = parser.__dict__['_option_string_actions'].keys()
     handled_flag_set = []
-    print "\n\t"+"-"*25+" switches, vars, vals "+"-"*20+"\n"
+    print "\n\t"+"-"*20+"   switches, vars, vals  "+"-"*20+"\n"
     print "\t  Literals\t\t\tvar 'dest'\t\tValue"
-    print "\t", "-"*60
+    print "\t", "-"*65
     for opt in all_opts:
         all_option_flags = get_option_flags(parser, opt)
         if opt in handled_flag_set:
@@ -265,59 +233,8 @@ def show_parser_options(parser, args):
                 continue
             else: 
                 print "\t", all_option_flags, "\t"*2+"::", dvar, "\t\t::", val
-    print "\t"+"-"*60+"\n"
+    print "\t"+"-"*65+"\n"
     return
-
-# ------------------------------------------------------------------------------
-def abortBadParamfile(lines):
-    for i in range(len(lines)):
-        log.error("  %03d:%s" % (i, lines[i]))
-    log.error("  %03d:<<stopped parsing due to error>>" % (i+1))
-    sys.exit(1)
-    return
-
-# ------------------------------------------------------------------------------
-def check_files(args):
-    """
-    Sanity check on submitted files.
-    """
-    try:
-        assert(args.files or args.astrotype)
-    except AssertionError:
-        log.info("Either file(s) OR an astrotype is required;"
-                 "-t or --astrotype.")
-        log.error("NO INPUT FILE or ASTROTYPE specified")
-        log.info("type 'reduce -h' for usage information")
-        sys.exit(1)
-
-    input_files = []
-    bad_files   = []
-
-    for image in args.files:
-        if not os.access(image, os.R_OK):
-            log.error('Cannot read file: '+str(image))   
-            log.warning("Some files not found or cannot be opened:\n\t" + image)
-            bad_files.append(image)
-        else:
-            input_files.append(image)
-
-    try:
-        assert(bad_files)
-        print "Got a badList ... ", bad_files
-        print "I.e. File not found or unreadable."
-        err = "\n\t".join(bad_files)
-        log.error("Some files not found or can't be loaded:\n\t" + err)
-        log.error("Exiting due to missing datasets.")
-        try:
-            assert(input_files)
-            found = "\n\t".join(input_files)
-            log.info("These datasets were found and loaded:\n\t" + found)
-        except AssertionError:
-            print "Got no input files"
-            pass
-        sys.exit(1)
-    except AssertionError:
-            return input_files
 
 # ------------------------------------------------------------------------------
 def set_user_params(userparams):
@@ -391,8 +308,4 @@ def normalize_args(args):
         args.cal_mgr = args.cal_mgr[0]
     if isinstance(args.suffix, list):
         args.suffix = args.suffix[0]
-    if isinstance(args.forceHeight, list):
-        args.forceHeight = args.forceHeight[0]
-    if isinstance(args.forceWidth, list):
-        args.forceWidth = args.forceWidth[0]
     return args

@@ -18,7 +18,7 @@ from astrodata.Errors import AstroDataError
 from astrodata.Errors import DescriptorError
 from astrodata.ReductionObjectRequests import CalibrationRequest
 
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 
 #-------------------------------------------------------------------------------
 class CalibrationDefinitionLibrary(object):
@@ -29,7 +29,7 @@ class CalibrationDefinitionLibrary(object):
 
     def __init__(self):
         self.xmlIndex = {}
-        self.log = gemLog.getGeminiLog()
+        self.log = logutils.get_logger(__name__)
 
     def __str__(self):
         return str(self.xmlIndex)

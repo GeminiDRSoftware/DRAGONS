@@ -27,17 +27,17 @@ from astrodata import Lookups
 from astrodata.AstroData import AstroData
 
 from astrodata.RecipeManager import RecipeLibrary
-from astrodata.RecipeManager import RecipeExcept
 from astrodata.RecipeManager import ReductionContext
+from astrodata.RecipeManager import RecipeError
 
-from astrodata.ReductionObjects import ReductionExcept
+from astrodata.ReductionObjects import ReductionError
 from astrodata.ReductionObjects import command_clause
 
 from astrodata.adutils import logutils
 from astrodata.adutils.terminal import IrafStdout
 from astrodata.usercalibrationservice import user_cal_service
 
-from astrodata.gdpgutil   import cluster_by_groupid
+from astrodata.gdpgutil import cluster_by_groupid
 from astrodata.debugmodes import set_descriptor_throw
 
 import parseUtils
@@ -45,13 +45,10 @@ import parseUtils
 from caches import cachedirs
 from caches import stkindfile
 # ------------------------------------------------------------------------------
-# start color printing filter for xgtermc
-# useTK      = args.bMonitor
 PKG_type   = "Gemini"       # moved out of lookup_table call
 irafstdout = IrafStdout()   # fout = filteredstdout
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
-
 # ------------------------------------------------------------------------------
 def start_proxy_servers():
     adcc_proc = None
@@ -96,10 +93,10 @@ class Reduce(object):
         self.recipename   = args.recipename
         self.primsetname  = args.primsetname
 
-        self.rtf       = args.rtf
+        self.rtf       = False
         self.cal_mgr   = args.cal_mgr
         self.invoked   = args.invoked
-        self.writeInt  = args.writeInt
+        self.writeInt  = False
         self.user_cals = args.user_cals
 
         self.logfile   = args.logfile
@@ -111,11 +108,16 @@ class Reduce(object):
         self.user_params  = upar
         self.globalParams = gpar
 
-        self.intelligence = args.intelligence
+        self.intelligence = False
         self.running_contexts = args.running_contexts
         self.throwDescriptorExceptions = args.throwDescriptorExceptions
 
-
+    # The certain values indicated as 'False' in the above member set 
+    # have been discontinued and removed from the reduce parser, i.e.
+    # they are no longer available on the command line and values for
+    # them are not returned by the buildParser() function. Some may
+    # be implemented in future development, such as 'intelligence.'
+    #
     # ----------------------------------------------------------------------
     # configure the run space; execute recipe(s).
     def runr(self, command_clause=command_clause):
@@ -219,11 +221,11 @@ class Reduce(object):
                 xstat = signal.SIGIO
                 log.error(rec_msg)
                 log.error(str(err))
-            except RecipeExcept, err:
+            except RecipeError, err:
                 xstat = signal.SIGIO
                 log.error(rec_msg)
                 log.error(str(err))
-            except ReductionExcept, err:
+            except ReductionError, err:
                 xstat = signal.SIGABRT
                 log.error(red_msg)
                 break
@@ -387,7 +389,7 @@ class Reduce(object):
             types = [self.astrotype]
         else:
             ro = self.rl.retrieve_reduction_object(self.infiles[0])
-            types = self.infiles[0].get_types()
+            types = self.infiles[0].types
 
         # add command clause
         ro.register_command_clause(command_clause)
@@ -442,7 +444,7 @@ class Reduce(object):
             if rec.startswith("recipe."):
                 rname = re.sub("recipe.", "", os.path.basename(rec))
             else:
-                raise RecipeExcept("Recipe names must be like 'recipe.RECIPENAME'")
+                raise RecipeError("Recipe names must be like 'recipe.RECIPENAME'")
 
             rsrc  = open(rec).read()
             prec  = self.rl.compose_recipe(rname, rsrc)
@@ -462,7 +464,7 @@ class Reduce(object):
                     self.rl.load_and_bind_recipe(ro, rec, astrotype=self.astrotype)
                 else:
                     self.rl.load_and_bind_recipe(ro, rec, dataset=self.infiles[0])
-            except RecipeExcept, x:
+            except RecipeError, x:
                 log.error("INSTRUCTION MAY BE A MISPELLED PRIMITIVE OR RECIPE NAME")
                 msg = "name of recipe unknown"
                 if hasattr(x, "name"):
@@ -470,7 +472,7 @@ class Reduce(object):
                 log.error("-"*len(msg))
                 log.error(msg)
                 log.error("-"*len(msg))
-                raise RecipeExcept(msg)
+                raise RecipeError(msg)
         # ---------------------------------------------------- #
         # COMMAND LOOP
         # ---------------------------------------------------- #

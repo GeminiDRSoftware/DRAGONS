@@ -1,0 +1,159 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Discussion &mdash; Reduce Users Manual X1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/todo-styles.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     'X1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Reduce Users Manual X1 documentation" href="index.html" />
+    <link rel="next" title="6. Acknowledgments" href="ack.html" />
+    <link rel="prev" title="Supplemental tools" href="supptools.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="ack.html" title="6. Acknowledgments"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="supptools.html" title="Supplemental tools"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Reduce Users Manual X1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="discussion">
+<h1>Discussion<a class="headerlink" href="#discussion" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="the-adcc">
+<span id="adcc"></span><h2>The adcc<a class="headerlink" href="#the-adcc" title="Permalink to this headline">¶</a></h2>
+<p>As a matter of operations, <tt class="docutils literal"><span class="pre">reduce</span></tt> and the Recipe System depend upon the
+services of what is called the <tt class="docutils literal"><span class="pre">adcc</span></tt>, the Automated Data Communication Center.
+The <tt class="docutils literal"><span class="pre">adcc</span></tt> provides services to pipeline operations through two proxy servers,
+an XML-RPC server and an HTTP server. The XML_RPC server serves calibration
+requests made on it, and retrieves calibrations that satisfiy those requests
+from the Gemini FITS Store, a service that provides automated calibration
+lookup and retrieval.</p>
+<p>The <tt class="docutils literal"><span class="pre">adcc</span></tt> can be run externally and will run continuously until it is
+shutdown. Any instances of <tt class="docutils literal"><span class="pre">reduce</span></tt> (and the Recipe System) will employ
+this external instance of the <tt class="docutils literal"><span class="pre">adcc</span></tt> to service a pipeline&#8217;s calibration
+requests. However, a user of <tt class="docutils literal"><span class="pre">reduce</span></tt> need not start an instance of the
+<tt class="docutils literal"><span class="pre">adcc</span></tt> nor, indeed, know anytihng about the <tt class="docutils literal"><span class="pre">adcc</span></tt> <cite>per se</cite>. If one is not
+available, an instance of the <tt class="docutils literal"><span class="pre">adcc</span></tt> will be started by <tt class="docutils literal"><span class="pre">reduce</span></tt> itself,
+and will serve that particular <tt class="docutils literal"><span class="pre">reduce</span></tt> process and then terminate.</p>
+<p>This note is provided should users notice an <tt class="docutils literal"><span class="pre">adcc</span></tt> process and wonder what
+it is.</p>
+</div>
+<div class="section" id="future-enhancements">
+<h2>Future Enhancements<a class="headerlink" href="#future-enhancements" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="intelligence">
+<h3>Intelligence<a class="headerlink" href="#intelligence" title="Permalink to this headline">¶</a></h3>
+<p>One enhancement long imagined is what has been generally termed &#8216;intelligence&#8217;.
+That is, an ability for either <tt class="docutils literal"><span class="pre">reduce</span></tt> or some utility to automatically do
+AstroDataType classification of a set of data, group them appropriately, and
+then pass these grouped data to the Recipe System.</p>
+<p>As things stand now, it is up to the user to pass commonly typed data to
+<tt class="docutils literal"><span class="pre">reduce</span></tt>. As shown in the previous section, <a class="reference internal" href="supptools.html#typewalk"><em>typewalk</em></a>, <tt class="docutils literal"><span class="pre">typewalk</span></tt>
+can help a user perform this task and create a &#8216;ready-to-run&#8217; &#64;file that can
+be passed directly to <tt class="docutils literal"><span class="pre">reduce</span></tt>. Properly implemented &#8216;intelligence&#8217; will
+<cite>not</cite> require the user to determine the AstroDataTypes of datasets.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Discussion</a><ul>
+<li><a class="reference internal" href="#the-adcc">The adcc</a></li>
+<li><a class="reference internal" href="#future-enhancements">Future Enhancements</a><ul>
+<li><a class="reference internal" href="#intelligence">Intelligence</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="supptools.html"
+                        title="previous chapter">Supplemental tools</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="ack.html"
+                        title="next chapter">6. Acknowledgments</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/discuss.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="ack.html" title="6. Acknowledgments"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="supptools.html" title="Supplemental tools"
+             >previous</a> |</li>
+        <li><a href="index.html">Reduce Users Manual X1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Kennneth Anderson.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

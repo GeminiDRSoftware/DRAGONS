@@ -31,9 +31,20 @@ from astrodata.Errors    import SingleHDUMemberExcept
 #
 # TESTFILEs are located under gemini_python/test_data/astrodata_bench/
 # TESTURL specifies a non-extistent file, but request on a actual service.
-TESTFILE  = '../../../test_data/astrodata_bench/GS_GMOS_IMAGE.fits'    # 3 'SCI'
-TESTFILE2 = '../../../test_data/astrodata_bench/GS_GMOS_IMAGE_2.fits'  # 1 'SCI'
-TESTPHU   = '../../../test_data/astrodata_bench/GN_GNIRS_IMAGE_PHU.fits'  # PHU
+#
+# find 'test_data' under gemini_python
+GEM = None
+for path in sys.path:
+    if 'gemini_python' in path:
+        GEM = os.path.join(path.split('gemini_python')[0], 
+                           'gemini_python', 'test_data')
+        break
+if GEM is None:
+    SystemExit("Cannot find gemini_python test_data in available paths")
+
+TESTFILE  = os.path.join(GEM, 'astrodata_bench/GS_GMOS_IMAGE.fits')   # 3 'SCI'
+TESTFILE2 = os.path.join(GEM, 'astrodata_bench/GS_GMOS_IMAGE_2.fits')  # 1 'SCI'
+TESTPHU   = os.path.join(GEM, 'astrodata_bench/GN_GNIRS_IMAGE_PHU.fits')  # PHU
 TESTURL   = 'http://fits/file/GS_GMOS_IMAGE.fits'
 KNOWNTYPE = 'GMOS_IMAGE'
 KNOWNSTAT = 'GMOS_RAW'
@@ -150,25 +161,22 @@ def test_slice_4():
     sub_ad = ad['FOO']
     assert sub_ad is None
 
-def test_slice_4():
+def test_slice_5():
     """ Bad Index """
     ad = AstroData(dataset=TESTFILE)
     with pytest.raises(IndexError):
         ad[99]
 
-@xfail(reason="DISALLOW NEGATIVE INDEX: TO BE IMPLEMENTED")
-def test_slice_5():
-    """ Fail on negative index """
+def test_slice_6():
+    """ Slice on negative index """
+    ad = AstroData(dataset=TESTFILE)
+    assert isinstance(ad[-1], AstroData)
+
+def test_slice_7():
+    """ Bad negative index """
     ad = AstroData(dataset=TESTFILE)
     with pytest.raises(IndexError):
-        ad[-1]
-
-@xfail(reason="DISALLOW NEGATIVE INDEX: NOT IMPLEMENTED")
-def test_slice_6():
-    """ Fail on negative index """
-    ad = AstroData(dataset=TESTFILE)
-    if isinstance(ad[-1], AstroData):
-        raise NotImplementedError
+        ad[-5]
 
 #   __len__
 def test_len_1():
@@ -221,13 +229,10 @@ def test_attr_data_4():
 #   @property descriptors
 #   N.B. This interface is not yet implemented.
 #
-#   ad.descriptors is the new property and replacement for the all_descriptors()
-#   method. For now, we shall call all_descriptors(), which will fail on the new
-#   interface.
-@xfail(reason="TO BE IMPLEMENTED")
+#   ad.descriptors is the new property and replacement for all_descriptors()
 def test_attr_descriptors_1():
     ad = AstroData(header=header1, data=data1)
-    assert isinstance(ad.descriptors, dict)       # FAIL
+    assert isinstance(ad.descriptors, dict)
 
 #   @property header
 def test_attr_header_1():
@@ -265,15 +270,13 @@ def test_attr_header_6():
 #   ad.headers is the new property and replacement for the get_headers()
 #   method. For now, we shall call get_headers(), which will fail on the new
 #   interface.
-@xfail(reason="TO BE IMPLEMENTED")
 def test_attr_headers_1():
     ad = AstroData(TESTFILE)
-    assert isninstance(ad.headers, list)
+    assert isinstance(ad.headers, list)
 
-@xfail(reason="TO BE IMPLEMENTED")
 def test_attr_headers_2():
     ad = AstroData(TESTFILE)
-    assert len(ad.headers == len(ad) + 1)
+    assert len(ad.headers) == len(ad) + 1
 
 #   @property hdulist
 def test_attr_hdulist_1():
@@ -348,12 +351,11 @@ def test_method_append_2():
     with pytest.raises(AstroDataError):
         ad.append(moredata=ad2)
 
-@xfail(reason="append() breaks on <HDUList>: Trac #672")
 def test_method_append_3():
     ad = AstroData(TESTFILE)
     initial_len = len(ad)
     ad.append(moredata=pfob, auto_number=True)
-    assert len(ad) == initial_len + len(pfob)
+    assert len(ad) == initial_len + len(pfob) - 1 
 
 def test_method_append_4():
     ad = AstroData(TESTFILE)
@@ -366,11 +368,26 @@ def test_method_append_5():
     ad.append(moredata=hdu1, auto_number=True)
     assert ad.hdulist[-1] == hdu1
     
-@xfail(reason="append() is broken : Trac #479")
 def test_method_append_6():
     ad = AstroData(TESTFILE)
     initial_len = len(ad)
     ad.append(header=header1, data=data1, auto_number=True)
+
+def test_method_append_7():
+    ad = AstroData(TESTFILE)
+    ad.append(header=header1, data=data1, extname='TESTH', extver=1)
+    assert ad[3].header['EXTNAME'] == 'TESTH'
+
+def test_method_append_8():
+    ad = AstroData(TESTFILE)
+    ad.append(header=header1, data=data1, extname='TESTH', extver=2)
+    assert ad[3].header['EXTVER'] == 2
+
+def test_method_append_9():
+    ad = AstroData(TESTFILE)
+    ad.append(header=header1, data=data1, extname='TESTH', extver=1)
+    assert ad[('TESTH', 1)]
+
 
 #   close()
 def test_method_close_1():
@@ -404,14 +421,13 @@ def test_method_insert_2():
     ad.insert(1, moredata=hdu1, auto_number=True)
     assert len(ad) == initial_len + 1
 
-@xfail(reason="extname parameter unemployed. Trac #479")
 def test_method_insert_3():
     ad = AstroData(TESTFILE)
     initial_len = len(ad)
     ad.insert(1, moredata=hdu1, extname='TEST', auto_number=True)
-    assert ad[1].header['TEST']
+    with pytest.raises(KeyError):
+        assert ad[1].header['TEST']
 
-@xfail(reason="insert() breaks on <HDUList>. Trac #675")
 def test_method_insert_4():
     ad = AstroData(TESTFILE)
     initial_len = len(ad)
@@ -426,10 +442,41 @@ def test_method_insert_5():
 
 def test_method_insert_6():
     ad = AstroData(TESTFILE)
+    del header1['EXTNAME']
+    ad.insert(1, header=header1, data=data1, extname="TEST",
+              auto_number=True)
+    assert ad[1].header.get("EXTNAME") == "TEST"
+
+def test_method_insert_7():
+    ad = AstroData(TESTFILE)
+    xname = "TEST"
+    xver  = 99
+    del header1['EXTNAME']
+    ad.insert(1, header=header1, data=data1, extname=xname,
+              extver=xver, auto_number=True)
+    assert ad[1].header.get("EXTNAME") == xname
+    assert ad[1].header.get("EXTVER") == xver
+
+def test_method_insert_8():
+    ad = AstroData(TESTFILE)
     initial_len = len(ad)
     header1['EXTNAME'] = 'TEST'
     ad.insert(1, header=header1, data=data1, auto_number=True)
     assert ad[1].header['EXTNAME'] == 'TEST'
+
+def test_method_insert_9():
+    ad = AstroData(TESTFILE)
+    initial_len = len(ad)
+    header1['EXTNAME'] = "TEST"
+    with pytest.raises(AstroDataError):
+        ad.insert(1, header=header1, auto_number=True)
+
+def test_method_insert_10():
+    ad = AstroData(TESTFILE)
+    initial_len = len(ad)
+    del header1['EXTNAME']
+    with pytest.raises(AstroDataError):
+        ad.insert(1, data=data1, auto_number=True)
 
 #   open()
 def test_method_open_1():
@@ -449,7 +496,7 @@ def test_method_remove_1():
     ad.remove(1)
     assert len(ad) == initial_len - 1
 
-def test_method_remove_1():
+def test_method_remove_2():
     ad = AstroData(TESTFILE)
     initial_len = len(ad)
     ad.remove(('SCI', 1))
@@ -525,43 +572,35 @@ def test_attr_types_6():
     assert PHUTYPE in ad.types
 
 #   type()
-@xfail(reason="TO BE IMPLEMENTED")
 def test_method_type_1():
     ad = AstroData(TESTFILE)
     assert isinstance(ad.type(), list)
 
-@xfail(reason="TO BE IMPLEMENTED")
 def test_method_type_2():
     ad = AstroData(TESTFILE)
     assert isinstance(ad.type(prune=True), list)
 
-@xfail(reason="TO BE IMPLEMENTED")
 def test_method_type_3():
     ad = AstroData(TESTFILE)
     assert KNOWNTYPE in ad.type()
 
-@xfail(reason="TO BE IMPLEMENTED")
 def test_method_type_4():
     ad = AstroData(TESTFILE)
     assert KNOWNTYPE in ad.type(prune=True)
 
 #   status()
-@xfail(reason="TO BE IMPLEMENTED")
 def test_method_status_1():
     ad = AstroData(TESTFILE)
     assert isinstance(ad.status(), list)
 
-@xfail(reason="TO BE IMPLEMENTED")
 def test_method_status_2():
     ad = AstroData(TESTFILE)
     assert isinstance(ad.status(prune=True), list)
 
-@xfail(reason="TO BE IMPLEMENTED")
 def test_method_status_3():
     ad = AstroData(TESTFILE)
     assert KNOWNSTAT in ad.status()
 
-@xfail(reason="TO BE IMPLEMENTED")
 def test_method_status_4():
     ad = AstroData(TESTFILE)
     assert KNOWNSTAT in ad.status(prune=True)
@@ -605,44 +644,49 @@ def test_method_count_exts_3():
     sci_exts = 1
     assert sci_exts == ad.count_exts('SCI')
 
-#   ext_index()   Current: get_int_ext()
-@xfail(reason="TO BE IMPLEMENTED")
+#   ext_index() was get_int_ext()
 def test_method_ext_index_1():
     ad = AstroData(TESTFILE)
     assert isinstance(ad.ext_index(('SCI',1)), int)
 
-@xfail(reason="TO BE IMPLEMENTED")
 def test_method_ext_index_2():
     ad = AstroData(TESTFILE)
     assert ad.ext_index(('SCI',1)) == 0
 
-@xfail(reason="TO BE IMPLEMENTED")
 def test_method_ext_index_3():
     ad = AstroData(TESTFILE)
     assert ad.ext_index(('SCI',3)) == 2
-    
-# Here we are going to ensure that the current get_int_ext()
-# is working correctly. These shall produce an XPASS condition.
-#    *** To be removed ***
-@xfail(reason="TO BE IMPLEMENTED")
-def test_method_old_get_int_ext_1():
-    ad = AstroData(TESTFILE)
-    assert isinstance(ad.get_int_ext(('SCI',1)), int)
 
-@xfail(reason="TO BE IMPLEMENTED")
-def test_method_old_get_int_ext_2():
+#   rename_ext()
+def test_method_rename_ext_1():    # Raise on multi-ext 
     ad = AstroData(TESTFILE)
-    assert ad.get_int_ext(('SCI',1)) == 0
+    with pytest.raises(SingleHDUMemberExcept):
+        ad.rename_ext("SCI", ver=99)
 
-@xfail(reason="TO BE IMPLEMENTED")
-def test_method_old_get_int_ext_3():
-    ad = AstroData(TESTFILE)
-    assert ad.get_int_ext(('SCI',3)) == 2
-#   *** End To be removed ***
+def test_method_rename_ext_2():
+    ad = AstroData(TESTFILE)      
+    with pytest.raises(SingleHDUMemberExcept):
+        ad.rename_ext("FOO")
+
+def test_method_rename_ext_3():
+    ad = AstroData(TESTFILE2)      # Single 'SCI' ext
+    ad.rename_ext("FOO")
+    assert ad.extname() == "FOO"
+
+def test_method_rename_ext_4():
+    ad = AstroData(TESTFILE2)
+    ad.rename_ext("FOO", ver=99)
+    assert ad.extname() == "FOO"
+    assert ad.extver() == 99
+
+def test_method_rename_ext_5():    # TypeError w/ only 'ver=' param
+    ad = AstroData(TESTFILE2)
+    with pytest.raises(TypeError):
+        ad.rename_ext(ver=2)
 
 #   extname()
 def test_method_extname_1():
-    ad = AstroData(TESTFILE2)      # Single 'SCI' extension file
+    ad = AstroData(TESTFILE2)      # Single 'SCI' ext
     assert isinstance(ad.extname(), str)
 
 def test_method_extname_2():
@@ -656,7 +700,7 @@ def test_method_extname_3():
 
 #   extver()
 def test_method_extver_1():
-    ad = AstroData(TESTFILE2)      # Single 'SCI' extension file
+    ad = AstroData(TESTFILE2)      # Single 'SCI' ext
     assert isinstance(ad.extver(), int)
 
 def test_method_extver_2():

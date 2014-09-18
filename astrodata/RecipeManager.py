@@ -18,10 +18,13 @@ import gdpgutil
 from gdpgutil import inherit_index
 import ReductionObjects
 import IDFactory as idFac # id hashing functions
-from Errors import ReduceError, AstroDataError
+
+from Errors import AstroDataError
+from Errors import PrimitiveError
+from Errors import ReduceError
+
 from gdpgutil import pick_config
-from ParamObject import PrimitiveParameter
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from AstroDataType import get_classification_library
 from ReductionContextRecords import CalibrationRecord, \
     StackableRecord, AstroDataRecord, FringeRecord
@@ -34,7 +37,7 @@ from CalibrationDefinitionLibrary import CalibrationDefinitionLibrary
 import eventsmanagers
 import traceback
 from primitivescat import PrimitivesCatalog
-
+#------------------------------------------------------------------------------ 
 centralPrimitivesIndex = {}
 centralRecipeIndex = {}
 centralRecipeInfo = {}
@@ -42,39 +45,24 @@ centralReductionMap = {}
 centralAstroTypeRecipeIndex = {}
 centralParametersIndex = {}
 centralAstroTypeParametersIndex = {}
-
 centralPrimitivesCatalog = PrimitivesCatalog()
 #------------------------------------------------------------------------------ 
 MAINSTREAM = "main"
-class RecipeExcept:
+#------------------------------------------------------------------------------ 
+class RecipeError(Exception):
     """ This is the general exception the classes and functions in the
     Structures.py module raise.
     """
-    def __init__(self, msg="Exception Raised in Recipe System", **argv):
-        """This constructor takes a message to print to the user.
-        """
-        self.message = msg
-        for arg in argv.keys():
-            exec("self."+arg+"="+repr(argv[arg]))
-            
-            
-    def __str__(self):
-        """This str conversion member returns the message given by the user
-        (or the default message) when the exception is not caught.
-        """
-        return self.message
-        
-class SettingFixedParam(RecipeExcept):
+    pass 
+
+class SettingFixedParam(RecipeError):
     pass
 
-class RCBadParmValue(RecipeExcept):
+class RCBadParmValue(RecipeError):
     pass
-       
+#------------------------------------------------------------------------------ 
+
 class UserParam(object):
-    astrotype = None
-    primname = None
-    param = None
-    value = None
     def __init__(self, astrotype, primname, param, value):
         self.astrotype = astrotype
         self.primname = primname
@@ -82,12 +70,14 @@ class UserParam(object):
         self.value = value
     
     def __repr__(self):
-        ret = "UserParam: adtype=%s primname=%s %s=%s" % (repr(self.astrotype),
-                                          repr(self.primname),
-                                          repr(self.param),
-                                          repr(self.value),
-                                          )
+        ret = "UserParam: adtype=%s primname=%s %s=%s" % \
+              (repr(self.astrotype),
+               repr(self.primname),
+               repr(self.param),
+               repr(self.value),
+              )
         return ret
+
 class UserParams(object):
     user_param_dict = None
     
@@ -120,7 +110,7 @@ class UserParams(object):
             self.user_param_dict[up.astrotype].update({up.primname: {}})
             
         if up.param in self.user_param_dict[up.astrotype][up.primname]:
-            raise RecipeExcept("Parameter (%s.%s%s) already set by user" % \
+            raise RecipeError("Parameter (%s.%s%s) already set by user" % \
             (up.astrotype, up.primname, up.param))
         else:
             self.user_param_dict[up.astrotype][up.primname].update({up.param:up.value})
@@ -132,7 +122,8 @@ class UserParams(object):
     def __contains__(self, arg):
         if self.user_param_dict:
             return self.user_param_dict.__contains__(arg0)
-            
+
+#------------------------------------------------------------------------------ 
 class ReductionContext(dict):
     """The ReductionContext is used by primitives and recipies, implicitely in the
     later case, to get input and report output. This allows primitives to be
@@ -779,7 +770,7 @@ class ReductionContext(dict):
         if stream == None:
             stream = self._current_stream
         if stream in self._output_streams:
-			self._output_streams.remove(stream)
+            self._output_streams.remove(stream)
         return
     
     def get_stack(self, purpose=""):
@@ -1091,7 +1082,7 @@ class ReductionContext(dict):
                         astrodata.ReductionContextRecords.AstroDataRecord):
                         rets += "\n    ReductionContextRecords.AstroDataRecord:"
                         rets += str(rcr)
-                        rets += rcr.ad.infostr()
+                        rets += rcr.ad._infostr()
         
         if context_vars:
             # original_inputs
@@ -1170,8 +1161,8 @@ class ReductionContext(dict):
                                 rets += "'%s':\n\n    %s" % \
                     (str(jkey), "ReductionContextRecords.AstroDataRecord:")
                                 rets += str(rcr)
-                                rets += "\n    OUTPUT AD.INFO (rcr.ad.infostr())"
-                                rets += rcr.ad.infostr() + "\n"
+                                rets += "\n    OUTPUT AD.INFO (rcr.ad._infostr())"
+                                rets += rcr.ad._infostr() + "\n"
                             else:
                                 rets += str(rcr)
                 rets += "    " + "-"*41 + "\n\n"
@@ -1285,7 +1276,7 @@ class ReductionContext(dict):
                 filename = data.filename
                 parent = data.parent
             else:
-                raise RecipeExcept("BAD ARGUMENT: '%(data)s'->'%(type)s'" % {'data':str(data), 'type':str(type(data))})
+                raise RecipeError("BAD ARGUMENT: '%(data)s'->'%(type)s'" % {'data':str(data), 'type':str(type(data))})
                
             if current_dir == True:
                 root = os.getcwd()
@@ -1448,13 +1439,8 @@ class ReductionContext(dict):
         other streams).
         """
         ##@@TODO: Read the new way code is done.
-        #if category != MAINSTREAM:
-        #    raise RecipeExcept("You may only use " + 
-        #        "'main' category output at this time.")
-        # print "RM1101:", self.ro.curPrimName, "stream:", repr(stream)
         if stream == None:
             stream = self._current_stream
-        #print "RM1105:", self.ro.curPrimName, "stream:", stream
         # this clause saves the output stream so we know when to 
         # the first report happens so we can clear the set at that time.
         # print "RM1459:report_output:"+stream+"|"+repr(self._output_streams) 
@@ -1560,7 +1546,7 @@ class ReductionContext(dict):
                         compatibility, currently only "all" is supported.
         '''
         if type(caltype) != str:
-            raise RecipeExcept("caltype not string, type = " + str( type(caltype)))
+            raise RecipeError("caltype not string, type = " + str( type(caltype)))
         if inputs is None:
             # note: this was using original inputs!
             addToCmdQueue = self.cdl.get_cal_req(self.get_inputs_as_astrodata(),
@@ -1841,7 +1827,7 @@ class ReductionContext(dict):
 def open_if_name(dataset):
     """Utility function to handle accepting datasets as AstroData
     instances or string filenames. Works in conjunction with close_if_name.
-    The way it works, open_if_name opens returns an GeminiData isntance"""    
+    The way it works, open_if_name opens returns an AstroData isntance"""
     bNeedsClosing = False    
     if type(dataset) == str:
         bNeedsClosing = True
@@ -1850,7 +1836,7 @@ def open_if_name(dataset):
         bNeedsClosing = False
         gd = dataset
     else:
-        raise RecipeExcept("BadArgument in recipe utility function: open_if_name(..)\n MUST be filename (string) or GeminiData instrument")
+        raise RecipeError("BadArgument in recipe utility function: open_if_name(..)\n MUST be filename (string) or AstroData instrument")
     return (gd, bNeedsClosing)
     
 def close_if_name(dataset, b_needs_closing):
@@ -1878,7 +1864,7 @@ class RecipeLibrary(object):
         val = pick_config(ref, centralPrimitivesIndex, "leaves")
         k = val.keys()
         if False: # we do allow this, have TO! for recipes and multiple packages len(k) != 1:
-                raise RecipeExcept("Can't discover correct primtype for %s, more than one (%s)" % (ref.filename, repr(k)))
+                raise RecipeError("Can't discover correct primtype for %s, more than one (%s)" % (ref.filename, repr(k)))
         return k[0]
         
     def report_history(self):
@@ -1927,7 +1913,7 @@ class RecipeLibrary(object):
                         return #not a recipe, but exists as primitive
                     else:
                         msg = "NAME CONFLICT: ASSIGNING RECIPE %s BUT EXISTS AS PRIMITIVE:\n\t%s" % rec, repr(ps)
-                        raise RecipeExcept(msg)
+                        raise RecipeError(msg)
             except ReductionObjects.ReductionExcept:
                  pass # just means there is no primset, that function throws
                 
@@ -1943,11 +1929,11 @@ class RecipeLibrary(object):
                 ro = self.bind_recipe(ro, name, rfunc)
                 #p rint "RM1918:", dir(ro)
             else:
-                raise RecipeExcept("Error: Recipe Source for '%s' Not Found\n\ttype=%s, instruction_name=%s, src=%s"
+                raise RecipeError("Error: Recipe Source for '%s' Not Found\n\ttype=%s, instruction_name=%s, src=%s"
                                     % (name, astrotype, name, src), name = name)
         elif dataset != None:
             gd, bnc = open_if_name(dataset)
-            types = gd.get_types()
+            types = gd.types
             rec = None
             for typ in types:
                 rec = self.retrieve_recipe(name, astrotype=typ, inherit=False)
@@ -1974,10 +1960,10 @@ class RecipeLibrary(object):
             raise AstroDataError("Passed dataset appears to have no data extensions")
 
         if dataset and astrotype:
-            raise RecipeExcept("Cannot pass both dataset and astrotype.")
+            raise RecipeError("Cannot pass both dataset and astrotype.")
 
         if dataset is None and astrotype is None:
-            raise RecipeExcept("Must pass one (1) of dataset or astrotype.")
+            raise RecipeError("Must pass one (1) of dataset or astrotype.")
 
         byfname = False
 
@@ -1991,7 +1977,7 @@ class RecipeLibrary(object):
             else:
                 raise BadArgument()
             # get the types
-            types = astrod.get_types(prune=True)
+            types = astrod.type(prune=True)
         else:
             types = [astrotype]
 
@@ -2129,10 +2115,7 @@ class RecipeLibrary(object):
         if (astrotype == None) and (dataset != None):
             val = pick_config(dataset, centralPrimitivesIndex, style="leaves")
             k = val.keys()
-            #if len(k) != 1:
-            #    print "RM1939:", repr(val)
-                # raise RecipeExcept("CAN'T RESOLVE PRIMITIVE SET CONFLICT")
-            #astrotype = k[0]
+
         if (astrotype != None):
             k = [astrotype]
         #p rint "RM2103:", astrotype, k, val
@@ -2144,37 +2127,42 @@ class RecipeLibrary(object):
                 primdeflist = centralPrimitivesIndex[astrotype]
                 #print "RM1948:", repr(primdeflist)
                 for primdef in primdeflist:
-                    rfilename = primdef[0] # the first in the tuple is the primset file
+                    rfilename = primdef[0]              # primset file
                     rpathname = centralReductionMap[rfilename]
                     rootpath = os.path.dirname(rpathname)
                     importname = os.path.splitext(rfilename)[0]
                     a = datetime.now()
                     try:
-                        # print "RM1282: about to import", importname, primdef[1]
                         exec ("import " + importname)
-                        # print ("RM1285: after import")
-                    except:
-                        log = gemLog.getGeminiLog()
-                        blmsg =  "##### PRIMITIVE SET IMPORT ERROR: SKIPPING %(impname)s\n" * 3
+                    except KeyboardInterrupt:
+                        log = logutils.get_logger(__name__)
+                        log.error("Primitive import interrupted")
+                        log.error("retrieve_primitive_set() received Ctrl-C event.")
+                        raise KeyboardInterrupt
+                    except NameError:
+                        log = logutils.get_logger(__name__)
+                        blmsg = "##### PRIMITIVE SET IMPORT ERROR: SKIPPING "\
+                                "%(impname)s\n" * 3
                         blmsg = blmsg % {"impname": importname}
                         msg = blmsg + traceback.format_exc() + blmsg
                         if log:
                             log.error(msg)
                         else:                    
                             print "PRINTED, not logged:\n"+msg
-                    b = datetime.now()
+                        raise PrimitveError
+
                     try:
-                        primset = eval (importname + "." + primdef[1] + "()")
+                        primset = eval(importname + "." + primdef[1] + "()")
                     except NameError:
                         traceback.print_exc()
                         print "NOTE "*15
-                        print "NOTE: if you have had trouble with importing a Gemini primitive set,"
-                        print "      you may need to create login.cl.  This can be done, if IRAF is installed,"
-                        print  "      with the 'mkiraf' command"""
+                        print "NOTE: If you have trouble importing a "
+                        print "      Gemini primitive set, you may need "
+                        print "      to create login.cl.  With IRAF installed,"
+                        print "      this can be done with the 'mkiraf' command."
                         print "NOTE "*15
-                        sys.exit(1)
-                    
-                    except:
+                        raise NameError
+                    except Exception:
                         print
                         print ("!@"*40)
                         print "PROBLEM CREATING PRIMITIVE SET"
@@ -2182,10 +2170,8 @@ class RecipeLibrary(object):
                         traceback.print_exc()
                         print ("!@"*40)
                         print
-                        raise
-                        # set filename and directory name
-                    # used by other parts of the system for naming convention based retrieval
-                    # i.e. of parameters
+                        raise PrimitiveError
+
                     primset.astrotype = astrotype
                     primset.acquire_param_dict()
                     primlist.append(primset)
@@ -2328,7 +2314,7 @@ def %(name)s(self,cfgObj):
         if explicitType:
             types = [explicitType]
         else:
-            types = astrod.get_types()
+            types = astrod.types
             
         # look up recipes, fill list
         reclist = []
@@ -2342,38 +2328,6 @@ def %(name)s(self,cfgObj):
         print reclist
         return reclist
 
-    def retrieve_parameters(self, dataset, contextobj, name):
-        '''
-        
-        '''
-        raise "this is old code which needs removing"
-        # Load defaults
-        print "RM1364: here"
-        defaultParamFiles = self.get_applicable_parameters(dataset)
-        print "RM1365", defaultParamFiles
-        #print "RM836:", defaultParamFiles
-        for defaultParams in defaultParamFiles:
-            contextobj.update(centralParametersIndex[defaultParams])
-        
-        """
-        #print "RM841:", redobj.values()
-        # Load local if it exists
-        if centralParametersIndex.has_key( name ):
-            for recKey in centralParametersIndex[name]:
-                if recKey in contextobj.keys():
-                    if contextobj[recKey].overwrite:
-                        # This code looks a little confusing, but its purpose is to make sure
-                        # everything in the default, except the value, is the same.
-                        contextobj[recKey].value = centralParametersIndex[name][recKey].value
-                    else:
-                        print "Attempting to overwrite Parameter '" + str(recKey) + "'. This is not allowed."
-                else:
-                    print "Parameter '"+ str(recKey) + "' was not found. Adding..."
-                    userParam = centralParametersIndex[name][recKey]
-                    updateParam = PrimitiveParameter( userParam.name, userParam.value, overwrite=True, help="User Defined.")
-                    contextobj.update( {recKey:updateParam} )
-        """
-      
 
 # CODE THAT RUNS ON IMPORT
 # THIS MODULE ACTS AS A SINGLETON FOR RECIPE FEATURES
@@ -2471,7 +2425,7 @@ if True: # was firstrun logic... python interpreter makes sure this module only 
                         # @@TODO: eventually continue, don't raise!
                         # don't raise, this makes bad recipe packages halt the whole package!
                         # raise now because this should NEVER happen.
-                        raise RecipeExcept("Two Recipes with the same name.")
+                        raise RecipeError("Two Recipes with the same name.")
                 #print "RM2412:",fullpath
                 centralRecipeIndex.update({recname: fullpath})
                 recinfo = get_recipe_info(recname, fullpath)

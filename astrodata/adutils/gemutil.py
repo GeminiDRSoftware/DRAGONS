@@ -5,7 +5,7 @@ import mefutil
 import strutil
 import time
 
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from astrodata import Errors, new_pyfits_version
 
 log = None
@@ -99,7 +99,7 @@ def imageName(image, rawpath='', prefix='auto', observatory='gemini-north',
     global log
     if log==None:
         # instantiate the logger object and put into the global variable 
-        log = gemLog.getGeminiLog()
+        log = logutils.get_logger(__name__)
         
     # loading and bringing the pyraf related modules into the name-space
     pyraf, gemini, yes, no = pyrafLoader()
@@ -192,7 +192,7 @@ def appendSuffix(filename, suffix):
     global log
     if log==None:
         # instantiate the logger object and put into the global variable 
-        log = gemLog.getGeminiLog()
+        log = logutils.get_logger(__name__)
 
     found = False
     # Extensions is a list of recognized filename extensions.
@@ -245,7 +245,7 @@ def replaceSuffix(filename, suffix):
     global log
     if log==None:
         # instantiate the logger object and put into the global variable 
-        log = gemLog.getGeminiLog()
+        log = logutils.get_logger(__name__)
     
     found = False
     # Extensions is a list of recognized filename extensions.
@@ -450,7 +450,7 @@ def printlog(text, logfile=None, verbose=True):
     global log
     if log==None:
         # instantiate the logger object and put into the global variable 
-        log = gemLog.getGeminiLog()
+        log = logutils.get_logger(__name__)
         
 
     if logfile == 'STDOUT':

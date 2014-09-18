@@ -1,7 +1,7 @@
 import os
 import strutil
 
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 
 log = None
  
@@ -42,7 +42,7 @@ def checkImageParam(image, logBadlist=False):
     """
     global log
     if log==None:
-        log = gemLog.getGeminiLog()
+        log = logutils.get_logger(__name__)
 
     root = os.path.dirname(image)
     imageName = os.path.basename(image)
@@ -137,7 +137,7 @@ def checkOutputParam(outfile, defaultValue='out.fits'):
     """
     global log
     if log==None:
-        log = gemLog.getGeminiLog()
+        log = logutils.get_logger(__name__)
         
     root = os.path.dirname(outfile)
     outfileName = os.path.basename(outfile)
@@ -205,7 +205,7 @@ def verifyOutlist( inlist, outlist ):
     """
     global log
     if log==None:
-        log = gemLog.getGeminiLog()
+        log = logutils.get_logger(__name__)
     
     try:    
         if outlist == []:
@@ -266,7 +266,7 @@ def checkParam(parameter, paramType, defaultValue, compareValue=0.0):
     """
     global log
     if log==None:
-        log = gemLog.getGeminiLog()
+        log = logutils.get_logger(__name__)
         
     if type(parameter) == paramType:
         if (paramType == type(0)) or (paramType == type(0.0)):

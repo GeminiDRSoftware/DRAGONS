@@ -1,0 +1,191 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Supplemental tools &mdash; Reduce Users Manual X1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/todo-styles.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     'X1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Reduce Users Manual X1 documentation" href="index.html" />
+    <link rel="next" title="Discussion" href="discuss.html" />
+    <link rel="prev" title="Interfaces" href="interfaces.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="discuss.html" title="Discussion"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="interfaces.html" title="Interfaces"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Reduce Users Manual X1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="supplemental-tools">
+<h1>Supplemental tools<a class="headerlink" href="#supplemental-tools" title="Permalink to this headline">¶</a></h1>
+<p>The astrodata package provides a number of command line driven tools, two of
+which users may find helpful in executing reduce on their data. These tools can
+present primitive names available, their parameters and defaults, as well
+as perform data and type discovery in a directory tree.</p>
+<p>If the user environment has been correctly configured (Sec. <a class="reference internal" href="userenv.html#config"><em>Configuration</em></a>),
+these applications will work directly.</p>
+<div class="section" id="listprimitives">
+<h2>listprimitives<a class="headerlink" href="#listprimitives" title="Permalink to this headline">¶</a></h2>
+<p>In a correct environment, the <tt class="docutils literal"><span class="pre">listprimitives.py</span></tt> module (linked as
+<tt class="docutils literal"><span class="pre">listprimitives</span></tt>) will be available as a command line executable.
+This tool displays available primitives for all AstroDataTypes, their parameters,
+and defaults. These are the parameters discussed in Sec. <a class="reference internal" href="interfaces.html#userpars"><em>Overriding Primitive Parameters</em></a> that
+can be changed by the user with the <strong>-p, &#8211;param</strong> option on reduce. under the
+AstroDataTypes. The help describes more options:</p>
+<div class="highlight-python"><pre>$ listprimitives -h
+
+Usage: listprimitives [options]
+
+Gemini Observatory Primitive Inspection Tool, v1.0 2011
+
+Options:
+-h, --help            show this help message and exit
+-c, --use-color       apply color output scheme
+-e, --engineering     show engineering recipes
+-i, --info            show more information
+-p, --parameters      show parameters
+-r, --recipes         list top recipes
+-s, --primitive-set   show primitive sets (Astrodata types)
+-v, --verbose         set verbose mode
+--view-recipe=VIEW_RECIPE
+                      display the recipe</pre>
+</div>
+<p>Admittedly, this tool is in need of refinement and the GDPSG is working on
+building a tool that will present primitives and parameters in a more focused
+way. I.e. report only those primitives and parameters relevant to a given
+dataset.</p>
+</div>
+<div class="section" id="typewalk">
+<span id="id1"></span><h2>typewalk<a class="headerlink" href="#typewalk" title="Permalink to this headline">¶</a></h2>
+<p>The application <tt class="docutils literal"><span class="pre">typewalk</span></tt> can help users find data that match type
+criteria. As with <tt class="docutils literal"><span class="pre">listprimitives</span></tt>, if users have reduce available on the
+command line, <tt class="docutils literal"><span class="pre">typewalk</span></tt> will be available, too. See the help, <strong>-h, &#8211;help</strong>,
+for all available options on <tt class="docutils literal"><span class="pre">typewalk</span></tt>.</p>
+<p>More generally, <tt class="docutils literal"><span class="pre">typewalk</span></tt> examines files in a directory or directory tree and
+reports the types and status values through the AstroDataType classification
+scheme. Files are selected and reported through a regular expression mask
+which, by default, finds all &#8221;.fits&#8221; and &#8221;.FITS&#8221; files. Users can change
+this mask with the <strong>-f, &#8211;filemask</strong> option.</p>
+<p>By default, <tt class="docutils literal"><span class="pre">typewalk</span></tt> will recurse all subdirectories under the current
+directory. Users may specify an explicit directory with the <strong>-d, &#8211;dir</strong> option.</p>
+<p>A user may request that an output file is written when AstroDataType
+qualifiers are passed by the <strong>&#8211;types</strong> option. An output file is specified
+through the <strong>-o, &#8211;out</strong> option. Output files are formatted so they may
+be passed <cite>directly to the reduce command line</cite> via that applications
+&#8216;at-file&#8217; (&#64;file) facility. See <a class="reference internal" href="interfaces.html#atfile"><em>The &#64;file facility</em></a> or the reduce help for more on
+&#8216;at-files&#8217;.</p>
+<p>Users may select type matching logic with the <strong>&#8211;or</strong> switch. By default,
+qualifying logic is AND. I.e. the logic specifies that <cite>all</cite> types must be
+present (x AND y); <strong>&#8211;or</strong> specifies that ANY types, enumerated with
+<strong>&#8211;types</strong>, may be present (x OR y). <strong>&#8211;or</strong> is only effective when
+<strong>&#8211;types</strong> is used.</p>
+<p>For example, find all gmos images from Cerro Pachon in the top level
+directory and write out the matching files, then run reduce on them
+(<strong>-n</strong> is &#8216;norecurse&#8217;):</p>
+<div class="highlight-python"><pre>$ typewalk -n --types GEMINI_SOUTH GMOS_IMAGE --out gmos_images_south
+$ reduce @gmos_images_south</pre>
+</div>
+<p>This will also report match results to stdout, colourized if requested (<strong>-c</strong>).</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Supplemental tools</a><ul>
+<li><a class="reference internal" href="#listprimitives">listprimitives</a></li>
+<li><a class="reference internal" href="#typewalk">typewalk</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="interfaces.html"
+                        title="previous chapter">Interfaces</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="discuss.html"
+                        title="next chapter">Discussion</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/supptools.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="discuss.html" title="Discussion"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="interfaces.html" title="Interfaces"
+             >previous</a> |</li>
+        <li><a href="index.html">Reduce Users Manual X1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Kennneth Anderson.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

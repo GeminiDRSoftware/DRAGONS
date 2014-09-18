@@ -65,9 +65,9 @@ class DescriptorValueTypeError(Error):
     
 class ExtTableError(Error):
     """
-    General exception raised for Errors in ExtTable.py
+    General exception raised for Errors in class AstroData._ExtTable
     """
-    message = "Exception raised in ExtTable.py"
+    message = "Exception raised in class AstroData._ExtTable"
 
 class FatalDeprecation(Error):
     """

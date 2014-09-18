@@ -5,10 +5,10 @@ import tempfile
 from astrodata import IDFactory
 import cookielib 
 import urlparse
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
         
 def urlfetch(url, store = None, clobber = False):
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
     purl = urlparse.urlparse(url)
     host = "fits" #"hbffits3.hi.gemini.edu" #@@CONFIG: FITSSTORE RETRIEVAL HOST
     npurl = urlparse.ParseResult(purl.scheme,

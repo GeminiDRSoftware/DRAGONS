@@ -47,10 +47,10 @@ def check_data_set(filenames):
 
 # -----------------------------------------------------------------------------
 def cluster_by_groupid(datalist):
-    from astrodata.adutils import gemLog
+    from astrodata.adutils import logutils
     allinputs = []
     clusterdict = {}
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
     log.info("gdpg65: cluster_by_groupid")
     log.debug("gdpg66: "+repr(datalist))
     
@@ -111,7 +111,7 @@ def cluster_types(datalist):
                    % (str(type(data)), str(AstroData))
             raise GDPGUtilError(msg)
 
-        types = tuple( data.get_types() )
+        types = tuple( data.types )
         if clusterIndex.has_key( types ):
             dlist = clusterIndex[types]
             dlist.append( data )
@@ -125,7 +125,7 @@ def cluster_types(datalist):
 def open_if_name(dataset):
     """Utility function to handle accepting datasets as AstroData
     instances or string filenames. Works in conjunction with close_if_name.
-    The way it works, open_if_name opens returns an GeminiData isntance
+    The way it works, open_if_name opens returns an AstroData isntance
     """
     bNeedsClosing = False
     if type(dataset) == str:
@@ -140,7 +140,7 @@ def open_if_name(dataset):
     else:
         raise GDPGUtilError("BadArgument in recipe utility function: "+
                             "open_if_name(..)\n MUST be filename (string) or "+
-                            "GeminiData instrument")
+                            "AstroData instrument")
     return (gd, bNeedsClosing)
     
     
@@ -205,9 +205,9 @@ def pick_config(dataset, index, style="unique"):
     
     candidates = {}
     if style == "unique" or style == "leaves":
-        types = ad.get_types(prune=True)
+        types = ad.type(prune=True)
     else:
-        types = ad.get_types()
+        types = ad.types
         
     # Only one type can imply a package. This goes through the types, making 
     # candidates of the first value in the index in order from child to 

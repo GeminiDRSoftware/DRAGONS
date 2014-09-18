@@ -36,31 +36,26 @@ These actions may be used in the add_argument() method call, such as,
 from argparse import Action
 
 # -----------------------------------------------------------------------------
-_version = '__test__'
-
-# -----------------------------------------------------------------------------
 class PosArgAction(Action):
     def __call__(self, parser, namespace, values, option_string=None):
         if values:
             setattr(namespace, self.dest, values)
         return
 
-
 class BooleanAction(Action):
-        def __call__(self, parser, namespace, values, option_string=None):
-            # 'values' is a list, which may have accumulated pos args
-            _pos_args = []
-            _switch_state = bool(getattr(namespace, self.dest))
-            _pos_args.extend([f for f in values if ".fits" in f])
+    def __call__(self, parser, namespace, values, option_string=None):
+        # 'values' is a list, which may have accumulated pos args
+        _pos_args = []
+        _switch_state = bool(getattr(namespace, self.dest))
+        _pos_args.extend([f for f in values if ".fits" in f])
 
-            # Configure namespace w new files
-            if _pos_args:
-                setattr(namespace, 'files', _pos_args)
+        # Configure namespace w new files
+        if _pos_args:
+            setattr(namespace, 'files', _pos_args)
 
-            # Toggle switch.
-            setattr(namespace, self.dest, not _switch_state)
-            return
-
+        # Toggle switch.
+        setattr(namespace, self.dest, not _switch_state)
+        return
 
 class UnitaryArgumentAction(Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -84,7 +79,6 @@ class UnitaryArgumentAction(Action):
         # override any previous namespace self.dest
         setattr(namespace, self.dest, _par_args)
         return
-
 
 class ParameterAction(Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -119,7 +113,6 @@ class ParameterAction(Action):
             _extant_par_args.extend(_par_args)
             setattr(namespace, self.dest, _extant_par_args)
         return
-
 
 class CalibrationAction(Action):
     def __call__(self, parser, namespace, values, option_string=None):
