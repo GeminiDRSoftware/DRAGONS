@@ -54,7 +54,7 @@ if(len(mag) == 0):
 
 # Now apply the exposure time and nom_at_ext corrections to mag
 et = float(ad.exposure_time())
-if(ad.is_type('GMOS_NODANDSHUFFLE')):
+if 'GMOS_NODANDSHUFFLE' in ad.types:
     print "Imaging Nod-And-Shuffle. Photometry may be dubious"
     et /= 2.0
 

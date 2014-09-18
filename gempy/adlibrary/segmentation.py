@@ -217,15 +217,15 @@ def edge_detector_data(ad,filter_kernel='Sobel'):
     mdf['image_data'] = ad['SCI',1].data
 
     # Instantiate the appropiate class
-    if ad.is_type('F2'):
+    if 'F2' in ad.types:
         # Set the footprint_low, footprint_high values from the
         # instrument setting.
         mdf['speclen'] = f2_fplen(ad)
-    elif ad.is_type('GNIRS'):
+    elif 'GNIRS' in ad.types:
         # Set the footprint_low, footprint_high values from the
         # instrument setting.
         mdf['speclen'] = gnirs_fplen(ad)
-    elif ad.is_type('GMOS'):
+    elif 'GMOS' in ad.types:
         # Set the footprint_low, footprint_high values from the
         # instrument setting.
         # Single hdu
@@ -341,11 +341,11 @@ class EdgeDetector(object):
          this requirements)
        """
        mdf = edge_detector_data(ad)
-       if ad.is_type('F2'):
+       if 'F2' in ad.types:
           inst = object.__new__(F2_edge_detector)
-       elif ad.is_type('GNIRS'):
+       elif 'GNIRS' in ad.types:
           inst = object.__new__(GNIRS_edge_detector)
-       elif ad.is_type('GMOS'):
+       elif 'GMOS' in ad.types:
           inst = object.__new__(GMOS_edge_detector)
 
        inst.mdf = mdf

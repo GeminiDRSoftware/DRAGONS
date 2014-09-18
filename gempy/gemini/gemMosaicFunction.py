@@ -64,7 +64,7 @@ def gemini_mosaic_function(ad, ref_extname='SCI'):
     
     # We only take GMOS and GSAOI for now
 
-    if not ad.is_type('GMOS') and not ad.is_type('GSAOI'):
+    if not 'GMOS' in ad.types and not 'GSAOI' in ad.types:
         raise RuntimeError('Input file is not supported by MosaicAD: ',
                             str(ad.filename),' Type:',str(ad.types))
 
@@ -170,7 +170,7 @@ def _set_geo_values(ad,ccdsecs,detsecs,binning):
         bin_string = "unbinned"
 
 
-    if ad.is_type('GMOS'):  
+    if 'GMOS' in ad.types:  
         lookup = 'Gemini/GMOS/geometry_conf'
     else:
         lookup = 'Gemini/'+instrument+'/geometry_conf'

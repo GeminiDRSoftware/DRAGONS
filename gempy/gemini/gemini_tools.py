@@ -1587,7 +1587,7 @@ def obsmode_add(ad):
     :param ad: AstroData instance to find mode of
     :type ad: AstroData instance
     """
-    types = ad.get_types()
+    types = ad.types
     if "GMOS" in types:
         if "PREPARED" in types:
             gprep = ad.phu_get_key_value("GPREPARE")
@@ -1627,11 +1627,11 @@ def obsmode_del(ad):
        :param ad: AstroData instance to find mode of
        :type ad: AstroData instance
     """
-    if 'GMOS' in ad.get_types():
-        del ad.get_phu().header['OBSMODE']
-        del ad.get_phu().header['GPREPARE']
-        del ad.get_phu().header['GBIAS']
-        del ad.get_phu().header['GSREDUCE']
+    if 'GMOS' in ad.types:
+        del ad.phu.header['OBSMODE']
+        del ad.phu.header['GPREPARE']
+        del ad.phu.header['GBIAS']
+        del ad.phu.header['GSREDUCE']
     return ad
     
 
@@ -2381,7 +2381,7 @@ def get_offset_dict(adinputs=None):
         # Get the offsets from the primary header:
         poff = ad.phu_get_key_value('POFFSET')
         qoff = ad.phu_get_key_value('QOFFSET')
-        # name = ad.get_filename()
+        # name = ad.filename
         name = ad  # store a direct reference
 
         offsets[name] = (poff, qoff)
