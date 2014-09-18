@@ -1,5 +1,5 @@
 import numpy as np
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from gempy.gemini import gemini_tools as gt
 from primitives_F2 import F2Primitives
 

@@ -4,7 +4,7 @@ import numpy as np
 from astrodata import AstroData
 from astrodata import Errors
 from astrodata import Lookups
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from astrodata.adutils.gemutil import pyrafLoader
 from gempy.gemini import gemini_tools as gt
 from primitives_GMOS import GMOSPrimitives
@@ -24,8 +24,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     
     def fringeCorrect(self,rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "fringeCorrect", "starting"))
@@ -113,8 +113,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     def makeFringe(self, rc):
 
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
 
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "makeFringe", 
@@ -272,8 +272,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     def makeFringeFrame(self,rc):
 
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
 
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "makeFringeFrame", 
@@ -352,8 +352,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "normalizeFlat", "starting"))
@@ -469,8 +469,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         level before stacking.
         """
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
 
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "scaleByIntensity", "starting"))
@@ -591,8 +591,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "scaleFringeToScience",
@@ -833,8 +833,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "stackFlats", "starting"))
@@ -887,8 +887,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
     def subtractFringe(self, rc):
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "subtractFringe",

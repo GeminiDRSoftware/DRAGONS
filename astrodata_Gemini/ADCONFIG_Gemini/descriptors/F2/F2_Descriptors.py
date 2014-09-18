@@ -5,7 +5,7 @@ from time import strptime
 from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
-from astrodata.Calculator import Calculator
+
 from astrodata.Descriptors import DescriptorValue
 from astrodata.structuredslice import pixel_exts, bintable_exts
 from gempy.gemini import gemini_metadata_utils as gmu

@@ -2,7 +2,7 @@ import sys
 
 import numpy as np
 from astrodata import AstroData
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
 from astrodata import Lookups

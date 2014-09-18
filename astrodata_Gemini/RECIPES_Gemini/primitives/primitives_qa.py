@@ -519,7 +519,7 @@ class QAPrimitives(GENERALPrimitives):
 
                 # If it's a funky nod-and-shuffle imaging acquistion,
                 # then need to scale exposure time
-                if ad.is_type("GMOS_NODANDSHUFFLE"):
+                if "GMOS_NODANDSHUFFLE" in ad.types:
                     log.warning("Imaging Nod-And-Shuffle. Photometry may be dubious")
                     # AFAIK the number of nod_cycles isn't actually relevant -
                     # there's always 2 nod positions, thus the exposure
@@ -1278,7 +1278,7 @@ class QAPrimitives(GENERALPrimitives):
                       "instrument": ad.instrument().as_pytype(),
                       "object": ad.object().as_pytype(),
                       "wfs": ad.wavefront_sensor().as_pytype(),
-                      "types": ad.get_types(),
+                      "types": ad.types,
                     }
                   }
             import random

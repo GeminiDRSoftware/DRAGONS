@@ -1,7 +1,7 @@
 import os
 from copy import deepcopy
 from astrodata import Errors
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
@@ -25,8 +25,8 @@ class MaskPrimitives(GENERALPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "addObjectMaskToDQ", "starting"))

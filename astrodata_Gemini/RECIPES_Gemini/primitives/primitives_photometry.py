@@ -9,7 +9,7 @@ from copy import deepcopy
 from astrodata import AstroData
 from astrodata import Errors
 from astrodata import Lookups
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from astrodata.ConfigSpace import lookup_path
 from gempy.library import astrotools as at
 from gempy.gemini import gemini_tools as gt
@@ -76,8 +76,8 @@ class PhotometryPrimitives(GENERALPrimitives):
         """
 
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
 
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "addReferenceCatalog", "starting"))
@@ -201,8 +201,8 @@ class PhotometryPrimitives(GENERALPrimitives):
         """
  
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "detectSources", "starting"))
@@ -355,8 +355,8 @@ class PhotometryPrimitives(GENERALPrimitives):
     def measureCCAndAstrometry(self, rc):
 
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
 
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "measureCCAndAstrometry",
@@ -439,7 +439,7 @@ def _match_objcat_refcat(adinput=None):
 
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
 
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more inputs
@@ -542,7 +542,7 @@ def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5,
     except ImportError:
         from convolve import convolve2d
     
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
     
     if not sciext:
         raise Errors.InputError("_daofind requires a science extension.")
@@ -1019,7 +1019,7 @@ def _average_each_cluster( xyArray, pixApart=10.0 ):
 def _sextractor(ad=None,seeing_estimate=None):
 
     # Get the log
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
 
     # Get path to default sextractor parameter files
     default_dict = Lookups.get_lookup_table(
@@ -1042,7 +1042,7 @@ def _sextractor(ad=None,seeing_estimate=None):
         # AstroData numbering convention (0=first extension
         # after PHU). This is the same convension sextractor
         # uses.
-        extnum = ad.get_int_ext(("SCI",extver))
+        extnum = ad.ext_index(("SCI",extver))
         scitmpfn = "%s[%d]" % (tmpfn,extnum)
 
         dqext = ad["DQ",extver]
@@ -1051,7 +1051,7 @@ def _sextractor(ad=None,seeing_estimate=None):
             # properly if it is 32-bit
             dqext.data = dqext.data.astype(np.int16)
         
-            extnum = ad.get_int_ext(("DQ",extver))
+            extnum = ad.ext_index(("DQ",extver))
             dqtmpfn = "%s[%d]" % (tmpfn,extnum)
 
             # Get correct default files for this mode

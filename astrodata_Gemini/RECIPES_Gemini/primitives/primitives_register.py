@@ -2,7 +2,7 @@ import numpy as np
 import pywcs
 from astrodata import Errors
 from astrodata import Lookups
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from gempy.library import astrotools as at
 from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
@@ -105,8 +105,8 @@ class RegisterPrimitives(GENERALPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "correctWCSToReferenceFrame",
@@ -331,8 +331,8 @@ class RegisterPrimitives(GENERALPrimitives):
         """
 
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
 
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "determineAstrometricSolution",
@@ -482,8 +482,8 @@ class RegisterPrimitives(GENERALPrimitives):
         """
 
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
 
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "updateWCS",
@@ -636,7 +636,7 @@ def _correlate_sources(ad1, ad2, delta=None, firstPass=10, cull_sources=False):
     :type cull_sources: bool
     """
     
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
     
     # If desired, clip out the most star-like sources in the OBJCAT
     if cull_sources:
@@ -714,7 +714,7 @@ def _align_wcs(reference, adinput, objIns, rotate=False, scale=False):
     :type scale: bool
     """
     
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
     
     if not isinstance(adinput,list):
         adinput = [adinput]
@@ -849,7 +849,7 @@ def _header_align(reference, adinput):
     :type adinput: AstroData objects, either a single instance or a list
     """
     
-    log = gemLog.getGeminiLog()
+    log = logutils.get_logger(__name__)
     
     if not isinstance(adinput,list):
         adinput = [adinput]

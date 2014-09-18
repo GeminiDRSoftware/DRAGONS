@@ -2,7 +2,7 @@ import re
 
 from astrodata import Descriptors
 from astrodata import Lookups
-from astrodata.Calculator import Calculator
+
 from astrodata.Descriptors import DescriptorValue
 from gempy.gemini import gemini_metadata_utils as gmu
 from gempy.library import astrotools

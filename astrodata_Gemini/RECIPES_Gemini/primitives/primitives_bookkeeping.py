@@ -2,7 +2,7 @@ import os, shutil, time
 from datetime import datetime
 from astrodata import Errors
 from astrodata import IDFactory
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
@@ -31,8 +31,7 @@ class BookkeepingPrimitives(GENERALPrimitives):
         
         """
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Perform an update to the stack cache file (or create it) using the
         # current inputs in the reduction context
@@ -78,9 +77,8 @@ class BookkeepingPrimitives(GENERALPrimitives):
     
     def contextReport(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                 logLevel=rc["logLevel"])
-        
+        log = logutils.get_logger(__name__)
+
         log.fullinfo(rc.report(report_history=rc["report_history"],
                                internal_dict=rc["internal_dict"],
                                context_vars=rc["context_vars"],
@@ -105,8 +103,7 @@ class BookkeepingPrimitives(GENERALPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         # Get purpose of list
         sidset = set()
@@ -143,8 +140,7 @@ class BookkeepingPrimitives(GENERALPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         log.stdinfo("Inputs:")
         #print "pG977:", id(rc), repr(rc.inputs)
         #if "stream" in rc:
@@ -169,8 +165,7 @@ class BookkeepingPrimitives(GENERALPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         sidset = set()
         purpose = rc["purpose"]
@@ -203,8 +198,7 @@ class BookkeepingPrimitives(GENERALPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
         
         rcparams = rc.param_names()
         if (rc["show"]):
@@ -227,8 +221,8 @@ class BookkeepingPrimitives(GENERALPrimitives):
     
     def sleep(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
         if rc["duration"]:
             dur = float(rc["duration"])
         else:
@@ -240,9 +234,7 @@ class BookkeepingPrimitives(GENERALPrimitives):
     
     def time(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        
+        log = logutils.get_logger(__name__)
         cur = datetime.now()
         elap = ""
         if rc["lastTime"] and not rc["start"]:
@@ -288,9 +280,7 @@ class BookkeepingPrimitives(GENERALPrimitives):
         """
         
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
-        
+        log = logutils.get_logger(__name__)
         # Logging current values of suffix and prefix
         log.fullinfo("suffix = %s" % str(rc["suffix"]))
         log.fullinfo("prefix = %s" % str(rc["prefix"]))

@@ -1,7 +1,7 @@
 import os
 from astrodata import AstroData
 from astrodata import Lookups
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from astrodata.ReductionObjects import PrimitiveSet
 from gempy.gemini import gemini_tools as gt
 
@@ -31,8 +31,8 @@ class GENERALPrimitives(PrimitiveSet):
     
     def addInputs(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
         
         import glob as gl
         if rc["files"] == None:
@@ -75,8 +75,8 @@ class GENERALPrimitives(PrimitiveSet):
 
     def listDir(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
         
         if rc["dir"] == None:
             thedir = "."
@@ -123,8 +123,8 @@ class GENERALPrimitives(PrimitiveSet):
         yield rc
     
     def forwardInput(self, rc):
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
         
         if rc["to_stream"] != None:
             stream = rc["to_stream"]
@@ -165,8 +165,8 @@ class GENERALPrimitives(PrimitiveSet):
     forwardStream = forwardInput
     
     def showOutputs(self, rc):
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
         streams = rc.outputs.keys()
         streams.sort()
         streams.remove("main")
@@ -207,8 +207,8 @@ class GENERALPrimitives(PrimitiveSet):
         yield rc
 
     def log(self, rc):
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
         
         msg = rc["msg"]
         if msg == None:
@@ -229,8 +229,8 @@ class GENERALPrimitives(PrimitiveSet):
         # rc["operand"]
 
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
 
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "add", "starting"))
@@ -284,8 +284,8 @@ class GENERALPrimitives(PrimitiveSet):
         # rc["operand"]
 
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
 
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "divide", "starting"))
@@ -339,8 +339,8 @@ class GENERALPrimitives(PrimitiveSet):
         # rc["operand"]
 
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
 
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "multiply", "starting"))
@@ -394,8 +394,8 @@ class GENERALPrimitives(PrimitiveSet):
         # rc["operand"]
 
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
 
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "subtract", "starting"))

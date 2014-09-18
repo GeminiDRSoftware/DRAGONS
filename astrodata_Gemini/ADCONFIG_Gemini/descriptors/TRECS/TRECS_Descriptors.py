@@ -1,7 +1,7 @@
 from astrodata import Descriptors
 from astrodata import Errors
 from astrodata import Lookups
-from astrodata.Calculator import Calculator
+
 from astrodata.Descriptors import DescriptorValue
 import GemCalcUtil
 

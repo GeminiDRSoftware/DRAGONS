@@ -40,19 +40,18 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     # need recalculating here). The first branch of this condition can be
     # removed once pixel_scale() is improved or has the same check has been
     # added to it:
-    if ad.is_type('PREPARED'):
+    if 'PREPARED' in ad.types:
         scale = ad.phu_get_key_value('PIXSCALE')
     else:
         scale = ad.pixel_scale().get_value()
 
     # Imaging:
-    if ad.is_type('NIRI_IMAGE'):
+    if 'NIRI_IMAGE' in ad.types:
         dist = 512.* scale
         return all([abs(x-r) < dist for x, r in zip(position,refpos)])
 
     # Long slit:
-    elif ad.is_type('NIRI_SPECT'):
-
+    elif 'NIRI_SPECT' in ad.types:
         # I'm leaving NIRI spectroscopy as an exercise for later, after
         # identifying the following complications: The NIRI slits have
         # different lengths, depending where they are installed in the MOS

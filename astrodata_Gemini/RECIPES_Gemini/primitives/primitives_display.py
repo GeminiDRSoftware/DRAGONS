@@ -7,7 +7,7 @@ except ImportError:
 
 from astrodata import Errors
 from astrodata import Lookups
-from astrodata.adutils import gemLog
+from astrodata.adutils import logutils
 from astrodata.adutils.gemutil import pyrafLoader
 from gempy.gemini import gemini_data_calculations as gdc
 from gempy.gemini import gemini_tools as gt
@@ -31,8 +31,8 @@ class DisplayPrimitives(GENERALPrimitives):
     
     def display(self, rc):
         # Instantiate the log
-        log = gemLog.getGeminiLog(logType=rc["logType"],
-                                  logLevel=rc["logLevel"])
+        log = logutils.get_logger(__name__)
+
         
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "display", "starting"))

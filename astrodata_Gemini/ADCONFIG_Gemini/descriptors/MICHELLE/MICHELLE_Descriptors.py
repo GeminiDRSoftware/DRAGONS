@@ -1,6 +1,6 @@
 from astrodata import Descriptors
 from astrodata import Errors
-from astrodata.Calculator import Calculator
+
 from astrodata.Descriptors import DescriptorValue
 
 from MICHELLE_Keywords import MICHELLE_KeyDict

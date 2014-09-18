@@ -40,7 +40,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     # need recalculating here). The first branch of this condition can be
     # removed once pixel_scale() is improved or has the same check has
     # been added to it:
-    if ad.is_type('PREPARED'):
+    if 'PREPARED' in ad.types:
         scale = ad.phu_get_key_value('PIXSCALE')
     else:
         scale = ad.pixel_scale().get_value()
@@ -51,16 +51,12 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     with_gems = (scale < 0.1)
 
     # Imaging:
-    if ad.is_type('F2_IMAGE'):
-
+    if 'F2_IMAGE' in ad.types:
         dist = 60. if with_gems else 183.
-
         return math.sqrt(sum([(x-r)**2 for x, r in zip(position,refpos)])) \
              < frac_FOV * dist
-
     # Long slit:
-    elif ad.is_type('F2_LS'):
-
+    elif 'F2_LS' in ad.types:
         # Parse slit width in pixels from mask name:
         mask = str(ad.focal_plane_mask())
         try:
@@ -80,8 +76,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
         return all([abs(x-r) < d for x, r, d in zip(position,refpos,dist)])
 
     # MOS:
-    elif ad.is_type('F2_MOS'):
-
+    elif 'F2_MOS' in ad.types:
         # If we need to check the MOS mask name at some point, the regexp is
         # "G(N|S)[0-9]{4}(A|B)(Q|L)[0-9]{3}-[0-9]+$" (harmlessly relaxing the
         # final running mask number to avoid a new release if Gemini were to
