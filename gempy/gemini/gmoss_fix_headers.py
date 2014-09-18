@@ -66,9 +66,11 @@ except ImportError:
         raise ImportError("Cannot import pyfits or astropy.io.fits, "
                           "please make sure one of them is installed.")
 
+from astropy.time import Time
+
 ####
 # Script meta-data
-__version__ = [0, 3, 7]
+__version__ = [0, 4, 0]
 __PROGRAM__ = os.path.splitext(os.path.basename(__file__))[0]
 __VERSION_STRING__ = '.'.join([str(x) for x in __version__])
 
@@ -97,6 +99,7 @@ __SV_PROGRAM_IDS__ = ["SV"]
 
 # Used to update PHU date related keywords
 __CORRECT_KEY__ = "DATE"
+__CORRECT_TIME_KEY__ = "UT"
 
 ####
 # Instrument specfic constants
@@ -115,7 +118,8 @@ ADDITIONAL_OFFSET = 0  # Apparent offset not in CD_MATRIX - As of the WCS
 ####
 # The wrapper function called by main(); it is this function should be imported
 # if required to be part of another Python script
-def correct_headers(hdulist, report=None, logger=None):
+def correct_headers(hdulist, report=None, logger=None, correct_phu=True,
+                    correct_image_extensions=True):
     """
     The hard work function to update the headers. Updates the PHU and then
     image extensions, in place! The keywords updated are in the doc string for
@@ -176,7 +180,15 @@ def correct_headers(hdulist, report=None, logger=None):
         return None
 
     # Call function to fix PHU keywords and image extension keywords
-    if True in [fix_phu(hdulist[0]), fix_image_extensions(hdulist)]:
+    phu_updated = False
+    if correct_phu:
+        phu_updated = fix_phu(hdulist[0])
+        
+    image_extensions_updated = False
+    if correct_image_extensions:
+        image_extensions_updated = fix_image_extensions(hdulist)
+        
+    if True in [phu_updated, image_extensions_updated]:
         updated = True
     else:
         updated = False
@@ -384,6 +396,8 @@ def fix_release_date(phu, correct_key=__CORRECT_KEY__):
     release_date = release_date.strftime("%Y-%m-%d")
     phu.header["RELEASE"] = release_date
 
+    return True
+
     
 def _update_date_object(date, months):
     """
@@ -411,23 +425,40 @@ def _update_date_object(date, months):
     return datetime.datetime.strptime(return_date, "%Y-%m-%d")
 
 
-def fix_obsepoch(phu, correct_key=__CORRECT_KEY__):
-    """ Just do a string replace of the year in the OBSEPOCH string """
-
-    date = _get_key_value(phu, correct_key)
-    obsepoch = _get_key_value(phu, "OBSEPOCH")
-    if None in [date, obsepoch]:
+def fix_obsepoch(phu, date_key=__CORRECT_KEY__, time_key=__CORRECT_TIME_KEY__):
+    """
+    OBSEPOCH is the EPOCH of the image. For this to be wrong the DATE-OBS
+    must have been wrong. Which likely means the accuracy of the fix to this
+    keyword will be limited to half a second rather than milli-seconds, as the
+    DATE-OBS is normally supplied by the GPS time from the syncro bus. Both
+    date and time are required to fix this keyword.
+    
+    """
+    date = _get_key_value(phu, date_key)
+    ut = _get_key_value(phu, time_key)
+    ut_type = _get_key_value(phu, "TIMESYS")
+    if None in [date, ut]:
         raise ValueError
 
-    date_regexp = re.compile(DATE_STRING).match(date)
-    obsepoch_regexp = re.compile("^(?P<year>[0-9]{4})(?P<decimal>\.[0-9]+)$")
-    obsepoch_regexp = obsepoch_regexp.match(str(obsepoch))
+    # Form an astropy time object
+    date_time_string = ' '.join([date, ut])
+    observation_utc = Time(date_time_string, scale=ut_type.lower())
 
-    obsepoch = "{0}{1}".format(date_regexp.group("year"),
-                               obsepoch_regexp.group("decimal"))
-    phu.header["OBSEPOCH"] = float(obsepoch)
+    # Calculate the Julian EPOCH
+    new_obsepoch = round(observation_utc.jyear, 11)
+
+    try:
+        orig_comment = phu.header.cards["OBSEPOCH"][2]
+    except:
+        orig_comment = "UPDATED"
+
+    new_comment = ("{0}: from {1} and {2} "
+                   "".format(orig_comment, date_key, time_key))
+
+    phu.header["OBSEPOCH"] = (new_obsepoch, new_comment)
+
+    return True
     
-
 ####
 # Helper functions
 def _get_key_value(header, key):
@@ -586,7 +617,8 @@ def main(args=None):
         # Edits the HDUList in place
         try:
             updated = correct_headers(hdulist, report=report,
-                                      logger=log)
+                                      logger=log, correct_phu=args.fix_phu,
+                                      correct_image_extensions=args.fix_exts)
         except (IOError, ValueError, KeyError) as err:
             errmsg = ("ERROR - type: {0}, message: {1}".format(
                       type(err), str(err)))
@@ -838,6 +870,12 @@ def parse_command_line_inputs():
                                                    "created in the pwd and "
                                                    " only if an exception is "
                                                    "raised"))
+
+    parser.add_argument('--nofix_phu', dest="fix_phu", action="store_false",
+                        default=True, help=("Do not fix PHU"))
+
+    parser.add_argument('--nofix_exts', dest="fix_exts", action="store_false",
+                        default=True, help=("Do not fix image extensions"))
 
     parser.add_argument('--logfile', dest="logfile", action="store",
                         default=_default_log_file(), help="Logfile")
