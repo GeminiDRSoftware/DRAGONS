@@ -908,7 +908,7 @@ try:
                         print "Ctrl-C Exit"
                         prs.unregister()
                         raise
-                    except astrodata.ReductionObjects.ReductionExcept, e:
+                    except astrodata.ReductionObjects.ReductionError, e:
                         log.error("FATAL:" + str(e))
                         break;
                         #prs.unregister()
