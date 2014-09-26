@@ -223,123 +223,72 @@ MetricsViewer.prototype = {
 	iq_options.title = "Zenith IQ";
 	iq_options.ymax = 2.5;
 	iq_options.yaxis_label = "Zenith IQ (arcsec)";
-	iq_options.series_labels = ["U","U(p)","B","B(p)","V","V(p)",
-				    "R","R(p)","I","I(p)","Y","Y(p)",
-				    "J(oi)","J","H(oi)","H","K(oi)","K",
-				    "L(oi)","L","M(oi)","M","N(oi)","N",
-				    "Q(oi)","Q"];
+	iq_options.series_labels = ["u","g","r","i","Z","Y",
+				    "J","H","K","L","M","N","Q"];
 	// This got very long.  It should probably be moved somewhere else.
 	iq_options.overlay = [
-			      //U with OI
-			      [{y:0.50,name:"IQ20",color:'#888'},
+			      //u
+			      [{y:0.60,name:"IQ20",color:'#888'},
 	                       {y:0.90,name:"IQ70",color:'#888'},
 	                       {y:1.20,name:"IQ85",color:'#888'}],
-			      //U with PWFS
+			      //g
+			      [{y:0.60,name:"IQ20",color:'#888'},
+	                       {y:0.85,name:"IQ70",color:'#888'},
+	                       {y:1.10,name:"IQ85",color:'#888'}],
+			      //r
 			      [{y:0.50,name:"IQ20",color:'#888'},
-	                       {y:0.90,name:"IQ70",color:'#888'},
-	                       {y:1.30,name:"IQ85",color:'#888'}],
-			      //B with OI
-			      [{y:0.45,name:"IQ20",color:'#888'},
-	                       {y:0.85,name:"IQ70",color:'#888'},
-	                       {y:1.15,name:"IQ85",color:'#888'}],
-			      //B with PWFS
-			      [{y:0.45,name:"IQ20",color:'#888'},
-	                       {y:0.85,name:"IQ70",color:'#888'},
-	                       {y:1.15,name:"IQ85",color:'#888'}],
-			      //V with OI
-			      [{y:0.45,name:"IQ20",color:'#888'},
-	                       {y:0.80,name:"IQ70",color:'#888'},
-	                       {y:1.10,name:"IQ85",color:'#888'}],
-			      //V with PWFS
-			      [{y:0.45,name:"IQ20",color:'#888'},
-	                       {y:0.80,name:"IQ70",color:'#888'},
-	                       {y:1.20,name:"IQ85",color:'#888'}],
-			      //R with OI
-			      [{y:0.45,name:"IQ20",color:'#888'},
 	                       {y:0.75,name:"IQ70",color:'#888'},
 	                       {y:1.05,name:"IQ85",color:'#888'}],
-			      //R with PWFS
-			      [{y:0.45,name:"IQ20",color:'#888'},
-	                       {y:0.80,name:"IQ70",color:'#888'},
-	                       {y:1.15,name:"IQ85",color:'#888'}],
-			      //I with OI
-			      [{y:0.40,name:"IQ20",color:'#888'},
+			      //i
+			      [{y:0.50,name:"IQ20",color:'#888'},
 	                       {y:0.75,name:"IQ70",color:'#888'},
 	                       {y:1.05,name:"IQ85",color:'#888'}],
-			      //I with PWFS
-			      [{y:0.45,name:"IQ20",color:'#888'},
-	                       {y:0.80,name:"IQ70",color:'#888'},
-	                       {y:1.10,name:"IQ85",color:'#888'}],
-			      //Y with OI
+			      //Z
+			      [{y:0.50,name:"IQ20",color:'#888'},
+	                       {y:0.70,name:"IQ70",color:'#888'},
+	                       {y:0.95,name:"IQ85",color:'#888'}],
+			      //Y
 			      [{y:0.40,name:"IQ20",color:'#888'},
 	                       {y:0.65,name:"IQ70",color:'#888'},
 	                       {y:0.90,name:"IQ85",color:'#888'}],
-			      //Y with PWFS
-			      [{y:0.40,name:"IQ20",color:'#888'},
-	                       {y:0.70,name:"IQ70",color:'#888'},
-	                       {y:1.00,name:"IQ85",color:'#888'}],
-			      //J with OI
-			      [{y:0.35,name:"IQ20",color:'#888'},
-	                       {y:0.55,name:"IQ70",color:'#888'},
-	                       {y:0.80,name:"IQ85",color:'#888'}],
-			      //J with PWFS
+			      //J
 			      [{y:0.40,name:"IQ20",color:'#888'},
 	                       {y:0.60,name:"IQ70",color:'#888'},
 	                       {y:0.85,name:"IQ85",color:'#888'}],
-			      //H with OI
-			      [{y:0.35,name:"IQ20",color:'#888'},
-	                       {y:0.55,name:"IQ70",color:'#888'},
-	                       {y:0.80,name:"IQ85",color:'#888'}],
-			      //H with PWFS
+			      //H
 			      [{y:0.40,name:"IQ20",color:'#888'},
 	                       {y:0.60,name:"IQ70",color:'#888'},
 	                       {y:0.85,name:"IQ85",color:'#888'}],
-			      //K with OI
-			      [{y:0.30,name:"IQ20",color:'#888'},
-	                       {y:0.50,name:"IQ70",color:'#888'},
-	                       {y:0.75,name:"IQ85",color:'#888'}],
-			      //K with PWFS
+			      //K
 			      [{y:0.35,name:"IQ20",color:'#888'},
-	                       {y:0.55,name:"IQ70",color:'#888'},
+	                       {y:0.50,name:"IQ70",color:'#888'},
 	                       {y:0.80,name:"IQ85",color:'#888'}],
-			      //L with OI
-			      [{y:0.30,name:"IQ20",color:'#888'},
-	                       {y:0.45,name:"IQ70",color:'#888'},
-	                       {y:0.70,name:"IQ85",color:'#888'}],
-			      //L with PWFS
+			      //L
 			      [{y:0.35,name:"IQ20",color:'#888'},
 	                       {y:0.50,name:"IQ70",color:'#888'},
 	                       {y:0.75,name:"IQ85",color:'#888'}],
-			      //M with OI
-			      [{y:0.30,name:"IQ20",color:'#888'},
-	                       {y:0.45,name:"IQ70",color:'#888'},
-	                       {y:0.65,name:"IQ85",color:'#888'}],
-			      //M with PWFS
+			      //M
 			      [{y:0.35,name:"IQ20",color:'#888'},
 	                       {y:0.50,name:"IQ70",color:'#888'},
 	                       {y:0.70,name:"IQ85",color:'#888'}],
-			      //N with OI
+			      //N
 			      [{y:0.34,name:"IQ20",color:'#888'},
 	                       {y:0.37,name:"IQ70",color:'#888'},
 	                       {y:0.45,name:"IQ85",color:'#888'}],
-			      //N with PWFS
-			      [{y:0.34,name:"IQ20",color:'#888'},
-	                       {y:0.37,name:"IQ70",color:'#888'},
-	                       {y:0.45,name:"IQ85",color:'#888'}],
-			      //Q with OI
-			      [{y:0.00,name:"IQ20",color:'#888'},
-	                       {y:0.50,name:"IQ70",color:'#888'},
-	                       {y:0.54,name:"IQ85",color:'#888'}],
-			      //Q with PWFS
+			      //Q
 			      [{y:0.00,name:"IQ20",color:'#888'},
 	                       {y:0.00,name:"IQ70",color:'#888'},
-                               {y:0.54,name:"IQ85",color:'#888'}]];
+	                       {y:0.54,name:"IQ85",color:'#888'}]];
 
 	// These colors were tested for distinctiveness under common
 	// color-blindness conditions at http://newmanservices.com/colorblind
-	iq_options.series_colors = ["#3F35EA","#566AF5","#5C84FF","#9AB3FF",
-				    "#9CCF31","#C9E198","#F7E908","#F7F2A1",
-				    "#CE0000","#E64B4B","#86C7FF","#B9DFFF"];
+	//iq_options.series_colors = ["#3F35EA","#566AF5","#FF9E00","#9AB3FF",
+	//			    "#9CCF31","#C9E198","#F7E908","#F7F2A1",
+	//			    "#CE0000","#E64B4B","#86C7FF","#B9DFFF"];
+        iq_options.series_colors = ["#3F35EA","#5C84FF","#C30000","#FF9E00",
+                                    "#F7E908","#9CCF99",
+                                    "#86B7FF","#C9E166","#E64B4B","#AA5E00",
+                                    "#F7ff55","#9DDF00","#6C99FF"]
 	this.iq_plot = new TimePlot($("#iq_plot_wrapper"),"iqplot",iq_options);
 
 	// CC Plot
@@ -363,9 +312,11 @@ MetricsViewer.prototype = {
 	bg_options.invert_yaxis = true;
 	bg_options.yaxis_label = "Sky Brightness (mag/arcsec^2)";
 	bg_options.series_labels = ["u","g","r","i","z"];
-	bg_options.series_colors = ["#86C7FF","#5C84FF","#FF9E00",
-				    "#F7E908","#3F35EA"];
-	bg_options.overlay = [ //u
+	//bg_options.series_colors = ["#86C7FF","#5C84FF","#FF9E00",
+	//			    "#F7E908","#3F35EA"];
+	bg_options.series_colors = ["#3f35ea","#5C84FF","#C30000",
+                                    "#FF9E00","#F7E908"]
+        bg_options.overlay = [ //u
 	                       [{y:21.66,name:"BG20",color:'#888'},
 	                        {y:19.49,name:"BG50",color:'#888'},
 	                        {y:17.48,name:"BG80",color:'#888'}],
@@ -1442,21 +1393,22 @@ MetricsViewer.prototype = {
 		    var wb = record["metadata"]["waveband"];
 		    var oi_bands = ["U","B","V","R","I","Y"];
 		    var pw_bands = ["J","H","K","L","M","N"];
-		    if (wfs=="OIWFS") {
-			if (oi_bands.indexOf(wb)!=-1) {
-			    series = wb;
-			} else {
-			    series = wb+"(o)";
-			}
-		    } else if (wfs=="PWFS1" || wfs=="PWFS2") {
-			if (pw_bands.indexOf(wb)!=-1) {
-			    series = wb;
-			} else {
-			    series = wb+"(p)";
-			}
-		    } else {
-			series = wb;
-		    }
+		    //if (wfs=="OIWFS") {
+			//if (oi_bands.indexOf(wb)!=-1) {
+			//    series = wb;
+			//} else {
+			//    series = wb+"(o)";
+			//}
+		    //} else if (wfs=="PWFS1" || wfs=="PWFS2") {
+			//if (pw_bands.indexOf(wb)!=-1) {
+			//    series = wb;
+			//} else {
+			//    series = wb+"(p)";
+			//}
+		    //} else {
+			//series = wb;
+		    //}
+		    series = wb;
 		} else if (dk[0]=="bg") {
 		    series = record["metadata"]["filter"];
 		} else {
