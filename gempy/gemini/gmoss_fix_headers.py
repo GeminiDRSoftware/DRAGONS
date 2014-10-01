@@ -79,7 +79,7 @@ all = ["main", "parse_command_line_inputs", "correct_headers", "__version__"]
 
 ####
 # Regular expressions
-DATE_STRING = "(?P<year>[0-9]{4})-(?P<month>[01][1-9])-(?P<day>[0123][0-9])"
+DATE_STRING = "(?P<year>[0-9]{4})-(?P<month>[01][0-9])-(?P<day>[0123][0-9])"
 SECTION_STRING = ("\[(?P<X1>[0-9]+)\:(?P<X2>[0-9]+),"
                   "(?P<Y1>[0-9]+):(?P<Y2>[0-9]+)\]")
 FILE_SYSTEM_PATHS = ["rawpath", "outpath", "backup_path"]
