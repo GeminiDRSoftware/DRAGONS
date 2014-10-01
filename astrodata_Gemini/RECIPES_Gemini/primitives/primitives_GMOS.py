@@ -235,7 +235,13 @@ class GMOSPrimitives(GEMINIPrimitives):
             if ad.detector_name(pretty=True).as_pytype() == "Hamamatsu":
                 log.status("Fixing headers for Hamamatsu data")
                 # Updates in place
-                correct_headers(ad.hdulist)
+
+                # Image extension headers appear to be correct - MS 2014-10-01
+                #     correct_image_extensions=Flase
+                # As does the DATE-OBS but as this seemed to break even after
+                # apparently being fixed, still perform this check. - MS
+                correct_headers(ad.hdulist, logger=log,
+                                correct_image_extensions=False)
 
             # Pixel scale
             gt.update_key_from_descriptor(
