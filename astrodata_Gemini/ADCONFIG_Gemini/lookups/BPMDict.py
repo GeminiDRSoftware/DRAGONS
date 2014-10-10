@@ -10,6 +10,9 @@ bpm_dict = {
     "GMOS-N_e2v_22_6amp_v1": "Gemini/GMOS/BPM/gmos-n_bpm_e2v_22_6amp_v1.fits",
     "GMOS-S_EEV_11_3amp_v1": "Gemini/GMOS/BPM/gmos-s_bpm_EEV_11_3amp_v1.fits",
     "GMOS-S_EEV_22_3amp_v1": "Gemini/GMOS/BPM/gmos-s_bpm_EEV_22_3amp_v1.fits",
+    "GMOS-S_HAM_11_12amp_v1": "Gemini/GMOS/BPM/gmos-s_bpm_HAM_11_12amp_v1.fits",
+    "GMOS-S_HAM_22_12amp_v1": "Gemini/GMOS/BPM/gmos-s_bpm_HAM_22_12amp_v1.fits",
+    "GMOS-S_HAM_44_12amp_v1": "Gemini/GMOS/BPM/gmos-s_bpm_HAM_44_12amp_v1.fits",
     "F2_1_1": "Gemini/F2/BPM/F2_bpm.fits",
     "NIRI_1_1": "Gemini/NIRI/BPM/NIRI_bpm.fits",
     }

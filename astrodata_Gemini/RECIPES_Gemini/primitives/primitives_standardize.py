@@ -634,7 +634,9 @@ class StandardizePrimitives(GENERALPrimitives):
             # Check the number of amps used
             namps = ad.phu_get_key_value("NAMPS")
 
-            if   namps == 2: 
+            if namps == 4: 
+                amp = "12amp"
+            elif namps == 2: 
                 amp = "6amp"
             elif namps == 1: 
                 amp = "3amp"
