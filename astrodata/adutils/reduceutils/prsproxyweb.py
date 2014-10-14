@@ -28,7 +28,6 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 from astrodata import AstroData
 from astrodata.Lookups import get_lookup_table
-from astrodata.RecipeManager import RecipeLibrary
 
 # ------------------------------------------------------------------------------
 def parsepath(path):
@@ -168,8 +167,6 @@ def fstore_get(timestamp):
         qa_data       = json.loads(store_handle.read())
     return qa_data
 
-# ------------------------------------------------------------------------------
-rl = RecipeLibrary()
 # ------------------------------------------------------------------------------
 webserverdone = False
 # ------------------------------------------------------------------------------
