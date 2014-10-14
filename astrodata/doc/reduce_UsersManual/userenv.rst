@@ -6,19 +6,14 @@ User Environment
 Once `astrodata has been installed <http://gdpsg.wikis-internal.gemini.edu/index.php/InstallAstroData>`_, 
 only minor adjustments need to be made to the user environment in order to make 
 astrodata importable and allow ``reduce`` to work properly. Presumably, the user 
-has retrieved the gemini_python package from the SVN repository describe in the link
-above. 
+has retrieved the gemini_python package, available as a tar file from the Gemini website.
 
 .. _config:
 
 Configuration
 -------------
-
-Let us start with checkout of the gemini_python trunk::
-
-   $ svn co http://chara.hi.gemini.edu/svn/DRSoftware/gemini_python/trunk
-
-Users need not leave the checkout name `trunk` in place and obviously can rename
+.. Update to indicate actual distribution
+Users need not leave the name `trunk` in place and obviously can rename
 it to be whatever they like. Whatever that path, add this path to the PYTHONPATH 
 environment variable.
 
