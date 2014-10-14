@@ -96,6 +96,7 @@ class Reduce(object):
         self.rtf       = False
         self.cal_mgr   = args.cal_mgr
         self.invoked   = args.invoked
+        self.suffix    = args.suffix
         self.writeInt  = False
         self.user_cals = args.user_cals
 
@@ -498,6 +499,28 @@ class Reduce(object):
             self._write_context_log(co)
             co.is_finished(True)
             raise
+        outputs = co.get_stream("main")
+        clobber = co["clobber"]
+        if clobber:
+            clobber = clobber.lower()
+            if clobber == "false":
+                clobber = False
+            else:
+                clobber = True
+        for output in outputs:
+            ad = output.ad
+            try:
+                ad.write(clobber=clobber, suffix=self.suffix, rename=True)
+                log.stdinfo("Wrote %s in output directory" % ad.filename)
+            except Errors.OutputExists:
+                log.error( "%s exists. Will not write." % ad.filename)
+            except Errors.AstroDataReadonlyError, err:
+                log.warning('%s is "readonly". Will not write.' % ad.filename)
+            except Errors.AstroDataError, err:
+                log.error("CANNOT WRITE %s: " % ad.filename + err.message)
+            except:
+                log.error("CANNOT WRITE %s, unhandled exception." % ad.filename)
+                raise
         return
 
 
