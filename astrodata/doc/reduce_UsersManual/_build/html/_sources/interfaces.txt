@@ -6,23 +6,17 @@ Interfaces
 Introduction
 ------------
 
-The ``reduce`` application provides both a command line interface and an API, both
+The ``reduce`` application provides a command line interface and an API, both
 of which can configure and launch a Recipe System processing pipeline (a 'recipe')
-on the passed dataset. Control of ``reduce`` and and the Recipe System is provided 
+on the input dataset. Control of ``reduce`` and the Recipe System is provided 
 by a variety of options and switches. Of course, all options and switches 
 can be accessed and controlled through the API.
-
-``reduce`` itself is essentially a skeleton script. After parsing the command 
-line, the script then passes the parsed arguments to the defined function, main(), 
-which in turn calls the Reduce() class constructor with "args". Class Reduce() 
-is implemented in the module coreReduce.py, found under 
-``astrodata/adutils/reduceutils``.
 
 
 Command line interface
 ----------------------
 
-We begin with the command line help provide by ``reduce -h, --help``, followed by 
+We begin with the command line help provided by ``reduce --help``, followed by 
 further description and discussion of certain non-trivial options that require 
 detailed explanation. ::
 
@@ -67,7 +61,7 @@ Informational switches
        ['-p', '--param'] 	:: userparam 		:: None
        ['--logmode'] 		:: logmode 		:: ['console']
        ['-r', '--recipe'] 	:: recipename 		:: None
-       ['--throw_descriptor_exceptions'] :: throwDescriptorExceptions 	:: False
+       ['--throw_descriptor_exceptions'] :: throwDescriptorExceptions :: False
        ['--logfile'] 		:: logfile 		:: reduce.log
        ['-t', '--astrotype'] 	:: astrotype 		:: None
        ['--override_cal'] 	:: user_cals 		:: None
@@ -82,19 +76,19 @@ Informational switches
 Configuration Switches, Options
 +++++++++++++++++++++++++++++++
 **--addprimset <PRIMSETNAME>** 
-    Add this path to user supplied primitives to reduction. I.e. path to a 
+    Add this path to user-supplied primitives for reduction. eg., path to a 
     primitives module.
 
 **--calmgr <CAL_MGR>**
     This is a URL specifying a calibration manager service. A calibration manager 
-    overides Recipe System table.
+    overides Recipe System table. Not available outside Gemini operations.
 
 **--context <RUNNING_CONTEXTS>**
     Use <RUNNING_CONTEXTS> for primitives sensitive to context. Eg., --context QA
     When not specified, the context defaults to 'QA'. 
 
 **--invoked**
-    Boolean indicating that reduce was invoked by adcc.
+    Boolean indicating that reduce was invoked by the control center.
 
 **--logmode <LOGMODE>**
     Set logging mode. One of 'standard', 'console', 'quiet', 'debug', or 'null',
@@ -102,7 +96,7 @@ Configuration Switches, Options
     file. Default is 'standard'.
 
 **--logfile <LOGFILE>**
-    Set the log file name. Default is 'reduce.log' in '.'
+    Set the log file name. Default is 'reduce.log' in the current directory.
 
 **--loglevel <LOGLEVEL>**
     Set the verbose level for console logging. One of
@@ -110,7 +104,9 @@ Configuration Switches, Options
     Default is 'stdinfo'.
 
 **--override_cal <USER_CALS [USER_CALS ...]>**
-    Add calibration to User Calibration Service. '--override_cal CALTYPE:CAL_PATH'
+    The option allows users to provide their own calibrations to ``reduce``.
+    Add a calibration to User Calibration Service. 
+    '--override_cal CALTYPE:CAL_PATH'
     Eg.,:
 
       --override_cal processed_arc:wcal/gsTest_arc.fits
@@ -118,9 +114,9 @@ Configuration Switches, Options
 **-p <USERPARAM [USERPARAM ...]>, --param <USERPARAM [USERPARAM ...]>**
     Set a primitive parameter from the command line. The form '-p par=val' sets 
     the parameter in the reduction context such that all primitives will 'see' it.
-    The form:
+    The form ::
 
-      -p ASTROTYPE:primitivename:par=val
+    -p ASTROTYPE:primitivename:par=val
 
     sets the parameter such that it applies only when the current reduction type 
     (type of current reference image) is 'ASTROTYPE' and the primitive is 
@@ -132,7 +128,7 @@ Configuration Switches, Options
 **-r <RECIPENAME>, --recipe <RECIPENAME>**
     Specify an explicit recipe to be used rather than internally determined by
     a dataset's <ASTROTYPE>. Default is None and later determined by the Recipe 
-    System based on the determined AstroDataType.
+    System based on the AstroDataType.
 
 **-t <ASTROTYPE>, --astrotype <ASTROTYPE>**
     Run a recipe based on this AstroDataType, which overrides default type or 
@@ -143,46 +139,52 @@ Configuration Switches, Options
     Add 'suffix' to output filenames at end of reduction.
 
 **--throw_descriptor_exceptions**
-    Boolean indicating descriptor exceptions are to be raised.
+    Boolean indicating descriptor exceptions are to be raised. This is a 
+    development switch.
 
 Nominal Usage
 +++++++++++++
+The minimal call for reduce can be ::
 
-In most use cases, users will likely call ``reduce`` very simply with one or more 
-positional arguments and nothing more. Oftentimes ``reduce`` will be run on a 
-single FITS files::
+   $ reduce <dataset.fits>
 
-   $ reduce <fitsfile.fits>
+While this minimal call is available at the Gemini Observatory, if a calibration 
+service is unavailable to the user -- likely true for most users -- users should 
+call ``reduce`` on a specified dataset by providing calibration files with the 
+--overrride_cal option. For example::
 
-Such a simple command for complex processing of data is possible because AstroData 
+  $ reduce --override_cal processed_arc:wcal/gsTest_arc.fits <dataset.fits>
+
+Such a command for complex processing of data is possible because AstroData 
 and the Recipe System do all the necessary work in determining how the data are to 
 be processed, which is critcially based upon the determination of the `typeset` 
 that applies to that data.
 
-Without any user-specified recipe (-r --recipe), the default recipe is ``qaReduce``,
-which is defined for various AstroDataTypes. For example, the ``qaReduce`` recipe
-for a GMOS_IMAGE specifies that the following primitives are called on the data:
+Without any user-specified recipe (-r --recipe), the default recipe is 
+``qaReduce``, which is defined for various AstroDataTypes and currently used at 
+the summit. For example, the ``qaReduce`` recipe for a GMOS_IMAGE specifies that 
+the following primitives are called on the data::
 
-- prepare
-- addDQ
-- addVAR
-- detectSources
-- measureIQ
-- measureBG
-- measureCCAndAstrometry
-- overscanCorrect
-- biasCorrect
-- ADUToElectrons
-- addVAR
-- flatCorrect
-- mosaicDetectors
-- makeFringe
-- fringeCorrect
-- detectSources
-- measureIQ
-- measureBG
-- measureCCAndAstrometry
-- addToList
+ prepare
+ addDQ
+ addVAR
+ detectSources
+ measureIQ
+ measureBG
+ measureCCAndAstrometry
+ overscanCorrect
+ biasCorrect
+ ADUToElectrons
+ addVAR
+ flatCorrect
+ mosaicDetectors
+ makeFringe
+ fringeCorrect
+ detectSources
+ measureIQ
+ measureBG
+ measureCCAndAstrometry
+ addToList
 
 The point here is not to overwhelm readers with a stack of primitive names, but 
 to present both the default pipeline processing that the above simple ``reduce`` 
@@ -196,22 +198,22 @@ Overriding Primitive Parameters
 +++++++++++++++++++++++++++++++
 
 In some cases, users may wish to change the functional behaviour of certain 
-processing steps, i.e. change default Recipe System behaviour of primitive 
+processing steps, i.e. change default behaviour of primitive 
 functions.
 
-Primitives defined within the Recipe System each have a set of pre-defined 
-parameters, which are used to control functional behaviour of the primitive.
-Each defined parameter has a "user override" token, which indicates that a
-particular parameter may be overridden by the user. Users can adjust parameter
-values from the reduce command line with the option,
+Each primitive has a set of pre-defined parameters, which are used to control 
+functional behaviour of the primitive. Each defined parameter has a "user 
+override" token, which indicates that a particular parameter may be overridden 
+by the user. Users can adjust parameter values from the reduce command line with 
+the option,
 
     **-p, --param**
 
 If permitted by the "user override" token, parameters and values specified 
 through the **-p, --param** option will `override` the defined 
 parameter default value and may alter default behaviour of the primitive 
-accessing this parameter from the reduction context. A user may pass several 
-parameter-value pairs with this option.
+accessing this parameter. A user may pass several parameter-value pairs with this 
+option.
 
 Eg.::
 
@@ -223,18 +225,17 @@ default to change the source detection behaviour::
 
   $ reduce -p threshold=4.5 <fitsfile.fits>
 
-This overrides the defined default value.
+.. dev of parameter viewer ..
 
 .. _atfile:
 
 The @file facility
 ++++++++++++++++++
 
-The reduce command line interface is implemented under the ``argparse`` module's
-``ArgumentParser`` class. ArgumentParser provides what might be called the '@file' 
-facility (users and readers familiar with IRAF will recognize this facility). 
-The ``argparse`` documentation actually calls this a 'from file', but
-it is the same thing.
+The reduce command line interface supports what might be called an 'at-file' 
+facility (users and readers familiar with IRAF will recognize this facility). This
+facility allows users to provide any and all command line options and flags 
+to ``reduce`` via in a single acsii text file.
 
 By passing an @file to ``reduce`` on the command line, users can encapsulate all 
 the options and positional arguments they might wish to specify in a single 
@@ -242,10 +243,6 @@ the options and positional arguments they might wish to specify in a single
 @files in another. The parser opens all files sequentially and parses
 all arguments in the same manner as if they were specified on the command line.
 Essentially, an @file is some or all of the command line and parsed identically.
-While ArgumentParser allows this facility to be configured to recognize one or
-more characters other than '@' as indicating an "at-file", the ``reduce`` parser
-is configured thusly. Using other characters is fraught, as the shell will 
-interpret many such characters before the parser ever sees them.
 
 To illustrate the convenience provided by an '@file', let us begin with an 
 example `reduce` command line that has a number of arguments::
@@ -271,8 +268,8 @@ This then turns the previous reduce command line into something a little more
 
   $ reduce @reduce_args.par
 
-The order of these arguments is irrelevant. The parser will figure out what is what.
-The above file could be thus written like::
+The order of these arguments is irrelevant. The parser will figure out what is 
+what. The above file could be thus written like::
 
   -r recipe.ArgsTests
   --param
@@ -312,8 +309,8 @@ The above file could be thus written like::
 	    S20130616S0019.fits
 	    N20100311S0090.fits
 
-All the above  examples of ``reduce_args.par`` are equivalently parsed. Which, of course, users
-may check by adding the **-d** flag::
+All the above  examples of ``reduce_args.par`` are equivalently parsed. Which, 
+of course, users may check by adding the **-d** flag::
 
   $ reduce -d @redpars.par
   
@@ -416,16 +413,19 @@ while parfile holds all other specifications::
 
 Overriding @file values
 +++++++++++++++++++++++
+The ``reduce`` application employs a customized command line parser such that 
+the command line option 
 
-The GDPSG have specified customized parser actions such that a command line 
-**-p, --param** option will accumulate to the set of primitive parameters or 
-override a particular parameter, if that is specified. For other arguments 
-where singular values are passed, the command line value `overrides` the @file 
-value.
+**-p** or **--param**
+
+will accumulate a set of parameters `or` override a particular parameter. 
+This may be seen when a parameter is specified in a user @file and then 
+specified on the command line. For unitary value arguments, the command line 
+value will `override` the @file value.
 
 It is further specified that if one or more datasets (i.e. positional arguments) 
 are passed on the command line, `all fits files appearing as positional arguments` 
-`in the parameter file will be replaced by the command line file(s).`
+`in the parameter file will be replaced by the command line arguments.`
 
 Using the parfile above,
 
@@ -476,6 +476,8 @@ Eg. 4) Override a recipe and specify another fits file ::
 
 Application Programming Interface (API)
 ---------------------------------------
+.. note:: The following sections discuss and describe programming interfaces
+          available on ``reduce`` and the underlying class Reduce.
 
 The ``reduce`` application is essentially a skeleton script providing the 
 described command line interface. After parsing the command line, the script 
@@ -563,7 +565,7 @@ with the appropriate settings supplied on the instance. This is precisely what
                     console_lvl=reduce.loglevel)
 
 At this point, the caller is able to call the runr() method on the "reduce" 
-instance. Processing will then proceed in the usual manner.
+instance.
 
    >>> reduce.runr()
    All submitted files appear valid
@@ -572,3 +574,4 @@ instance. Processing will then proceed in the usual manner.
    S20130616S0019.fits
    ...
 
+Processing will then proceed in the usual manner.

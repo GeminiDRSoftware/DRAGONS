@@ -3,6 +3,15 @@
 Discussion
 ==========
 
+.. discuss fits store
+
+.. _fitsstore:
+
+Fits Storage
+------------
+
+blah blah blah Fits Storage blah blah ...
+
 .. _adcc:
 
 The adcc
@@ -43,3 +52,7 @@ As things stand now, it is up to the user to pass commonly typed data to
 can help a user perform this task and create a 'ready-to-run' @file that can 
 be passed directly to ``reduce``. Properly implemented 'intelligence' will 
 `not` require the user to determine the AstroDataTypes of datasets.
+
+Local Calibration Service
++++++++++++++++++++++++++
+blahbadeeblah about a local calibration service ...

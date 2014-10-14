@@ -58,12 +58,11 @@
 which users may find helpful in executing reduce on their data. These tools can
 present primitive names available, their parameters and defaults, as well
 as perform data and type discovery in a directory tree.</p>
-<p>If the user environment has been correctly configured (Sec. <a class="reference internal" href="userenv.html#config"><em>Configuration</em></a>),
-these applications will work directly.</p>
+<p>If the user environment has been correctly configured these applications
+will work directly.</p>
 <div class="section" id="listprimitives">
 <h2>listprimitives<a class="headerlink" href="#listprimitives" title="Permalink to this headline">¶</a></h2>
-<p>In a correct environment, the <tt class="docutils literal"><span class="pre">listprimitives.py</span></tt> module (linked as
-<tt class="docutils literal"><span class="pre">listprimitives</span></tt>) will be available as a command line executable.
+<p><tt class="docutils literal"><span class="pre">listprimitives</span></tt> is available as a command line executable.
 This tool displays available primitives for all AstroDataTypes, their parameters,
 and defaults. These are the parameters discussed in Sec. <a class="reference internal" href="interfaces.html#userpars"><em>Overriding Primitive Parameters</em></a> that
 can be changed by the user with the <strong>-p, &#8211;param</strong> option on reduce. under the
@@ -86,36 +85,36 @@ Options:
 --view-recipe=VIEW_RECIPE
                       display the recipe</pre>
 </div>
-<p>Admittedly, this tool is in need of refinement and the GDPSG is working on
+<p>Admittedly, this tool is in need of refinement and work continues on
 building a tool that will present primitives and parameters in a more focused
-way. I.e. report only those primitives and parameters relevant to a given
+way, i.e. report only those primitives and parameters relevant to a given
 dataset.</p>
 </div>
 <div class="section" id="typewalk">
 <span id="id1"></span><h2>typewalk<a class="headerlink" href="#typewalk" title="Permalink to this headline">¶</a></h2>
 <p>The application <tt class="docutils literal"><span class="pre">typewalk</span></tt> can help users find data that match type
-criteria. As with <tt class="docutils literal"><span class="pre">listprimitives</span></tt>, if users have reduce available on the
-command line, <tt class="docutils literal"><span class="pre">typewalk</span></tt> will be available, too. See the help, <strong>-h, &#8211;help</strong>,
-for all available options on <tt class="docutils literal"><span class="pre">typewalk</span></tt>.</p>
+criteria. See the help, <strong>-h</strong> or <strong>&#8211;help</strong>, for all available options
+on <tt class="docutils literal"><span class="pre">typewalk</span></tt>.</p>
 <p>More generally, <tt class="docutils literal"><span class="pre">typewalk</span></tt> examines files in a directory or directory tree and
 reports the types and status values through the AstroDataType classification
 scheme. Files are selected and reported through a regular expression mask
 which, by default, finds all &#8221;.fits&#8221; and &#8221;.FITS&#8221; files. Users can change
-this mask with the <strong>-f, &#8211;filemask</strong> option.</p>
+this mask with the <strong>-f</strong> or <strong>&#8211;filemask</strong> option.</p>
 <p>By default, <tt class="docutils literal"><span class="pre">typewalk</span></tt> will recurse all subdirectories under the current
-directory. Users may specify an explicit directory with the <strong>-d, &#8211;dir</strong> option.</p>
-<p>A user may request that an output file is written when AstroDataType
-qualifiers are passed by the <strong>&#8211;types</strong> option. An output file is specified
-through the <strong>-o, &#8211;out</strong> option. Output files are formatted so they may
-be passed <cite>directly to the reduce command line</cite> via that applications
+directory. Users may specify an explicit directory with the <strong>-d</strong> or
+<strong>&#8211;dir</strong> option.</p>
+<p>A user may request that a file be written that will contain all datasets
+matching AstroDataType qualifiers passed by the <strong>&#8211;types</strong> option. An output
+file is specified through the <strong>-o, &#8211;out</strong> option. Output files are formatted
+so they may be passed <cite>directly to the reduce command line</cite> via that applications
 &#8216;at-file&#8217; (&#64;file) facility. See <a class="reference internal" href="interfaces.html#atfile"><em>The &#64;file facility</em></a> or the reduce help for more on
 &#8216;at-files&#8217;.</p>
 <p>Users may select type matching logic with the <strong>&#8211;or</strong> switch. By default,
-qualifying logic is AND. I.e. the logic specifies that <cite>all</cite> types must be
+qualifying logic is AND, i.e. the logic specifies that <cite>all</cite> types must be
 present (x AND y); <strong>&#8211;or</strong> specifies that ANY types, enumerated with
 <strong>&#8211;types</strong>, may be present (x OR y). <strong>&#8211;or</strong> is only effective when
 <strong>&#8211;types</strong> is used.</p>
-<p>For example, find all gmos images from Cerro Pachon in the top level
+<p>For example, find all GMOS images from Cerro Pachon in the top level
 directory and write out the matching files, then run reduce on them
 (<strong>-n</strong> is &#8216;norecurse&#8217;):</p>
 <div class="highlight-python"><pre>$ typewalk -n --types GEMINI_SOUTH GMOS_IMAGE --out gmos_images_south

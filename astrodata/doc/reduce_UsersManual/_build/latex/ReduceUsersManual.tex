@@ -13,7 +13,7 @@
 \usepackage{appendix} \setcounter{tocdepth}{0}
 
 \title{reduce Users Manual}
-\date{September 03, 2014}
+\date{October 14, 2014}
 \release{X1}
 \author{Kennneth Anderson}
 \newcommand{\sphinxlogo}{}
@@ -134,17 +134,6 @@ will only be engaged when directly pertinent to the operations of \code{reduce}.
 \section{Applicable Documents}
 \label{intro:applicable-documents}\begin{itemize}
 \item {} 
-\emph{GMOS Imaging – Quality Assessment Pipeline Processing Walkthrough}, K. Labrie,
-GDPSG, v2.0, 12-06-2011.
-
-\item {} 
-\emph{Image Quality Assessment and the QAP}, P. Hirst, GS/GN Science Staff, 16-05-2012
-
-\item {} 
-\emph{Gemini IRAF Imaging Tutorial}, E. Hogan, GDPSG, Observational Techniques Wrokshop,
-1-4, Apr. 2014.
-
-\item {} 
 \href{http://gdpsg.wikis-internal.gemini.edu/index.php/InstallAstroData}{Install AstroData}
 
 \end{itemize}
@@ -153,27 +142,16 @@ GDPSG, v2.0, 12-06-2011.
 \section{Reference Documents}
 \label{intro:reference-documents}\begin{itemize}
 \item {} 
-\emph{Astrodata Package Programmer's Manual}, C. Allen, GDPSG, 07-05-2013
-
-\item {} 
-\emph{Gemini AstroData Type Reference}, C. Allen, GDPSG, 09-03-2012
-
-\item {} 
-\emph{Class AstroData Application Programming Interface (API)}, K. Anderson, M. Simpson,
-14-06-2014.
-
-\item {} 
 \emph{The Gemini Recipe System: a dynamic workflow for automated data reduction},
 K. Labrie \emph{et al}, SPIE, 2010.
 
 \item {} 
-\emph{Developing for Gemini’s extensible pipeline environment}, K. Labrie, C. Allen,
-P. Hirst, ADASS, 2011
+\emph{Developing for Gemini’s extensible pipeline environment}, K. Labrie,
+C. Allen, P. Hirst, ADASS, 2011
 
 \item {} 
 \emph{Gemini's Recipe System; A publicly available instrument-agnostic pipeline
-infrastructure},
-K. Labrie et al, ADASS 2013.
+infrastructure}, K. Labrie et al, ADASS 2013.
 
 \end{itemize}
 
@@ -185,94 +163,95 @@ Gemini Recipe System, a framework for developing and running configurable data
 processing pipelines and which can accommodate processing pipelines for arbitrary
 dataset types. In conjunction with the development of \code{astrodata}, Gemini
 Observatory has also developed the compatible \code{astrodata\_Gemini} package, the
-code base currently providing abstraction of, and processing for, Gemini Observatory
-astronomical observations.
+code base currently providing abstraction of, and processing for, Gemini
+Observatory astronomical observations.
 
 In Gemini Observatory's operational environment ``on summit,'' \code{reduce},
 \code{astrodata}, and the \code{astrodata\_Gemini} packages provide a currently defined,
-near-realtime, quality assurance pipeline, the so-called QAP. \code{reduce} is used to
-launch this pipeline on newly acquired data and provide image quality metrics to
-observers, who then assess the metrics and apply observational decisions on telescope
-operations.
+near-realtime, quality assurance pipeline, the so-called QAP. \code{reduce} is used
+to launch this pipeline on newly acquired data and provide image quality metrics
+to observers, who then assess the metrics and apply observational decisions on
+telescope operations.
 
 Users unfamiliar with terms and concepts heretofore presented should consult
-documentation cited in the previous sections, or consult your nearest pipeline
-physician.
+documentation cited in the previous sections (working on the Recipe System User
+Manual).
 
 
 \section{Glossary}
 \label{intro:glossary}\begin{quote}
 
-\textbf{adcc} -- Automatated Data Communication Center. Provides XML-RPC and HTTP services
-for pipeline operations. Can be run externally to \code{reduce.} Users need not know
-about or invoke the \code{adcc} for \code{reduce} operations. \code{reduce} will launch
-an \code{adcc} instance if one is not available. See Sec. {\hyperref[discuss:adcc]{\emph{The adcc}}} for further
-discussion on \code{adcc}.
+\textbf{adcc} -- Automatated Data Communication Center. Provides XML-RPC and HTTP
+services for pipeline operations. Can be run externally to \code{reduce.} Users
+need not know about or invoke the \code{adcc} for \code{reduce} operations.
+\code{reduce} will launch an \code{adcc} instance if one is not available. See
+Sec. {\hyperref[discuss:adcc]{\emph{The adcc}}} for further discussion on \code{adcc}.
 
-\textbf{astrodata} (or Astrodata) -- part of the \textbf{gemini\_python} package suite that defines
-the dataset abstraction layer for the Recipe System.
+\textbf{astrodata} (or Astrodata) -- part of the \textbf{gemini\_python} package suite
+that defines the dataset abstraction layer for the Recipe System.
 
-\textbf{AstroData} -- not to be confused with \textbf{astrodata}, this is the main class of the
-\code{astrodata} package, and the one most users and developers will interact with at a
-programmatic level.
+\textbf{AstroData} -- not to be confused with \textbf{astrodata}, this is the main class
+of the \code{astrodata} package, and the one most users and developers will
+interact with at a programmatic level.
 
-\textbf{AstroDataType} -- Represents a data classification. A dataset will be classified by a
-number of types that describe both the data and its processing state. The AstroDataTypes
-are hierarchical, from generic to specific.  For example, a typical GMOS image might have
-a set of types like
+\textbf{AstroDataType} -- Represents a data classification. A dataset will be
+classified by a number of types that describe both the data and its processing
+state. The AstroDataTypes are hierarchical, from generic to specific.  For
+example, a typical GMOS image might have a set of types like
 
 `GMOS\_S', `GMOS\_IMAGE', `GEMINI', `SIDEREAL', `IMAGE', `GMOS', `GEMINI\_SOUTH',
 `GMOS\_RAW', `UNPREPARED', `RAW' (see \textbf{types} below).
 
-\textbf{astrodata\_Gemini} -- the \textbf{gemini\_python} package that provides all observatory
-specific definitions of data types, \textbf{recipes}, and associated \textbf{primitives} for Gemini
-Observatory data.
+\textbf{astrodata\_Gemini} -- the \textbf{gemini\_python} package that provides all
+observatory specific definitions of data types, \textbf{recipes}, and associated
+\textbf{primitives} for Gemini Observatory data.
 
-\textbf{astrodata\_X} -- conceivably a data reduction package that could reduce other observatory
-and telescope data. Under the Astrodata system, it is entirely possible for the Recipe
-System to process HST or Keck data, given the development of an associated package,
-astrodata\_HST or astrodata\_Keck. Pipelines and processing functions are defined for the
-particulars of each telescope and its various instruments.
+\textbf{astrodata\_X} -- conceivably a data reduction package that could reduce
+other observatory and telescope data. Under the Astrodata system, it is
+entirely possible for the Recipe System to process HST or Keck data, given
+the development of an associated package, astrodata\_HST or astrodata\_Keck.
+Pipelines and processing functions are defined for the particulars of each
+telescope and its various instruments.
 
-\textbf{descriptor} -- Represents a high-level metadata name. Descriptors allow access
-to essential information about the data through a uniform, instrument-agnostic
-interface to the FITS headers.
+\textbf{Descriptor} -- Represents a high-level metadata name. Descriptors allow
+access to essential information about the data through a uniform,
+instrument-agnostic interface to the FITS headers.
 
-\textbf{GDPSG} -- Gemini Data Processing Software Group
+\textbf{gemini\_python} -- A suite of packages comprising \textbf{astrodata},
+\textbf{astrodata\_Gemini}, \textbf{astrodata\_FITS}, and \textbf{gempy}, all of which provide
+the full functionality needed to run \textbf{Recipe System}  pipelines on
+observational datasets.
 
-\textbf{gemini\_python} -- A suite of packages comprising \textbf{astrodata}, \textbf{astrodata\_Gemini},
-and \textbf{gempy} all of which provide the full functionality needed to run \textbf{Recipe System}
-pipelines on observational datasets.
+\textbf{gempy} -- a \textbf{gemini\_python} package comprising functional utilities to
+the \textbf{astrodata\_Gemini} package.
 
-\textbf{gempy} -- a \textbf{gemini\_python} package comprising functional utilities to the
-\textbf{astrodata\_Gemini} package.
+\textbf{MEF} -- Multiple Extension FITS, the standard data format not only for
+Gemini Observatory but many observatories.
 
-\textbf{MEF} -- Multiple Extension FITS, the standard data format not only for Gemini
-Observatory but many observatories.
+\textbf{primitive} -- A function defined within an \textbf{astrodata\_{[}X{]}} package that
+performs actual work on the passed dataset. Primitives observe tightly
+controlled interfaces in support of re-use of primitives and recipes for
+different types of data, when possible. For example, all primitives called
+\code{flatCorrect} must apply the flat field correction appropriate for the data’s
+current AstroDataType, and must have the same set of input parameters.
 
-\textbf{primitive} -- A function defined within an \textbf{astrodata\_{[}X{]}} package that performs
-actual work on the passed dataset. Primitives observe tightly controlled interfaces
-in support of re-use of primitives and recipes for different types of data, when possible.
-For example, all primitives called \code{flatCorrect} must apply the flat field correction
-appropriate for the data’s current AstroDataType, and must have the same set of input
-parameters.
+\textbf{recipe} -- Represents the sequence of transformations. A recipe is a
+simple text file that enumerates the set and order of \textbf{primitives} that will
+process the passed dataset. A \textbf{recipe} is the high-level pipeline definition.
+Users can pass recipe names directly to reduce. Essentially, a recipe is a
+pipeline.
 
-\textbf{recipe} -- Represents the sequence of transformations. A recipe is a simple text file
-that enumerates the set and order of \textbf{primitives} that will process the passed dataset.
-A \textbf{recipe} is the high-level pipeline definition. Users can pass recipe names directly
-to reduce. Essentially, a recipe is a pipeline.
-
-\textbf{Recipe System} -- The gemin\_python framework that accommodates an arbitrary number of
-defined recipes and the primitives
+\textbf{Recipe System} -- The gemin\_python framework that accommodates an arbitrary
+number of defined recipes and the primitives
 
 \textbf{reduce} -- The user/caller interface to the Recipe System and its associated
 recipes/pipelines.
 
 \textbf{type} or \textbf{typeset} --  Not to be confused with language primitive or
-programmatic data types, these are data types defined within an \textbf{astrodata\_{[}X{]}}
-package used to describe the kind of observational data that has been passed to
-the Recipe System., Eg., GMOS\_IMAGE, NIRI. In this document, these terms are
-synonymous with \textbf{AstroDataType} unless otherwise indicated.
+programmatic data types, these are data types defined within an
+\textbf{astrodata\_{[}X{]}} package used to describe the kind of observational data that
+has been passed to the Recipe System., Eg., GMOS\_IMAGE, NIRI. In this document,
+these terms are synonymous with \textbf{AstroDataType} unless otherwise indicated.
 \end{quote}
 
 
@@ -281,19 +260,12 @@ synonymous with \textbf{AstroDataType} unless otherwise indicated.
 Once \href{http://gdpsg.wikis-internal.gemini.edu/index.php/InstallAstroData}{astrodata has been installed},
 only minor adjustments need to be made to the user environment in order to make
 astrodata importable and allow \code{reduce} to work properly. Presumably, the user
-has retrieved the gemini\_python package from the SVN repository describe in the link
-above.
+has retrieved the gemini\_python package, available as a tar file from the Gemini website.
 
 
 \section{Configuration}
 \label{userenv:configuration}\label{userenv:config}
-Let us start with checkout of the gemini\_python trunk:
-
-\begin{Verbatim}[commandchars=\\\{\}]
-\$ svn co http://chara.hi.gemini.edu/svn/DRSoftware/gemini\_python/trunk
-\end{Verbatim}
-
-Users need not leave the checkout name \emph{trunk} in place and obviously can rename
+Users need not leave the name \emph{trunk} in place and obviously can rename
 it to be whatever they like. Whatever that path, add this path to the PYTHONPATH
 environment variable.
 
@@ -354,22 +326,16 @@ This will print the reduce help to the screen.
 
 \section{Introduction}
 \label{interfaces:introduction}
-The \code{reduce} application provides both a command line interface and an API, both
+The \code{reduce} application provides a command line interface and an API, both
 of which can configure and launch a Recipe System processing pipeline (a `recipe')
-on the passed dataset. Control of \code{reduce} and and the Recipe System is provided
+on the input dataset. Control of \code{reduce} and the Recipe System is provided
 by a variety of options and switches. Of course, all options and switches
 can be accessed and controlled through the API.
-
-\code{reduce} itself is essentially a skeleton script. After parsing the command
-line, the script then passes the parsed arguments to the defined function, main(),
-which in turn calls the Reduce() class constructor with ``args''. Class Reduce()
-is implemented in the module coreReduce.py, found under
-\code{astrodata/adutils/reduceutils}.
 
 
 \section{Command line interface}
 \label{interfaces:command-line-interface}
-We begin with the command line help provide by \code{reduce -h, -{-}help}, followed by
+We begin with the command line help provided by \code{reduce -{-}help}, followed by
 further description and discussion of certain non-trivial options that require
 detailed explanation.
 
@@ -420,7 +386,7 @@ Literals                 var 'dest'              Value
 ['-p', '--param']        :: userparam            :: None
 ['--logmode']            :: logmode              :: ['console']
 ['-r', '--recipe']       :: recipename           :: None
-['--throw\_descriptor\_exceptions'] :: throwDescriptorExceptions   :: False
+['--throw\_descriptor\_exceptions'] :: throwDescriptorExceptions :: False
 ['--logfile']            :: logfile              :: reduce.log
 ['-t', '--astrotype']    :: astrotype            :: None
 ['--override\_cal']       :: user\_cals            :: None
@@ -439,19 +405,19 @@ Input fits file(s):      fitsfile.fits
 \subsection{Configuration Switches, Options}
 \label{interfaces:configuration-switches-options}\begin{description}
 \item[{\textbf{--addprimset \textless{}PRIMSETNAME\textgreater{}}}] \leavevmode
-Add this path to user supplied primitives to reduction. I.e. path to a
+Add this path to user-supplied primitives for reduction. eg., path to a
 primitives module.
 
 \item[{\textbf{--calmgr \textless{}CAL\_MGR\textgreater{}}}] \leavevmode
 This is a URL specifying a calibration manager service. A calibration manager
-overides Recipe System table.
+overides Recipe System table. Not available outside Gemini operations.
 
 \item[{\textbf{--context \textless{}RUNNING\_CONTEXTS\textgreater{}}}] \leavevmode
 Use \textless{}RUNNING\_CONTEXTS\textgreater{} for primitives sensitive to context. Eg., --context QA
 When not specified, the context defaults to `QA'.
 
 \item[{\textbf{--invoked}}] \leavevmode
-Boolean indicating that reduce was invoked by adcc.
+Boolean indicating that reduce was invoked by the control center.
 
 \item[{\textbf{--logmode \textless{}LOGMODE\textgreater{}}}] \leavevmode
 Set logging mode. One of `standard', `console', `quiet', `debug', or `null',
@@ -459,7 +425,7 @@ where `console' writes only to screen and `quiet' writes only to the log
 file. Default is `standard'.
 
 \item[{\textbf{--logfile \textless{}LOGFILE\textgreater{}}}] \leavevmode
-Set the log file name. Default is `reduce.log' in `.'
+Set the log file name. Default is `reduce.log' in the current directory.
 
 \item[{\textbf{--loglevel \textless{}LOGLEVEL\textgreater{}}}] \leavevmode
 Set the verbose level for console logging. One of
@@ -467,7 +433,9 @@ Set the verbose level for console logging. One of
 Default is `stdinfo'.
 
 \item[{\textbf{--override\_cal \textless{}USER\_CALS {[}USER\_CALS ...{]}\textgreater{}}}] \leavevmode
-Add calibration to User Calibration Service. `--override\_cal CALTYPE:CAL\_PATH'
+The option allows users to provide their own calibrations to \code{reduce}.
+Add a calibration to User Calibration Service.
+`--override\_cal CALTYPE:CAL\_PATH'
 Eg.,:
 \begin{quote}
 
@@ -477,11 +445,11 @@ Eg.,:
 \item[{\textbf{-p \textless{}USERPARAM {[}USERPARAM ...{]}\textgreater{}, --param \textless{}USERPARAM {[}USERPARAM ...{]}\textgreater{}}}] \leavevmode
 Set a primitive parameter from the command line. The form `-p par=val' sets
 the parameter in the reduction context such that all primitives will `see' it.
-The form:
-\begin{quote}
+The form
 
+\begin{Verbatim}[commandchars=\\\{\}]
 -p ASTROTYPE:primitivename:par=val
-\end{quote}
+\end{Verbatim}
 
 sets the parameter such that it applies only when the current reduction type
 (type of current reference image) is `ASTROTYPE' and the primitive is
@@ -493,7 +461,7 @@ See Sec. {\hyperref[interfaces:userpars]{\emph{Overriding Primitive Parameters}}
 \item[{\textbf{-r \textless{}RECIPENAME\textgreater{}, --recipe \textless{}RECIPENAME\textgreater{}}}] \leavevmode
 Specify an explicit recipe to be used rather than internally determined by
 a dataset's \textless{}ASTROTYPE\textgreater{}. Default is None and later determined by the Recipe
-System based on the determined AstroDataType.
+System based on the AstroDataType.
 
 \item[{\textbf{-t \textless{}ASTROTYPE\textgreater{}, --astrotype \textless{}ASTROTYPE\textgreater{}}}] \leavevmode
 Run a recipe based on this AstroDataType, which overrides default type or
@@ -504,91 +472,61 @@ acquire data. \code{reduce} default is None and determined internally.
 Add `suffix' to output filenames at end of reduction.
 
 \item[{\textbf{--throw\_descriptor\_exceptions}}] \leavevmode
-Boolean indicating descriptor exceptions are to be raised.
+Boolean indicating descriptor exceptions are to be raised. This is a
+development switch.
 
 \end{description}
 
 
 \subsection{Nominal Usage}
 \label{interfaces:nominal-usage}
-In most use cases, users will likely call \code{reduce} very simply with one or more
-positional arguments and nothing more. Oftentimes \code{reduce} will be run on a
-single FITS files:
+The minimal call for reduce can be
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce \textless{}fitsfile.fits\textgreater{}
+\$ reduce \textless{}dataset.fits\textgreater{}
 \end{Verbatim}
 
-Such a simple command for complex processing of data is possible because AstroData
+While this minimal call is available at the Gemini Observatory, if a calibration
+service is unavailable to the user -- likely true for most users -- users should
+call \code{reduce} on a specified dataset by providing calibration files with the
+--overrride\_cal option. For example:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\$ reduce --override\_cal processed\_arc:wcal/gsTest\_arc.fits \textless{}dataset.fits\textgreater{}
+\end{Verbatim}
+
+Such a command for complex processing of data is possible because AstroData
 and the Recipe System do all the necessary work in determining how the data are to
 be processed, which is critcially based upon the determination of the \emph{typeset}
 that applies to that data.
 
-Without any user-specified recipe (-r --recipe), the default recipe is \code{qaReduce},
-which is defined for various AstroDataTypes. For example, the \code{qaReduce} recipe
-for a GMOS\_IMAGE specifies that the following primitives are called on the data:
-\begin{itemize}
-\item {} 
-prepare
+Without any user-specified recipe (-r --recipe), the default recipe is
+\code{qaReduce}, which is defined for various AstroDataTypes and currently used at
+the summit. For example, the \code{qaReduce} recipe for a GMOS\_IMAGE specifies that
+the following primitives are called on the data:
 
-\item {} 
-addDQ
-
-\item {} 
-addVAR
-
-\item {} 
-detectSources
-
-\item {} 
-measureIQ
-
-\item {} 
-measureBG
-
-\item {} 
-measureCCAndAstrometry
-
-\item {} 
-overscanCorrect
-
-\item {} 
-biasCorrect
-
-\item {} 
-ADUToElectrons
-
-\item {} 
-addVAR
-
-\item {} 
-flatCorrect
-
-\item {} 
-mosaicDetectors
-
-\item {} 
-makeFringe
-
-\item {} 
-fringeCorrect
-
-\item {} 
-detectSources
-
-\item {} 
-measureIQ
-
-\item {} 
-measureBG
-
-\item {} 
-measureCCAndAstrometry
-
-\item {} 
-addToList
-
-\end{itemize}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{n}{prepare}
+\PYG{n}{addDQ}
+\PYG{n}{addVAR}
+\PYG{n}{detectSources}
+\PYG{n}{measureIQ}
+\PYG{n}{measureBG}
+\PYG{n}{measureCCAndAstrometry}
+\PYG{n}{overscanCorrect}
+\PYG{n}{biasCorrect}
+\PYG{n}{ADUToElectrons}
+\PYG{n}{addVAR}
+\PYG{n}{flatCorrect}
+\PYG{n}{mosaicDetectors}
+\PYG{n}{makeFringe}
+\PYG{n}{fringeCorrect}
+\PYG{n}{detectSources}
+\PYG{n}{measureIQ}
+\PYG{n}{measureBG}
+\PYG{n}{measureCCAndAstrometry}
+\PYG{n}{addToList}
+\end{Verbatim}
 
 The point here is not to overwhelm readers with a stack of primitive names, but
 to present both the default pipeline processing that the above simple \code{reduce}
@@ -600,14 +538,14 @@ commands.
 \subsection{Overriding Primitive Parameters}
 \label{interfaces:userpars}\label{interfaces:overriding-primitive-parameters}
 In some cases, users may wish to change the functional behaviour of certain
-processing steps, i.e. change default Recipe System behaviour of primitive
+processing steps, i.e. change default behaviour of primitive
 functions.
 
-Primitives defined within the Recipe System each have a set of pre-defined
-parameters, which are used to control functional behaviour of the primitive.
-Each defined parameter has a ``user override'' token, which indicates that a
-particular parameter may be overridden by the user. Users can adjust parameter
-values from the reduce command line with the option,
+Each primitive has a set of pre-defined parameters, which are used to control
+functional behaviour of the primitive. Each defined parameter has a ``user
+override'' token, which indicates that a particular parameter may be overridden
+by the user. Users can adjust parameter values from the reduce command line with
+the option,
 \begin{quote}
 
 \textbf{-p, --param}
@@ -616,8 +554,8 @@ values from the reduce command line with the option,
 If permitted by the ``user override'' token, parameters and values specified
 through the \textbf{-p, --param} option will \emph{override} the defined
 parameter default value and may alter default behaviour of the primitive
-accessing this parameter from the reduction context. A user may pass several
-parameter-value pairs with this option.
+accessing this parameter. A user may pass several parameter-value pairs with this
+option.
 
 Eg.:
 
@@ -633,16 +571,13 @@ default to change the source detection behaviour:
 \$ reduce -p threshold=4.5 \textless{}fitsfile.fits\textgreater{}
 \end{Verbatim}
 
-This overrides the defined default value.
-
 
 \subsection{The @file facility}
 \label{interfaces:the-file-facility}\label{interfaces:atfile}
-The reduce command line interface is implemented under the \code{argparse} module's
-\code{ArgumentParser} class. ArgumentParser provides what might be called the \href{mailto:'@file}{`@file}`
-facility (users and readers familiar with IRAF will recognize this facility).
-The \code{argparse} documentation actually calls this a `from file', but
-it is the same thing.
+The reduce command line interface supports what might be called an `at-file'
+facility (users and readers familiar with IRAF will recognize this facility). This
+facility allows users to provide any and all command line options and flags
+to \code{reduce} via in a single acsii text file.
 
 By passing an @file to \code{reduce} on the command line, users can encapsulate all
 the options and positional arguments they might wish to specify in a single
@@ -650,10 +585,6 @@ the options and positional arguments they might wish to specify in a single
 @files in another. The parser opens all files sequentially and parses
 all arguments in the same manner as if they were specified on the command line.
 Essentially, an @file is some or all of the command line and parsed identically.
-While ArgumentParser allows this facility to be configured to recognize one or
-more characters other than `@' as indicating an ``at-file'', the \code{reduce} parser
-is configured thusly. Using other characters is fraught, as the shell will
-interpret many such characters before the parser ever sees them.
 
 To illustrate the convenience provided by an \href{mailto:'@file}{`@file}`, let us begin with an
 example \emph{reduce} command line that has a number of arguments:
@@ -685,8 +616,8 @@ This then turns the previous reduce command line into something a little more
 \$ reduce @reduce\_args.par
 \end{Verbatim}
 
-The order of these arguments is irrelevant. The parser will figure out what is what.
-The above file could be thus written like:
+The order of these arguments is irrelevant. The parser will figure out what is
+what. The above file could be thus written like:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 -r recipe.ArgsTests
@@ -732,8 +663,8 @@ N20100311S0090.fits
 \end{Verbatim}
 \end{notice}
 
-All the above  examples of \code{reduce\_args.par} are equivalently parsed. Which, of course, users
-may check by adding the \textbf{-d} flag:
+All the above  examples of \code{reduce\_args.par} are equivalently parsed. Which,
+of course, users may check by adding the \textbf{-d} flag:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \$ reduce -d @redpars.par
@@ -850,15 +781,19 @@ while parfile holds all other specifications:
 
 \subsection{Overriding @file values}
 \label{interfaces:overriding-file-values}
-The GDPSG have specified customized parser actions such that a command line
-\textbf{-p, --param} option will accumulate to the set of primitive parameters or
-override a particular parameter, if that is specified. For other arguments
-where singular values are passed, the command line value \emph{overrides} the @file
-value.
+The \code{reduce} application employs a customized command line parser such that
+the command line option
+
+\textbf{-p} or \textbf{--param}
+
+will accumulate a set of parameters \emph{or} override a particular parameter.
+This may be seen when a parameter is specified in a user @file and then
+specified on the command line. For unitary value arguments, the command line
+value will \emph{override} the @file value.
 
 It is further specified that if one or more datasets (i.e. positional arguments)
 are passed on the command line, \emph{all fits files appearing as positional arguments}
-\emph{in the parameter file will be replaced by the command line file(s).}
+\emph{in the parameter file will be replaced by the command line arguments.}
 
 Using the parfile above,
 
@@ -917,6 +852,11 @@ RECIPE:           recipe.FOO
 
 \section{Application Programming Interface (API)}
 \label{interfaces:application-programming-interface-api}
+\begin{notice}{note}{Note:}
+The following sections discuss and describe programming interfaces
+available on \code{reduce} and the underlying class Reduce.
+\end{notice}
+
 The \code{reduce} application is essentially a skeleton script providing the
 described command line interface. After parsing the command line, the script
 then passes the parsed arguments to its main() function, which in turn calls
@@ -1009,7 +949,7 @@ with the appropriate settings supplied on the instance. This is precisely what
 \end{Verbatim}
 
 At this point, the caller is able to call the runr() method on the ``reduce''
-instance. Processing will then proceed in the usual manner.
+instance.
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{runr}\PYG{p}{(}\PYG{p}{)}
@@ -1020,6 +960,8 @@ instance. Processing will then proceed in the usual manner.
 \PYG{g+gp}{...}
 \end{Verbatim}
 
+Processing will then proceed in the usual manner.
+
 
 \chapter{Supplemental tools}
 \label{supptools:supplemental-tools}\label{supptools::doc}
@@ -1028,14 +970,13 @@ which users may find helpful in executing reduce on their data. These tools can
 present primitive names available, their parameters and defaults, as well
 as perform data and type discovery in a directory tree.
 
-If the user environment has been correctly configured (Sec. {\hyperref[userenv:config]{\emph{Configuration}}}),
-these applications will work directly.
+If the user environment has been correctly configured these applications
+will work directly.
 
 
 \section{listprimitives}
 \label{supptools:listprimitives}
-In a correct environment, the \code{listprimitives.py} module (linked as
-\code{listprimitives}) will be available as a command line executable.
+\code{listprimitives} is available as a command line executable.
 This tool displays available primitives for all AstroDataTypes, their parameters,
 and defaults. These are the parameters discussed in Sec. {\hyperref[interfaces:userpars]{\emph{Overriding Primitive Parameters}}} that
 can be changed by the user with the \textbf{-p, --param} option on reduce. under the
@@ -1061,42 +1002,42 @@ Options:
                       display the recipe
 \end{Verbatim}
 
-Admittedly, this tool is in need of refinement and the GDPSG is working on
+Admittedly, this tool is in need of refinement and work continues on
 building a tool that will present primitives and parameters in a more focused
-way. I.e. report only those primitives and parameters relevant to a given
+way, i.e. report only those primitives and parameters relevant to a given
 dataset.
 
 
 \section{typewalk}
 \label{supptools:typewalk}\label{supptools:id1}
 The application \code{typewalk} can help users find data that match type
-criteria. As with \code{listprimitives}, if users have reduce available on the
-command line, \code{typewalk} will be available, too. See the help, \textbf{-h, --help},
-for all available options on \code{typewalk}.
+criteria. See the help, \textbf{-h} or \textbf{--help}, for all available options
+on \code{typewalk}.
 
 More generally, \code{typewalk} examines files in a directory or directory tree and
 reports the types and status values through the AstroDataType classification
 scheme. Files are selected and reported through a regular expression mask
 which, by default, finds all ''.fits'' and ''.FITS'' files. Users can change
-this mask with the \textbf{-f, --filemask} option.
+this mask with the \textbf{-f} or \textbf{--filemask} option.
 
 By default, \code{typewalk} will recurse all subdirectories under the current
-directory. Users may specify an explicit directory with the \textbf{-d, --dir} option.
+directory. Users may specify an explicit directory with the \textbf{-d} or
+\textbf{--dir} option.
 
-A user may request that an output file is written when AstroDataType
-qualifiers are passed by the \textbf{--types} option. An output file is specified
-through the \textbf{-o, --out} option. Output files are formatted so they may
-be passed \emph{directly to the reduce command line} via that applications
+A user may request that a file be written that will contain all datasets
+matching AstroDataType qualifiers passed by the \textbf{--types} option. An output
+file is specified through the \textbf{-o, --out} option. Output files are formatted
+so they may be passed \emph{directly to the reduce command line} via that applications
 `at-file' (@file) facility. See {\hyperref[interfaces:atfile]{\emph{The @file facility}}} or the reduce help for more on
 `at-files'.
 
 Users may select type matching logic with the \textbf{--or} switch. By default,
-qualifying logic is AND. I.e. the logic specifies that \emph{all} types must be
+qualifying logic is AND, i.e. the logic specifies that \emph{all} types must be
 present (x AND y); \textbf{--or} specifies that ANY types, enumerated with
 \textbf{--types}, may be present (x OR y). \textbf{--or} is only effective when
 \textbf{--types} is used.
 
-For example, find all gmos images from Cerro Pachon in the top level
+For example, find all GMOS images from Cerro Pachon in the top level
 directory and write out the matching files, then run reduce on them
 (\textbf{-n} is `norecurse'):
 
@@ -1110,6 +1051,11 @@ This will also report match results to stdout, colourized if requested (\textbf{
 
 \chapter{Discussion}
 \label{discuss:discussion}\label{discuss::doc}
+
+\section{Fits Storage}
+\label{discuss:fits-storage}\label{discuss:fitsstore}
+blah blah blah Fits Storage blah blah ...
+
 
 \section{The adcc}
 \label{discuss:adcc}\label{discuss:the-adcc}
@@ -1150,10 +1096,15 @@ be passed directly to \code{reduce}. Properly implemented `intelligence' will
 \emph{not} require the user to determine the AstroDataTypes of datasets.
 
 
+\subsection{Local Calibration Service}
+\label{discuss:local-calibration-service}
+blahbadeeblah about a local calibration service ...
+
+
 \chapter{6. Acknowledgments}
 \label{ack::doc}\label{ack:acknowledgments}
-{\color{red}\bfseries{}*}The Gemini Observatory is operated by the Association of Universities for
-Research in Astronomy, Inc., under a cooperative agreement with the NSF on
+The Gemini Observatory is operated by the Association of Universities for
+Research in Astronomy (AURA), Inc., under a cooperative agreement with the NSF on
 behalf of the Gemini partnership: the National Science Foundation
 (United States), the Science and Technology Facilities Council (United Kingdom),
 the National Research Council (Canada), CONICYT (Chile), the Australian
