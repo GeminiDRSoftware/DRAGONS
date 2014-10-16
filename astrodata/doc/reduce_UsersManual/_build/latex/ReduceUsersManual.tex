@@ -13,7 +13,7 @@
 \usepackage{appendix} \setcounter{tocdepth}{0}
 
 \title{reduce Users Manual}
-\date{October 14, 2014}
+\date{October 16, 2014}
 \release{X1}
 \author{Kennneth Anderson}
 \newcommand{\sphinxlogo}{}
@@ -554,8 +554,8 @@ the option,
 If permitted by the ``user override'' token, parameters and values specified
 through the \textbf{-p, --param} option will \emph{override} the defined
 parameter default value and may alter default behaviour of the primitive
-accessing this parameter. A user may pass several parameter-value pairs with this
-option.
+accessing this parameter. A user may pass several parameter-value pairs with
+this option.
 
 Eg.:
 
@@ -563,9 +563,9 @@ Eg.:
 \$ reduce -p par1=val1 par2=val2 [par3=val3 ... ] \textless{}fitsfile1.fits\textgreater{}
 \end{Verbatim}
 
-For example, some photometry primitives perform source detection on an image. The
-`detection threshold' has a defined default, but a user may alter this parameter
-default to change the source detection behaviour:
+For example, some photometry primitives perform source detection on an image.
+The `detection threshold' has a defined default, but a user may alter this
+parameter default to change the source detection behaviour:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \$ reduce -p threshold=4.5 \textless{}fitsfile.fits\textgreater{}
@@ -575,8 +575,8 @@ default to change the source detection behaviour:
 \subsection{The @file facility}
 \label{interfaces:the-file-facility}\label{interfaces:atfile}
 The reduce command line interface supports what might be called an `at-file'
-facility (users and readers familiar with IRAF will recognize this facility). This
-facility allows users to provide any and all command line options and flags
+facility (users and readers familiar with IRAF will recognize this facility).
+This facility allows users to provide any and all command line options and flags
 to \code{reduce} via in a single acsii text file.
 
 By passing an @file to \code{reduce} on the command line, users can encapsulate all
@@ -631,8 +631,8 @@ N20100311S0090.fits
 
 \begin{notice}{note}{Note:}
 Comments are accommodated, both line and in-line. `=' signs \emph{may} be
-used but this has meaning only for arguments that expect unitary values.
-The `=' is really quite unnecessary.
+used but this has meaning only for arguments that expect unitary
+values. The `=' is entirely unnecessary.
 
 White space is the only significant separator of arguments: spaces,
 tabs, newlines are all equivalent when argument parsing. This means
@@ -965,18 +965,21 @@ Processing will then proceed in the usual manner.
 
 \chapter{Supplemental tools}
 \label{supptools:supplemental-tools}\label{supptools::doc}
-The astrodata package provides a number of command line driven tools, two of
-which users may find helpful in executing reduce on their data. These tools can
-present primitive names available, their parameters and defaults, as well
-as perform data and type discovery in a directory tree.
+The astrodata package provides a number of command line driven tools, which
+users may find helpful in executing reduce on their data.
 
-If the user environment has been correctly configured these applications
+With the installation and configuration of \code{astrodata} and \code{reduce} comes
+some supplemental tools to help users discover information, not only about their
+own data, but about the Recipe System, such as available recipes, primitives,
+and defined AstroDataTypes.
+
+If the user environment has been configured correctly these applications
 will work directly.
 
 
 \section{listprimitives}
 \label{supptools:listprimitives}
-\code{listprimitives} is available as a command line executable.
+The application \code{listprimitives} is available as a command line executable.
 This tool displays available primitives for all AstroDataTypes, their parameters,
 and defaults. These are the parameters discussed in Sec. {\hyperref[interfaces:userpars]{\emph{Overriding Primitive Parameters}}} that
 can be changed by the user with the \textbf{-p, --param} option on reduce. under the
@@ -992,7 +995,6 @@ Gemini Observatory Primitive Inspection Tool, v1.0 2011
 Options:
 -h, --help            show this help message and exit
 -c, --use-color       apply color output scheme
--e, --engineering     show engineering recipes
 -i, --info            show more information
 -p, --parameters      show parameters
 -r, --recipes         list top recipes
@@ -1002,29 +1004,188 @@ Options:
                       display the recipe
 \end{Verbatim}
 
-Admittedly, this tool is in need of refinement and work continues on
+
+\subsection{listprimitives information}
+\label{supptools:listprimitives-information}
+The following section presents examples of the kind of information that
+\code{listprimitives} may provide.
+
+Show available recipes:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\$ listprimitives -r
+
+===============================================================================
+
+RECIPES\_Gemini
+-------------------------------------------------------------------------------
+   1. basicQA
+   2. checkQA
+   3. makeProcessedArc.GMOS\_SPECT
+   4. makeProcessedBias
+   5. makeProcessedDark
+   6. makeProcessedFlat
+   7. makeProcessedFlat.GMOS\_IMAGE
+   8. makeProcessedFlat.GMOS\_SPECT
+   9. makeProcessedFlat.NIRI\_IMAGE
+   10. makeProcessedFringe
+   11. qaReduce.GMOS\_IMAGE
+   12. qaReduce.GMOS\_SPECT
+   13. qaReduce.NIRI\_IMAGE
+   14. qaReduceAndStack.GMOS\_IMAGE
+   15. qaStack.GMOS\_IMAGE
+   16. reduce.F2\_IMAGE
+   17. reduce.GMOS\_IMAGE
+
+Subrecipes
+-------------------------------------------------------------------------------
+   1. biasCorrect
+   2. correctWCSToReferenceCatalog
+   3. darkCorrect
+   4. flatCorrect
+   5. lampOnLampOff
+   6. makeSky
+   7. overscanCorrect
+   8. prepare
+   9. skyCorrect
+   10. standardizeHeaders
+   11. thermalEmissionCorrect
+
+===============================================================================
+\end{Verbatim}
+
+Users can request display the contents of a particular recipe, as listed above.
+This will present the `stack' of primitives that will be called by the
+Recipe System when the particular recipe is either specified through the
+\code{reduce} command line by the user, or selected internally by the Recipe System
+itself.
+
+For example, a user may like to see the primitive stack called by the default
+`QA' recipe for GMOS\_IMAGE data. As seen in the above example, these `qa' recipes
+are defined for several AstroDataTypes.
+
+Show the primitive stack for the `qa' GMOS\_IMAGE type:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\$ listprimitives --view-recipe qaReduce.GMOS\_IMAGE
+
+===============================================================================
+RECIPE: qaReduce.GMOS\_IMAGE
+===============================================================================
+\# This recipe performs the standardization and corrections needed to convert
+\# the raw input science images into a single stacked science image
+
+prepare
+addDQ
+addVAR(read\_noise=True)
+detectSources
+measureIQ(display=True)
+measureBG
+measureCCAndAstrometry
+overscanCorrect
+biasCorrect
+ADUToElectrons
+addVAR(poisson\_noise=True)
+flatCorrect
+mosaicDetectors
+makeFringe
+fringeCorrect
+detectSources
+measureIQ(display=True)
+measureBG
+measureCCAndAstrometry
+addToList(purpose=forStack)
+
+
+===============================================================================
+\end{Verbatim}
+
+\code{listprimitives} is in need of refinement and work continues on
 building a tool that will present primitives and parameters in a more focused
-way, i.e. report only those primitives and parameters relevant to a given
-dataset.
+way, i.e., report only those primitives and parameters relevant to a given
+dataset. As it currently stands, users can request that \code{listprimitives}
+display primitive parameters (as may be passed to \code{reduce} through the
+\textbf{-p} or \textbf{--param} option, Sec. {\hyperref[interfaces:userpars]{\emph{Overriding Primitive Parameters}}}), but this results in a
+list of all AstroDataTypes, their primitives and associated parameters.
+Admittedly, this list is rather ungainly, but users may see, for example, that
+the primitive \code{detectSources} has several user-tunable parameters:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+detectSources
+    suffix: '\_sourcesDetected'
+    centroid\_function: 'moffat'
+    threshold: 3.0
+    sigma: None
+    fwhm: None
+    method: 'sextractor'
+    max\_sources: 50
+\end{Verbatim}
+
+See the discussion in Sec. {\hyperref[interfaces:userpars]{\emph{Overriding Primitive Parameters}}} on command line override of
+primitive parameters, and where overriding the `threshold' parameter is dicussed
+specifically.
 
 
 \section{typewalk}
 \label{supptools:typewalk}\label{supptools:id1}
-The application \code{typewalk} can help users find data that match type
-criteria. See the help, \textbf{-h} or \textbf{--help}, for all available options
-on \code{typewalk}.
-
-More generally, \code{typewalk} examines files in a directory or directory tree and
-reports the types and status values through the AstroDataType classification
-scheme. Files are selected and reported through a regular expression mask
-which, by default, finds all ''.fits'' and ''.FITS'' files. Users can change
-this mask with the \textbf{-f} or \textbf{--filemask} option.
+As with \code{listprimitives} and \code{reduce}, the command line application \code{typewalk}
+becomes available once the user has configured astrodata correctly. \code{typewalk}
+examines files in a directory or directory tree and reports the types and status
+values through the AstroDataType classification scheme. Running \code{typewalk} on a
+directory containing some Gemini datasets will demonstrate what users can expect
+to see. If a user has downloaded gemini\_python X1 package with the `test\_data', the
+user can move to this directory and run \code{typewalk} on that extensive set of
+Gemini datasets.
 
 By default, \code{typewalk} will recurse all subdirectories under the current
 directory. Users may specify an explicit directory with the \textbf{-d} or
 \textbf{--dir} option.
 
-A user may request that a file be written that will contain all datasets
+\code{typewalk} provides the following options {[}\textbf{-h, --help}{]}:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+-h, --help            show this help message and exit
+-b BATCHNUM, --batch BATCHNUM
+                      In shallow walk mode, number of files to process at a
+                      time in the current directory. Controls behavior in
+                      large data directories. Default = 100.
+--calibrations        Show local calibrations (NOT IMPLEMENTED).
+-c, --color           Colorize display
+-d TWDIR, --dir TWDIR
+                      Walk this directory and report types. default is cwd.
+-f FILEMASK, --filemask FILEMASK
+                      Show files matching regex \textless{}FILEMASK\textgreater{}. Default is all
+                      .fits and .FITS files.
+-i, --info            Show file meta information.
+--keys KEY [KEY ...]  Print keyword values for reported files.Eg., --keys
+                      TELESCOP OBJECT
+-n, --norecurse       Do not recurse subdirectories.
+--or                  Use OR logic on 'types' criteria. If not specified,
+                      matching logic is AND (See --types). Eg., --or --types
+                      GEMINI\_SOUTH GMOS\_IMAGE will report datasets that are
+                      either GEMINI\_SOUTH *OR* GMOS\_IMAGE.
+-o OUTFILE, --out OUTFILE
+                      Write reported files to this file. Effective only with
+                      --types option.
+--raise               Raise descriptor exceptions.
+--types TYPES [TYPES ...]
+                      Find datasets that match only these type criteria.
+                      Eg., --types GEMINI\_SOUTH GMOS\_IMAGE will report
+                      datasets that are both GEMINI\_SOUTH *and* GMOS\_IMAGE.
+--status              Report data processing status only.
+--typology            Report data typologies only.
+\end{Verbatim}
+
+Files are selected and reported through a regular expression mask which,
+by default, finds all ''.fits'' and ''.FITS'' files. Users can change this mask
+with the \textbf{-f, --filemask} option.
+
+As the \textbf{--types} option indicates, \code{typewalk} can find and report data that
+match specific type criteria. For example, a user might want to find all GMOS
+image flats under a certain directory. \code{typewalk} will locate and report all
+datasets that would match the AstroDataType, GMOS\_IMAGE\_FLAT.
+
+A user may request that a file be written containing all datasets
 matching AstroDataType qualifiers passed by the \textbf{--types} option. An output
 file is specified through the \textbf{-o, --out} option. Output files are formatted
 so they may be passed \emph{directly to the reduce command line} via that applications
@@ -1034,8 +1195,8 @@ so they may be passed \emph{directly to the reduce command line} via that applic
 Users may select type matching logic with the \textbf{--or} switch. By default,
 qualifying logic is AND, i.e. the logic specifies that \emph{all} types must be
 present (x AND y); \textbf{--or} specifies that ANY types, enumerated with
-\textbf{--types}, may be present (x OR y). \textbf{--or} is only effective when
-\textbf{--types} is used.
+\textbf{--types}, may be present (x OR y). \textbf{--or} is only effective when the
+\textbf{--types} option is specified with more than one type.
 
 For example, find all GMOS images from Cerro Pachon in the top level
 directory and write out the matching files, then run reduce on them
@@ -1044,6 +1205,12 @@ directory and write out the matching files, then run reduce on them
 \begin{Verbatim}[commandchars=\\\{\}]
 \$ typewalk -n --types GEMINI\_SOUTH GMOS\_IMAGE --out gmos\_images\_south
 \$ reduce @gmos\_images\_south
+\end{Verbatim}
+
+Find all F2\_SPECT and GMOS\_SPECT datasets in a directory tree:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\$ typewalk --or --types GMOS\_SPECT F2\_SPECT
 \end{Verbatim}
 
 This will also report match results to stdout, colourized if requested (\textbf{-c}).

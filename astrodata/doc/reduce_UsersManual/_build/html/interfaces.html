@@ -238,22 +238,22 @@ the option,</p>
 <p>If permitted by the &#8220;user override&#8221; token, parameters and values specified
 through the <strong>-p, &#8211;param</strong> option will <cite>override</cite> the defined
 parameter default value and may alter default behaviour of the primitive
-accessing this parameter. A user may pass several parameter-value pairs with this
-option.</p>
+accessing this parameter. A user may pass several parameter-value pairs with
+this option.</p>
 <p>Eg.:</p>
 <div class="highlight-python"><pre>$ reduce -p par1=val1 par2=val2 [par3=val3 ... ] &lt;fitsfile1.fits&gt;</pre>
 </div>
-<p>For example, some photometry primitives perform source detection on an image. The
-&#8216;detection threshold&#8217; has a defined default, but a user may alter this parameter
-default to change the source detection behaviour:</p>
+<p>For example, some photometry primitives perform source detection on an image.
+The &#8216;detection threshold&#8217; has a defined default, but a user may alter this
+parameter default to change the source detection behaviour:</p>
 <div class="highlight-python"><pre>$ reduce -p threshold=4.5 &lt;fitsfile.fits&gt;</pre>
 </div>
 </div>
 <div class="section" id="the-file-facility">
 <span id="atfile"></span><h3>The &#64;file facility<a class="headerlink" href="#the-file-facility" title="Permalink to this headline">¶</a></h3>
 <p>The reduce command line interface supports what might be called an &#8216;at-file&#8217;
-facility (users and readers familiar with IRAF will recognize this facility). This
-facility allows users to provide any and all command line options and flags
+facility (users and readers familiar with IRAF will recognize this facility).
+This facility allows users to provide any and all command line options and flags
 to <tt class="docutils literal"><span class="pre">reduce</span></tt> via in a single acsii text file.</p>
 <p>By passing an &#64;file to <tt class="docutils literal"><span class="pre">reduce</span></tt> on the command line, users can encapsulate all
 the options and positional arguments they might wish to specify in a single
@@ -295,8 +295,8 @@ N20100311S0090.fits</pre>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p>Comments are accommodated, both line and in-line. &#8216;=&#8217; signs <cite>may</cite> be
-used but this has meaning only for arguments that expect unitary values.
-The &#8216;=&#8217; is really quite unnecessary.</p>
+used but this has meaning only for arguments that expect unitary
+values. The &#8216;=&#8217; is entirely unnecessary.</p>
 <p>White space is the only significant separator of arguments: spaces,
 tabs, newlines are all equivalent when argument parsing. This means
 the user can &#8216;arrange&#8217; their &#64;file for clarity.</p>

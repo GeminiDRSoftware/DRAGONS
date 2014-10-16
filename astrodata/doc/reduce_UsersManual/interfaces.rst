@@ -212,16 +212,16 @@ the option,
 If permitted by the "user override" token, parameters and values specified 
 through the **-p, --param** option will `override` the defined 
 parameter default value and may alter default behaviour of the primitive 
-accessing this parameter. A user may pass several parameter-value pairs with this 
-option.
+accessing this parameter. A user may pass several parameter-value pairs with 
+this option.
 
 Eg.::
 
   $ reduce -p par1=val1 par2=val2 [par3=val3 ... ] <fitsfile1.fits>
 
-For example, some photometry primitives perform source detection on an image. The 
-'detection threshold' has a defined default, but a user may alter this parameter
-default to change the source detection behaviour::
+For example, some photometry primitives perform source detection on an image. 
+The 'detection threshold' has a defined default, but a user may alter this 
+parameter default to change the source detection behaviour::
 
   $ reduce -p threshold=4.5 <fitsfile.fits>
 
@@ -233,8 +233,8 @@ The @file facility
 ++++++++++++++++++
 
 The reduce command line interface supports what might be called an 'at-file' 
-facility (users and readers familiar with IRAF will recognize this facility). This
-facility allows users to provide any and all command line options and flags 
+facility (users and readers familiar with IRAF will recognize this facility). 
+This facility allows users to provide any and all command line options and flags 
 to ``reduce`` via in a single acsii text file.
 
 By passing an @file to ``reduce`` on the command line, users can encapsulate all 
@@ -280,8 +280,8 @@ what. The above file could be thus written like::
   N20100311S0090.fits
 
 .. note:: Comments are accommodated, both line and in-line. '=' signs `may` be 
-	  used but this has meaning only for arguments that expect unitary values. 
-	  The '=' is really quite unnecessary.
+	  used but this has meaning only for arguments that expect unitary 
+          values. The '=' is entirely unnecessary.
 
 	  White space is the only significant separator of arguments: spaces, 
 	  tabs, newlines are all equivalent when argument parsing. This means 
