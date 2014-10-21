@@ -1,0 +1,25 @@
+\indexentry{astrodata.AstroData (module)|hyperpage}{1}
+\indexentry{AstroData (class in astrodata.AstroData)|hyperpage}{1}
+\indexentry{\_\_getitem\_\_() (astrodata.AstroData.AstroData method)|hyperpage}{2}
+\indexentry{data (astrodata.AstroData.AstroData attribute)|hyperpage}{3}
+\indexentry{filename (astrodata.AstroData.AstroData attribute)|hyperpage}{3}
+\indexentry{header (astrodata.AstroData.AstroData attribute)|hyperpage}{3}
+\indexentry{headers (astrodata.AstroData.AstroData attribute)|hyperpage}{4}
+\indexentry{hdulist (astrodata.AstroData.AstroData attribute)|hyperpage}{4}
+\indexentry{append() (astrodata.AstroData.AstroData method)|hyperpage}{4}
+\indexentry{close() (astrodata.AstroData.AstroData method)|hyperpage}{4}
+\indexentry{insert() (astrodata.AstroData.AstroData method)|hyperpage}{4}
+\indexentry{open() (astrodata.AstroData.AstroData method)|hyperpage}{5}
+\indexentry{remove() (astrodata.AstroData.AstroData method)|hyperpage}{5}
+\indexentry{store\_original\_name() (astrodata.AstroData.AstroData method)|hyperpage}{5}
+\indexentry{write() (astrodata.AstroData.AstroData method)|hyperpage}{5}
+\indexentry{type() (astrodata.AstroData.AstroData method)|hyperpage}{6}
+\indexentry{status() (astrodata.AstroData.AstroData method)|hyperpage}{6}
+\indexentry{count\_exts() (astrodata.AstroData.AstroData method)|hyperpage}{6}
+\indexentry{ext\_index() (astrodata.AstroData.AstroData method)|hyperpage}{6}
+\indexentry{rename\_ext() (astrodata.AstroData.AstroData method)|hyperpage}{7}
+\indexentry{info() (astrodata.AstroData.AstroData method)|hyperpage}{7}
+\indexentry{get\_key\_value() (astrodata.AstroData.AstroData method)|hyperpage}{7}
+\indexentry{set\_key\_value() (astrodata.AstroData.AstroData method)|hyperpage}{7}
+\indexentry{phu\_get\_key\_value() (astrodata.AstroData.AstroData method)|hyperpage}{8}
+\indexentry{phu\_set\_key\_value() (astrodata.AstroData.AstroData method)|hyperpage}{8}
