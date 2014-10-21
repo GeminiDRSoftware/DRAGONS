@@ -342,7 +342,7 @@ def test_wavefront_sensor():
 
 def test_wavelength_band():
     ad = AstroData(TESTFILE)
-    assert ad.wavelength_band().get_value() == 'I'
+    assert ad.wavelength_band().get_value() == 'i'
 
 def test_wavelength_reference_pixel():
     ad = AstroData(TESTFILE)
