@@ -22,8 +22,6 @@ def handleClArgs():
                             "v1.0 2011")
     parser.add_option("-c", "--use-color", action="store_true", dest="use_color",
                       default=False, help="apply color output scheme")
-    parser.add_option("-e", "--engineering", action="store_true", dest="engineering",
-                      default=False, help="show engineering recipes")
     parser.add_option("-i", "--info", action="store_true", dest="info",
                       default=False, help="show more information")
     parser.add_option("-p", "--parameters", action="store_true", dest="parameters",
@@ -43,7 +41,6 @@ def handleClArgs():
 
 # ------------------------------------------------------------------------------
 def run(options, args):
-    opte = options.engineering
     opti = options.info
     optp = options.parameters
     oset = options.primitive_set
@@ -65,7 +62,7 @@ def run(options, args):
     pin = PrimInspect(use_color=options.use_color)
 
     if options.recipes or oview:                            # Show Recipes
-        pin.list_recipes(pkg="Gemini",eng=opte, view=oview)
+        pin.list_recipes(pkg="Gemini", view=oview)
     elif oset:                                              # OR Primitives
         pin.list_primsets(info=opti)
     else: 
