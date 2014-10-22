@@ -8,6 +8,7 @@
 =======================
 
 .. toctree::
+   :numbered:
    :maxdepth: 2
 
    intro
@@ -16,6 +17,14 @@
    supptools
    discuss
    ack
+
+Appendix
+--------
+
+.. toctree::
+   :maxdepth: 1
+   
+   appendices/appendix_demo
 
 Indices and tables
 ==================

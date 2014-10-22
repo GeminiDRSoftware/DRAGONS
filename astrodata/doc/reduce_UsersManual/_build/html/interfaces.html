@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -8,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Interfaces &mdash; Reduce Users Manual X1 documentation</title>
+    <title>3. Interfaces &mdash; Reduce Users Manual X1 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +14,7 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '',
+        URL_ROOT:    './',
         VERSION:     'X1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
@@ -27,8 +25,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="Reduce Users Manual X1 documentation" href="index.html" />
-    <link rel="next" title="Supplemental tools" href="supptools.html" />
-    <link rel="prev" title="User Environment" href="userenv.html" /> 
+    <link rel="next" title="4. Supplemental tools" href="supptools.html" />
+    <link rel="prev" title="2. User Environment" href="userenv.html" /> 
   </head>
   <body>
     <div class="related">
@@ -38,10 +36,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="supptools.html" title="Supplemental tools"
+          <a href="supptools.html" title="4. Supplemental tools"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="userenv.html" title="User Environment"
+          <a href="userenv.html" title="2. User Environment"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">Reduce Users Manual X1 documentation</a> &raquo;</li> 
       </ul>
@@ -53,9 +51,9 @@
           <div class="body">
             
   <div class="section" id="interfaces">
-<h1>Interfaces<a class="headerlink" href="#interfaces" title="Permalink to this headline">¶</a></h1>
+<h1>3. Interfaces<a class="headerlink" href="#interfaces" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<h2>3.1. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
 <p>The <tt class="docutils literal"><span class="pre">reduce</span></tt> application provides a command line interface and an API, both
 of which can configure and launch a Recipe System processing pipeline (a &#8216;recipe&#8217;)
 on the input dataset. Control of <tt class="docutils literal"><span class="pre">reduce</span></tt> and the Recipe System is provided
@@ -63,18 +61,20 @@ by a variety of options and switches. Of course, all options and switches
 can be accessed and controlled through the API.</p>
 </div>
 <div class="section" id="command-line-interface">
-<h2>Command line interface<a class="headerlink" href="#command-line-interface" title="Permalink to this headline">¶</a></h2>
+<h2>3.2. Command line interface<a class="headerlink" href="#command-line-interface" title="Permalink to this headline">¶</a></h2>
 <p>We begin with the command line help provided by <tt class="docutils literal"><span class="pre">reduce</span> <span class="pre">--help</span></tt>, followed by
 further description and discussion of certain non-trivial options that require
 detailed explanation.</p>
-<div class="highlight-python"><pre>usage: reduce [options] fitsfile [fitsfile ...]</pre>
+<div class="highlight-python"><div class="highlight"><pre>usage: reduce [options] fitsfile [fitsfile ...]
+</pre></div>
 </div>
 <p>positional arguments:</p>
-<div class="highlight-python"><pre>fitsfile [fitsfile ...]</pre>
+<div class="highlight-python"><div class="highlight"><pre>fitsfile [fitsfile ...]
+</pre></div>
 </div>
 <p>The [options] are described in the following sections.</p>
 <div class="section" id="informational-switches">
-<h3>Informational switches<a class="headerlink" href="#informational-switches" title="Permalink to this headline">¶</a></h3>
+<h3>3.2.1. Informational switches<a class="headerlink" href="#informational-switches" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong>-h, &#8211;help</strong></dt>
 <dd>show the help message and exit</dd>
@@ -90,35 +90,36 @@ recipe (-r, &#8211;recipe), &#8216;recipename&#8217; indicates &#8216;None&#8217
 the Recipe System has not yet been engaged and a default recipe not yet
 determined.</p>
 <p>Eg.,:</p>
-<div class="last highlight-python"><pre>$ reduce -d --logmode console fitsfile.fits
+<div class="last highlight-python"><div class="highlight"><pre>$ reduce -d --logmode console fitsfile.fits
 
 --------------------   switches, vars, vals  --------------------
 
-Literals                 var 'dest'              Value
+Literals                 var &#39;dest&#39;              Value
 -----------------------------------------------------------------
-['--invoked']            :: invoked              :: False
-['--addprimset']         :: primsetname          :: None
-['-d', '--displayflags'] :: displayflags         :: True
-['-p', '--param']        :: userparam            :: None
-['--logmode']            :: logmode              :: ['console']
-['-r', '--recipe']       :: recipename           :: None
-['--throw_descriptor_exceptions'] :: throwDescriptorExceptions :: False
-['--logfile']            :: logfile              :: reduce.log
-['-t', '--astrotype']    :: astrotype            :: None
-['--override_cal']       :: user_cals            :: None
-['--context']            :: running_contexts     :: None
-['--calmgr']             :: cal_mgr              :: None
-['--suffix']             :: suffix               :: None
-['--loglevel']           :: loglevel             :: stdinfo
+[&#39;--invoked&#39;]            :: invoked              :: False
+[&#39;--addprimset&#39;]         :: primsetname          :: None
+[&#39;-d&#39;, &#39;--displayflags&#39;] :: displayflags         :: True
+[&#39;-p&#39;, &#39;--param&#39;]        :: userparam            :: None
+[&#39;--logmode&#39;]            :: logmode              :: [&#39;console&#39;]
+[&#39;-r&#39;, &#39;--recipe&#39;]       :: recipename           :: None
+[&#39;--throw_descriptor_exceptions&#39;] :: throwDescriptorExceptions :: False
+[&#39;--logfile&#39;]            :: logfile              :: reduce.log
+[&#39;-t&#39;, &#39;--astrotype&#39;]    :: astrotype            :: None
+[&#39;--override_cal&#39;]       :: user_cals            :: None
+[&#39;--context&#39;]            :: running_contexts     :: None
+[&#39;--calmgr&#39;]             :: cal_mgr              :: None
+[&#39;--suffix&#39;]             :: suffix               :: None
+[&#39;--loglevel&#39;]           :: loglevel             :: stdinfo
 -----------------------------------------------------------------
 
-Input fits file(s):      fitsfile.fits</pre>
+Input fits file(s):      fitsfile.fits
+</pre></div>
 </div>
 </dd>
 </dl>
 </div>
 <div class="section" id="configuration-switches-options">
-<h3>Configuration Switches, Options<a class="headerlink" href="#configuration-switches-options" title="Permalink to this headline">¶</a></h3>
+<h3>3.2.2. Configuration Switches, Options<a class="headerlink" href="#configuration-switches-options" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong>&#8211;addprimset &lt;PRIMSETNAME&gt;</strong></dt>
 <dd>Add this path to user-supplied primitives for reduction. eg., path to a
@@ -153,7 +154,8 @@ Eg.,:</p>
 <dd><p class="first">Set a primitive parameter from the command line. The form &#8216;-p par=val&#8217; sets
 the parameter in the reduction context such that all primitives will &#8216;see&#8217; it.
 The form</p>
-<div class="highlight-python"><pre>-p ASTROTYPE:primitivename:par=val</pre>
+<div class="highlight-python"><div class="highlight"><pre>-p ASTROTYPE:primitivename:par=val
+</pre></div>
 </div>
 <p>sets the parameter such that it applies only when the current reduction type
 (type of current reference image) is &#8216;ASTROTYPE&#8217; and the primitive is
@@ -177,15 +179,17 @@ development switch.</dd>
 </dl>
 </div>
 <div class="section" id="nominal-usage">
-<h3>Nominal Usage<a class="headerlink" href="#nominal-usage" title="Permalink to this headline">¶</a></h3>
+<h3>3.2.3. Nominal Usage<a class="headerlink" href="#nominal-usage" title="Permalink to this headline">¶</a></h3>
 <p>The minimal call for reduce can be</p>
-<div class="highlight-python"><pre>$ reduce &lt;dataset.fits&gt;</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ reduce &lt;dataset.fits&gt;
+</pre></div>
 </div>
 <p>While this minimal call is available at the Gemini Observatory, if a calibration
 service is unavailable to the user &#8211; likely true for most users &#8211; users should
 call <tt class="docutils literal"><span class="pre">reduce</span></tt> on a specified dataset by providing calibration files with the
 &#8211;overrride_cal option. For example:</p>
-<div class="highlight-python"><pre>$ reduce --override_cal processed_arc:wcal/gsTest_arc.fits &lt;dataset.fits&gt;</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ reduce --override_cal processed_arc:wcal/gsTest_arc.fits &lt;dataset.fits&gt;
+</pre></div>
 </div>
 <p>Such a command for complex processing of data is possible because AstroData
 and the Recipe System do all the necessary work in determining how the data are to
@@ -224,7 +228,7 @@ away the complexity of the processing that is engaged with the simplist of
 commands.</p>
 </div>
 <div class="section" id="overriding-primitive-parameters">
-<span id="userpars"></span><h3>Overriding Primitive Parameters<a class="headerlink" href="#overriding-primitive-parameters" title="Permalink to this headline">¶</a></h3>
+<span id="userpars"></span><h3>3.2.4. Overriding Primitive Parameters<a class="headerlink" href="#overriding-primitive-parameters" title="Permalink to this headline">¶</a></h3>
 <p>In some cases, users may wish to change the functional behaviour of certain
 processing steps, i.e. change default behaviour of primitive
 functions.</p>
@@ -241,16 +245,18 @@ parameter default value and may alter default behaviour of the primitive
 accessing this parameter. A user may pass several parameter-value pairs with
 this option.</p>
 <p>Eg.:</p>
-<div class="highlight-python"><pre>$ reduce -p par1=val1 par2=val2 [par3=val3 ... ] &lt;fitsfile1.fits&gt;</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ reduce -p par1=val1 par2=val2 [par3=val3 ... ] &lt;fitsfile1.fits&gt;
+</pre></div>
 </div>
 <p>For example, some photometry primitives perform source detection on an image.
 The &#8216;detection threshold&#8217; has a defined default, but a user may alter this
 parameter default to change the source detection behaviour:</p>
-<div class="highlight-python"><pre>$ reduce -p threshold=4.5 &lt;fitsfile.fits&gt;</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ reduce -p threshold=4.5 &lt;fitsfile.fits&gt;
+</pre></div>
 </div>
 </div>
 <div class="section" id="the-file-facility">
-<span id="atfile"></span><h3>The &#64;file facility<a class="headerlink" href="#the-file-facility" title="Permalink to this headline">¶</a></h3>
+<span id="atfile"></span><h3>3.2.5. The &#64;file facility<a class="headerlink" href="#the-file-facility" title="Permalink to this headline">¶</a></h3>
 <p>The reduce command line interface supports what might be called an &#8216;at-file&#8217;
 facility (users and readers familiar with IRAF will recognize this facility).
 This facility allows users to provide any and all command line options and flags
@@ -263,34 +269,38 @@ all arguments in the same manner as if they were specified on the command line.
 Essentially, an &#64;file is some or all of the command line and parsed identically.</p>
 <p>To illustrate the convenience provided by an <a class="reference external" href="mailto:'&#37;&#52;&#48;file">'<span>&#64;</span>file</a>&#8216;, let us begin with an
 example <cite>reduce</cite> command line that has a number of arguments:</p>
-<div class="highlight-python"><pre>$ reduce -p GMOS_IMAGE:contextReport:tpar=100 GMOS_IMAGE:contextReport:report_inputs=True
-  -r recipe.ArgsTest --context qa S20130616S0019.fits N20100311S0090.fits</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ reduce -p GMOS_IMAGE:contextReport:tpar=100 GMOS_IMAGE:contextReport:report_inputs=True
+  -r recipe.ArgsTest --context qa S20130616S0019.fits N20100311S0090.fits
+</pre></div>
 </div>
 <p>Ungainly, to be sure. Here, two (2) <cite>user parameters</cite> are being specified
 with <strong>-p</strong>, a <cite>recipe</cite> with <strong>-r</strong>, and a <cite>context</cite> argument is specified
 to be <strong>qa</strong> . This can be wrapped in a plain text &#64;file called
 <cite>reduce_args.par</cite>:</p>
-<div class="highlight-python"><pre>S20130616S0019.fits
+<div class="highlight-python"><div class="highlight"><pre>S20130616S0019.fits
 N20100311S0090.fits
 --param
 GMOS_IMAGE:contextReport:tpar=100
 GMOS_IMAGE:contextReport:report_inputs=True
 -r recipe.ArgsTests
---context qa</pre>
+--context qa
+</pre></div>
 </div>
 <p>This then turns the previous reduce command line into something a little more
 <cite>keyboard friendly</cite>:</p>
-<div class="highlight-python"><pre>$ reduce @reduce_args.par</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ reduce @reduce_args.par
+</pre></div>
 </div>
 <p>The order of these arguments is irrelevant. The parser will figure out what is
 what. The above file could be thus written like:</p>
-<div class="highlight-python"><pre>-r recipe.ArgsTests
+<div class="highlight-python"><div class="highlight"><pre>-r recipe.ArgsTests
 --param
 GMOS_IMAGE:contextReport:tpar=100
 GMOS_IMAGE:contextReport:report_inputs=True
 --context qa
 S20130616S0019.fits
-N20100311S0090.fits</pre>
+N20100311S0090.fits
+</pre></div>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -301,7 +311,7 @@ values. The &#8216;=&#8217; is entirely unnecessary.</p>
 tabs, newlines are all equivalent when argument parsing. This means
 the user can &#8216;arrange&#8217; their &#64;file for clarity.</p>
 <p>Eg., a more readable version of the above file might be written as:</p>
-<div class="last highlight-python"><pre># reduce parameter file
+<div class="last highlight-python"><div class="highlight"><pre># reduce parameter file
 # yyyy-mm-dd
 # GDPSG
 
@@ -310,7 +320,7 @@ the user can &#8216;arrange&#8217; their &#64;file for clarity.</p>
     recipe.ArgsTests  # test recipe
 
 # primitive parameters here
-# These are 'untyped', i.e. global
+# These are &#39;untyped&#39;, i.e. global
 --param
     tpar=100
     report_inputs=True
@@ -319,39 +329,41 @@ the user can &#8216;arrange&#8217; their &#64;file for clarity.</p>
     qa                # QA context
 
 S20130616S0019.fits
-N20100311S0090.fits</pre>
+N20100311S0090.fits
+</pre></div>
 </div>
 </div>
 <p>All the above  examples of <tt class="docutils literal"><span class="pre">reduce_args.par</span></tt> are equivalently parsed. Which,
 of course, users may check by adding the <strong>-d</strong> flag:</p>
-<div class="highlight-python"><pre>$ reduce -d @redpars.par
+<div class="highlight-python"><div class="highlight"><pre>$ reduce -d @redpars.par
 
 --------------------   switches, vars, vals  --------------------
 
-Literals                      var 'dest'              Value
+Literals                      var &#39;dest&#39;              Value
 -----------------------------------------------------------------
-['--invoked']                 :: invoked              :: False
-['--addprimset']              :: primsetname          :: None
-['-d', '--displayflags']      :: displayflags         :: True
-['-p', '--param']             :: userparam            :: ['tpar=100', 'report_inputs=True']
-['--logmode']                 :: logmode              :: standard
-['-r', '--recipe']            :: recipename           :: ['recipe.ArgTests']
-['--throw_descriptor_exceptions'] :: throwDescriptorExceptions        :: False
-['--logfile']                 :: logfile              :: reduce.log
-['-t', '--astrotype']         :: astrotype            :: None
-['--override_cal']            :: user_cals            :: None
-['--context']                 :: running_contexts     :: ['QA']
-['--calmgr']                  :: cal_mgr              :: None
-['--suffix']                  :: suffix               :: None
-['--loglevel']                :: loglevel             :: stdinfo
+[&#39;--invoked&#39;]                 :: invoked              :: False
+[&#39;--addprimset&#39;]              :: primsetname          :: None
+[&#39;-d&#39;, &#39;--displayflags&#39;]      :: displayflags         :: True
+[&#39;-p&#39;, &#39;--param&#39;]             :: userparam            :: [&#39;tpar=100&#39;, &#39;report_inputs=True&#39;]
+[&#39;--logmode&#39;]                 :: logmode              :: standard
+[&#39;-r&#39;, &#39;--recipe&#39;]            :: recipename           :: [&#39;recipe.ArgTests&#39;]
+[&#39;--throw_descriptor_exceptions&#39;] :: throwDescriptorExceptions        :: False
+[&#39;--logfile&#39;]                 :: logfile              :: reduce.log
+[&#39;-t&#39;, &#39;--astrotype&#39;]         :: astrotype            :: None
+[&#39;--override_cal&#39;]            :: user_cals            :: None
+[&#39;--context&#39;]                 :: running_contexts     :: [&#39;QA&#39;]
+[&#39;--calmgr&#39;]                  :: cal_mgr              :: None
+[&#39;--suffix&#39;]                  :: suffix               :: None
+[&#39;--loglevel&#39;]                :: loglevel             :: stdinfo
 -----------------------------------------------------------------
 
 Input fits file(s):   S20130616S0019.fits
-Input fits file(s):   N20100311S0090.fits</pre>
+Input fits file(s):   N20100311S0090.fits
+</pre></div>
 </div>
 </div>
 <div class="section" id="recursive-file-processing">
-<h3>Recursive &#64;file processing<a class="headerlink" href="#recursive-file-processing" title="Permalink to this headline">¶</a></h3>
+<h3>3.2.6. Recursive &#64;file processing<a class="headerlink" href="#recursive-file-processing" title="Permalink to this headline">¶</a></h3>
 <p>As implemented, the &#64;file facility will recursively handle, and process
 correctly, other &#64;file specifications that appear in a passed &#64;file or
 on the command line. For example, we may have another file containing a
@@ -363,7 +375,7 @@ arguments.</p>
 </div>
 <p>We can indicate that this file is to be consumed with the prefix character
 &#8220;&#64;&#8221; as well. In this case, the &#8216;reduce_args.par&#8217; file could thus appear:</p>
-<div class="highlight-python"><pre># reduce test parameter file
+<div class="highlight-python"><div class="highlight"><pre># reduce test parameter file
 
 @fitsfiles       # file with fits files
 
@@ -377,7 +389,8 @@ arguments.</p>
     FOO=BAR
 
 # Spec the recipe
--r recipe.ArgTests</pre>
+-r recipe.ArgTests
+</pre></div>
 </div>
 <p>The parser will open and read the &#64;fitsfiles, consuming those lines in the
 same way as any other command line arguments. Indeed, such a file need not only
@@ -388,10 +401,12 @@ serially.</p>
 <p>As stipulated earlier, because the &#64;file facility provides arguments equivalent
 to those that appear on the command line, employment of this facility means that
 a reduce command line could assume the form:</p>
-<div class="highlight-python"><pre>$ reduce @parfile @fitsfiles</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ reduce @parfile @fitsfiles
+</pre></div>
 </div>
 <p>or equally:</p>
-<div class="highlight-python"><pre>$ reduce @fitsfiles @parfile</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ reduce @fitsfiles @parfile
+</pre></div>
 </div>
 <p>where &#8216;parfile&#8217; could contain the flags and user parameters, and &#8216;fitsfiles&#8217;
 could contain a list of datasets.</p>
@@ -400,7 +415,7 @@ could contain a list of datasets.</p>
 </pre></div>
 </div>
 <p>while parfile holds all other specifications:</p>
-<div class="highlight-python"><pre># reduce test parameter file
+<div class="highlight-python"><div class="highlight"><pre># reduce test parameter file
 # GDPSG
 
 # AstroDataType
@@ -413,11 +428,12 @@ could contain a list of datasets.</p>
     FOO=BAR            # This is a test parameter
 
 # Spec the recipe
--r recipe.ArgTests</pre>
+-r recipe.ArgTests
+</pre></div>
 </div>
 </div>
 <div class="section" id="overriding-file-values">
-<h3>Overriding &#64;file values<a class="headerlink" href="#overriding-file-values" title="Permalink to this headline">¶</a></h3>
+<h3>3.2.7. Overriding &#64;file values<a class="headerlink" href="#overriding-file-values" title="Permalink to this headline">¶</a></h3>
 <p>The <tt class="docutils literal"><span class="pre">reduce</span></tt> application employs a customized command line parser such that
 the command line option</p>
 <p><strong>-p</strong> or <strong>&#8211;param</strong></p>
@@ -430,49 +446,53 @@ are passed on the command line, <cite>all fits files appearing as positional arg
 <cite>in the parameter file will be replaced by the command line arguments.</cite></p>
 <p>Using the parfile above,</p>
 <p>Eg. 1)  Accumulate a new parameter:</p>
-<div class="highlight-python"><pre>$ reduce @parfile --param FOO=BARSOOM
+<div class="highlight-python"><div class="highlight"><pre>$ reduce @parfile --param FOO=BARSOOM
 
 parsed options:
 --------------------
 AstroDataType: GMOS_IMAGE
-FITS files:    ['S20130616S0019.fits', 'N20100311S0090.fits']
+FITS files:    [&#39;S20130616S0019.fits&#39;, &#39;N20100311S0090.fits&#39;]
 Parameters:    tpar=100, report_inputs=True, FOO=BARSOOM
-RECIPE:        recipe.ArgsTest</pre>
+RECIPE:        recipe.ArgsTest
+</pre></div>
 </div>
 <p>Eg. 2) Override a parameter in the &#64;file:</p>
-<div class="highlight-python"><pre>$ reduce @parfile --param tpar=99
+<div class="highlight-python"><div class="highlight"><pre>$ reduce @parfile --param tpar=99
 
 parsed options:
 --------------------
 AstroDataType: GMOS_IMAGE
-FITS files:    ['S20130616S0019.fits', 'N20100311S0090.fits']
+FITS files:    [&#39;S20130616S0019.fits&#39;, &#39;N20100311S0090.fits&#39;]
 Parameters:    tpar=99, report_inputs=True
-RECIPE:        recipe.ArgsTest</pre>
+RECIPE:        recipe.ArgsTest
+</pre></div>
 </div>
 <p>Eg. 3) Override the recipe:</p>
-<div class="highlight-python"><pre>$ reduce @parfile -r=recipe.FOO
+<div class="highlight-python"><div class="highlight"><pre>$ reduce @parfile -r=recipe.FOO
 
 parsed options:
 --------------------
 AstroDataType:    GMOS_IMAGE
-FITS files:       ['S20130616S0019.fits', 'N20100311S0090.fits']
+FITS files:       [&#39;S20130616S0019.fits&#39;, &#39;N20100311S0090.fits&#39;]
 Parameters:       tpar=100, report_inputs=True
-RECIPE:           recipe.FOO</pre>
+RECIPE:           recipe.FOO
+</pre></div>
 </div>
 <p>Eg. 4) Override a recipe and specify another fits file</p>
-<div class="highlight-python"><pre>$ reduce @parfile -r=recipe.FOO test_data/N20100311S0090_1.fits
+<div class="highlight-python"><div class="highlight"><pre>$ reduce @parfile -r=recipe.FOO test_data/N20100311S0090_1.fits
 
 parsed options:
 --------------------
 AstroDataType:    GMOS_IMAGE
-FITS files:       ['test_data/N20100311S0090_1.fits']
+FITS files:       [&#39;test_data/N20100311S0090_1.fits&#39;]
 Parameters:       tpar=100, report_inputs=True
-RECIPE:           recipe.FOO</pre>
+RECIPE:           recipe.FOO
+</pre></div>
 </div>
 </div>
 </div>
 <div class="section" id="application-programming-interface-api">
-<h2>Application Programming Interface (API)<a class="headerlink" href="#application-programming-interface-api" title="Permalink to this headline">¶</a></h2>
+<h2>3.3. Application Programming Interface (API)<a class="headerlink" href="#application-programming-interface-api" title="Permalink to this headline">¶</a></h2>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">The following sections discuss and describe programming interfaces
@@ -485,7 +505,7 @@ the Reduce() class constructor with &#8220;args&#8221;. Class Reduce() is define
 in the module <tt class="docutils literal"><span class="pre">coreReduce.py</span></tt>. <tt class="docutils literal"><span class="pre">reduce</span></tt> and class Reduce are both
 scriptable, as the following discussion will illustrate.</p>
 <div class="section" id="reduce-main">
-<span id="main"></span><h3>reduce.main()<a class="headerlink" href="#reduce-main" title="Permalink to this headline">¶</a></h3>
+<span id="main"></span><h3>3.3.1. reduce.main()<a class="headerlink" href="#reduce-main" title="Permalink to this headline">¶</a></h3>
 <p>The main() function of reduce receives one (1) parameter that is a Namespace
 object as returned by a call on ArgumentParser.parse_args(). Specific to reduce,
 the caller can supply this object by a call on the parseUtils.buildParser()
@@ -518,7 +538,7 @@ args.recipename is type string.</p>
 <p>Processing will proceed as usual.</p>
 </div>
 <div class="section" id="class-reduce-and-the-runr-method">
-<h3>Class Reduce and the runr() method<a class="headerlink" href="#class-reduce-and-the-runr-method" title="Permalink to this headline">¶</a></h3>
+<h3>3.3.2. Class Reduce and the runr() method<a class="headerlink" href="#class-reduce-and-the-runr-method" title="Permalink to this headline">¶</a></h3>
 <p>Class Reduce is defined in <tt class="docutils literal"><span class="pre">astrodata.adutils.reduceutils</span></tt> module,
 <tt class="docutils literal"><span class="pre">coreReduce.py</span></tt>.</p>
 <p>The reduce.main() function serves mainly as a callable for the command line
@@ -579,21 +599,21 @@ instance.</p>
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Interfaces</a><ul>
-<li><a class="reference internal" href="#introduction">Introduction</a></li>
-<li><a class="reference internal" href="#command-line-interface">Command line interface</a><ul>
-<li><a class="reference internal" href="#informational-switches">Informational switches</a></li>
-<li><a class="reference internal" href="#configuration-switches-options">Configuration Switches, Options</a></li>
-<li><a class="reference internal" href="#nominal-usage">Nominal Usage</a></li>
-<li><a class="reference internal" href="#overriding-primitive-parameters">Overriding Primitive Parameters</a></li>
-<li><a class="reference internal" href="#the-file-facility">The &#64;file facility</a></li>
-<li><a class="reference internal" href="#recursive-file-processing">Recursive &#64;file processing</a></li>
-<li><a class="reference internal" href="#overriding-file-values">Overriding &#64;file values</a></li>
+<li><a class="reference internal" href="#">3. Interfaces</a><ul>
+<li><a class="reference internal" href="#introduction">3.1. Introduction</a></li>
+<li><a class="reference internal" href="#command-line-interface">3.2. Command line interface</a><ul>
+<li><a class="reference internal" href="#informational-switches">3.2.1. Informational switches</a></li>
+<li><a class="reference internal" href="#configuration-switches-options">3.2.2. Configuration Switches, Options</a></li>
+<li><a class="reference internal" href="#nominal-usage">3.2.3. Nominal Usage</a></li>
+<li><a class="reference internal" href="#overriding-primitive-parameters">3.2.4. Overriding Primitive Parameters</a></li>
+<li><a class="reference internal" href="#the-file-facility">3.2.5. The &#64;file facility</a></li>
+<li><a class="reference internal" href="#recursive-file-processing">3.2.6. Recursive &#64;file processing</a></li>
+<li><a class="reference internal" href="#overriding-file-values">3.2.7. Overriding &#64;file values</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#application-programming-interface-api">Application Programming Interface (API)</a><ul>
-<li><a class="reference internal" href="#reduce-main">reduce.main()</a></li>
-<li><a class="reference internal" href="#class-reduce-and-the-runr-method">Class Reduce and the runr() method</a></li>
+<li><a class="reference internal" href="#application-programming-interface-api">3.3. Application Programming Interface (API)</a><ul>
+<li><a class="reference internal" href="#reduce-main">3.3.1. reduce.main()</a></li>
+<li><a class="reference internal" href="#class-reduce-and-the-runr-method">3.3.2. Class Reduce and the runr() method</a></li>
 </ul>
 </li>
 </ul>
@@ -602,10 +622,10 @@ instance.</p>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="userenv.html"
-                        title="previous chapter">User Environment</a></p>
+                        title="previous chapter">2. User Environment</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="supptools.html"
-                        title="next chapter">Supplemental tools</a></p>
+                        title="next chapter">4. Supplemental tools</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/interfaces.txt"
@@ -635,17 +655,17 @@ instance.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="supptools.html" title="Supplemental tools"
+          <a href="supptools.html" title="4. Supplemental tools"
              >next</a> |</li>
         <li class="right" >
-          <a href="userenv.html" title="User Environment"
+          <a href="userenv.html" title="2. User Environment"
              >previous</a> |</li>
         <li><a href="index.html">Reduce Users Manual X1 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2014, Kennneth Anderson.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>

@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -8,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Supplemental tools &mdash; Reduce Users Manual X1 documentation</title>
+    <title>4. Supplemental tools &mdash; Reduce Users Manual X1 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +14,7 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '',
+        URL_ROOT:    './',
         VERSION:     'X1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
@@ -27,8 +25,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="Reduce Users Manual X1 documentation" href="index.html" />
-    <link rel="next" title="Discussion" href="discuss.html" />
-    <link rel="prev" title="Interfaces" href="interfaces.html" /> 
+    <link rel="next" title="5. Discussion" href="discuss.html" />
+    <link rel="prev" title="3. Interfaces" href="interfaces.html" /> 
   </head>
   <body>
     <div class="related">
@@ -38,10 +36,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="discuss.html" title="Discussion"
+          <a href="discuss.html" title="5. Discussion"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="interfaces.html" title="Interfaces"
+          <a href="interfaces.html" title="3. Interfaces"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">Reduce Users Manual X1 documentation</a> &raquo;</li> 
       </ul>
@@ -53,7 +51,7 @@
           <div class="body">
             
   <div class="section" id="supplemental-tools">
-<h1>Supplemental tools<a class="headerlink" href="#supplemental-tools" title="Permalink to this headline">¶</a></h1>
+<h1>4. Supplemental tools<a class="headerlink" href="#supplemental-tools" title="Permalink to this headline">¶</a></h1>
 <p>The astrodata package provides a number of command line driven tools, which
 users may find helpful in executing reduce on their data.</p>
 <p>With the installation and configuration of <tt class="docutils literal"><span class="pre">astrodata</span></tt> and <tt class="docutils literal"><span class="pre">reduce</span></tt> comes
@@ -63,13 +61,13 @@ and defined AstroDataTypes.</p>
 <p>If the user environment has been configured correctly these applications
 will work directly.</p>
 <div class="section" id="listprimitives">
-<h2>listprimitives<a class="headerlink" href="#listprimitives" title="Permalink to this headline">¶</a></h2>
+<h2>4.1. listprimitives<a class="headerlink" href="#listprimitives" title="Permalink to this headline">¶</a></h2>
 <p>The application <tt class="docutils literal"><span class="pre">listprimitives</span></tt> is available as a command line executable.
 This tool displays available primitives for all AstroDataTypes, their parameters,
 and defaults. These are the parameters discussed in Sec. <a class="reference internal" href="interfaces.html#userpars"><em>Overriding Primitive Parameters</em></a> that
 can be changed by the user with the <strong>-p, &#8211;param</strong> option on reduce. under the
 AstroDataTypes. The help describes more options:</p>
-<div class="highlight-python"><pre>$ listprimitives -h
+<div class="highlight-python"><div class="highlight"><pre>$ listprimitives -h
 
 Usage: listprimitives [options]
 
@@ -84,14 +82,15 @@ Options:
 -s, --primitive-set   show primitive sets (Astrodata types)
 -v, --verbose         set verbose mode
 --view-recipe=VIEW_RECIPE
-                      display the recipe</pre>
+                      display the recipe
+</pre></div>
 </div>
 <div class="section" id="listprimitives-information">
-<h3>listprimitives information<a class="headerlink" href="#listprimitives-information" title="Permalink to this headline">¶</a></h3>
+<h3>4.1.1. listprimitives information<a class="headerlink" href="#listprimitives-information" title="Permalink to this headline">¶</a></h3>
 <p>The following section presents examples of the kind of information that
 <tt class="docutils literal"><span class="pre">listprimitives</span></tt> may provide.</p>
 <p>Show available recipes:</p>
-<div class="highlight-python"><pre>$ listprimitives -r
+<div class="highlight-python"><div class="highlight"><pre>$ listprimitives -r
 
 ===============================================================================
 
@@ -129,7 +128,8 @@ Subrecipes
    10. standardizeHeaders
    11. thermalEmissionCorrect
 
-===============================================================================</pre>
+===============================================================================
+</pre></div>
 </div>
 <p>Users can request display the contents of a particular recipe, as listed above.
 This will present the &#8216;stack&#8217; of primitives that will be called by the
@@ -140,7 +140,7 @@ itself.</p>
 &#8216;QA&#8217; recipe for GMOS_IMAGE data. As seen in the above example, these &#8216;qa&#8217; recipes
 are defined for several AstroDataTypes.</p>
 <p>Show the primitive stack for the &#8216;qa&#8217; GMOS_IMAGE type:</p>
-<div class="highlight-python"><pre>$ listprimitives --view-recipe qaReduce.GMOS_IMAGE
+<div class="highlight-python"><div class="highlight"><pre>$ listprimitives --view-recipe qaReduce.GMOS_IMAGE
 
 ===============================================================================
 RECIPE: qaReduce.GMOS_IMAGE
@@ -170,7 +170,8 @@ measureCCAndAstrometry
 addToList(purpose=forStack)
 
 
-===============================================================================</pre>
+===============================================================================
+</pre></div>
 </div>
 <p><tt class="docutils literal"><span class="pre">listprimitives</span></tt> is in need of refinement and work continues on
 building a tool that will present primitives and parameters in a more focused
@@ -181,14 +182,15 @@ display primitive parameters (as may be passed to <tt class="docutils literal"><
 list of all AstroDataTypes, their primitives and associated parameters.
 Admittedly, this list is rather ungainly, but users may see, for example, that
 the primitive <tt class="docutils literal"><span class="pre">detectSources</span></tt> has several user-tunable parameters:</p>
-<div class="highlight-python"><pre>detectSources
-    suffix: '_sourcesDetected'
-    centroid_function: 'moffat'
+<div class="highlight-python"><div class="highlight"><pre>detectSources
+    suffix: &#39;_sourcesDetected&#39;
+    centroid_function: &#39;moffat&#39;
     threshold: 3.0
     sigma: None
     fwhm: None
-    method: 'sextractor'
-    max_sources: 50</pre>
+    method: &#39;sextractor&#39;
+    max_sources: 50
+</pre></div>
 </div>
 <p>See the discussion in Sec. <a class="reference internal" href="interfaces.html#userpars"><em>Overriding Primitive Parameters</em></a> on command line override of
 primitive parameters, and where overriding the &#8216;threshold&#8217; parameter is dicussed
@@ -196,7 +198,7 @@ specifically.</p>
 </div>
 </div>
 <div class="section" id="typewalk">
-<span id="id1"></span><h2>typewalk<a class="headerlink" href="#typewalk" title="Permalink to this headline">¶</a></h2>
+<span id="id1"></span><h2>4.2. typewalk<a class="headerlink" href="#typewalk" title="Permalink to this headline">¶</a></h2>
 <p>As with <tt class="docutils literal"><span class="pre">listprimitives</span></tt> and <tt class="docutils literal"><span class="pre">reduce</span></tt>, the command line application <tt class="docutils literal"><span class="pre">typewalk</span></tt>
 becomes available once the user has configured astrodata correctly. <tt class="docutils literal"><span class="pre">typewalk</span></tt>
 examines files in a directory or directory tree and reports the types and status
@@ -209,7 +211,7 @@ Gemini datasets.</p>
 directory. Users may specify an explicit directory with the <strong>-d</strong> or
 <strong>&#8211;dir</strong> option.</p>
 <p><tt class="docutils literal"><span class="pre">typewalk</span></tt> provides the following options [<strong>-h, &#8211;help</strong>]:</p>
-<div class="highlight-python"><pre>-h, --help            show this help message and exit
+<div class="highlight-python"><div class="highlight"><pre>-h, --help            show this help message and exit
 -b BATCHNUM, --batch BATCHNUM
                       In shallow walk mode, number of files to process at a
                       time in the current directory. Controls behavior in
@@ -225,7 +227,7 @@ directory. Users may specify an explicit directory with the <strong>-d</strong> 
 --keys KEY [KEY ...]  Print keyword values for reported files.Eg., --keys
                       TELESCOP OBJECT
 -n, --norecurse       Do not recurse subdirectories.
---or                  Use OR logic on 'types' criteria. If not specified,
+--or                  Use OR logic on &#39;types&#39; criteria. If not specified,
                       matching logic is AND (See --types). Eg., --or --types
                       GEMINI_SOUTH GMOS_IMAGE will report datasets that are
                       either GEMINI_SOUTH *OR* GMOS_IMAGE.
@@ -238,7 +240,8 @@ directory. Users may specify an explicit directory with the <strong>-d</strong> 
                       Eg., --types GEMINI_SOUTH GMOS_IMAGE will report
                       datasets that are both GEMINI_SOUTH *and* GMOS_IMAGE.
 --status              Report data processing status only.
---typology            Report data typologies only.</pre>
+--typology            Report data typologies only.
+</pre></div>
 </div>
 <p>Files are selected and reported through a regular expression mask which,
 by default, finds all &#8221;.fits&#8221; and &#8221;.FITS&#8221; files. Users can change this mask
@@ -261,11 +264,13 @@ present (x AND y); <strong>&#8211;or</strong> specifies that ANY types, enumerat
 <p>For example, find all GMOS images from Cerro Pachon in the top level
 directory and write out the matching files, then run reduce on them
 (<strong>-n</strong> is &#8216;norecurse&#8217;):</p>
-<div class="highlight-python"><pre>$ typewalk -n --types GEMINI_SOUTH GMOS_IMAGE --out gmos_images_south
-$ reduce @gmos_images_south</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ typewalk -n --types GEMINI_SOUTH GMOS_IMAGE --out gmos_images_south
+$ reduce @gmos_images_south
+</pre></div>
 </div>
 <p>Find all F2_SPECT and GMOS_SPECT datasets in a directory tree:</p>
-<div class="highlight-python"><pre>$ typewalk --or --types GMOS_SPECT F2_SPECT</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ typewalk --or --types GMOS_SPECT F2_SPECT
+</pre></div>
 </div>
 <p>This will also report match results to stdout, colourized if requested (<strong>-c</strong>).</p>
 </div>
@@ -279,22 +284,22 @@ $ reduce @gmos_images_south</pre>
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Supplemental tools</a><ul>
-<li><a class="reference internal" href="#listprimitives">listprimitives</a><ul>
-<li><a class="reference internal" href="#listprimitives-information">listprimitives information</a></li>
+<li><a class="reference internal" href="#">4. Supplemental tools</a><ul>
+<li><a class="reference internal" href="#listprimitives">4.1. listprimitives</a><ul>
+<li><a class="reference internal" href="#listprimitives-information">4.1.1. listprimitives information</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#typewalk">typewalk</a></li>
+<li><a class="reference internal" href="#typewalk">4.2. typewalk</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="interfaces.html"
-                        title="previous chapter">Interfaces</a></p>
+                        title="previous chapter">3. Interfaces</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="discuss.html"
-                        title="next chapter">Discussion</a></p>
+                        title="next chapter">5. Discussion</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/supptools.txt"
@@ -324,17 +329,17 @@ $ reduce @gmos_images_south</pre>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="discuss.html" title="Discussion"
+          <a href="discuss.html" title="5. Discussion"
              >next</a> |</li>
         <li class="right" >
-          <a href="interfaces.html" title="Interfaces"
+          <a href="interfaces.html" title="3. Interfaces"
              >previous</a> |</li>
         <li><a href="index.html">Reduce Users Manual X1 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2014, Kennneth Anderson.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>
