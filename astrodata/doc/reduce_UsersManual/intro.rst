@@ -17,11 +17,6 @@ information about the ``astrodata`` package, the Recipe System, and/or the data
 processing involved in data reduction are beyond the scope of this document and 
 will only be engaged when directly pertinent to the operations of ``reduce``.
 
-Applicable Documents
---------------------
-
-  - `Install AstroData <http://gdpsg.wikis-internal.gemini.edu/index.php/InstallAstroData>`_
-
 Reference Documents
 -------------------
 

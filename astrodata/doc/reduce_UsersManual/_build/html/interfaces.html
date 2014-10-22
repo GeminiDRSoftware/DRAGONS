@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -14,7 +16,7 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
+        URL_ROOT:    '',
         VERSION:     'X1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
@@ -65,12 +67,10 @@ can be accessed and controlled through the API.</p>
 <p>We begin with the command line help provided by <tt class="docutils literal"><span class="pre">reduce</span> <span class="pre">--help</span></tt>, followed by
 further description and discussion of certain non-trivial options that require
 detailed explanation.</p>
-<div class="highlight-python"><div class="highlight"><pre>usage: reduce [options] fitsfile [fitsfile ...]
-</pre></div>
+<div class="highlight-python"><pre>usage: reduce [options] fitsfile [fitsfile ...]</pre>
 </div>
 <p>positional arguments:</p>
-<div class="highlight-python"><div class="highlight"><pre>fitsfile [fitsfile ...]
-</pre></div>
+<div class="highlight-python"><pre>fitsfile [fitsfile ...]</pre>
 </div>
 <p>The [options] are described in the following sections.</p>
 <div class="section" id="informational-switches">
@@ -90,30 +90,29 @@ recipe (-r, &#8211;recipe), &#8216;recipename&#8217; indicates &#8216;None&#8217
 the Recipe System has not yet been engaged and a default recipe not yet
 determined.</p>
 <p>Eg.,:</p>
-<div class="last highlight-python"><div class="highlight"><pre>$ reduce -d --logmode console fitsfile.fits
+<div class="last highlight-python"><pre>$ reduce -d --logmode console fitsfile.fits
 
 --------------------   switches, vars, vals  --------------------
 
-Literals                 var &#39;dest&#39;              Value
+Literals                 var 'dest'              Value
 -----------------------------------------------------------------
-[&#39;--invoked&#39;]            :: invoked              :: False
-[&#39;--addprimset&#39;]         :: primsetname          :: None
-[&#39;-d&#39;, &#39;--displayflags&#39;] :: displayflags         :: True
-[&#39;-p&#39;, &#39;--param&#39;]        :: userparam            :: None
-[&#39;--logmode&#39;]            :: logmode              :: [&#39;console&#39;]
-[&#39;-r&#39;, &#39;--recipe&#39;]       :: recipename           :: None
-[&#39;--throw_descriptor_exceptions&#39;] :: throwDescriptorExceptions :: False
-[&#39;--logfile&#39;]            :: logfile              :: reduce.log
-[&#39;-t&#39;, &#39;--astrotype&#39;]    :: astrotype            :: None
-[&#39;--override_cal&#39;]       :: user_cals            :: None
-[&#39;--context&#39;]            :: running_contexts     :: None
-[&#39;--calmgr&#39;]             :: cal_mgr              :: None
-[&#39;--suffix&#39;]             :: suffix               :: None
-[&#39;--loglevel&#39;]           :: loglevel             :: stdinfo
+['--invoked']            :: invoked              :: False
+['--addprimset']         :: primsetname          :: None
+['-d', '--displayflags'] :: displayflags         :: True
+['-p', '--param']        :: userparam            :: None
+['--logmode']            :: logmode              :: ['console']
+['-r', '--recipe']       :: recipename           :: None
+['--throw_descriptor_exceptions'] :: throwDescriptorExceptions :: False
+['--logfile']            :: logfile              :: reduce.log
+['-t', '--astrotype']    :: astrotype            :: None
+['--override_cal']       :: user_cals            :: None
+['--context']            :: running_contexts     :: None
+['--calmgr']             :: cal_mgr              :: None
+['--suffix']             :: suffix               :: None
+['--loglevel']           :: loglevel             :: stdinfo
 -----------------------------------------------------------------
 
-Input fits file(s):      fitsfile.fits
-</pre></div>
+Input fits file(s):      fitsfile.fits</pre>
 </div>
 </dd>
 </dl>
@@ -154,8 +153,7 @@ Eg.,:</p>
 <dd><p class="first">Set a primitive parameter from the command line. The form &#8216;-p par=val&#8217; sets
 the parameter in the reduction context such that all primitives will &#8216;see&#8217; it.
 The form</p>
-<div class="highlight-python"><div class="highlight"><pre>-p ASTROTYPE:primitivename:par=val
-</pre></div>
+<div class="highlight-python"><pre>-p ASTROTYPE:primitivename:par=val</pre>
 </div>
 <p>sets the parameter such that it applies only when the current reduction type
 (type of current reference image) is &#8216;ASTROTYPE&#8217; and the primitive is
@@ -181,15 +179,13 @@ development switch.</dd>
 <div class="section" id="nominal-usage">
 <h3>3.2.3. Nominal Usage<a class="headerlink" href="#nominal-usage" title="Permalink to this headline">¶</a></h3>
 <p>The minimal call for reduce can be</p>
-<div class="highlight-python"><div class="highlight"><pre>$ reduce &lt;dataset.fits&gt;
-</pre></div>
+<div class="highlight-python"><pre>$ reduce &lt;dataset.fits&gt;</pre>
 </div>
 <p>While this minimal call is available at the Gemini Observatory, if a calibration
 service is unavailable to the user &#8211; likely true for most users &#8211; users should
 call <tt class="docutils literal"><span class="pre">reduce</span></tt> on a specified dataset by providing calibration files with the
 &#8211;overrride_cal option. For example:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ reduce --override_cal processed_arc:wcal/gsTest_arc.fits &lt;dataset.fits&gt;
-</pre></div>
+<div class="highlight-python"><pre>$ reduce --override_cal processed_arc:wcal/gsTest_arc.fits &lt;dataset.fits&gt;</pre>
 </div>
 <p>Such a command for complex processing of data is possible because AstroData
 and the Recipe System do all the necessary work in determining how the data are to
@@ -245,14 +241,12 @@ parameter default value and may alter default behaviour of the primitive
 accessing this parameter. A user may pass several parameter-value pairs with
 this option.</p>
 <p>Eg.:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ reduce -p par1=val1 par2=val2 [par3=val3 ... ] &lt;fitsfile1.fits&gt;
-</pre></div>
+<div class="highlight-python"><pre>$ reduce -p par1=val1 par2=val2 [par3=val3 ... ] &lt;fitsfile1.fits&gt;</pre>
 </div>
 <p>For example, some photometry primitives perform source detection on an image.
 The &#8216;detection threshold&#8217; has a defined default, but a user may alter this
 parameter default to change the source detection behaviour:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ reduce -p threshold=4.5 &lt;fitsfile.fits&gt;
-</pre></div>
+<div class="highlight-python"><pre>$ reduce -p threshold=4.5 &lt;fitsfile.fits&gt;</pre>
 </div>
 </div>
 <div class="section" id="the-file-facility">
@@ -269,38 +263,34 @@ all arguments in the same manner as if they were specified on the command line.
 Essentially, an &#64;file is some or all of the command line and parsed identically.</p>
 <p>To illustrate the convenience provided by an <a class="reference external" href="mailto:'&#37;&#52;&#48;file">'<span>&#64;</span>file</a>&#8216;, let us begin with an
 example <cite>reduce</cite> command line that has a number of arguments:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ reduce -p GMOS_IMAGE:contextReport:tpar=100 GMOS_IMAGE:contextReport:report_inputs=True
-  -r recipe.ArgsTest --context qa S20130616S0019.fits N20100311S0090.fits
-</pre></div>
+<div class="highlight-python"><pre>$ reduce -p GMOS_IMAGE:contextReport:tpar=100 GMOS_IMAGE:contextReport:report_inputs=True
+  -r recipe.ArgsTest --context qa S20130616S0019.fits N20100311S0090.fits</pre>
 </div>
 <p>Ungainly, to be sure. Here, two (2) <cite>user parameters</cite> are being specified
 with <strong>-p</strong>, a <cite>recipe</cite> with <strong>-r</strong>, and a <cite>context</cite> argument is specified
 to be <strong>qa</strong> . This can be wrapped in a plain text &#64;file called
 <cite>reduce_args.par</cite>:</p>
-<div class="highlight-python"><div class="highlight"><pre>S20130616S0019.fits
+<div class="highlight-python"><pre>S20130616S0019.fits
 N20100311S0090.fits
 --param
 GMOS_IMAGE:contextReport:tpar=100
 GMOS_IMAGE:contextReport:report_inputs=True
 -r recipe.ArgsTests
---context qa
-</pre></div>
+--context qa</pre>
 </div>
 <p>This then turns the previous reduce command line into something a little more
 <cite>keyboard friendly</cite>:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ reduce @reduce_args.par
-</pre></div>
+<div class="highlight-python"><pre>$ reduce @reduce_args.par</pre>
 </div>
 <p>The order of these arguments is irrelevant. The parser will figure out what is
 what. The above file could be thus written like:</p>
-<div class="highlight-python"><div class="highlight"><pre>-r recipe.ArgsTests
+<div class="highlight-python"><pre>-r recipe.ArgsTests
 --param
 GMOS_IMAGE:contextReport:tpar=100
 GMOS_IMAGE:contextReport:report_inputs=True
 --context qa
 S20130616S0019.fits
-N20100311S0090.fits
-</pre></div>
+N20100311S0090.fits</pre>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -311,7 +301,7 @@ values. The &#8216;=&#8217; is entirely unnecessary.</p>
 tabs, newlines are all equivalent when argument parsing. This means
 the user can &#8216;arrange&#8217; their &#64;file for clarity.</p>
 <p>Eg., a more readable version of the above file might be written as:</p>
-<div class="last highlight-python"><div class="highlight"><pre># reduce parameter file
+<div class="last highlight-python"><pre># reduce parameter file
 # yyyy-mm-dd
 # GDPSG
 
@@ -320,7 +310,7 @@ the user can &#8216;arrange&#8217; their &#64;file for clarity.</p>
     recipe.ArgsTests  # test recipe
 
 # primitive parameters here
-# These are &#39;untyped&#39;, i.e. global
+# These are 'untyped', i.e. global
 --param
     tpar=100
     report_inputs=True
@@ -329,37 +319,35 @@ the user can &#8216;arrange&#8217; their &#64;file for clarity.</p>
     qa                # QA context
 
 S20130616S0019.fits
-N20100311S0090.fits
-</pre></div>
+N20100311S0090.fits</pre>
 </div>
 </div>
 <p>All the above  examples of <tt class="docutils literal"><span class="pre">reduce_args.par</span></tt> are equivalently parsed. Which,
 of course, users may check by adding the <strong>-d</strong> flag:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ reduce -d @redpars.par
+<div class="highlight-python"><pre>$ reduce -d @redpars.par
 
 --------------------   switches, vars, vals  --------------------
 
-Literals                      var &#39;dest&#39;              Value
+Literals                      var 'dest'              Value
 -----------------------------------------------------------------
-[&#39;--invoked&#39;]                 :: invoked              :: False
-[&#39;--addprimset&#39;]              :: primsetname          :: None
-[&#39;-d&#39;, &#39;--displayflags&#39;]      :: displayflags         :: True
-[&#39;-p&#39;, &#39;--param&#39;]             :: userparam            :: [&#39;tpar=100&#39;, &#39;report_inputs=True&#39;]
-[&#39;--logmode&#39;]                 :: logmode              :: standard
-[&#39;-r&#39;, &#39;--recipe&#39;]            :: recipename           :: [&#39;recipe.ArgTests&#39;]
-[&#39;--throw_descriptor_exceptions&#39;] :: throwDescriptorExceptions        :: False
-[&#39;--logfile&#39;]                 :: logfile              :: reduce.log
-[&#39;-t&#39;, &#39;--astrotype&#39;]         :: astrotype            :: None
-[&#39;--override_cal&#39;]            :: user_cals            :: None
-[&#39;--context&#39;]                 :: running_contexts     :: [&#39;QA&#39;]
-[&#39;--calmgr&#39;]                  :: cal_mgr              :: None
-[&#39;--suffix&#39;]                  :: suffix               :: None
-[&#39;--loglevel&#39;]                :: loglevel             :: stdinfo
+['--invoked']                 :: invoked              :: False
+['--addprimset']              :: primsetname          :: None
+['-d', '--displayflags']      :: displayflags         :: True
+['-p', '--param']             :: userparam            :: ['tpar=100', 'report_inputs=True']
+['--logmode']                 :: logmode              :: standard
+['-r', '--recipe']            :: recipename           :: ['recipe.ArgTests']
+['--throw_descriptor_exceptions'] :: throwDescriptorExceptions        :: False
+['--logfile']                 :: logfile              :: reduce.log
+['-t', '--astrotype']         :: astrotype            :: None
+['--override_cal']            :: user_cals            :: None
+['--context']                 :: running_contexts     :: ['QA']
+['--calmgr']                  :: cal_mgr              :: None
+['--suffix']                  :: suffix               :: None
+['--loglevel']                :: loglevel             :: stdinfo
 -----------------------------------------------------------------
 
 Input fits file(s):   S20130616S0019.fits
-Input fits file(s):   N20100311S0090.fits
-</pre></div>
+Input fits file(s):   N20100311S0090.fits</pre>
 </div>
 </div>
 <div class="section" id="recursive-file-processing">
@@ -375,7 +363,7 @@ arguments.</p>
 </div>
 <p>We can indicate that this file is to be consumed with the prefix character
 &#8220;&#64;&#8221; as well. In this case, the &#8216;reduce_args.par&#8217; file could thus appear:</p>
-<div class="highlight-python"><div class="highlight"><pre># reduce test parameter file
+<div class="highlight-python"><pre># reduce test parameter file
 
 @fitsfiles       # file with fits files
 
@@ -389,8 +377,7 @@ arguments.</p>
     FOO=BAR
 
 # Spec the recipe
--r recipe.ArgTests
-</pre></div>
+-r recipe.ArgTests</pre>
 </div>
 <p>The parser will open and read the &#64;fitsfiles, consuming those lines in the
 same way as any other command line arguments. Indeed, such a file need not only
@@ -401,12 +388,10 @@ serially.</p>
 <p>As stipulated earlier, because the &#64;file facility provides arguments equivalent
 to those that appear on the command line, employment of this facility means that
 a reduce command line could assume the form:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ reduce @parfile @fitsfiles
-</pre></div>
+<div class="highlight-python"><pre>$ reduce @parfile @fitsfiles</pre>
 </div>
 <p>or equally:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ reduce @fitsfiles @parfile
-</pre></div>
+<div class="highlight-python"><pre>$ reduce @fitsfiles @parfile</pre>
 </div>
 <p>where &#8216;parfile&#8217; could contain the flags and user parameters, and &#8216;fitsfiles&#8217;
 could contain a list of datasets.</p>
@@ -415,7 +400,7 @@ could contain a list of datasets.</p>
 </pre></div>
 </div>
 <p>while parfile holds all other specifications:</p>
-<div class="highlight-python"><div class="highlight"><pre># reduce test parameter file
+<div class="highlight-python"><pre># reduce test parameter file
 # GDPSG
 
 # AstroDataType
@@ -428,8 +413,7 @@ could contain a list of datasets.</p>
     FOO=BAR            # This is a test parameter
 
 # Spec the recipe
--r recipe.ArgTests
-</pre></div>
+-r recipe.ArgTests</pre>
 </div>
 </div>
 <div class="section" id="overriding-file-values">
@@ -446,48 +430,44 @@ are passed on the command line, <cite>all fits files appearing as positional arg
 <cite>in the parameter file will be replaced by the command line arguments.</cite></p>
 <p>Using the parfile above,</p>
 <p>Eg. 1)  Accumulate a new parameter:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ reduce @parfile --param FOO=BARSOOM
+<div class="highlight-python"><pre>$ reduce @parfile --param FOO=BARSOOM
 
 parsed options:
 --------------------
 AstroDataType: GMOS_IMAGE
-FITS files:    [&#39;S20130616S0019.fits&#39;, &#39;N20100311S0090.fits&#39;]
+FITS files:    ['S20130616S0019.fits', 'N20100311S0090.fits']
 Parameters:    tpar=100, report_inputs=True, FOO=BARSOOM
-RECIPE:        recipe.ArgsTest
-</pre></div>
+RECIPE:        recipe.ArgsTest</pre>
 </div>
 <p>Eg. 2) Override a parameter in the &#64;file:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ reduce @parfile --param tpar=99
+<div class="highlight-python"><pre>$ reduce @parfile --param tpar=99
 
 parsed options:
 --------------------
 AstroDataType: GMOS_IMAGE
-FITS files:    [&#39;S20130616S0019.fits&#39;, &#39;N20100311S0090.fits&#39;]
+FITS files:    ['S20130616S0019.fits', 'N20100311S0090.fits']
 Parameters:    tpar=99, report_inputs=True
-RECIPE:        recipe.ArgsTest
-</pre></div>
+RECIPE:        recipe.ArgsTest</pre>
 </div>
 <p>Eg. 3) Override the recipe:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ reduce @parfile -r=recipe.FOO
+<div class="highlight-python"><pre>$ reduce @parfile -r=recipe.FOO
 
 parsed options:
 --------------------
 AstroDataType:    GMOS_IMAGE
-FITS files:       [&#39;S20130616S0019.fits&#39;, &#39;N20100311S0090.fits&#39;]
+FITS files:       ['S20130616S0019.fits', 'N20100311S0090.fits']
 Parameters:       tpar=100, report_inputs=True
-RECIPE:           recipe.FOO
-</pre></div>
+RECIPE:           recipe.FOO</pre>
 </div>
 <p>Eg. 4) Override a recipe and specify another fits file</p>
-<div class="highlight-python"><div class="highlight"><pre>$ reduce @parfile -r=recipe.FOO test_data/N20100311S0090_1.fits
+<div class="highlight-python"><pre>$ reduce @parfile -r=recipe.FOO test_data/N20100311S0090_1.fits
 
 parsed options:
 --------------------
 AstroDataType:    GMOS_IMAGE
-FITS files:       [&#39;test_data/N20100311S0090_1.fits&#39;]
+FITS files:       ['test_data/N20100311S0090_1.fits']
 Parameters:       tpar=100, report_inputs=True
-RECIPE:           recipe.FOO
-</pre></div>
+RECIPE:           recipe.FOO</pre>
 </div>
 </div>
 </div>
@@ -665,7 +645,7 @@ instance.</p>
     </div>
     <div class="footer">
         &copy; Copyright 2014, Kennneth Anderson.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>
 </html>

@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -14,7 +16,7 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
+        URL_ROOT:    '',
         VERSION:     'X1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
@@ -52,52 +54,87 @@
             
   <div class="section" id="user-environment">
 <h1>2. User Environment<a class="headerlink" href="#user-environment" title="Permalink to this headline">¶</a></h1>
-<p>Once <a class="reference external" href="http://gdpsg.wikis-internal.gemini.edu/index.php/InstallAstroData">astrodata has been installed</a>,
-only minor adjustments need to be made to the user environment in order to make
-astrodata importable and allow <tt class="docutils literal"><span class="pre">reduce</span></tt> to work properly. Presumably, the user
-has retrieved the gemini_python package, available as a tar file from the Gemini website.</p>
-<div class="section" id="configuration">
-<span id="config"></span><h2>2.1. Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
-<p>Users need not leave the name <cite>trunk</cite> in place and obviously can rename
-it to be whatever they like. Whatever that path, add this path to the PYTHONPATH
-environment variable.</p>
-<p>For example, <tt class="docutils literal"><span class="pre">gemini_python/trunk</span></tt> is checked out as described above.
-In &#8216;.&#8217; the directory <cite>trunk</cite> is now present and populated:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ ls -l
-drwxr-xr-x  19 user  group     646 Aug 20 14:44 trunk/
-</pre></div>
+<p>Once a user has has retrieved the gemini_python package, available as a tarfile
+from the Gemini website (<a class="reference external" href="http://gemini.edu">http://gemini.edu</a>), and untarred only minor adjustments need
+to be made to the user environment in order to make astrodata importable and
+allow <tt class="docutils literal"><span class="pre">reduce</span></tt> to work properly.</p>
+<div class="section" id="installation">
+<span id="config"></span><h2>2.1. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>Download the gemini_python X1 distribution (tar archive), place the tarfile as
+desired, and extract the archive:</p>
+<div class="highlight-python"><pre>$ tar -xvf gemini_python_X1.tar.gz</pre>
 </div>
-<p>Rename trunk to some friendlier name:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ mv trunk gemsoft
-$ ls -l
-drwxr-xr-x  19 user  group     646 Aug 20 14:44 gemsoft/
-</pre></div>
+<p>Next, invoke the usual Distutils command for a standard python module installation:</p>
+<div class="highlight-python"><pre>python setup.py install --prefix=/somewhere/</pre>
 </div>
-<p>Set the environment to make astrodata <cite>et al</cite> importable:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ export PYTHONPATH=${PYTHONPATH}:/user/path/to/gemsoft
-</pre></div>
-</div>
-<p>Add the path <cite>astrodata/scripts</cite> to the PATH environment variable:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ export PATH=${PATH}:/user/path/to/gemsoft/astrodata/scripts
-</pre></div>
-</div>
-<p><cite>reduce</cite> is made available on the command line from here. It should already
-have the executable bit set from the repository, but if not, chmod <tt class="docutils literal"><span class="pre">reduce</span></tt>
-to an appropriate mask.</p>
+<p>This will place executables in <tt class="docutils literal"><span class="pre">/somewhere/bin</span></tt> and the package modules in
+<tt class="docutils literal"><span class="pre">/somewhere/lib/python2.7/site-packages/</span></tt>.</p>
+<p>Users will then need to have <tt class="docutils literal"><span class="pre">/somewhere/bin</span></tt> in $PATH and
+<tt class="docutils literal"><span class="pre">/somewhere/lib/python2.7/site-packages</span></tt> in either $PYTHONPATH or add the
+site-packages to sys.path.</p>
+<p><tt class="docutils literal"><span class="pre">reduce</span></tt> is made available on the command line once the installation is complete.</p>
 </div>
 <div class="section" id="test-the-installation">
 <h2>2.2. Test the installation<a class="headerlink" href="#test-the-installation" title="Permalink to this headline">¶</a></h2>
 <p>Start up the python interpreter and import astrodata:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ python
-&gt;&gt;&gt; import astrodata
-</pre></div>
+<div class="highlight-python"><pre>$ python
+&gt;&gt;&gt; import astrodata</pre>
 </div>
 <p>Next, return to the command line and test that <tt class="docutils literal"><span class="pre">reduce</span></tt> is reachable
-and runs:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ reduce -h [--help]
-</pre></div>
+and runs. There may some delay as package modules are byte compiled:</p>
+<div class="highlight-python"><pre>$ reduce -h [--help]</pre>
 </div>
 <p>This will print the reduce help to the screen.</p>
+<p>If users have Gemini fits files available, they can test that the Recipe System
+is functioning as expected with a test recipe provided by the astrodata_Gemini
+package:</p>
+<div class="highlight-python"><pre>$ reduce --recipe test_one /path/to/gemini_data.fits</pre>
+</div>
+<p>If all is well, users will see something like:</p>
+<div class="highlight-python"><pre>Resetting logger for application: reduce
+Logging configured for application: reduce
+                       --- reduce, v4890  ---
+              Running under astrodata Version GP-X1
+All submitted files appear valid
+Starting Reduction on set #1 of 1
+
+  Processing dataset(s):
+        gemini_data.fits
+
+==============================================================================
+RECIPE: test_one
+==============================================================================
+ PRIMITIVE: showParameters
+ -------------------------
+ rtf = False
+ suffix = '_scafaasled'
+ otherTest = False
+ logindent = 3
+ logfile = 'reduce.log'
+ reducecache = '.reducecache'
+ storedcals = 'calibrations/storedcals'
+ index = 1
+ retrievedcals = 'calibrations/retrievedcals'
+ cachedict = {'storedcals': 'calibrations/storedcals', 'retrievedcals':
+              'calibrations/retrievedcals', 'calibrations': 'calibrations',
+              'reducecache': '.reducecache'}
+ loglevel = 'stdinfo'
+ calurl_dict = {'CALMGR': 'http://fits/calmgr',
+                'UPLOADPROCCAL': 'http://fits/upload_processed_cal',
+                'QAMETRICURL': 'http://fits/qareport',
+                'QAQUERYURL': 'http://fits/qaforgui',
+                'LOCALCALMGR': 'http://localhost:%(httpport)d/calmgr/%(caltype)s'}
+ logmode = 'standard'
+ test = True
+ writeInt = False
+ calibrations = 'calibrations'
+ .
+Wrote gemini_data.fits in output directory
+Shutting down proxy servers ...
+ADCC is running externally. No proxies to close
+reduce exited     on status: 0</pre>
+</div>
+<p>Exit status 0 indicates nominal operations.</p>
 </div>
 </div>
 
@@ -110,7 +147,7 @@ and runs:</p>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">2. User Environment</a><ul>
-<li><a class="reference internal" href="#configuration">2.1. Configuration</a></li>
+<li><a class="reference internal" href="#installation">2.1. Installation</a></li>
 <li><a class="reference internal" href="#test-the-installation">2.2. Test the installation</a></li>
 </ul>
 </li>
@@ -161,7 +198,7 @@ and runs:</p>
     </div>
     <div class="footer">
         &copy; Copyright 2014, Kennneth Anderson.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>
 </html>
