@@ -240,7 +240,10 @@ class Reduce(object):
                             traceback.format_exc()))
                 break
 
-        msg = "\n\nreduce terminated on status: %d" % xstat
+        if xstat != 0:
+            msg = "\n\nreduce terminated on status: %d" % xstat
+        else:
+            msg = "\n\nreduce completed successfully."
         reduceServer.finished = True
         if prs.registered:
             prs.unregister()
