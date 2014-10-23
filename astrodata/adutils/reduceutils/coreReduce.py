@@ -157,16 +157,14 @@ class Reduce(object):
 
         def __shutdown_proxy(msg):
             if adcc_proc is None:
-                log.stdinfo("ADCC is running externally. No proxies to close")
                 return
+
             if adcc_proc.poll() is None:
-                log.stdinfo("Force terminate adcc proxy ...")
                 adcc_proc.send_signal(signal.SIGINT)
                 adcc_exit = adcc_proc.wait()
             else:
                 adcc_exit = adcc_proc.wait()
 
-            log.stdinfo("  adcc terminated on status: %s" % str(adcc_exit))
             log.stdinfo(str(msg))
             return
 
@@ -242,8 +240,7 @@ class Reduce(object):
                             traceback.format_exc()))
                 break
 
-        msg = "reduce terminated on status: %d" % xstat
-        log.stdinfo("Shutting down proxy servers ...")
+        msg = "\n\nreduce terminated on status: %d" % xstat
         reduceServer.finished = True
         if prs.registered:
             prs.unregister()
@@ -499,14 +496,9 @@ class Reduce(object):
             self._write_context_log(co)
             co.is_finished(True)
             raise
+
         outputs = co.get_stream("main")
         clobber = co["clobber"]
-        if clobber:
-            clobber = clobber.lower()
-            if clobber == "false":
-                clobber = False
-            else:
-                clobber = True
         for output in outputs:
             ad = output.ad
             try:

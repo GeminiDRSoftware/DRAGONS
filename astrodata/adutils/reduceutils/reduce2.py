@@ -97,7 +97,10 @@ def main(args):
         log.error(type(err))
         log.error(str(err))
 
-    log.stdinfo("reduce exited     on status: %d" % estat)
+    if estat != 0:
+        log.stdinfo("\n\nreduce exit status: %d\n" % estat)
+    else:
+        pass
     return (estat)
 
 # --------------------------------------------------------------------------
