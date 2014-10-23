@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -50,6 +48,218 @@
             
   <div class="section" id="reduce-demo">
 <h1><cite>reduce</cite> demo<a class="headerlink" href="#reduce-demo" title="Permalink to this headline">¶</a></h1>
+<p>Original demo author: Kathleen Labrie, October 2014</p>
+<div class="section" id="setting-up">
+<h2>Setting up<a class="headerlink" href="#setting-up" title="Permalink to this headline">¶</a></h2>
+<p>First install Ureka, which can be obtained at <a class="reference external" href="http://ssb.stsci.edu/ureka/">http://ssb.stsci.edu/ureka/</a>.</p>
+<p>The second step is to install <cite>gemini_python</cite> as described in the &#8220;User Environment&#8221;
+section.  Do maker sure that the command <cite>reduce</cite> is in your <cite>PATH</cite> and that
+<cite>PYTHONPATH</cite> includes the location where the modules <cite>astrodata</cite>, <cite>astrodata_FITS</cite>,
+<cite>astrodata_Gemini</cite>, and <cite>gempy</cite> are installed.</p>
+<p>The demo data is distributed separately.  You can find the demo data package
+<cite>gemini_python_datapkg-X1.tar.gz</cite> on the Gemini website, where you found the
+gemini_python package.  Unpack the data package somewhere convenient:</p>
+<div class="highlight-python"><div class="highlight"><pre>tar xvzf gemini_python_datapkg-X1.tar.gz
+</pre></div>
+</div>
+<p>In there, you will find a subdirectory named <cite>data_for_reduce_demo</cite>.  Those are
+the data we will use here.  You will also find an empty directory called
+<cite>playground</cite>.  This is your playground. The instructions in this demo assume that
+you are running the <cite>reduce</cite> command from that directory.  There is no requirements
+to run <cite>reduce</cite> from that directory, but if you want to follow the demo to the
+letter, this is where you should be for all the paths to work.</p>
+</div>
+<div class="section" id="introduction-to-the-demo">
+<h2>Introduction to the Demo<a class="headerlink" href="#introduction-to-the-demo" title="Permalink to this headline">¶</a></h2>
+<p>In this demo, we will reduce a simple dither on source GMOS imaging sequence.
+We will first process the raw biases, and then the raw twilight flats.  We will
+then use those processed files to process and stack the science observation.</p>
+<p>Instead of the default Quality Assessment (QA) recipe that is used at the Gemini
+summit, we will use another recipe that will focus on the reduction rather
+than on the multiple measurements of the QA metrics used at night.  QA metrics,
+here the image quality (IQ), will only be measured at the end of the reduction
+rather than throughout the process.   Another difference between the standard
+QA recipe and the demo recipe, is that the demo recipe does stack the data, while
+the stacking is turned off in the QA context.</p>
+<p>The demo recipe is essentially a Quick Look recipe.  It is NOT valid for Science
+Quality.  Remember that we you are using is a QA pipeline, not a Science pipeline.</p>
+</div>
+<div class="section" id="the-recipes">
+<h2>The Recipes<a class="headerlink" href="#the-recipes" title="Permalink to this headline">¶</a></h2>
+<p>To process the biases and the flats we will be using the standard recipes. The
+system will be able to pick those automatically when it recognizes the input data
+as GMOS biases and GMOS twilight flats.</p>
+<p>For the science data, we will overide the recipe selection to use the Demo recipe.
+If we were not to overide the recipe selection, the system would automatically
+select the QA recipe.  The Demo recipe is more representative of a standard
+Quick-Look reduction with stacking, hence probably more interesting to the reader.</p>
+<p>The standard recipe to process GMOS biases is named <cite>recipe.makeProcessedBias</cite>
+and contains these instructions:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># This recipe performs the standardization and corrections needed to convert</span>
+<span class="c"># the raw input bias images into a single stacked bias image. This output</span>
+<span class="c"># processed bias is stored on disk using storeProcessedBias and has a name</span>
+<span class="c"># equal to the name of the first input bias image with &quot;_bias.fits&quot; appended.</span>
+
+<span class="n">prepare</span>
+<span class="n">addDQ</span>
+<span class="n">addVAR</span><span class="p">(</span><span class="n">read_noise</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">overscanCorrect</span>
+<span class="n">addToList</span><span class="p">(</span><span class="n">purpose</span><span class="o">=</span><span class="s">&quot;forStack&quot;</span><span class="p">)</span>
+<span class="n">getList</span><span class="p">(</span><span class="n">purpose</span><span class="o">=</span><span class="s">&quot;forStack&quot;</span><span class="p">)</span>
+<span class="n">stackFrames</span>
+<span class="n">storeProcessedBias</span>
+</pre></div>
+</div>
+<p>The standard recipe to process GMOS twilight flats is named
+<cite>recipe.makeProcessedFlat.GMOS_IMAGE</cite> and contains these instructions:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># This recipe performs the standardization and corrections needed to convert</span>
+<span class="c"># the raw input flat images into a single stacked and normalized flat image.</span>
+<span class="c"># This output processed flat is stored on disk using storeProcessedFlat and</span>
+<span class="c"># has a name equal to the name of the first input flat image with &quot;_flat.fits&quot;</span>
+<span class="c"># appended.</span>
+
+<span class="n">prepare</span>
+<span class="n">addDQ</span>
+<span class="n">addVAR</span><span class="p">(</span><span class="n">read_noise</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">display</span>
+<span class="n">overscanCorrect</span>
+<span class="n">biasCorrect</span>
+<span class="n">ADUToElectrons</span>
+<span class="n">addVAR</span><span class="p">(</span><span class="n">poisson_noise</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">addToList</span><span class="p">(</span><span class="n">purpose</span><span class="o">=</span><span class="s">&quot;forStack&quot;</span><span class="p">)</span>
+<span class="n">getList</span><span class="p">(</span><span class="n">purpose</span><span class="o">=</span><span class="s">&quot;forStack&quot;</span><span class="p">)</span>
+<span class="n">stackFlats</span>
+<span class="n">normalizeFlat</span>
+<span class="n">storeProcessedFlat</span>
+</pre></div>
+</div>
+<p>The Demo recipe is named <cite>recipe.reduceDemo</cite> and contains these instructions:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># recipe.reduceDemo</span>
+
+<span class="n">prepare</span>
+<span class="n">addDQ</span>
+<span class="n">addVAR</span><span class="p">(</span><span class="n">read_noise</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">overscanCorrect</span>
+<span class="n">biasCorrect</span>
+<span class="n">ADUToElectrons</span>
+<span class="n">addVAR</span><span class="p">(</span><span class="n">poisson_noise</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">flatCorrect</span>
+<span class="n">makeFringe</span>
+<span class="n">fringeCorrect</span>
+<span class="n">mosaicDetectors</span>
+<span class="n">detectSources</span>
+<span class="n">addToList</span><span class="p">(</span><span class="n">purpose</span><span class="o">=</span><span class="n">forStack</span><span class="p">)</span>
+<span class="n">getList</span><span class="p">(</span><span class="n">purpose</span><span class="o">=</span><span class="n">forStack</span><span class="p">)</span>
+<span class="n">alignAndStack</span>
+<span class="n">detectSources</span>
+<span class="n">measureIQ</span>
+</pre></div>
+</div>
+<p>For the curious, the standard bias and flat recipes are found in
+<cite>astrodata_Gemini/RECIPES_Gemini/</cite> and the demo recipe is in
+<cite>astrodata_Gemini/RECIPES_Gemini/demos/</cite>.  You do not really need that information
+as the system will find them on its own.</p>
+</div>
+<div class="section" id="the-demo">
+<h2>The Demo<a class="headerlink" href="#the-demo" title="Permalink to this headline">¶</a></h2>
+<p>The images will be displayed at times.  Therefore, start ds9:</p>
+<div class="highlight-python"><div class="highlight"><pre>ds9 &amp;
+</pre></div>
+</div>
+<div class="section" id="the-processed-bias">
+<h3>The Processed Bias<a class="headerlink" href="#the-processed-bias" title="Permalink to this headline">¶</a></h3>
+<p>The first step is to create the processed bias.  We are using the standard
+recipe.  The system will recognize the inputs as GMOS biases and call the
+appropriate recipe automatically.</p>
+<p>The biases were taken on different dates
+around the time of the science observations.  For convenience, we will use
+a file with the list of datasets as input instead of listing all the input
+datasets individually.  This list has already been written for you but to
+keep thing general, the path information was left out; we will add it as
+part of the demo.</p>
+<div class="highlight-python"><div class="highlight"><pre>cd &lt;your_path&gt;/gemini_python_datapkg-X1/playground
+sed -e &#39;s/^/..\/data_for_reduce_demo\//g&#39; \
+   ../data_for_reduce_demo/bias.list &gt; bias.list
+
+reduce @bias.list
+</pre></div>
+</div>
+<p>This creates the processed bias, <cite>N20120202S0955_bias.fits</cite>.  The output suffix
+<cite>_bias</cite> is the indicator that this is a processed bias.  All processed calibrations
+are also stored in <cite>calibrations/storedcals/</cite> for safe keeping.</p>
+<p>If you wish to see what the processed bias looks like:</p>
+<div class="highlight-python"><div class="highlight"><pre>reduce N20120202S0955_bias.fits -r display
+</pre></div>
+</div>
+<p><em>Note: This will issue an error about the file already existing.  Ignore it.
+The explanation of what is going on is beyond the scope of this demo.  We
+will fix this, eventually.  Remember that this is a release of software meant
+for internal use; there are still plenty of issues to be resolved.</em></p>
+</div>
+<div class="section" id="the-processed-flat">
+<h3>The Processed Flat<a class="headerlink" href="#the-processed-flat" title="Permalink to this headline">¶</a></h3>
+<p>Next we create a processed flat.  We will use the processed bias we have
+just created.  The system will recognize the inputs as GMOS twilight flats and
+call the appropriate recipe automatically.</p>
+<p>The &#8220;public&#8221; RecipeSystem does not yet have a Local Calibration Server.  Therefore,
+we will need to specify the processed bias we want to use on the <cite>reduce</cite> command
+line.  For information only, internally the QA pipeline at the summit uses a
+central calibration server and the most appropriate processed calibrations available
+are selected and retrieve automatically.  We hope to be able to offer a &#8220;local&#8221;,
+end-user version of this system in the future.  For now, calibrations must be
+specified on the command line.</p>
+<p>For the flats, we do not really need a list, we can use wild cards:</p>
+<div class="highlight-python"><div class="highlight"><pre>reduce ../data_for_reduce_demo/N20120123*.fits \
+   --override_cal processed_bias:N20120202S0955_bias.fits \
+   -p clobber=True
+</pre></div>
+</div>
+<p>This creates the processed flat, <cite>N20120123S0123_flat.fits</cite>.  The output suffix
+<cite>_flat</cite> is the indictor that this is a processed flat.  The processed flat is also
+stored in <cite>calibrations/storedcals/</cite> for safe keeping.</p>
+<p>The <cite>clobber</cite> parameter is set to True to allow the system to overwrite the final
+output.  By default, the system refuses to overwrite an output file.</p>
+<p>If you wish to see what the processed flat looks like:</p>
+<div class="highlight-python"><div class="highlight"><pre>reduce N20120123S0123_flat.fits -r display
+</pre></div>
+</div>
+</div>
+<div class="section" id="the-science-frames">
+<h3>The Science Frames<a class="headerlink" href="#the-science-frames" title="Permalink to this headline">¶</a></h3>
+<p>We now have all the pieces required to reduce the science frames.  This time,
+instead of using the standard QA recipe, we will use the demo recipe.  Again,
+we will specify the processed calibrations, bias and flat, we wish to use.</p>
+<div class="highlight-python"><div class="highlight"><pre>reduce ../data_for_reduce_demo/N20120203S028?.fits \
+   --override_cal processed_bias:N20120202S0955_bias.fits \
+                  processed_flat:N20120123S0123_flat.fits \
+   -r reduceDemo \
+   -p clobber=True
+</pre></div>
+</div>
+<p>The demo data was obtained with the z&#8217; filter, therefore the images contain fringing.
+The <cite>makeFringe</cite> and <cite>fringeCorrect</cite> primitives are filter-aware, they will do
+something only when the data is from a filter that produces fringing, like the z&#8217;
+filter.</p>
+<p>The last primitive in the recipe is <cite>measureIQ</cite> which is one of the QA metrics
+primitives used at night by the QA pipeline.  The primitive selects stars in
+the field and measures the average seeing and ellipticity.  The image it runs
+on is displayed and the selected stars are circled for visual inspections.</p>
+<p>The fully processed stacked science image is <cite>N20120203S0281_iqMeasured.fits</cite>.
+By default, the suffix of the final image is set by the last primitive run
+on the data, in this case <cite>measureIQ</cite>.</p>
+<p>This default naming can be confusing.  If you wish to set the suffix of the
+final image yourself, use <cite>&#8211;suffix _myfinalsuffix</cite>.</p>
+</div>
+<div class="section" id="clean-up">
+<h3>Clean up<a class="headerlink" href="#clean-up" title="Permalink to this headline">¶</a></h3>
+<p>It is good practice to reset the RecipeSystem state when you are done:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">superclean</span> <span class="o">--</span><span class="n">safe</span>
+</pre></div>
+</div>
+<p>Your files will stay there, only some hidden RecipeSystem directories
+and files will be deleted.</p>
+</div>
+</div>
 </div>
 
 
@@ -58,6 +268,23 @@
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><cite>reduce</cite> demo</a><ul>
+<li><a class="reference internal" href="#setting-up">Setting up</a></li>
+<li><a class="reference internal" href="#introduction-to-the-demo">Introduction to the Demo</a></li>
+<li><a class="reference internal" href="#the-recipes">The Recipes</a></li>
+<li><a class="reference internal" href="#the-demo">The Demo</a><ul>
+<li><a class="reference internal" href="#the-processed-bias">The Processed Bias</a></li>
+<li><a class="reference internal" href="#the-processed-flat">The Processed Flat</a></li>
+<li><a class="reference internal" href="#the-science-frames">The Science Frames</a></li>
+<li><a class="reference internal" href="#clean-up">Clean up</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
   <p class="topless"><a href="../ack.html"
                         title="previous chapter">6. 6. Acknowledgments</a></p>
@@ -97,7 +324,7 @@
     </div>
     <div class="footer">
         &copy; Copyright 2014, Kennneth Anderson.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>

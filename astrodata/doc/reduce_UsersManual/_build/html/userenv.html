@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -16,7 +14,7 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '',
+        URL_ROOT:    './',
         VERSION:     'X1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
@@ -62,10 +60,12 @@ allow <tt class="docutils literal"><span class="pre">reduce</span></tt> to work 
 <span id="config"></span><h2>2.1. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <p>Download the gemini_python X1 distribution (tar archive), place the tarfile as
 desired, and extract the archive:</p>
-<div class="highlight-python"><pre>$ tar -xvf gemini_python_X1.tar.gz</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ tar -xvf gemini_python_X1.tar.gz
+</pre></div>
 </div>
 <p>Next, invoke the usual Distutils command for a standard python module installation:</p>
-<div class="highlight-python"><pre>python setup.py install --prefix=/somewhere/</pre>
+<div class="highlight-python"><div class="highlight"><pre>python setup.py install --prefix=/somewhere/
+</pre></div>
 </div>
 <p>This will place executables in <tt class="docutils literal"><span class="pre">/somewhere/bin</span></tt> and the package modules in
 <tt class="docutils literal"><span class="pre">/somewhere/lib/python2.7/site-packages/</span></tt>.</p>
@@ -77,21 +77,24 @@ site-packages to sys.path.</p>
 <div class="section" id="test-the-installation">
 <h2>2.2. Test the installation<a class="headerlink" href="#test-the-installation" title="Permalink to this headline">¶</a></h2>
 <p>Start up the python interpreter and import astrodata:</p>
-<div class="highlight-python"><pre>$ python
-&gt;&gt;&gt; import astrodata</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ python
+&gt;&gt;&gt; import astrodata
+</pre></div>
 </div>
 <p>Next, return to the command line and test that <tt class="docutils literal"><span class="pre">reduce</span></tt> is reachable
 and runs. There may some delay as package modules are byte compiled:</p>
-<div class="highlight-python"><pre>$ reduce -h [--help]</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ reduce -h [--help]
+</pre></div>
 </div>
 <p>This will print the reduce help to the screen.</p>
 <p>If users have Gemini fits files available, they can test that the Recipe System
 is functioning as expected with a test recipe provided by the astrodata_Gemini
 package:</p>
-<div class="highlight-python"><pre>$ reduce --recipe test_one /path/to/gemini_data.fits</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ reduce --recipe test_one /path/to/gemini_data.fits
+</pre></div>
 </div>
 <p>If all is well, users will see something like:</p>
-<div class="highlight-python"><pre>Resetting logger for application: reduce
+<div class="highlight-python"><div class="highlight"><pre>Resetting logger for application: reduce
 Logging configured for application: reduce
                        --- reduce, v4890  ---
               Running under astrodata Version GP-X1
@@ -107,32 +110,33 @@ RECIPE: test_one
  PRIMITIVE: showParameters
  -------------------------
  rtf = False
- suffix = '_scafaasled'
+ suffix = &#39;_scafaasled&#39;
  otherTest = False
  logindent = 3
- logfile = 'reduce.log'
- reducecache = '.reducecache'
- storedcals = 'calibrations/storedcals'
+ logfile = &#39;reduce.log&#39;
+ reducecache = &#39;.reducecache&#39;
+ storedcals = &#39;calibrations/storedcals&#39;
  index = 1
- retrievedcals = 'calibrations/retrievedcals'
- cachedict = {'storedcals': 'calibrations/storedcals', 'retrievedcals':
-              'calibrations/retrievedcals', 'calibrations': 'calibrations',
-              'reducecache': '.reducecache'}
- loglevel = 'stdinfo'
- calurl_dict = {'CALMGR': 'http://fits/calmgr',
-                'UPLOADPROCCAL': 'http://fits/upload_processed_cal',
-                'QAMETRICURL': 'http://fits/qareport',
-                'QAQUERYURL': 'http://fits/qaforgui',
-                'LOCALCALMGR': 'http://localhost:%(httpport)d/calmgr/%(caltype)s'}
- logmode = 'standard'
+ retrievedcals = &#39;calibrations/retrievedcals&#39;
+ cachedict = {&#39;storedcals&#39;: &#39;calibrations/storedcals&#39;, &#39;retrievedcals&#39;:
+              &#39;calibrations/retrievedcals&#39;, &#39;calibrations&#39;: &#39;calibrations&#39;,
+              &#39;reducecache&#39;: &#39;.reducecache&#39;}
+ loglevel = &#39;stdinfo&#39;
+ calurl_dict = {&#39;CALMGR&#39;: &#39;http://fits/calmgr&#39;,
+                &#39;UPLOADPROCCAL&#39;: &#39;http://fits/upload_processed_cal&#39;,
+                &#39;QAMETRICURL&#39;: &#39;http://fits/qareport&#39;,
+                &#39;QAQUERYURL&#39;: &#39;http://fits/qaforgui&#39;,
+                &#39;LOCALCALMGR&#39;: &#39;http://localhost:%(httpport)d/calmgr/%(caltype)s&#39;}
+ logmode = &#39;standard&#39;
  test = True
  writeInt = False
- calibrations = 'calibrations'
+ calibrations = &#39;calibrations&#39;
  .
 Wrote gemini_data.fits in output directory
 Shutting down proxy servers ...
 ADCC is running externally. No proxies to close
-reduce exited     on status: 0</pre>
+reduce exited     on status: 0
+</pre></div>
 </div>
 <p>Exit status 0 indicates nominal operations.</p>
 </div>
@@ -198,7 +202,7 @@ reduce exited     on status: 0</pre>
     </div>
     <div class="footer">
         &copy; Copyright 2014, Kennneth Anderson.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>
