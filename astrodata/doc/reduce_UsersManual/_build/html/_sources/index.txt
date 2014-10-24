@@ -22,6 +22,7 @@ Appendix
 --------
 
 .. toctree::
+   :numbered:
    :maxdepth: 1
    
    appendices/appendix_demo

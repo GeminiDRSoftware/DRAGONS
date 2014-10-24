@@ -40,3 +40,4 @@
 \contentsline {subsection}{\numberline {A.4.2}The Processed Flat}{25}{subsection.A.4.2}
 \contentsline {subsection}{\numberline {A.4.3}The Science Frames}{26}{subsection.A.4.3}
 \contentsline {subsection}{\numberline {A.4.4}Clean up}{26}{subsection.A.4.4}
+\contentsline {section}{\numberline {A.5}Limitations}{26}{section.A.5}

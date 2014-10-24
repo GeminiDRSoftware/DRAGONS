@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>reduce demo &mdash; Reduce Users Manual X1 documentation</title>
+    <title>1. reduce demo &mdash; Reduce Users Manual X1 documentation</title>
     
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -47,53 +47,54 @@
           <div class="body">
             
   <div class="section" id="reduce-demo">
-<h1><cite>reduce</cite> demo<a class="headerlink" href="#reduce-demo" title="Permalink to this headline">¶</a></h1>
+<h1>1. <cite>reduce</cite> demo<a class="headerlink" href="#reduce-demo" title="Permalink to this headline">¶</a></h1>
 <p>Original demo author: Kathleen Labrie, October 2014</p>
 <div class="section" id="setting-up">
-<h2>Setting up<a class="headerlink" href="#setting-up" title="Permalink to this headline">¶</a></h2>
+<h2>1.1. Setting up<a class="headerlink" href="#setting-up" title="Permalink to this headline">¶</a></h2>
 <p>First install Ureka, which can be obtained at <a class="reference external" href="http://ssb.stsci.edu/ureka/">http://ssb.stsci.edu/ureka/</a>.</p>
-<p>The second step is to install <cite>gemini_python</cite> as described in the &#8220;User Environment&#8221;
-section.  Do maker sure that the command <cite>reduce</cite> is in your <cite>PATH</cite> and that
-<cite>PYTHONPATH</cite> includes the location where the modules <cite>astrodata</cite>, <cite>astrodata_FITS</cite>,
-<cite>astrodata_Gemini</cite>, and <cite>gempy</cite> are installed.</p>
+<p>The second step is to install <tt class="docutils literal"><span class="pre">gemini_python</span></tt> as described in
+<a class="reference internal" href="../userenv.html#config"><em>Section 2 - Installation</em></a>.
+Please do make sure that the command <cite>reduce</cite> is in your <tt class="docutils literal"><span class="pre">PATH</span></tt> and that
+<tt class="docutils literal"><span class="pre">PYTHONPATH</span></tt> includes the location where the modules <tt class="docutils literal"><span class="pre">astrodata</span></tt>, <tt class="docutils literal"><span class="pre">astrodata_FITS</span></tt>,
+<tt class="docutils literal"><span class="pre">astrodata_Gemini</span></tt>, and <tt class="docutils literal"><span class="pre">gempy</span></tt> are installed.</p>
 <p>The demo data is distributed separately.  You can find the demo data package
-<cite>gemini_python_datapkg-X1.tar.gz</cite> on the Gemini website, where you found the
+<tt class="docutils literal"><span class="pre">gemini_python_datapkg-X1.tar.gz</span></tt> on the Gemini website where you found the
 gemini_python package.  Unpack the data package somewhere convenient:</p>
 <div class="highlight-python"><div class="highlight"><pre>tar xvzf gemini_python_datapkg-X1.tar.gz
 </pre></div>
 </div>
-<p>In there, you will find a subdirectory named <cite>data_for_reduce_demo</cite>.  Those are
+<p>In there, you will find a subdirectory named <tt class="docutils literal"><span class="pre">data_for_reduce_demo</span></tt>.  Those are
 the data we will use here.  You will also find an empty directory called
-<cite>playground</cite>.  This is your playground. The instructions in this demo assume that
-you are running the <cite>reduce</cite> command from that directory.  There is no requirements
-to run <cite>reduce</cite> from that directory, but if you want to follow the demo to the
+<tt class="docutils literal"><span class="pre">playground</span></tt>.  This is your playground. The instructions in this demo assume that
+you are running the <tt class="docutils literal"><span class="pre">reduce</span></tt> command from that directory.  There is no requirements
+to run <tt class="docutils literal"><span class="pre">reduce</span></tt> from that directory, but if you want to follow the demo to the
 letter, this is where you should be for all the paths to work.</p>
 </div>
 <div class="section" id="introduction-to-the-demo">
-<h2>Introduction to the Demo<a class="headerlink" href="#introduction-to-the-demo" title="Permalink to this headline">¶</a></h2>
+<h2>1.2. Introduction to the Demo<a class="headerlink" href="#introduction-to-the-demo" title="Permalink to this headline">¶</a></h2>
 <p>In this demo, we will reduce a simple dither on source GMOS imaging sequence.
 We will first process the raw biases, and then the raw twilight flats.  We will
 then use those processed files to process and stack the science observation.</p>
 <p>Instead of the default Quality Assessment (QA) recipe that is used at the Gemini
-summit, we will use another recipe that will focus on the reduction rather
+summits, we will use another recipe that will focus on the reduction rather
 than on the multiple measurements of the QA metrics used at night.  QA metrics,
 here the image quality (IQ), will only be measured at the end of the reduction
-rather than throughout the process.   Another difference between the standard
+rather than throughout the reduction.   Another difference between the standard
 QA recipe and the demo recipe, is that the demo recipe does stack the data, while
 the stacking is turned off in the QA context.</p>
 <p>The demo recipe is essentially a Quick Look recipe.  It is NOT valid for Science
 Quality.  Remember that we you are using is a QA pipeline, not a Science pipeline.</p>
 </div>
 <div class="section" id="the-recipes">
-<h2>The Recipes<a class="headerlink" href="#the-recipes" title="Permalink to this headline">¶</a></h2>
+<h2>1.3. The Recipes<a class="headerlink" href="#the-recipes" title="Permalink to this headline">¶</a></h2>
 <p>To process the biases and the flats we will be using the standard recipes. The
 system will be able to pick those automatically when it recognizes the input data
 as GMOS biases and GMOS twilight flats.</p>
-<p>For the science data, we will overide the recipe selection to use the Demo recipe.
-If we were not to overide the recipe selection, the system would automatically
+<p>For the science data, we will override the recipe selection to use the Demo recipe.
+If we were not to override the recipe selection, the system would automatically
 select the QA recipe.  The Demo recipe is more representative of a standard
 Quick-Look reduction with stacking, hence probably more interesting to the reader.</p>
-<p>The standard recipe to process GMOS biases is named <cite>recipe.makeProcessedBias</cite>
+<p>The standard recipe to process GMOS biases is named <tt class="docutils literal"><span class="pre">recipe.makeProcessedBias</span></tt>
 and contains these instructions:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="c"># This recipe performs the standardization and corrections needed to convert</span>
 <span class="c"># the raw input bias images into a single stacked bias image. This output</span>
@@ -111,7 +112,7 @@ and contains these instructions:</p>
 </pre></div>
 </div>
 <p>The standard recipe to process GMOS twilight flats is named
-<cite>recipe.makeProcessedFlat.GMOS_IMAGE</cite> and contains these instructions:</p>
+<tt class="docutils literal"><span class="pre">recipe.makeProcessedFlat.GMOS_IMAGE</span></tt> and contains these instructions:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="c"># This recipe performs the standardization and corrections needed to convert</span>
 <span class="c"># the raw input flat images into a single stacked and normalized flat image.</span>
 <span class="c"># This output processed flat is stored on disk using storeProcessedFlat and</span>
@@ -133,7 +134,7 @@ and contains these instructions:</p>
 <span class="n">storeProcessedFlat</span>
 </pre></div>
 </div>
-<p>The Demo recipe is named <cite>recipe.reduceDemo</cite> and contains these instructions:</p>
+<p>The Demo recipe is named <tt class="docutils literal"><span class="pre">recipe.reduceDemo</span></tt> and contains these instructions:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="c"># recipe.reduceDemo</span>
 
 <span class="n">prepare</span>
@@ -156,37 +157,36 @@ and contains these instructions:</p>
 </pre></div>
 </div>
 <p>For the curious, the standard bias and flat recipes are found in
-<cite>astrodata_Gemini/RECIPES_Gemini/</cite> and the demo recipe is in
-<cite>astrodata_Gemini/RECIPES_Gemini/demos/</cite>.  You do not really need that information
+<tt class="docutils literal"><span class="pre">astrodata_Gemini/RECIPES_Gemini/</span></tt> and the demo recipe is in
+<tt class="docutils literal"><span class="pre">astrodata_Gemini/RECIPES_Gemini/demos/</span></tt>.  You do not really need that information
 as the system will find them on its own.</p>
 </div>
 <div class="section" id="the-demo">
-<h2>The Demo<a class="headerlink" href="#the-demo" title="Permalink to this headline">¶</a></h2>
+<h2>1.4. The Demo<a class="headerlink" href="#the-demo" title="Permalink to this headline">¶</a></h2>
 <p>The images will be displayed at times.  Therefore, start ds9:</p>
 <div class="highlight-python"><div class="highlight"><pre>ds9 &amp;
 </pre></div>
 </div>
 <div class="section" id="the-processed-bias">
-<h3>The Processed Bias<a class="headerlink" href="#the-processed-bias" title="Permalink to this headline">¶</a></h3>
+<h3>1.4.1. The Processed Bias<a class="headerlink" href="#the-processed-bias" title="Permalink to this headline">¶</a></h3>
 <p>The first step is to create the processed bias.  We are using the standard
 recipe.  The system will recognize the inputs as GMOS biases and call the
 appropriate recipe automatically.</p>
 <p>The biases were taken on different dates
 around the time of the science observations.  For convenience, we will use
 a file with the list of datasets as input instead of listing all the input
-datasets individually.  This list has already been written for you but to
-keep thing general, the path information was left out; we will add it as
-part of the demo.</p>
+datasets individually.  We will use a tool named <tt class="docutils literal"><span class="pre">typewalk</span></tt> to painlessly
+create the list.</p>
 <div class="highlight-python"><div class="highlight"><pre>cd &lt;your_path&gt;/gemini_python_datapkg-X1/playground
-sed -e &#39;s/^/..\/data_for_reduce_demo\//g&#39; \
-   ../data_for_reduce_demo/bias.list &gt; bias.list
+
+typewalk --types GMOS_BIAS --dir ../data_for_reduce_demo -o bias.list
 
 reduce @bias.list
 </pre></div>
 </div>
-<p>This creates the processed bias, <cite>N20120202S0955_bias.fits</cite>.  The output suffix
-<cite>_bias</cite> is the indicator that this is a processed bias.  All processed calibrations
-are also stored in <cite>calibrations/storedcals/</cite> for safe keeping.</p>
+<p>This creates the processed bias, <tt class="docutils literal"><span class="pre">N20120202S0955_bias.fits</span></tt>.  The output suffix
+<tt class="docutils literal"><span class="pre">_bias</span></tt> is the indicator that this is a processed bias.  All processed calibrations
+are also stored in <tt class="docutils literal"><span class="pre">./calibrations/storedcals/</span></tt> for safe keeping.</p>
 <p>If you wish to see what the processed bias looks like:</p>
 <div class="highlight-python"><div class="highlight"><pre>reduce N20120202S0955_bias.fits -r display
 </pre></div>
@@ -197,7 +197,7 @@ will fix this, eventually.  Remember that this is a release of software meant
 for internal use; there are still plenty of issues to be resolved.</em></p>
 </div>
 <div class="section" id="the-processed-flat">
-<h3>The Processed Flat<a class="headerlink" href="#the-processed-flat" title="Permalink to this headline">¶</a></h3>
+<h3>1.4.2. The Processed Flat<a class="headerlink" href="#the-processed-flat" title="Permalink to this headline">¶</a></h3>
 <p>Next we create a processed flat.  We will use the processed bias we have
 just created.  The system will recognize the inputs as GMOS twilight flats and
 call the appropriate recipe automatically.</p>
@@ -214,10 +214,10 @@ specified on the command line.</p>
    -p clobber=True
 </pre></div>
 </div>
-<p>This creates the processed flat, <cite>N20120123S0123_flat.fits</cite>.  The output suffix
-<cite>_flat</cite> is the indictor that this is a processed flat.  The processed flat is also
-stored in <cite>calibrations/storedcals/</cite> for safe keeping.</p>
-<p>The <cite>clobber</cite> parameter is set to True to allow the system to overwrite the final
+<p>This creates the processed flat, <tt class="docutils literal"><span class="pre">N20120123S0123_flat.fits</span></tt>.  The output suffix
+<tt class="docutils literal"><span class="pre">_flat</span></tt> is the indictor that this is a processed flat.  The processed flat is also
+stored in <tt class="docutils literal"><span class="pre">./calibrations/storedcals/</span></tt> for safe keeping.</p>
+<p>The <tt class="docutils literal"><span class="pre">clobber</span></tt> parameter is set to True to allow the system to overwrite the final
 output.  By default, the system refuses to overwrite an output file.</p>
 <p>If you wish to see what the processed flat looks like:</p>
 <div class="highlight-python"><div class="highlight"><pre>reduce N20120123S0123_flat.fits -r display
@@ -225,9 +225,9 @@ output.  By default, the system refuses to overwrite an output file.</p>
 </div>
 </div>
 <div class="section" id="the-science-frames">
-<h3>The Science Frames<a class="headerlink" href="#the-science-frames" title="Permalink to this headline">¶</a></h3>
+<h3>1.4.3. The Science Frames<a class="headerlink" href="#the-science-frames" title="Permalink to this headline">¶</a></h3>
 <p>We now have all the pieces required to reduce the science frames.  This time,
-instead of using the standard QA recipe, we will use the demo recipe.  Again,
+instead of using the standard QA recipe, we will use the Demo recipe.  Again,
 we will specify the processed calibrations, bias and flat, we wish to use.</p>
 <div class="highlight-python"><div class="highlight"><pre>reduce ../data_for_reduce_demo/N20120203S028?.fits \
    --override_cal processed_bias:N20120202S0955_bias.fits \
@@ -237,21 +237,23 @@ we will specify the processed calibrations, bias and flat, we wish to use.</p>
 </pre></div>
 </div>
 <p>The demo data was obtained with the z&#8217; filter, therefore the images contain fringing.
-The <cite>makeFringe</cite> and <cite>fringeCorrect</cite> primitives are filter-aware, they will do
+The <tt class="docutils literal"><span class="pre">makeFringe</span></tt> and <tt class="docutils literal"><span class="pre">fringeCorrect</span></tt> primitives are filter-aware, they will do
 something only when the data is from a filter that produces fringing, like the z&#8217;
-filter.</p>
-<p>The last primitive in the recipe is <cite>measureIQ</cite> which is one of the QA metrics
+filter.  The processed fringe that is created is stored with the other processed
+calibrations in <tt class="docutils literal"><span class="pre">./calibrations/storedcals/</span></tt> and it is named <tt class="docutils literal"><span class="pre">N20120203S0281_fringe.fits</span></tt>.
+The <tt class="docutils literal"><span class="pre">_fringe</span></tt> suffix indicates a processed fringe.</p>
+<p>The last primitive in the recipe is <tt class="docutils literal"><span class="pre">measureIQ</span></tt> which is one of the QA metrics
 primitives used at night by the QA pipeline.  The primitive selects stars in
 the field and measures the average seeing and ellipticity.  The image it runs
 on is displayed and the selected stars are circled for visual inspections.</p>
-<p>The fully processed stacked science image is <cite>N20120203S0281_iqMeasured.fits</cite>.
+<p>The fully processed stacked science image is <tt class="docutils literal"><span class="pre">N20120203S0281_iqMeasured.fits</span></tt>.
 By default, the suffix of the final image is set by the last primitive run
-on the data, in this case <cite>measureIQ</cite>.</p>
+on the data, in this case <tt class="docutils literal"><span class="pre">measureIQ</span></tt>.</p>
 <p>This default naming can be confusing.  If you wish to set the suffix of the
-final image yourself, use <cite>&#8211;suffix _myfinalsuffix</cite>.</p>
+final image yourself, use <tt class="docutils literal"><span class="pre">--suffix</span>&nbsp; <span class="pre">_myfinalsuffix</span></tt>.</p>
 </div>
 <div class="section" id="clean-up">
-<h3>Clean up<a class="headerlink" href="#clean-up" title="Permalink to this headline">¶</a></h3>
+<h3>1.4.4. Clean up<a class="headerlink" href="#clean-up" title="Permalink to this headline">¶</a></h3>
 <p>It is good practice to reset the RecipeSystem state when you are done:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">superclean</span> <span class="o">--</span><span class="n">safe</span>
 </pre></div>
@@ -259,6 +261,15 @@ final image yourself, use <cite>&#8211;suffix _myfinalsuffix</cite>.</p>
 <p>Your files will stay there, only some hidden RecipeSystem directories
 and files will be deleted.</p>
 </div>
+</div>
+<div class="section" id="limitations">
+<h2>1.5. Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">¶</a></h2>
+<p>The X1 version of the RecipeSystem has not been vetted for Science Quality.
+Use ONLY for quick look purposes.</p>
+<p>The RecipeSystem currently does not handle memory usage in a very smart way.
+The number of files one can pass on to <tt class="docutils literal"><span class="pre">reduce</span></tt> is directly limited by the
+memory of the user&#8217;s computer.  This demo ran successfully on a Mac laptop
+with 4 GB of memory.</p>
 </div>
 </div>
 
@@ -270,17 +281,18 @@ and files will be deleted.</p>
         <div class="sphinxsidebarwrapper">
   <h3><a href="../index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#"><cite>reduce</cite> demo</a><ul>
-<li><a class="reference internal" href="#setting-up">Setting up</a></li>
-<li><a class="reference internal" href="#introduction-to-the-demo">Introduction to the Demo</a></li>
-<li><a class="reference internal" href="#the-recipes">The Recipes</a></li>
-<li><a class="reference internal" href="#the-demo">The Demo</a><ul>
-<li><a class="reference internal" href="#the-processed-bias">The Processed Bias</a></li>
-<li><a class="reference internal" href="#the-processed-flat">The Processed Flat</a></li>
-<li><a class="reference internal" href="#the-science-frames">The Science Frames</a></li>
-<li><a class="reference internal" href="#clean-up">Clean up</a></li>
+<li><a class="reference internal" href="#">1. <cite>reduce</cite> demo</a><ul>
+<li><a class="reference internal" href="#setting-up">1.1. Setting up</a></li>
+<li><a class="reference internal" href="#introduction-to-the-demo">1.2. Introduction to the Demo</a></li>
+<li><a class="reference internal" href="#the-recipes">1.3. The Recipes</a></li>
+<li><a class="reference internal" href="#the-demo">1.4. The Demo</a><ul>
+<li><a class="reference internal" href="#the-processed-bias">1.4.1. The Processed Bias</a></li>
+<li><a class="reference internal" href="#the-processed-flat">1.4.2. The Processed Flat</a></li>
+<li><a class="reference internal" href="#the-science-frames">1.4.3. The Science Frames</a></li>
+<li><a class="reference internal" href="#clean-up">1.4.4. Clean up</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#limitations">1.5. Limitations</a></li>
 </ul>
 </li>
 </ul>
