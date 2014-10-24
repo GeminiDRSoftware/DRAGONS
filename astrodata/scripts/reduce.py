@@ -969,9 +969,6 @@ try:
                     # write outputs
                     outputs = co.get_stream("main")
                     clobber = co["clobber"]
-                    print
-                    print "@RED L973 - clobber::", type(clobber), clobber
-                    print
                     if clobber:
                         clobber = clobber.lower()
                         if clobber == "false":
