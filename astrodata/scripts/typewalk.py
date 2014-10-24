@@ -121,6 +121,9 @@ def typewalk_argparser():
     parser.add_argument("--typology", dest="onlyTypology", action="store_true",
                       help="Report data typologies only.")
 
+    parser.add_argument("--xcal", dest="xcal", action="store_true",
+                        help="Exclude calibration ('CAL') types from reporting.")
+
     return parser.parse_args()
 
 # ------------------------------------------------------------------------------
@@ -196,7 +199,7 @@ class DataSpider(object):
     def typewalk(self, directory=os.getcwd(), only="all", or_logic=False,
                  pheads=None, showinfo=False, onlyStatus=False, outfile=None,
                  onlyTypology=False, filemask=None, showCals=False,
-                 stayTop=False, raiseExcept=False, batchnum=100):
+                 stayTop=False, raiseExcept=False, batchnum=100, xcal=False):
         """
         Recursively walk <directory> and put type information to stdout
         """
@@ -263,6 +266,11 @@ class DataSpider(object):
                             dtypes = fl.type()
                         elif (onlyStatus):
                             dtypes = fl.status()
+
+                        # xcal indicates no reporting CAL types
+                        if xcal:
+                            if dtypes and 'CAL' in dtypes:
+                                continue
 
                         # Here we are looking to match *all* caller types.
                         # Logical AND, not OR.
@@ -405,6 +413,7 @@ def main(options):
                     stayTop=options.stayTop,
                     raiseExcept=options.raiseExcept,
                     batchnum=int(options.batchnum)-1,
+                    xcal=options.xcal
         )
         print "Done DataSpider.typewalk(..)"
     except KeyboardInterrupt:
