@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -16,7 +14,7 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '',
+        URL_ROOT:    './',
         VERSION:     '0.9.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
@@ -54,22 +52,50 @@
             
   <div class="section" id="tutorial">
 <span id="id1"></span><h1>2. Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<p>(write the points below into real text)</p>
+<ul class="simple">
+<li>this is just a quick intro.  you will be referred to sections within this manual for</li>
+</ul>
+<p>the more detailed explanation and more information.
+* the intended audience are new users of astrodata, but it can obviously serve as a
+quick refresher for standard operations.
+* the data used in this tutorial and throughout the manual is packaged in
+<tt class="docutils literal"><span class="pre">gemini_python_datapkg-X1.tar.gz</span></tt>. The archive file can be downloaded from the Gemini
+website.
+* in the data package, the data used in this manual is stored in the directory
+<tt class="docutils literal"><span class="pre">data_for_ad_user_manual</span></tt>.
+* to run this tutorial, you will need to install <tt class="docutils literal"><span class="pre">gemini_python</span></tt>.  See the
+<a class="reference internal" href="intro.html#install"><em>Installing Astrodata</em></a> section in the <a class="reference external" href="http://docs.python.org/reference/introduction.html#introduction" title="(in Python v2.7)"><em>Introduction</em></a> &lt;intro&gt;`.</p>
+<div class="section" id="open-and-access-mef-files">
+<h2>2.1. Open and Access MEF Files<a class="headerlink" href="#open-and-access-mef-files" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>for the first few sections we will use the interactive Python shell</li>
+<li>start python</li>
+</ul>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">python</span>
+</pre></div>
+</div>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2</pre></div></td><td class="code"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;....fits&#39;</span><span class="p">)</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<div class="section" id="display-a-mef-file">
+<h2>2.2. Display a MEF File<a class="headerlink" href="#display-a-mef-file" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="operate-on-mef-files">
+<h2>2.3. Operate on MEF Files<a class="headerlink" href="#operate-on-mef-files" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="create-and-update-mef-files">
+<h2>2.4. Create and Update MEF Files<a class="headerlink" href="#create-and-update-mef-files" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="writing-a-python-function-using-astrodata">
+<h2>2.5. Writing a Python Function using AstroData<a class="headerlink" href="#writing-a-python-function-using-astrodata" title="Permalink to this headline">¶</a></h2>
 <div class="admonition-todo admonition" id="index-0">
 <p class="first admonition-title">Todo</p>
 <p class="last">Create a tutorial that shows how to do typical things an astronomer might want do.</p>
 </div>
-<div class="section" id="open-and-access-mef-files">
-<h2>2.1. Open and Access MEF Files<a class="headerlink" href="#open-and-access-mef-files" title="Permalink to this headline">¶</a></h2>
-<p>from astrodata import AstroData</p>
-</div>
-<div class="section" id="operate-on-mef-files">
-<h2>2.2. Operate on MEF Files<a class="headerlink" href="#operate-on-mef-files" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="create-and-update-mef-files">
-<h2>2.3. Create and Update MEF Files<a class="headerlink" href="#create-and-update-mef-files" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="writing-a-python-function-using-astrodata">
-<h2>2.4. Writing a Python Function using AstroData<a class="headerlink" href="#writing-a-python-function-using-astrodata" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
@@ -83,9 +109,10 @@
   <ul>
 <li><a class="reference internal" href="#">2. Tutorial</a><ul>
 <li><a class="reference internal" href="#open-and-access-mef-files">2.1. Open and Access MEF Files</a></li>
-<li><a class="reference internal" href="#operate-on-mef-files">2.2. Operate on MEF Files</a></li>
-<li><a class="reference internal" href="#create-and-update-mef-files">2.3. Create and Update MEF Files</a></li>
-<li><a class="reference internal" href="#writing-a-python-function-using-astrodata">2.4. Writing a Python Function using AstroData</a></li>
+<li><a class="reference internal" href="#display-a-mef-file">2.2. Display a MEF File</a></li>
+<li><a class="reference internal" href="#operate-on-mef-files">2.3. Operate on MEF Files</a></li>
+<li><a class="reference internal" href="#create-and-update-mef-files">2.4. Create and Update MEF Files</a></li>
+<li><a class="reference internal" href="#writing-a-python-function-using-astrodata">2.5. Writing a Python Function using AstroData</a></li>
 </ul>
 </li>
 </ul>
@@ -135,7 +162,7 @@
     </div>
     <div class="footer">
         &copy; Copyright 2014, Kathleen Labrie.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>
