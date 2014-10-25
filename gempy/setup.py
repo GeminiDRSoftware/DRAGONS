@@ -19,6 +19,8 @@ import sys
 
 from distutils.core import setup
 
+svndir = re.compile('.svn')
+
 MODULENAME = 'gempy'
 
 # PACKAGES and PACKAGE_DIRS
@@ -34,22 +36,26 @@ PACKAGE_DIRS[MODULENAME] = '.'
 
 # PACKAGE_DATA
 PACKAGE_DATA = {}
-for p in PACKAGES:
-    PACKAGE_DATA[p]=['Copyright',
-                     'ReleaseNote',
-                     'README',
-                     'INSTALL',
-                     ]
+PACKAGE_DATA[MODULENAME] = []
+#for p in PACKAGES:
+#    PACKAGE_DATA[p]=['LICENSE',
+#                     'ReleaseNote',
+#                     'README',
+#                     'INSTALL',
+#                     ]
+for root, dirs, files in os.walk('tests'):
+    if not svndir.search(root) and len(files) > 0:
+        PACKAGE_DATA[MODULENAME].extend( map((lambda f: os.path.join(root, f)), files) )
+
 
 DATA_FILES = []
 DOC_DIR = os.path.join('share','gempy')
 svndir = re.compile('.svn')
-# the 'doc' directory is completely out dated, don't install or distribute until fixed
-#for root, dirs, files in os.walk('doc'):
-#    if not svndir.search(root) and len(files) > 0:
-#        dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
-#        DOC_FILES = map((lambda f: os.path.join(root,f)), files)      
-#        DATA_FILES.append( (os.path.join(DOC_DIR,dest), DOC_FILES) )
+for root, dirs, files in os.walk('doc'):
+    if not svndir.search(root) and len(files) > 0:
+        dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
+        DOC_FILES = map((lambda f: os.path.join(root,f)), files)      
+        DATA_FILES.append( (os.path.join(DOC_DIR,dest), DOC_FILES) )
 for root, dirs, files in os.walk('doc-local'):
     if not svndir.search(root) and len(files) > 0:
         dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
