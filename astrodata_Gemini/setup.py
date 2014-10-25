@@ -52,15 +52,16 @@ PACKAGE_DIRS[PACKAGENAME] = '.'
 # PACKAGE_DATA
 PACKAGE_DATA = {}
 PACKAGE_DATA[PACKAGENAME] = []
-for s in ['.']+[RECIPENAME]:
-    PACKAGE_DATA[PACKAGENAME].extend([os.path.join(s,'Copyright'),
-                                     os.path.join(s,'ReleaseNote'),
-                                     os.path.join(s,'README'),
-                                     os.path.join(s,'INSTALL'),
-                                     ])
+#for s in ['.']+[RECIPENAME]:
+#    PACKAGE_DATA[PACKAGENAME].extend([os.path.join(s,'LICENSE'),
+#                                     os.path.join(s,'ReleaseNote'),
+#                                     os.path.join(s,'README'),
+#                                     os.path.join(s,'INSTALL'),
+#                                     ])
 PACKAGE_DATA[PACKAGENAME].extend(glob.glob(os.path.join(RECIPENAME,'recipe.*')))
 PACKAGE_DATA[PACKAGENAME].extend(glob.glob(os.path.join(RECIPENAME,'subrecipes','recipe.*')))
-#PACKAGE_DATA[PACKAGENAME].append(os.path.join(RECIPENAME,'primitives','primitives_List.txt'))
+PACKAGE_DATA[PACKAGENAME].extend(glob.glob(os.path.join(RECIPENAME,'demos','recipe.*')))
+PACKAGE_DATA[PACKAGENAME].extend(glob.glob(os.path.join(RECIPENAME,'tests','recipe.*')))
 
 
 PACKAGE_DATA[PACKAGENAME].append(os.path.join(CONFIGNAME,'structures','*.py'))
@@ -79,12 +80,12 @@ for root, dirs, files in os.walk(os.path.join(CONFIGNAME,'classifications')):
 # DATA_DIRS and DATA_FILES
 DATA_FILES = []
 
-DOC_DIR = os.path.join('share','astrodata_Gemini')
-for root, dirs, files in os.walk('doc'):
-    if not svndir.search(root) and len(files) > 0:
-        dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
-        DOC_FILES = map((lambda f: os.path.join(root,f)), files)
-        DATA_FILES.append( (os.path.join(DOC_DIR,dest), DOC_FILES) )
+# DOC_DIR = os.path.join('share','astrodata_Gemini')
+# for root, dirs, files in os.walk('doc'):
+#     if not svndir.search(root) and len(files) > 0:
+#         dest = root.split('/',1)[1] if len(root.split('/',1)) > 1 else ""
+#         DOC_FILES = map((lambda f: os.path.join(root,f)), files)
+#         DATA_FILES.append( (os.path.join(DOC_DIR,dest), DOC_FILES) )
 
 # SCRIPTS
 SCRIPTS = []
