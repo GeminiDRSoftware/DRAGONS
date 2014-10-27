@@ -274,7 +274,7 @@ class DataSpider(object):
                             try:
                                 assert set(dtypes).intersection(set(xtypes))
                                 continue
-                            except:
+                            except AssertionError:
                                 pass
 
                         # Here we are looking to match *all* caller types.
@@ -286,12 +286,13 @@ class DataSpider(object):
                             else:
                                 found = False
                                 if or_logic:
-                                    for only_type in only:
-                                        if only_type in dtypes:
-                                            found = True
-                                            if outfile:
+                                    try:
+                                        assert(set(only).intersection(set(dtypes)))
+                                        found = True
+                                        if outfile:
                                                 outfile_list.append(fname)
-                                            break
+                                    except AssertionError:
+                                        pass
                                 else:
                                     if set(only).issubset(dtypes):
                                         found = True
