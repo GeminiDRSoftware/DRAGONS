@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -14,7 +16,7 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
+        URL_ROOT:    '',
         VERSION:     'X1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
@@ -54,7 +56,20 @@
 <h1>5. Discussion<a class="headerlink" href="#discussion" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="fits-storage">
 <span id="fitsstore"></span><h2>5.1. Fits Storage<a class="headerlink" href="#fits-storage" title="Permalink to this headline">¶</a></h2>
-<p>blah blah blah Fits Storage blah blah ...</p>
+<p>The URLs that appear in <tt class="docutils literal"><span class="pre">test_one</span></tt> recipe example (Sec. <a class="reference internal" href="userenv.html#test"><em>Test the installation</em></a>), reference web services
+available within the Gemini Observatory&#8217;s operational environment. They will
+<cite>not</cite> be available directly to users running <tt class="docutils literal"><span class="pre">reduce</span></tt> outside of the Gemini
+Observatory environment.</p>
+<p>In the context of <tt class="docutils literal"><span class="pre">reduce</span></tt> and the Astrodata Recipe System, FitsStorage provides
+a calibration management and association feature. Essentially, given a science
+frame (or any frame that requires calibration) and a calibration
+type requested, FitsStorage is able to automatically choose the best available
+calibration of the required type to apply to the science frame. The Recipe System
+uses a machine-oriented calibration manager interface in order to select
+calibration frames to apply as part of pipeline processing.</p>
+<p>Though this service is not currently available to general gemini_python users,
+plans to provide this as a local calibration service are in place and expected
+for <a class="reference internal" href="#future"><em>Future Enhancements</em></a>.</p>
 </div>
 <div class="section" id="the-adcc">
 <span id="adcc"></span><h2>5.2. The adcc<a class="headerlink" href="#the-adcc" title="Permalink to this headline">¶</a></h2>
@@ -76,7 +91,7 @@ and will serve that particular <tt class="docutils literal"><span class="pre">re
 it is.</p>
 </div>
 <div class="section" id="future-enhancements">
-<h2>5.3. Future Enhancements<a class="headerlink" href="#future-enhancements" title="Permalink to this headline">¶</a></h2>
+<span id="future"></span><h2>5.3. Future Enhancements<a class="headerlink" href="#future-enhancements" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="intelligence">
 <h3>5.3.1. Intelligence<a class="headerlink" href="#intelligence" title="Permalink to this headline">¶</a></h3>
 <p>One enhancement long imagined is what has been generally termed &#8216;intelligence&#8217;.
@@ -91,7 +106,11 @@ be passed directly to <tt class="docutils literal"><span class="pre">reduce</spa
 </div>
 <div class="section" id="local-calibration-service">
 <h3>5.3.2. Local Calibration Service<a class="headerlink" href="#local-calibration-service" title="Permalink to this headline">¶</a></h3>
-<p>blahbadeeblah about a local calibration service ...</p>
+<p>The Fits Storage service will be delivered as part of a future release and will
+provide the calibration management and association features of <a class="reference internal" href="#fitsstore"><em>Fits Storage</em></a>: for
+use with the public release of the <cite>gemini_python</cite> data reduction package. This
+feature will provide automatic calibration selection for both pipeline (recipe)
+operations and in an interactive processing environment.</p>
 </div>
 </div>
 </div>
@@ -161,7 +180,7 @@ be passed directly to <tt class="docutils literal"><span class="pre">reduce</spa
     </div>
     <div class="footer">
         &copy; Copyright 2014, Kennneth Anderson.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>
 </html>

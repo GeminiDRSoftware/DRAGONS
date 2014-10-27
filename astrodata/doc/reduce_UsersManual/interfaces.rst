@@ -1,4 +1,5 @@
 .. interfaces:
+.. include discuss
 
 Interfaces
 ==========
@@ -148,10 +149,12 @@ The minimal call for reduce can be ::
 
    $ reduce <dataset.fits>
 
-While this minimal call is available at the Gemini Observatory, if a calibration 
-service is unavailable to the user -- likely true for most users -- users should 
-call ``reduce`` on a specified dataset by providing calibration files with the 
---overrride_cal option. For example::
+While this minimal call is available at the Gemini Observatory (see Sec. 
+:ref:`fitsstore`), if a calibration service is unavailable to the user -- 
+likely true for most users -- users should call ``reduce`` on a specified 
+dataset by providing calibration files with the  --overrride_cal option. 
+
+For example::
 
   $ reduce --override_cal processed_arc:wcal/gsTest_arc.fits <dataset.fits>
 

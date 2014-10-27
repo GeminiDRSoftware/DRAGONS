@@ -2,9 +2,9 @@
 \contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}
 \contentsline {section}{\numberline {1.1}Reference Documents}{1}{section.1.1}
 \contentsline {section}{\numberline {1.2}Overview}{1}{section.1.2}
-\contentsline {section}{\numberline {1.3}Glossary}{1}{section.1.3}
-\contentsline {chapter}{\numberline {2}User Environment}{3}{chapter.2}
-\contentsline {section}{\numberline {2.1}Installation}{3}{section.2.1}
+\contentsline {section}{\numberline {1.3}Glossary}{2}{section.1.3}
+\contentsline {chapter}{\numberline {2}Installation}{3}{chapter.2}
+\contentsline {section}{\numberline {2.1}Install}{3}{section.2.1}
 \contentsline {section}{\numberline {2.2}Test the installation}{3}{section.2.2}
 \contentsline {chapter}{\numberline {3}Interfaces}{5}{chapter.3}
 \contentsline {section}{\numberline {3.1}Introduction}{5}{section.3.1}
@@ -12,13 +12,13 @@
 \contentsline {subsection}{\numberline {3.2.1}Informational switches}{5}{subsection.3.2.1}
 \contentsline {subsection}{\numberline {3.2.2}Configuration Switches, Options}{6}{subsection.3.2.2}
 \contentsline {subsection}{\numberline {3.2.3}Nominal Usage}{7}{subsection.3.2.3}
-\contentsline {subsection}{\numberline {3.2.4}Overriding Primitive Parameters}{7}{subsection.3.2.4}
+\contentsline {subsection}{\numberline {3.2.4}Overriding Primitive Parameters}{8}{subsection.3.2.4}
 \contentsline {subsection}{\numberline {3.2.5}The @file facility}{8}{subsection.3.2.5}
 \contentsline {subsection}{\numberline {3.2.6}Recursive @file processing}{10}{subsection.3.2.6}
 \contentsline {subsection}{\numberline {3.2.7}Overriding @file values}{11}{subsection.3.2.7}
 \contentsline {section}{\numberline {3.3}Application Programming Interface (API)}{12}{section.3.3}
 \contentsline {subsection}{\numberline {3.3.1}reduce.main()}{12}{subsection.3.3.1}
-\contentsline {subsection}{\numberline {3.3.2}Class Reduce and the runr() method}{12}{subsection.3.3.2}
+\contentsline {subsection}{\numberline {3.3.2}Class Reduce and the runr() method}{13}{subsection.3.3.2}
 \contentsline {chapter}{\numberline {4}Supplemental tools}{15}{chapter.4}
 \contentsline {section}{\numberline {4.1}listprimitives}{15}{section.4.1}
 \contentsline {subsection}{\numberline {4.1.1}listprimitives information}{15}{subsection.4.1.1}
@@ -28,16 +28,16 @@
 \contentsline {section}{\numberline {5.2}The adcc}{19}{section.5.2}
 \contentsline {section}{\numberline {5.3}Future Enhancements}{19}{section.5.3}
 \contentsline {subsection}{\numberline {5.3.1}Intelligence}{19}{subsection.5.3.1}
-\contentsline {subsection}{\numberline {5.3.2}Local Calibration Service}{19}{subsection.5.3.2}
+\contentsline {subsection}{\numberline {5.3.2}Local Calibration Service}{20}{subsection.5.3.2}
 \contentsline {chapter}{\numberline {6}6. Acknowledgments}{21}{chapter.6}
 \contentsline {chapter}{Appendices}{}{section*.3}
 \contentsline {chapter}{\numberline {A}\emph {reduce} demo}{23}{appendix.A}
 \contentsline {section}{\numberline {A.1}Setting up}{23}{section.A.1}
 \contentsline {section}{\numberline {A.2}Introduction to the Demo}{23}{section.A.2}
-\contentsline {section}{\numberline {A.3}The Recipes}{23}{section.A.3}
+\contentsline {section}{\numberline {A.3}The Recipes}{24}{section.A.3}
 \contentsline {section}{\numberline {A.4}The Demo}{25}{section.A.4}
 \contentsline {subsection}{\numberline {A.4.1}The Processed Bias}{25}{subsection.A.4.1}
 \contentsline {subsection}{\numberline {A.4.2}The Processed Flat}{25}{subsection.A.4.2}
 \contentsline {subsection}{\numberline {A.4.3}The Science Frames}{26}{subsection.A.4.3}
 \contentsline {subsection}{\numberline {A.4.4}Clean up}{26}{subsection.A.4.4}
-\contentsline {section}{\numberline {A.5}Limitations}{26}{section.A.5}
+\contentsline {section}{\numberline {A.5}Limitations}{27}{section.A.5}

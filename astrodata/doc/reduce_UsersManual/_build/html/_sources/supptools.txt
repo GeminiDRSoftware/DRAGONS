@@ -1,3 +1,4 @@
+.. supptools:
 .. include userenv
 .. include interfaces
 

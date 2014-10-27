@@ -1,5 +1,5 @@
-.. include discuss
 .. intro:
+.. include discuss
 
 Introduction
 ============

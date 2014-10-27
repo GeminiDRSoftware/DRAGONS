@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -60,8 +62,7 @@ Please do make sure that the command <cite>reduce</cite> is in your <tt class="d
 <p>The demo data is distributed separately.  You can find the demo data package
 <tt class="docutils literal"><span class="pre">gemini_python_datapkg-X1.tar.gz</span></tt> on the Gemini website where you found the
 gemini_python package.  Unpack the data package somewhere convenient:</p>
-<div class="highlight-python"><div class="highlight"><pre>tar xvzf gemini_python_datapkg-X1.tar.gz
-</pre></div>
+<div class="highlight-python"><pre>tar xvzf gemini_python_datapkg-X1.tar.gz</pre>
 </div>
 <p>In there, you will find a subdirectory named <tt class="docutils literal"><span class="pre">data_for_reduce_demo</span></tt>.  Those are
 the data we will use here.  You will also find an empty directory called
@@ -164,8 +165,7 @@ as the system will find them on its own.</p>
 <div class="section" id="the-demo">
 <h2>1.4. The Demo<a class="headerlink" href="#the-demo" title="Permalink to this headline">¶</a></h2>
 <p>The images will be displayed at times.  Therefore, start ds9:</p>
-<div class="highlight-python"><div class="highlight"><pre>ds9 &amp;
-</pre></div>
+<div class="highlight-python"><pre>ds9 &amp;</pre>
 </div>
 <div class="section" id="the-processed-bias">
 <h3>1.4.1. The Processed Bias<a class="headerlink" href="#the-processed-bias" title="Permalink to this headline">¶</a></h3>
@@ -177,19 +177,17 @@ around the time of the science observations.  For convenience, we will use
 a file with the list of datasets as input instead of listing all the input
 datasets individually.  We will use a tool named <tt class="docutils literal"><span class="pre">typewalk</span></tt> to painlessly
 create the list.</p>
-<div class="highlight-python"><div class="highlight"><pre>cd &lt;your_path&gt;/gemini_python_datapkg-X1/playground
+<div class="highlight-python"><pre>cd &lt;your_path&gt;/gemini_python_datapkg-X1/playground
 
 typewalk --types GMOS_BIAS --dir ../data_for_reduce_demo -o bias.list
 
-reduce @bias.list
-</pre></div>
+reduce @bias.list</pre>
 </div>
 <p>This creates the processed bias, <tt class="docutils literal"><span class="pre">N20120202S0955_bias.fits</span></tt>.  The output suffix
 <tt class="docutils literal"><span class="pre">_bias</span></tt> is the indicator that this is a processed bias.  All processed calibrations
 are also stored in <tt class="docutils literal"><span class="pre">./calibrations/storedcals/</span></tt> for safe keeping.</p>
 <p>If you wish to see what the processed bias looks like:</p>
-<div class="highlight-python"><div class="highlight"><pre>reduce N20120202S0955_bias.fits -r display
-</pre></div>
+<div class="highlight-python"><pre>reduce N20120202S0955_bias.fits -r display</pre>
 </div>
 <p><em>Note: This will issue an error about the file already existing.  Ignore it.
 The explanation of what is going on is beyond the scope of this demo.  We
@@ -209,10 +207,9 @@ are selected and retrieve automatically.  We hope to be able to offer a &#8220;l
 end-user version of this system in the future.  For now, calibrations must be
 specified on the command line.</p>
 <p>For the flats, we do not really need a list, we can use wild cards:</p>
-<div class="highlight-python"><div class="highlight"><pre>reduce ../data_for_reduce_demo/N20120123*.fits \
+<div class="highlight-python"><pre>reduce ../data_for_reduce_demo/N20120123*.fits \
    --override_cal processed_bias:N20120202S0955_bias.fits \
-   -p clobber=True
-</pre></div>
+   -p clobber=True</pre>
 </div>
 <p>This creates the processed flat, <tt class="docutils literal"><span class="pre">N20120123S0123_flat.fits</span></tt>.  The output suffix
 <tt class="docutils literal"><span class="pre">_flat</span></tt> is the indictor that this is a processed flat.  The processed flat is also
@@ -220,8 +217,7 @@ stored in <tt class="docutils literal"><span class="pre">./calibrations/storedca
 <p>The <tt class="docutils literal"><span class="pre">clobber</span></tt> parameter is set to True to allow the system to overwrite the final
 output.  By default, the system refuses to overwrite an output file.</p>
 <p>If you wish to see what the processed flat looks like:</p>
-<div class="highlight-python"><div class="highlight"><pre>reduce N20120123S0123_flat.fits -r display
-</pre></div>
+<div class="highlight-python"><pre>reduce N20120123S0123_flat.fits -r display</pre>
 </div>
 </div>
 <div class="section" id="the-science-frames">
@@ -229,12 +225,11 @@ output.  By default, the system refuses to overwrite an output file.</p>
 <p>We now have all the pieces required to reduce the science frames.  This time,
 instead of using the standard QA recipe, we will use the Demo recipe.  Again,
 we will specify the processed calibrations, bias and flat, we wish to use.</p>
-<div class="highlight-python"><div class="highlight"><pre>reduce ../data_for_reduce_demo/N20120203S028?.fits \
+<div class="highlight-python"><pre>reduce ../data_for_reduce_demo/N20120203S028?.fits \
    --override_cal processed_bias:N20120202S0955_bias.fits \
                   processed_flat:N20120123S0123_flat.fits \
    -r reduceDemo \
-   -p clobber=True
-</pre></div>
+   -p clobber=True</pre>
 </div>
 <p>The demo data was obtained with the z&#8217; filter, therefore the images contain fringing.
 The <tt class="docutils literal"><span class="pre">makeFringe</span></tt> and <tt class="docutils literal"><span class="pre">fringeCorrect</span></tt> primitives are filter-aware, they will do
@@ -336,7 +331,7 @@ with 4 GB of memory.</p>
     </div>
     <div class="footer">
         &copy; Copyright 2014, Kennneth Anderson.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
     </div>
   </body>
 </html>
