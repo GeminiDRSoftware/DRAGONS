@@ -121,7 +121,7 @@ def typewalk_argparser():
     parser.add_argument("--typology", dest="onlyTypology", action="store_true",
                       help="Report data typologies only.")
 
-    parser.add_argument("--xtypes", dest="xtypes", nargs='*', default=None,
+    parser.add_argument("--xtypes", dest="xtypes", nargs='+', default=None,
                         help="Exclude <xtypes> from reporting.")
 
     return parser.parse_args()
