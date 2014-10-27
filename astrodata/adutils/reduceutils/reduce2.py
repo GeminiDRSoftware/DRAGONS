@@ -77,12 +77,12 @@ def main(args):
     log = logutils.get_logger(__name__)
     try:
         assert log.root.handlers
-        log.stdinfo("Resetting logger for application: reduce")
         log.root.handlers = []
         logutils.config(mode=args.logmode, console_lvl=args.loglevel,
                         file_name=args.logfile)
         log = logutils.get_logger(__name__)
-        log.stdinfo("Logging configured for application: reduce")
+        log.info("Logging configured for application: reduce")
+        log.info(" ")
     except AssertionError:
         pass
 
