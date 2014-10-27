@@ -3,6 +3,6 @@ Pre-requisites
 Installation instructions
 
 python setup.py install
-	Will install in Python's site-packages.
+    Will install in Python's site-packages.
 python setup.py install --prefix=/astro/iraf/i686/gempylocal
-	Will install in /astro/iraf/i686/gempylocal/lib/python2.5/site-packages.
+    Will install in /astro/iraf/i686/gempylocal/lib/python2.5/site-packages
