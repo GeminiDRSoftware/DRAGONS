@@ -168,7 +168,7 @@ def generate_outfile(outfile, olist, match_type, logical_or, xtypes):
         else:
             ofile.write("# Qualifying logic: AND\n")
         if xtypes:
-            ofile.write("# Excluded types: %s" % str(xtypes))
+            ofile.write("# Excluded types:   " + " ".join(xtypes) + "\n")
         ofile.write("# -----------------------\n")
         for ffile in olist:
             ofile.write(ffile)
