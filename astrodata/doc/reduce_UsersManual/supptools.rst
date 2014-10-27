@@ -207,6 +207,8 @@ directory. Users may specify an explicit directory with the **-d** or
                         datasets that are both GEMINI_SOUTH *and* GMOS_IMAGE.
   --status              Report data processing status only.
   --typology            Report data typologies only.
+  --xtypes XTYPES [[XTYPES ...]
+                        Exclude <xtypes> from reporting.
 
 Files are selected and reported through a regular expression mask which, 
 by default, finds all ".fits" and ".FITS" files. Users can change this mask 
@@ -242,3 +244,34 @@ Find all F2_SPECT and GMOS_SPECT datasets in a directory tree::
  $ typewalk --or --types GMOS_SPECT F2_SPECT
 
 This will also report match results to stdout, colourized if requested (**-c**).
+
+Users may find the **--xtypes** flag useful, as it provides a facility for
+filtering results further by allowing certain types to be excluded from the
+report. 
+
+For example, find GMOS_IMAGE types, but exclude ACQUISITION images from reporting::
+
+  $ typewalk --types GMOS_IMAGE --xtypes ACQUISITION
+
+  directory: ../test_data/output
+     S20131010S0105.fits ............... (GEMINI) (GEMINI_SOUTH) (GMOS) (GMOS_IMAGE) 
+     (GMOS_RAW) (GMOS_S) (IMAGE) (RAW) (SIDEREAL) (UNPREPARED)
+
+     S20131010S0105_forFringe.fits ..... (GEMINI) (GEMINI_SOUTH) (GMOS) (GMOS_IMAGE) 
+     (GMOS_S) (IMAGE) (NEEDSFLUXCAL) (OVERSCAN_SUBTRACTED) (OVERSCAN_TRIMMED) 
+     (PREPARED) (SIDEREAL)
+
+     S20131010S0105_forStack.fits ...... (GEMINI) (GEMINI_SOUTH) (GMOS) (GMOS_IMAGE) 
+     (GMOS_S) (IMAGE) (NEEDSFLUXCAL) (OVERSCAN_SUBTRACTED) (OVERSCAN_TRIMMED) 
+     (PREPARED) (SIDEREAL)
+
+Exclude ACQUISITION images that have already had some processing done::
+
+  $ typewalk --types GMOS_IMAGE --xtypes ACQUISITION PREPARED
+
+  directory: ../test_data/output
+     S20131010S0105.fits ............... (GEMINI) (GEMINI_SOUTH) (GMOS) (GMOS_IMAGE) 
+     (GMOS_RAW) (GMOS_S) (IMAGE) (RAW) (SIDEREAL) (UNPREPARED)
+
+With **--types** and **--xtypes**, users may really tune their searches for very
+specific datasets.

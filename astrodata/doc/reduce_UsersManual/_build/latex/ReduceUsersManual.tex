@@ -249,6 +249,12 @@ these terms are synonymous with \textbf{AstroDataType} unless otherwise indicate
 
 \chapter{Installation}
 \label{userenv:installation}\label{userenv::doc}
+The \code{astrodata} package has several dependencies like \code{numpy}, \code{astropy},
+and others. All dependencies of \code{gemini\_python} and \code{astrodata} are provide by
+the Ureka package, and users are highly encouraged to install and use this very
+useful package. It is an easy and, perhaps, best way to get everything you need
+and then some. Ureka is available at \href{http://ssb.stsci.edu/ureka/}{http://ssb.stsci.edu/ureka/}.
+
 Once a user has has retrieved the gemini\_python package, available as a tarfile
 from the Gemini website (\href{http://gemini.edu}{http://gemini.edu}), and untarred only minor adjustments
 need to be made to the user environment in order to make astrodata importable and
@@ -257,28 +263,79 @@ allow \code{reduce} to work properly.
 
 \section{Install}
 \label{userenv:config}\label{userenv:install}
-The \code{gemini\_python} package can be easily installed with the standard Distutils
-process. Download the gemini\_python X1 distribution (tar archive), place the
-tarfile as desired, and extract the archive:
+
+\subsection{Recommended Installation}
+\label{userenv:recommended-installation}
+It is recommended to install the software in a location other than the standard
+python location for modules (the default \code{site-packages}). This is also the
+only solution if you do not have write permission to the default \code{site-packages}.
+Here is how you install the software somewhere other than the default location:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ tar -xvf gemini\_python\_X1.tar.gz
+\$ python setup.py install --prefix=/your/favorite/location
 \end{Verbatim}
 
-Next, invoke the usual command for a standard python module installation:
+\code{/your/favorite/location} must already exist.  This command will install executable
+scripts in a \code{bin} subdirectory, the documentation in a \code{share} subdirectory,
+and the modules in a \code{lib/python2.7/site-packages} subdirectory.  The modules being
+installed are \code{astrodata}, \code{astrodata\_FITS}, \code{astrodata\_Gemini}, and \code{gempy}.
+In this manual, we will only use \code{astrodata}.
+
+Because you are not using the default location, you will need to add two paths to
+your environment.  You might want to add the following to your .cshrc or
+.bash\_profile, or equivalent shell configuration script.
+
+C shell(csh, tcsh):
 
 \begin{Verbatim}[commandchars=\\\{\}]
-python setup.py install --prefix=/somewhere/
+setenv PATH /your/favorite/location:\$\PYGZob{}PATH\PYGZcb{}
+setenv PYTHONPATH /your/favorite/location:\$\PYGZob{}PYTHONPATH\PYGZcb{}
 \end{Verbatim}
 
-This will place executables in \code{/somewhere/bin} and the package modules in
-\code{/somewhere/lib/python2.7/site-packages/}.
+Bourne shells (sh, bash, ksh, ...)
 
-Users will then need to have \code{/somewhere/bin} in \$PATH and
-\code{/somewhere/lib/python2.7/site-packages} in either \$PYTHONPATH or have that
-\code{site-packages} in sys.path.
+\begin{Verbatim}[commandchars=\\\{\}]
+export PATH=/your/favorite/location:\$\PYGZob{}PATH\PYGZcb{}
+export PYTHONPATH=/your/favorite/location:\$\PYGZob{}PYTHONPATH\PYGZcb{}
+\end{Verbatim}
 
-\code{reduce} is made available on the command line once the installation is complete.
+If you added those lines to your shell configuration script, make sure your
+\code{source} the file to activate the new setting.
+
+For csh/tcsh:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\$ source \textasciitilde{}/.cshrc
+\$ rehash
+\end{Verbatim}
+
+For bash:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\$ source \textasciitilde{}/.bash\_profile
+\end{Verbatim}
+
+
+\subsection{Installation under Ureka}
+\label{userenv:installation-under-ureka}
+Assuming that you have installed Ureka and that you have write access to the Ureka
+directory, this will install \code{astrodata} in the Ureka \code{site-packages} directory.
+WARNING: While easier to install and configure, this will modify your Ureka
+installation.
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\$ python setup.py install
+\end{Verbatim}
+
+This will also add executables to the Ureka \code{bin} directory and documentation to
+the Ureka \code{share} directory.
+
+With this installation scheme, there is no need to add paths to your environment.
+However, it is a lot more complicated to remove the Gemini software in case of
+problems, or if you just want to clean it out after evaluation.
+
+In tcsh, you will need to run \code{rehash} to pick the new executables written to
+\code{bin}.
 
 
 \section{Test the installation}
@@ -1213,6 +1270,8 @@ directory. Users may specify an explicit directory with the \textbf{-d} or
                       datasets that are both GEMINI\_SOUTH *and* GMOS\_IMAGE.
 --status              Report data processing status only.
 --typology            Report data typologies only.
+--xtypes XTYPES [[XTYPES ...]
+                      Exclude \textless{}xtypes\textgreater{} from reporting.
 \end{Verbatim}
 
 Files are selected and reported through a regular expression mask which,
@@ -1253,6 +1312,41 @@ Find all F2\_SPECT and GMOS\_SPECT datasets in a directory tree:
 \end{Verbatim}
 
 This will also report match results to stdout, colourized if requested (\textbf{-c}).
+
+Users may find the \textbf{--xtypes} flag useful, as it provides a facility for
+filtering results further by allowing certain types to be excluded from the
+report.
+
+For example, find GMOS\_IMAGE types, but exclude ACQUISITION images from reporting:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\$ typewalk --types GMOS\_IMAGE --xtypes ACQUISITION
+
+directory: ../test\_data/output
+   S20131010S0105.fits ............... (GEMINI) (GEMINI\_SOUTH) (GMOS) (GMOS\_IMAGE)
+   (GMOS\_RAW) (GMOS\_S) (IMAGE) (RAW) (SIDEREAL) (UNPREPARED)
+
+   S20131010S0105\_forFringe.fits ..... (GEMINI) (GEMINI\_SOUTH) (GMOS) (GMOS\_IMAGE)
+   (GMOS\_S) (IMAGE) (NEEDSFLUXCAL) (OVERSCAN\_SUBTRACTED) (OVERSCAN\_TRIMMED)
+   (PREPARED) (SIDEREAL)
+
+   S20131010S0105\_forStack.fits ...... (GEMINI) (GEMINI\_SOUTH) (GMOS) (GMOS\_IMAGE)
+   (GMOS\_S) (IMAGE) (NEEDSFLUXCAL) (OVERSCAN\_SUBTRACTED) (OVERSCAN\_TRIMMED)
+   (PREPARED) (SIDEREAL)
+\end{Verbatim}
+
+Exclude ACQUISITION images that have already had some processing done:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\$ typewalk --types GMOS\_IMAGE --xtypes ACQUISITION PREPARED
+
+directory: ../test\_data/output
+   S20131010S0105.fits ............... (GEMINI) (GEMINI\_SOUTH) (GMOS) (GMOS\_IMAGE)
+   (GMOS\_RAW) (GMOS\_S) (IMAGE) (RAW) (SIDEREAL) (UNPREPARED)
+\end{Verbatim}
+
+With \textbf{--types} and \textbf{--xtypes}, users may really tune their searches for very
+specific datasets.
 
 
 \chapter{Discussion}
