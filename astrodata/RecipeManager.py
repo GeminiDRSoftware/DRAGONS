@@ -1930,7 +1930,7 @@ class RecipeLibrary(object):
                 #p rint "RM1918:", dir(ro)
             else:
                 raise RecipeError("Error: Recipe Source for '%s' Not Found\n\ttype=%s, instruction_name=%s, src=%s"
-                                    % (name, astrotype, name, src), name = name)
+                                    % (name, astrotype, name, src))
         elif dataset != None:
             gd, bnc = open_if_name(dataset)
             types = gd.types
