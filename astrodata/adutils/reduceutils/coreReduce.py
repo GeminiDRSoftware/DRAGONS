@@ -157,6 +157,7 @@ class Reduce(object):
 
         def __shutdown_proxy(msg):
             if adcc_proc is None:
+                log.stdinfo(str(msg))
                 return
 
             if adcc_proc.poll() is None:
@@ -241,9 +242,9 @@ class Reduce(object):
                 break
 
         if xstat != 0:
-            msg = "\n\nreduce terminated on status: %d" % xstat
+            msg = "reduce instance aborted."
         else:
-            msg = "\n\nreduce completed successfully."
+            msg = "\nreduce completed successfully."
         reduceServer.finished = True
         if prs.registered:
             prs.unregister()
