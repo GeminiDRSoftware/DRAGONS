@@ -176,7 +176,7 @@ try:
     #print 'TIME:', (oet -ost)
     b = datetime.now()
 
-    from astrodata.usercalibrationservice import user_cal_service
+    from astrodata.adutils.usercalibrationservice import user_cal_service
     if options.user_cals:
         user_cals = options.user_cals.split(",")
         for user_cal in user_cals:
@@ -216,7 +216,7 @@ try:
     useTK =  options.bMonitor
     # ------
     #$Id: recipeman.py,v 1.8 2008/08/05 03:28:06 callen Exp $
-    from astrodata.tkMonitor import *
+    from astrodata.adutils.tkMonitor import *
 
     adatadir = "./recipedata/"
     calindfile = "./.reducecache/calindex.pkl"
@@ -227,7 +227,7 @@ try:
 
     # do debug modes first
     if options.throwDescriptorExceptions:
-        from astrodata.debugmodes import set_descriptor_throw
+        from astrodata.adutils.debugmodes import set_descriptor_throw
         set_descriptor_throw(True)
         
     if options.invoked:

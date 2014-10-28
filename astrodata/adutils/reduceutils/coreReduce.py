@@ -35,10 +35,10 @@ from astrodata.ReductionObjects import command_clause
 
 from astrodata.adutils import logutils
 from astrodata.adutils.terminal import IrafStdout
-from astrodata.usercalibrationservice import user_cal_service
+from astrodata.adutils.usercalibrationservice import user_cal_service
 
 from astrodata.gdpgutil import cluster_by_groupid
-from astrodata.debugmodes import set_descriptor_throw
+from astrodata.adutils.debugmodes import set_descriptor_throw
 
 import parseUtils
 

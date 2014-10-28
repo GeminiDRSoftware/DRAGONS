@@ -219,7 +219,7 @@ class DataSpider(object):
             batchno = batchnum
 
         if raiseExcept:
-            from astrodata.debugmodes import set_descriptor_throw
+            from astrodata.adutils.debugmodes import set_descriptor_throw
             set_descriptor_throw(True)
 
         if stayTop == True:

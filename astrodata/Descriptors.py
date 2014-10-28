@@ -159,7 +159,7 @@ def get_calculator(dataset):
         concreteCalcClass = type("CompositeCalcClass", tuple(foundcalcs), {})
         finalCalc = concreteCalcClass()
         
-        from debugmodes import get_descriptor_throw
+        from astrodata.adutils.debugmodes import get_descriptor_throw
         finalCalc.throwExceptions = get_descriptor_throw()
         return finalCalc
 

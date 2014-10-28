@@ -1,8 +1,4 @@
-from astrodata import RecipeManager
-from astrodata.RecipeManager import RecipeLibrary, centralPrimitivesCatalog
 import inspect
-from astrodata.mkcalciface import get_calculator_interface
-
 
 def get_primitives(primsetInstance):
     def pred(tob):
