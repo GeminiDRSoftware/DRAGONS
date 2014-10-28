@@ -365,32 +365,33 @@ class ADCCHandler(BaseHTTPRequestHandler):
             self.end_headers()
             
             reduce_params = json.loads(pdict)
-            if reduce_params.has_key("filepath"):
-                fp = reduce_params["filepath"]
-            else:
-                fp = None
 
-            if reduce_params.has_key("options"):
-                opt = reduce_params["options"]
-            else:
-                opt = None
-
-            if reduce_params.has_key("parameters"):
-                prm = reduce_params["parameters"]
-            else:
-                prm = None
-
+            # get() returns None if no key
+            fp  = reduce_params.get("filepath")
+            opt = reduce_params.get("options")
+            prm = reduce_params.get("parameters")
             cmdlist = ["reduce", "--invoked"]
-            if opt is not None:
-                for key in opt:
-                    cmdlist.extend(["--" + str(key), str(opt[key])])
+
+            # reduce_beta is the old reduce, deprecated @Rev4949
+            #cmdlist = ["reduce_beta", "--invoked"]
+
+            # cmdlist built for reduce2 parameters (-p) field, i.e. no commas
             if prm is not None:
-                prm_str = ""
-                for key in prm:
-                    prm_str += str(key) + "=" + str(prm[key]) + ","
-                if prm_str:
-                    prm_str = prm_str.rstrip(",")
-                cmdlist.extend(["-p", prm_str])
+                cmdlist.extend(["-p"])
+                cmdlist.extend([str(key)+"="+str(val) for key,val in prm.items()])
+
+            if opt is not None:
+                for key,val in opt.items():
+                    cmdlist.extend(["--"+str(key), str(val)])
+
+            # build for reduce_beat parameters (-p) field, i.e. w/ commas
+            # if prm is not None:
+            #     prm_str = ""
+            #     for key in prm:
+            #         prm_str += str(key) + "=" + str(prm[key]) + ","
+            #     if prm_str:
+            #         prm_str = prm_str.rstrip(",")
+            #     cmdlist.extend(["-p", prm_str])
 
             if fp is not None:
                 cmdlist.append(str(fp))
