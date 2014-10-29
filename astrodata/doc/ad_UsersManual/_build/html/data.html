@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>7. Pixel Data &mdash; AstroData Users Manual 0.9.0 documentation</title>
+    <title>5. Pixel Data &mdash; AstroData Users Manual 0.9.0 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -25,8 +25,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="AstroData Users Manual 0.9.0 documentation" href="index.html" />
-    <link rel="next" title="8. Table Data" href="tables.html" />
-    <link rel="prev" title="6. FITS Headers" href="headers.html" /> 
+    <link rel="next" title="6. Table Data" href="tables.html" />
+    <link rel="prev" title="4. FITS Headers" href="headers.html" /> 
   </head>
   <body>
     <div class="related">
@@ -36,10 +36,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="tables.html" title="8. Table Data"
+          <a href="tables.html" title="6. Table Data"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="headers.html" title="6. FITS Headers"
+          <a href="headers.html" title="4. FITS Headers"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
       </ul>
@@ -51,9 +51,9 @@
           <div class="body">
             
   <div class="section" id="pixel-data">
-<span id="data"></span><h1>7. Pixel Data<a class="headerlink" href="#pixel-data" title="Permalink to this headline">¶</a></h1>
+<span id="data"></span><h1>5. Pixel Data<a class="headerlink" href="#pixel-data" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="operate-on-the-pixel-data">
-<h2>7.1. Operate on the Pixel Data<a class="headerlink" href="#operate-on-the-pixel-data" title="Permalink to this headline">¶</a></h2>
+<h2>5.1. Operate on the Pixel Data<a class="headerlink" href="#operate-on-the-pixel-data" title="Permalink to this headline">¶</a></h2>
 <p>The pixel data is stored as a numpy ndarray.  This means that anything that can be done with numpy on a ndarray
 can be done on the pixel data stored in the AstroData object.  Examples include arithmetic, statistics, display,
 plotting, etc.  Please refer to numpy documentation for details on what it offers.  In this chapter, we will
@@ -77,7 +77,7 @@ present some typical examples.</p>
 </div>
 </div>
 <div class="section" id="arithmetic-on-astrodata-objects">
-<h2>7.2. Arithmetic on AstroData Objects<a class="headerlink" href="#arithmetic-on-astrodata-objects" title="Permalink to this headline">¶</a></h2>
+<h2>5.2. Arithmetic on AstroData Objects<a class="headerlink" href="#arithmetic-on-astrodata-objects" title="Permalink to this headline">¶</a></h2>
 <p>AstroData supports basic arithmetic directly: addition, subtraction, multiplication, division.
 The big advantage of using the AstroData implementation of those operator is that if the
 AstroData object has variance and data quality planes, those will be calculated and propagated
@@ -183,7 +183,7 @@ propagate correctly, you will have to do the math yourself.</p>
 </div>
 </div>
 <div class="section" id="variance">
-<h2>7.3. Variance<a class="headerlink" href="#variance" title="Permalink to this headline">¶</a></h2>
+<h2>5.3. Variance<a class="headerlink" href="#variance" title="Permalink to this headline">¶</a></h2>
 <p>Here we demonstrate the variance propagation when using AstroData arithmetic methods.
 First let us create and append variance planes to our file.  We will just add the poisson
 noise and ignore read noise for the purpose of this example.</p>
@@ -244,7 +244,7 @@ the variance accordingly was <tt class="docutils literal"><span class="pre">ad.m
 </div>
 </div>
 <div class="section" id="display">
-<h2>7.4. Display<a class="headerlink" href="#display" title="Permalink to this headline">¶</a></h2>
+<h2>5.4. Display<a class="headerlink" href="#display" title="Permalink to this headline">¶</a></h2>
 <p>Displaying <tt class="docutils literal"><span class="pre">numpy</span></tt> arrays from Python is straighforward with the <tt class="docutils literal"><span class="pre">numdisplay</span></tt> module.
 The module also has a function to read the position the cursor, which can be useful when
 developing an interactive task.</p>
@@ -283,7 +283,7 @@ It does not respond to mouse clicks, but it does respond to keyboard entries.:</
 </div>
 </div>
 <div class="section" id="useful-tools-from-the-numpy-and-scipy-modules">
-<h2>7.5. Useful tools from the Numpy and SciPy Modules<a class="headerlink" href="#useful-tools-from-the-numpy-and-scipy-modules" title="Permalink to this headline">¶</a></h2>
+<h2>5.5. Useful tools from the Numpy and SciPy Modules<a class="headerlink" href="#useful-tools-from-the-numpy-and-scipy-modules" title="Permalink to this headline">¶</a></h2>
 <p>The <tt class="docutils literal"><span class="pre">numpy</span></tt> and <tt class="docutils literal"><span class="pre">scipy</span></tt> modules offer a multitude of functions and tools.  They
 both have their own documentation.  Here we simply highlight a few functions that
 could be used for common things an astronomer might want to do.  The idea is to
@@ -341,7 +341,7 @@ get the reader started in her exploration of <tt class="docutils literal"><span 
 The reader should refer to those packages&#8217; documentation to learn more.</p>
 </div>
 <div class="section" id="using-the-astrodata-data-quality-plane">
-<h2>7.6. Using the AstroData Data Quality Plane<a class="headerlink" href="#using-the-astrodata-data-quality-plane" title="Permalink to this headline">¶</a></h2>
+<h2>5.6. Using the AstroData Data Quality Plane<a class="headerlink" href="#using-the-astrodata-data-quality-plane" title="Permalink to this headline">¶</a></h2>
 <div class="admonition-todo admonition" id="index-0">
 <p class="first admonition-title">Todo</p>
 <p class="last">Write examples that use the DQ plane.  Eg. transform DQ plane in a numpy mask
@@ -349,7 +349,7 @@ and do statistics.</p>
 </div>
 </div>
 <div class="section" id="manipulate-data-sections">
-<h2>7.7. Manipulate Data Sections<a class="headerlink" href="#manipulate-data-sections" title="Permalink to this headline">¶</a></h2>
+<h2>5.7. Manipulate Data Sections<a class="headerlink" href="#manipulate-data-sections" title="Permalink to this headline">¶</a></h2>
 <p>Sections of the data array can be accessed and processed.  It is important to
 note here that when indexing a numpy array, the left most number refers to the
 highest dimension&#8217;s axis (eg. in IRAF sections are in (x,y) format, in Python
@@ -397,7 +397,7 @@ functions, data sections, numpy 0-based arrays, and numpy statistics function me
 </div>
 </div>
 <div class="section" id="work-on-data-cubes">
-<h2>7.8. Work on Data Cubes<a class="headerlink" href="#work-on-data-cubes" title="Permalink to this headline">¶</a></h2>
+<h2>5.8. Work on Data Cubes<a class="headerlink" href="#work-on-data-cubes" title="Permalink to this headline">¶</a></h2>
 <div class="admonition-todo admonition" id="index-1">
 <p class="first admonition-title">Todo</p>
 <p class="last">write some intro to the data cube section and example</p>
@@ -434,7 +434,7 @@ functions, data sections, numpy 0-based arrays, and numpy statistics function me
 </div>
 </div>
 <div class="section" id="plot-data">
-<h2>7.9. Plot Data<a class="headerlink" href="#plot-data" title="Permalink to this headline">¶</a></h2>
+<h2>5.9. Plot Data<a class="headerlink" href="#plot-data" title="Permalink to this headline">¶</a></h2>
 <p>In Python, the main tool to create plots is <tt class="docutils literal"><span class="pre">matplotlib</span></tt>.  We have used it in the
 previous section on data cubes.  Here we do not aimed at covering all of <tt class="docutils literal"><span class="pre">matplotlib</span></tt>;
 the reader should refer to that package&#8217;s documentation.  Rather we will give a few
@@ -490,26 +490,26 @@ examples that might be of use for quick inspection of the data.</p>
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">7. Pixel Data</a><ul>
-<li><a class="reference internal" href="#operate-on-the-pixel-data">7.1. Operate on the Pixel Data</a></li>
-<li><a class="reference internal" href="#arithmetic-on-astrodata-objects">7.2. Arithmetic on AstroData Objects</a></li>
-<li><a class="reference internal" href="#variance">7.3. Variance</a></li>
-<li><a class="reference internal" href="#display">7.4. Display</a></li>
-<li><a class="reference internal" href="#useful-tools-from-the-numpy-and-scipy-modules">7.5. Useful tools from the Numpy and SciPy Modules</a></li>
-<li><a class="reference internal" href="#using-the-astrodata-data-quality-plane">7.6. Using the AstroData Data Quality Plane</a></li>
-<li><a class="reference internal" href="#manipulate-data-sections">7.7. Manipulate Data Sections</a></li>
-<li><a class="reference internal" href="#work-on-data-cubes">7.8. Work on Data Cubes</a></li>
-<li><a class="reference internal" href="#plot-data">7.9. Plot Data</a></li>
+<li><a class="reference internal" href="#">5. Pixel Data</a><ul>
+<li><a class="reference internal" href="#operate-on-the-pixel-data">5.1. Operate on the Pixel Data</a></li>
+<li><a class="reference internal" href="#arithmetic-on-astrodata-objects">5.2. Arithmetic on AstroData Objects</a></li>
+<li><a class="reference internal" href="#variance">5.3. Variance</a></li>
+<li><a class="reference internal" href="#display">5.4. Display</a></li>
+<li><a class="reference internal" href="#useful-tools-from-the-numpy-and-scipy-modules">5.5. Useful tools from the Numpy and SciPy Modules</a></li>
+<li><a class="reference internal" href="#using-the-astrodata-data-quality-plane">5.6. Using the AstroData Data Quality Plane</a></li>
+<li><a class="reference internal" href="#manipulate-data-sections">5.7. Manipulate Data Sections</a></li>
+<li><a class="reference internal" href="#work-on-data-cubes">5.8. Work on Data Cubes</a></li>
+<li><a class="reference internal" href="#plot-data">5.9. Plot Data</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="headers.html"
-                        title="previous chapter">6. FITS Headers</a></p>
+                        title="previous chapter">4. FITS Headers</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="tables.html"
-                        title="next chapter">8. Table Data</a></p>
+                        title="next chapter">6. Table Data</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/data.txt"
@@ -539,10 +539,10 @@ examples that might be of use for quick inspection of the data.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="tables.html" title="8. Table Data"
+          <a href="tables.html" title="6. Table Data"
              >next</a> |</li>
         <li class="right" >
-          <a href="headers.html" title="6. FITS Headers"
+          <a href="headers.html" title="4. FITS Headers"
              >previous</a> |</li>
         <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
       </ul>

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>8. Table Data &mdash; AstroData Users Manual 0.9.0 documentation</title>
+    <title>6. Table Data &mdash; AstroData Users Manual 0.9.0 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -25,8 +25,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="AstroData Users Manual 0.9.0 documentation" href="index.html" />
-    <link rel="next" title="9. Log Utility" href="logging.html" />
-    <link rel="prev" title="7. Pixel Data" href="data.html" /> 
+    <link rel="next" title="7. Log Utility" href="logging.html" />
+    <link rel="prev" title="5. Pixel Data" href="data.html" /> 
   </head>
   <body>
     <div class="related">
@@ -36,10 +36,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="logging.html" title="9. Log Utility"
+          <a href="logging.html" title="7. Log Utility"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="data.html" title="7. Pixel Data"
+          <a href="data.html" title="5. Pixel Data"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
       </ul>
@@ -51,13 +51,13 @@
           <div class="body">
             
   <div class="section" id="table-data">
-<h1>8. Table Data<a class="headerlink" href="#table-data" title="Permalink to this headline">¶</a></h1>
+<h1>6. Table Data<a class="headerlink" href="#table-data" title="Permalink to this headline">¶</a></h1>
 <p><tt class="docutils literal"><span class="pre">Astrodata</span></tt> does not provide any special wrappers for FITS Table Data.  But
 since <tt class="docutils literal"><span class="pre">astrodata</span></tt> is built on top of <tt class="docutils literal"><span class="pre">pyfits</span></tt>, the standard <tt class="docutils literal"><span class="pre">pyfits</span></tt>
 table functions can be used.  The reader should refer to the <tt class="docutils literal"><span class="pre">pyfits</span></tt> documentation
 for complete details.  Here we show a few useful examples of basic usage.</p>
 <div class="section" id="read-from-a-fits-table">
-<h2>8.1. Read from a FITS Table<a class="headerlink" href="#read-from-a-fits-table" title="Permalink to this headline">¶</a></h2>
+<h2>6.1. Read from a FITS Table<a class="headerlink" href="#read-from-a-fits-table" title="Permalink to this headline">¶</a></h2>
 <p>A FITS table is stored in a MEF file as a <tt class="docutils literal"><span class="pre">BinTableHDU</span></tt>.  The table data is retrieved from
 the <tt class="docutils literal"><span class="pre">AstroData</span></tt> object with the same <tt class="docutils literal"><span class="pre">.data</span></tt> attribute as for pixel extension, but for
 FITS tables <tt class="docutils literal"><span class="pre">.data</span></tt> returns a <tt class="docutils literal"><span class="pre">FITS_rec</span></tt>, which is a <tt class="docutils literal"><span class="pre">pyfits</span></tt> class.  Here is how to
@@ -94,7 +94,7 @@ get information out of a FITS table.:</p>
 </div>
 </div>
 <div class="section" id="create-a-fits-table">
-<h2>8.2. Create a FITS Table<a class="headerlink" href="#create-a-fits-table" title="Permalink to this headline">¶</a></h2>
+<h2>6.2. Create a FITS Table<a class="headerlink" href="#create-a-fits-table" title="Permalink to this headline">¶</a></h2>
 <p>Creating a FITS table is mostly a matter of creating the columns, name and data.
 The name is a string, the data is stored in a <tt class="docutils literal"><span class="pre">numpy</span></tt> array.:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
@@ -130,7 +130,7 @@ The name is a string, the data is stored in a <tt class="docutils literal"><span
 the <tt class="docutils literal"><span class="pre">.append()</span></tt> function.</p>
 </div>
 <div class="section" id="operate-on-a-fits-table">
-<h2>8.3. Operate on a FITS Table<a class="headerlink" href="#operate-on-a-fits-table" title="Permalink to this headline">¶</a></h2>
+<h2>6.3. Operate on a FITS Table<a class="headerlink" href="#operate-on-a-fits-table" title="Permalink to this headline">¶</a></h2>
 <p>The <tt class="docutils literal"><span class="pre">pyfits</span></tt> manual is the recommended source for a more complete documentation
 on working on FITS table with Python.  Here are a few examples of what one can
 modify a FITS table.:</p>
@@ -241,20 +241,20 @@ modify a FITS table.:</p>
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">8. Table Data</a><ul>
-<li><a class="reference internal" href="#read-from-a-fits-table">8.1. Read from a FITS Table</a></li>
-<li><a class="reference internal" href="#create-a-fits-table">8.2. Create a FITS Table</a></li>
-<li><a class="reference internal" href="#operate-on-a-fits-table">8.3. Operate on a FITS Table</a></li>
+<li><a class="reference internal" href="#">6. Table Data</a><ul>
+<li><a class="reference internal" href="#read-from-a-fits-table">6.1. Read from a FITS Table</a></li>
+<li><a class="reference internal" href="#create-a-fits-table">6.2. Create a FITS Table</a></li>
+<li><a class="reference internal" href="#operate-on-a-fits-table">6.3. Operate on a FITS Table</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="data.html"
-                        title="previous chapter">7. Pixel Data</a></p>
+                        title="previous chapter">5. Pixel Data</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="logging.html"
-                        title="next chapter">9. Log Utility</a></p>
+                        title="next chapter">7. Log Utility</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/tables.txt"
@@ -284,10 +284,10 @@ modify a FITS table.:</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="logging.html" title="9. Log Utility"
+          <a href="logging.html" title="7. Log Utility"
              >next</a> |</li>
         <li class="right" >
-          <a href="data.html" title="7. Pixel Data"
+          <a href="data.html" title="5. Pixel Data"
              >previous</a> |</li>
         <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
       </ul>

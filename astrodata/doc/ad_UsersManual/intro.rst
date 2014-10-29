@@ -44,7 +44,7 @@ install the software somewhere other than the default location::
 scripts in a ``bin`` subdirectory, the documentation in a ``share`` subdirectory,
 and the modules in a ``lib/python2.7/site-packages`` subdirectory.  The modules being
 installed are ``astrodata``, ``astrodata_FITS``, ``astrodata_Gemini``, and ``gempy``.
-In this manual, we will only use ``astrodata``.
+In this manual, we will not use ``gempy``.
 
 Because you are not using the default location, you will need to add two paths to
 your environment.  You might want to add the following to your .cshrc or .bash_profile,

@@ -12,17 +12,23 @@ AstroData User's Manual
    :maxdepth: 2
    
    intro
-   tutorial
    io
-   structure
    types
    headers
    data
    tables
-   logging
-   validation
-   advanced
-   other
-   descriptors
+
+.. raw:: latex
+
+   % Set up the appendix mode and modify the LaTeX toc behavior
+   \appendix
+   \noappendicestocpagenum
+   \addappheadtotoc
+
+.. toctree::
+   :maxdepth: 1
    
+   appendices/appendix_descriptors
+   
+
 .. todolist::

@@ -12,19 +12,20 @@ AstroData User's Manual
    :maxdepth: 2
    
    intro
-   tutorial
    io
-   structure
    types
    headers
    data
    tables
-   logging
-   validation
-   advanced
-   other
-   descriptors
    
+Appendix
+--------
+
+.. toctree::
+   :numbered:
+   :maxdepth: 1
+   
+   appendices/appendix_descriptors
 
 Indices and tables
 ==================

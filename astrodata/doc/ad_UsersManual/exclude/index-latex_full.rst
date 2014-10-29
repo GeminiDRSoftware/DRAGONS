@@ -17,22 +17,10 @@ AstroData User's Manual
    headers
    data
    tables
+   logging
+   validation
+   advanced
+   other
+   descriptors
    
-Appendix
---------
-
-.. toctree::
-   :numbered:
-   :maxdepth: 1
-   
-   appendices/appendix_descriptors
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
 .. todolist::
-
