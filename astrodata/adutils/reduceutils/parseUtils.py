@@ -17,8 +17,12 @@ __version_date__ = '$Date$'[7:-3]
 # the ArgumentParser "fromfile" facility, customized "action" classes, and a 
 # customized help formatter, the ReduceHelpFormatter class.
 # ------------------------------------------------------------------------------
-""" This module provides command line parsing facilities tuned to reduce and 
+_release = 'X1'
+# ------------------------------------------------------------------------------
+""" 
+This module provides command line parsing facilities tuned to reduce and 
 GDPSG requirements on handling reduce arguments.
+
 """
 import os
 import re
@@ -79,10 +83,10 @@ class ReduceArgumentParser(ArgumentParser):
 
 # ------------------------------------------------------------------------------
 def buildParser(version):
-    parser = ReduceArgumentParser(description="_"*11 + 
-                                  " Gemini Observatory Recipe System Processor "
-                                  " (v1.1 2013) " + "_"*10 + "\n" + "_"*30 +\
-                                  " Written by GDPSG " + "_"*29, prog="reduce2",
+    parser = ReduceArgumentParser(description="_"*17 + 
+                                  " Gemini Observatory Recipe System Processor " + 
+                                  "_"*15 + "\n" + "_"*25 + " gemini_python Release "+
+                                  _release + " " + "_"*25, prog="reduce",
                                   formatter_class=ReduceHelpFormatter,
                                   fromfile_prefix_chars='@')
 

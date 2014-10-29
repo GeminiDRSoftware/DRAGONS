@@ -13,7 +13,7 @@ __version_date__ = '$Date$'[7:-3]
 # reduce2.py -- refactored reduce, cl parsing exported, functionalized.
 #               see parseUtils.py
 # ------------------------------------------------------------------------------
-#__version__ = '2.0'
+_version = '2.0'
 # ------------------------------------------------------------------------------
 """
 This module (reduce2) provides a functionalized interface to running the core 
@@ -86,7 +86,10 @@ def main(args):
     except AssertionError:
         pass
 
-    log.stdinfo("\t\t\t--- reduce, v%s ---" % __version__)
+    try:
+        log.stdinfo("\t\t\t--- reduce, v%s ---" % _version)
+    except NameError:
+        log.stdinfo("\t\t\t--- reduce, v%s ---" % __version__)
     log.stdinfo("\t\tRunning under astrodata Version "+ ad_version)
     r_reduce = Reduce(args)
     try:
@@ -105,7 +108,8 @@ def main(args):
 
 # --------------------------------------------------------------------------
 if __name__ == "__main__":
-    parser = parseUtils.buildParser(__version__)
+    version_report = _version + "(r" + __version__.strip() + ")"
+    parser = parseUtils.buildParser(version_report)
     args   = parser.parse_args()
 
     if args.displayflags:
