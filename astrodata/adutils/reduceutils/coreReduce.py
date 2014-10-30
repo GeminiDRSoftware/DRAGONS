@@ -505,9 +505,18 @@ class Reduce(object):
         clobber = co["clobber"]
         for output in outputs:
             ad = output.ad
+            adname = ad.filename
+            if self.suffix:
+                origname, user_name = self._make_user_name(adname, self.suffix)
             try:
-                ad.write(clobber=clobber, suffix=self.suffix, rename=True)
-                log.stdinfo("Wrote %s in output directory" % ad.filename)
+                if origname and user_name:
+                    ad.write(filename=origname, clobber=clobber, suffix=self.suffix, 
+                             rename=True)
+                    log.stdinfo("Wrote %s in output directory" % user_name)
+                else:
+                    ad.write(filename=origname, clobber=clobber, suffix=self.suffix, 
+                             rename=True)
+                    log.stdinfo("Wrote %s in output directory" % ad.filename)
             except Errors.OutputExists:
                 log.error( "%s exists. Will not write." % ad.filename)
             except Errors.AstroDataReadonlyError, err:
@@ -569,6 +578,53 @@ class Reduce(object):
         co.update({'calurl_dict':calurldict})
 
         return co
+
+    def _make_user_name(self, adname, suffix):
+        """
+        Method recieves a passed AstroData filename, adname and the user-supplied
+        suffix (command line --suffix flag), in order to strip off primitive
+        suffixes and replace any and all of those with the final user suffix.
+        The method must *assume* that processing has only appended underscored 
+        suffixes to the original filename. This is a reasonable assumption for QAP 
+        and astrodata_Gemini; primitives *only* appended suffixes like "_forStack", 
+        "_addVAR", etc.. Other (future) packages are *not* guaranteed to do only 
+        this.
+
+        This should be considered a superficial, X1-only solution to the problem
+        of the user supplied --suffix issue (See Trac #403 for discussion).
+        The problem is properly addressed by AstroData and the write() method.
+        Currently, AstroData.write() does not and cannot distinguish a
+        suffix passed by primitives and other funtion calls  and one that may be 
+        passed by reduce from the --suffix command line flag. Discussion in
+        Trac #403 generally agrees that the user-supplied --suffix flag
+        should *override* any and all other suffixes on the final output 
+        file(s).
+
+        :parameter adname: filename to convert with a user supplied suffix,
+                           self.suffix.
+        :type adname: <str>
+
+        :parameter suffix: suffix supplied to the reduce command line with
+                           --suffix flag
+        :type suffix: <str>
+
+        :returns: New filename with user suffix. This should be the original
+                  input filename head + suffix + ext.
+                  Eg., file_suffix.fits
+        :rtype: <str>
+
+        """
+        origname = None
+        usrname  = None
+        adhead, adtail = os.path.splitext(adname)
+        for infile in self.files:
+            infile_base = os.path.basename(infile)
+            inhead, intail = os.path.splitext(infile_base)
+            if inhead in adhead:
+                origname = infile_base
+                usrname  = adname.replace(adhead, inhead + suffix)
+                break
+        return origname, usrname
 
     def _write_context_log(self, co=None, bReportHistory=False):
         """ Write a context report in the event of a non-specific
