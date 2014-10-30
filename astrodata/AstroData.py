@@ -452,7 +452,7 @@ class AstroData(CalculatorInterface):
     @property
     def data(self):
         """
-        The data property can only be used for single-HDU AstroData
+        Property: The data property can only be used for single-HDU AstroData
         instances, such as those returned during iteration. To set the 
         data member, use *ad.data = newdata*, where *newdata* must be a 
         numpy array. To get the data member, use *npdata = ad.data*.
@@ -497,12 +497,24 @@ class AstroData(CalculatorInterface):
 
     @property
     def descriptors(self):
+        """
+        Property: Returns a dictionary of all registered metadata descriptor 
+        functions defined on the instance.
+
+        Eg.,
+
+        {descriptor_function_name : descriptor value (dv)}
+
+        :returns: dict of descriptor functions
+        :rtype: <dict>
+
+        """
         return self._all_descriptors()
 
     @property
     def filename(self):
         """ 
-        'filename' is monitored so that the mode can be changed 
+        Property: 'filename' is monitored so that the mode can be changed 
         from 'readonly' when 'filename' is changed.
 
         """
@@ -518,7 +530,7 @@ class AstroData(CalculatorInterface):
     @property
     def header(self):
         """
-        Returns the header member for Single-HDU AstroData instances. 
+        Property: Returns the header member for Single-HDU AstroData instances. 
 
         The header property can only be used for single-HDU AstroData
         instances, such as those returned during iteration. It is a
@@ -553,7 +565,7 @@ class AstroData(CalculatorInterface):
     @property
     def headers(self):
         """
-        Returns header member(s) for all extension (except PHU).
+        Property: Returns header member(s) for all extension (except PHU).
 
         :returns: list of pyfits.Header instances
         :rtype:  <list>
@@ -567,7 +579,7 @@ class AstroData(CalculatorInterface):
     @property
     def hdulist(self):
         """
-        List of header-data units on the instance.
+        Property: Returns a list of header-data units on the instance.
         
         :returns: The AstroData's HDUList as returned by pyfits.open()
         :rtype:  <pyfits.HDUList>
@@ -588,6 +600,13 @@ class AstroData(CalculatorInterface):
 
     @property
     def phu(self):
+        """
+        Property: Returns the instance's primary HDU.
+
+        :returns: The instance "phu"
+        :rtype: <PrimaryHDU>
+
+        """
         return self._hdulist[0]
     
     @phu.setter
@@ -1042,6 +1061,14 @@ class AstroData(CalculatorInterface):
     # ------------------------- Classification Members -------------------------
     @property
     def types(self):
+        """
+        Property: Returns the composite list of AstroData classifications. I.e. 
+        the instance's qualified type and status classifications.
+        
+        :returns: a list of types and status strings
+        :rtype: <list> 
+
+        """
         if not self._types:
             self._discover_types()
         return self._types

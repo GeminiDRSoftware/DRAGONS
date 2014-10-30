@@ -9,6 +9,7 @@ AstroData API documentation
 .. toctree::
    :maxdepth: 2
 
+   intro
    astro_class
 
 Indices and tables

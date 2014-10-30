@@ -13,7 +13,7 @@
 
 
 \title{AstroData API Documentation}
-\date{October 21, 2014}
+\date{October 30, 2014}
 \release{X1}
 \author{Kenneth Anderson}
 \newcommand{\sphinxlogo}{}
@@ -115,14 +115,8 @@
 
 
 
-\chapter{AstroData API, Methods and Properties}
-\label{astro_class:astrodata-api-documentation}\label{astro_class:astrodata-api-methods-and-properties}\label{astro_class::doc}
-
-\section{Class AstroData}
-\label{astro_class:class-astrodata}\label{astro_class:module-astrodata.AstroData}\index{astrodata.AstroData (module)}\index{AstroData (class in astrodata.AstroData)}
-
-\begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.AstroData}\pysiglinewithargsret{\strong{class }\code{astrodata.AstroData.}\bfcode{AstroData}}{\emph{dataset=None}, \emph{phu=None}, \emph{header=None}, \emph{data=None}, \emph{exts=None}, \emph{extInsts=None}, \emph{store=None}, \emph{mode='readonly'}}{}
+\chapter{Introduction}
+\label{intro:astrodata-api-documentation}\label{intro:introduction}\label{intro::doc}
 The AstroData class abstracts datasets stored in MEF files
 and provides uniform interfaces for working on datasets from different
 instruments and modes.  Configuration packages are used to describe
@@ -133,11 +127,11 @@ MEFs can be generalized as lists of header-data units (HDU), with key-value
 pairs populating headers, and pixel values populating the data array.
 AstroData interprets a MEF as a single complex entity.  The individual
 ``extensions'' within the MEF are available using Python list (``{[}{]}'') syntax;
-they are wrapped in AstroData objects. 
-(See \code{AstroData.\_\_getitem\_\_()}).
+they are wrapped in AstroData objects.
+
 AstroData uses \code{pyfits} for MEF I/O and \code{numpy} for pixel manipulations.
 
-While the \code{pyfits} and \code{numpy} objects are available to the programmer, 
+While the \code{pyfits} and \code{numpy} objects are available to the programmer,
 \code{AstroData} provides analogous methods for most \code{pyfits} functionalities
 which allows it to maintain the dataset  as a cohesive whole. The programmer
 does however use the \code{numpy.ndarrays} directly for pixel manipulation.
@@ -145,9 +139,9 @@ does however use the \code{numpy.ndarrays} directly for pixel manipulation.
 In order to identify types of dataset and provide type-specific behavior,
 \code{AstroData} relies on configuration packages either in the \code{PYTHONPATH}
 environment variable or the \code{Astrodata} package environment variables,
-\code{ADCONFIGPATH} and \code{RECIPEPATH}. A configuration package 
+\code{ADCONFIGPATH} and \code{RECIPEPATH}. A configuration package
 (eg. \code{astrodata\_Gemini}) contains definitions for all instruments and
-modes. A configuration package contains type definitions, meta-data 
+modes. A configuration package contains type definitions, meta-data
 functions, information lookup tables, and any other code
 or information needed to handle specific types of dataset.
 
@@ -163,7 +157,7 @@ to provide consistent interfaces for obtaining common meta-data across all
 instruments and modes;
 
 \item {} 
-to relate internal extensions, e.g. discriminate between science and 
+to relate internal extensions, e.g. discriminate between science and
 variance arrays and associate them properly;
 
 \item {} 
@@ -174,9 +168,18 @@ but unknown to general purpose transformations.
 
 In general, the purpose of \code{AstroData} is to provide smart dataset-oriented
 interfaces that adapt to dataset type. The primary interfaces are for file
-handling, dataset-type checking, and managing meta-data, but \code{AstroData} 
+handling, dataset-type checking, and managing meta-data, but \code{AstroData}
 also integrates other functionalities.
 
+
+\chapter{AstroData API, Methods and Properties}
+\label{astro_class:astrodata-api-methods-and-properties}\label{astro_class::doc}
+
+\section{Class AstroData}
+\label{astro_class:class-astrodata}\label{astro_class:module-astrodata.AstroData}\index{astrodata.AstroData (module)}\index{AstroData (class in astrodata.AstroData)}
+
+\begin{fulllineitems}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData}\pysiglinewithargsret{\strong{class }\code{astrodata.AstroData.}\bfcode{AstroData}}{\emph{dataset=None}, \emph{phu=None}, \emph{header=None}, \emph{data=None}, \emph{exts=None}, \emph{extInsts=None}, \emph{store=None}, \emph{mode='readonly'}}{}
 The AstroData constructor constructs an in-memory representation of a
 dataset. If given a filename it uses pyfits to open the dataset, reads
 the header and detects applicable types. Binary data, such as pixel
@@ -254,6 +257,170 @@ at the user's command with \code{ad.write()}.
 \end{itemize}
 
 \end{description}\end{quote}
+\index{data (astrodata.AstroData.AstroData attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.data}\pysigline{\bfcode{data}}
+Property: The data property can only be used for single-HDU AstroData
+instances, such as those returned during iteration. To set the 
+data member, use \emph{ad.data = newdata}, where \emph{newdata} must be a 
+numpy array. To get the data member, use \emph{npdata = ad.data}.
+
+The ``data'' member returns appropriate HDU's data member(s) specifically
+for the case in which the AstroData instance has ONE HDU (in 
+addition to the PHU). This allows a single-extension AstroData, 
+such as AstroData generates through iteration, to be used as though 
+it simply is just the one extension. One is dealing with single 
+extension AstroData instances when iterating over the AstroData 
+extensions  and when picking out an extension by integer or tuple 
+indexing. 
+Eg.,
+\begin{quote}
+\begin{description}
+\item[{for ad in dataset{[}SCI{]}:}] \leavevmode\begin{description}
+\item[{\# ad is a single-HDU index}] \leavevmode
+ad.data = newdata
+
+\end{description}
+
+\end{description}
+\end{quote}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+data array associated with the single extension
+
+\item[{Return type}] \leavevmode
+\textless{}ndarray\textgreater{}
+
+\item[{Raises }] \leavevmode
+Errors.SingleHDUMemberExcept
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{descriptors (astrodata.AstroData.AstroData attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.descriptors}\pysigline{\bfcode{descriptors}}
+Property: Returns a dictionary of all registered metadata descriptor 
+functions defined on the instance.
+
+Eg.,
+
+\{descriptor\_function\_name : descriptor value (dv)\}
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+dict of descriptor functions
+
+\item[{Return type}] \leavevmode
+\textless{}dict\textgreater{}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{filename (astrodata.AstroData.AstroData attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.filename}\pysigline{\bfcode{filename}}
+Property: `filename' is monitored so that the mode can be changed 
+from `readonly' when `filename' is changed.
+
+\end{fulllineitems}
+
+\index{header (astrodata.AstroData.AstroData attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.header}\pysigline{\bfcode{header}}
+Property: Returns the header member for Single-HDU AstroData instances.
+
+The header property can only be used for single-HDU AstroData
+instances, such as those returned during iteration. It is a
+property attribute which uses \emph{get\_header(..)} and
+\emph{set\_header(..)} to access the header member with the ``='' syntax.
+To set the header member, use \emph{ad.header = newheader}, where
+\emph{newheader} must be a pyfits.Header object. To get the header
+member, use \emph{hduheader = ad.header}.
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+header
+
+\item[{Return type}] \leavevmode
+pyfits.Header
+
+\item[{Raises }] \leavevmode
+Errors.SingleHDUMemberExcept
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{headers (astrodata.AstroData.AstroData attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.headers}\pysigline{\bfcode{headers}}
+Property: Returns header member(s) for all extension (except PHU).
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+list of pyfits.Header instances
+
+\item[{Return type}] \leavevmode
+\textless{}list\textgreater{}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{hdulist (astrodata.AstroData.AstroData attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.hdulist}\pysigline{\bfcode{hdulist}}
+Property: Returns a list of header-data units on the instance.
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+The AstroData's HDUList as returned by pyfits.open()
+
+\item[{Return type}] \leavevmode
+\textless{}pyfits.HDUList\textgreater{}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{phu (astrodata.AstroData.AstroData attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.phu}\pysigline{\bfcode{phu}}
+Property: Returns the instance's primary HDU.
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+The instance ``phu''
+
+\item[{Return type}] \leavevmode
+\textless{}PrimaryHDU\textgreater{}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{types (astrodata.AstroData.AstroData attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.types}\pysigline{\bfcode{types}}
+Property: Returns the composite list of AstroData classifications. I.e. 
+the instance's qualified type and status classifications.
+\begin{quote}\begin{description}
+\item[{Returns}] \leavevmode
+a list of types and status strings
+
+\item[{Return type}] \leavevmode
+\textless{}list\textgreater{}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 \index{\_\_getitem\_\_() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
@@ -317,116 +484,6 @@ AstroData instance associated with the subset of data.
 
 \item[{Raises }] \leavevmode
 KeyError, IndexError
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{data (astrodata.AstroData.AstroData attribute)}
-
-\begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.AstroData.data}\pysigline{\bfcode{data}}
-The data property can only be used for single-HDU AstroData
-instances, such as those returned during iteration. To set the 
-data member, use \emph{ad.data = newdata}, where \emph{newdata} must be a 
-numpy array. To get the data member, use \emph{npdata = ad.data}.
-
-The ``data'' member returns appropriate HDU's data member(s) specifically
-for the case in which the AstroData instance has ONE HDU (in 
-addition to the PHU). This allows a single-extension AstroData, 
-such as AstroData generates through iteration, to be used as though 
-it simply is just the one extension. One is dealing with single 
-extension AstroData instances when iterating over the AstroData 
-extensions  and when picking out an extension by integer or tuple 
-indexing. 
-Eg.,
-\begin{quote}
-\begin{description}
-\item[{for ad in dataset{[}SCI{]}:}] \leavevmode\begin{description}
-\item[{\# ad is a single-HDU index}] \leavevmode
-ad.data = newdata
-
-\end{description}
-
-\end{description}
-\end{quote}
-\begin{quote}\begin{description}
-\item[{Returns}] \leavevmode
-data array associated with the single extension
-
-\item[{Return type}] \leavevmode
-\textless{}ndarray\textgreater{}
-
-\item[{Raises }] \leavevmode
-Errors.SingleHDUMemberExcept
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{filename (astrodata.AstroData.AstroData attribute)}
-
-\begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.AstroData.filename}\pysigline{\bfcode{filename}}
-`filename' is monitored so that the mode can be changed 
-from `readonly' when `filename' is changed.
-
-\end{fulllineitems}
-
-\index{header (astrodata.AstroData.AstroData attribute)}
-
-\begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.AstroData.header}\pysigline{\bfcode{header}}
-Returns the header member for Single-HDU AstroData instances.
-
-The header property can only be used for single-HDU AstroData
-instances, such as those returned during iteration. It is a
-property attribute which uses \emph{get\_header(..)} and
-\emph{set\_header(..)} to access the header member with the ``='' syntax.
-To set the header member, use \emph{ad.header = newheader}, where
-\emph{newheader} must be a pyfits.Header object. To get the header
-member, use \emph{hduheader = ad.header}.
-\begin{quote}\begin{description}
-\item[{Returns}] \leavevmode
-header
-
-\item[{Return type}] \leavevmode
-pyfits.Header
-
-\item[{Raises }] \leavevmode
-Errors.SingleHDUMemberExcept
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{headers (astrodata.AstroData.AstroData attribute)}
-
-\begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.AstroData.headers}\pysigline{\bfcode{headers}}
-Returns header member(s) for all extension (except PHU).
-\begin{quote}\begin{description}
-\item[{Returns}] \leavevmode
-list of pyfits.Header instances
-
-\item[{Return type}] \leavevmode
-\textless{}list\textgreater{}
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{hdulist (astrodata.AstroData.AstroData attribute)}
-
-\begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.AstroData.hdulist}\pysigline{\bfcode{hdulist}}
-List of header-data units on the instance.
-\begin{quote}\begin{description}
-\item[{Returns}] \leavevmode
-The AstroData's HDUList as returned by pyfits.open()
-
-\item[{Return type}] \leavevmode
-\textless{}pyfits.HDUList\textgreater{}
 
 \end{description}\end{quote}
 

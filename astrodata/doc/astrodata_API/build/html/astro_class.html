@@ -26,7 +26,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="AstroData API X1 documentation" href="index.html" />
-    <link rel="prev" title="AstroData API documentation" href="index.html" /> 
+    <link rel="prev" title="Introduction" href="intro.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,7 +39,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="index.html" title="AstroData API documentation"
+          <a href="intro.html" title="Introduction"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">AstroData API X1 documentation</a> &raquo;</li> 
       </ul>
@@ -57,49 +57,7 @@
 <dl class="class">
 <dt id="astrodata.AstroData.AstroData">
 <em class="property">class </em><tt class="descclassname">astrodata.AstroData.</tt><tt class="descname">AstroData</tt><big>(</big><em>dataset=None</em>, <em>phu=None</em>, <em>header=None</em>, <em>data=None</em>, <em>exts=None</em>, <em>extInsts=None</em>, <em>store=None</em>, <em>mode='readonly'</em><big>)</big><a class="headerlink" href="#astrodata.AstroData.AstroData" title="Permalink to this definition">¶</a></dt>
-<dd><p>The AstroData class abstracts datasets stored in MEF files
-and provides uniform interfaces for working on datasets from different
-instruments and modes.  Configuration packages are used to describe
-the specific data characteristics, layout, and to store type-specific
-implementations.</p>
-<p>MEFs can be generalized as lists of header-data units (HDU), with key-value
-pairs populating headers, and pixel values populating the data array.
-AstroData interprets a MEF as a single complex entity.  The individual
-&#8220;extensions&#8221; within the MEF are available using Python list (&#8220;[]&#8221;) syntax;
-they are wrapped in AstroData objects. 
-(See <tt class="xref py py-meth docutils literal"><span class="pre">AstroData.__getitem__()</span></tt>).
-AstroData uses <tt class="docutils literal"><span class="pre">pyfits</span></tt> for MEF I/O and <tt class="docutils literal"><span class="pre">numpy</span></tt> for pixel manipulations.</p>
-<p>While the <tt class="docutils literal"><span class="pre">pyfits</span></tt> and <tt class="docutils literal"><span class="pre">numpy</span></tt> objects are available to the programmer, 
-<tt class="docutils literal"><span class="pre">AstroData</span></tt> provides analogous methods for most <tt class="docutils literal"><span class="pre">pyfits</span></tt> functionalities
-which allows it to maintain the dataset  as a cohesive whole. The programmer
-does however use the <tt class="docutils literal"><span class="pre">numpy.ndarrays</span></tt> directly for pixel manipulation.</p>
-<p>In order to identify types of dataset and provide type-specific behavior,
-<tt class="docutils literal"><span class="pre">AstroData</span></tt> relies on configuration packages either in the <tt class="docutils literal"><span class="pre">PYTHONPATH</span></tt>
-environment variable or the <tt class="docutils literal"><span class="pre">Astrodata</span></tt> package environment variables,
-<tt class="docutils literal"><span class="pre">ADCONFIGPATH</span></tt> and <tt class="docutils literal"><span class="pre">RECIPEPATH</span></tt>. A configuration package 
-(eg. <tt class="docutils literal"><span class="pre">astrodata_Gemini</span></tt>) contains definitions for all instruments and
-modes. A configuration package contains type definitions, meta-data 
-functions, information lookup tables, and any other code
-or information needed to handle specific types of dataset.</p>
-<p>This allows <tt class="docutils literal"><span class="pre">AstroData</span></tt> to manage access to the dataset for convenience
-and consistency. For example, <tt class="docutils literal"><span class="pre">AstroData</span></tt> is able:</p>
-<blockquote>
-<div><ul class="simple">
-<li>to allow reduction scripts to have easy access to dataset classification
-information in a consistent way across all instruments and modes;</li>
-<li>to provide consistent interfaces for obtaining common meta-data across all
-instruments and modes;</li>
-<li>to relate internal extensions, e.g. discriminate between science and 
-variance arrays and associate them properly;</li>
-<li>to help propagate header-data units important to the given instrument mode,
-but unknown to general purpose transformations.</li>
-</ul>
-</div></blockquote>
-<p>In general, the purpose of <tt class="docutils literal"><span class="pre">AstroData</span></tt> is to provide smart dataset-oriented
-interfaces that adapt to dataset type. The primary interfaces are for file
-handling, dataset-type checking, and managing meta-data, but <tt class="docutils literal"><span class="pre">AstroData</span></tt> 
-also integrates other functionalities.</p>
-<p>The AstroData constructor constructs an in-memory representation of a
+<dd><p>The AstroData constructor constructs an in-memory representation of a
 dataset. If given a filename it uses pyfits to open the dataset, reads
 the header and detects applicable types. Binary data, such as pixel
 data, is left on disk until referenced.</p>
@@ -159,6 +117,162 @@ at the user&#8217;s command with <tt class="docutils literal"><span class="pre">
 </tr>
 </tbody>
 </table>
+<dl class="attribute">
+<dt id="astrodata.AstroData.AstroData.data">
+<tt class="descname">data</tt><a class="headerlink" href="#astrodata.AstroData.AstroData.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Property: The data property can only be used for single-HDU AstroData
+instances, such as those returned during iteration. To set the 
+data member, use <em>ad.data = newdata</em>, where <em>newdata</em> must be a 
+numpy array. To get the data member, use <em>npdata = ad.data</em>.</p>
+<p>The &#8220;data&#8221; member returns appropriate HDU&#8217;s data member(s) specifically
+for the case in which the AstroData instance has ONE HDU (in 
+addition to the PHU). This allows a single-extension AstroData, 
+such as AstroData generates through iteration, to be used as though 
+it simply is just the one extension. One is dealing with single 
+extension AstroData instances when iterating over the AstroData 
+extensions  and when picking out an extension by integer or tuple 
+indexing. 
+Eg.,</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>for ad in dataset[SCI]:</dt>
+<dd><dl class="first last docutils">
+<dt># ad is a single-HDU index</dt>
+<dd>ad.data = newdata</dd>
+</dl>
+</dd>
+</dl>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">data array associated with the single extension</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">&lt;ndarray&gt;</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises :</th><td class="field-body">Errors.SingleHDUMemberExcept</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="astrodata.AstroData.AstroData.descriptors">
+<tt class="descname">descriptors</tt><a class="headerlink" href="#astrodata.AstroData.AstroData.descriptors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Property: Returns a dictionary of all registered metadata descriptor 
+functions defined on the instance.</p>
+<p>Eg.,</p>
+<p>{descriptor_function_name : descriptor value (dv)}</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">dict of descriptor functions</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">&lt;dict&gt;</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="astrodata.AstroData.AstroData.filename">
+<tt class="descname">filename</tt><a class="headerlink" href="#astrodata.AstroData.AstroData.filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Property: &#8216;filename&#8217; is monitored so that the mode can be changed 
+from &#8216;readonly&#8217; when &#8216;filename&#8217; is changed.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="astrodata.AstroData.AstroData.header">
+<tt class="descname">header</tt><a class="headerlink" href="#astrodata.AstroData.AstroData.header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Property: Returns the header member for Single-HDU AstroData instances.</p>
+<p>The header property can only be used for single-HDU AstroData
+instances, such as those returned during iteration. It is a
+property attribute which uses <em>get_header(..)</em> and
+<em>set_header(..)</em> to access the header member with the &#8220;=&#8221; syntax.
+To set the header member, use <em>ad.header = newheader</em>, where
+<em>newheader</em> must be a pyfits.Header object. To get the header
+member, use <em>hduheader = ad.header</em>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">header</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">pyfits.Header</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises :</th><td class="field-body">Errors.SingleHDUMemberExcept</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="astrodata.AstroData.AstroData.headers">
+<tt class="descname">headers</tt><a class="headerlink" href="#astrodata.AstroData.AstroData.headers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Property: Returns header member(s) for all extension (except PHU).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of pyfits.Header instances</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">&lt;list&gt;</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="astrodata.AstroData.AstroData.hdulist">
+<tt class="descname">hdulist</tt><a class="headerlink" href="#astrodata.AstroData.AstroData.hdulist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Property: Returns a list of header-data units on the instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The AstroData&#8217;s HDUList as returned by pyfits.open()</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">&lt;pyfits.HDUList&gt;</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="astrodata.AstroData.AstroData.phu">
+<tt class="descname">phu</tt><a class="headerlink" href="#astrodata.AstroData.AstroData.phu" title="Permalink to this definition">¶</a></dt>
+<dd><p>Property: Returns the instance&#8217;s primary HDU.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The instance &#8220;phu&#8221;</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">&lt;PrimaryHDU&gt;</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="astrodata.AstroData.AstroData.types">
+<tt class="descname">types</tt><a class="headerlink" href="#astrodata.AstroData.AstroData.types" title="Permalink to this definition">¶</a></dt>
+<dd><p>Property: Returns the composite list of AstroData classifications. I.e. 
+the instance&#8217;s qualified type and status classifications.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a list of types and status strings</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">&lt;list&gt;</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="method">
 <dt id="astrodata.AstroData.AstroData.__getitem__">
 <tt class="descname">__getitem__</tt><big>(</big><em>ext</em><big>)</big><a class="headerlink" href="#astrodata.AstroData.AstroData.__getitem__" title="Permalink to this definition">¶</a></dt>
@@ -212,110 +326,6 @@ the given EXTNAME wrapped by the new instance.</td>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">&lt;AstroData&gt;</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises :</th><td class="field-body">KeyError, IndexError</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="astrodata.AstroData.AstroData.data">
-<tt class="descname">data</tt><a class="headerlink" href="#astrodata.AstroData.AstroData.data" title="Permalink to this definition">¶</a></dt>
-<dd><p>The data property can only be used for single-HDU AstroData
-instances, such as those returned during iteration. To set the 
-data member, use <em>ad.data = newdata</em>, where <em>newdata</em> must be a 
-numpy array. To get the data member, use <em>npdata = ad.data</em>.</p>
-<p>The &#8220;data&#8221; member returns appropriate HDU&#8217;s data member(s) specifically
-for the case in which the AstroData instance has ONE HDU (in 
-addition to the PHU). This allows a single-extension AstroData, 
-such as AstroData generates through iteration, to be used as though 
-it simply is just the one extension. One is dealing with single 
-extension AstroData instances when iterating over the AstroData 
-extensions  and when picking out an extension by integer or tuple 
-indexing. 
-Eg.,</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>for ad in dataset[SCI]:</dt>
-<dd><dl class="first last docutils">
-<dt># ad is a single-HDU index</dt>
-<dd>ad.data = newdata</dd>
-</dl>
-</dd>
-</dl>
-</div></blockquote>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">data array associated with the single extension</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">&lt;ndarray&gt;</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Raises :</th><td class="field-body">Errors.SingleHDUMemberExcept</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="astrodata.AstroData.AstroData.filename">
-<tt class="descname">filename</tt><a class="headerlink" href="#astrodata.AstroData.AstroData.filename" title="Permalink to this definition">¶</a></dt>
-<dd><p>&#8216;filename&#8217; is monitored so that the mode can be changed 
-from &#8216;readonly&#8217; when &#8216;filename&#8217; is changed.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="astrodata.AstroData.AstroData.header">
-<tt class="descname">header</tt><a class="headerlink" href="#astrodata.AstroData.AstroData.header" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the header member for Single-HDU AstroData instances.</p>
-<p>The header property can only be used for single-HDU AstroData
-instances, such as those returned during iteration. It is a
-property attribute which uses <em>get_header(..)</em> and
-<em>set_header(..)</em> to access the header member with the &#8220;=&#8221; syntax.
-To set the header member, use <em>ad.header = newheader</em>, where
-<em>newheader</em> must be a pyfits.Header object. To get the header
-member, use <em>hduheader = ad.header</em>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">header</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">pyfits.Header</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Raises :</th><td class="field-body">Errors.SingleHDUMemberExcept</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="astrodata.AstroData.AstroData.headers">
-<tt class="descname">headers</tt><a class="headerlink" href="#astrodata.AstroData.AstroData.headers" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns header member(s) for all extension (except PHU).</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of pyfits.Header instances</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">&lt;list&gt;</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="astrodata.AstroData.AstroData.hdulist">
-<tt class="descname">hdulist</tt><a class="headerlink" href="#astrodata.AstroData.AstroData.hdulist" title="Permalink to this definition">¶</a></dt>
-<dd><p>List of header-data units on the instance.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The AstroData&#8217;s HDUList as returned by pyfits.open()</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">&lt;pyfits.HDUList&gt;</td>
 </tr>
 </tbody>
 </table>
@@ -774,8 +784,8 @@ specific value and, optionally, a comment</p>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="index.html"
-                        title="previous chapter">AstroData API documentation</a></p>
+  <p class="topless"><a href="intro.html"
+                        title="previous chapter">Introduction</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/astro_class.txt"
@@ -808,7 +818,7 @@ specific value and, optionally, a comment</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="index.html" title="AstroData API documentation"
+          <a href="intro.html" title="Introduction"
              >previous</a> |</li>
         <li><a href="index.html">AstroData API X1 documentation</a> &raquo;</li> 
       </ul>
