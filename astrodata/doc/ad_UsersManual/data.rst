@@ -506,40 +506,57 @@ In the example below, we calculate a clipped mean with rejection at
    stddev = data.std()
    mean = data.mean()
    
-   # get the mask
-   mask_extremes = ma.masked_outside(data, mean-3*stddev, mean+3*stddev).mask
+   clipped_mean = ma.masked_outside(data, mean-3*stddev, mean+3*stddev).mean()
    
-   # ma.array() applies the mask to data.
-   clipped_mean = ma.array(data, mask=mask_extremes).compressed().mean()
 
-# ma.masked_outside() with mask out anything outside +/- 3*stddev of the mean.
-# mask_extreme contains the "mask" returned by masked_outside()
+On Line 6, ``ma.masked_outside`` identify all values falling outside the 
+allowed range, and creates a ``MaskedArray`` which is a combination of the 
+data array and a True/False mask, with True identifying the values to reject.
+The really convenient thing is that the method ``mean`` will take this 
+information and calculate the average ignoring all values tagged for rejection.
 
-   # The compressed() method converts the masked data into a ndarray on
-   # which we can run .mean().
-
+WARNING: The ``numpy.clip`` function is not the equivalent of the mask
+solution.  As explain in the ``numpy.clip`` documentation, the function 
+*replaces* the extreme values with the minimum and maximum, it *does not
+reject* the extreme values.  
 
 
 Filters with scipy
 ------------------
+
+Another common operation is the filtering of an image, for example convolving
+with a gaussian filter.  The scipy module ``ndimage.filters`` offers several
+such functions for image processing.  See the scipy documentation for more
+details.
+
+The example below applies a gaussian filter to a pixel array.
+
 :: 
 
    import scipy.ndimage.filters as filters
    from stsci.numdisplay import display
    
-   # Another common image operation is the filtering of an image.
-   # To gaussian filter an image, use scipy.ndimage.filters.gaussian_filter.
-   # The filters module offers several other functions for image processing, 
-   # see help(filters)
-   conv_data = np.zeros(data.size).reshape(data.shape)
+   convolved_data = np.zeros(data.size).reshape(data.shape)
    sigma = 10.
-   filters.gaussian_filter(data, sigma, output=conv_data)
-   display(data, zscale=True)
-   display(conv_data, zscale=True)
+   filters.gaussian_filter(data, sigma, output=convolved_data)
    
-   # If you wanted to put this convoled data back in the AstroData
-   # object you would do:
-   ad['SCI',2].data = conv_data
+   # visually compare the convolve image with the original.
+   display(data, zscale=True)
+   display(convolved_data, zscale=True, frame=2)
+   
+   # To put the convolved data back in the AstroData object
+   ad['SCI',2].data = convolved_data
+
+On Line 4, a numpy array of the same size and shape as the input data is 
+created and filled with zeros.  This receives the output convolved image 
+produced by the function ``gaussian_filter`` (Line 6).  
+
+On Line 13, the input data is replaced with the convolved data.  Remember
+that one will need to use ``write`` to make that change effective on disk.
+
+
+Many other tools
+----------------
 
 The world of ``numpy``, ``scipy``, and the new ``astropy`` is rich and vast.
 The reader should refer to those packages' documentation to learn more.
@@ -555,6 +572,7 @@ Using the AstroData Data Quality Plane
 
 Manipulate Data Sections
 ========================
+
 Sections of the data array can be accessed and processed.  It is important to
 note here that when indexing a numpy array, the left most number refers to the
 highest dimension's axis (eg. in IRAF sections are in (x,y) format, in Python
@@ -563,7 +581,10 @@ are 0-indexed, not 1-indexed like in Fortran or IRAF.  For example, in a 2-D
 numpy array, the pixel position (x,y) = (50,75) would be accessed as 
 data[74,49].
 
-Here are some examples using data sections.::
+Basic statistics on section
+---------------------------
+
+::
 
    from astrodata import AstroData
    import numpy as np
@@ -571,75 +592,183 @@ Here are some examples using data sections.::
    ad = AstroData('N20110313S0188.fits')
    data = ad['SCI',2].data
    
-   # Let's get statistics for a 25x25 pixel-wide box centered on pixel 50,75.
+   # Get statistics for a 25x25 pixel-wide box centered on pixel 50,75.
    mean = data[62:87,37:62].mean()
    median = np.median(data[62:87,37:62])
    stddev = data[62:87,37:62].std()
    minimum = data[62:87,37:62].min()
    maximum = data[62:87,37:62].max()
-   print "Mean      Median Stddev       Min    Max\n", mean, median, stddev, minimum, maximum
-
-Now let us apply our knownledge so far to do a quick overscan subtraction.
-In this example, we make use of Descriptors, astrodata arithmetic
-functions, data sections, numpy 0-based arrays, and numpy statistics function 
-mean().::
-
-   # Get the (EXTNAME,EXTVER)-keyed dictionary for the overscan section and
-   # the data section.
-   oversec_descriptor = ad.overscan_section().as_dict()
-   datasec_descriptor = ad.data_section().as_dict()
    
-   # Loop through the extensions. 
+   print "Mean    Median Stddev  Min    Max\n", mean, median, stddev, minimum, maximum
+
+There is one odd thing that the reader should notice.  On Line 9, ``median`` 
+is not being called like the others.  This is because there are ``median``
+method associated with a ``ndarray``.  But there is a numpy function, so that
+is what is used.
+
+Example - Overscan subtraction
+------------------------------
+
+Several concepts from previous chapters are used in this example.
+The Descriptors are used to retrieve overscan section and data section 
+information from the headers.  Numpy statistics is done on the pixel data 
+sections.  AstroData arithmetics is used to subtract the overscan level. 
+Finally, the overscan section is trimmed off and the AstroData is written to 
+a new file.
+
+The make the example more complete, we use the file created in the Variance
+section.  We will propagate the variance and trim the variance planes too.
+
+::
+
+   from astrodata import AstroData
+   
+   ad = AstroData('N188_with_var.fits')
+
+   # Get EXTVER-keyed dictionary for the overscan section and the data 
+   # section.
+   oversec_dict = ad.overscan_section().collapse_by_extver()
+   datasec_dict = ad.data_section().collapse_by_extver()
+   
+   # Loop through the science extensions. 
    for ext in ad['SCI']:
-      extnamever = (ext.extname(),ext.extver())
-      (x1, x2, y1, y2) = oversec_descriptor[extnamever]
-      (dx1, dx2, dy1, dy2) = datasec_descriptor[extnamever] 
-        
-      # Measure and subtract the overscan level
-      mean_overscan = ad[extnamever].data[y1:y2,x1:x2].mean()
-      ad[extnamever].sub(mean_overscan)
-      
+      #
+      extver = ext.extver()
+      #
+      (x1, x2, y1, y2) = oversec_dict[extver]
+      (dx1, dx2, dy1, dy2) = datasec_dict[extver]
+      #
+      # Measure the overscan level
+      mean_overscan = ext.data[y1:y2,x1:x2].mean() 
+      # 
+      # Append variance and subtract overscan. Variance is propagated.
+      ext.append(ad['VAR',extver])
+      ext.sub(mean_overscan)
+      #
       # Trim the data to remove the overscan section and keep only
       # the data section.
-      ad[extnamever].data = ad[extnamever].data[dy1:dy2,dx1:dx2]
+      ext['SCI',extver].data = ext['SCI',extver].data[dy1:dy2,dx1:dx2]
+      ext['VAR',extver].data = ext['VAR',extver].data[dy1:dy2,dx1:dx2]
+
+   ad.write('N188_overscanTrimmed.fits')
+
+The dataset loaded in Line 3 has three 'SCI' extensions and three 'VAR' 
+extensions.  
+
+On Lines 7 and 8, the descriptors ``overscan_section`` and ``data_section`` 
+are used to retrieve the region information relating to the location
+of the overscan section and data section in each extension.  The return
+values for each extension is a list of four zero-based indices identifying 
+the x and y axes lower and upper range for the section.
+
+Since the overscan and data sections are the same for a given extension 
+version regardless of the extension name (ie. 'SCI' and 'VAR' have 
+identical size and structure), the section information is keyed by extension
+version only with the help of the ``collapse_by_extver()`` method (Line 7
+and 8).
+
+The content of oversec_dict is ::
+
+   1: [0, 32, 0, 2304], 2: [0, 32, 0, 2304], 3: [1024, 1056, 0, 2304]}
+
+The overscan section and the data section could have been obtained in the 
+loop for each extension.  It is however more efficient to retrieve the
+descriptor information once, then three times in the loop, when it is 
+possible to do so.
+
+Moving on to the loop starting on Line 11.  For convenience, the extension
+version of the current extension is stored in a variable on Line 13.  It
+will be used to access the section dictionaries from Line 7 and 8, and to
+associate a variance extension to the current extension.
+
+The boundaries of the overscan section and of the data section for the
+current extension are assigned to convenient variables on Lines 15 and 16.
+The values are zero-indexed to match the ``ndarray``.
+
+The overscan is here simply calculated as the average within the overscan
+section (Line 19).
+
+To simplying our lifes, we want to be using the automatic variance propagation
+offered by the AstroData arithmetic utility.  The extension obtained from the
+``in`` on Line 11 is an AstroData object with only the 'SCI' extension.  No
+variance propagation will occur if there are no 'VAR' extension in that
+AstroData object.  Therefore, on Line 22, we append the 'VAR' extension of the
+same version as the 'SCI' extension.  When the subtraction is done on Line 23,
+the operation affects both the 'SCI' extension and the newly appended 'VAR'
+extension.
+
+Now that the overscan level has been subtracted, that section needs to be 
+trimmed off.  Only the data section is kept.  This is done on Lines 27 and 28.
+Note that after the 'VAR' extension is appended, there are two extensions in
+the AstroData object, and in order to work with them, they must now be 
+specified.  Contrast that with the calls on Lines 13 and 19; then there were
+only one extension, the 'SCI' extension, and selection was implicit.
+
+A final but important reminder.  All of the work was done on the extensions
+extracted from the original AstroData object, ``ad``.  Since the extensions 
+are not true copies but rather references to the original source, all the 
+modifications to ``ext`` are in reality modifications to ``ad``.  So, now, all
+we have to do is write the modified ``ad`` to disk with another name (Line 31).
 
 
-Work on Data Cubes
-==================
+Data Cubes
+==========
 
-.. todo::
-   write some intro to the data cube section and example
+Reduced Integral Field Unit (IFU) data is commonly stored in a cube, a 
+three-dimensional array.  The ``data`` component of an AstroData object can
+be such a cube, and can be manipulated and explored with numpy, plotted with
+matplotlib (the next section shows a few more matplotlib examples.)
+
+In the MEF file, the x and y axes are in the first and second dimension, and 
+the third dimension is for the wavelength axis. In the ``ndarray``, that order 
+is reversed.  The dimensions of the ``ndarray`` are (wavelength, y, x).
    
 ::
 
    from astrodata import AstroData
+   import numpy as np
    from stsci.numdisplay import display
-   from pylab import *
+   import matplotlib.pyplot as plt
    
    adcube = AstroData('gmosifu_cube.fits')
    adcube.info()
    
-   # The pixel data is a 3-dimensional numpy array with wavelength is axis 0, and 
-   # x,y positions in axis 2 and 1, respectively.  (In the FITS file, wavelength
-   # is in axis 3, and x, y are in axis 1 and 2, respectively.)
+   # The shape of the cube, (wavelength, y, x).   
    adcube.data.shape
    
-   # To sum along the wavelength axis
+   # Sum along the wavelength axis to create a "white light" image.
    sum_image = adcube.data.sum(axis=0)
    display(sum_image, zscale=True)
    
-   # To plot a 1-D representation of the wavelength axis at pixel position (7,30)
-   plot(adcube.data[:,29,6])
-   show()
+   # Plot a 1-D spectrum from pixel position (7,30)
+   plt.plot(adcube.data[:,29,6])
+   plt.show()
    
-   # To plot the same thing using the wavelength values for the x axis of the plot
-   # one needs to use the WCS to calculate the pixel to wavelength conversion.
+   # Plot the same thing but with wavelength along the x axis of the plot.
    crval3 = adcube.get_key_value('CRVAL3')
    cdelt3 = adcube.get_key_value('CDELT3')
-   spec_length = adcube.data[:,29,6].size
-   wavelength = crval3 + arange(spec_length)*cdelt3
-   plot(wavelength, adcube.data[:,29,6])
-   show()
+   spec_pixel_length = adcube.data[:,29,6].size
+   wavelength = crval3 + np.arange(spec_pixel_length)*cdelt3
+   plt.clf()
+   plt.plot(wavelength, adcube.data[:,29,6])
+   plt.show()
+
+On Line 13, the cube is "collapse" in the wavelength dimension to produce a
+"white light" 2-D image.
+
+On Line 17, a vector through the cube at pixel position (7,30) is retrieved
+and plotted with matplotlib.  The pixel values are plotted against the 
+zero-indexed pixel position along the wavelength axis.  The ``show()`` 
+statement (Line 18) might or might not be needed depending on your 
+``interactive`` setting in the ``matplotlibrc`` file.  
+
+To plot the spectrum with physical units on the plot's x-axis one needs the
+WCS information from the header (Lines 21 to 24).  The statement ``plt.clf()``
+simply clears the figure.
+
+People familiar with astropy might prefer to use the ``wcs`` module to 
+convert pixels to wavelenths (Lines 21 to 24).
+
 
 Plot Data
 =========
@@ -652,7 +781,8 @@ of the data.
 ::
 
    from astrodata import AstroData
-   from pylab import *
+   import matplotlib.pyplot as plt
+   from matplotlib.colors import LogNorm
    
    adimg = AstroData('N20110313S0188.fits')
    adspec = AstroData('estgsS20080220S0078.fits')
@@ -660,33 +790,39 @@ of the data.
    # Line plot from image.  Row #1044.
    line_index = 1043
    line = adimg['SCI',2].data[line_index, :]
-   plot(line)
-   show()
+   plt.clf()
+   plt.plot(line)
+   plt.show()
    
    # Column plot from image, averaging across 11 pixels around column #327.
    col_index = 326
    width = 5
    col_section = adimg['SCI',2].data[:,col_index-width:col_index+width+1]
    column = col_section.mean(axis=1)
-   plot(column)
-   show()
+   plt.clf()
+   plt.plot(column)
+   plt.show()
    
    # Contour plot for section
    galaxy = adimg['SCI',2].data[1045:1085,695:735]
-   contour(galaxy)
-   axis('equal')
-   show()
+   plt.clf()
+   plt.imshow(galaxy, cmap='binary', norm=LogNorm())
+   plt.contour(galaxy)
+   plt.axis('equal')
+   plt.show()
    
    # Spectrum in pixel
-   plot(adspec['SCI',1].data)
-   show()
+   plt.clf()
+   plt.plot(adspec['SCI',1].data)
+   plt.show()
    
    # Spectrum in wavelength (CRPIX1 = 1)
    crpix1 = adspec['SCI',1].get_key_value('CRPIX1')
    crval1 = adspec['SCI',1].get_key_value('CRVAL1')
    cdelt1 = adspec['SCI',1].get_key_value('CDELT1')
    length = adspec['SCI',1].get_key_value('NAXIS1')
-   wavelengths = crval1 + (arange(length)-crpix1+1)*cdelt1
-   plot(wavelengths, adspec['SCI',1].data)
-   show()
+   wavelengths = crval1 + (np.arange(length)-crpix1+1)*cdelt1
+   plt.clf()
+   plt.plot(wavelengths, adspec['SCI',1].data)
+   plt.show()
 

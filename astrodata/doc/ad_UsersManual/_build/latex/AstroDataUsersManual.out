@@ -1,13 +1,7 @@
 \BOOKMARK [0][-]{chapter.1}{Introduction}{}% 1
-\BOOKMARK [0][-]{chapter.2}{Tutorial}{}% 2
-\BOOKMARK [0][-]{chapter.3}{Input and Output Operations}{}% 3
-\BOOKMARK [0][-]{chapter.4}{MEF Structure Mapping}{}% 4
-\BOOKMARK [0][-]{chapter.5}{AstroDataTypes}{}% 5
-\BOOKMARK [0][-]{chapter.6}{FITS Headers}{}% 6
-\BOOKMARK [0][-]{chapter.7}{Pixel Data}{}% 7
-\BOOKMARK [0][-]{chapter.8}{Table Data}{}% 8
-\BOOKMARK [0][-]{chapter.9}{Log Utility}{}% 9
-\BOOKMARK [0][-]{chapter.10}{Dataset Validation}{}% 10
-\BOOKMARK [0][-]{chapter.11}{Advanced Topics}{}% 11
-\BOOKMARK [0][-]{chapter.12}{Other Topics}{}% 12
-\BOOKMARK [0][-]{chapter.13}{List of Standard Descriptors}{}% 13
+\BOOKMARK [0][-]{chapter.2}{MEF Input/Output Operations and Extensions Manipulation}{}% 2
+\BOOKMARK [0][-]{chapter.3}{AstroDataTypes}{}% 3
+\BOOKMARK [0][-]{chapter.4}{FITS Headers}{}% 4
+\BOOKMARK [0][-]{chapter.5}{Pixel Data}{}% 5
+\BOOKMARK [0][-]{chapter.6}{Table Data}{}% 6
+\BOOKMARK [0][-]{appendix.A}{List of Descriptors}{}% 7
