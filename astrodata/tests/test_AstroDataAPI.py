@@ -28,23 +28,40 @@ from astrodata.Errors    import OutputExists
 from astrodata.Errors    import AstroDataError
 from astrodata.Errors    import SingleHDUMemberExcept
 # ==================================== Set up  =================================
-#
 # TESTFILEs are located under gemini_python/test_data/astrodata_bench/
 # TESTURL specifies a non-extistent file, but request on a actual service.
-#
-# find 'test_data' under gemini_python
-GEM = None
-for path in sys.path:
-    if 'gemini_python' in path:
-        GEM = os.path.join(path.split('gemini_python')[0], 
-                           'gemini_python', 'test_data')
-        break
-if GEM is None:
-    SystemExit("Cannot find gemini_python test_data in available paths")
+GEM0 = None
+GEM1 = None
+# OR a user location for benchmark datasets
+GEM0 = os.environ.get("ADTESTDATA")
 
-TESTFILE  = os.path.join(GEM, 'astrodata_bench/GS_GMOS_IMAGE.fits')   # 3 'SCI'
-TESTFILE2 = os.path.join(GEM, 'astrodata_bench/GS_GMOS_IMAGE_2.fits')  # 1 'SCI'
-TESTPHU   = os.path.join(GEM, 'astrodata_bench/GN_GNIRS_IMAGE_PHU.fits')  # PHU
+# If no env var, look for 'test_data' under gemini_python
+if GEM0 is None:
+    for path in sys.path:
+        if 'gemini_python' in path:
+            GEM1 = os.path.join(path.split('gemini_python')[0], 
+                               'gemini_python', 'test_data')
+            break
+
+if GEM0:
+    TESTFILE  = os.path.join(GEM0, 'GS_GMOS_IMAGE.fits')   # 3 'SCI'
+    TESTFILE2 = os.path.join(GEM0, 'GS_GMOS_IMAGE_2.fits')  # 1 'SCI'
+    TESTPHU   = os.path.join(GEM0, 'GN_GNIRS_IMAGE_PHU.fits')  # PHU
+elif GEM1:
+    TESTFILE  = os.path.join(GEM1, 'astrodata_bench/GS_GMOS_IMAGE.fits')   # 3 'SCI'
+    TESTFILE2 = os.path.join(GEM1, 'astrodata_bench/GS_GMOS_IMAGE_2.fits')  # 1 'SCI'
+    TESTPHU   = os.path.join(GEM1, 'astrodata_bench/GN_GNIRS_IMAGE_PHU.fits')  # PHU
+else:
+    SystemExit("Cannot find astrodata benchmark test_data in available paths")
+
+# Do TESTFILEs exist?
+try:
+    assert os.path.isfile(TESTFILE)
+    assert os.path.isfile(TESTFILE2)
+    assert os.path.isfile(TESTPHU)
+except AssertionError:
+    SystemExit("Cannot find astrodata benchmark datasets in available paths")
+# ==============================================================================
 TESTURL   = 'http://fits/file/GS_GMOS_IMAGE.fits'
 KNOWNTYPE = 'GMOS_IMAGE'
 KNOWNSTAT = 'GMOS_RAW'
@@ -62,7 +79,6 @@ header1 = pfob[1].header         # <'Header'>
 header2 = pfob[2].header         # <'Header'>
 # ==================================== tests  ==================================
 xfail = pytest.mark.xfail
-
 # ==============================================================================
 # Constructor 
 def test_constructor_0():
@@ -258,11 +274,11 @@ def test_attr_header_4():
 
 def test_attr_header_5():
     ad = AstroData(header=header1, data=data1)
-    assert ad.header.has_key('EXTNAME')
+    assert ad.header['EXTNAME']
 
 def test_attr_header_6():
     ad = AstroData(header=header1, data=data1)
-    assert ad.header.has_key('EXTVER')
+    assert ad.header['EXTVER']
 
 #   @property headers
 #   N.B. This interface is not yet implemented.
@@ -532,8 +548,9 @@ def test_method_write_2():
 
 def test_method_write_3():
     ad = AstroData(TESTFILE)
-    with pytest.raises(OutputExists):
-        ad.write(filename="New_File.test", rename=True)
+    assert os.path.isfile("New_File.test")
+    ad.write(filename="New_File.test", rename=True)
+    assert os.path.isfile("New_File.test")
 
 def test_method_write_4():
     ad = AstroData(TESTFILE)
@@ -786,7 +803,7 @@ def test_method_get_key_val_8():
 def test_method_set_key_val_1():
     ad = AstroData(TESTFILE2)
     ad.set_key_value('TESTKEY', 'TESTVALUE')
-    assert ad.header.has_key('TESTKEY')
+    assert ad.header['TESTKEY']
 
 def test_method_set_key_val_2():
     ad = AstroData(TESTFILE2)
@@ -852,7 +869,6 @@ def test_method_phu_set_key_val_1():
     ad = AstroData(TESTFILE2)
     test_val = 'TESTVALUE'
     ad.phu_set_key_value('TESTKEY', test_val)
-    assert ad.phu.header.has_key('TESTKEY')
     assert ad.phu.header['TESTKEY'] == test_val
 
 def test_method_phu_set_key_val_2():

@@ -22,24 +22,26 @@ import pytest
 
 from astrodata.AstroData import AstroData
 # ==================================== Set up  =================================
-#
 # TESTFILEs are located under gemini_python/test_data/astrodata_bench/
-#
-# find 'test_data' under gemini_python
-GEM = None
-for path in sys.path:
-    if 'gemini_python' in path:
-        GEM = os.path.join(path.split('gemini_python')[0], 
-                           'gemini_python', 'test_data')
-        break
-if GEM is None:
-    SystemExit("Cannot find gemini_python test_data in available paths")
+GEM0 = None
+GEM1 = None
+GEM0 = os.environ.get("ADTESTDATA")
+# If no env var, look for 'test_data' under gemini_python
+if GEM0 is None:
+    for path in sys.path:
+        if 'gemini_python' in path:
+            GEM1 = os.path.join(path.split('gemini_python')[0], 
+                               'gemini_python', 'test_data')
+            break
 
-TESTFILE  = os.path.join(GEM, 'astrodata_bench/GS_GMOS_IMAGE.fits')   # 3 'SCI'
-
+if GEM0:
+    TESTFILE  = os.path.join(GEM0, 'GS_GMOS_IMAGE.fits') # 3 'SCI'
+elif GEM1:
+    TESTFILE  = os.path.join(GEM1, 'astrodata_bench/GS_GMOS_IMAGE.fits') # 3 'SCI'
+else:
+    SystemExit("Cannot find astrodata benchmark test_data in available paths")
 # ==================================== tests  ==================================
 xfail = pytest.mark.xfail
-
 # ==============================================================================
 def test_airmass():
     ad = AstroData(TESTFILE)
