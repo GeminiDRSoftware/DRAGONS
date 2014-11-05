@@ -128,8 +128,7 @@ class CalibrationDefinitionLibrary(object):
                                'read_mode',
                                'well_depth_setting',
                                'camera',
-                               'elevation',
-                               'cass_rotator_pa'
+                               'gcal_lamp'
                                ]
 
             options = {'central_wavelength':'asMicrometers=True'}
