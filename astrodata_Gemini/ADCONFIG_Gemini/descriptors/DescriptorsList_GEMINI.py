@@ -28,6 +28,7 @@
     DD("gain", pytype=float),
     DD("gain_setting", pytype=str),
     DD("grating", pytype=str),
+    DD("gcal_lamp", pytype=str),
     DD("group_id", pytype=str),
     DD("local_time", pytype=datetime),
     DD("lyot_stop", pytype=str),

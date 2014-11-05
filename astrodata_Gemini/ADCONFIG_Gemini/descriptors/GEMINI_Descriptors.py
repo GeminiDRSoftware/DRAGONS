@@ -591,6 +591,37 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # exception if this descriptor is called.
         raise Errors.ExistError()
     
+    def gcal_lamp(self, dataset, **args):
+        # This tells you what GCAL is radiating. Generally, this is given by
+        # the GCALLAMP header, *except* in the case of the IR lamp which is
+        # never turned off (because it takes ages to stabilize when you turn it
+        # back on) but is behind a shutter, the state of which is given by the
+        # GCALSHUT header. Note that the only thing behind the shutter is the 
+        # IR lamp, the other lamps are not shuttered but are simply turned
+        # on and off on demand.
+
+        # If the headers are not found, then GCAL is not in the beam.
+        # phu_get_key_value will return None and that will be returned
+        # to the called. This is desired behavour.
+
+        # Various values have been seen in data to reflect no lamp on
+        # These are all returned as "Off" by this descriptor
+
+        # Lamps illuminated
+        lamps = dataset.phu_get_key_value("GCALLAMP")
+
+        # IR shutter state
+        shut = dataset.phu_get_key_value("GCALSHUT")
+
+        if shut == 'CLOSED':
+            if lamps == 'IRhigh' or lamps == 'IRlow':
+                lamps = ''
+
+        if lamps in ['', 'No Value']:
+            lamps = 'Off'
+
+        return lamps
+
     def group_id(self, dataset, **args):
         # Get the observation id using the appropriate descriptor
         observation_id = dataset.observation_id()

@@ -538,6 +538,26 @@ class docstrings:
         """
         pass
     
+    def gcal_lamp(self):
+        """
+        Return the lamp from which GCAL is sending out light. This takes into
+        account the fact that the IR lamp is behind a shutter.
+
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+                       set to as_dict to return a dictionary, where the number 
+                       of dictionary elements equals the number of pixel data 
+                       extensions in the image. The key of the dictionary is 
+                       an (EXTNAME, EXTVER) tuple, if available. Otherwise, 
+                       the key is the integer index of the extension.
+        :type format: string
+        :rtype: string as default (i.e., format=None)
+        :rtype: dictionary containing one or more string(s) (format=as_dict)
+        :return: the lamp from which gcal is sending out light
+        """
+        pass
+
     def grating(self):
         """
         Return the grating value
