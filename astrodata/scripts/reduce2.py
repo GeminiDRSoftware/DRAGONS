@@ -5,10 +5,10 @@
 #                                                              astrodata/scripts
 #                                                                     reduce2.py
 # ------------------------------------------------------------------------------
-# $Id$
+# $Id: reduce2.py 4952 2014-10-29 14:21:36Z kanderson $
 # ------------------------------------------------------------------------------
-__version__      = '$Rev$'[6:-1]
-__version_date__ = '$Date$'[7:-3]
+__version__      = '$Rev: 4952 $'[6:-1]
+__version_date__ = '$Date: 2014-10-29 11:21:36 -0300 (Wed, 29 Oct 2014) $'[7:-3]
 # ------------------------------------------------------------------------------
 # reduce2.py -- refactored reduce, cl parsing exported, functionalized.
 #               see parseUtils.py
@@ -62,8 +62,8 @@ from   signal import SIGTERM
 from astrodata import __version__ as ad_version
 from astrodata.adutils import logutils
 
-import parseUtils
-from   coreReduce import Reduce
+from astrodata.adutils.reduceutils import parseUtils
+from astrodata.adutils.reduceutils.coreReduce import Reduce
 # ------------------------------------------------------------------------------
 def main(args):
     """
