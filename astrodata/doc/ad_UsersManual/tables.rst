@@ -4,9 +4,9 @@
 Table Data
 **********
 
-``astrodata`` does not provide any special wrappers for FITS Table Data.  But
-since ``astrodata`` is built on top of ``pyfits``, the standard ``pyfits``
-table functions can be used.  The reader should refer to the ``pyfits`` 
+AstroData does not provide any special wrappers for FITS Table Data.  But
+since AstroData is built on top of PyFITS, the standard PyFITS
+table functions can be used.  The reader should refer to the PyFITS 
 table documentation for complete details (e.g. 
 https://pythonhosted.org/pyfits/users_guide/users_table.html). In this chapter, 
 a few useful examples of basic usage are shown.  As the reader will see, table 
@@ -14,7 +14,7 @@ manipulation can be tedious and tricky.
 
 
 
-``astropy.table`` might simply some of the examples of the examples presented
+``astropy.table`` might simplify some of the examples presented
 in this chapter.  This will be looked into at some future time.  (Suggestions
 for improvements are welcome.)
 
@@ -46,8 +46,10 @@ Read from a FITS Table
 A FITS table is stored in a MEF file as a ``BinTableHDU``.  The table data is 
 retrieved from the ``AstroData`` object with the same ``.data`` attribute as 
 for pixel extensions, but for FITS tables ``.data`` returns a ``FITS_rec``, 
-which is a ``pyfits`` class, instead of a numpy ``ndarray``.  Here is how to
-get information out of a FITS table.::
+which is a PyFITS class, instead of a Numpy ``ndarray``.  Here is how to
+get information out of a FITS table.
+
+::
 
    from astrodata import AstroData
    
@@ -81,7 +83,7 @@ Gemini data, those are used in the data reduction to identify, to first
 order, where spectra fall on the detector.
 
 The output of ``names`` (Line 10) is a simple list of strings.  The output
-of ``columns`` is a pyfits ``ColDefs`` object.  When printed it looks like this::
+of ``columns`` is a PyFITS ``ColDefs`` object.  When printed it looks like this::
 
    ColDefs(
        name = 'ID'; format = '1J'; null = -2147483647; disp = 'A3'
@@ -149,8 +151,8 @@ the ``.append()`` function.
 
 Operate on a FITS Table
 =======================
-The pyfits manual is the recommended source for more complete documentation
-on working on FITS table with Python.  Here are a few examples of what one can
+The PyFITS manual is the recommended source for more complete documentation
+on working on FITS table with Python.  Here are a few examples of how one can
 modify a FITS table.
 
 Preparation for the examples
@@ -226,7 +228,7 @@ columns have been reorganized, a *new* table is created and, in this case,
 replaces the original ``table1``.
 
 The index of the ``pabeta`` column in ``table2`` is found with the ``index``
-method as shown on Line 2.  Then it is just a matter of copying that column
+method as shown on Line 2.  Then it is just a matter of adding that column
 from ``table2`` to the columns of ``table1`` (Line 3).
 
 The columns in the new ``table1`` are::
@@ -289,7 +291,7 @@ does not seem to be working properly.
    table1.columns.names
 
 To change the name of a column, one needs to change the ``name`` attribute
-of the column.  On the first line, the index of the position index of the 
+of the column.  On the first line, the position index of the 
 column named ``feii`` is used to select the column to change, and then the
 name of that column is changed to ``ironII``.
 
@@ -304,18 +306,18 @@ The ``table1`` columns are now::
 Appending and deleting rows
 ---------------------------
 
-Appending and deleting rows is uncanningly complicated with pyfits.
+Appending and deleting rows is uncanningly complicated with PyFITS.
 This is an area where the use ``astropy.table`` can certainly help.  We hope
 to be able to add astropy-based examples to this manual in the near future.
-But for now, let us study the pyfits way.
+But for now, let us study the PyFITS way.
 
 *Disclaimer*:  This is the way the author figured out how to do the row
-manipulations.  If the reader knows of a better way to do it with pyfits,
-please let us know.)
+manipulations.  If the reader knows of a better way to do it with PyFITS,
+please let us know.
 
-Below, we append two new entries to table2.  Only the ``SNR_ID`` and 
+Below, we append two new entries to ``table2``.  Only the ``SNR_ID`` and 
 ``pabeta`` fields will be added to the table since those are the only
-two columsn in ``table2``.  When an entry has fields not represented
+two columns in ``table2``.  When an entry has fields not represented
 in the table, those fields are simply ignored.
 
 ::

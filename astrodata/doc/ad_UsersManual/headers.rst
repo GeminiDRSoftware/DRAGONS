@@ -31,7 +31,7 @@ AstroData Descriptors
 =====================
 AstroData Descriptors provide a "header keyword-to-concept" mapping that 
 allows one to access header information in a consistent manner, regardless 
-of which instrument the dataset is from.  Life for the AstroDataTypes, the 
+of which instrument the dataset is from.  Like for the AstroDataTypes, the 
 mapping is coded in a configuration package that is provided by the 
 observatory or the user.  
 
@@ -136,8 +136,8 @@ and Descriptors are taking care of it.
 When the automatic convertion to a Python cannot be determine from context
 the programmer must use the method ``as_pytype()``. ::
 
-   as.pixel_scale()
-   as.pixel_scale().as_pytype()
+   ad.pixel_scale()
+   ad.pixel_scale().as_pytype()
 
 The first line returns a DescriptorValue, the second line returns a float.
 
@@ -152,7 +152,7 @@ in the header.
 
 One important thing to keep in mind is that the PHU and the extension headers 
 are accessed differently. The method ``phu_get_key_value`` accesses the PHU
-headers; the method ``get_key_value`` accesses the headers of the specified
+header; the method ``get_key_value`` accesses the header of the specified
 extension.
 
 Here are some direct access examples::
@@ -201,10 +201,10 @@ done as follow::
 EXTNAME and EXTVER
 ------------------
 MEF files have the concept of naming and versioning extensions.  The header 
-storing the name and version are ``EXTNAME`` and ``EXTVER``.  AstroData uses
+keywords storing the name and version are ``EXTNAME`` and ``EXTVER``.  AstroData uses
 that concept extensively.  In fact, even if a MEF on disk does not have 
 ``EXTNAME`` and ``EXTVER`` defined, for example Gemini raw datasets, upon
-opening the file, AstroData will assign names and versions to each extension.
+opening the file AstroData will assign names and versions to each extension.
 The default behavior is to assign all extension a ``EXTNAME`` of ``SCI``
 and then version them sequential from 1 to the number of extension present.
 

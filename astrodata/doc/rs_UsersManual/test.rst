@@ -1,1 +1,0 @@
-../reduce_UsersManual/test.rst

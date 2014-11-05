@@ -32,7 +32,7 @@ letter, this is where you should be for all the paths to work.
 
 Introduction to the Demo
 ------------------------
-In this demo, we will reduce a simple dither on source GMOS imaging sequence.
+In this demo, we will reduce a simple dither-on-source GMOS imaging sequence.
 We will first process the raw biases, and then the raw twilight flats.  We will
 then use those processed files to process and stack the science observation.
 
@@ -45,7 +45,7 @@ QA recipe and the demo recipe, is that the demo recipe does stack the data, whil
 the stacking is turned off in the QA context.
 
 The demo recipe is essentially a Quick Look recipe.  It is NOT valid for Science
-Quality.  Remember that we you are using is a QA pipeline, not a Science pipeline.
+Quality.  Remember that what you are using is a QA pipeline, not a Science pipeline.
 
 The Recipes
 -----------
@@ -176,7 +176,7 @@ The "public" RecipeSystem does not yet have a Local Calibration Server.  Therefo
 we will need to specify the processed bias we want to use on the `reduce` command
 line.  For information only, internally the QA pipeline at the summit uses a 
 central calibration server and the most appropriate processed calibrations available
-are selected and retrieve automatically.  We hope to be able to offer a "local",
+are selected and retrieved automatically.  We hope to be able to offer a "local",
 end-user version of this system in the future.  For now, calibrations must be 
 specified on the command line. 
 

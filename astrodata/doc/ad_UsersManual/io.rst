@@ -11,9 +11,9 @@ Multi-Extension FITS (MEF) file.
 
 A MEF file is a Primary Header Unit (PHU) with a list of Header Data Units
 (HDU), commonly referred to as extensions.  In AstroData, the extension
-numbering is zero-based, the first extension is ``myAstroData[0]`` where 
+numbering is zero-indexed, the first extension is ``myAstroData[0]`` where 
 ``myAstroData`` is an open AstroData object.  If you are familiar with
-IRAF, then keep in mind that in IRAF the extensions are 1-based.  For
+IRAF, then keep in mind that in IRAF the extensions are 1-indexed.  For
 example::
 
    # In IRAF
@@ -23,7 +23,7 @@ example::
    numdisplay.display(myAstroData[0].data) 
 
 The first data extension is 1 in IRAF, but it is 0 in AstroData.  All Python
-arrays are zero-based, so AstroData was made compliant with modern practice.
+arrays are zero-indexed, so AstroData was made compliant with modern practice.
 
 
 **Try it yourself**
@@ -53,7 +53,7 @@ Open and access existing MEF files
 ==================================
 
 An AstroData object can be created from the name of the file on disk, a URL,
-or from PyFITS HDUList or HDU instance.  An existing MEF file can be open as 
+or from PyFITS HDUList or HDU instance.  An existing MEF file can be opened as 
 an AstroData object in ``readonly``, ``update``, or ``append`` mode.  
 The default is ``readonly``.
 
@@ -107,18 +107,18 @@ of the ``mode`` argument::
 Accessing the content of a MEF file
 -----------------------------------
 
-Conceivably once opens a file to access its content. Manipulations of the 
+Conceivably one opens a file to access its content. Manipulations of the 
 pixel data and of the headers are covered in more details in later sections 
-(:ref:`Section 7 - Pixel Data <data>` and 
-:ref:`Section 6 - FITS Headers <headers>`, respectively). Here we show 
+(:ref:`Section 5 - Pixel Data <data>` and 
+:ref:`Section 4 - FITS Headers <headers>`, respectively). Here we show 
 a few very basic examples on how to access pixels and headers.
 
-The pixel data in an AstroData object are stored as ``numpy`` ``ndarray``.
-Any ``ndarray`` operations are valid.  We use ``numpy``'s ``average`` function
+The pixel data in an AstroData object are stored as Numpy ``ndarray``.
+Any ``ndarray`` operations are valid.  We use Numpy's ``average`` function
 in the example below.
 
-The headers in an AstroData object are stored as ``pyfits`` headers.  Any
-``pyfits`` header operations are valid.
+The headers in an AstroData object are stored as PyFITS headers.  Any
+PyFITS header operations are valid.
 
 ::
 
@@ -155,14 +155,14 @@ this will launch the execution of the loop.)*
 Now let us discuss the example.
 
 As stated above, the pixel data are stored in ``numpy.ndarray`` objects.  
-Therefore, ``numpy`` needs to be imported if any ``numpy`` operations is to
+Therefore, Numpy needs to be imported if any ``numpy`` operations is to
 be run on the data.  This is done on Line 2, using the standard import 
-convention for ``numpy``.
+convention for Numpy.
 
 On Line 6, the for-loop that will access the extension sequentially is defined.
 Only the extensions are returned, the Primary Header Unit (PHU) is not
 sent to the loop.  Access to the PHU is discussed in 
-:ref:`Section 6 - FITS Headers <headers>`.
+:ref:`Section 4 - FITS Headers <headers>`.
 
 In an AstroData object, each extension is given, in memory if not on disk, 
 an extension name and an extension version.  Line 7 accesses that information.
@@ -190,7 +190,7 @@ or if not using the names, using the positional number for the extension::
    print 'Extension name and version for extension 0: ', \
       ad[0].extname(), ad[0].extver()
 
-Note that the extension positions are zero-based, ``ad[0]`` is not the
+Note that the extension positions are zero-indexed, ``ad[0]`` is not the
 PHU, it is the first extension.
   
 
@@ -285,8 +285,9 @@ user must either specify the EXTNAME, EXTVER of the new extension or use
 the ``auto_number`` options which tries to do something sensible to keep the
 MEF structurally valid.
 
-The second difficulty is due to the fact a reference to an extension is 
-just that a "reference", a "link", it is not a copy.  Any changes to the
+The second difficulty is due to the fact an assignment of an extension to
+a variable is 
+just a "reference", a "link", it is not a copy.  Any changes to the
 variable standing as a pointer to an extension in an AstroData object will
 affect the AstroData object itself.
 
@@ -306,7 +307,7 @@ As you see in the previous subsection, the extension name and extension
 version number of the extension in ``new_extension`` is ['SCI', 2].  There
 is already an extension named and versioned that way in ``ad`` (see the
 result of ``ad.info()`` in the previous subsection).  Therefore, to avoid
-conflict, the argument to append ``auto_number`` is set to ``True``.
+conflict, the argument ``auto_number`` is set to ``True``.
 
 As you can see from the output of ``ad.info()`` after the ``append`` call::
 
@@ -342,13 +343,13 @@ a reference to the extension stored in ``adread``, when ``auto_number``
 changes the version number to 4, the extension in ``adread`` will also be
 modified, corrupting the source.  Moreover, if other modifications are made
 to the extension inserted in ``ad``, it will modify ``adread`` too. There are 
-times when it will not matter as ``adread`` is scheduled to be closed anyway, 
+times when it will not matter at all, for example if ``adread`` is scheduled to be closed anyway, 
 but if ``adread`` is to be used later in the script, it should not be modified 
 like that.  
 
 To cut the link between the extension appended to the dataset and the
 source, the argument ``do_deepcopy`` is set to ``True``.  This will often be
-needed.  It is not the default out of memory usage concerns and to force
+needed.  It is not the default because of memory usage concerns, and to force
 the user to think before creating copies and decide if it is truly needed.
 
 
@@ -357,7 +358,7 @@ Inserting an extension
 
 When inserting an extension into an AstroData object, the same caution to
 extension name and version, and to the reference versus copy issues applies.
-Instead of repeating ourselves, we refer to users to discusssion above in
+Instead of repeating ourselves, we refer to users to the discusssion above in
 the "Appending" section.
 
 With that in mind, let us present a few examples of insertion.
@@ -448,7 +449,7 @@ in this manual, yet fortunately not that commonly needed.
 When we inserted ``new_extension`` above, we did not use ``do_deepcopy``.
 Therefore, if we were to modify ``new_extension``, like through ``auto_number``,
 we would be modifying not only the source, ``adread``, but also that extension
-we added to ``ad`` !  
+we have already added to ``ad`` !  
 
 As you can see, it is vitally important to understand was is a true copy and
 what is a reference to something else when dealing with extensions.  Beginners
@@ -458,7 +459,7 @@ rise significantly.
 
 Here is how one would insert ``new_extension`` somewhere else in ``ad``.
 In the example, the extension is inserted between the current third and
-fourth extension.  Since position ID are zero-based, this means between
+fourth extension.  Since position ID are zero-indexed, this means between
 position 2 and 3.
  
 ::
@@ -499,12 +500,12 @@ Look at what happened to the name of the newly inserted extension
 The automatic renumbering assigned an extension number of 5 to the newly
 inserted extension.  One might have expected that 2 would be assigned as the
 next available version number of the 'VAR' name.  This behavior was designed
-to prevent the software from making scientific assumption that the new
+to prevent the software from making the scientific assumption that the new
 extension is in anyway associated with another.  Normally, it is assumed that
 all extension with a given EXTVER are scientifically associated.  ``auto_number``
 has no way to know which extension is scientifically associated with an other.
 The purpose of ``auto_number`` is solely to keep the AstroData structure sound
-and prevent corruption due to classing name/version pairs.  It is the job
+and prevent corruption due to clashing name/version pairs.  It is the job
 of the programmer, who has the scientific knowledge of the associations, to
 name and version the extensions correctly when that matters. 
    
@@ -567,7 +568,7 @@ Removing an extension
 Compared to appending and inserting extensions, removing them is a breeze.
 As before, the extension to remove can be speficied with the position number 
 or with the extension name and version.  Just remember that the position 
-numbers are zero-based.
+numbers are zero-indexed.
 
 ::
 
@@ -616,7 +617,7 @@ overwritten with the ``write()`` command. ::
 The first line will print the file name currently associated with the 
 AstroData object, ``ad``.  This the file that will be written to.
 
-More often though, the idea is the write the modified output to a new
+More often though, the idea is to the write the modified output to a new
 file.  This can be done regardless of the ``mode`` used when the file was 
 opened.  All that is needed is to specify a new file name.  Note that
 this will change the file name associated with the AstroData object, 
@@ -642,11 +643,11 @@ no longer needed::
    adread.close()
 
 If you have been following along, the input file on disk was modified by
-on of the ``write`` examples above.  We will need the unmodified file in
-the next section.  To restore the file from the original::
+one of the ``write`` examples above.  We will need the unmodified file in
+the next section.  To restore the file to the original::
 
-   import os
-   os.system('cp ../data_for_ad_user_manual/N20110313S0188.fits .')
+   import shutil
+   shutil.copy('../data_for_ad_user_manual/N20110313S0188.fits', '.')
 
 
 Create New MEF Files
@@ -673,7 +674,7 @@ Open a file, make modifications, write a new MEF file on disk::
    ad.write('newfile2.fits')
    ad.close()
 
-Needing real copies in memory
+Needing true copies in memory
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Since in Python, and when working with AstroData objects, the memory can be
 shared between variables, it is sometimes necessary to create a "true" copy
@@ -702,10 +703,10 @@ Create New MEF Files from Scratch
 ---------------------------------
 
 Another use case is creating a new MEF files or AstroData object when none 
-existed before. The pixel data needs to be created as a numpy ``ndarray``.  
-The header must be created as pyfits header. IMPORTANT: AstroData is currently
-not compatible with ``astropy.io.fits``, one *must* use the standalone 
-``pyfits`` module (it comes with Ureka).
+existed before. The pixel data needs to be created as a Numpy ``ndarray``.  
+The header must be created as PyFITS header. IMPORTANT: AstroData currently
+is not compatible with ``astropy.io.fits``, one *must* use the standalone 
+PyFITS module (it comes with Ureka).
 
 :: 
 
@@ -730,7 +731,7 @@ not compatible with ``astropy.io.fits``, one *must* use the standalone
 The input header does not need to have anything in it (Line 6).  In fact, if 
 you are really creating from scratch, it is probably better to leave it empty 
 and populate it after the creation of the AstroData object.  Upon creation,
-AstroData, through pyfits, will take care of adding the minimal set of header
+AstroData, through PyFITS, will take care of adding the minimal set of header
 cards to make the file FITS compliant.
 
 The pixel data array must be a ``ndarray``.  On Line 9, we create a

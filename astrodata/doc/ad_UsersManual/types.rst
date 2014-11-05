@@ -15,7 +15,8 @@ opened with AstroData, the headers are inspected, data identification rules
 are applied, and all applicable AstroDataTypes are assigned.  From that point 
 on, the AstroData object "knows" whether it is a GMOS image, a NIRI spectrum, 
 an IFU from GMOS or NIFS. This embedded knowledge is critical to the header 
-keyword mapping done by the Descriptors (see Section ...), for examples.  
+keyword mapping done by the Descriptors (see 
+:ref:`Section 4 - FITS Headers <headers>`), for examples.  
 The RecipeSystem also depends heavily on the AstroDataType feature.
 
 Examples of AstroDataTypes are: GMOS_IMAGE, SIDEREAL, GMOS_IFU_FLAT, NIRI_CAL,
@@ -28,7 +29,7 @@ The types are obviously observatory and instrument dependent.  The
 identification rules do need to be coded for AstroData to assign 
 AstroDataTypes.  This has been done for most if not all Gemini data.  The 
 Gemini Types are included in the ``astrodata_Gemini`` package that is 
-installed along with ``astrodata`` when``gemini_python`` is installed.   
+installed along with ``astrodata`` when ``gemini_python`` is installed.   
 Keeping the instrument rules and configuration separate from ``astrodata`` 
 keeps it generic, and allows other packages to be easily added, for example, 
 one might want to add a third-party package for CFHT instruments. 
@@ -48,8 +49,6 @@ the necessary files.
 ::
 
    cd <path>/gemini_python_datapkg-X1/playground
-   cp ../data_for_ad_user_manual/N20110313S0188.fits .
-   cp ../data_for_ad_user_manual/N20110316S0321.fits .
    cp ../data_for_ad_user_manual/N20111124S0203.fits .
 
 Then launch the Python shell::
@@ -137,7 +136,7 @@ and the ``status()`` statement returns::
    ['GMOS_RAW', 'UNPREPARED', 'RAW']
 
 
-If code incur modifications to the AstroData object that result in changes to 
+If code applies modifications to the AstroData object that result in changes to 
 the AstroDataTypes, it is necessary to let the system know about it.  The 
 method ``refresh_types()`` rescan the AstroData headers and reapply the
 identification rules.  This type refreshing is used mostly when the processing

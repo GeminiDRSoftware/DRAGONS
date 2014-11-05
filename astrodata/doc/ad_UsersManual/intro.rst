@@ -8,15 +8,27 @@ Introduction
 
 What is AstroData?
 ==================
-.. todo::
-   Describe AstroData in a language that astronomer will comprehend.
-   
-.. note::
-   For the TODO: use language a scientist will comprehend.  then either refer to the programmer's reference
-   or add a section clearly advertised to programmers.  the idea is that we don't want to lose
-   the scientists, but if some readers are more technically oriented we also want to make sure
-   they get the info they are after.
+The AstroData class is a tool to represents datasets stored in 
+Multi-Extension FITS (MEF) files. It provides uniform interfaces for 
+working on datasets from different instruments and their observational modes. 
+Configuration packages are used to describe the specific data characteristics, 
+layout, and to store type-specific implementations.  Once a MEF has been
+opened with AstroData, the object it is assigned to knows essential information
+about itself, like from which instrument this data comes from, how to access
+the header information, etc.
 
+Multi-extension FITS files are generalized as lists of header-data units 
+(HDU), with key-value pairs populating headers, and pixel values populating 
+data arrays. AstroData interprets a MEF as a single complex entity.  The 
+individual "extensions" within the MEF are available with normal Python list 
+("[]") syntax.
+
+In order to identify types for the dataset and provide type-specific behavior, 
+AstroData relies on configuration packages.  A configuration package (eg. 
+``astrodata_Gemini``) contains definitions for all instruments and modes. A 
+configuration package contains type definitions, meta-data functions, 
+information lookup tables, and any other code or information needed to handle 
+specific types of dataset.
 
 .. _install:
 
@@ -28,7 +40,9 @@ The best way to get everything you need is to install Ureka, http://ssb.stsci.ed
 
 Once this is done, install ``gemini_python``.  The ``astrodata`` package is currently
 distributed as part of the ``gemini_python`` package.  The ``gemini_python`` package,
-``gemini_python-X1.tar.gz``, can be obtained from the Gemini website.
+``gemini_python-X1.tar.gz``, can be obtained from the Gemini website:
+
+  http://www.gemini.edu/sciops/data-and-results/processing-software
 
 Recommended installation
 ------------------------

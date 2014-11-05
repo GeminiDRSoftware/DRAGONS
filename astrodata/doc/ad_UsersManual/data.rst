@@ -158,8 +158,8 @@ The CORRECT way to calculate ``x*10 + x``::
    
 As one can see, for complex equation, using the AstroData arithmetic method
 can get fairly confusing.  Operator overload would solve this situation but
-it has not been implemented yet mostly due to lack of resources.  Therefore, 
-we recommend to use numpy for really complex equation since operator overload 
+it has not been implemented yet mostly due to a lack of resources.  Therefore, 
+we recommend the use numpy for really complex equation since operator overload 
 is implemented in numpy and the operator precedence is respected.  The 
 downside is that if you need the variance plane propagated correctly, you will 
 have to do the math yourself. 
@@ -395,14 +395,14 @@ most common, especially for users coming from IRAF.
 Retrieving cursor position
 --------------------------
 
-The funciton ``numdisplay.readcursor`` can be used to retrieve cursor position.
+The function ``numdisplay.readcursor`` can be used to retrieve cursor position.
 Note that it will **not** respond to mouse clicks, **only** keyboard entries
 are acknowledged.
 
 When invoked, ``readcursor()`` will stop the flow of the program and wait for
 the user to put the cursor on top of the image and type a key.  A **string** 
 with four space-separated values are going to be returned: the x and y 
-coordinates, a frame reference number, and value of the key the user hit.
+coordinates, a frame reference number, and the value of the key the user hit.
 
 ::
 
@@ -433,7 +433,7 @@ it is believe important to show a few examples to steer new users in the
 right direction.
  
 The ``numpy`` and ``scipy`` modules offer a multitude of functions and tools. 
-They both have their own documentation.  Here we simply highlight a few 
+They both have their own documentation.  Here we simply highlighting a few 
 functions that could be used for common things an astronomer might want to do.  
 The idea is to get the reader started in her exploration of ``numpy`` and 
 ``scipy``.
@@ -459,8 +459,8 @@ ndarray
    data.dtype
 
 The two most important thing to remember for users coming from the IRAF world 
-are that the array has the y-axis is the first index, the x-axis is the second
-(Line 8, 11), and that the array indices are zero-based, not one-based 
+are that the array has the y-axis in the first index, the x-axis in the second
+(Line 8, 11), and that the array indices are zero-indexed, not one-indexed 
 (Line 11).
 
 Sometimes it is useful to know the type of the values stored in the array,
@@ -483,7 +483,7 @@ many to cover here, but here are a couple examples.
 Note how ``mean()`` is called differently from the other two.  ``mean()`` is
 a ``ndarray`` method, the others are numpy functions.  The implementation 
 details are clearly well beyond the scope of this manual, but when looking
-for the tool you need keep in mind that there are two sets of functions to
+for the tool you need, keep in mind that there are two sets of functions to
 look into.  Duplications like ``.mean()`` and ``np.average()`` can happen,
 but they are not the norm.  The readers are strongly encourage to refer to the
 numpy documentation to find the tool they need.
@@ -494,7 +494,7 @@ Clipped statistics
 It is common in astronomy to apply clipping to the statistics, a clipped
 average, for example.
 
-The numpy `ma` module can be used to create masks of the values to reject.
+The numpy ``ma`` module can be used to create masks of the values to reject.
 
 In the example below, we calculate a clipped mean with rejection at 
 +/- 3 times the standard deviation.
@@ -599,7 +599,8 @@ Basic statistics on section
    minimum = data[62:87,37:62].min()
    maximum = data[62:87,37:62].max()
    
-   print "Mean    Median Stddev  Min    Max\n", mean, median, stddev, minimum, maximum
+   print "Mean    Median Stddev  Min    Max\n", \
+      mean, median, stddev, minimum, maximum
 
 There is one odd thing that the reader should notice.  On Line 9, ``median`` 
 is not being called like the others.  This is because there are ``median``
@@ -616,7 +617,7 @@ sections.  AstroData arithmetics is used to subtract the overscan level.
 Finally, the overscan section is trimmed off and the AstroData is written to 
 a new file.
 
-The make the example more complete, we use the file created in the Variance
+To make the example more complete, we use the file created in the Variance
 section.  We will propagate the variance and trim the variance planes too.
 
 ::
@@ -658,7 +659,7 @@ extensions.
 On Lines 7 and 8, the descriptors ``overscan_section`` and ``data_section`` 
 are used to retrieve the region information relating to the location
 of the overscan section and data section in each extension.  The return
-values for each extension is a list of four zero-based indices identifying 
+values for each extension is a list of four zero-indexed indices identifying 
 the x and y axes lower and upper range for the section.
 
 Since the overscan and data sections are the same for a given extension 
@@ -673,7 +674,7 @@ The content of oversec_dict is ::
 
 The overscan section and the data section could have been obtained in the 
 loop for each extension.  It is however more efficient to retrieve the
-descriptor information once, then three times in the loop, when it is 
+descriptor information once than three times in the loop, when it is 
 possible to do so.
 
 Moving on to the loop starting on Line 11.  For convenience, the extension
@@ -702,7 +703,7 @@ trimmed off.  Only the data section is kept.  This is done on Lines 27 and 28.
 Note that after the 'VAR' extension is appended, there are two extensions in
 the AstroData object, and in order to work with them, they must now be 
 specified.  Contrast that with the calls on Lines 13 and 19; then there were
-only one extension, the 'SCI' extension, and selection was implicit.
+still only one extension, the 'SCI' extension, and selection was implicit.
 
 A final but important reminder.  All of the work was done on the extensions
 extracted from the original AstroData object, ``ad``.  Since the extensions 
@@ -753,7 +754,7 @@ is reversed.  The dimensions of the ``ndarray`` are (wavelength, y, x).
    plt.plot(wavelength, adcube.data[:,29,6])
    plt.show()
 
-On Line 13, the cube is "collapse" in the wavelength dimension to produce a
+On Line 13, the cube is "collapsed" in the wavelength dimension to produce a
 "white light" 2-D image.
 
 On Line 17, a vector through the cube at pixel position (7,30) is retrieved
