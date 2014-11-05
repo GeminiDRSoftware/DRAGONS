@@ -973,8 +973,8 @@ class AstroData(CalculatorInterface):
             origFilename = phuOrigFilename
         return origFilename
 
-    def write(self, filename=None, clobber=False, rename=None, prefix = None, 
-              suffix = None):
+    def write(self, filename=None, clobber=False, rename=None, prefix=None, 
+              suffix=None):
         """
         The write method acts similarly to the 'pyfits HDUList.writeto(..)'
         function if a filename is given, or like 'pyfits.HDUList.update(..)' if 
@@ -1049,7 +1049,10 @@ class AstroData(CalculatorInterface):
 
         if (fname == None):
             raise Errors.AstroDataError("fname is None")
-            
+
+        if self.mode == 'update' or self.mode == 'append':
+            clobber = True
+
         if os.path.exists(fname):
             if clobber:
                 os.remove(fname)
