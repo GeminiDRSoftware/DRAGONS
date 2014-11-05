@@ -476,55 +476,22 @@ RECIPE:           recipe.FOO</pre>
 <h2>3.3. Application Programming Interface (API)<a class="headerlink" href="#application-programming-interface-api" title="Permalink to this headline">¶</a></h2>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">The following sections discuss and describe programming interfaces
-available on <tt class="docutils literal"><span class="pre">reduce</span></tt> and the underlying class Reduce.</p>
+<p class="last">The following section discuss and describe programming interfaces
+available on the coreReduce class Reduce.</p>
 </div>
 <p>The <tt class="docutils literal"><span class="pre">reduce</span></tt> application is essentially a skeleton script providing the
 described command line interface. After parsing the command line, the script
 then passes the parsed arguments to its main() function, which in turn calls
 the Reduce() class constructor with &#8220;args&#8221;. Class Reduce() is defined
-in the module <tt class="docutils literal"><span class="pre">coreReduce.py</span></tt>. <tt class="docutils literal"><span class="pre">reduce</span></tt> and class Reduce are both
+in the module <tt class="docutils literal"><span class="pre">coreReduce.py</span></tt>. The coreReduce class Reduce is importable and
 scriptable, as the following discussion will illustrate.</p>
-<div class="section" id="reduce-main">
-<span id="main"></span><h3>3.3.1. reduce.main()<a class="headerlink" href="#reduce-main" title="Permalink to this headline">¶</a></h3>
-<p>The main() function of reduce receives one (1) parameter that is a Namespace
-object as returned by a call on ArgumentParser.parse_args(). Specific to reduce,
-the caller can supply this object by a call on the parseUtils.buildParser()
-function, which returns a fully defined reduce parser. As usual, the parser
-object should then be called with the parse_args() method to return a valid
-reduce parser Namespace. Since there is no interaction with sys.argv, as in
-a command line call, all Namespace attributes have only their defined default
-values. It is for the caller to set these values as needed.</p>
-<p>As the example below demonstrates, once the &#8220;args&#8221; Namespace object is
-instantiated, a caller can set any arguments as needed. Bu they must be set
-to the correct type. The caller should examine the various &#8220;args&#8221; types to
-determine how to set values. For example, args.files is type list, whereas
-args.recipename is type string.</p>
-<p>Eg.,</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">astrodata.adutils.reduceutils</span> <span class="kn">import</span> <span class="nb">reduce</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">astrodata.adutils.reduceutils</span> <span class="kn">import</span> <span class="n">parseUtils</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">args</span> <span class="o">=</span> <span class="n">parseUtils</span><span class="o">.</span><span class="n">buildParser</span><span class="p">(</span><span class="s">&quot;Reduce,v2.0&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">args</span><span class="o">.</span><span class="n">files</span>
-<span class="go">[]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">args</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;S20130616S0019.fits&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">args</span><span class="o">.</span><span class="n">recipename</span> <span class="o">=</span> <span class="s">&quot;recipe.FOO&quot;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-<span class="go">--- reduce, v2.0 ---</span>
-<span class="go">Starting Reduction on set #1 of 1</span>
-<span class="go">Processing dataset(s):</span>
-<span class="go">S20130616S0019.fits</span>
-<span class="gp">...</span>
-</pre></div>
-</div>
-<p>Processing will proceed as usual.</p>
-</div>
 <div class="section" id="class-reduce-and-the-runr-method">
-<h3>3.3.2. Class Reduce and the runr() method<a class="headerlink" href="#class-reduce-and-the-runr-method" title="Permalink to this headline">¶</a></h3>
+<span id="main"></span><h3>3.3.1. Class Reduce and the runr() method<a class="headerlink" href="#class-reduce-and-the-runr-method" title="Permalink to this headline">¶</a></h3>
 <p>Class Reduce is defined in <tt class="docutils literal"><span class="pre">astrodata.adutils.reduceutils</span></tt> module,
 <tt class="docutils literal"><span class="pre">coreReduce.py</span></tt>.</p>
 <p>The reduce.main() function serves mainly as a callable for the command line
 interface. While main() is callable by users supplying the correct &#8220;args&#8221;
-parameter (See <a class="reference internal" href="#main"><em>reduce.main()</em></a>), the Reduce() class is also callable and
+parameter (See <a class="reference internal" href="#main"><em>Class Reduce and the runr() method</em></a>), the Reduce() class is also callable and
 can be used directly, and more appropriately. Callers need not supply an &#8220;args&#8221;
 parameter to the class constructor. The instance of Reduce will have all the
 same arguments as in a command line scenario, available as attributes on the
@@ -593,8 +560,7 @@ instance.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#application-programming-interface-api">3.3. Application Programming Interface (API)</a><ul>
-<li><a class="reference internal" href="#reduce-main">3.3.1. reduce.main()</a></li>
-<li><a class="reference internal" href="#class-reduce-and-the-runr-method">3.3.2. Class Reduce and the runr() method</a></li>
+<li><a class="reference internal" href="#class-reduce-and-the-runr-method">3.3.1. Class Reduce and the runr() method</a></li>
 </ul>
 </li>
 </ul>

@@ -506,6 +506,8 @@ class Reduce(object):
         for output in outputs:
             ad = output.ad
             adname = ad.filename
+            origname  = None
+            user_name = None
             if self.suffix:
                 origname, user_name = self._make_user_name(adname, self.suffix)
             try:

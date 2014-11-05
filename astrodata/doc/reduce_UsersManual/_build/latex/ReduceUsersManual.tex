@@ -13,7 +13,7 @@
 \usepackage{appendix} \setcounter{tocdepth}{0}
 
 \title{reduce Users Manual}
-\date{October 27, 2014}
+\date{November 05, 2014}
 \release{X1}
 \author{Kennneth Anderson}
 \newcommand{\sphinxlogo}{}
@@ -949,64 +949,26 @@ RECIPE:           recipe.FOO
 \section{Application Programming Interface (API)}
 \label{interfaces:application-programming-interface-api}
 \begin{notice}{note}{Note:}
-The following sections discuss and describe programming interfaces
-available on \code{reduce} and the underlying class Reduce.
+The following section discuss and describe programming interfaces
+available on the coreReduce class Reduce.
 \end{notice}
 
 The \code{reduce} application is essentially a skeleton script providing the
 described command line interface. After parsing the command line, the script
 then passes the parsed arguments to its main() function, which in turn calls
 the Reduce() class constructor with ``args''. Class Reduce() is defined
-in the module \code{coreReduce.py}. \code{reduce} and class Reduce are both
+in the module \code{coreReduce.py}. The coreReduce class Reduce is importable and
 scriptable, as the following discussion will illustrate.
 
 
-\subsection{reduce.main()}
-\label{interfaces:main}\label{interfaces:reduce-main}
-The main() function of reduce receives one (1) parameter that is a Namespace
-object as returned by a call on ArgumentParser.parse\_args(). Specific to reduce,
-the caller can supply this object by a call on the parseUtils.buildParser()
-function, which returns a fully defined reduce parser. As usual, the parser
-object should then be called with the parse\_args() method to return a valid
-reduce parser Namespace. Since there is no interaction with sys.argv, as in
-a command line call, all Namespace attributes have only their defined default
-values. It is for the caller to set these values as needed.
-
-As the example below demonstrates, once the ``args'' Namespace object is
-instantiated, a caller can set any arguments as needed. Bu they must be set
-to the correct type. The caller should examine the various ``args'' types to
-determine how to set values. For example, args.files is type list, whereas
-args.recipename is type string.
-
-Eg.,
-
-\begin{Verbatim}[commandchars=\\\{\}]
-\PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{k+kn}{from} \PYG{n+nn}{astrodata.adutils.reduceutils} \PYG{k+kn}{import} \PYG{n+nb}{reduce}
-\PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{k+kn}{from} \PYG{n+nn}{astrodata.adutils.reduceutils} \PYG{k+kn}{import} \PYG{n}{parseUtils}
-\PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{n}{args} \PYG{o}{=} \PYG{n}{parseUtils}\PYG{o}{.}\PYG{n}{buildParser}\PYG{p}{(}\PYG{l+s}{"}\PYG{l+s}{Reduce,v2.0}\PYG{l+s}{"}\PYG{p}{)}\PYG{o}{.}\PYG{n}{parse\PYGZus{}args}\PYG{p}{(}\PYG{p}{)}
-\PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{n}{args}\PYG{o}{.}\PYG{n}{files}
-\PYG{g+go}{[]}
-\PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{n}{args}\PYG{o}{.}\PYG{n}{files}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{l+s}{'}\PYG{l+s}{S20130616S0019.fits}\PYG{l+s}{'}\PYG{p}{)}
-\PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{n}{args}\PYG{o}{.}\PYG{n}{recipename} \PYG{o}{=} \PYG{l+s}{"}\PYG{l+s}{recipe.FOO}\PYG{l+s}{"}
-\PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{main}\PYG{p}{(}\PYG{n}{args}\PYG{p}{)}
-\PYG{g+go}{--- reduce, v2.0 ---}
-\PYG{g+go}{Starting Reduction on set \PYGZsh{}1 of 1}
-\PYG{g+go}{Processing dataset(s):}
-\PYG{g+go}{S20130616S0019.fits}
-\PYG{g+gp}{...}
-\end{Verbatim}
-
-Processing will proceed as usual.
-
-
 \subsection{Class Reduce and the runr() method}
-\label{interfaces:class-reduce-and-the-runr-method}
+\label{interfaces:main}\label{interfaces:class-reduce-and-the-runr-method}
 Class Reduce is defined in \code{astrodata.adutils.reduceutils} module,
 \code{coreReduce.py}.
 
 The reduce.main() function serves mainly as a callable for the command line
 interface. While main() is callable by users supplying the correct ``args''
-parameter (See {\hyperref[interfaces:main]{\emph{reduce.main()}}}), the Reduce() class is also callable and
+parameter (See {\hyperref[interfaces:main]{\emph{Class Reduce and the runr() method}}}), the Reduce() class is also callable and
 can be used directly, and more appropriately. Callers need not supply an ``args''
 parameter to the class constructor. The instance of Reduce will have all the
 same arguments as in a command line scenario, available as attributes on the

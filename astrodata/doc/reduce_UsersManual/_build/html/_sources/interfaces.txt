@@ -479,53 +479,17 @@ Eg. 4) Override a recipe and specify another fits file ::
 
 Application Programming Interface (API)
 ---------------------------------------
-.. note:: The following sections discuss and describe programming interfaces
-          available on ``reduce`` and the underlying class Reduce.
+.. note:: The following section discuss and describe programming interfaces
+          available on the coreReduce class Reduce.
 
 The ``reduce`` application is essentially a skeleton script providing the 
 described command line interface. After parsing the command line, the script 
 then passes the parsed arguments to its main() function, which in turn calls 
 the Reduce() class constructor with "args". Class Reduce() is defined 
-in the module ``coreReduce.py``. ``reduce`` and class Reduce are both 
+in the module ``coreReduce.py``. The coreReduce class Reduce is importable and 
 scriptable, as the following discussion will illustrate.
 
 .. _main:
-
-reduce.main()
-+++++++++++++
-
-The main() function of reduce receives one (1) parameter that is a Namespace 
-object as returned by a call on ArgumentParser.parse_args(). Specific to reduce, 
-the caller can supply this object by a call on the parseUtils.buildParser() 
-function, which returns a fully defined reduce parser. As usual, the parser 
-object should then be called with the parse_args() method to return a valid 
-reduce parser Namespace. Since there is no interaction with sys.argv, as in 
-a command line call, all Namespace attributes have only their defined default 
-values. It is for the caller to set these values as needed.
-
-As the example below demonstrates, once the "args" Namespace object is 
-instantiated, a caller can set any arguments as needed. Bu they must be set 
-to the correct type. The caller should examine the various "args" types to 
-determine how to set values. For example, args.files is type list, whereas 
-args.recipename is type string.
-
-Eg.,
-
-    >>> from astrodata.adutils.reduceutils import reduce
-    >>> from astrodata.adutils.reduceutils import parseUtils
-    >>> args = parseUtils.buildParser("Reduce,v2.0").parse_args()
-    >>> args.files
-    []
-    >>> args.files.append('S20130616S0019.fits')
-    >>> args.recipename = "recipe.FOO"
-    >>> reduce.main(args)
-    --- reduce, v2.0 ---
-    Starting Reduction on set #1 of 1
-    Processing dataset(s):
-    S20130616S0019.fits
-    ...
-
-Processing will proceed as usual.
 
 Class Reduce and the runr() method
 ++++++++++++++++++++++++++++++++++
