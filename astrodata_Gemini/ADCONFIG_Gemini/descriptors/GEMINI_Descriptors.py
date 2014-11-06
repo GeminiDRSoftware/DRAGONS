@@ -1177,7 +1177,8 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             #print "Trying to use OBSSTART"
             obsstart = dataset.phu_get_key_value("OBSSTART").strip()
             if(obsstart):
-                ut_datetime = dateutil.parser.parse(obsstart)
+                # Sometimes has a Z on the end which gives the datetime a tzinfo = tzutc
+                ut_datetime = dateutil.parser.parse(obsstart).replace(tzinfo=None)
                 #print "Did it by OBSSTART"
                 if(dateonly):
                     return ut_datetime.date()
