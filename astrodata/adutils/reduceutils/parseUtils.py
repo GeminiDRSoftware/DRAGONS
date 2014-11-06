@@ -24,23 +24,16 @@ This module provides command line parsing facilities tuned to reduce and
 GDPSG requirements on handling reduce arguments.
 
 """
-import os
-import re
-import sys
-
 from argparse import ArgumentParser
 from argparse import HelpFormatter
-
-from astrodata.RecipeManager import UserParam, UserParams
-from astrodata.AstroDataType import get_classification_library
-
-from astrodata.adutils import strutil
 
 from reduceActions import PosArgAction
 from reduceActions import BooleanAction 
 from reduceActions import ParameterAction
 from reduceActions import CalibrationAction
 from reduceActions import UnitaryArgumentAction
+
+from astrodata.RecipeManager import UserParam, UserParams
 
 # ------------------------------------------------------------------------------
 class ReduceHelpFormatter(HelpFormatter):
@@ -192,7 +185,7 @@ def parser_has_option(parser, option):
     return parser.__dict__['_option_string_actions'].has_key(option)
 
 def get_option_flags(parser, option):
-    return parser.__dict__['_option_string_actions'][option].__dict__['option_strings']
+    return parser.__dict__['_option_string_actions'][option].__dict__['option_strings'] 
 
 def insert_option_value(parser, args, option, value):
     exec("args.%s=value" % \
