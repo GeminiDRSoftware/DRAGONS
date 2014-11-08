@@ -68,3 +68,10 @@ class BHROS_DescriptorCalc(GEMINI_DescriptorCalc):
                                  name="central_wavelength", ad=dataset)
         return ret_dv
 
+    def disperser(self, dataset, stripID=False, pretty=False, **args):
+
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue('bHROS', name="disperser", ad=dataset)
+
+        return ret_dv
+
