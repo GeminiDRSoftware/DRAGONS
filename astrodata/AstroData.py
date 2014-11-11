@@ -918,8 +918,8 @@ class AstroData(CalculatorInterface):
     def remove(self, index, hdui=False):
         """
         :param index: the extension index, either an int or (EXTNAME, EXTVER)
-                      pair before which the extension is to be inserted.
-                      Note: the first data extension is [0], you cannot insert 
+                      pair before which the extension is to be removed.
+                      Note: the first data extension is [0], you cannot remove 
                       before the PHU. Index always refers to Astrodata Numbering 
                       system, 0 = HDU
         :type index: <int>, or <tuple> (EXTNAME,EXTVER)
