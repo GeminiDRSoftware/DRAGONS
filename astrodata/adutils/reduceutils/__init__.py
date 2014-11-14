@@ -1,3 +1,3 @@
-# __init__.py for ReduceUtils
+# __init__.py for reduceutils
 
-__version__ = '0.9 (December 2010)'
+__version__ = 'Release GP-X1 (05-11-2014)'
