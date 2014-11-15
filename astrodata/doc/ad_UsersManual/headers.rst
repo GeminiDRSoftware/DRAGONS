@@ -60,7 +60,7 @@ To get the list of descriptors available for an AstroData object::
    ad.descriptors
    sorted(ad.descriptors.keys())
 
-The ``descriptors`` property contains a dictionary with the name of the
+The ``descriptors`` property returns a dictionary with the name of the
 descriptors available for this AstroData object as the keys.  The really
 interesting information is in the keys.  On Line 5, we retrieve the
 sorted list of available Descriptors.

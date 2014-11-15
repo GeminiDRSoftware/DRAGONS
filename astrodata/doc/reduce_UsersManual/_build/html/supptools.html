@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -8,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>4. Supplemental tools &mdash; Reduce Users Manual X1 documentation</title>
+    <title>4. Supplemental tools &mdash; Reduce Users Manual X1.0.1 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,8 +14,8 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '',
-        VERSION:     'X1',
+        URL_ROOT:    './',
+        VERSION:     'X1.0.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,7 +24,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Reduce Users Manual X1 documentation" href="index.html" />
+    <link rel="top" title="Reduce Users Manual X1.0.1 documentation" href="index.html" />
     <link rel="next" title="5. Discussion" href="discuss.html" />
     <link rel="prev" title="3. Interfaces" href="interfaces.html" /> 
   </head>
@@ -43,7 +41,7 @@
         <li class="right" >
           <a href="interfaces.html" title="3. Interfaces"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">Reduce Users Manual X1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">Reduce Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -69,7 +67,7 @@ This tool displays available primitives for all AstroDataTypes, their parameters
 and defaults. These are the parameters discussed in Sec. <a class="reference internal" href="interfaces.html#userpars"><em>Overriding Primitive Parameters</em></a> that
 can be changed by the user with the <strong>-p, &#8211;param</strong> option on reduce. under the
 AstroDataTypes. The help describes more options:</p>
-<div class="highlight-python"><pre>$ listprimitives -h
+<div class="highlight-python"><div class="highlight"><pre>$ listprimitives -h
 
 Usage: listprimitives [options]
 
@@ -84,14 +82,15 @@ Options:
 -s, --primitive-set   show primitive sets (Astrodata types)
 -v, --verbose         set verbose mode
 --view-recipe=VIEW_RECIPE
-                      display the recipe</pre>
+                      display the recipe
+</pre></div>
 </div>
 <div class="section" id="listprimitives-information">
 <h3>4.1.1. listprimitives information<a class="headerlink" href="#listprimitives-information" title="Permalink to this headline">¶</a></h3>
 <p>The following section presents examples of the kind of information that
 <tt class="docutils literal"><span class="pre">listprimitives</span></tt> may provide.</p>
 <p>Show available recipes:</p>
-<div class="highlight-python"><pre>$ listprimitives -r
+<div class="highlight-python"><div class="highlight"><pre>$ listprimitives -r
 
 ===============================================================================
 
@@ -129,10 +128,11 @@ Subrecipes
    10. standardizeHeaders
    11. thermalEmissionCorrect
 
-===============================================================================</pre>
+===============================================================================
+</pre></div>
 </div>
-<p>Users can request display the contents of a particular recipe, as listed above.
-This will present the &#8216;stack&#8217; of primitives that will be called by the
+<p>Users can also display the contents of a particular recipe or subrecipe.
+This will present the sequence of primitives that will be called by the
 Recipe System when the particular recipe is either specified through the
 <tt class="docutils literal"><span class="pre">reduce</span></tt> command line by the user, or selected internally by the Recipe System
 itself.</p>
@@ -140,7 +140,7 @@ itself.</p>
 &#8216;QA&#8217; recipe for GMOS_IMAGE data. As seen in the above example, these &#8216;qa&#8217; recipes
 are defined for several AstroDataTypes.</p>
 <p>Show the primitive stack for the &#8216;qa&#8217; GMOS_IMAGE type:</p>
-<div class="highlight-python"><pre>$ listprimitives --view-recipe qaReduce.GMOS_IMAGE
+<div class="highlight-python"><div class="highlight"><pre>$ listprimitives --view-recipe qaReduce.GMOS_IMAGE
 
 ===============================================================================
 RECIPE: qaReduce.GMOS_IMAGE
@@ -170,7 +170,8 @@ measureCCAndAstrometry
 addToList(purpose=forStack)
 
 
-===============================================================================</pre>
+===============================================================================
+</pre></div>
 </div>
 <p><tt class="docutils literal"><span class="pre">listprimitives</span></tt> is in need of refinement and work continues on
 building a tool that will present primitives and parameters in a more focused
@@ -181,14 +182,15 @@ display primitive parameters (as may be passed to <tt class="docutils literal"><
 list of all AstroDataTypes, their primitives and associated parameters.
 Admittedly, this list is rather ungainly, but users may see, for example, that
 the primitive <tt class="docutils literal"><span class="pre">detectSources</span></tt> has several user-tunable parameters:</p>
-<div class="highlight-python"><pre>detectSources
-    suffix: '_sourcesDetected'
-    centroid_function: 'moffat'
+<div class="highlight-python"><div class="highlight"><pre>detectSources
+    suffix: &#39;_sourcesDetected&#39;
+    centroid_function: &#39;moffat&#39;
     threshold: 3.0
     sigma: None
     fwhm: None
-    method: 'sextractor'
-    max_sources: 50</pre>
+    method: &#39;sextractor&#39;
+    max_sources: 50
+</pre></div>
 </div>
 <p>See the discussion in Sec. <a class="reference internal" href="interfaces.html#userpars"><em>Overriding Primitive Parameters</em></a> on command line override of
 primitive parameters, and where overriding the &#8216;threshold&#8217; parameter is dicussed
@@ -197,19 +199,17 @@ specifically.</p>
 </div>
 <div class="section" id="typewalk">
 <span id="id1"></span><h2>4.2. typewalk<a class="headerlink" href="#typewalk" title="Permalink to this headline">¶</a></h2>
-<p>As with <tt class="docutils literal"><span class="pre">listprimitives</span></tt> and <tt class="docutils literal"><span class="pre">reduce</span></tt>, the command line application <tt class="docutils literal"><span class="pre">typewalk</span></tt>
-becomes available once the user has configured astrodata correctly. <tt class="docutils literal"><span class="pre">typewalk</span></tt>
-examines files in a directory or directory tree and reports the types and status
-values through the AstroDataType classification scheme. Running <tt class="docutils literal"><span class="pre">typewalk</span></tt> on a
-directory containing some Gemini datasets will demonstrate what users can expect
+<p><tt class="docutils literal"><span class="pre">typewalk</span></tt> examines files in a directory or directory tree and reports the types
+and status values through the AstroDataType classification scheme. Running <tt class="docutils literal"><span class="pre">typewalk</span></tt>
+on a directory containing some Gemini datasets will demonstrate what users can expect
 to see. If a user has downloaded gemini_python X1 package with the &#8216;test_data&#8217;, the
 user can move to this directory and run <tt class="docutils literal"><span class="pre">typewalk</span></tt> on that extensive set of
 Gemini datasets.</p>
 <p>By default, <tt class="docutils literal"><span class="pre">typewalk</span></tt> will recurse all subdirectories under the current
 directory. Users may specify an explicit directory with the <strong>-d</strong> or
-<strong>&#8211;dir</strong> option.</p>
+<strong>&#8211;dir</strong> option; the behavior remains recursive.</p>
 <p><tt class="docutils literal"><span class="pre">typewalk</span></tt> provides the following options [<strong>-h, &#8211;help</strong>]:</p>
-<div class="highlight-python"><pre>-h, --help            show this help message and exit
+<div class="highlight-python"><div class="highlight"><pre>-h, --help            show this help message and exit
 -b BATCHNUM, --batch BATCHNUM
                       In shallow walk mode, number of files to process at a
                       time in the current directory. Controls behavior in
@@ -225,7 +225,7 @@ directory. Users may specify an explicit directory with the <strong>-d</strong> 
 --keys KEY [KEY ...]  Print keyword values for reported files.Eg., --keys
                       TELESCOP OBJECT
 -n, --norecurse       Do not recurse subdirectories.
---or                  Use OR logic on 'types' criteria. If not specified,
+--or                  Use OR logic on &#39;types&#39; criteria. If not specified,
                       matching logic is AND (See --types). Eg., --or --types
                       GEMINI_SOUTH GMOS_IMAGE will report datasets that are
                       either GEMINI_SOUTH *OR* GMOS_IMAGE.
@@ -240,7 +240,8 @@ directory. Users may specify an explicit directory with the <strong>-d</strong> 
 --status              Report data processing status only.
 --typology            Report data typologies only.
 --xtypes XTYPES [[XTYPES ...]
-                      Exclude &lt;xtypes&gt; from reporting.</pre>
+                      Exclude &lt;xtypes&gt; from reporting.
+</pre></div>
 </div>
 <p>Files are selected and reported through a regular expression mask which,
 by default, finds all &#8221;.fits&#8221; and &#8221;.FITS&#8221; files. Users can change this mask
@@ -263,18 +264,20 @@ present (x AND y); <strong>&#8211;or</strong> specifies that ANY types, enumerat
 <p>For example, find all GMOS images from Cerro Pachon in the top level
 directory and write out the matching files, then run reduce on them
 (<strong>-n</strong> is &#8216;norecurse&#8217;):</p>
-<div class="highlight-python"><pre>$ typewalk -n --types GEMINI_SOUTH GMOS_IMAGE --out gmos_images_south
-$ reduce @gmos_images_south</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ typewalk -n --types GEMINI_SOUTH GMOS_IMAGE --out gmos_images_south
+$ reduce @gmos_images_south
+</pre></div>
 </div>
 <p>Find all F2_SPECT and GMOS_SPECT datasets in a directory tree:</p>
-<div class="highlight-python"><pre>$ typewalk --or --types GMOS_SPECT F2_SPECT</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ typewalk --or --types GMOS_SPECT F2_SPECT
+</pre></div>
 </div>
 <p>This will also report match results to stdout, colourized if requested (<strong>-c</strong>).</p>
 <p>Users may find the <strong>&#8211;xtypes</strong> flag useful, as it provides a facility for
 filtering results further by allowing certain types to be excluded from the
 report.</p>
 <p>For example, find GMOS_IMAGE types, but exclude ACQUISITION images from reporting:</p>
-<div class="highlight-python"><pre>$ typewalk --types GMOS_IMAGE --xtypes ACQUISITION
+<div class="highlight-python"><div class="highlight"><pre>$ typewalk --types GMOS_IMAGE --xtypes ACQUISITION
 
 directory: ../test_data/output
    S20131010S0105.fits ............... (GEMINI) (GEMINI_SOUTH) (GMOS) (GMOS_IMAGE)
@@ -286,14 +289,16 @@ directory: ../test_data/output
 
    S20131010S0105_forStack.fits ...... (GEMINI) (GEMINI_SOUTH) (GMOS) (GMOS_IMAGE)
    (GMOS_S) (IMAGE) (NEEDSFLUXCAL) (OVERSCAN_SUBTRACTED) (OVERSCAN_TRIMMED)
-   (PREPARED) (SIDEREAL)</pre>
+   (PREPARED) (SIDEREAL)
+</pre></div>
 </div>
 <p>Exclude ACQUISITION images that have already had some processing done:</p>
-<div class="highlight-python"><pre>$ typewalk --types GMOS_IMAGE --xtypes ACQUISITION PREPARED
+<div class="highlight-python"><div class="highlight"><pre>$ typewalk --types GMOS_IMAGE --xtypes ACQUISITION PREPARED
 
 directory: ../test_data/output
    S20131010S0105.fits ............... (GEMINI) (GEMINI_SOUTH) (GMOS) (GMOS_IMAGE)
-   (GMOS_RAW) (GMOS_S) (IMAGE) (RAW) (SIDEREAL) (UNPREPARED)</pre>
+   (GMOS_RAW) (GMOS_S) (IMAGE) (RAW) (SIDEREAL) (UNPREPARED)
+</pre></div>
 </div>
 <p>With <strong>&#8211;types</strong> and <strong>&#8211;xtypes</strong>, users may really tune their searches for very
 specific datasets.</p>
@@ -358,12 +363,12 @@ specific datasets.</p>
         <li class="right" >
           <a href="interfaces.html" title="3. Interfaces"
              >previous</a> |</li>
-        <li><a href="index.html">Reduce Users Manual X1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">Reduce Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2014, Kennneth Anderson.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>

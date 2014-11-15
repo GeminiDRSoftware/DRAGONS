@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -8,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>1. Introduction &mdash; Reduce Users Manual X1 documentation</title>
+    <title>1. Introduction &mdash; Reduce Users Manual X1.0.1 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,8 +14,8 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '',
-        VERSION:     'X1',
+        URL_ROOT:    './',
+        VERSION:     'X1.0.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,7 +24,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Reduce Users Manual X1 documentation" href="index.html" />
+    <link rel="top" title="Reduce Users Manual X1.0.1 documentation" href="index.html" />
     <link rel="next" title="2. Installation" href="userenv.html" />
     <link rel="prev" title="reduce Users Manual" href="index.html" /> 
   </head>
@@ -43,7 +41,7 @@
         <li class="right" >
           <a href="index.html" title="reduce Users Manual"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">Reduce Users Manual X1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">Reduce Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -141,7 +139,8 @@ performs actual work on the passed dataset. Primitives observe tightly
 controlled interfaces in support of re-use of primitives and recipes for
 different types of data, when possible. For example, all primitives called
 <tt class="docutils literal"><span class="pre">flatCorrect</span></tt> must apply the flat field correction appropriate for the data’s
-current AstroDataType, and must have the same set of input parameters.</p>
+current AstroDataType, and must have the same set of input parameters.  This
+is a Gemini Coding Standard, it is not enforced by the Recipe System.</p>
 <p><strong>recipe</strong> &#8211; Represents the sequence of transformations. A recipe is a
 simple text file that enumerates the set and order of <strong>primitives</strong> that will
 process the passed dataset. A <strong>recipe</strong> is the high-level pipeline definition.
@@ -151,6 +150,9 @@ pipeline.</p>
 number of defined recipes and the primitives</p>
 <p><strong>reduce</strong> &#8211; The user/caller interface to the Recipe System and its associated
 recipes/pipelines.</p>
+<p><strong>subrecipe</strong> &#8211; Shorter recipe called like a primitive by a recipe or another
+subrecipe.  The subrecipes are not part of the main recipe index, they are more
+akin in purpose to primitives than to recipes.</p>
 <p><strong>type</strong> or <strong>typeset</strong> &#8211;  Not to be confused with language primitive or
 programmatic data types, these are data types defined within an
 <strong>astrodata_[X]</strong> package used to describe the kind of observational data that
@@ -178,7 +180,7 @@ these terms are synonymous with <strong>AstroDataType</strong> unless otherwise 
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="index.html"
-                        title="previous chapter"><tt class="docutils literal docutils literal docutils literal docutils literal"><span class="pre">reduce</span></tt> Users Manual</a></p>
+                        title="previous chapter"><tt class="docutils literal docutils literal docutils literal docutils literal docutils literal docutils literal docutils literal"><span class="pre">reduce</span></tt> Users Manual</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="userenv.html"
                         title="next chapter">2. Installation</a></p>
@@ -216,12 +218,12 @@ these terms are synonymous with <strong>AstroDataType</strong> unless otherwise 
         <li class="right" >
           <a href="index.html" title="reduce Users Manual"
              >previous</a> |</li>
-        <li><a href="index.html">Reduce Users Manual X1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">Reduce Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2014, Kennneth Anderson.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>

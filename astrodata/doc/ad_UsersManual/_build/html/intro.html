@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>1. Introduction &mdash; AstroData Users Manual 0.9.0 documentation</title>
+    <title>1. Introduction &mdash; AstroData Users Manual X1.0.1 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -15,7 +15,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.9.0',
+        VERSION:     'X1.0.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="AstroData Users Manual 0.9.0 documentation" href="index.html" />
+    <link rel="top" title="AstroData Users Manual X1.0.1 documentation" href="index.html" />
     <link rel="next" title="2. MEF Input/Output Operations and Extensions Manipulation" href="io.html" />
     <link rel="prev" title="AstroData User’s Manual" href="index.html" /> 
   </head>
@@ -41,7 +41,7 @@
         <li class="right" >
           <a href="index.html" title="AstroData User’s Manual"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -54,25 +54,48 @@
 <span id="intro"></span><h1>1. Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="what-is-astrodata">
 <h2>1.1. What is AstroData?<a class="headerlink" href="#what-is-astrodata" title="Permalink to this headline">¶</a></h2>
-<div class="admonition-todo admonition" id="index-0">
-<p class="first admonition-title">Todo</p>
-<p class="last">Describe AstroData in a language that astronomer will comprehend.</p>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">For the TODO: use language a scientist will comprehend.  then either refer to the programmer&#8217;s reference
-or add a section clearly advertised to programmers.  the idea is that we don&#8217;t want to lose
-the scientists, but if some readers are more technically oriented we also want to make sure
-they get the info they are after.</p>
-</div>
+<p>The AstroData class is a tool to represent datasets stored in
+Multi-Extension FITS (MEF) files. It provides uniform interfaces for
+working on datasets from different instruments and their observational modes.
+Configuration packages are used to describe the specific data characteristics,
+layout, and to store type-specific implementations.  Once a MEF has been
+opened with AstroData, the object it is assigned to knows essential information
+about itself, like from which instrument this data comes from, how to access
+the header information, etc.</p>
+<p>Multi-extension FITS files are generalized as lists of header-data units
+(HDU), with key-value pairs populating headers, and pixel values populating
+data arrays. AstroData interprets a MEF as a single complex entity.  The
+individual &#8220;extensions&#8221; within the MEF are available with normal Python list
+(&#8220;[]&#8221;) syntax.</p>
+<p>In order to identify types for the dataset and provide type-specific behavior,
+AstroData relies on configuration packages.  A configuration package (eg.
+<tt class="docutils literal"><span class="pre">astrodata_Gemini</span></tt>) contains definitions for all instruments and modes. A
+configuration package contains type definitions, meta-data functions,
+information lookup tables, and any other code or information needed to handle
+specific types of dataset.</p>
 </div>
 <div class="section" id="installing-astrodata">
 <span id="install"></span><h2>1.2. Installing AstroData<a class="headerlink" href="#installing-astrodata" title="Permalink to this headline">¶</a></h2>
 <p>The <tt class="docutils literal"><span class="pre">astrodata</span></tt> package has several dependencies like <tt class="docutils literal"><span class="pre">numpy</span></tt>, <tt class="docutils literal"><span class="pre">astropy</span></tt>, and others.
 The best way to get everything you need is to install Ureka, <a class="reference external" href="http://ssb.stsci.edu/ureka/">http://ssb.stsci.edu/ureka/</a>.</p>
+<p>WARNING:  The Ureka installation script will not set up IRAF for you. You need to do
+that yourself. Here&#8217;s how:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ cd ~
+$ mkdir iraf
+$ cd iraf
+$ mkiraf
+-- creating a new uparm directory
+Terminal types: xgterm,xterm,gterm,vt640,vt100,etc.
+Enter terminal type: xgterm
+A new LOGIN.CL file has been created in the current directory.
+You may wish to review and edit this file to change the defaults.
+</pre></div>
+</div>
 <p>Once this is done, install <tt class="docutils literal"><span class="pre">gemini_python</span></tt>.  The <tt class="docutils literal"><span class="pre">astrodata</span></tt> package is currently
 distributed as part of the <tt class="docutils literal"><span class="pre">gemini_python</span></tt> package.  The <tt class="docutils literal"><span class="pre">gemini_python</span></tt> package,
-<tt class="docutils literal"><span class="pre">gemini_python-X1.tar.gz</span></tt>, can be obtained from the Gemini website.</p>
+<tt class="docutils literal"><span class="pre">gemini_python-X1.tar.gz</span></tt>, can be obtained from the Gemini website:</p>
+<blockquote>
+<div><a class="reference external" href="http://www.gemini.edu/sciops/data-and-results/processing-software">http://www.gemini.edu/sciops/data-and-results/processing-software</a></div></blockquote>
 <div class="section" id="recommended-installation">
 <h3>1.2.1. Recommended installation<a class="headerlink" href="#recommended-installation" title="Permalink to this headline">¶</a></h3>
 <p>It is recommended to install the software in a location other than the standard python
@@ -91,13 +114,13 @@ In this manual, we will not use <tt class="docutils literal"><span class="pre">g
 your environment.  You might want to add the following to your .cshrc or .bash_profile,
 or equivalent shell configuration script.</p>
 <p>For tcsh:</p>
-<div class="highlight-python"><div class="highlight"><pre>setenv PATH /your/favorite/location:${PATH}
-setenv PYTHONPATH /your/favorite/location:${PYTHONPATH}
+<div class="highlight-python"><div class="highlight"><pre>setenv PATH /your/favorite/location/bin:${PATH}
+setenv PYTHONPATH /your/favorite/location/lib/python2.7/site-packages:${PYTHONPATH}
 </pre></div>
 </div>
 <p>For bash:</p>
-<div class="highlight-python"><div class="highlight"><pre>export PATH=/your/favorite/location:${PATH}
-export PYTHONPATH=/your/favorite/location:${PYTHONPATH}
+<div class="highlight-python"><div class="highlight"><pre>export PATH=/your/favorite/location/bin:${PATH}
+export PYTHONPATH=/your/favorite/location/lib/python2.7/site-packages:${PYTHONPATH}
 </pre></div>
 </div>
 <p>If you added those lines to your shell configuration script, make sure your <tt class="docutils literal"><span class="pre">source</span></tt>
@@ -215,7 +238,7 @@ on a best-effort basis only.</p>
         <li class="right" >
           <a href="index.html" title="AstroData User’s Manual"
              >previous</a> |</li>
-        <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

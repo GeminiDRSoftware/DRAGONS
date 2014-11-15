@@ -141,7 +141,7 @@ PyFITS header operations are valid.
       print 'The value of NAXIS2 is: ', hdr.get('NAXIS2')
       print
    
-*(Python Beginner's Note 1: The ``#`` on line 8 and 13 are not necessary to the 
+*(Python Beginner's Note 1: The ``#`` on line 8 and 14 are not necessary to the 
 code but simplify
 the cut and paste of the statements from the HTML page to the Python
 shell, without affecting readability.)*
@@ -178,7 +178,7 @@ NOT copied, the new variables simply point to the information stored in the
 AstroData object.  If ``data`` or ``hdr`` are modified, the AstroData object
 itself will be modified.
 
-In the example above, a loop through the extension is used.  To access a specific
+In the example above, a loop through the extensions is used.  To access a specific
 extension by name, it is also possible to do something like this::
       
    data = ad['SCI',1].data

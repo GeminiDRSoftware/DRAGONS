@@ -306,7 +306,7 @@ The ``table1`` columns are now::
 Appending and deleting rows
 ---------------------------
 
-Appending and deleting rows is uncanningly complicated with PyFITS.
+Appending and deleting rows is uncannily complicated with PyFITS.
 This is an area where the use ``astropy.table`` can certainly help.  We hope
 to be able to add astropy-based examples to this manual in the near future.
 But for now, let us study the PyFITS way.
@@ -368,7 +368,7 @@ new size (Lines 10-11).
 Changing a value
 ----------------
 
-Changing a value is simply a matter of identify the column and the row that 
+Changing a value is simply a matter of identifying the column and the row that 
 needs the new value.
 
 Below we show how one might search one column to identify the row and then 

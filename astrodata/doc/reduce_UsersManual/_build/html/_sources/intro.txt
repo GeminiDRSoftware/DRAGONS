@@ -105,7 +105,8 @@ Glossary
   controlled interfaces in support of re-use of primitives and recipes for 
   different types of data, when possible. For example, all primitives called 
   ``flatCorrect`` must apply the flat field correction appropriate for the data’s 
-  current AstroDataType, and must have the same set of input parameters.
+  current AstroDataType, and must have the same set of input parameters.  This
+  is a Gemini Coding Standard, it is not enforced by the Recipe System.
 
   **recipe** -- Represents the sequence of transformations. A recipe is a 
   simple text file that enumerates the set and order of **primitives** that will 
@@ -119,6 +120,10 @@ Glossary
   **reduce** -- The user/caller interface to the Recipe System and its associated 
   recipes/pipelines.
 
+  **subrecipe** -- Shorter recipe called like a primitive by a recipe or another
+  subrecipe.  The subrecipes are not part of the main recipe index, they are more
+  akin in purpose to primitives than to recipes. 
+  
   **type** or **typeset** --  Not to be confused with language primitive or 
   programmatic data types, these are data types defined within an 
   **astrodata_[X]** package used to describe the kind of observational data that 

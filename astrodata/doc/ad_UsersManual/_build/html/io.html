@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>2. MEF Input/Output Operations and Extensions Manipulation &mdash; AstroData Users Manual 0.9.0 documentation</title>
+    <title>2. MEF Input/Output Operations and Extensions Manipulation &mdash; AstroData Users Manual X1.0.1 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -15,7 +15,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.9.0',
+        VERSION:     'X1.0.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="AstroData Users Manual 0.9.0 documentation" href="index.html" />
+    <link rel="top" title="AstroData Users Manual X1.0.1 documentation" href="index.html" />
     <link rel="next" title="3. AstroDataTypes" href="types.html" />
     <link rel="prev" title="1. Introduction" href="intro.html" /> 
   </head>
@@ -41,7 +41,7 @@
         <li class="right" >
           <a href="intro.html" title="1. Introduction"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -56,9 +56,9 @@
 Multi-Extension FITS (MEF) file.</p>
 <p>A MEF file is a Primary Header Unit (PHU) with a list of Header Data Units
 (HDU), commonly referred to as extensions.  In AstroData, the extension
-numbering is zero-based, the first extension is <tt class="docutils literal"><span class="pre">myAstroData[0]</span></tt> where
+numbering is zero-indexed, the first extension is <tt class="docutils literal"><span class="pre">myAstroData[0]</span></tt> where
 <tt class="docutils literal"><span class="pre">myAstroData</span></tt> is an open AstroData object.  If you are familiar with
-IRAF, then keep in mind that in IRAF the extensions are 1-based.  For
+IRAF, then keep in mind that in IRAF the extensions are 1-indexed.  For
 example:</p>
 <div class="highlight-python"><div class="highlight"><pre># In IRAF
 display myMEF[1]
@@ -68,7 +68,7 @@ numdisplay.display(myAstroData[0].data)
 </pre></div>
 </div>
 <p>The first data extension is 1 in IRAF, but it is 0 in AstroData.  All Python
-arrays are zero-based, so AstroData was made compliant with modern practice.</p>
+arrays are zero-indexed, so AstroData was made compliant with modern practice.</p>
 <p><strong>Try it yourself</strong></p>
 <p>If you wish to follow along and try the commands yourself, download
 the data package, go to the <tt class="docutils literal"><span class="pre">playground</span></tt> directory and copy over
@@ -86,7 +86,7 @@ cp ../data_for_ad_user_manual/N20111124S0203.fits .
 <div class="section" id="open-and-access-existing-mef-files">
 <h2>2.1. Open and access existing MEF files<a class="headerlink" href="#open-and-access-existing-mef-files" title="Permalink to this headline">¶</a></h2>
 <p>An AstroData object can be created from the name of the file on disk, a URL,
-or from PyFITS HDUList or HDU instance.  An existing MEF file can be open as
+or from PyFITS HDUList or HDU instance.  An existing MEF file can be opened as
 an AstroData object in <tt class="docutils literal"><span class="pre">readonly</span></tt>, <tt class="docutils literal"><span class="pre">update</span></tt>, or <tt class="docutils literal"><span class="pre">append</span></tt> mode.
 The default is <tt class="docutils literal"><span class="pre">readonly</span></tt>.</p>
 <p>Here is a very simple example on how to open a file in <tt class="docutils literal"><span class="pre">readonly</span></tt> mode,
@@ -165,16 +165,16 @@ of the <tt class="docutils literal"><span class="pre">mode</span></tt> argument:
 </div>
 <div class="section" id="accessing-the-content-of-a-mef-file">
 <h3>2.1.1. Accessing the content of a MEF file<a class="headerlink" href="#accessing-the-content-of-a-mef-file" title="Permalink to this headline">¶</a></h3>
-<p>Conceivably once opens a file to access its content. Manipulations of the
+<p>Conceivably one opens a file to access its content. Manipulations of the
 pixel data and of the headers are covered in more details in later sections
-(<a class="reference internal" href="data.html#data"><em>Section 7 - Pixel Data</em></a> and
-<a class="reference internal" href="headers.html#headers"><em>Section 6 - FITS Headers</em></a>, respectively). Here we show
+(<a class="reference internal" href="data.html#data"><em>Section 5 - Pixel Data</em></a> and
+<a class="reference internal" href="headers.html#headers"><em>Section 4 - FITS Headers</em></a>, respectively). Here we show
 a few very basic examples on how to access pixels and headers.</p>
-<p>The pixel data in an AstroData object are stored as <tt class="docutils literal"><span class="pre">numpy</span></tt> <tt class="docutils literal"><span class="pre">ndarray</span></tt>.
-Any <tt class="docutils literal"><span class="pre">ndarray</span></tt> operations are valid.  We use <tt class="docutils literal"><span class="pre">numpy</span></tt>&#8216;s <tt class="docutils literal"><span class="pre">average</span></tt> function
+<p>The pixel data in an AstroData object are stored as Numpy <tt class="docutils literal"><span class="pre">ndarray</span></tt>.
+Any <tt class="docutils literal"><span class="pre">ndarray</span></tt> operations are valid.  We use Numpy&#8217;s <tt class="docutils literal"><span class="pre">average</span></tt> function
 in the example below.</p>
-<p>The headers in an AstroData object are stored as <tt class="docutils literal"><span class="pre">pyfits</span></tt> headers.  Any
-<tt class="docutils literal"><span class="pre">pyfits</span></tt> header operations are valid.</p>
+<p>The headers in an AstroData object are stored as PyFITS headers.  Any
+PyFITS header operations are valid.</p>
 <div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
  2
  3
@@ -212,7 +212,7 @@ in the example below.</p>
    <span class="k">print</span>
 </pre></div>
 </td></tr></table></div>
-<p><em>(Python Beginner&#8217;s Note 1: The ``#`` on line 8 and 13 are not necessary to the
+<p><em>(Python Beginner&#8217;s Note 1: The ``#`` on line 8 and 14 are not necessary to the
 code but simplify
 the cut and paste of the statements from the HTML page to the Python
 shell, without affecting readability.)</em></p>
@@ -223,13 +223,13 @@ have written the last ``print`` statement, type return on the ``...`` line,
 this will launch the execution of the loop.)</em></p>
 <p>Now let us discuss the example.</p>
 <p>As stated above, the pixel data are stored in <tt class="docutils literal"><span class="pre">numpy.ndarray</span></tt> objects.
-Therefore, <tt class="docutils literal"><span class="pre">numpy</span></tt> needs to be imported if any <tt class="docutils literal"><span class="pre">numpy</span></tt> operations is to
+Therefore, Numpy needs to be imported if any <tt class="docutils literal"><span class="pre">numpy</span></tt> operations is to
 be run on the data.  This is done on Line 2, using the standard import
-convention for <tt class="docutils literal"><span class="pre">numpy</span></tt>.</p>
+convention for Numpy.</p>
 <p>On Line 6, the for-loop that will access the extension sequentially is defined.
 Only the extensions are returned, the Primary Header Unit (PHU) is not
 sent to the loop.  Access to the PHU is discussed in
-<a class="reference internal" href="headers.html#headers"><em>Section 6 - FITS Headers</em></a>.</p>
+<a class="reference internal" href="headers.html#headers"><em>Section 4 - FITS Headers</em></a>.</p>
 <p>In an AstroData object, each extension is given, in memory if not on disk,
 an extension name and an extension version.  Line 7 accesses that information.</p>
 <p>On lines 10 to 13, the pixel data for the current extension is assigned to the
@@ -240,7 +240,7 @@ the variable <tt class="docutils literal"><span class="pre">hdr</span></tt>, and
 NOT copied, the new variables simply point to the information stored in the
 AstroData object.  If <tt class="docutils literal"><span class="pre">data</span></tt> or <tt class="docutils literal"><span class="pre">hdr</span></tt> are modified, the AstroData object
 itself will be modified.</p>
-<p>In the example above, a loop through the extension is used.  To access a specific
+<p>In the example above, a loop through the extensions is used.  To access a specific
 extension by name, it is also possible to do something like this:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">data</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
 <span class="k">print</span> <span class="s">&#39;Value of NAXIS2: &#39;</span><span class="p">,</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;NAXIS2&#39;</span><span class="p">)</span>
@@ -252,7 +252,7 @@ extension by name, it is also possible to do something like this:</p>
    <span class="n">ad</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">extname</span><span class="p">(),</span> <span class="n">ad</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">extver</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>Note that the extension positions are zero-based, <tt class="docutils literal"><span class="pre">ad[0]</span></tt> is not the
+<p>Note that the extension positions are zero-indexed, <tt class="docutils literal"><span class="pre">ad[0]</span></tt> is not the
 PHU, it is the first extension.</p>
 </div>
 </div>
@@ -368,8 +368,9 @@ the same EXTNAME, EXTVER combination.  When appending or inserting, the
 user must either specify the EXTNAME, EXTVER of the new extension or use
 the <tt class="docutils literal"><span class="pre">auto_number</span></tt> options which tries to do something sensible to keep the
 MEF structurally valid.</p>
-<p>The second difficulty is due to the fact a reference to an extension is
-just that a &#8220;reference&#8221;, a &#8220;link&#8221;, it is not a copy.  Any changes to the
+<p>The second difficulty is due to the fact an assignment of an extension to
+a variable is
+just a &#8220;reference&#8221;, a &#8220;link&#8221;, it is not a copy.  Any changes to the
 variable standing as a pointer to an extension in an AstroData object will
 affect the AstroData object itself.</p>
 <p>The <tt class="docutils literal"><span class="pre">append</span></tt> method adds an extension as the end of a dataset. Here is an
@@ -385,7 +386,7 @@ gets appended to the <tt class="docutils literal"><span class="pre">ad</span></t
 version number of the extension in <tt class="docutils literal"><span class="pre">new_extension</span></tt> is [&#8216;SCI&#8217;, 2].  There
 is already an extension named and versioned that way in <tt class="docutils literal"><span class="pre">ad</span></tt> (see the
 result of <tt class="docutils literal"><span class="pre">ad.info()</span></tt> in the previous subsection).  Therefore, to avoid
-conflict, the argument to append <tt class="docutils literal"><span class="pre">auto_number</span></tt> is set to <tt class="docutils literal"><span class="pre">True</span></tt>.</p>
+conflict, the argument <tt class="docutils literal"><span class="pre">auto_number</span></tt> is set to <tt class="docutils literal"><span class="pre">True</span></tt>.</p>
 <p>As you can see from the output of <tt class="docutils literal"><span class="pre">ad.info()</span></tt> after the <tt class="docutils literal"><span class="pre">append</span></tt> call:</p>
 <div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
  2
@@ -437,19 +438,19 @@ a reference to the extension stored in <tt class="docutils literal"><span class=
 changes the version number to 4, the extension in <tt class="docutils literal"><span class="pre">adread</span></tt> will also be
 modified, corrupting the source.  Moreover, if other modifications are made
 to the extension inserted in <tt class="docutils literal"><span class="pre">ad</span></tt>, it will modify <tt class="docutils literal"><span class="pre">adread</span></tt> too. There are
-times when it will not matter as <tt class="docutils literal"><span class="pre">adread</span></tt> is scheduled to be closed anyway,
+times when it will not matter at all, for example if <tt class="docutils literal"><span class="pre">adread</span></tt> is scheduled to be closed anyway,
 but if <tt class="docutils literal"><span class="pre">adread</span></tt> is to be used later in the script, it should not be modified
 like that.</p>
 <p>To cut the link between the extension appended to the dataset and the
 source, the argument <tt class="docutils literal"><span class="pre">do_deepcopy</span></tt> is set to <tt class="docutils literal"><span class="pre">True</span></tt>.  This will often be
-needed.  It is not the default out of memory usage concerns and to force
+needed.  It is not the default because of memory usage concerns, and to force
 the user to think before creating copies and decide if it is truly needed.</p>
 </div>
 <div class="section" id="inserting-an-extension">
 <h3>2.2.3. Inserting an extension<a class="headerlink" href="#inserting-an-extension" title="Permalink to this headline">¶</a></h3>
 <p>When inserting an extension into an AstroData object, the same caution to
 extension name and version, and to the reference versus copy issues applies.
-Instead of repeating ourselves, we refer to users to discusssion above in
+Instead of repeating ourselves, we refer to users to the discusssion above in
 the &#8220;Appending&#8221; section.</p>
 <p>With that in mind, let us present a few examples of insertion.</p>
 <div class="section" id="simple-insertion">
@@ -570,7 +571,7 @@ in this manual, yet fortunately not that commonly needed.</p>
 <p>When we inserted <tt class="docutils literal"><span class="pre">new_extension</span></tt> above, we did not use <tt class="docutils literal"><span class="pre">do_deepcopy</span></tt>.
 Therefore, if we were to modify <tt class="docutils literal"><span class="pre">new_extension</span></tt>, like through <tt class="docutils literal"><span class="pre">auto_number</span></tt>,
 we would be modifying not only the source, <tt class="docutils literal"><span class="pre">adread</span></tt>, but also that extension
-we added to <tt class="docutils literal"><span class="pre">ad</span></tt> !</p>
+we have already added to <tt class="docutils literal"><span class="pre">ad</span></tt> !</p>
 <p>As you can see, it is vitally important to understand was is a true copy and
 what is a reference to something else when dealing with extensions.  Beginners
 might want to use <tt class="docutils literal"><span class="pre">do_deepcopy=True</span></tt> as a default, until they are comfortable
@@ -578,7 +579,7 @@ with the concept of references.  <em>Beware</em> however that memory usage can
 rise significantly.</p>
 <p>Here is how one would insert <tt class="docutils literal"><span class="pre">new_extension</span></tt> somewhere else in <tt class="docutils literal"><span class="pre">ad</span></tt>.
 In the example, the extension is inserted between the current third and
-fourth extension.  Since position ID are zero-based, this means between
+fourth extension.  Since position ID are zero-indexed, this means between
 position 2 and 3.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">ad</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">new_extension</span><span class="p">,</span> <span class="n">auto_number</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">do_deepcopy</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="n">ad</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
@@ -642,12 +643,12 @@ AD No.    Name          Type      MEF No.  Cards    Dimensions   Format
 <p>The automatic renumbering assigned an extension number of 5 to the newly
 inserted extension.  One might have expected that 2 would be assigned as the
 next available version number of the &#8216;VAR&#8217; name.  This behavior was designed
-to prevent the software from making scientific assumption that the new
+to prevent the software from making the scientific assumption that the new
 extension is in anyway associated with another.  Normally, it is assumed that
 all extension with a given EXTVER are scientifically associated.  <tt class="docutils literal"><span class="pre">auto_number</span></tt>
 has no way to know which extension is scientifically associated with an other.
 The purpose of <tt class="docutils literal"><span class="pre">auto_number</span></tt> is solely to keep the AstroData structure sound
-and prevent corruption due to classing name/version pairs.  It is the job
+and prevent corruption due to clashing name/version pairs.  It is the job
 of the programmer, who has the scientific knowledge of the associations, to
 name and version the extensions correctly when that matters.</p>
 </div>
@@ -733,7 +734,7 @@ AD No.    Name          Type      MEF No.  Cards    Dimensions   Format
 <p>Compared to appending and inserting extensions, removing them is a breeze.
 As before, the extension to remove can be speficied with the position number
 or with the extension name and version.  Just remember that the position
-numbers are zero-based.</p>
+numbers are zero-indexed.</p>
 <div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
 2
 3
@@ -804,7 +805,7 @@ overwritten with the <tt class="docutils literal"><span class="pre">write()</spa
 </div>
 <p>The first line will print the file name currently associated with the
 AstroData object, <tt class="docutils literal"><span class="pre">ad</span></tt>.  This the file that will be written to.</p>
-<p>More often though, the idea is the write the modified output to a new
+<p>More often though, the idea is to the write the modified output to a new
 file.  This can be done regardless of the <tt class="docutils literal"><span class="pre">mode</span></tt> used when the file was
 opened.  All that is needed is to specify a new file name.  Note that
 this will change the file name associated with the AstroData object,
@@ -826,10 +827,10 @@ no longer needed:</p>
 </pre></div>
 </div>
 <p>If you have been following along, the input file on disk was modified by
-on of the <tt class="docutils literal"><span class="pre">write</span></tt> examples above.  We will need the unmodified file in
-the next section.  To restore the file from the original:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">os</span>
-<span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s">&#39;cp ../data_for_ad_user_manual/N20110313S0188.fits .&#39;</span><span class="p">)</span>
+one of the <tt class="docutils literal"><span class="pre">write</span></tt> examples above.  We will need the unmodified file in
+the next section.  To restore the file to the original:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">shutil</span>
+<span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="s">&#39;../data_for_ad_user_manual/N20110313S0188.fits&#39;</span><span class="p">,</span> <span class="s">&#39;.&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -859,8 +860,8 @@ to work on it and write the modified MEF to a new file.</p>
 </pre></div>
 </td></tr></table></div>
 </div>
-<div class="section" id="needing-real-copies-in-memory">
-<h4>2.3.1.2. Needing real copies in memory<a class="headerlink" href="#needing-real-copies-in-memory" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="needing-true-copies-in-memory">
+<h4>2.3.1.2. Needing true copies in memory<a class="headerlink" href="#needing-true-copies-in-memory" title="Permalink to this headline">¶</a></h4>
 <p>Since in Python, and when working with AstroData objects, the memory can be
 shared between variables, it is sometimes necessary to create a &#8220;true&#8221; copy
 of an AstroData object to keep us from modifying the original.</p>
@@ -890,10 +891,10 @@ if you <tt class="docutils literal"><span class="pre">write</span></tt> the file
 <div class="section" id="create-new-mef-files-from-scratch">
 <h3>2.3.2. Create New MEF Files from Scratch<a class="headerlink" href="#create-new-mef-files-from-scratch" title="Permalink to this headline">¶</a></h3>
 <p>Another use case is creating a new MEF files or AstroData object when none
-existed before. The pixel data needs to be created as a numpy <tt class="docutils literal"><span class="pre">ndarray</span></tt>.
-The header must be created as pyfits header. IMPORTANT: AstroData is currently
-not compatible with <tt class="docutils literal"><span class="pre">astropy.io.fits</span></tt>, one <em>must</em> use the standalone
-<tt class="docutils literal"><span class="pre">pyfits</span></tt> module (it comes with Ureka).</p>
+existed before. The pixel data needs to be created as a Numpy <tt class="docutils literal"><span class="pre">ndarray</span></tt>.
+The header must be created as PyFITS header. IMPORTANT: AstroData currently
+is not compatible with <tt class="docutils literal"><span class="pre">astropy.io.fits</span></tt>, one <em>must</em> use the standalone
+PyFITS module (it comes with Ureka).</p>
 <div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
  2
  3
@@ -932,7 +933,7 @@ not compatible with <tt class="docutils literal"><span class="pre">astropy.io.fi
 <p>The input header does not need to have anything in it (Line 6).  In fact, if
 you are really creating from scratch, it is probably better to leave it empty
 and populate it after the creation of the AstroData object.  Upon creation,
-AstroData, through pyfits, will take care of adding the minimal set of header
+AstroData, through PyFITS, will take care of adding the minimal set of header
 cards to make the file FITS compliant.</p>
 <p>The pixel data array must be a <tt class="docutils literal"><span class="pre">ndarray</span></tt>.  On Line 9, we create a
 1024 x 2048 array, filled with a gradient of pixel value.</p>
@@ -972,7 +973,7 @@ be written to disk.  No default names are assigned to new AstroData objects.</p>
 <li><a class="reference internal" href="#create-new-mef-files">2.3. Create New MEF Files</a><ul>
 <li><a class="reference internal" href="#create-new-copy-of-mef-files">2.3.1. Create New Copy of MEF Files</a><ul>
 <li><a class="reference internal" href="#basic-example">2.3.1.1. Basic example</a></li>
-<li><a class="reference internal" href="#needing-real-copies-in-memory">2.3.1.2. Needing real copies in memory</a></li>
+<li><a class="reference internal" href="#needing-true-copies-in-memory">2.3.1.2. Needing true copies in memory</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#create-new-mef-files-from-scratch">2.3.2. Create New MEF Files from Scratch</a></li>
@@ -1022,7 +1023,7 @@ be written to disk.  No default names are assigned to new AstroData objects.</p>
         <li class="right" >
           <a href="intro.html" title="1. Introduction"
              >previous</a> |</li>
-        <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

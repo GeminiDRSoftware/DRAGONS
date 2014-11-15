@@ -165,8 +165,11 @@ that applies to that data.
 
 Without any user-specified recipe (-r --recipe), the default recipe is 
 ``qaReduce``, which is defined for various AstroDataTypes and currently used at 
-the summit. For example, the ``qaReduce`` recipe for a GMOS_IMAGE specifies that 
-the following primitives are called on the data::
+the summit. The Recipe System uses a combination of index, AstroDataTypes, and
+recipe naming convention to identify the appropriate recipe to run. 
+
+The ``qaReduce`` recipe for a GMOS_IMAGE, named ``recipe.qaReduce.GMOS_IMAGE``, 
+specifies that the following primitives are called on the data::
 
  prepare
  addDQ
@@ -192,7 +195,7 @@ the following primitives are called on the data::
 The point here is not to overwhelm readers with a stack of primitive names, but 
 to present both the default pipeline processing that the above simple ``reduce`` 
 command invokes and to demonstrate how much the ``reduce`` interface abstracts 
-away the complexity of the processing that is engaged with the simplist of 
+away the complexity of the processing that is engaged with the simplicity of 
 commands.
 
 .. _userpars:
@@ -282,38 +285,36 @@ what. The above file could be thus written like::
   S20130616S0019.fits
   N20100311S0090.fits
 
-.. note:: Comments are accommodated, both line and in-line. '=' signs `may` be 
-	  used but this has meaning only for arguments that expect unitary 
-          values. The '=' is entirely unnecessary.
+Comments are accommodated, both as full line and in-line with the ``#``
+character.  White space is the only significant separator of arguments: spaces,
+tabs, newlines are all equivalent when argument parsing.  This means
+the user can "arrange" their @file for clarity.
 
-	  White space is the only significant separator of arguments: spaces, 
-	  tabs, newlines are all equivalent when argument parsing. This means 
-	  the user can 'arrange' their @file for clarity.
+Here's a more readable version of the file from the previous example
+using comments and tabulation::
 
-	  Eg., a more readable version of the above file might be written as::
+    # reduce parameter file
+    # yyyy-mm-dd
+    # GDPSG 
+    
+    # Spec the recipe
+    -r 
+        recipe.ArgsTests  # test recipe
+    
+    # primitive parameters here
+    # These are 'untyped', i.e. global
+    --param
+        tpar=100
+        report_inputs=True
+    
+    --context 
+        qa                # QA context
+    
+    S20130616S0019.fits
+    N20100311S0090.fits
 
-	    # reduce parameter file
-	    # yyyy-mm-dd
-	    # GDPSG 
-	    
-	    # Spec the recipe
-	    -r 
-	        recipe.ArgsTests  # test recipe
-	    
-	    # primitive parameters here
-	    # These are 'untyped', i.e. global
-	    --param
-	        tpar=100
-	        report_inputs=True
-	    
-	    --context 
-	        qa                # QA context
-	    
-	    S20130616S0019.fits
-	    N20100311S0090.fits
-
-All the above  examples of ``reduce_args.par`` are equivalently parsed. Which, 
-of course, users may check by adding the **-d** flag::
+All the above  examples of ``reduce_args.par`` are equivalently parsed, which 
+users may check by adding the **-d** flag::
 
   $ reduce -d @redpars.par
   
@@ -376,7 +377,7 @@ The parser will open and read the @fitsfiles, consuming those lines in the
 same way as any other command line arguments. Indeed, such a file need not only 
 contain fits files (positional arguments), but other arguments as well. This is 
 recursive. That is, the @fitsfiles can contain other at-files", which can contain 
-other "at-files", which can contain ..., `ad infinitum`. These will be processed 
+other "at-files", which can contain ..., etc. These will be processed 
 serially.
 
 As stipulated earlier, because the @file facility provides arguments equivalent 
@@ -412,6 +413,12 @@ while parfile holds all other specifications::
   
   # Spec the recipe
   -r recipe.ArgTests
+
+The @file does not need to be located in the current directory.  Normal, 
+directory path syntax applies, for example::
+
+   reduce @../../mydefaultparams @fitsfile
+   
 
 
 Overriding @file values
@@ -465,7 +472,7 @@ Eg. 3) Override the recipe::
   Parameters:       tpar=100, report_inputs=True
   RECIPE:           recipe.FOO
 
-Eg. 4) Override a recipe and specify another fits file ::
+Eg. 4) Override a recipe and specify another fits file.  The file names in the @file will be ignored::
 
   $ reduce @parfile -r=recipe.FOO test_data/N20100311S0090_1.fits
   
@@ -479,17 +486,56 @@ Eg. 4) Override a recipe and specify another fits file ::
 
 Application Programming Interface (API)
 ---------------------------------------
-.. note:: The following section discuss and describe programming interfaces
-          available on the coreReduce class Reduce.
+.. note:: This section discusses and describes programming interfaces
+          available on ``reduce`` and the underlying class Reduce.  This section
+          is for advanced users wishing to code with ``reduce`` rather than just 
+          using it on the command line.  The common user can safely skip this 
+          section.
 
 The ``reduce`` application is essentially a skeleton script providing the 
 described command line interface. After parsing the command line, the script 
 then passes the parsed arguments to its main() function, which in turn calls 
 the Reduce() class constructor with "args". Class Reduce() is defined 
-in the module ``coreReduce.py``. The coreReduce class Reduce is importable and 
+in the module ``coreReduce.py``. ``reduce`` and class Reduce are both 
 scriptable, as the following discussion will illustrate.
 
 .. _main:
+
+reduce.main()
++++++++++++++
+
+The main() function of reduce receives one (1) parameter that is a Namespace 
+object as returned by a call on ArgumentParser.parse_args(). Specific to reduce, 
+the caller can supply this object by a call on the parseUtils.buildParser() 
+function, which returns a fully defined reduce parser. The parser 
+object should then be called with the parse_args() method to return a valid 
+reduce parser Namespace. Since there is no interaction with sys.argv, as in 
+a command line call, all Namespace attributes have only their defined default 
+values. It is for the caller to set these values as needed.
+
+As the example below demonstrates, once the "args" Namespace object is 
+instantiated, a caller can set any arguments as needed. Bu they must be set 
+to the correct type. The caller should examine the various "args" types to 
+determine how to set values. For example, args.files is type list, whereas 
+args.recipename is type string.
+
+Eg.,
+
+    >>> from astrodata.adutils.reduceutils import reduce
+    >>> from astrodata.adutils.reduceutils import parseUtils
+    >>> args = parseUtils.buildParser("Reduce,v2.0").parse_args()
+    >>> args.files
+    []
+    >>> args.files.append('S20130616S0019.fits')
+    >>> args.recipename = "recipe.FOO"
+    >>> reduce.main(args)
+    --- reduce, v2.0 ---
+    Starting Reduction on set #1 of 1
+    Processing dataset(s):
+    S20130616S0019.fits
+    ...
+
+Processing will proceed as usual.
 
 Class Reduce and the runr() method
 ++++++++++++++++++++++++++++++++++

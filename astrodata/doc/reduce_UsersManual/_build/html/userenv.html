@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -8,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>2. Installation &mdash; Reduce Users Manual X1 documentation</title>
+    <title>2. Installation &mdash; Reduce Users Manual X1.0.1 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,8 +14,8 @@
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '',
-        VERSION:     'X1',
+        URL_ROOT:    './',
+        VERSION:     'X1.0.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,7 +24,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Reduce Users Manual X1 documentation" href="index.html" />
+    <link rel="top" title="Reduce Users Manual X1.0.1 documentation" href="index.html" />
     <link rel="next" title="3. Interfaces" href="interfaces.html" />
     <link rel="prev" title="1. Introduction" href="intro.html" /> 
   </head>
@@ -43,7 +41,7 @@
         <li class="right" >
           <a href="intro.html" title="1. Introduction"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">Reduce Users Manual X1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">Reduce Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -59,6 +57,19 @@ and others. All dependencies of <tt class="docutils literal"><span class="pre">g
 the Ureka package, and users are highly encouraged to install and use this very
 useful package. It is an easy and, perhaps, best way to get everything you need
 and then some. Ureka is available at <a class="reference external" href="http://ssb.stsci.edu/ureka/">http://ssb.stsci.edu/ureka/</a>.</p>
+<p>WARNING:  The Ureka installation script will not set up IRAF for you. You need to do
+that yourself. Here&#8217;s how:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ cd ~
+$ mkdir iraf
+$ cd iraf
+$ mkiraf
+-- creating a new uparm directory
+Terminal types: xgterm,xterm,gterm,vt640,vt100,etc.
+Enter terminal type: xgterm
+A new LOGIN.CL file has been created in the current directory.
+You may wish to review and edit this file to change the defaults.
+</pre></div>
+</div>
 <p>Once a user has has retrieved the gemini_python package, available as a tarfile
 from the Gemini website (<a class="reference external" href="http://gemini.edu">http://gemini.edu</a>), and untarred only minor adjustments
 need to be made to the user environment in order to make astrodata importable and
@@ -71,7 +82,8 @@ allow <tt class="docutils literal"><span class="pre">reduce</span></tt> to work 
 python location for modules (the default <tt class="docutils literal"><span class="pre">site-packages</span></tt>). This is also the
 only solution if you do not have write permission to the default <tt class="docutils literal"><span class="pre">site-packages</span></tt>.
 Here is how you install the software somewhere other than the default location:</p>
-<div class="highlight-python"><pre>$ python setup.py install --prefix=/your/favorite/location</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ python setup.py install --prefix=/your/favorite/location
+</pre></div>
 </div>
 <p><tt class="docutils literal"><span class="pre">/your/favorite/location</span></tt> must already exist.  This command will install executable
 scripts in a <tt class="docutils literal"><span class="pre">bin</span></tt> subdirectory, the documentation in a <tt class="docutils literal"><span class="pre">share</span></tt> subdirectory,
@@ -82,21 +94,25 @@ In this manual, we will only use <tt class="docutils literal"><span class="pre">
 your environment.  You might want to add the following to your .cshrc or
 .bash_profile, or equivalent shell configuration script.</p>
 <p>C shell(csh, tcsh):</p>
-<div class="highlight-python"><pre>setenv PATH /your/favorite/location:${PATH}
-setenv PYTHONPATH /your/favorite/location:${PYTHONPATH}</pre>
+<div class="highlight-python"><div class="highlight"><pre>setenv PATH /your/favorite/location/bin:${PATH}
+setenv PYTHONPATH /your/favorite/location/lib/python2.7/site-packages:${PYTHONPATH}
+</pre></div>
 </div>
 <p>Bourne shells (sh, bash, ksh, ...)</p>
-<div class="highlight-python"><pre>export PATH=/your/favorite/location:${PATH}
-export PYTHONPATH=/your/favorite/location:${PYTHONPATH}</pre>
+<div class="highlight-python"><div class="highlight"><pre>export PATH=/your/favorite/location/bin:${PATH}
+export PYTHONPATH=/your/favorite/location/lib/python2.7/site-packages:${PYTHONPATH}
+</pre></div>
 </div>
 <p>If you added those lines to your shell configuration script, make sure your
 <tt class="docutils literal"><span class="pre">source</span></tt> the file to activate the new setting.</p>
 <p>For csh/tcsh:</p>
-<div class="highlight-python"><pre>$ source ~/.cshrc
-$ rehash</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ source ~/.cshrc
+$ rehash
+</pre></div>
 </div>
 <p>For bash:</p>
-<div class="highlight-python"><pre>$ source ~/.bash_profile</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ source ~/.bash_profile
+</pre></div>
 </div>
 </div>
 <div class="section" id="installation-under-ureka">
@@ -105,7 +121,8 @@ $ rehash</pre>
 directory, this will install <tt class="docutils literal"><span class="pre">astrodata</span></tt> in the Ureka <tt class="docutils literal"><span class="pre">site-packages</span></tt> directory.
 WARNING: While easier to install and configure, this will modify your Ureka
 installation.</p>
-<div class="highlight-python"><pre>$ python setup.py install</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ python setup.py install
+</pre></div>
 </div>
 <p>This will also add executables to the Ureka <tt class="docutils literal"><span class="pre">bin</span></tt> directory and documentation to
 the Ureka <tt class="docutils literal"><span class="pre">share</span></tt> directory.</p>
@@ -119,21 +136,24 @@ problems, or if you just want to clean it out after evaluation.</p>
 <div class="section" id="test-the-installation">
 <span id="test"></span><h2>2.2. Test the installation<a class="headerlink" href="#test-the-installation" title="Permalink to this headline">¶</a></h2>
 <p>Start up the python interpreter and import astrodata:</p>
-<div class="highlight-python"><pre>$ python
-&gt;&gt;&gt; import astrodata</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ python
+&gt;&gt;&gt; import astrodata
+</pre></div>
 </div>
 <p>Next, return to the command line and test that <tt class="docutils literal"><span class="pre">reduce</span></tt> is reachable
 and runs. There may be some delay as package modules are byte compiled:</p>
-<div class="highlight-python"><pre>$ reduce -h [--help]</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ reduce -h [--help]
+</pre></div>
 </div>
 <p>This will print the reduce help to the screen.</p>
 <p>If users have Gemini fits files available, they can test that the Recipe System
 is functioning as expected with a test recipe provided by the astrodata_Gemini
 package:</p>
-<div class="highlight-python"><pre>$ reduce --recipe test_one /path/to/gemini_data.fits</pre>
+<div class="highlight-python"><div class="highlight"><pre>$ reduce --recipe test_one /path/to/gemini_data.fits
+</pre></div>
 </div>
 <p>If all is well, users will see something like:</p>
-<div class="highlight-python"><pre>Resetting logger for application: reduce
+<div class="highlight-python"><div class="highlight"><pre>Resetting logger for application: reduce
 Logging configured for application: reduce
                        --- reduce, v4890  ---
               Running under astrodata Version GP-X1
@@ -149,32 +169,33 @@ RECIPE: test_one
  PRIMITIVE: showParameters
  -------------------------
  rtf = False
- suffix = '_scafaasled'
+ suffix = &#39;_scafaasled&#39;
  otherTest = False
  logindent = 3
- logfile = 'reduce.log'
- reducecache = '.reducecache'
- storedcals = 'calibrations/storedcals'
+ logfile = &#39;reduce.log&#39;
+ reducecache = &#39;.reducecache&#39;
+ storedcals = &#39;calibrations/storedcals&#39;
  index = 1
- retrievedcals = 'calibrations/retrievedcals'
- cachedict = {'storedcals': 'calibrations/storedcals', 'retrievedcals':
-              'calibrations/retrievedcals', 'calibrations': 'calibrations',
-              'reducecache': '.reducecache'}
- loglevel = 'stdinfo'
- calurl_dict = {'CALMGR': 'http://fits/calmgr',
-                'UPLOADPROCCAL': 'http://fits/upload_processed_cal',
-                'QAMETRICURL': 'http://fits/qareport',
-                'QAQUERYURL': 'http://fits/qaforgui',
-                'LOCALCALMGR': 'http://localhost:%(httpport)d/calmgr/%(caltype)s'}
- logmode = 'standard'
+ retrievedcals = &#39;calibrations/retrievedcals&#39;
+ cachedict = {&#39;storedcals&#39;: &#39;calibrations/storedcals&#39;, &#39;retrievedcals&#39;:
+              &#39;calibrations/retrievedcals&#39;, &#39;calibrations&#39;: &#39;calibrations&#39;,
+              &#39;reducecache&#39;: &#39;.reducecache&#39;}
+ loglevel = &#39;stdinfo&#39;
+ calurl_dict = {&#39;CALMGR&#39;: &#39;http://fits/calmgr&#39;,
+                &#39;UPLOADPROCCAL&#39;: &#39;http://fits/upload_processed_cal&#39;,
+                &#39;QAMETRICURL&#39;: &#39;http://fits/qareport&#39;,
+                &#39;QAQUERYURL&#39;: &#39;http://fits/qaforgui&#39;,
+                &#39;LOCALCALMGR&#39;: &#39;http://localhost:%(httpport)d/calmgr/%(caltype)s&#39;}
+ logmode = &#39;standard&#39;
  test = True
  writeInt = False
- calibrations = 'calibrations'
+ calibrations = &#39;calibrations&#39;
  .
 Wrote gemini_data.fits in output directory
 
 
-reduce completed successfully.</pre>
+reduce completed successfully.
+</pre></div>
 </div>
 <p>Users curious about the URLs in the example above, i.e. <tt class="docutils literal"><span class="pre">http://fits/...</span></tt>, see
 Sec. <a class="reference internal" href="discuss.html#fitsstore"><em>Fits Storage</em></a> in Chapter 5, Discussion.</p>
@@ -240,12 +261,12 @@ Sec. <a class="reference internal" href="discuss.html#fitsstore"><em>Fits Storag
         <li class="right" >
           <a href="intro.html" title="1. Introduction"
              >previous</a> |</li>
-        <li><a href="index.html">Reduce Users Manual X1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">Reduce Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2014, Kennneth Anderson.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>

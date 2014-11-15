@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6. Table Data &mdash; AstroData Users Manual 0.9.0 documentation</title>
+    <title>6. Table Data &mdash; AstroData Users Manual X1.0.1 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -15,7 +15,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.9.0',
+        VERSION:     'X1.0.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,8 +24,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="AstroData Users Manual 0.9.0 documentation" href="index.html" />
-    <link rel="next" title="1. List of Standard Descriptors" href="appendices/appendix_descriptors.html" />
+    <link rel="top" title="AstroData Users Manual X1.0.1 documentation" href="index.html" />
+    <link rel="next" title="1. List of Descriptors" href="appendices/appendix_descriptors.html" />
     <link rel="prev" title="5. Pixel Data" href="data.html" /> 
   </head>
   <body>
@@ -36,12 +36,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="appendices/appendix_descriptors.html" title="1. List of Standard Descriptors"
+          <a href="appendices/appendix_descriptors.html" title="1. List of Descriptors"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="data.html" title="5. Pixel Data"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -52,14 +52,14 @@
             
   <div class="section" id="table-data">
 <h1>6. Table Data<a class="headerlink" href="#table-data" title="Permalink to this headline">¶</a></h1>
-<p><tt class="docutils literal"><span class="pre">astrodata</span></tt> does not provide any special wrappers for FITS Table Data.  But
-since <tt class="docutils literal"><span class="pre">astrodata</span></tt> is built on top of <tt class="docutils literal"><span class="pre">pyfits</span></tt>, the standard <tt class="docutils literal"><span class="pre">pyfits</span></tt>
-table functions can be used.  The reader should refer to the <tt class="docutils literal"><span class="pre">pyfits</span></tt>
+<p>AstroData does not provide any special wrappers for FITS Table Data.  But
+since AstroData is built on top of PyFITS, the standard PyFITS
+table functions can be used.  The reader should refer to the PyFITS
 table documentation for complete details (e.g.
 <a class="reference external" href="https://pythonhosted.org/pyfits/users_guide/users_table.html">https://pythonhosted.org/pyfits/users_guide/users_table.html</a>). In this chapter,
 a few useful examples of basic usage are shown.  As the reader will see, table
 manipulation can be tedious and tricky.</p>
-<p><tt class="docutils literal"><span class="pre">astropy.table</span></tt> might simply some of the examples of the examples presented
+<p><tt class="docutils literal"><span class="pre">astropy.table</span></tt> might simplify some of the examples presented
 in this chapter.  This will be looked into at some future time.  (Suggestions
 for improvements are welcome.)</p>
 <p><strong>Try it yourself</strong></p>
@@ -79,8 +79,8 @@ cp ../data_for_ad_user_manual/estgsS20080220S0078.fits .
 <p>A FITS table is stored in a MEF file as a <tt class="docutils literal"><span class="pre">BinTableHDU</span></tt>.  The table data is
 retrieved from the <tt class="docutils literal"><span class="pre">AstroData</span></tt> object with the same <tt class="docutils literal"><span class="pre">.data</span></tt> attribute as
 for pixel extensions, but for FITS tables <tt class="docutils literal"><span class="pre">.data</span></tt> returns a <tt class="docutils literal"><span class="pre">FITS_rec</span></tt>,
-which is a <tt class="docutils literal"><span class="pre">pyfits</span></tt> class, instead of a numpy <tt class="docutils literal"><span class="pre">ndarray</span></tt>.  Here is how to
-get information out of a FITS table.:</p>
+which is a PyFITS class, instead of a Numpy <tt class="docutils literal"><span class="pre">ndarray</span></tt>.  Here is how to
+get information out of a FITS table.</p>
 <div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
  2
  3
@@ -137,7 +137,7 @@ get information out of a FITS table.:</p>
 Gemini data, those are used in the data reduction to identify, to first
 order, where spectra fall on the detector.</p>
 <p>The output of <tt class="docutils literal"><span class="pre">names</span></tt> (Line 10) is a simple list of strings.  The output
-of <tt class="docutils literal"><span class="pre">columns</span></tt> is a pyfits <tt class="docutils literal"><span class="pre">ColDefs</span></tt> object.  When printed it looks like this:</p>
+of <tt class="docutils literal"><span class="pre">columns</span></tt> is a PyFITS <tt class="docutils literal"><span class="pre">ColDefs</span></tt> object.  When printed it looks like this:</p>
 <div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
  2
  3
@@ -240,8 +240,8 @@ the <tt class="docutils literal"><span class="pre">.append()</span></tt> functio
 </div>
 <div class="section" id="operate-on-a-fits-table">
 <h2>6.3. Operate on a FITS Table<a class="headerlink" href="#operate-on-a-fits-table" title="Permalink to this headline">¶</a></h2>
-<p>The pyfits manual is the recommended source for more complete documentation
-on working on FITS table with Python.  Here are a few examples of what one can
+<p>The PyFITS manual is the recommended source for more complete documentation
+on working on FITS table with Python.  Here are a few examples of how one can
 modify a FITS table.</p>
 <div class="section" id="preparation-for-the-examples">
 <h3>6.3.1. Preparation for the examples<a class="headerlink" href="#preparation-for-the-examples" title="Permalink to this headline">¶</a></h3>
@@ -336,7 +336,7 @@ columns, not on the table as such.  To add a column to <tt class="docutils liter
 columns have been reorganized, a <em>new</em> table is created and, in this case,
 replaces the original <tt class="docutils literal"><span class="pre">table1</span></tt>.</p>
 <p>The index of the <tt class="docutils literal"><span class="pre">pabeta</span></tt> column in <tt class="docutils literal"><span class="pre">table2</span></tt> is found with the <tt class="docutils literal"><span class="pre">index</span></tt>
-method as shown on Line 2.  Then it is just a matter of copying that column
+method as shown on Line 2.  Then it is just a matter of adding that column
 from <tt class="docutils literal"><span class="pre">table2</span></tt> to the columns of <tt class="docutils literal"><span class="pre">table1</span></tt> (Line 3).</p>
 <p>The columns in the new <tt class="docutils literal"><span class="pre">table1</span></tt> are:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">,</span> <span class="s">&#39;feii&#39;</span><span class="p">,</span> <span class="s">&#39;pabeta&#39;</span><span class="p">]</span>
@@ -400,7 +400,7 @@ does not seem to be working properly.</p>
 </pre></div>
 </div>
 <p>To change the name of a column, one needs to change the <tt class="docutils literal"><span class="pre">name</span></tt> attribute
-of the column.  On the first line, the index of the position index of the
+of the column.  On the first line, the position index of the
 column named <tt class="docutils literal"><span class="pre">feii</span></tt> is used to select the column to change, and then the
 name of that column is changed to <tt class="docutils literal"><span class="pre">ironII</span></tt>.</p>
 <p>Again, a <em>new</em> table needs to be created once the modifications to the columns
@@ -412,16 +412,16 @@ are completed.</p>
 </div>
 <div class="section" id="appending-and-deleting-rows">
 <h3>6.3.6. Appending and deleting rows<a class="headerlink" href="#appending-and-deleting-rows" title="Permalink to this headline">¶</a></h3>
-<p>Appending and deleting rows is uncanningly complicated with pyfits.
+<p>Appending and deleting rows is uncannily complicated with PyFITS.
 This is an area where the use <tt class="docutils literal"><span class="pre">astropy.table</span></tt> can certainly help.  We hope
 to be able to add astropy-based examples to this manual in the near future.
-But for now, let us study the pyfits way.</p>
+But for now, let us study the PyFITS way.</p>
 <p><em>Disclaimer</em>:  This is the way the author figured out how to do the row
-manipulations.  If the reader knows of a better way to do it with pyfits,
-please let us know.)</p>
-<p>Below, we append two new entries to table2.  Only the <tt class="docutils literal"><span class="pre">SNR_ID</span></tt> and
+manipulations.  If the reader knows of a better way to do it with PyFITS,
+please let us know.</p>
+<p>Below, we append two new entries to <tt class="docutils literal"><span class="pre">table2</span></tt>.  Only the <tt class="docutils literal"><span class="pre">SNR_ID</span></tt> and
 <tt class="docutils literal"><span class="pre">pabeta</span></tt> fields will be added to the table since those are the only
-two columsn in <tt class="docutils literal"><span class="pre">table2</span></tt>.  When an entry has fields not represented
+two columns in <tt class="docutils literal"><span class="pre">table2</span></tt>.  When an entry has fields not represented
 in the table, those fields are simply ignored.</p>
 <div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
  2
@@ -494,7 +494,7 @@ new size (Lines 10-11).</p>
 </div>
 <div class="section" id="changing-a-value">
 <h3>6.3.7. Changing a value<a class="headerlink" href="#changing-a-value" title="Permalink to this headline">¶</a></h3>
-<p>Changing a value is simply a matter of identify the column and the row that
+<p>Changing a value is simply a matter of identifying the column and the row that
 needs the new value.</p>
 <p>Below we show how one might search one column to identify the row and then
 change that row in another column.</p>
@@ -537,7 +537,7 @@ change that row in another column.</p>
                         title="previous chapter">5. Pixel Data</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="appendices/appendix_descriptors.html"
-                        title="next chapter">1. List of Standard Descriptors</a></p>
+                        title="next chapter">1. List of Descriptors</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/tables.txt"
@@ -567,12 +567,12 @@ change that row in another column.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="appendices/appendix_descriptors.html" title="1. List of Standard Descriptors"
+          <a href="appendices/appendix_descriptors.html" title="1. List of Descriptors"
              >next</a> |</li>
         <li class="right" >
           <a href="data.html" title="5. Pixel Data"
              >previous</a> |</li>
-        <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

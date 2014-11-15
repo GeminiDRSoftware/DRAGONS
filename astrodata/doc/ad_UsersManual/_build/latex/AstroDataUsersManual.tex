@@ -14,8 +14,8 @@
 \usepackage{appendix} \setcounter{tocdepth}{0}
 
 \title{AstroData Users Manual}
-\date{October 31, 2014}
-\release{0.9.0}
+\date{November 14, 2014}
+\release{X1.0.1}
 \author{Kathleen Labrie}
 \newcommand{\sphinxlogo}{}
 \renewcommand{\releasename}{Release}
@@ -127,17 +127,27 @@
 
 \section{What is AstroData?}
 \label{intro:what-is-astrodata}
-\begin{notice}{note}{Todo}
+The AstroData class is a tool to represent datasets stored in
+Multi-Extension FITS (MEF) files. It provides uniform interfaces for
+working on datasets from different instruments and their observational modes.
+Configuration packages are used to describe the specific data characteristics,
+layout, and to store type-specific implementations.  Once a MEF has been
+opened with AstroData, the object it is assigned to knows essential information
+about itself, like from which instrument this data comes from, how to access
+the header information, etc.
 
-Describe AstroData in a language that astronomer will comprehend.
-\end{notice}
+Multi-extension FITS files are generalized as lists of header-data units
+(HDU), with key-value pairs populating headers, and pixel values populating
+data arrays. AstroData interprets a MEF as a single complex entity.  The
+individual ``extensions'' within the MEF are available with normal Python list
+(``{[}{]}'') syntax.
 
-\begin{notice}{note}{Note:}
-For the TODO: use language a scientist will comprehend.  then either refer to the programmer's reference
-or add a section clearly advertised to programmers.  the idea is that we don't want to lose
-the scientists, but if some readers are more technically oriented we also want to make sure
-they get the info they are after.
-\end{notice}
+In order to identify types for the dataset and provide type-specific behavior,
+AstroData relies on configuration packages.  A configuration package (eg.
+\code{astrodata\_Gemini}) contains definitions for all instruments and modes. A
+configuration package contains type definitions, meta-data functions,
+information lookup tables, and any other code or information needed to handle
+specific types of dataset.
 
 
 \section{Installing AstroData}
@@ -145,9 +155,28 @@ they get the info they are after.
 The \code{astrodata} package has several dependencies like \code{numpy}, \code{astropy}, and others.
 The best way to get everything you need is to install Ureka, \href{http://ssb.stsci.edu/ureka/}{http://ssb.stsci.edu/ureka/}.
 
+WARNING:  The Ureka installation script will not set up IRAF for you. You need to do
+that yourself. Here's how:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYGZdl{} cd \PYGZti{}
+\PYGZdl{} mkdir iraf
+\PYGZdl{} cd iraf
+\PYGZdl{} mkiraf
+\PYGZhy{}\PYGZhy{} creating a new uparm directory
+Terminal types: xgterm,xterm,gterm,vt640,vt100,etc.
+Enter terminal type: xgterm
+A new LOGIN.CL file has been created in the current directory.
+You may wish to review and edit this file to change the defaults.
+\end{Verbatim}
+
 Once this is done, install \code{gemini\_python}.  The \code{astrodata} package is currently
 distributed as part of the \code{gemini\_python} package.  The \code{gemini\_python} package,
-\code{gemini\_python-X1.tar.gz}, can be obtained from the Gemini website.
+\code{gemini\_python-X1.tar.gz}, can be obtained from the Gemini website:
+\begin{quote}
+
+\href{http://www.gemini.edu/sciops/data-and-results/processing-software}{http://www.gemini.edu/sciops/data-and-results/processing-software}
+\end{quote}
 
 
 \subsection{Recommended installation}
@@ -174,15 +203,15 @@ or equivalent shell configuration script.
 For tcsh:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-setenv PATH /your/favorite/location:\PYGZdl{}\PYGZob{}PATH\PYGZcb{}
-setenv PYTHONPATH /your/favorite/location:\PYGZdl{}\PYGZob{}PYTHONPATH\PYGZcb{}
+setenv PATH /your/favorite/location/bin:\PYGZdl{}\PYGZob{}PATH\PYGZcb{}
+setenv PYTHONPATH /your/favorite/location/lib/python2.7/site\PYGZhy{}packages:\PYGZdl{}\PYGZob{}PYTHONPATH\PYGZcb{}
 \end{Verbatim}
 
 For bash:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-export PATH=/your/favorite/location:\PYGZdl{}\PYGZob{}PATH\PYGZcb{}
-export PYTHONPATH=/your/favorite/location:\PYGZdl{}\PYGZob{}PYTHONPATH\PYGZcb{}
+export PATH=/your/favorite/location/bin:\PYGZdl{}\PYGZob{}PATH\PYGZcb{}
+export PYTHONPATH=/your/favorite/location/lib/python2.7/site\PYGZhy{}packages:\PYGZdl{}\PYGZob{}PYTHONPATH\PYGZcb{}
 \end{Verbatim}
 
 If you added those lines to your shell configuration script, make sure your \code{source}
@@ -257,9 +286,9 @@ Multi-Extension FITS (MEF) file.
 
 A MEF file is a Primary Header Unit (PHU) with a list of Header Data Units
 (HDU), commonly referred to as extensions.  In AstroData, the extension
-numbering is zero-based, the first extension is \code{myAstroData{[}0{]}} where
+numbering is zero-indexed, the first extension is \code{myAstroData{[}0{]}} where
 \code{myAstroData} is an open AstroData object.  If you are familiar with
-IRAF, then keep in mind that in IRAF the extensions are 1-based.  For
+IRAF, then keep in mind that in IRAF the extensions are 1-indexed.  For
 example:
 
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -271,7 +300,7 @@ numdisplay.display(myAstroData[0].data)
 \end{Verbatim}
 
 The first data extension is 1 in IRAF, but it is 0 in AstroData.  All Python
-arrays are zero-based, so AstroData was made compliant with modern practice.
+arrays are zero-indexed, so AstroData was made compliant with modern practice.
 
 \textbf{Try it yourself}
 
@@ -296,7 +325,7 @@ Then launch the Python shell:
 \section{Open and access existing MEF files}
 \label{io:open-and-access-existing-mef-files}
 An AstroData object can be created from the name of the file on disk, a URL,
-or from PyFITS HDUList or HDU instance.  An existing MEF file can be open as
+or from PyFITS HDUList or HDU instance.  An existing MEF file can be opened as
 an AstroData object in \code{readonly}, \code{update}, or \code{append} mode.
 The default is \code{readonly}.
 
@@ -354,18 +383,18 @@ of the \code{mode} argument:
 
 \subsection{Accessing the content of a MEF file}
 \label{io:accessing-the-content-of-a-mef-file}
-Conceivably once opens a file to access its content. Manipulations of the
+Conceivably one opens a file to access its content. Manipulations of the
 pixel data and of the headers are covered in more details in later sections
-({\hyperref[data:data]{\emph{Section 7 - Pixel Data}}} and
-{\hyperref[headers:headers]{\emph{Section 6 - FITS Headers}}}, respectively). Here we show
+({\hyperref[data:data]{\emph{Section 5 - Pixel Data}}} and
+{\hyperref[headers:headers]{\emph{Section 4 - FITS Headers}}}, respectively). Here we show
 a few very basic examples on how to access pixels and headers.
 
-The pixel data in an AstroData object are stored as \code{numpy} \code{ndarray}.
-Any \code{ndarray} operations are valid.  We use \code{numpy}`s \code{average} function
+The pixel data in an AstroData object are stored as Numpy \code{ndarray}.
+Any \code{ndarray} operations are valid.  We use Numpy's \code{average} function
 in the example below.
 
-The headers in an AstroData object are stored as \code{pyfits} headers.  Any
-\code{pyfits} header operations are valid.
+The headers in an AstroData object are stored as PyFITS headers.  Any
+PyFITS header operations are valid.
 
 \begin{Verbatim}[commandchars=\\\{\},numbers=left,firstnumber=1,stepnumber=1]
 \PYG{k+kn}{from} \PYG{n+nn}{astrodata} \PYG{k+kn}{import} \PYG{n}{AstroData}
@@ -388,7 +417,7 @@ The headers in an AstroData object are stored as \code{pyfits} headers.  Any
    \PYG{k}{print}
 \end{Verbatim}
 
-\emph{(Python Beginner's Note 1: The {}`{}`\#{}`{}` on line 8 and 13 are not necessary to the
+\emph{(Python Beginner's Note 1: The {}`{}`\#{}`{}` on line 8 and 14 are not necessary to the
 code but simplify
 the cut and paste of the statements from the HTML page to the Python
 shell, without affecting readability.)}
@@ -402,14 +431,14 @@ this will launch the execution of the loop.)}
 Now let us discuss the example.
 
 As stated above, the pixel data are stored in \code{numpy.ndarray} objects.
-Therefore, \code{numpy} needs to be imported if any \code{numpy} operations is to
+Therefore, Numpy needs to be imported if any \code{numpy} operations is to
 be run on the data.  This is done on Line 2, using the standard import
-convention for \code{numpy}.
+convention for Numpy.
 
 On Line 6, the for-loop that will access the extension sequentially is defined.
 Only the extensions are returned, the Primary Header Unit (PHU) is not
 sent to the loop.  Access to the PHU is discussed in
-{\hyperref[headers:headers]{\emph{Section 6 - FITS Headers}}}.
+{\hyperref[headers:headers]{\emph{Section 4 - FITS Headers}}}.
 
 In an AstroData object, each extension is given, in memory if not on disk,
 an extension name and an extension version.  Line 7 accesses that information.
@@ -425,7 +454,7 @@ NOT copied, the new variables simply point to the information stored in the
 AstroData object.  If \code{data} or \code{hdr} are modified, the AstroData object
 itself will be modified.
 
-In the example above, a loop through the extension is used.  To access a specific
+In the example above, a loop through the extensions is used.  To access a specific
 extension by name, it is also possible to do something like this:
 
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -441,7 +470,7 @@ or if not using the names, using the positional number for the extension:
    \PYG{n}{ad}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{o}{.}\PYG{n}{extname}\PYG{p}{(}\PYG{p}{)}\PYG{p}{,} \PYG{n}{ad}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{o}{.}\PYG{n}{extver}\PYG{p}{(}\PYG{p}{)}
 \end{Verbatim}
 
-Note that the extension positions are zero-based, \code{ad{[}0{]}} is not the
+Note that the extension positions are zero-indexed, \code{ad{[}0{]}} is not the
 PHU, it is the first extension.
 
 
@@ -537,8 +566,9 @@ user must either specify the EXTNAME, EXTVER of the new extension or use
 the \code{auto\_number} options which tries to do something sensible to keep the
 MEF structurally valid.
 
-The second difficulty is due to the fact a reference to an extension is
-just that a ``reference'', a ``link'', it is not a copy.  Any changes to the
+The second difficulty is due to the fact an assignment of an extension to
+a variable is
+just a ``reference'', a ``link'', it is not a copy.  Any changes to the
 variable standing as a pointer to an extension in an AstroData object will
 affect the AstroData object itself.
 
@@ -558,7 +588,7 @@ As you see in the previous subsection, the extension name and extension
 version number of the extension in \code{new\_extension} is {[}'SCI', 2{]}.  There
 is already an extension named and versioned that way in \code{ad} (see the
 result of \code{ad.info()} in the previous subsection).  Therefore, to avoid
-conflict, the argument to append \code{auto\_number} is set to \code{True}.
+conflict, the argument \code{auto\_number} is set to \code{True}.
 
 As you can see from the output of \code{ad.info()} after the \code{append} call:
 
@@ -595,13 +625,13 @@ a reference to the extension stored in \code{adread}, when \code{auto\_number}
 changes the version number to 4, the extension in \code{adread} will also be
 modified, corrupting the source.  Moreover, if other modifications are made
 to the extension inserted in \code{ad}, it will modify \code{adread} too. There are
-times when it will not matter as \code{adread} is scheduled to be closed anyway,
+times when it will not matter at all, for example if \code{adread} is scheduled to be closed anyway,
 but if \code{adread} is to be used later in the script, it should not be modified
 like that.
 
 To cut the link between the extension appended to the dataset and the
 source, the argument \code{do\_deepcopy} is set to \code{True}.  This will often be
-needed.  It is not the default out of memory usage concerns and to force
+needed.  It is not the default because of memory usage concerns, and to force
 the user to think before creating copies and decide if it is truly needed.
 
 
@@ -609,7 +639,7 @@ the user to think before creating copies and decide if it is truly needed.
 \label{io:inserting-an-extension}
 When inserting an extension into an AstroData object, the same caution to
 extension name and version, and to the reference versus copy issues applies.
-Instead of repeating ourselves, we refer to users to discusssion above in
+Instead of repeating ourselves, we refer to users to the discusssion above in
 the ``Appending'' section.
 
 With that in mind, let us present a few examples of insertion.
@@ -707,7 +737,7 @@ in this manual, yet fortunately not that commonly needed.
 When we inserted \code{new\_extension} above, we did not use \code{do\_deepcopy}.
 Therefore, if we were to modify \code{new\_extension}, like through \code{auto\_number},
 we would be modifying not only the source, \code{adread}, but also that extension
-we added to \code{ad} !
+we have already added to \code{ad} !
 
 As you can see, it is vitally important to understand was is a true copy and
 what is a reference to something else when dealing with extensions.  Beginners
@@ -717,7 +747,7 @@ rise significantly.
 
 Here is how one would insert \code{new\_extension} somewhere else in \code{ad}.
 In the example, the extension is inserted between the current third and
-fourth extension.  Since position ID are zero-based, this means between
+fourth extension.  Since position ID are zero-indexed, this means between
 position 2 and 3.
 
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -760,12 +790,12 @@ AD No.    Name          Type      MEF No.  Cards    Dimensions   Format
 The automatic renumbering assigned an extension number of 5 to the newly
 inserted extension.  One might have expected that 2 would be assigned as the
 next available version number of the `VAR' name.  This behavior was designed
-to prevent the software from making scientific assumption that the new
+to prevent the software from making the scientific assumption that the new
 extension is in anyway associated with another.  Normally, it is assumed that
 all extension with a given EXTVER are scientifically associated.  \code{auto\_number}
 has no way to know which extension is scientifically associated with an other.
 The purpose of \code{auto\_number} is solely to keep the AstroData structure sound
-and prevent corruption due to classing name/version pairs.  It is the job
+and prevent corruption due to clashing name/version pairs.  It is the job
 of the programmer, who has the scientific knowledge of the associations, to
 name and version the extensions correctly when that matters.
 
@@ -828,7 +858,7 @@ The new extension pushed (`SCI',4) down and took its place in the sequence.
 Compared to appending and inserting extensions, removing them is a breeze.
 As before, the extension to remove can be speficied with the position number
 or with the extension name and version.  Just remember that the position
-numbers are zero-based.
+numbers are zero-indexed.
 
 \begin{Verbatim}[commandchars=\\\{\},numbers=left,firstnumber=1,stepnumber=1]
 \PYG{n}{ad}\PYG{o}{.}\PYG{n}{remove}\PYG{p}{(}\PYG{l+m+mi}{4}\PYG{p}{)}
@@ -880,7 +910,7 @@ overwritten with the \code{write()} command.
 The first line will print the file name currently associated with the
 AstroData object, \code{ad}.  This the file that will be written to.
 
-More often though, the idea is the write the modified output to a new
+More often though, the idea is to the write the modified output to a new
 file.  This can be done regardless of the \code{mode} used when the file was
 opened.  All that is needed is to specify a new file name.  Note that
 this will change the file name associated with the AstroData object,
@@ -907,12 +937,12 @@ no longer needed:
 \end{Verbatim}
 
 If you have been following along, the input file on disk was modified by
-on of the \code{write} examples above.  We will need the unmodified file in
-the next section.  To restore the file from the original:
+one of the \code{write} examples above.  We will need the unmodified file in
+the next section.  To restore the file to the original:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\PYG{k+kn}{import} \PYG{n+nn}{os}
-\PYG{n}{os}\PYG{o}{.}\PYG{n}{system}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{cp ../data\PYGZus{}for\PYGZus{}ad\PYGZus{}user\PYGZus{}manual/N20110313S0188.fits .}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{k+kn}{import} \PYG{n+nn}{shutil}
+\PYG{n}{shutil}\PYG{o}{.}\PYG{n}{copy}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{../data\PYGZus{}for\PYGZus{}ad\PYGZus{}user\PYGZus{}manual/N20110313S0188.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{.}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
 \end{Verbatim}
 
 
@@ -942,8 +972,8 @@ Open a file, make modifications, write a new MEF file on disk:
 \end{Verbatim}
 
 
-\subsubsection{Needing real copies in memory}
-\label{io:needing-real-copies-in-memory}
+\subsubsection{Needing true copies in memory}
+\label{io:needing-true-copies-in-memory}
 Since in Python, and when working with AstroData objects, the memory can be
 shared between variables, it is sometimes necessary to create a ``true'' copy
 of an AstroData object to keep us from modifying the original.
@@ -972,10 +1002,10 @@ if you \code{write} the files back to disk.
 \subsection{Create New MEF Files from Scratch}
 \label{io:create-new-mef-files-from-scratch}
 Another use case is creating a new MEF files or AstroData object when none
-existed before. The pixel data needs to be created as a numpy \code{ndarray}.
-The header must be created as pyfits header. IMPORTANT: AstroData is currently
-not compatible with \code{astropy.io.fits}, one \emph{must} use the standalone
-\code{pyfits} module (it comes with Ureka).
+existed before. The pixel data needs to be created as a Numpy \code{ndarray}.
+The header must be created as PyFITS header. IMPORTANT: AstroData currently
+is not compatible with \code{astropy.io.fits}, one \emph{must} use the standalone
+PyFITS module (it comes with Ureka).
 
 \begin{Verbatim}[commandchars=\\\{\},numbers=left,firstnumber=1,stepnumber=1]
 \PYG{k+kn}{from} \PYG{n+nn}{astrodata} \PYG{k+kn}{import} \PYG{n}{AstroData}
@@ -1000,7 +1030,7 @@ not compatible with \code{astropy.io.fits}, one \emph{must} use the standalone
 The input header does not need to have anything in it (Line 6).  In fact, if
 you are really creating from scratch, it is probably better to leave it empty
 and populate it after the creation of the AstroData object.  Upon creation,
-AstroData, through pyfits, will take care of adding the minimal set of header
+AstroData, through PyFITS, will take care of adding the minimal set of header
 cards to make the file FITS compliant.
 
 The pixel data array must be a \code{ndarray}.  On Line 9, we create a
@@ -1020,7 +1050,8 @@ opened with AstroData, the headers are inspected, data identification rules
 are applied, and all applicable AstroDataTypes are assigned.  From that point
 on, the AstroData object ``knows'' whether it is a GMOS image, a NIRI spectrum,
 an IFU from GMOS or NIFS. This embedded knowledge is critical to the header
-keyword mapping done by the Descriptors (see Section ...), for examples.
+keyword mapping done by the Descriptors (see
+{\hyperref[headers:headers]{\emph{Section 4 - FITS Headers}}}), for examples.
 The RecipeSystem also depends heavily on the AstroDataType feature.
 
 Examples of AstroDataTypes are: GMOS\_IMAGE, SIDEREAL, GMOS\_IFU\_FLAT, NIRI\_CAL,
@@ -1033,7 +1064,7 @@ The types are obviously observatory and instrument dependent.  The
 identification rules do need to be coded for AstroData to assign
 AstroDataTypes.  This has been done for most if not all Gemini data.  The
 Gemini Types are included in the \code{astrodata\_Gemini} package that is
-installed along with \code{astrodata} when{}`{}`gemini\_python{}`{}` is installed.
+installed along with \code{astrodata} when \code{gemini\_python} is installed.
 Keeping the instrument rules and configuration separate from \code{astrodata}
 keeps it generic, and allows other packages to be easily added, for example,
 one might want to add a third-party package for CFHT instruments.
@@ -1049,8 +1080,6 @@ the necessary files.
 
 \begin{Verbatim}[commandchars=\\\{\}]
 cd \PYGZlt{}path\PYGZgt{}/gemini\PYGZus{}python\PYGZus{}datapkg\PYGZhy{}X1/playground
-cp ../data\PYGZus{}for\PYGZus{}ad\PYGZus{}user\PYGZus{}manual/N20110313S0188.fits .
-cp ../data\PYGZus{}for\PYGZus{}ad\PYGZus{}user\PYGZus{}manual/N20110316S0321.fits .
 cp ../data\PYGZus{}for\PYGZus{}ad\PYGZus{}user\PYGZus{}manual/N20111124S0203.fits .
 \end{Verbatim}
 
@@ -1074,7 +1103,7 @@ logic decisions based to on the type.
    \PYG{k}{print} \PYG{l+s}{\PYGZdq{}}\PYG{l+s}{I am these types instead: }\PYG{l+s}{\PYGZdq{}}\PYG{p}{,} \PYG{n}{ad}\PYG{o}{.}\PYG{n}{types}
 \end{Verbatim}
 
-The attribute \code{types} returns a list of all the AstroDataTypes
+The attribute \code{types} is a list of all the AstroDataTypes
 associated with the dataset.  Other than for controlling the flow of the
 program, it can be useful when interactively exploring the various types
 associated with a dataset, or when there's a need to write all the types
@@ -1143,7 +1172,7 @@ and the \code{status()} statement returns:
 \PYG{p}{[}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{GMOS\PYGZus{}RAW}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{UNPREPARED}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{RAW}\PYG{l+s}{\PYGZsq{}}\PYG{p}{]}
 \end{Verbatim}
 
-If code incur modifications to the AstroData object that result in changes to
+If code applies modifications to the AstroData object that result in changes to
 the AstroDataTypes, it is necessary to let the system know about it.  The
 method \code{refresh\_types()} rescan the AstroData headers and reapply the
 identification rules.  This type refreshing is used mostly when the processing
@@ -1192,7 +1221,7 @@ Then launch the Python shell:
 \label{headers:astrodata-descriptors}
 AstroData Descriptors provide a ``header keyword-to-concept'' mapping that
 allows one to access header information in a consistent manner, regardless
-of which instrument the dataset is from.  Life for the AstroDataTypes, the
+of which instrument the dataset is from.  Like for the AstroDataTypes, the
 mapping is coded in a configuration package that is provided by the
 observatory or the user.
 
@@ -1224,7 +1253,7 @@ To get the list of descriptors available for an AstroData object:
 \PYG{n+nb}{sorted}\PYG{p}{(}\PYG{n}{ad}\PYG{o}{.}\PYG{n}{descriptors}\PYG{o}{.}\PYG{n}{keys}\PYG{p}{(}\PYG{p}{)}\PYG{p}{)}
 \end{Verbatim}
 
-The \code{descriptors} property contains a dictionary with the name of the
+The \code{descriptors} property returns a dictionary with the name of the
 descriptors available for this AstroData object as the keys.  The really
 interesting information is in the keys.  On Line 5, we retrieve the
 sorted list of available Descriptors.
@@ -1305,8 +1334,8 @@ When the automatic convertion to a Python cannot be determine from context
 the programmer must use the method \code{as\_pytype()}.
 
 \begin{Verbatim}[commandchars=\\\{\}]
-as.pixel\PYGZus{}scale()
-as.pixel\PYGZus{}scale().as\PYGZus{}pytype()
+\PYG{n}{ad}\PYG{o}{.}\PYG{n}{pixel\PYGZus{}scale}\PYG{p}{(}\PYG{p}{)}
+\PYG{n}{ad}\PYG{o}{.}\PYG{n}{pixel\PYGZus{}scale}\PYG{p}{(}\PYG{p}{)}\PYG{o}{.}\PYG{n}{as\PYGZus{}pytype}\PYG{p}{(}\PYG{p}{)}
 \end{Verbatim}
 
 The first line returns a DescriptorValue, the second line returns a float.
@@ -1321,7 +1350,7 @@ in the header.
 
 One important thing to keep in mind is that the PHU and the extension headers
 are accessed differently. The method \code{phu\_get\_key\_value} accesses the PHU
-headers; the method \code{get\_key\_value} accesses the headers of the specified
+header; the method \code{get\_key\_value} accesses the header of the specified
 extension.
 
 Here are some direct access examples:
@@ -1374,10 +1403,10 @@ done as follow:
 \subsection{EXTNAME and EXTVER}
 \label{headers:extname-and-extver}
 MEF files have the concept of naming and versioning extensions.  The header
-storing the name and version are \code{EXTNAME} and \code{EXTVER}.  AstroData uses
+keywords storing the name and version are \code{EXTNAME} and \code{EXTVER}.  AstroData uses
 that concept extensively.  In fact, even if a MEF on disk does not have
 \code{EXTNAME} and \code{EXTVER} defined, for example Gemini raw datasets, upon
-opening the file, AstroData will assign names and versions to each extension.
+opening the file AstroData will assign names and versions to each extension.
 The default behavior is to assign all extension a \code{EXTNAME} of \code{SCI}
 and then version them sequential from 1 to the number of extension present.
 
@@ -1521,8 +1550,34 @@ example, on Line 10, we calculate the sum of the pixel values with the
 
 \section{Arithmetic on AstroData Objects}
 \label{data:arithmetic-on-astrodata-objects}
-AstroData supports basic arithmetic directly: addition, subtraction,
-multiplication, division.  The big advantage of using the AstroData
+AstroData supports basic arithmetic directly:
+
+\begin{tabulary}{\linewidth}{|L|L|}
+\hline
+
+addition
+ & 
+.add()
+\\
+
+subtraction
+ & 
+.sub()
+\\
+
+multiplication
+ & 
+.mult()
+\\
+
+division
+ & 
+.div()
+\\
+\hline\end{tabulary}
+
+
+The big advantage of using the AstroData
 implementation of those operator is that if the AstroData object has variance
 and data quality planes, those will be calculated and propagated to the
 output appropriately.
@@ -1619,8 +1674,8 @@ The CORRECT way to calculate \code{x*10 + x}:
 
 As one can see, for complex equation, using the AstroData arithmetic method
 can get fairly confusing.  Operator overload would solve this situation but
-it has not been implemented yet mostly due to lack of resources.  Therefore,
-we recommend to use numpy for really complex equation since operator overload
+it has not been implemented yet mostly due to a lack of resources.  Therefore,
+we recommend the use numpy for really complex equation since operator overload
 is implemented in numpy and the operator precedence is respected.  The
 downside is that if you need the variance plane propagated correctly, you will
 have to do the math yourself.
@@ -1861,14 +1916,14 @@ most common, especially for users coming from IRAF.
 
 \subsection{Retrieving cursor position}
 \label{data:retrieving-cursor-position}
-The funciton \code{numdisplay.readcursor} can be used to retrieve cursor position.
+The function \code{numdisplay.readcursor} can be used to retrieve cursor position.
 Note that it will \textbf{not} respond to mouse clicks, \textbf{only} keyboard entries
 are acknowledged.
 
 When invoked, \code{readcursor()} will stop the flow of the program and wait for
 the user to put the cursor on top of the image and type a key.  A \textbf{string}
 with four space-separated values are going to be returned: the x and y
-coordinates, a frame reference number, and value of the key the user hit.
+coordinates, a frame reference number, and the value of the key the user hit.
 
 \begin{Verbatim}[commandchars=\\\{\},numbers=left,firstnumber=1,stepnumber=1]
 \PYG{c}{\PYGZsh{} here we assume that the previous example has just been run.}
@@ -1898,7 +1953,7 @@ it is believe important to show a few examples to steer new users in the
 right direction.
 
 The \code{numpy} and \code{scipy} modules offer a multitude of functions and tools.
-They both have their own documentation.  Here we simply highlight a few
+They both have their own documentation.  Here we simply highlighting a few
 functions that could be used for common things an astronomer might want to do.
 The idea is to get the reader started in her exploration of \code{numpy} and
 \code{scipy}.
@@ -1924,8 +1979,8 @@ The idea is to get the reader started in her exploration of \code{numpy} and
 \end{Verbatim}
 
 The two most important thing to remember for users coming from the IRAF world
-are that the array has the y-axis is the first index, the x-axis is the second
-(Line 8, 11), and that the array indices are zero-based, not one-based
+are that the array has the y-axis in the first index, the x-axis in the second
+(Line 8, 11), and that the array indices are zero-indexed, not one-indexed
 (Line 11).
 
 Sometimes it is useful to know the type of the values stored in the array,
@@ -1947,9 +2002,9 @@ many to cover here, but here are a couple examples.
 Note how \code{mean()} is called differently from the other two.  \code{mean()} is
 a \code{ndarray} method, the others are numpy functions.  The implementation
 details are clearly well beyond the scope of this manual, but when looking
-for the tool you need keep in mind that there are two sets of functions to
+for the tool you need, keep in mind that there are two sets of functions to
 look into.  Duplications like \code{.mean()} and \code{np.average()} can happen,
-but they are not the norm.  The readers are strongly encourage to refer to the
+but they are not the norm.  The readers are strongly encouraged to refer to the
 numpy documentation to find the tool they need.
 
 
@@ -1958,7 +2013,7 @@ numpy documentation to find the tool they need.
 It is common in astronomy to apply clipping to the statistics, a clipped
 average, for example.
 
-The numpy \emph{ma} module can be used to create masks of the values to reject.
+The numpy \code{ma} module can be used to create masks of the values to reject.
 
 In the example below, we calculate a clipped mean with rejection at
 +/- 3 times the standard deviation.
@@ -2059,11 +2114,12 @@ data{[}74,49{]}.
 \PYG{n}{minimum} \PYG{o}{=} \PYG{n}{data}\PYG{p}{[}\PYG{l+m+mi}{62}\PYG{p}{:}\PYG{l+m+mi}{87}\PYG{p}{,}\PYG{l+m+mi}{37}\PYG{p}{:}\PYG{l+m+mi}{62}\PYG{p}{]}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{p}{)}
 \PYG{n}{maximum} \PYG{o}{=} \PYG{n}{data}\PYG{p}{[}\PYG{l+m+mi}{62}\PYG{p}{:}\PYG{l+m+mi}{87}\PYG{p}{,}\PYG{l+m+mi}{37}\PYG{p}{:}\PYG{l+m+mi}{62}\PYG{p}{]}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{p}{)}
 
-\PYG{k}{print} \PYG{l+s}{\PYGZdq{}}\PYG{l+s}{Mean    Median Stddev  Min    Max}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s}{\PYGZdq{}}\PYG{p}{,} \PYG{n}{mean}\PYG{p}{,} \PYG{n}{median}\PYG{p}{,} \PYG{n}{stddev}\PYG{p}{,} \PYG{n}{minimum}\PYG{p}{,} \PYG{n}{maximum}
+\PYG{k}{print} \PYG{l+s}{\PYGZdq{}}\PYG{l+s}{Mean    Median Stddev  Min    Max}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s}{\PYGZdq{}}\PYG{p}{,} \PYGZbs{}
+   \PYG{n}{mean}\PYG{p}{,} \PYG{n}{median}\PYG{p}{,} \PYG{n}{stddev}\PYG{p}{,} \PYG{n}{minimum}\PYG{p}{,} \PYG{n}{maximum}
 \end{Verbatim}
 
 There is one odd thing that the reader should notice.  On Line 9, \code{median}
-is not being called like the others.  This is because there are \code{median}
+is not being called like the others.  This is because there is no \code{median}
 method associated with a \code{ndarray}.  But there is a numpy function, so that
 is what is used.
 
@@ -2077,7 +2133,7 @@ sections.  AstroData arithmetics is used to subtract the overscan level.
 Finally, the overscan section is trimmed off and the AstroData is written to
 a new file.
 
-The make the example more complete, we use the file created in the Variance
+To make the example more complete, we use the file created in the Variance
 section.  We will propagate the variance and trim the variance planes too.
 
 \begin{Verbatim}[commandchars=\\\{\},numbers=left,firstnumber=1,stepnumber=1]
@@ -2119,7 +2175,7 @@ extensions.
 On Lines 7 and 8, the descriptors \code{overscan\_section} and \code{data\_section}
 are used to retrieve the region information relating to the location
 of the overscan section and data section in each extension.  The return
-values for each extension is a list of four zero-based indices identifying
+values for each extension is a list of four zero-indexed indices identifying
 the x and y axes lower and upper range for the section.
 
 Since the overscan and data sections are the same for a given extension
@@ -2136,7 +2192,7 @@ The content of oversec\_dict is
 
 The overscan section and the data section could have been obtained in the
 loop for each extension.  It is however more efficient to retrieve the
-descriptor information once, then three times in the loop, when it is
+descriptor information once than three times in the loop, when it is
 possible to do so.
 
 Moving on to the loop starting on Line 11.  For convenience, the extension
@@ -2165,7 +2221,7 @@ trimmed off.  Only the data section is kept.  This is done on Lines 27 and 28.
 Note that after the `VAR' extension is appended, there are two extensions in
 the AstroData object, and in order to work with them, they must now be
 specified.  Contrast that with the calls on Lines 13 and 19; then there were
-only one extension, the `SCI' extension, and selection was implicit.
+still only one extension, the `SCI' extension, and selection was implicit.
 
 A final but important reminder.  All of the work was done on the extensions
 extracted from the original AstroData object, \code{ad}.  Since the extensions
@@ -2215,7 +2271,7 @@ is reversed.  The dimensions of the \code{ndarray} are (wavelength, y, x).
 \PYG{n}{plt}\PYG{o}{.}\PYG{n}{show}\PYG{p}{(}\PYG{p}{)}
 \end{Verbatim}
 
-On Line 13, the cube is ``collapse'' in the wavelength dimension to produce a
+On Line 13, the cube is ``collapsed'' in the wavelength dimension to produce a
 ``white light'' 2-D image.
 
 On Line 17, a vector through the cube at pixel position (7,30) is retrieved
@@ -2291,15 +2347,15 @@ of the data.
 
 \chapter{Table Data}
 \label{tables:table-data}\label{tables::doc}
-\code{astrodata} does not provide any special wrappers for FITS Table Data.  But
-since \code{astrodata} is built on top of \code{pyfits}, the standard \code{pyfits}
-table functions can be used.  The reader should refer to the \code{pyfits}
+AstroData does not provide any special wrappers for FITS Table Data.  But
+since AstroData is built on top of PyFITS, the standard PyFITS
+table functions can be used.  The reader should refer to the PyFITS
 table documentation for complete details (e.g.
 \href{https://pythonhosted.org/pyfits/users\_guide/users\_table.html}{https://pythonhosted.org/pyfits/users\_guide/users\_table.html}). In this chapter,
 a few useful examples of basic usage are shown.  As the reader will see, table
 manipulation can be tedious and tricky.
 
-\code{astropy.table} might simply some of the examples of the examples presented
+\code{astropy.table} might simplify some of the examples presented
 in this chapter.  This will be looked into at some future time.  (Suggestions
 for improvements are welcome.)
 
@@ -2326,8 +2382,8 @@ Then launch the Python shell:
 A FITS table is stored in a MEF file as a \code{BinTableHDU}.  The table data is
 retrieved from the \code{AstroData} object with the same \code{.data} attribute as
 for pixel extensions, but for FITS tables \code{.data} returns a \code{FITS\_rec},
-which is a \code{pyfits} class, instead of a numpy \code{ndarray}.  Here is how to
-get information out of a FITS table.:
+which is a PyFITS class, instead of a Numpy \code{ndarray}.  Here is how to
+get information out of a FITS table.
 
 \begin{Verbatim}[commandchars=\\\{\},numbers=left,firstnumber=1,stepnumber=1]
 \PYG{k+kn}{from} \PYG{n+nn}{astrodata} \PYG{k+kn}{import} \PYG{n}{AstroData}
@@ -2363,7 +2419,7 @@ Gemini data, those are used in the data reduction to identify, to first
 order, where spectra fall on the detector.
 
 The output of \code{names} (Line 10) is a simple list of strings.  The output
-of \code{columns} is a pyfits \code{ColDefs} object.  When printed it looks like this:
+of \code{columns} is a PyFITS \code{ColDefs} object.  When printed it looks like this:
 
 \begin{Verbatim}[commandchars=\\\{\},numbers=left,firstnumber=1,stepnumber=1]
 ColDefs(
@@ -2432,8 +2488,8 @@ the \code{.append()} function.
 
 \section{Operate on a FITS Table}
 \label{tables:operate-on-a-fits-table}
-The pyfits manual is the recommended source for more complete documentation
-on working on FITS table with Python.  Here are a few examples of what one can
+The PyFITS manual is the recommended source for more complete documentation
+on working on FITS table with Python.  Here are a few examples of how one can
 modify a FITS table.
 
 
@@ -2511,7 +2567,7 @@ columns have been reorganized, a \emph{new} table is created and, in this case,
 replaces the original \code{table1}.
 
 The index of the \code{pabeta} column in \code{table2} is found with the \code{index}
-method as shown on Line 2.  Then it is just a matter of copying that column
+method as shown on Line 2.  Then it is just a matter of adding that column
 from \code{table2} to the columns of \code{table1} (Line 3).
 
 The columns in the new \code{table1} are:
@@ -2578,7 +2634,7 @@ does not seem to be working properly.
 \end{Verbatim}
 
 To change the name of a column, one needs to change the \code{name} attribute
-of the column.  On the first line, the index of the position index of the
+of the column.  On the first line, the position index of the
 column named \code{feii} is used to select the column to change, and then the
 name of that column is changed to \code{ironII}.
 
@@ -2594,18 +2650,18 @@ The \code{table1} columns are now:
 
 \subsection{Appending and deleting rows}
 \label{tables:appending-and-deleting-rows}
-Appending and deleting rows is uncanningly complicated with pyfits.
+Appending and deleting rows is uncannily complicated with PyFITS.
 This is an area where the use \code{astropy.table} can certainly help.  We hope
 to be able to add astropy-based examples to this manual in the near future.
-But for now, let us study the pyfits way.
+But for now, let us study the PyFITS way.
 
 \emph{Disclaimer}:  This is the way the author figured out how to do the row
-manipulations.  If the reader knows of a better way to do it with pyfits,
-please let us know.)
+manipulations.  If the reader knows of a better way to do it with PyFITS,
+please let us know.
 
-Below, we append two new entries to table2.  Only the \code{SNR\_ID} and
+Below, we append two new entries to \code{table2}.  Only the \code{SNR\_ID} and
 \code{pabeta} fields will be added to the table since those are the only
-two columsn in \code{table2}.  When an entry has fields not represented
+two columns in \code{table2}.  When an entry has fields not represented
 in the table, those fields are simply ignored.
 
 \begin{Verbatim}[commandchars=\\\{\},numbers=left,firstnumber=1,stepnumber=1]
@@ -2655,7 +2711,7 @@ new size (Lines 10-11).
 
 \subsection{Changing a value}
 \label{tables:changing-a-value}
-Changing a value is simply a matter of identify the column and the row that
+Changing a value is simply a matter of identifying the column and the row that
 needs the new value.
 
 Below we show how one might search one column to identify the row and then
@@ -2719,7 +2775,7 @@ datetime
 
 \section{astrodata\_Gemini}
 \label{appendices/appendix_descriptors:astrodata-gemini}
-\begin{longtable}{|l|l|l|}
+\begin{longtable}{|l|p{3.0in}|l|}
 \hline
 \textsf{\relax 
 \textbf{Descriptor}
@@ -3095,7 +3151,7 @@ str
 
 ra
  & 
-right ascension
+right ascension, in degrees
  & 
 float
 \\
@@ -3251,17 +3307,11 @@ float
 
 \begin{notice}{note}{Todo}
 
-Describe AstroData in a language that astronomer will comprehend.
+Write examples that use the DQ plane.  Eg. transform DQ plane in a numpy
+mask and do statistics.
 \end{notice}
 
-(The {\hyperref[intro:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/intro.rst, line 11.)
-
-\begin{notice}{note}{Todo}
-
-Primer on creating new AstroDataTypes.
-\end{notice}
-
-(The {\hyperref[types:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/types.rst, line 153.)
+(The {\hyperref[data:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/data.rst, line 579.)
 
 \begin{notice}{note}{Todo}
 
@@ -3272,11 +3322,10 @@ Primer on Descriptor definitions for new instrument.
 
 \begin{notice}{note}{Todo}
 
-Write examples that use the DQ plane.  Eg. transform DQ plane in a numpy
-mask and do statistics.
+Primer on creating new AstroDataTypes.
 \end{notice}
 
-(The {\hyperref[data:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/data.rst, line 568.)
+(The {\hyperref[types:index-0]{\emph{original entry}}} is located in  /data/eclipse/workspace/gemini\_python/astrodata/doc/ad\_UsersManual/types.rst, line 152.)
 
 
 

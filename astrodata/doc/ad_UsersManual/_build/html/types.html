@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>3. AstroDataTypes &mdash; AstroData Users Manual 0.9.0 documentation</title>
+    <title>3. AstroDataTypes &mdash; AstroData Users Manual X1.0.1 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -15,7 +15,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.9.0',
+        VERSION:     'X1.0.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="AstroData Users Manual 0.9.0 documentation" href="index.html" />
+    <link rel="top" title="AstroData Users Manual X1.0.1 documentation" href="index.html" />
     <link rel="next" title="4. FITS Headers" href="headers.html" />
     <link rel="prev" title="2. MEF Input/Output Operations and Extensions Manipulation" href="io.html" /> 
   </head>
@@ -41,7 +41,7 @@
         <li class="right" >
           <a href="io.html" title="2. MEF Input/Output Operations and Extensions Manipulation"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -59,7 +59,8 @@ opened with AstroData, the headers are inspected, data identification rules
 are applied, and all applicable AstroDataTypes are assigned.  From that point
 on, the AstroData object &#8220;knows&#8221; whether it is a GMOS image, a NIRI spectrum,
 an IFU from GMOS or NIFS. This embedded knowledge is critical to the header
-keyword mapping done by the Descriptors (see Section ...), for examples.
+keyword mapping done by the Descriptors (see
+<a class="reference internal" href="headers.html#headers"><em>Section 4 - FITS Headers</em></a>), for examples.
 The RecipeSystem also depends heavily on the AstroDataType feature.</p>
 <p>Examples of AstroDataTypes are: GMOS_IMAGE, SIDEREAL, GMOS_IFU_FLAT, NIRI_CAL,
 NIRI_SPECT, GEMINI_SOUTH, etc.</p>
@@ -69,7 +70,7 @@ feature is not used as much yet.</p>
 identification rules do need to be coded for AstroData to assign
 AstroDataTypes.  This has been done for most if not all Gemini data.  The
 Gemini Types are included in the <tt class="docutils literal"><span class="pre">astrodata_Gemini</span></tt> package that is
-installed along with <tt class="docutils literal"><span class="pre">astrodata</span></tt> when``gemini_python`` is installed.
+installed along with <tt class="docutils literal"><span class="pre">astrodata</span></tt> when <tt class="docutils literal"><span class="pre">gemini_python</span></tt> is installed.
 Keeping the instrument rules and configuration separate from <tt class="docutils literal"><span class="pre">astrodata</span></tt>
 keeps it generic, and allows other packages to be easily added, for example,
 one might want to add a third-party package for CFHT instruments.</p>
@@ -81,8 +82,6 @@ one might want to add a third-party package for CFHT instruments.</p>
 the data package, go to the <tt class="docutils literal"><span class="pre">playground</span></tt> directory and copy over
 the necessary files.</p>
 <div class="highlight-python"><div class="highlight"><pre>cd &lt;path&gt;/gemini_python_datapkg-X1/playground
-cp ../data_for_ad_user_manual/N20110313S0188.fits .
-cp ../data_for_ad_user_manual/N20110316S0321.fits .
 cp ../data_for_ad_user_manual/N20111124S0203.fits .
 </pre></div>
 </div>
@@ -109,7 +108,7 @@ logic decisions based to on the type.</p>
    <span class="k">print</span> <span class="s">&quot;I am these types instead: &quot;</span><span class="p">,</span> <span class="n">ad</span><span class="o">.</span><span class="n">types</span>
 </pre></div>
 </td></tr></table></div>
-<p>The attribute <tt class="docutils literal"><span class="pre">types</span></tt> returns a list of all the AstroDataTypes
+<p>The attribute <tt class="docutils literal"><span class="pre">types</span></tt> is a list of all the AstroDataTypes
 associated with the dataset.  Other than for controlling the flow of the
 program, it can be useful when interactively exploring the various types
 associated with a dataset, or when there&#8217;s a need to write all the types
@@ -189,7 +188,7 @@ status, no types.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="s">&#39;GMOS_RAW&#39;</span><span class="p">,</span> <span class="s">&#39;UNPREPARED&#39;</span><span class="p">,</span> <span class="s">&#39;RAW&#39;</span><span class="p">]</span>
 </pre></div>
 </div>
-<p>If code incur modifications to the AstroData object that result in changes to
+<p>If code applies modifications to the AstroData object that result in changes to
 the AstroDataTypes, it is necessary to let the system know about it.  The
 method <tt class="docutils literal"><span class="pre">refresh_types()</span></tt> rescan the AstroData headers and reapply the
 identification rules.  This type refreshing is used mostly when the processing
@@ -269,7 +268,7 @@ and the basic principles</p>
         <li class="right" >
           <a href="io.html" title="2. MEF Input/Output Operations and Extensions Manipulation"
              >previous</a> |</li>
-        <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

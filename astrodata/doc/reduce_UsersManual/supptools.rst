@@ -90,8 +90,8 @@ Show available recipes::
 
  ===============================================================================
 
-Users can request display the contents of a particular recipe, as listed above.
-This will present the 'stack' of primitives that will be called by the
+Users can also display the contents of a particular recipe or subrecipe.
+This will present the sequence of primitives that will be called by the
 Recipe System when the particular recipe is either specified through the 
 ``reduce`` command line by the user, or selected internally by the Recipe System 
 itself.
@@ -162,18 +162,16 @@ specifically.
 typewalk
 --------
 
-As with ``listprimitives`` and ``reduce``, the command line application ``typewalk`` 
-becomes available once the user has configured astrodata correctly. ``typewalk`` 
-examines files in a directory or directory tree and reports the types and status 
-values through the AstroDataType classification scheme. Running ``typewalk`` on a
-directory containing some Gemini datasets will demonstrate what users can expect 
+``typewalk`` examines files in a directory or directory tree and reports the types 
+and status values through the AstroDataType classification scheme. Running ``typewalk`` 
+on a directory containing some Gemini datasets will demonstrate what users can expect 
 to see. If a user has downloaded gemini_python X1 package with the 'test_data', the 
 user can move to this directory and run ``typewalk`` on that extensive set of
 Gemini datasets.
 
 By default, ``typewalk`` will recurse all subdirectories under the current
 directory. Users may specify an explicit directory with the **-d** or 
-**--dir** option.
+**--dir** option; the behavior remains recursive.
 
 ``typewalk`` provides the following options [**-h, --help**]::
 

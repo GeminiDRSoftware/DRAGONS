@@ -73,7 +73,7 @@ logic decisions based to on the type.
    else:
       print "I am these types instead: ", ad.types
 
-The attribute ``types`` returns a list of all the AstroDataTypes 
+The attribute ``types`` is a list of all the AstroDataTypes 
 associated with the dataset.  Other than for controlling the flow of the
 program, it can be useful when interactively exploring the various types 
 associated with a dataset, or when there's a need to write all the types 

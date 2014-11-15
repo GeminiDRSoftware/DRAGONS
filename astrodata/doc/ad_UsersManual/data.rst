@@ -65,8 +65,19 @@ example, on Line 10, we calculate the sum of the pixel values with the
 
 Arithmetic on AstroData Objects
 ===============================
-AstroData supports basic arithmetic directly: addition, subtraction, 
-multiplication, division.  The big advantage of using the AstroData 
+AstroData supports basic arithmetic directly:
+
++----------------+---------+
+| addition       | .add()  |
++----------------+---------+
+| subtraction    | .sub()  |
++----------------+---------+
+| multiplication | .mult() |
++----------------+---------+
+| division       | .div()  |
++----------------+---------+
+
+The big advantage of using the AstroData 
 implementation of those operator is that if the AstroData object has variance 
 and data quality planes, those will be calculated and propagated to the 
 output appropriately. ::
@@ -485,7 +496,7 @@ a ``ndarray`` method, the others are numpy functions.  The implementation
 details are clearly well beyond the scope of this manual, but when looking
 for the tool you need, keep in mind that there are two sets of functions to
 look into.  Duplications like ``.mean()`` and ``np.average()`` can happen,
-but they are not the norm.  The readers are strongly encourage to refer to the
+but they are not the norm.  The readers are strongly encouraged to refer to the
 numpy documentation to find the tool they need.
 
 Clipped statistics
@@ -603,7 +614,7 @@ Basic statistics on section
       mean, median, stddev, minimum, maximum
 
 There is one odd thing that the reader should notice.  On Line 9, ``median`` 
-is not being called like the others.  This is because there are ``median``
+is not being called like the others.  This is because there is no ``median``
 method associated with a ``ndarray``.  But there is a numpy function, so that
 is what is used.
 

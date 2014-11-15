@@ -3,6 +3,7 @@
 \documentclass[letterpaper,10pt,english]{sphinxmanual}
 \usepackage[utf8]{inputenc}
 \DeclareUnicodeCharacter{00A0}{\nobreakspace}
+\usepackage{cmap}
 \usepackage[T1]{fontenc}
 \usepackage{babel}
 \usepackage{times}
@@ -13,8 +14,8 @@
 \usepackage{appendix} \setcounter{tocdepth}{0}
 
 \title{reduce Users Manual}
-\date{November 05, 2014}
-\release{X1}
+\date{November 14, 2014}
+\release{X1.0.1}
 \author{Kennneth Anderson}
 \newcommand{\sphinxlogo}{}
 \renewcommand{\releasename}{Release}
@@ -31,75 +32,81 @@
     \PYG@it{\PYG@bf{\PYG@ff{#1}}}}}}}
 \def\PYG#1#2{\PYG@reset\PYG@toks#1+\relax+\PYG@do{#2}}
 
-\def\PYG@tok@gd{\def\PYG@tc##1{\textcolor[rgb]{0.63,0.00,0.00}{##1}}}
-\def\PYG@tok@gu{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.50,0.00,0.50}{##1}}}
-\def\PYG@tok@gt{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.25,0.82}{##1}}}
-\def\PYG@tok@gs{\let\PYG@bf=\textbf}
-\def\PYG@tok@gr{\def\PYG@tc##1{\textcolor[rgb]{1.00,0.00,0.00}{##1}}}
-\def\PYG@tok@cm{\let\PYG@it=\textit\def\PYG@tc##1{\textcolor[rgb]{0.25,0.50,0.56}{##1}}}
-\def\PYG@tok@vg{\def\PYG@tc##1{\textcolor[rgb]{0.73,0.38,0.84}{##1}}}
-\def\PYG@tok@m{\def\PYG@tc##1{\textcolor[rgb]{0.13,0.50,0.31}{##1}}}
-\def\PYG@tok@mh{\def\PYG@tc##1{\textcolor[rgb]{0.13,0.50,0.31}{##1}}}
-\def\PYG@tok@cs{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.50,0.56}{##1}}\def\PYG@bc##1{\colorbox[rgb]{1.00,0.94,0.94}{##1}}}
-\def\PYG@tok@ge{\let\PYG@it=\textit}
-\def\PYG@tok@vc{\def\PYG@tc##1{\textcolor[rgb]{0.73,0.38,0.84}{##1}}}
-\def\PYG@tok@il{\def\PYG@tc##1{\textcolor[rgb]{0.13,0.50,0.31}{##1}}}
-\def\PYG@tok@go{\def\PYG@tc##1{\textcolor[rgb]{0.19,0.19,0.19}{##1}}}
-\def\PYG@tok@cp{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
-\def\PYG@tok@gi{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.63,0.00}{##1}}}
-\def\PYG@tok@gh{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.50}{##1}}}
-\def\PYG@tok@ni{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.84,0.33,0.22}{##1}}}
-\def\PYG@tok@nl{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.13,0.44}{##1}}}
-\def\PYG@tok@nn{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.05,0.52,0.71}{##1}}}
-\def\PYG@tok@no{\def\PYG@tc##1{\textcolor[rgb]{0.38,0.68,0.84}{##1}}}
-\def\PYG@tok@na{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
-\def\PYG@tok@nb{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
-\def\PYG@tok@nc{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.05,0.52,0.71}{##1}}}
-\def\PYG@tok@nd{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.33,0.33,0.33}{##1}}}
-\def\PYG@tok@ne{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
-\def\PYG@tok@nf{\def\PYG@tc##1{\textcolor[rgb]{0.02,0.16,0.49}{##1}}}
-\def\PYG@tok@si{\let\PYG@it=\textit\def\PYG@tc##1{\textcolor[rgb]{0.44,0.63,0.82}{##1}}}
-\def\PYG@tok@s2{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
-\def\PYG@tok@vi{\def\PYG@tc##1{\textcolor[rgb]{0.73,0.38,0.84}{##1}}}
-\def\PYG@tok@nt{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.02,0.16,0.45}{##1}}}
-\def\PYG@tok@nv{\def\PYG@tc##1{\textcolor[rgb]{0.73,0.38,0.84}{##1}}}
-\def\PYG@tok@s1{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
-\def\PYG@tok@gp{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.78,0.36,0.04}{##1}}}
-\def\PYG@tok@sh{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
-\def\PYG@tok@ow{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
-\def\PYG@tok@sx{\def\PYG@tc##1{\textcolor[rgb]{0.78,0.36,0.04}{##1}}}
-\def\PYG@tok@bp{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
-\def\PYG@tok@c1{\let\PYG@it=\textit\def\PYG@tc##1{\textcolor[rgb]{0.25,0.50,0.56}{##1}}}
-\def\PYG@tok@kc{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
-\def\PYG@tok@c{\let\PYG@it=\textit\def\PYG@tc##1{\textcolor[rgb]{0.25,0.50,0.56}{##1}}}
-\def\PYG@tok@mf{\def\PYG@tc##1{\textcolor[rgb]{0.13,0.50,0.31}{##1}}}
-\def\PYG@tok@err{\def\PYG@bc##1{\fcolorbox[rgb]{1.00,0.00,0.00}{1,1,1}{##1}}}
-\def\PYG@tok@kd{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
-\def\PYG@tok@ss{\def\PYG@tc##1{\textcolor[rgb]{0.32,0.47,0.09}{##1}}}
-\def\PYG@tok@sr{\def\PYG@tc##1{\textcolor[rgb]{0.14,0.33,0.53}{##1}}}
-\def\PYG@tok@mo{\def\PYG@tc##1{\textcolor[rgb]{0.13,0.50,0.31}{##1}}}
-\def\PYG@tok@mi{\def\PYG@tc##1{\textcolor[rgb]{0.13,0.50,0.31}{##1}}}
-\def\PYG@tok@kn{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
-\def\PYG@tok@o{\def\PYG@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
-\def\PYG@tok@kr{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
-\def\PYG@tok@s{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
-\def\PYG@tok@kp{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
-\def\PYG@tok@w{\def\PYG@tc##1{\textcolor[rgb]{0.73,0.73,0.73}{##1}}}
-\def\PYG@tok@kt{\def\PYG@tc##1{\textcolor[rgb]{0.56,0.13,0.00}{##1}}}
-\def\PYG@tok@sc{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
-\def\PYG@tok@sb{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
-\def\PYG@tok@k{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
-\def\PYG@tok@se{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
-\def\PYG@tok@sd{\let\PYG@it=\textit\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
+\expandafter\def\csname PYG@tok@gd\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.63,0.00,0.00}{##1}}}
+\expandafter\def\csname PYG@tok@gu\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.50,0.00,0.50}{##1}}}
+\expandafter\def\csname PYG@tok@gt\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.27,0.87}{##1}}}
+\expandafter\def\csname PYG@tok@gs\endcsname{\let\PYG@bf=\textbf}
+\expandafter\def\csname PYG@tok@gr\endcsname{\def\PYG@tc##1{\textcolor[rgb]{1.00,0.00,0.00}{##1}}}
+\expandafter\def\csname PYG@tok@cm\endcsname{\let\PYG@it=\textit\def\PYG@tc##1{\textcolor[rgb]{0.25,0.50,0.56}{##1}}}
+\expandafter\def\csname PYG@tok@vg\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.73,0.38,0.84}{##1}}}
+\expandafter\def\csname PYG@tok@m\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.13,0.50,0.31}{##1}}}
+\expandafter\def\csname PYG@tok@mh\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.13,0.50,0.31}{##1}}}
+\expandafter\def\csname PYG@tok@cs\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.50,0.56}{##1}}\def\PYG@bc##1{\setlength{\fboxsep}{0pt}\colorbox[rgb]{1.00,0.94,0.94}{\strut ##1}}}
+\expandafter\def\csname PYG@tok@ge\endcsname{\let\PYG@it=\textit}
+\expandafter\def\csname PYG@tok@vc\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.73,0.38,0.84}{##1}}}
+\expandafter\def\csname PYG@tok@il\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.13,0.50,0.31}{##1}}}
+\expandafter\def\csname PYG@tok@go\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.20,0.20,0.20}{##1}}}
+\expandafter\def\csname PYG@tok@cp\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
+\expandafter\def\csname PYG@tok@gi\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.63,0.00}{##1}}}
+\expandafter\def\csname PYG@tok@gh\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.00,0.50}{##1}}}
+\expandafter\def\csname PYG@tok@ni\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.84,0.33,0.22}{##1}}}
+\expandafter\def\csname PYG@tok@nl\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.13,0.44}{##1}}}
+\expandafter\def\csname PYG@tok@nn\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.05,0.52,0.71}{##1}}}
+\expandafter\def\csname PYG@tok@no\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.38,0.68,0.84}{##1}}}
+\expandafter\def\csname PYG@tok@na\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
+\expandafter\def\csname PYG@tok@nb\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
+\expandafter\def\csname PYG@tok@nc\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.05,0.52,0.71}{##1}}}
+\expandafter\def\csname PYG@tok@nd\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.33,0.33,0.33}{##1}}}
+\expandafter\def\csname PYG@tok@ne\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
+\expandafter\def\csname PYG@tok@nf\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.02,0.16,0.49}{##1}}}
+\expandafter\def\csname PYG@tok@si\endcsname{\let\PYG@it=\textit\def\PYG@tc##1{\textcolor[rgb]{0.44,0.63,0.82}{##1}}}
+\expandafter\def\csname PYG@tok@s2\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
+\expandafter\def\csname PYG@tok@vi\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.73,0.38,0.84}{##1}}}
+\expandafter\def\csname PYG@tok@nt\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.02,0.16,0.45}{##1}}}
+\expandafter\def\csname PYG@tok@nv\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.73,0.38,0.84}{##1}}}
+\expandafter\def\csname PYG@tok@s1\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
+\expandafter\def\csname PYG@tok@gp\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.78,0.36,0.04}{##1}}}
+\expandafter\def\csname PYG@tok@sh\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
+\expandafter\def\csname PYG@tok@ow\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
+\expandafter\def\csname PYG@tok@sx\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.78,0.36,0.04}{##1}}}
+\expandafter\def\csname PYG@tok@bp\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
+\expandafter\def\csname PYG@tok@c1\endcsname{\let\PYG@it=\textit\def\PYG@tc##1{\textcolor[rgb]{0.25,0.50,0.56}{##1}}}
+\expandafter\def\csname PYG@tok@kc\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
+\expandafter\def\csname PYG@tok@c\endcsname{\let\PYG@it=\textit\def\PYG@tc##1{\textcolor[rgb]{0.25,0.50,0.56}{##1}}}
+\expandafter\def\csname PYG@tok@mf\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.13,0.50,0.31}{##1}}}
+\expandafter\def\csname PYG@tok@err\endcsname{\def\PYG@bc##1{\setlength{\fboxsep}{0pt}\fcolorbox[rgb]{1.00,0.00,0.00}{1,1,1}{\strut ##1}}}
+\expandafter\def\csname PYG@tok@kd\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
+\expandafter\def\csname PYG@tok@ss\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.32,0.47,0.09}{##1}}}
+\expandafter\def\csname PYG@tok@sr\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.14,0.33,0.53}{##1}}}
+\expandafter\def\csname PYG@tok@mo\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.13,0.50,0.31}{##1}}}
+\expandafter\def\csname PYG@tok@mi\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.13,0.50,0.31}{##1}}}
+\expandafter\def\csname PYG@tok@kn\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
+\expandafter\def\csname PYG@tok@o\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PYG@tok@kr\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
+\expandafter\def\csname PYG@tok@s\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
+\expandafter\def\csname PYG@tok@kp\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
+\expandafter\def\csname PYG@tok@w\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.73,0.73,0.73}{##1}}}
+\expandafter\def\csname PYG@tok@kt\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.56,0.13,0.00}{##1}}}
+\expandafter\def\csname PYG@tok@sc\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
+\expandafter\def\csname PYG@tok@sb\endcsname{\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
+\expandafter\def\csname PYG@tok@k\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.00,0.44,0.13}{##1}}}
+\expandafter\def\csname PYG@tok@se\endcsname{\let\PYG@bf=\textbf\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
+\expandafter\def\csname PYG@tok@sd\endcsname{\let\PYG@it=\textit\def\PYG@tc##1{\textcolor[rgb]{0.25,0.44,0.63}{##1}}}
 
 \def\PYGZbs{\char`\\}
 \def\PYGZus{\char`\_}
 \def\PYGZob{\char`\{}
 \def\PYGZcb{\char`\}}
 \def\PYGZca{\char`\^}
+\def\PYGZam{\char`\&}
+\def\PYGZlt{\char`\<}
+\def\PYGZgt{\char`\>}
 \def\PYGZsh{\char`\#}
 \def\PYGZpc{\char`\%}
 \def\PYGZdl{\char`\$}
+\def\PYGZhy{\char`\-}
+\def\PYGZsq{\char`\'}
+\def\PYGZdq{\char`\"}
 \def\PYGZti{\char`\~}
 % for compatibility with earlier versions
 \def\PYGZat{@}
@@ -225,7 +232,8 @@ performs actual work on the passed dataset. Primitives observe tightly
 controlled interfaces in support of re-use of primitives and recipes for
 different types of data, when possible. For example, all primitives called
 \code{flatCorrect} must apply the flat field correction appropriate for the data’s
-current AstroDataType, and must have the same set of input parameters.
+current AstroDataType, and must have the same set of input parameters.  This
+is a Gemini Coding Standard, it is not enforced by the Recipe System.
 
 \textbf{recipe} -- Represents the sequence of transformations. A recipe is a
 simple text file that enumerates the set and order of \textbf{primitives} that will
@@ -238,6 +246,10 @@ number of defined recipes and the primitives
 
 \textbf{reduce} -- The user/caller interface to the Recipe System and its associated
 recipes/pipelines.
+
+\textbf{subrecipe} -- Shorter recipe called like a primitive by a recipe or another
+subrecipe.  The subrecipes are not part of the main recipe index, they are more
+akin in purpose to primitives than to recipes.
 
 \textbf{type} or \textbf{typeset} --  Not to be confused with language primitive or
 programmatic data types, these are data types defined within an
@@ -254,6 +266,21 @@ and others. All dependencies of \code{gemini\_python} and \code{astrodata} are p
 the Ureka package, and users are highly encouraged to install and use this very
 useful package. It is an easy and, perhaps, best way to get everything you need
 and then some. Ureka is available at \href{http://ssb.stsci.edu/ureka/}{http://ssb.stsci.edu/ureka/}.
+
+WARNING:  The Ureka installation script will not set up IRAF for you. You need to do
+that yourself. Here's how:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYGZdl{} cd \PYGZti{}
+\PYGZdl{} mkdir iraf
+\PYGZdl{} cd iraf
+\PYGZdl{} mkiraf
+\PYGZhy{}\PYGZhy{} creating a new uparm directory
+Terminal types: xgterm,xterm,gterm,vt640,vt100,etc.
+Enter terminal type: xgterm
+A new LOGIN.CL file has been created in the current directory.
+You may wish to review and edit this file to change the defaults.
+\end{Verbatim}
 
 Once a user has has retrieved the gemini\_python package, available as a tarfile
 from the Gemini website (\href{http://gemini.edu}{http://gemini.edu}), and untarred only minor adjustments
@@ -272,7 +299,7 @@ only solution if you do not have write permission to the default \code{site-pack
 Here is how you install the software somewhere other than the default location:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ python setup.py install --prefix=/your/favorite/location
+\PYGZdl{} python setup.py install \PYGZhy{}\PYGZhy{}prefix=/your/favorite/location
 \end{Verbatim}
 
 \code{/your/favorite/location} must already exist.  This command will install executable
@@ -288,15 +315,15 @@ your environment.  You might want to add the following to your .cshrc or
 C shell(csh, tcsh):
 
 \begin{Verbatim}[commandchars=\\\{\}]
-setenv PATH /your/favorite/location:\$\PYGZob{}PATH\PYGZcb{}
-setenv PYTHONPATH /your/favorite/location:\$\PYGZob{}PYTHONPATH\PYGZcb{}
+setenv PATH /your/favorite/location/bin:\PYGZdl{}\PYGZob{}PATH\PYGZcb{}
+setenv PYTHONPATH /your/favorite/location/lib/python2.7/site\PYGZhy{}packages:\PYGZdl{}\PYGZob{}PYTHONPATH\PYGZcb{}
 \end{Verbatim}
 
 Bourne shells (sh, bash, ksh, ...)
 
 \begin{Verbatim}[commandchars=\\\{\}]
-export PATH=/your/favorite/location:\$\PYGZob{}PATH\PYGZcb{}
-export PYTHONPATH=/your/favorite/location:\$\PYGZob{}PYTHONPATH\PYGZcb{}
+export PATH=/your/favorite/location/bin:\PYGZdl{}\PYGZob{}PATH\PYGZcb{}
+export PYTHONPATH=/your/favorite/location/lib/python2.7/site\PYGZhy{}packages:\PYGZdl{}\PYGZob{}PYTHONPATH\PYGZcb{}
 \end{Verbatim}
 
 If you added those lines to your shell configuration script, make sure your
@@ -305,14 +332,14 @@ If you added those lines to your shell configuration script, make sure your
 For csh/tcsh:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ source \textasciitilde{}/.cshrc
-\$ rehash
+\PYGZdl{} source \PYGZti{}/.cshrc
+\PYGZdl{} rehash
 \end{Verbatim}
 
 For bash:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ source \textasciitilde{}/.bash\_profile
+\PYGZdl{} source \PYGZti{}/.bash\PYGZus{}profile
 \end{Verbatim}
 
 
@@ -324,7 +351,7 @@ WARNING: While easier to install and configure, this will modify your Ureka
 installation.
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ python setup.py install
+\PYGZdl{} python setup.py install
 \end{Verbatim}
 
 This will also add executables to the Ureka \code{bin} directory and documentation to
@@ -343,15 +370,15 @@ In tcsh, you will need to run \code{rehash} to pick the new executables written 
 Start up the python interpreter and import astrodata:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ python
-\textgreater{}\textgreater{}\textgreater{} import astrodata
+\PYGZdl{} python
+\PYGZgt{}\PYGZgt{}\PYGZgt{} import astrodata
 \end{Verbatim}
 
 Next, return to the command line and test that \code{reduce} is reachable
 and runs. There may be some delay as package modules are byte compiled:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce -h [--help]
+\PYGZdl{} reduce \PYGZhy{}h [\PYGZhy{}\PYGZhy{}help]
 \end{Verbatim}
 
 This will print the reduce help to the screen.
@@ -361,7 +388,7 @@ is functioning as expected with a test recipe provided by the astrodata\_Gemini
 package:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce --recipe test\_one /path/to/gemini\_data.fits
+\PYGZdl{} reduce \PYGZhy{}\PYGZhy{}recipe test\PYGZus{}one /path/to/gemini\PYGZus{}data.fits
 \end{Verbatim}
 
 If all is well, users will see something like:
@@ -369,43 +396,43 @@ If all is well, users will see something like:
 \begin{Verbatim}[commandchars=\\\{\}]
 Resetting logger for application: reduce
 Logging configured for application: reduce
-                       --- reduce, v4890  ---
-              Running under astrodata Version GP-X1
+                       \PYGZhy{}\PYGZhy{}\PYGZhy{} reduce, v4890  \PYGZhy{}\PYGZhy{}\PYGZhy{}
+              Running under astrodata Version GP\PYGZhy{}X1
 All submitted files appear valid
-Starting Reduction on set \#1 of 1
+Starting Reduction on set \PYGZsh{}1 of 1
 
   Processing dataset(s):
-        gemini\_data.fits
+        gemini\PYGZus{}data.fits
 
 ==============================================================================
-RECIPE: test\_one
+RECIPE: test\PYGZus{}one
 ==============================================================================
  PRIMITIVE: showParameters
- -------------------------
+ \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
  rtf = False
- suffix = '\_scafaasled'
+ suffix = \PYGZsq{}\PYGZus{}scafaasled\PYGZsq{}
  otherTest = False
  logindent = 3
- logfile = 'reduce.log'
- reducecache = '.reducecache'
- storedcals = 'calibrations/storedcals'
+ logfile = \PYGZsq{}reduce.log\PYGZsq{}
+ reducecache = \PYGZsq{}.reducecache\PYGZsq{}
+ storedcals = \PYGZsq{}calibrations/storedcals\PYGZsq{}
  index = 1
- retrievedcals = 'calibrations/retrievedcals'
- cachedict = \PYGZob{}'storedcals': 'calibrations/storedcals', 'retrievedcals':
-              'calibrations/retrievedcals', 'calibrations': 'calibrations',
-              'reducecache': '.reducecache'\PYGZcb{}
- loglevel = 'stdinfo'
- calurl\_dict = \PYGZob{}'CALMGR': 'http://fits/calmgr',
-                'UPLOADPROCCAL': 'http://fits/upload\_processed\_cal',
-                'QAMETRICURL': 'http://fits/qareport',
-                'QAQUERYURL': 'http://fits/qaforgui',
-                'LOCALCALMGR': 'http://localhost:\%(httpport)d/calmgr/\%(caltype)s'\PYGZcb{}
- logmode = 'standard'
+ retrievedcals = \PYGZsq{}calibrations/retrievedcals\PYGZsq{}
+ cachedict = \PYGZob{}\PYGZsq{}storedcals\PYGZsq{}: \PYGZsq{}calibrations/storedcals\PYGZsq{}, \PYGZsq{}retrievedcals\PYGZsq{}:
+              \PYGZsq{}calibrations/retrievedcals\PYGZsq{}, \PYGZsq{}calibrations\PYGZsq{}: \PYGZsq{}calibrations\PYGZsq{},
+              \PYGZsq{}reducecache\PYGZsq{}: \PYGZsq{}.reducecache\PYGZsq{}\PYGZcb{}
+ loglevel = \PYGZsq{}stdinfo\PYGZsq{}
+ calurl\PYGZus{}dict = \PYGZob{}\PYGZsq{}CALMGR\PYGZsq{}: \PYGZsq{}http://fits/calmgr\PYGZsq{},
+                \PYGZsq{}UPLOADPROCCAL\PYGZsq{}: \PYGZsq{}http://fits/upload\PYGZus{}processed\PYGZus{}cal\PYGZsq{},
+                \PYGZsq{}QAMETRICURL\PYGZsq{}: \PYGZsq{}http://fits/qareport\PYGZsq{},
+                \PYGZsq{}QAQUERYURL\PYGZsq{}: \PYGZsq{}http://fits/qaforgui\PYGZsq{},
+                \PYGZsq{}LOCALCALMGR\PYGZsq{}: \PYGZsq{}http://localhost:\PYGZpc{}(httpport)d/calmgr/\PYGZpc{}(caltype)s\PYGZsq{}\PYGZcb{}
+ logmode = \PYGZsq{}standard\PYGZsq{}
  test = True
  writeInt = False
- calibrations = 'calibrations'
+ calibrations = \PYGZsq{}calibrations\PYGZsq{}
  .
-Wrote gemini\_data.fits in output directory
+Wrote gemini\PYGZus{}data.fits in output directory
 
 
 reduce completed successfully.
@@ -468,27 +495,27 @@ determined.
 Eg.,:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce -d --logmode console fitsfile.fits
+\PYGZdl{} reduce \PYGZhy{}d \PYGZhy{}\PYGZhy{}logmode console fitsfile.fits
 
---------------------   switches, vars, vals  --------------------
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}   switches, vars, vals  \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
 
-Literals                 var 'dest'              Value
------------------------------------------------------------------
-['--invoked']            :: invoked              :: False
-['--addprimset']         :: primsetname          :: None
-['-d', '--displayflags'] :: displayflags         :: True
-['-p', '--param']        :: userparam            :: None
-['--logmode']            :: logmode              :: ['console']
-['-r', '--recipe']       :: recipename           :: None
-['--throw\_descriptor\_exceptions'] :: throwDescriptorExceptions :: False
-['--logfile']            :: logfile              :: reduce.log
-['-t', '--astrotype']    :: astrotype            :: None
-['--override\_cal']       :: user\_cals            :: None
-['--context']            :: running\_contexts     :: None
-['--calmgr']             :: cal\_mgr              :: None
-['--suffix']             :: suffix               :: None
-['--loglevel']           :: loglevel             :: stdinfo
------------------------------------------------------------------
+Literals                 var \PYGZsq{}dest\PYGZsq{}              Value
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}invoked\PYGZsq{}]            :: invoked              :: False
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}addprimset\PYGZsq{}]         :: primsetname          :: None
+[\PYGZsq{}\PYGZhy{}d\PYGZsq{}, \PYGZsq{}\PYGZhy{}\PYGZhy{}displayflags\PYGZsq{}] :: displayflags         :: True
+[\PYGZsq{}\PYGZhy{}p\PYGZsq{}, \PYGZsq{}\PYGZhy{}\PYGZhy{}param\PYGZsq{}]        :: userparam            :: None
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}logmode\PYGZsq{}]            :: logmode              :: [\PYGZsq{}console\PYGZsq{}]
+[\PYGZsq{}\PYGZhy{}r\PYGZsq{}, \PYGZsq{}\PYGZhy{}\PYGZhy{}recipe\PYGZsq{}]       :: recipename           :: None
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}throw\PYGZus{}descriptor\PYGZus{}exceptions\PYGZsq{}] :: throwDescriptorExceptions :: False
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}logfile\PYGZsq{}]            :: logfile              :: reduce.log
+[\PYGZsq{}\PYGZhy{}t\PYGZsq{}, \PYGZsq{}\PYGZhy{}\PYGZhy{}astrotype\PYGZsq{}]    :: astrotype            :: None
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}override\PYGZus{}cal\PYGZsq{}]       :: user\PYGZus{}cals            :: None
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}context\PYGZsq{}]            :: running\PYGZus{}contexts     :: None
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}calmgr\PYGZsq{}]             :: cal\PYGZus{}mgr              :: None
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}suffix\PYGZsq{}]             :: suffix               :: None
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}loglevel\PYGZsq{}]           :: loglevel             :: stdinfo
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
 
 Input fits file(s):      fitsfile.fits
 \end{Verbatim}
@@ -542,7 +569,7 @@ the parameter in the reduction context such that all primitives will `see' it.
 The form
 
 \begin{Verbatim}[commandchars=\\\{\}]
--p ASTROTYPE:primitivename:par=val
+\PYGZhy{}p ASTROTYPE:primitivename:par=val
 \end{Verbatim}
 
 sets the parameter such that it applies only when the current reduction type
@@ -577,7 +604,7 @@ development switch.
 The minimal call for reduce can be
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce \textless{}dataset.fits\textgreater{}
+\PYGZdl{} reduce \PYGZlt{}dataset.fits\PYGZgt{}
 \end{Verbatim}
 
 While this minimal call is available at the Gemini Observatory (see Sec.
@@ -588,7 +615,7 @@ dataset by providing calibration files with the  --overrride\_cal option.
 For example:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce --override\_cal processed\_arc:wcal/gsTest\_arc.fits \textless{}dataset.fits\textgreater{}
+\PYGZdl{} reduce \PYGZhy{}\PYGZhy{}override\PYGZus{}cal processed\PYGZus{}arc:wcal/gsTest\PYGZus{}arc.fits \PYGZlt{}dataset.fits\PYGZgt{}
 \end{Verbatim}
 
 Such a command for complex processing of data is possible because AstroData
@@ -598,8 +625,11 @@ that applies to that data.
 
 Without any user-specified recipe (-r --recipe), the default recipe is
 \code{qaReduce}, which is defined for various AstroDataTypes and currently used at
-the summit. For example, the \code{qaReduce} recipe for a GMOS\_IMAGE specifies that
-the following primitives are called on the data:
+the summit. The Recipe System uses a combination of index, AstroDataTypes, and
+recipe naming convention to identify the appropriate recipe to run.
+
+The \code{qaReduce} recipe for a GMOS\_IMAGE, named \code{recipe.qaReduce.GMOS\_IMAGE},
+specifies that the following primitives are called on the data:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{n}{prepare}
@@ -627,7 +657,7 @@ the following primitives are called on the data:
 The point here is not to overwhelm readers with a stack of primitive names, but
 to present both the default pipeline processing that the above simple \code{reduce}
 command invokes and to demonstrate how much the \code{reduce} interface abstracts
-away the complexity of the processing that is engaged with the simplist of
+away the complexity of the processing that is engaged with the simplicity of
 commands.
 
 
@@ -656,7 +686,7 @@ this option.
 Eg.:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce -p par1=val1 par2=val2 [par3=val3 ... ] \textless{}fitsfile1.fits\textgreater{}
+\PYGZdl{} reduce \PYGZhy{}p par1=val1 par2=val2 [par3=val3 ... ] \PYGZlt{}fitsfile1.fits\PYGZgt{}
 \end{Verbatim}
 
 For example, some photometry primitives perform source detection on an image.
@@ -664,7 +694,7 @@ The `detection threshold' has a defined default, but a user may alter this
 parameter default to change the source detection behaviour:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce -p threshold=4.5 \textless{}fitsfile.fits\textgreater{}
+\PYGZdl{} reduce \PYGZhy{}p threshold=4.5 \PYGZlt{}fitsfile.fits\PYGZgt{}
 \end{Verbatim}
 
 
@@ -686,8 +716,8 @@ To illustrate the convenience provided by an \href{mailto:'@file}{`@file}`, let 
 example \emph{reduce} command line that has a number of arguments:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce -p GMOS\_IMAGE:contextReport:tpar=100 GMOS\_IMAGE:contextReport:report\_inputs=True
-  -r recipe.ArgsTest --context qa S20130616S0019.fits N20100311S0090.fits
+\PYGZdl{} reduce \PYGZhy{}p GMOS\PYGZus{}IMAGE:contextReport:tpar=100 GMOS\PYGZus{}IMAGE:contextReport:report\PYGZus{}inputs=True
+  \PYGZhy{}r recipe.ArgsTest \PYGZhy{}\PYGZhy{}context qa S20130616S0019.fits N20100311S0090.fits
 \end{Verbatim}
 
 Ungainly, to be sure. Here, two (2) \emph{user parameters} are being specified
@@ -698,92 +728,88 @@ to be \textbf{qa} . This can be wrapped in a plain text @file called
 \begin{Verbatim}[commandchars=\\\{\}]
 S20130616S0019.fits
 N20100311S0090.fits
---param
-GMOS\_IMAGE:contextReport:tpar=100
-GMOS\_IMAGE:contextReport:report\_inputs=True
--r recipe.ArgsTests
---context qa
+\PYGZhy{}\PYGZhy{}param
+GMOS\PYGZus{}IMAGE:contextReport:tpar=100
+GMOS\PYGZus{}IMAGE:contextReport:report\PYGZus{}inputs=True
+\PYGZhy{}r recipe.ArgsTests
+\PYGZhy{}\PYGZhy{}context qa
 \end{Verbatim}
 
 This then turns the previous reduce command line into something a little more
 \emph{keyboard friendly}:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce @reduce\_args.par
+\PYGZdl{} reduce @reduce\PYGZus{}args.par
 \end{Verbatim}
 
 The order of these arguments is irrelevant. The parser will figure out what is
 what. The above file could be thus written like:
 
 \begin{Verbatim}[commandchars=\\\{\}]
--r recipe.ArgsTests
---param
-GMOS\_IMAGE:contextReport:tpar=100
-GMOS\_IMAGE:contextReport:report\_inputs=True
---context qa
+\PYGZhy{}r recipe.ArgsTests
+\PYGZhy{}\PYGZhy{}param
+GMOS\PYGZus{}IMAGE:contextReport:tpar=100
+GMOS\PYGZus{}IMAGE:contextReport:report\PYGZus{}inputs=True
+\PYGZhy{}\PYGZhy{}context qa
 S20130616S0019.fits
 N20100311S0090.fits
 \end{Verbatim}
 
-\begin{notice}{note}{Note:}
-Comments are accommodated, both line and in-line. `=' signs \emph{may} be
-used but this has meaning only for arguments that expect unitary
-values. The `=' is entirely unnecessary.
+Comments are accommodated, both as full line and in-line with the \code{\#}
+character.  White space is the only significant separator of arguments: spaces,
+tabs, newlines are all equivalent when argument parsing.  This means
+the user can ``arrange'' their @file for clarity.
 
-White space is the only significant separator of arguments: spaces,
-tabs, newlines are all equivalent when argument parsing. This means
-the user can `arrange' their @file for clarity.
-
-Eg., a more readable version of the above file might be written as:
+Here's a more readable version of the file from the previous example
+using comments and tabulation:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\# reduce parameter file
-\# yyyy-mm-dd
-\# GDPSG
+\PYGZsh{} reduce parameter file
+\PYGZsh{} yyyy\PYGZhy{}mm\PYGZhy{}dd
+\PYGZsh{} GDPSG
 
-\# Spec the recipe
--r
-    recipe.ArgsTests  \# test recipe
+\PYGZsh{} Spec the recipe
+\PYGZhy{}r
+    recipe.ArgsTests  \PYGZsh{} test recipe
 
-\# primitive parameters here
-\# These are 'untyped', i.e. global
---param
+\PYGZsh{} primitive parameters here
+\PYGZsh{} These are \PYGZsq{}untyped\PYGZsq{}, i.e. global
+\PYGZhy{}\PYGZhy{}param
     tpar=100
-    report\_inputs=True
+    report\PYGZus{}inputs=True
 
---context
-    qa                \# QA context
+\PYGZhy{}\PYGZhy{}context
+    qa                \PYGZsh{} QA context
 
 S20130616S0019.fits
 N20100311S0090.fits
 \end{Verbatim}
-\end{notice}
 
-All the above  examples of \code{reduce\_args.par} are equivalently parsed. Which,
-of course, users may check by adding the \textbf{-d} flag:
+All the above  examples of \code{reduce\_args.par} are equivalently parsed, which
+users may check by adding the \textbf{-d} flag:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce -d @redpars.par
+\PYGZdl{} reduce \PYGZhy{}d @redpars.par
 
---------------------   switches, vars, vals  --------------------
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}   switches, vars, vals  \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
 
-Literals                      var 'dest'              Value
------------------------------------------------------------------
-['--invoked']                 :: invoked              :: False
-['--addprimset']              :: primsetname          :: None
-['-d', '--displayflags']      :: displayflags         :: True
-['-p', '--param']             :: userparam            :: ['tpar=100', 'report\_inputs=True']
-['--logmode']                 :: logmode              :: standard
-['-r', '--recipe']            :: recipename           :: ['recipe.ArgTests']
-['--throw\_descriptor\_exceptions'] :: throwDescriptorExceptions        :: False
-['--logfile']                 :: logfile              :: reduce.log
-['-t', '--astrotype']         :: astrotype            :: None
-['--override\_cal']            :: user\_cals            :: None
-['--context']                 :: running\_contexts     :: ['QA']
-['--calmgr']                  :: cal\_mgr              :: None
-['--suffix']                  :: suffix               :: None
-['--loglevel']                :: loglevel             :: stdinfo
------------------------------------------------------------------
+Literals                      var \PYGZsq{}dest\PYGZsq{}              Value
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}invoked\PYGZsq{}]                 :: invoked              :: False
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}addprimset\PYGZsq{}]              :: primsetname          :: None
+[\PYGZsq{}\PYGZhy{}d\PYGZsq{}, \PYGZsq{}\PYGZhy{}\PYGZhy{}displayflags\PYGZsq{}]      :: displayflags         :: True
+[\PYGZsq{}\PYGZhy{}p\PYGZsq{}, \PYGZsq{}\PYGZhy{}\PYGZhy{}param\PYGZsq{}]             :: userparam            :: [\PYGZsq{}tpar=100\PYGZsq{}, \PYGZsq{}report\PYGZus{}inputs=True\PYGZsq{}]
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}logmode\PYGZsq{}]                 :: logmode              :: standard
+[\PYGZsq{}\PYGZhy{}r\PYGZsq{}, \PYGZsq{}\PYGZhy{}\PYGZhy{}recipe\PYGZsq{}]            :: recipename           :: [\PYGZsq{}recipe.ArgTests\PYGZsq{}]
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}throw\PYGZus{}descriptor\PYGZus{}exceptions\PYGZsq{}] :: throwDescriptorExceptions        :: False
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}logfile\PYGZsq{}]                 :: logfile              :: reduce.log
+[\PYGZsq{}\PYGZhy{}t\PYGZsq{}, \PYGZsq{}\PYGZhy{}\PYGZhy{}astrotype\PYGZsq{}]         :: astrotype            :: None
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}override\PYGZus{}cal\PYGZsq{}]            :: user\PYGZus{}cals            :: None
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}context\PYGZsq{}]                 :: running\PYGZus{}contexts     :: [\PYGZsq{}QA\PYGZsq{}]
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}calmgr\PYGZsq{}]                  :: cal\PYGZus{}mgr              :: None
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}suffix\PYGZsq{}]                  :: suffix               :: None
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}loglevel\PYGZsq{}]                :: loglevel             :: stdinfo
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
 
 Input fits file(s):   S20130616S0019.fits
 Input fits file(s):   N20100311S0090.fits
@@ -808,28 +834,28 @@ We can indicate that this file is to be consumed with the prefix character
 ``@'' as well. In this case, the `reduce\_args.par' file could thus appear:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\# reduce test parameter file
+\PYGZsh{} reduce test parameter file
 
-@fitsfiles       \# file with fits files
+@fitsfiles       \PYGZsh{} file with fits files
 
-\# AstroDataType
--t GMOS\_IMAGE
+\PYGZsh{} AstroDataType
+\PYGZhy{}t GMOS\PYGZus{}IMAGE
 
-\# primitive parameters.
---param
-    report\_inputs=True
+\PYGZsh{} primitive parameters.
+\PYGZhy{}\PYGZhy{}param
+    report\PYGZus{}inputs=True
     tpar=99
     FOO=BAR
 
-\# Spec the recipe
--r recipe.ArgTests
+\PYGZsh{} Spec the recipe
+\PYGZhy{}r recipe.ArgTests
 \end{Verbatim}
 
 The parser will open and read the @fitsfiles, consuming those lines in the
 same way as any other command line arguments. Indeed, such a file need not only
 contain fits files (positional arguments), but other arguments as well. This is
 recursive. That is, the @fitsfiles can contain other at-files'', which can contain
-other ``at-files'', which can contain ..., \emph{ad infinitum}. These will be processed
+other ``at-files'', which can contain ..., etc. These will be processed
 serially.
 
 As stipulated earlier, because the @file facility provides arguments equivalent
@@ -837,13 +863,13 @@ to those that appear on the command line, employment of this facility means that
 a reduce command line could assume the form:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce @parfile @fitsfiles
+\PYGZdl{} reduce @parfile @fitsfiles
 \end{Verbatim}
 
 or equally:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce @fitsfiles @parfile
+\PYGZdl{} reduce @fitsfiles @parfile
 \end{Verbatim}
 
 where `parfile' could contain the flags and user parameters, and `fitsfiles'
@@ -858,20 +884,27 @@ Eg., fitsfiles comprises the one line:
 while parfile holds all other specifications:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\# reduce test parameter file
-\# GDPSG
+\PYGZsh{} reduce test parameter file
+\PYGZsh{} GDPSG
 
-\# AstroDataType
--t GMOS\_IMAGE
+\PYGZsh{} AstroDataType
+\PYGZhy{}t GMOS\PYGZus{}IMAGE
 
-\# primitive parameters.
---param
-    report\_inputs=True
-    tpar=99            \# This is a test parameter
-    FOO=BAR            \# This is a test parameter
+\PYGZsh{} primitive parameters.
+\PYGZhy{}\PYGZhy{}param
+    report\PYGZus{}inputs=True
+    tpar=99            \PYGZsh{} This is a test parameter
+    FOO=BAR            \PYGZsh{} This is a test parameter
 
-\# Spec the recipe
--r recipe.ArgTests
+\PYGZsh{} Spec the recipe
+\PYGZhy{}r recipe.ArgTests
+\end{Verbatim}
+
+The @file does not need to be located in the current directory.  Normal,
+directory path syntax applies, for example:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+reduce @../../mydefaultparams @fitsfile
 \end{Verbatim}
 
 
@@ -896,52 +929,52 @@ Using the parfile above,
 Eg. 1)  Accumulate a new parameter:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce @parfile --param FOO=BARSOOM
+\PYGZdl{} reduce @parfile \PYGZhy{}\PYGZhy{}param FOO=BARSOOM
 
 parsed options:
---------------------
-AstroDataType: GMOS\_IMAGE
-FITS files:    ['S20130616S0019.fits', 'N20100311S0090.fits']
-Parameters:    tpar=100, report\_inputs=True, FOO=BARSOOM
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
+AstroDataType: GMOS\PYGZus{}IMAGE
+FITS files:    [\PYGZsq{}S20130616S0019.fits\PYGZsq{}, \PYGZsq{}N20100311S0090.fits\PYGZsq{}]
+Parameters:    tpar=100, report\PYGZus{}inputs=True, FOO=BARSOOM
 RECIPE:        recipe.ArgsTest
 \end{Verbatim}
 
 Eg. 2) Override a parameter in the @file:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce @parfile --param tpar=99
+\PYGZdl{} reduce @parfile \PYGZhy{}\PYGZhy{}param tpar=99
 
 parsed options:
---------------------
-AstroDataType: GMOS\_IMAGE
-FITS files:    ['S20130616S0019.fits', 'N20100311S0090.fits']
-Parameters:    tpar=99, report\_inputs=True
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
+AstroDataType: GMOS\PYGZus{}IMAGE
+FITS files:    [\PYGZsq{}S20130616S0019.fits\PYGZsq{}, \PYGZsq{}N20100311S0090.fits\PYGZsq{}]
+Parameters:    tpar=99, report\PYGZus{}inputs=True
 RECIPE:        recipe.ArgsTest
 \end{Verbatim}
 
 Eg. 3) Override the recipe:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce @parfile -r=recipe.FOO
+\PYGZdl{} reduce @parfile \PYGZhy{}r=recipe.FOO
 
 parsed options:
---------------------
-AstroDataType:    GMOS\_IMAGE
-FITS files:       ['S20130616S0019.fits', 'N20100311S0090.fits']
-Parameters:       tpar=100, report\_inputs=True
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
+AstroDataType:    GMOS\PYGZus{}IMAGE
+FITS files:       [\PYGZsq{}S20130616S0019.fits\PYGZsq{}, \PYGZsq{}N20100311S0090.fits\PYGZsq{}]
+Parameters:       tpar=100, report\PYGZus{}inputs=True
 RECIPE:           recipe.FOO
 \end{Verbatim}
 
-Eg. 4) Override a recipe and specify another fits file
+Eg. 4) Override a recipe and specify another fits file.  The file names in the @file will be ignored:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ reduce @parfile -r=recipe.FOO test\_data/N20100311S0090\_1.fits
+\PYGZdl{} reduce @parfile \PYGZhy{}r=recipe.FOO test\PYGZus{}data/N20100311S0090\PYGZus{}1.fits
 
 parsed options:
---------------------
-AstroDataType:    GMOS\_IMAGE
-FITS files:       ['test\_data/N20100311S0090\_1.fits']
-Parameters:       tpar=100, report\_inputs=True
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
+AstroDataType:    GMOS\PYGZus{}IMAGE
+FITS files:       [\PYGZsq{}test\PYGZus{}data/N20100311S0090\PYGZus{}1.fits\PYGZsq{}]
+Parameters:       tpar=100, report\PYGZus{}inputs=True
 RECIPE:           recipe.FOO
 \end{Verbatim}
 
@@ -949,26 +982,67 @@ RECIPE:           recipe.FOO
 \section{Application Programming Interface (API)}
 \label{interfaces:application-programming-interface-api}
 \begin{notice}{note}{Note:}
-The following section discuss and describe programming interfaces
-available on the coreReduce class Reduce.
+This section discusses and describes programming interfaces
+available on \code{reduce} and the underlying class Reduce.  This section
+is for advanced users wishing to code with \code{reduce} rather than just
+using it on the command line.  The common user can safely skip this
+section.
 \end{notice}
 
 The \code{reduce} application is essentially a skeleton script providing the
 described command line interface. After parsing the command line, the script
 then passes the parsed arguments to its main() function, which in turn calls
 the Reduce() class constructor with ``args''. Class Reduce() is defined
-in the module \code{coreReduce.py}. The coreReduce class Reduce is importable and
+in the module \code{coreReduce.py}. \code{reduce} and class Reduce are both
 scriptable, as the following discussion will illustrate.
 
 
+\subsection{reduce.main()}
+\label{interfaces:main}\label{interfaces:reduce-main}
+The main() function of reduce receives one (1) parameter that is a Namespace
+object as returned by a call on ArgumentParser.parse\_args(). Specific to reduce,
+the caller can supply this object by a call on the parseUtils.buildParser()
+function, which returns a fully defined reduce parser. The parser
+object should then be called with the parse\_args() method to return a valid
+reduce parser Namespace. Since there is no interaction with sys.argv, as in
+a command line call, all Namespace attributes have only their defined default
+values. It is for the caller to set these values as needed.
+
+As the example below demonstrates, once the ``args'' Namespace object is
+instantiated, a caller can set any arguments as needed. Bu they must be set
+to the correct type. The caller should examine the various ``args'' types to
+determine how to set values. For example, args.files is type list, whereas
+args.recipename is type string.
+
+Eg.,
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{astrodata.adutils.reduceutils} \PYG{k+kn}{import} \PYG{n+nb}{reduce}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{astrodata.adutils.reduceutils} \PYG{k+kn}{import} \PYG{n}{parseUtils}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{args} \PYG{o}{=} \PYG{n}{parseUtils}\PYG{o}{.}\PYG{n}{buildParser}\PYG{p}{(}\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{Reduce,v2.0}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}\PYG{o}{.}\PYG{n}{parse\PYGZus{}args}\PYG{p}{(}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{args}\PYG{o}{.}\PYG{n}{files}
+\PYG{g+go}{[]}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{args}\PYG{o}{.}\PYG{n}{files}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{S20130616S0019.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{args}\PYG{o}{.}\PYG{n}{recipename} \PYG{o}{=} \PYG{l+s}{\PYGZdq{}}\PYG{l+s}{recipe.FOO}\PYG{l+s}{\PYGZdq{}}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{main}\PYG{p}{(}\PYG{n}{args}\PYG{p}{)}
+\PYG{g+go}{\PYGZhy{}\PYGZhy{}\PYGZhy{} reduce, v2.0 \PYGZhy{}\PYGZhy{}\PYGZhy{}}
+\PYG{g+go}{Starting Reduction on set \PYGZsh{}1 of 1}
+\PYG{g+go}{Processing dataset(s):}
+\PYG{g+go}{S20130616S0019.fits}
+\PYG{g+gp}{...}
+\end{Verbatim}
+
+Processing will proceed as usual.
+
+
 \subsection{Class Reduce and the runr() method}
-\label{interfaces:main}\label{interfaces:class-reduce-and-the-runr-method}
+\label{interfaces:class-reduce-and-the-runr-method}
 Class Reduce is defined in \code{astrodata.adutils.reduceutils} module,
 \code{coreReduce.py}.
 
 The reduce.main() function serves mainly as a callable for the command line
 interface. While main() is callable by users supplying the correct ``args''
-parameter (See {\hyperref[interfaces:main]{\emph{Class Reduce and the runr() method}}}), the Reduce() class is also callable and
+parameter (See {\hyperref[interfaces:main]{\emph{reduce.main()}}}), the Reduce() class is also callable and
 can be used directly, and more appropriately. Callers need not supply an ``args''
 parameter to the class constructor. The instance of Reduce will have all the
 same arguments as in a command line scenario, available as attributes on the
@@ -987,13 +1061,13 @@ configure the logger.
 Eg.,
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{k+kn}{from} \PYG{n+nn}{astrodata.adutils.reduceutils.coreReduce} \PYG{k+kn}{import} \PYG{n}{Reduce}
-\PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{n+nb}{reduce} \PYG{o}{=} \PYG{n}{Reduce}\PYG{p}{(}\PYG{p}{)}
-\PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{files}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{astrodata.adutils.reduceutils.coreReduce} \PYG{k+kn}{import} \PYG{n}{Reduce}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce} \PYG{o}{=} \PYG{n}{Reduce}\PYG{p}{(}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{files}
 \PYG{g+go}{[]}
-\PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{files}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{l+s}{'}\PYG{l+s}{S20130616S0019.fits}\PYG{l+s}{'}\PYG{p}{)}
-\PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{files}
-\PYG{g+go}{['S20130616S0019.fits']}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{files}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{S20130616S0019.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{files}
+\PYG{g+go}{[\PYGZsq{}S20130616S0019.fits\PYGZsq{}]}
 \end{Verbatim}
 
 Once an instance of Reduce has been made, callers can then configure logutils
@@ -1001,8 +1075,8 @@ with the appropriate settings supplied on the instance. This is precisely what
 \code{reduce} does when it configures logutils.
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{k+kn}{from} \PYG{n+nn}{astrodata.adutils} \PYG{k+kn}{import} \PYG{n}{logutils}
-\PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{n}{logutils}\PYG{o}{.}\PYG{n}{config}\PYG{p}{(}\PYG{n}{file\PYGZus{}name}\PYG{o}{=}\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logfile}\PYG{p}{,} \PYG{n}{mode}\PYG{o}{=}\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logmode}\PYG{p}{,}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{astrodata.adutils} \PYG{k+kn}{import} \PYG{n}{logutils}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{logutils}\PYG{o}{.}\PYG{n}{config}\PYG{p}{(}\PYG{n}{file\PYGZus{}name}\PYG{o}{=}\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logfile}\PYG{p}{,} \PYG{n}{mode}\PYG{o}{=}\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logmode}\PYG{p}{,}
 \PYG{g+go}{                    console\PYGZus{}lvl=reduce.loglevel)}
 \end{Verbatim}
 
@@ -1010,7 +1084,7 @@ At this point, the caller is able to call the runr() method on the ``reduce''
 instance.
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\PYG{g+gp}{\textgreater{}\textgreater{}\textgreater{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{runr}\PYG{p}{(}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{runr}\PYG{p}{(}\PYG{p}{)}
 \PYG{g+go}{All submitted files appear valid}
 \PYG{g+go}{Starting Reduction on set \PYGZsh{}1 of 1}
 \PYG{g+go}{Processing dataset(s):}
@@ -1044,21 +1118,21 @@ can be changed by the user with the \textbf{-p, --param} option on reduce. under
 AstroDataTypes. The help describes more options:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ listprimitives -h
+\PYGZdl{} listprimitives \PYGZhy{}h
 
 Usage: listprimitives [options]
 
 Gemini Observatory Primitive Inspection Tool, v1.0 2011
 
 Options:
--h, --help            show this help message and exit
--c, --use-color       apply color output scheme
--i, --info            show more information
--p, --parameters      show parameters
--r, --recipes         list top recipes
--s, --primitive-set   show primitive sets (Astrodata types)
--v, --verbose         set verbose mode
---view-recipe=VIEW\_RECIPE
+\PYGZhy{}h, \PYGZhy{}\PYGZhy{}help            show this help message and exit
+\PYGZhy{}c, \PYGZhy{}\PYGZhy{}use\PYGZhy{}color       apply color output scheme
+\PYGZhy{}i, \PYGZhy{}\PYGZhy{}info            show more information
+\PYGZhy{}p, \PYGZhy{}\PYGZhy{}parameters      show parameters
+\PYGZhy{}r, \PYGZhy{}\PYGZhy{}recipes         list top recipes
+\PYGZhy{}s, \PYGZhy{}\PYGZhy{}primitive\PYGZhy{}set   show primitive sets (Astrodata types)
+\PYGZhy{}v, \PYGZhy{}\PYGZhy{}verbose         set verbose mode
+\PYGZhy{}\PYGZhy{}view\PYGZhy{}recipe=VIEW\PYGZus{}RECIPE
                       display the recipe
 \end{Verbatim}
 
@@ -1071,32 +1145,32 @@ The following section presents examples of the kind of information that
 Show available recipes:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ listprimitives -r
+\PYGZdl{} listprimitives \PYGZhy{}r
 
 ===============================================================================
 
-RECIPES\_Gemini
--------------------------------------------------------------------------------
+RECIPES\PYGZus{}Gemini
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
    1. basicQA
    2. checkQA
-   3. makeProcessedArc.GMOS\_SPECT
+   3. makeProcessedArc.GMOS\PYGZus{}SPECT
    4. makeProcessedBias
    5. makeProcessedDark
    6. makeProcessedFlat
-   7. makeProcessedFlat.GMOS\_IMAGE
-   8. makeProcessedFlat.GMOS\_SPECT
-   9. makeProcessedFlat.NIRI\_IMAGE
+   7. makeProcessedFlat.GMOS\PYGZus{}IMAGE
+   8. makeProcessedFlat.GMOS\PYGZus{}SPECT
+   9. makeProcessedFlat.NIRI\PYGZus{}IMAGE
    10. makeProcessedFringe
-   11. qaReduce.GMOS\_IMAGE
-   12. qaReduce.GMOS\_SPECT
-   13. qaReduce.NIRI\_IMAGE
-   14. qaReduceAndStack.GMOS\_IMAGE
-   15. qaStack.GMOS\_IMAGE
-   16. reduce.F2\_IMAGE
-   17. reduce.GMOS\_IMAGE
+   11. qaReduce.GMOS\PYGZus{}IMAGE
+   12. qaReduce.GMOS\PYGZus{}SPECT
+   13. qaReduce.NIRI\PYGZus{}IMAGE
+   14. qaReduceAndStack.GMOS\PYGZus{}IMAGE
+   15. qaStack.GMOS\PYGZus{}IMAGE
+   16. reduce.F2\PYGZus{}IMAGE
+   17. reduce.GMOS\PYGZus{}IMAGE
 
 Subrecipes
--------------------------------------------------------------------------------
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
    1. biasCorrect
    2. correctWCSToReferenceCatalog
    3. darkCorrect
@@ -1112,8 +1186,8 @@ Subrecipes
 ===============================================================================
 \end{Verbatim}
 
-Users can request display the contents of a particular recipe, as listed above.
-This will present the `stack' of primitives that will be called by the
+Users can also display the contents of a particular recipe or subrecipe.
+This will present the sequence of primitives that will be called by the
 Recipe System when the particular recipe is either specified through the
 \code{reduce} command line by the user, or selected internally by the Recipe System
 itself.
@@ -1125,17 +1199,17 @@ are defined for several AstroDataTypes.
 Show the primitive stack for the `qa' GMOS\_IMAGE type:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ listprimitives --view-recipe qaReduce.GMOS\_IMAGE
+\PYGZdl{} listprimitives \PYGZhy{}\PYGZhy{}view\PYGZhy{}recipe qaReduce.GMOS\PYGZus{}IMAGE
 
 ===============================================================================
-RECIPE: qaReduce.GMOS\_IMAGE
+RECIPE: qaReduce.GMOS\PYGZus{}IMAGE
 ===============================================================================
-\# This recipe performs the standardization and corrections needed to convert
-\# the raw input science images into a single stacked science image
+\PYGZsh{} This recipe performs the standardization and corrections needed to convert
+\PYGZsh{} the raw input science images into a single stacked science image
 
 prepare
 addDQ
-addVAR(read\_noise=True)
+addVAR(read\PYGZus{}noise=True)
 detectSources
 measureIQ(display=True)
 measureBG
@@ -1143,7 +1217,7 @@ measureCCAndAstrometry
 overscanCorrect
 biasCorrect
 ADUToElectrons
-addVAR(poisson\_noise=True)
+addVAR(poisson\PYGZus{}noise=True)
 flatCorrect
 mosaicDetectors
 makeFringe
@@ -1170,13 +1244,13 @@ the primitive \code{detectSources} has several user-tunable parameters:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 detectSources
-    suffix: '\_sourcesDetected'
-    centroid\_function: 'moffat'
+    suffix: \PYGZsq{}\PYGZus{}sourcesDetected\PYGZsq{}
+    centroid\PYGZus{}function: \PYGZsq{}moffat\PYGZsq{}
     threshold: 3.0
     sigma: None
     fwhm: None
-    method: 'sextractor'
-    max\_sources: 50
+    method: \PYGZsq{}sextractor\PYGZsq{}
+    max\PYGZus{}sources: 50
 \end{Verbatim}
 
 See the discussion in Sec. {\hyperref[interfaces:userpars]{\emph{Overriding Primitive Parameters}}} on command line override of
@@ -1186,54 +1260,52 @@ specifically.
 
 \section{typewalk}
 \label{supptools:typewalk}\label{supptools:id1}
-As with \code{listprimitives} and \code{reduce}, the command line application \code{typewalk}
-becomes available once the user has configured astrodata correctly. \code{typewalk}
-examines files in a directory or directory tree and reports the types and status
-values through the AstroDataType classification scheme. Running \code{typewalk} on a
-directory containing some Gemini datasets will demonstrate what users can expect
+\code{typewalk} examines files in a directory or directory tree and reports the types
+and status values through the AstroDataType classification scheme. Running \code{typewalk}
+on a directory containing some Gemini datasets will demonstrate what users can expect
 to see. If a user has downloaded gemini\_python X1 package with the `test\_data', the
 user can move to this directory and run \code{typewalk} on that extensive set of
 Gemini datasets.
 
 By default, \code{typewalk} will recurse all subdirectories under the current
 directory. Users may specify an explicit directory with the \textbf{-d} or
-\textbf{--dir} option.
+\textbf{--dir} option; the behavior remains recursive.
 
 \code{typewalk} provides the following options {[}\textbf{-h, --help}{]}:
 
 \begin{Verbatim}[commandchars=\\\{\}]
--h, --help            show this help message and exit
--b BATCHNUM, --batch BATCHNUM
+\PYGZhy{}h, \PYGZhy{}\PYGZhy{}help            show this help message and exit
+\PYGZhy{}b BATCHNUM, \PYGZhy{}\PYGZhy{}batch BATCHNUM
                       In shallow walk mode, number of files to process at a
                       time in the current directory. Controls behavior in
                       large data directories. Default = 100.
---calibrations        Show local calibrations (NOT IMPLEMENTED).
--c, --color           Colorize display
--d TWDIR, --dir TWDIR
+\PYGZhy{}\PYGZhy{}calibrations        Show local calibrations (NOT IMPLEMENTED).
+\PYGZhy{}c, \PYGZhy{}\PYGZhy{}color           Colorize display
+\PYGZhy{}d TWDIR, \PYGZhy{}\PYGZhy{}dir TWDIR
                       Walk this directory and report types. default is cwd.
--f FILEMASK, --filemask FILEMASK
-                      Show files matching regex \textless{}FILEMASK\textgreater{}. Default is all
+\PYGZhy{}f FILEMASK, \PYGZhy{}\PYGZhy{}filemask FILEMASK
+                      Show files matching regex \PYGZlt{}FILEMASK\PYGZgt{}. Default is all
                       .fits and .FITS files.
--i, --info            Show file meta information.
---keys KEY [KEY ...]  Print keyword values for reported files.Eg., --keys
+\PYGZhy{}i, \PYGZhy{}\PYGZhy{}info            Show file meta information.
+\PYGZhy{}\PYGZhy{}keys KEY [KEY ...]  Print keyword values for reported files.Eg., \PYGZhy{}\PYGZhy{}keys
                       TELESCOP OBJECT
--n, --norecurse       Do not recurse subdirectories.
---or                  Use OR logic on 'types' criteria. If not specified,
-                      matching logic is AND (See --types). Eg., --or --types
-                      GEMINI\_SOUTH GMOS\_IMAGE will report datasets that are
-                      either GEMINI\_SOUTH *OR* GMOS\_IMAGE.
--o OUTFILE, --out OUTFILE
+\PYGZhy{}n, \PYGZhy{}\PYGZhy{}norecurse       Do not recurse subdirectories.
+\PYGZhy{}\PYGZhy{}or                  Use OR logic on \PYGZsq{}types\PYGZsq{} criteria. If not specified,
+                      matching logic is AND (See \PYGZhy{}\PYGZhy{}types). Eg., \PYGZhy{}\PYGZhy{}or \PYGZhy{}\PYGZhy{}types
+                      GEMINI\PYGZus{}SOUTH GMOS\PYGZus{}IMAGE will report datasets that are
+                      either GEMINI\PYGZus{}SOUTH *OR* GMOS\PYGZus{}IMAGE.
+\PYGZhy{}o OUTFILE, \PYGZhy{}\PYGZhy{}out OUTFILE
                       Write reported files to this file. Effective only with
-                      --types option.
---raise               Raise descriptor exceptions.
---types TYPES [TYPES ...]
+                      \PYGZhy{}\PYGZhy{}types option.
+\PYGZhy{}\PYGZhy{}raise               Raise descriptor exceptions.
+\PYGZhy{}\PYGZhy{}types TYPES [TYPES ...]
                       Find datasets that match only these type criteria.
-                      Eg., --types GEMINI\_SOUTH GMOS\_IMAGE will report
-                      datasets that are both GEMINI\_SOUTH *and* GMOS\_IMAGE.
---status              Report data processing status only.
---typology            Report data typologies only.
---xtypes XTYPES [[XTYPES ...]
-                      Exclude \textless{}xtypes\textgreater{} from reporting.
+                      Eg., \PYGZhy{}\PYGZhy{}types GEMINI\PYGZus{}SOUTH GMOS\PYGZus{}IMAGE will report
+                      datasets that are both GEMINI\PYGZus{}SOUTH *and* GMOS\PYGZus{}IMAGE.
+\PYGZhy{}\PYGZhy{}status              Report data processing status only.
+\PYGZhy{}\PYGZhy{}typology            Report data typologies only.
+\PYGZhy{}\PYGZhy{}xtypes XTYPES [[XTYPES ...]
+                      Exclude \PYGZlt{}xtypes\PYGZgt{} from reporting.
 \end{Verbatim}
 
 Files are selected and reported through a regular expression mask which,
@@ -1263,14 +1335,14 @@ directory and write out the matching files, then run reduce on them
 (\textbf{-n} is `norecurse'):
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ typewalk -n --types GEMINI\_SOUTH GMOS\_IMAGE --out gmos\_images\_south
-\$ reduce @gmos\_images\_south
+\PYGZdl{} typewalk \PYGZhy{}n \PYGZhy{}\PYGZhy{}types GEMINI\PYGZus{}SOUTH GMOS\PYGZus{}IMAGE \PYGZhy{}\PYGZhy{}out gmos\PYGZus{}images\PYGZus{}south
+\PYGZdl{} reduce @gmos\PYGZus{}images\PYGZus{}south
 \end{Verbatim}
 
 Find all F2\_SPECT and GMOS\_SPECT datasets in a directory tree:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ typewalk --or --types GMOS\_SPECT F2\_SPECT
+\PYGZdl{} typewalk \PYGZhy{}\PYGZhy{}or \PYGZhy{}\PYGZhy{}types GMOS\PYGZus{}SPECT F2\PYGZus{}SPECT
 \end{Verbatim}
 
 This will also report match results to stdout, colourized if requested (\textbf{-c}).
@@ -1282,29 +1354,29 @@ report.
 For example, find GMOS\_IMAGE types, but exclude ACQUISITION images from reporting:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ typewalk --types GMOS\_IMAGE --xtypes ACQUISITION
+\PYGZdl{} typewalk \PYGZhy{}\PYGZhy{}types GMOS\PYGZus{}IMAGE \PYGZhy{}\PYGZhy{}xtypes ACQUISITION
 
-directory: ../test\_data/output
-   S20131010S0105.fits ............... (GEMINI) (GEMINI\_SOUTH) (GMOS) (GMOS\_IMAGE)
-   (GMOS\_RAW) (GMOS\_S) (IMAGE) (RAW) (SIDEREAL) (UNPREPARED)
+directory: ../test\PYGZus{}data/output
+   S20131010S0105.fits ............... (GEMINI) (GEMINI\PYGZus{}SOUTH) (GMOS) (GMOS\PYGZus{}IMAGE)
+   (GMOS\PYGZus{}RAW) (GMOS\PYGZus{}S) (IMAGE) (RAW) (SIDEREAL) (UNPREPARED)
 
-   S20131010S0105\_forFringe.fits ..... (GEMINI) (GEMINI\_SOUTH) (GMOS) (GMOS\_IMAGE)
-   (GMOS\_S) (IMAGE) (NEEDSFLUXCAL) (OVERSCAN\_SUBTRACTED) (OVERSCAN\_TRIMMED)
+   S20131010S0105\PYGZus{}forFringe.fits ..... (GEMINI) (GEMINI\PYGZus{}SOUTH) (GMOS) (GMOS\PYGZus{}IMAGE)
+   (GMOS\PYGZus{}S) (IMAGE) (NEEDSFLUXCAL) (OVERSCAN\PYGZus{}SUBTRACTED) (OVERSCAN\PYGZus{}TRIMMED)
    (PREPARED) (SIDEREAL)
 
-   S20131010S0105\_forStack.fits ...... (GEMINI) (GEMINI\_SOUTH) (GMOS) (GMOS\_IMAGE)
-   (GMOS\_S) (IMAGE) (NEEDSFLUXCAL) (OVERSCAN\_SUBTRACTED) (OVERSCAN\_TRIMMED)
+   S20131010S0105\PYGZus{}forStack.fits ...... (GEMINI) (GEMINI\PYGZus{}SOUTH) (GMOS) (GMOS\PYGZus{}IMAGE)
+   (GMOS\PYGZus{}S) (IMAGE) (NEEDSFLUXCAL) (OVERSCAN\PYGZus{}SUBTRACTED) (OVERSCAN\PYGZus{}TRIMMED)
    (PREPARED) (SIDEREAL)
 \end{Verbatim}
 
 Exclude ACQUISITION images that have already had some processing done:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\$ typewalk --types GMOS\_IMAGE --xtypes ACQUISITION PREPARED
+\PYGZdl{} typewalk \PYGZhy{}\PYGZhy{}types GMOS\PYGZus{}IMAGE \PYGZhy{}\PYGZhy{}xtypes ACQUISITION PREPARED
 
-directory: ../test\_data/output
-   S20131010S0105.fits ............... (GEMINI) (GEMINI\_SOUTH) (GMOS) (GMOS\_IMAGE)
-   (GMOS\_RAW) (GMOS\_S) (IMAGE) (RAW) (SIDEREAL) (UNPREPARED)
+directory: ../test\PYGZus{}data/output
+   S20131010S0105.fits ............... (GEMINI) (GEMINI\PYGZus{}SOUTH) (GMOS) (GMOS\PYGZus{}IMAGE)
+   (GMOS\PYGZus{}RAW) (GMOS\PYGZus{}S) (IMAGE) (RAW) (SIDEREAL) (UNPREPARED)
 \end{Verbatim}
 
 With \textbf{--types} and \textbf{--xtypes}, users may really tune their searches for very
@@ -1416,7 +1488,7 @@ The demo data is distributed separately.  You can find the demo data package
 gemini\_python package.  Unpack the data package somewhere convenient:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-tar xvzf gemini\_python\_datapkg-X1.tar.gz
+tar xvzf gemini\PYGZus{}python\PYGZus{}datapkg\PYGZhy{}X1.tar.gz
 \end{Verbatim}
 
 In there, you will find a subdirectory named \code{data\_for\_reduce\_demo}.  Those are
@@ -1429,7 +1501,7 @@ letter, this is where you should be for all the paths to work.
 
 \section{Introduction to the Demo}
 \label{appendices/appendix_demo:introduction-to-the-demo}
-In this demo, we will reduce a simple dither on source GMOS imaging sequence.
+In this demo, we will reduce a simple dither-on-source GMOS imaging sequence.
 We will first process the raw biases, and then the raw twilight flats.  We will
 then use those processed files to process and stack the science observation.
 
@@ -1442,7 +1514,7 @@ QA recipe and the demo recipe, is that the demo recipe does stack the data, whil
 the stacking is turned off in the QA context.
 
 The demo recipe is essentially a Quick Look recipe.  It is NOT valid for Science
-Quality.  Remember that we you are using is a QA pipeline, not a Science pipeline.
+Quality.  Remember that what you are using is a QA pipeline, not a Science pipeline.
 
 
 \section{The Recipes}
@@ -1463,14 +1535,14 @@ and contains these instructions:
 \PYG{c}{\PYGZsh{} This recipe performs the standardization and corrections needed to convert}
 \PYG{c}{\PYGZsh{} the raw input bias images into a single stacked bias image. This output}
 \PYG{c}{\PYGZsh{} processed bias is stored on disk using storeProcessedBias and has a name}
-\PYG{c}{\PYGZsh{} equal to the name of the first input bias image with "\PYGZus{}bias.fits" appended.}
+\PYG{c}{\PYGZsh{} equal to the name of the first input bias image with \PYGZdq{}\PYGZus{}bias.fits\PYGZdq{} appended.}
 
 \PYG{n}{prepare}
 \PYG{n}{addDQ}
 \PYG{n}{addVAR}\PYG{p}{(}\PYG{n}{read\PYGZus{}noise}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
 \PYG{n}{overscanCorrect}
-\PYG{n}{addToList}\PYG{p}{(}\PYG{n}{purpose}\PYG{o}{=}\PYG{l+s}{"}\PYG{l+s}{forStack}\PYG{l+s}{"}\PYG{p}{)}
-\PYG{n}{getList}\PYG{p}{(}\PYG{n}{purpose}\PYG{o}{=}\PYG{l+s}{"}\PYG{l+s}{forStack}\PYG{l+s}{"}\PYG{p}{)}
+\PYG{n}{addToList}\PYG{p}{(}\PYG{n}{purpose}\PYG{o}{=}\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{forStack}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}
+\PYG{n}{getList}\PYG{p}{(}\PYG{n}{purpose}\PYG{o}{=}\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{forStack}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}
 \PYG{n}{stackFrames}
 \PYG{n}{storeProcessedBias}
 \end{Verbatim}
@@ -1482,7 +1554,7 @@ The standard recipe to process GMOS twilight flats is named
 \PYG{c}{\PYGZsh{} This recipe performs the standardization and corrections needed to convert}
 \PYG{c}{\PYGZsh{} the raw input flat images into a single stacked and normalized flat image.}
 \PYG{c}{\PYGZsh{} This output processed flat is stored on disk using storeProcessedFlat and}
-\PYG{c}{\PYGZsh{} has a name equal to the name of the first input flat image with "\PYGZus{}flat.fits"}
+\PYG{c}{\PYGZsh{} has a name equal to the name of the first input flat image with \PYGZdq{}\PYGZus{}flat.fits\PYGZdq{}}
 \PYG{c}{\PYGZsh{} appended.}
 
 \PYG{n}{prepare}
@@ -1493,8 +1565,8 @@ The standard recipe to process GMOS twilight flats is named
 \PYG{n}{biasCorrect}
 \PYG{n}{ADUToElectrons}
 \PYG{n}{addVAR}\PYG{p}{(}\PYG{n}{poisson\PYGZus{}noise}\PYG{o}{=}\PYG{n+nb+bp}{True}\PYG{p}{)}
-\PYG{n}{addToList}\PYG{p}{(}\PYG{n}{purpose}\PYG{o}{=}\PYG{l+s}{"}\PYG{l+s}{forStack}\PYG{l+s}{"}\PYG{p}{)}
-\PYG{n}{getList}\PYG{p}{(}\PYG{n}{purpose}\PYG{o}{=}\PYG{l+s}{"}\PYG{l+s}{forStack}\PYG{l+s}{"}\PYG{p}{)}
+\PYG{n}{addToList}\PYG{p}{(}\PYG{n}{purpose}\PYG{o}{=}\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{forStack}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}
+\PYG{n}{getList}\PYG{p}{(}\PYG{n}{purpose}\PYG{o}{=}\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{forStack}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}
 \PYG{n}{stackFlats}
 \PYG{n}{normalizeFlat}
 \PYG{n}{storeProcessedFlat}
@@ -1535,7 +1607,7 @@ as the system will find them on its own.
 The images will be displayed at times.  Therefore, start ds9:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-ds9 \&
+ds9 \PYGZam{}
 \end{Verbatim}
 
 
@@ -1552,9 +1624,9 @@ datasets individually.  We will use a tool named \code{typewalk} to painlessly
 create the list.
 
 \begin{Verbatim}[commandchars=\\\{\}]
-cd \textless{}your\_path\textgreater{}/gemini\_python\_datapkg-X1/playground
+cd \PYGZlt{}your\PYGZus{}path\PYGZgt{}/gemini\PYGZus{}python\PYGZus{}datapkg\PYGZhy{}X1/playground
 
-typewalk --types GMOS\_BIAS --dir ../data\_for\_reduce\_demo -o bias.list
+typewalk \PYGZhy{}\PYGZhy{}types GMOS\PYGZus{}BIAS \PYGZhy{}\PYGZhy{}dir ../data\PYGZus{}for\PYGZus{}reduce\PYGZus{}demo \PYGZhy{}o bias.list
 
 reduce @bias.list
 \end{Verbatim}
@@ -1566,7 +1638,7 @@ are also stored in \code{./calibrations/storedcals/} for safe keeping.
 If you wish to see what the processed bias looks like:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-reduce N20120202S0955\_bias.fits -r display
+reduce N20120202S0955\PYGZus{}bias.fits \PYGZhy{}r display
 \end{Verbatim}
 
 \emph{Note: This will issue an error about the file already existing.  Ignore it.
@@ -1585,16 +1657,16 @@ The ``public'' RecipeSystem does not yet have a Local Calibration Server.  There
 we will need to specify the processed bias we want to use on the \emph{reduce} command
 line.  For information only, internally the QA pipeline at the summit uses a
 central calibration server and the most appropriate processed calibrations available
-are selected and retrieve automatically.  We hope to be able to offer a ``local'',
+are selected and retrieved automatically.  We hope to be able to offer a ``local'',
 end-user version of this system in the future.  For now, calibrations must be
 specified on the command line.
 
 For the flats, we do not really need a list, we can use wild cards:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-reduce ../data\_for\_reduce\_demo/N20120123*.fits \PYGZbs{}
-   --override\_cal processed\_bias:N20120202S0955\_bias.fits \PYGZbs{}
-   -p clobber=True
+reduce ../data\PYGZus{}for\PYGZus{}reduce\PYGZus{}demo/N20120123*.fits \PYGZbs{}
+   \PYGZhy{}\PYGZhy{}override\PYGZus{}cal processed\PYGZus{}bias:N20120202S0955\PYGZus{}bias.fits \PYGZbs{}
+   \PYGZhy{}p clobber=True
 \end{Verbatim}
 
 This creates the processed flat, \code{N20120123S0123\_flat.fits}.  The output suffix
@@ -1607,7 +1679,7 @@ output.  By default, the system refuses to overwrite an output file.
 If you wish to see what the processed flat looks like:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-reduce N20120123S0123\_flat.fits -r display
+reduce N20120123S0123\PYGZus{}flat.fits \PYGZhy{}r display
 \end{Verbatim}
 
 
@@ -1618,11 +1690,11 @@ instead of using the standard QA recipe, we will use the Demo recipe.  Again,
 we will specify the processed calibrations, bias and flat, we wish to use.
 
 \begin{Verbatim}[commandchars=\\\{\}]
-reduce ../data\_for\_reduce\_demo/N20120203S028?.fits \PYGZbs{}
-   --override\_cal processed\_bias:N20120202S0955\_bias.fits \PYGZbs{}
-                  processed\_flat:N20120123S0123\_flat.fits \PYGZbs{}
-   -r reduceDemo \PYGZbs{}
-   -p clobber=True
+reduce ../data\PYGZus{}for\PYGZus{}reduce\PYGZus{}demo/N20120203S028?.fits \PYGZbs{}
+   \PYGZhy{}\PYGZhy{}override\PYGZus{}cal processed\PYGZus{}bias:N20120202S0955\PYGZus{}bias.fits \PYGZbs{}
+                  processed\PYGZus{}flat:N20120123S0123\PYGZus{}flat.fits \PYGZbs{}
+   \PYGZhy{}r reduceDemo \PYGZbs{}
+   \PYGZhy{}p clobber=True
 \end{Verbatim}
 
 The demo data was obtained with the z' filter, therefore the images contain fringing.
@@ -1650,7 +1722,7 @@ final image yourself, use \code{-{-}suffix  \_myfinalsuffix}.
 It is good practice to reset the RecipeSystem state when you are done:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\PYG{n}{superclean} \PYG{o}{-}\PYG{o}{-}\PYG{n}{safe}
+\PYG{n}{superclean} \PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZhy{}}\PYG{n}{safe}
 \end{Verbatim}
 
 Your files will stay there, only some hidden RecipeSystem directories

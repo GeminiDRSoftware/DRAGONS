@@ -9,6 +9,20 @@ the Ureka package, and users are highly encouraged to install and use this very
 useful package. It is an easy and, perhaps, best way to get everything you need
 and then some. Ureka is available at http://ssb.stsci.edu/ureka/.
 
+WARNING:  The Ureka installation script will not set up IRAF for you. You need to do
+that yourself. Here's how::
+
+   $ cd ~
+   $ mkdir iraf
+   $ cd iraf
+   $ mkiraf
+   -- creating a new uparm directory
+   Terminal types: xgterm,xterm,gterm,vt640,vt100,etc.
+   Enter terminal type: xgterm
+   A new LOGIN.CL file has been created in the current directory.
+   You may wish to review and edit this file to change the defaults.
+
+
 Once a user has has retrieved the gemini_python package, available as a tarfile 
 from the Gemini website (http://gemini.edu), and untarred only minor adjustments 
 need to be made to the user environment in order to make astrodata importable and 
@@ -16,8 +30,8 @@ allow ``reduce`` to work properly.
 
 .. _config:
 
-Install 
---------
+Install
+-------
 
 Recommended Installation
 ++++++++++++++++++++++++
@@ -41,13 +55,13 @@ your environment.  You might want to add the following to your .cshrc or
 
 C shell(csh, tcsh)::
 
-   setenv PATH /your/favorite/location:${PATH}
-   setenv PYTHONPATH /your/favorite/location:${PYTHONPATH}
+   setenv PATH /your/favorite/location/bin:${PATH}
+   setenv PYTHONPATH /your/favorite/location/lib/python2.7/site-packages:${PYTHONPATH}
 
 Bourne shells (sh, bash, ksh, ...) ::
 
-   export PATH=/your/favorite/location:${PATH}
-   export PYTHONPATH=/your/favorite/location:${PYTHONPATH}
+   export PATH=/your/favorite/location/bin:${PATH}
+   export PYTHONPATH=/your/favorite/location/lib/python2.7/site-packages:${PYTHONPATH}
 
 If you added those lines to your shell configuration script, make sure your 
 ``source`` the file to activate the new setting.

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>4. FITS Headers &mdash; AstroData Users Manual 0.9.0 documentation</title>
+    <title>4. FITS Headers &mdash; AstroData Users Manual X1.0.1 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -15,7 +15,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.9.0',
+        VERSION:     'X1.0.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="AstroData Users Manual 0.9.0 documentation" href="index.html" />
+    <link rel="top" title="AstroData Users Manual X1.0.1 documentation" href="index.html" />
     <link rel="next" title="5. Pixel Data" href="data.html" />
     <link rel="prev" title="3. AstroDataTypes" href="types.html" /> 
   </head>
@@ -41,7 +41,7 @@
         <li class="right" >
           <a href="types.html" title="3. AstroDataTypes"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -68,7 +68,7 @@ cp ../data_for_ad_user_manual/N20111124S0203.fits .
 <h2>4.1. AstroData Descriptors<a class="headerlink" href="#astrodata-descriptors" title="Permalink to this headline">¶</a></h2>
 <p>AstroData Descriptors provide a &#8220;header keyword-to-concept&#8221; mapping that
 allows one to access header information in a consistent manner, regardless
-of which instrument the dataset is from.  Life for the AstroDataTypes, the
+of which instrument the dataset is from.  Like for the AstroDataTypes, the
 mapping is coded in a configuration package that is provided by the
 observatory or the user.</p>
 <p>For example, if one were interested to know the filter used for an
@@ -99,7 +99,7 @@ with the pyfits interface.  This is also shown later in this chapter.</p>
 <span class="nb">sorted</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">descriptors</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 </pre></div>
 </td></tr></table></div>
-<p>The <tt class="docutils literal"><span class="pre">descriptors</span></tt> property contains a dictionary with the name of the
+<p>The <tt class="docutils literal"><span class="pre">descriptors</span></tt> property returns a dictionary with the name of the
 descriptors available for this AstroData object as the keys.  The really
 interesting information is in the keys.  On Line 5, we retrieve the
 sorted list of available Descriptors.</p>
@@ -194,8 +194,8 @@ appropriate gain value for that extension.  No looping necessary, AstroData
 and Descriptors are taking care of it.</p>
 <p>When the automatic convertion to a Python cannot be determine from context
 the programmer must use the method <tt class="docutils literal"><span class="pre">as_pytype()</span></tt>.</p>
-<div class="highlight-python"><div class="highlight"><pre>as.pixel_scale()
-as.pixel_scale().as_pytype()
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ad</span><span class="o">.</span><span class="n">pixel_scale</span><span class="p">()</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">pixel_scale</span><span class="p">()</span><span class="o">.</span><span class="n">as_pytype</span><span class="p">()</span>
 </pre></div>
 </div>
 <p>The first line returns a DescriptorValue, the second line returns a float.</p>
@@ -208,7 +208,7 @@ are no DescriptorValue involved and the type returned matches what is stored
 in the header.</p>
 <p>One important thing to keep in mind is that the PHU and the extension headers
 are accessed differently. The method <tt class="docutils literal"><span class="pre">phu_get_key_value</span></tt> accesses the PHU
-headers; the method <tt class="docutils literal"><span class="pre">get_key_value</span></tt> accesses the headers of the specified
+header; the method <tt class="docutils literal"><span class="pre">get_key_value</span></tt> accesses the header of the specified
 extension.</p>
 <p>Here are some direct access examples:</p>
 <div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
@@ -278,10 +278,10 @@ done as follow:</p>
 <div class="section" id="extname-and-extver">
 <h3>4.2.4. EXTNAME and EXTVER<a class="headerlink" href="#extname-and-extver" title="Permalink to this headline">¶</a></h3>
 <p>MEF files have the concept of naming and versioning extensions.  The header
-storing the name and version are <tt class="docutils literal"><span class="pre">EXTNAME</span></tt> and <tt class="docutils literal"><span class="pre">EXTVER</span></tt>.  AstroData uses
+keywords storing the name and version are <tt class="docutils literal"><span class="pre">EXTNAME</span></tt> and <tt class="docutils literal"><span class="pre">EXTVER</span></tt>.  AstroData uses
 that concept extensively.  In fact, even if a MEF on disk does not have
 <tt class="docutils literal"><span class="pre">EXTNAME</span></tt> and <tt class="docutils literal"><span class="pre">EXTVER</span></tt> defined, for example Gemini raw datasets, upon
-opening the file, AstroData will assign names and versions to each extension.
+opening the file AstroData will assign names and versions to each extension.
 The default behavior is to assign all extension a <tt class="docutils literal"><span class="pre">EXTNAME</span></tt> of <tt class="docutils literal"><span class="pre">SCI</span></tt>
 and then version them sequential from 1 to the number of extension present.</p>
 <p>The name and version of an extension is obtained this way:</p>
@@ -436,7 +436,7 @@ to strange problems.</p>
         <li class="right" >
           <a href="types.html" title="3. AstroDataTypes"
              >previous</a> |</li>
-        <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

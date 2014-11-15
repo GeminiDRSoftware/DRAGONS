@@ -8,7 +8,7 @@ Introduction
 
 What is AstroData?
 ==================
-The AstroData class is a tool to represents datasets stored in 
+The AstroData class is a tool to represent datasets stored in 
 Multi-Extension FITS (MEF) files. It provides uniform interfaces for 
 working on datasets from different instruments and their observational modes. 
 Configuration packages are used to describe the specific data characteristics, 
@@ -38,6 +38,19 @@ Installing AstroData
 The ``astrodata`` package has several dependencies like ``numpy``, ``astropy``, and others.
 The best way to get everything you need is to install Ureka, http://ssb.stsci.edu/ureka/.
 
+WARNING:  The Ureka installation script will not set up IRAF for you. You need to do
+that yourself. Here's how::
+
+   $ cd ~
+   $ mkdir iraf
+   $ cd iraf
+   $ mkiraf
+   -- creating a new uparm directory
+   Terminal types: xgterm,xterm,gterm,vt640,vt100,etc.
+   Enter terminal type: xgterm
+   A new LOGIN.CL file has been created in the current directory.
+   You may wish to review and edit this file to change the defaults.
+
 Once this is done, install ``gemini_python``.  The ``astrodata`` package is currently
 distributed as part of the ``gemini_python`` package.  The ``gemini_python`` package,
 ``gemini_python-X1.tar.gz``, can be obtained from the Gemini website:
@@ -66,13 +79,13 @@ or equivalent shell configuration script.
 
 For tcsh::
 
-   setenv PATH /your/favorite/location:${PATH}
-   setenv PYTHONPATH /your/favorite/location:${PYTHONPATH}
+   setenv PATH /your/favorite/location/bin:${PATH}
+   setenv PYTHONPATH /your/favorite/location/lib/python2.7/site-packages:${PYTHONPATH}
 
 For bash::
 
-   export PATH=/your/favorite/location:${PATH}
-   export PYTHONPATH=/your/favorite/location:${PYTHONPATH}
+   export PATH=/your/favorite/location/bin:${PATH}
+   export PYTHONPATH=/your/favorite/location/lib/python2.7/site-packages:${PYTHONPATH}
 
 If you added those lines to your shell configuration script, make sure your ``source``
 the file to activate the new setting.
