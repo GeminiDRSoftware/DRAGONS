@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2014) (preloaded format=pdflatex 2014.5.25)  30 OCT 2014 17:49
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2014) (preloaded format=pdflatex 2014.5.25)  20 NOV 2014 15:32
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -245,13 +245,16 @@ Now handling font encoding U ...
 ))
    defining Unicode char U+00A0 (decimal 160)
 
+(/usr/local/texlive/2014/texmf-dist/tex/latex/cmap/cmap.sty
+Package: cmap 2008/03/06 v1.0h CMap support: searchable PDF
+)
 (/usr/local/texlive/2014/texmf-dist/tex/latex/base/fontenc.sty
 Package: fontenc 2005/09/27 v1.99g Standard LaTeX package
 
 (/usr/local/texlive/2014/texmf-dist/tex/latex/base/t1enc.def
 File: t1enc.def 2005/09/27 v1.99g Standard LaTeX file
 LaTeX Font Info:    Redeclaring font encoding T1 on input line 43.
-))
+)<<t1.cmap>>)
 (/usr/local/texlive/2014/texmf-dist/tex/generic/babel/babel.sty
 Package: babel 2014/03/24 3.9k The Babel package
 
@@ -300,7 +303,19 @@ Package: longtable 2004/02/01 v4.11 Multi-page Table package (DPC)
 )
 (./sphinx.sty
 Package: sphinx 2010/01/15 LaTeX package (Sphinx markup)
- (/usr/local/texlive/2014/texmf-dist/tex/latex/base/textcomp.sty
+
+(/usr/local/texlive/2014/texmf-dist/tex/latex/fancyhdr/fancyhdr.sty
+\fancy@headwidth=\skip54
+\f@ncyO@elh=\skip55
+\f@ncyO@erh=\skip56
+\f@ncyO@olh=\skip57
+\f@ncyO@orh=\skip58
+\f@ncyO@elf=\skip59
+\f@ncyO@erf=\skip60
+\f@ncyO@olf=\skip61
+\f@ncyO@orf=\skip62
+)
+(/usr/local/texlive/2014/texmf-dist/tex/latex/base/textcomp.sty
 Package: textcomp 2005/09/27 v1.99g Standard LaTeX package
 Package textcomp Info: Sub-encoding information:
 (textcomp)               5 = only ISO-Adobe without \textcurrency
@@ -455,17 +470,6 @@ Package textcomp Info: Setting pplj sub-encoding to TS1/3 on input line 338.
 Package textcomp Info: Setting ptmx sub-encoding to TS1/4 on input line 339.
 Package textcomp Info: Setting ptmj sub-encoding to TS1/4 on input line 340.
 )
-(/usr/local/texlive/2014/texmf-dist/tex/latex/fancyhdr/fancyhdr.sty
-\fancy@headwidth=\skip54
-\f@ncyO@elh=\skip55
-\f@ncyO@erh=\skip56
-\f@ncyO@olh=\skip57
-\f@ncyO@orh=\skip58
-\f@ncyO@elf=\skip59
-\f@ncyO@erf=\skip60
-\f@ncyO@olf=\skip61
-\f@ncyO@orf=\skip62
-)
 (/usr/local/texlive/2014/texmf-dist/tex/latex/fancybox/fancybox.sty
 Package: fancybox 2010/05/15 1.4
 
@@ -492,7 +496,7 @@ Package: titlesec 2011/12/15 v2.10.0 Sectioning titles
 \titlewidthfirst=\dimen110
 )
 (./tabulary.sty
-Package: tabulary 2007/10/02 v0.9 tabulary package (DPC)
+Package: tabulary 2008/12/01 v0.9 tabulary package (DPC)
  (/usr/local/texlive/2014/texmf-dist/tex/latex/tools/array.sty
 Package: array 2008/09/09 v2.4c Tabular extension package (FMi)
 \col@sep=\dimen111
@@ -631,6 +635,9 @@ Package: wrapfig 2003/01/31  v 3.6
 )
 (/usr/local/texlive/2014/texmf-dist/tex/latex/parskip/parskip.sty
 Package: parskip 2001/04/09 non-zero parskip adjustments
+)
+(/usr/local/texlive/2014/texmf-dist/tex/latex/base/alltt.sty
+Package: alltt 1997/06/16 v2.0g defines alltt environment
 )
 (/usr/local/texlive/2014/texmf-dist/tex/latex/graphics/graphicx.sty
 Package: graphicx 2014/04/25 v1.0g Enhanced LaTeX Graphics (DPC,SPQR)
@@ -792,29 +799,29 @@ Writing index file AstroDataAPI.idx
 (./AstroDataAPI.aux)
 \openout1 = `AstroDataAPI.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 110.
-LaTeX Font Info:    ... okay on input line 110.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 110.
-LaTeX Font Info:    ... okay on input line 110.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 110.
-LaTeX Font Info:    ... okay on input line 110.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 110.
-LaTeX Font Info:    ... okay on input line 110.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 110.
-LaTeX Font Info:    ... okay on input line 110.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 110.
-LaTeX Font Info:    ... okay on input line 110.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 110.
-LaTeX Font Info:    Try loading font information for TS1+cmr on input line 110.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 117.
+LaTeX Font Info:    ... okay on input line 117.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 117.
+LaTeX Font Info:    ... okay on input line 117.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 117.
+LaTeX Font Info:    ... okay on input line 117.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 117.
+LaTeX Font Info:    ... okay on input line 117.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 117.
+LaTeX Font Info:    ... okay on input line 117.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 117.
+LaTeX Font Info:    ... okay on input line 117.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 117.
+LaTeX Font Info:    Try loading font information for TS1+cmr on input line 117.
 
 
 (/usr/local/texlive/2014/texmf-dist/tex/latex/base/ts1cmr.fd
 File: ts1cmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
 )
-LaTeX Font Info:    ... okay on input line 110.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 110.
-LaTeX Font Info:    ... okay on input line 110.
-LaTeX Font Info:    Try loading font information for T1+ptm on input line 110.
+LaTeX Font Info:    ... okay on input line 117.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 117.
+LaTeX Font Info:    ... okay on input line 117.
+LaTeX Font Info:    Try loading font information for T1+ptm on input line 117.
 
 (/usr/local/texlive/2014/texmf-dist/tex/latex/psnfss/t1ptm.fd
 File: t1ptm.fd 2001/06/04 font definitions for T1/ptm.
@@ -848,7 +855,7 @@ File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
 \AtBeginShipoutBox=\box41
-Package hyperref Info: Link coloring ON on input line 110.
+Package hyperref Info: Link coloring ON on input line 117.
 
 (/usr/local/texlive/2014/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2012/10/27 v2.43 Cross-referencing by name of section
@@ -858,39 +865,38 @@ Package: gettitlestring 2010/12/03 v1.4 Cleanup title references (HO)
 )
 \c@section@level=\count130
 )
-LaTeX Info: Redefining \ref on input line 110.
-LaTeX Info: Redefining \pageref on input line 110.
-LaTeX Info: Redefining \nameref on input line 110.
+LaTeX Info: Redefining \ref on input line 117.
+LaTeX Info: Redefining \pageref on input line 117.
+LaTeX Info: Redefining \nameref on input line 117.
 
 (./AstroDataAPI.out) (./AstroDataAPI.out)
 \@outlinefile=\write6
 \openout6 = `AstroDataAPI.out'.
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 113--113
+Underfull \hbox (badness 10000) in paragraph at lines 120--120
 
  []
 
-LaTeX Font Info:    Try loading font information for T1+phv on input line 113.
+LaTeX Font Info:    Try loading font information for T1+phv on input line 120.
 (/usr/local/texlive/2014/texmf-dist/tex/latex/psnfss/t1phv.fd
 File: t1phv.fd 2001/06/04 scalable font definitions for T1/phv.
 )
 LaTeX Font Info:    Font shape `T1/phv/bx/n' in size <24.88> not available
-(Font)              Font shape `T1/phv/b/n' tried instead on input line 113.
+(Font)              Font shape `T1/phv/b/n' tried instead on input line 120.
 LaTeX Font Info:    Font shape `T1/phv/m/it' in size <17.28> not available
-(Font)              Font shape `T1/phv/m/sl' tried instead on input line 113.
+(Font)              Font shape `T1/phv/m/sl' tried instead on input line 120.
 LaTeX Font Info:    Font shape `T1/phv/bx/it' in size <17.28> not available
-(Font)              Font shape `T1/phv/b/it' tried instead on input line 113.
+(Font)              Font shape `T1/phv/b/it' tried instead on input line 120.
 LaTeX Font Info:    Font shape `T1/phv/b/it' in size <17.28> not available
-(Font)              Font shape `T1/phv/b/sl' tried instead on input line 113.
+(Font)              Font shape `T1/phv/b/sl' tried instead on input line 120.
 LaTeX Font Info:    Font shape `T1/phv/bx/n' in size <17.28> not available
-(Font)              Font shape `T1/phv/b/n' tried instead on input line 113.
- [1
+(Font)              Font shape `T1/phv/b/n' tried instead on input line 120.
+<<ot1.cmap>><<oml.cmap>><<oms.cmap>><<omx.cmap>> [1
 
 {/usr/local/texlive/2014/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2
 
-]
-(./AstroDataAPI.toc
+] (./AstroDataAPI.toc
 LaTeX Font Info:    Font shape `T1/ptm/bx/n' in size <10> not available
 (Font)              Font shape `T1/ptm/b/n' tried instead on input line 2.
 )
@@ -900,28 +906,22 @@ LaTeX Font Info:    Font shape `T1/ptm/bx/n' in size <10> not available
 
 Adding blank page after the table of contents.
 LaTeX Font Info:    Font shape `T1/phv/bx/n' in size <10> not available
-(Font)              Font shape `T1/phv/b/n' tried instead on input line 113.
-pdfTeX warning (ext4): destination with the same identifier (name{page.i}) has 
-been already used, duplicate ignored
-<to be read again> 
-                   \relax 
-l.113 \tableofcontents
-                       [1
+(Font)              Font shape `T1/phv/b/n' tried instead on input line 120.
+[1
 
-]pdfTeX warning (ext4): destination with the same identifier (name{page.ii}) ha
-s been already used, duplicate ignored
-<to be read again> 
-                   \relax 
-l.113 \tableofcontents
-                       [2]
+] [2]
 Chapter 1.
 LaTeX Font Info:    Font shape `T1/phv/bx/n' in size <14.4> not available
-(Font)              Font shape `T1/phv/b/n' tried instead on input line 118.
-LaTeX Font Info:    Try loading font information for T1+pcr on input line 132.
+(Font)              Font shape `T1/phv/b/n' tried instead on input line 125.
+LaTeX Font Info:    Font shape `T1/ptm/bx/n' in size <14.4> not available
+(Font)              Font shape `T1/ptm/b/n' tried instead on input line 125.
+LaTeX Font Info:    Font shape `T1/ptm/bx/n' in size <24.88> not available
+(Font)              Font shape `T1/ptm/b/n' tried instead on input line 125.
+LaTeX Font Info:    Try loading font information for T1+pcr on input line 139.
 (/usr/local/texlive/2014/texmf-dist/tex/latex/psnfss/t1pcr.fd
 File: t1pcr.fd 2001/06/04 font definitions for T1/pcr.
 )
-LaTeX Font Info:    Try loading font information for TS1+ptm on input line 151.
+LaTeX Font Info:    Try loading font information for TS1+ptm on input line 158.
 
 
 (/usr/local/texlive/2014/texmf-dist/tex/latex/psnfss/ts1ptm.fd
@@ -934,30 +934,23 @@ File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
 ]
 Chapter 2.
 LaTeX Font Info:    Font shape `T1/pcr/bx/n' in size <10> not available
-(Font)              Font shape `T1/pcr/b/n' tried instead on input line 182.
-
-Underfull \hbox (badness 7631) in paragraph at lines 182--182
-[]\T1/ptm/m/it/10 dataset=None\T1/ptm/m/n/10 , \T1/ptm/m/it/10 phu=None\T1/ptm/
-m/n/10 , \T1/ptm/m/it/10 header=None\T1/ptm/m/n/10 , \T1/ptm/m/it/10 data=None\
-T1/ptm/m/n/10 ,
- []
-
+(Font)              Font shape `T1/pcr/b/n' tried instead on input line 189.
 [3] [4] [5]
-Underfull \hbox (badness 10000) in paragraph at lines 495--495
+Underfull \hbox (badness 10000) in paragraph at lines 502--502
 []\T1/ptm/m/it/10 moredata=None\T1/ptm/m/n/10 , \T1/ptm/m/it/10 data=None\T1/pt
 m/m/n/10 , \T1/ptm/m/it/10 header=None\T1/ptm/m/n/10 , \T1/ptm/m/it/10 extname=
 None\T1/ptm/m/n/10 , \T1/ptm/m/it/10 extver=None\T1/ptm/m/n/10 ,
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 553--553
+[6]
+Underfull \hbox (badness 10000) in paragraph at lines 646--646
 []\T1/ptm/m/it/10 index\T1/ptm/m/n/10 , \T1/ptm/m/it/10 more-data=None\T1/ptm/m
 /n/10 , \T1/ptm/m/it/10 data=None\T1/ptm/m/n/10 , \T1/ptm/m/it/10 header=None\T
 1/ptm/m/n/10 , \T1/ptm/m/it/10 extname=None\T1/ptm/m/n/10 , \T1/ptm/m/it/10 ext
 ver=None\T1/ptm/m/n/10 ,
  []
 
-[6] [7] [8] [9] [10]
+[7] [8] [9] [10]
 Chapter 3.
 [11
 
@@ -969,47 +962,27 @@ Chapter 3.
 ] (./AstroDataAPI.ind [14
 
 
-]
-Underfull \hbox (badness 10000) in paragraph at lines 33--34
-[]\T1/ptm/m/n/10 get_key_value() (as-tro-data.AstroData.AstroData
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 53--54
-[]\T1/ptm/m/n/10 phu_get_key_value() (as-tro-data.AstroData.AstroData
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 54--55
-[]\T1/ptm/m/n/10 phu_set_key_value() (as-tro-data.AstroData.AstroData
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 65--66
-[]\T1/ptm/m/n/10 store_original_name() (as-tro-data.AstroData.AstroData
- []
-
-[15
+] [15
 
 ])
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1010.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 1010.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1017.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1017.
  (./AstroDataAPI.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1010.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1010.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1017.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1017.
 
 Package rerunfilecheck Info: File `AstroDataAPI.out' has not changed.
 (rerunfilecheck)             Checksum: 0CB9BB810534635F71B4CC5B238F70F3;331.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1010.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1017.
  ) 
 Here is how much of TeX's memory you used:
- 9044 strings out of 493117
- 127092 string characters out of 6135433
- 229609 words of memory out of 5000000
- 12269 multiletter control sequences out of 15000+600000
- 50100 words of font info for 58 fonts, out of 8000000 for 9000
+ 9143 strings out of 493117
+ 128262 string characters out of 6135433
+ 230391 words of memory out of 5000000
+ 12307 multiletter control sequences out of 15000+600000
+ 53492 words of font info for 60 fonts, out of 8000000 for 9000
  1142 hyphenation exceptions out of 8191
- 36i,11n,45p,345b,635s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 36i,11n,45p,325b,668s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2014/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/local/t
 exlive/2014/texmf-dist/fonts/type1/urw/courier/ucrb8a.pfb></usr/local/texlive/2
 014/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/local/texlive/2014/texm
@@ -1019,10 +992,10 @@ type1/urw/helvetic/uhvr8a.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/u
 rw/times/utmb8a.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/urw/times/u
 tmr8a.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/urw/times/utmri8a.pfb
 >
-Output written on AstroDataAPI.pdf (19 pages, 123717 bytes).
+Output written on AstroDataAPI.pdf (19 pages, 128691 bytes).
 PDF statistics:
- 221 PDF objects out of 1000 (max. 8388607)
- 190 compressed objects within 2 object streams
- 53 named destinations out of 1000 (max. 500000)
- 49 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 229 PDF objects out of 1000 (max. 8388607)
+ 193 compressed objects within 2 object streams
+ 55 named destinations out of 1000 (max. 500000)
+ 69 words of extra memory for PDF output out of 10000 (max. 10000000)
 
