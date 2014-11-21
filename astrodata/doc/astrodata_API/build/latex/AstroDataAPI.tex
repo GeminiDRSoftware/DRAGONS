@@ -183,10 +183,10 @@ also integrates other functionalities.
 \label{astro_class:astrodata-api-methods-and-properties}\label{astro_class::doc}
 
 \section{Class AstroData}
-\label{astro_class:module-astrodata}\label{astro_class:class-astrodata}\index{astrodata (module)}\index{AstroData (class in astrodata)}
+\label{astro_class:class-astrodata}\label{astro_class:module-astrodata.AstroData}\index{astrodata.AstroData (module)}\index{AstroData (class in astrodata.AstroData)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData}\pysiglinewithargsret{\strong{class }\code{astrodata.}\bfcode{AstroData}}{\emph{dataset=None}, \emph{phu=None}, \emph{header=None}, \emph{data=None}, \emph{exts=None}, \emph{extInsts=None}, \emph{store=None}, \emph{mode='readonly'}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData}\pysiglinewithargsret{\strong{class }\code{astrodata.AstroData.}\bfcode{AstroData}}{\emph{dataset=None}, \emph{phu=None}, \emph{header=None}, \emph{data=None}, \emph{exts=None}, \emph{extInsts=None}, \emph{store=None}, \emph{mode='readonly'}}{}
 The AstroData constructor constructs an in-memory representation of a
 dataset. If given a filename it uses pyfits to open the dataset, reads
 the header and detects applicable types. Binary data, such as pixel
@@ -264,10 +264,10 @@ at the user's command with \code{ad.write()}.
 \end{itemize}
 
 \end{description}\end{quote}
-\index{data (astrodata.AstroData attribute)}
+\index{data (astrodata.AstroData.AstroData attribute)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.data}\pysigline{\bfcode{data}}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.data}\pysigline{\bfcode{data}}
 Property: The data property can only be used for single-HDU AstroData
 instances, such as those returned during iteration. To set the 
 data member, use \emph{ad.data = newdata}, where \emph{newdata} must be a 
@@ -306,10 +306,10 @@ Errors.SingleHDUMemberExcept
 
 \end{fulllineitems}
 
-\index{descriptors (astrodata.AstroData attribute)}
+\index{descriptors (astrodata.AstroData.AstroData attribute)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.descriptors}\pysigline{\bfcode{descriptors}}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.descriptors}\pysigline{\bfcode{descriptors}}
 Property: Returns a dictionary of all registered metadata descriptor 
 functions defined on the instance.
 
@@ -327,19 +327,19 @@ dict of descriptor functions
 
 \end{fulllineitems}
 
-\index{filename (astrodata.AstroData attribute)}
+\index{filename (astrodata.AstroData.AstroData attribute)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.filename}\pysigline{\bfcode{filename}}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.filename}\pysigline{\bfcode{filename}}
 Property: `filename' is monitored so that the mode can be changed 
 from `readonly' when `filename' is changed.
 
 \end{fulllineitems}
 
-\index{header (astrodata.AstroData attribute)}
+\index{header (astrodata.AstroData.AstroData attribute)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.header}\pysigline{\bfcode{header}}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.header}\pysigline{\bfcode{header}}
 Property: Returns the header member for Single-HDU AstroData instances.
 
 The header property can only be used for single-HDU AstroData
@@ -363,10 +363,10 @@ Errors.SingleHDUMemberExcept
 
 \end{fulllineitems}
 
-\index{headers (astrodata.AstroData attribute)}
+\index{headers (astrodata.AstroData.AstroData attribute)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.headers}\pysigline{\bfcode{headers}}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.headers}\pysigline{\bfcode{headers}}
 Property: Returns header member(s) for all extension (except PHU).
 \begin{quote}\begin{description}
 \item[{Returns}] \leavevmode
@@ -379,10 +379,10 @@ list of pyfits.Header instances
 
 \end{fulllineitems}
 
-\index{hdulist (astrodata.AstroData attribute)}
+\index{hdulist (astrodata.AstroData.AstroData attribute)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.hdulist}\pysigline{\bfcode{hdulist}}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.hdulist}\pysigline{\bfcode{hdulist}}
 Property: Returns a list of header-data units on the instance.
 \begin{quote}\begin{description}
 \item[{Returns}] \leavevmode
@@ -395,10 +395,10 @@ The AstroData's HDUList as returned by pyfits.open()
 
 \end{fulllineitems}
 
-\index{phu (astrodata.AstroData attribute)}
+\index{phu (astrodata.AstroData.AstroData attribute)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.phu}\pysigline{\bfcode{phu}}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.phu}\pysigline{\bfcode{phu}}
 Property: Returns the instance's primary HDU.
 \begin{quote}\begin{description}
 \item[{Returns}] \leavevmode
@@ -411,10 +411,10 @@ The instance ``phu''
 
 \end{fulllineitems}
 
-\index{types (astrodata.AstroData attribute)}
+\index{types (astrodata.AstroData.AstroData attribute)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.types}\pysigline{\bfcode{types}}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.types}\pysigline{\bfcode{types}}
 Property: Returns the composite list of AstroData classifications. I.e. 
 the instance's qualified type and status classifications.
 \begin{quote}\begin{description}
@@ -428,10 +428,10 @@ a list of types and status strings
 
 \end{fulllineitems}
 
-\index{\_\_getitem\_\_() (astrodata.AstroData method)}
+\index{\_\_getitem\_\_() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.__getitem__}\pysiglinewithargsret{\bfcode{\_\_getitem\_\_}}{\emph{ext}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.__getitem__}\pysiglinewithargsret{\bfcode{\_\_getitem\_\_}}{\emph{ext}}{}
 AstroData instances behave as list-like objects and therefore pythonic
 slicing operations may be performed on instances of this class.
 This method provides support for list slicing with the ``{[}{]}'' syntax.
@@ -496,10 +496,10 @@ KeyError, IndexError
 
 \end{fulllineitems}
 
-\index{append() (astrodata.AstroData method)}
+\index{append() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.append}\pysiglinewithargsret{\bfcode{append}}{\emph{moredata=None}, \emph{data=None}, \emph{header=None}, \emph{extname=None}, \emph{extver=None}, \emph{auto\_number=False}, \emph{do\_deepcopy=False}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.append}\pysiglinewithargsret{\bfcode{append}}{\emph{moredata=None}, \emph{data=None}, \emph{header=None}, \emph{extname=None}, \emph{extver=None}, \emph{auto\_number=False}, \emph{do\_deepcopy=False}}{}
 Appends header-data units (HDUs) to the AstroData instance.
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
@@ -546,18 +546,18 @@ another AD object.
 
 \end{fulllineitems}
 
-\index{close() (astrodata.AstroData method)}
+\index{close() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.close}\pysiglinewithargsret{\bfcode{close}}{}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.close}\pysiglinewithargsret{\bfcode{close}}{}{}
 Method will close the `HDUList' on this instance.
 
 \end{fulllineitems}
 
-\index{count\_exts() (astrodata.AstroData method)}
+\index{count\_exts() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.count_exts}\pysiglinewithargsret{\bfcode{count\_exts}}{\emph{extname=None}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.count_exts}\pysiglinewithargsret{\bfcode{count\_exts}}{\emph{extname=None}}{}
 The count\_exts() function returns the number of extensions matching the
 passed \textless{}extname\textgreater{} (as stored in the HDUs ``EXTNAME'' header).
 \begin{quote}\begin{description}
@@ -576,10 +576,10 @@ number of \textless{}extname\textgreater{} extensions
 
 \end{fulllineitems}
 
-\index{ext\_index() (astrodata.AstroData method)}
+\index{ext\_index() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.ext_index}\pysiglinewithargsret{\bfcode{ext\_index}}{\emph{extension}, \emph{hduref=False}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.ext_index}\pysiglinewithargsret{\bfcode{ext\_index}}{\emph{extension}, \emph{hduref=False}}{}
 Takes an extension index, either an integer or (EXTNAME, EXTVER) 
 tuple, and returns the index location of the extension.  If hduref is 
 set to True, then the index returned is relative to the HDUList 
@@ -589,10 +589,10 @@ convention, where index=0 is the first extension in the MEF file.
 
 \end{fulllineitems}
 
-\index{get\_key\_value() (astrodata.AstroData method)}
+\index{get\_key\_value() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.get_key_value}\pysiglinewithargsret{\bfcode{get\_key\_value}}{\emph{key}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.get_key_value}\pysiglinewithargsret{\bfcode{get\_key\_value}}{\emph{key}}{}
 The get\_key\_value() function is used to get the value associated
 with a given key in the data-header unit of a single-HDU
 AstroData instance (such as returned by iteration).
@@ -631,19 +631,19 @@ SingleHDUMemberExcept
 
 \end{fulllineitems}
 
-\index{info() (astrodata.AstroData method)}
+\index{info() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.info}\pysiglinewithargsret{\bfcode{info}}{\emph{oid=False}, \emph{table=False}, \emph{help=False}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.info}\pysiglinewithargsret{\bfcode{info}}{\emph{oid=False}, \emph{table=False}, \emph{help=False}}{}
 Prints to stdout information about the phu and extensions found 
 in the current instance.
 
 \end{fulllineitems}
 
-\index{insert() (astrodata.AstroData method)}
+\index{insert() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.insert}\pysiglinewithargsret{\bfcode{insert}}{\emph{index}, \emph{moredata=None}, \emph{data=None}, \emph{header=None}, \emph{extname=None}, \emph{extver=None}, \emph{auto\_number=False}, \emph{do\_deepcopy=False}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.insert}\pysiglinewithargsret{\bfcode{insert}}{\emph{index}, \emph{moredata=None}, \emph{data=None}, \emph{header=None}, \emph{extname=None}, \emph{extver=None}, \emph{auto\_number=False}, \emph{do\_deepcopy=False}}{}
 Insert a header-data unit (HDUs) into the AstroData instance.
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
@@ -696,10 +696,10 @@ another AD object.
 
 \end{fulllineitems}
 
-\index{open() (astrodata.AstroData method)}
+\index{open() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.open}\pysiglinewithargsret{\bfcode{open}}{\emph{source}, \emph{mode='readonly'}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.open}\pysiglinewithargsret{\bfcode{open}}{\emph{source}, \emph{mode='readonly'}}{}
 Method wraps a source dataset, which can be in memory as another
 AstroData or pyfits HDUList, or on disk, given as the string filename.
 
@@ -727,10 +727,10 @@ subsystem reporting the error.
 
 \end{fulllineitems}
 
-\index{phu\_get\_key\_value() (astrodata.AstroData method)}
+\index{phu\_get\_key\_value() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.phu_get_key_value}\pysiglinewithargsret{\bfcode{phu\_get\_key\_value}}{\emph{key}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.phu_get_key_value}\pysiglinewithargsret{\bfcode{phu\_get\_key\_value}}{\emph{key}}{}
 The phu\_get\_key\_value(..) function returns the value associated 
 with the given key within the primary header unit of the dataset.
 The value is returned as a string (storage format) and must be 
@@ -749,10 +749,10 @@ keyword value as string or None if not present.
 
 \end{fulllineitems}
 
-\index{phu\_set\_key\_value() (astrodata.AstroData method)}
+\index{phu\_set\_key\_value() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.phu_set_key_value}\pysiglinewithargsret{\bfcode{phu\_set\_key\_value}}{\emph{keyword=None}, \emph{value=None}, \emph{comment=None}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.phu_set_key_value}\pysiglinewithargsret{\bfcode{phu\_set\_key\_value}}{\emph{keyword=None}, \emph{value=None}, \emph{comment=None}}{}
 Add or update a keyword in the PHU of the AstroData object with a
 specific value and, optionally, a comment
 \begin{quote}\begin{description}
@@ -772,14 +772,14 @@ specific value and, optionally, a comment
 
 \end{fulllineitems}
 
-\index{remove() (astrodata.AstroData method)}
+\index{remove() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.remove}\pysiglinewithargsret{\bfcode{remove}}{\emph{index}, \emph{hdui=False}}{}~\begin{quote}\begin{description}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.remove}\pysiglinewithargsret{\bfcode{remove}}{\emph{index}, \emph{hdui=False}}{}~\begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode
 \textbf{index} (\emph{\textless{}int\textgreater{}, or \textless{}tuple\textgreater{} (EXTNAME,EXTVER)}) -- the extension index, either an int or (EXTNAME, EXTVER)
-pair before which the extension is to be inserted.
-Note: the first data extension is {[}0{]}, you cannot insert 
+pair before which the extension is to be removed.
+Note: the first data extension is {[}0{]}, you cannot remove 
 before the PHU. Index always refers to Astrodata Numbering 
 system, 0 = HDU
 
@@ -787,10 +787,10 @@ system, 0 = HDU
 
 \end{fulllineitems}
 
-\index{rename\_ext() (astrodata.AstroData method)}
+\index{rename\_ext() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.rename_ext}\pysiglinewithargsret{\bfcode{rename\_ext}}{\emph{name}, \emph{ver=None}, \emph{force=True}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.rename_ext}\pysiglinewithargsret{\bfcode{rename\_ext}}{\emph{name}, \emph{ver=None}, \emph{force=True}}{}
 The rename\_ext(..) function is used in order to rename an 
 HDU with a new EXTNAME and EXTVER identifier.  Merely changing 
 the EXTNAME and EXTVER values in the extensions pyfits.Header 
@@ -827,10 +827,10 @@ Default=True
 
 \end{fulllineitems}
 
-\index{set\_key\_value() (astrodata.AstroData method)}
+\index{set\_key\_value() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.set_key_value}\pysiglinewithargsret{\bfcode{set\_key\_value}}{\emph{key}, \emph{value}, \emph{comment=None}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.set_key_value}\pysiglinewithargsret{\bfcode{set\_key\_value}}{\emph{key}, \emph{value}, \emph{comment=None}}{}
 The set\_key\_value() function is used to set the value (and optionally
 the comment) associated with a given key in the data-header of a 
 single-HDU AstroData instance. The value argument will be converted to 
@@ -871,10 +871,10 @@ AstroData object, and can be used more convieniently.
 
 \end{fulllineitems}
 
-\index{status() (astrodata.AstroData method)}
+\index{status() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.status}\pysiglinewithargsret{\bfcode{status}}{\emph{prune=False}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.status}\pysiglinewithargsret{\bfcode{status}}{\emph{prune=False}}{}
 Returns the set of `status' classifications, which are those that 
 tend to change during the reduction of a dataset based on 
 the amount of processing, e.g. RAW vs PREPARED.  Strictly, a `status' 
@@ -899,10 +899,10 @@ list of classification names
 
 \end{fulllineitems}
 
-\index{store\_original\_name() (astrodata.AstroData method)}
+\index{store\_original\_name() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.store_original_name}\pysiglinewithargsret{\bfcode{store\_original\_name}}{}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.store_original_name}\pysiglinewithargsret{\bfcode{store\_original\_name}}{}{}
 Method adds the key `ORIGNAME' to PHU of an astrodata object 
 containing the filename when object was instantiated (without any 
 directory info, ie. the basename).
@@ -916,10 +916,10 @@ found using ad.phu\_get\_key\_value(`ORIGNAME').
 
 \end{fulllineitems}
 
-\index{type() (astrodata.AstroData method)}
+\index{type() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.type}\pysiglinewithargsret{\bfcode{type}}{\emph{prune=False}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.type}\pysiglinewithargsret{\bfcode{type}}{\emph{prune=False}}{}
 Returns a list of type classifications. It is possible to `prune' 
 the list so that only leaf nodes are returned, which is 
 useful when leaf nodes take precedence such as for descriptors.
@@ -948,10 +948,10 @@ list of classification names
 
 \end{fulllineitems}
 
-\index{write() (astrodata.AstroData method)}
+\index{write() (astrodata.AstroData.AstroData method)}
 
 \begin{fulllineitems}
-\phantomsection\label{astro_class:astrodata.AstroData.write}\pysiglinewithargsret{\bfcode{write}}{\emph{filename=None}, \emph{clobber=False}, \emph{rename=None}, \emph{prefix=None}, \emph{suffix=None}}{}
+\phantomsection\label{astro_class:astrodata.AstroData.AstroData.write}\pysiglinewithargsret{\bfcode{write}}{\emph{filename=None}, \emph{clobber=False}, \emph{rename=None}, \emph{prefix=None}, \emph{suffix=None}}{}
 The write method acts similarly to the `pyfits HDUList.writeto(..)'
 function if a filename is given, or like `pyfits.HDUList.update(..)' if 
 no name is given, using whatever the current name is set to. When a name
@@ -1009,7 +1009,7 @@ a new filename, but leave the `current' name in memory.
 \begin{theindex}
 \def\bigletter#1{{\Large\sffamily#1}\nopagebreak\vspace{1mm}}
 \bigletter{a}
-\item {\texttt{astrodata}}, \pageref{astro_class:module-astrodata}
+\item {\texttt{astrodata.AstroData}}, \pageref{astro_class:module-astrodata.AstroData}
 \end{theindex}
 
 \renewcommand{\indexname}{Index}

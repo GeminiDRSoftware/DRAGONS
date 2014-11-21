@@ -108,7 +108,11 @@ Start up the python interpreter and import astrodata::
 Next, return to the command line and test that ``reduce`` is reachable 
 and runs. There may be some delay as package modules are byte compiled::
 
-   $ reduce -h [--help]
+   $ reduce -h 
+
+or ::
+
+   $ reduce [--help]
 
 This will print the reduce help to the screen.
 

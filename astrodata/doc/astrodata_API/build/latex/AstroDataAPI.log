@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2014) (preloaded format=pdflatex 2014.5.25)  20 NOV 2014 15:32
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2014) (preloaded format=pdflatex 2014.5.25)  20 NOV 2014 15:41
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -935,6 +935,13 @@ File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
 Chapter 2.
 LaTeX Font Info:    Font shape `T1/pcr/bx/n' in size <10> not available
 (Font)              Font shape `T1/pcr/b/n' tried instead on input line 189.
+
+Underfull \hbox (badness 7631) in paragraph at lines 189--189
+[]\T1/ptm/m/it/10 dataset=None\T1/ptm/m/n/10 , \T1/ptm/m/it/10 phu=None\T1/ptm/
+m/n/10 , \T1/ptm/m/it/10 header=None\T1/ptm/m/n/10 , \T1/ptm/m/it/10 data=None\
+T1/ptm/m/n/10 ,
+ []
+
 [3] [4] [5]
 Underfull \hbox (badness 10000) in paragraph at lines 502--502
 []\T1/ptm/m/it/10 moredata=None\T1/ptm/m/n/10 , \T1/ptm/m/it/10 data=None\T1/pt
@@ -962,7 +969,27 @@ Chapter 3.
 ] (./AstroDataAPI.ind [14
 
 
-] [15
+]
+Underfull \hbox (badness 10000) in paragraph at lines 33--34
+[]\T1/ptm/m/n/10 get_key_value() (as-tro-data.AstroData.AstroData
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 53--54
+[]\T1/ptm/m/n/10 phu_get_key_value() (as-tro-data.AstroData.AstroData
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 54--55
+[]\T1/ptm/m/n/10 phu_set_key_value() (as-tro-data.AstroData.AstroData
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 65--66
+[]\T1/ptm/m/n/10 store_original_name() (as-tro-data.AstroData.AstroData
+ []
+
+[15
 
 ])
 Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1017.
@@ -977,12 +1004,12 @@ Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1017.
  ) 
 Here is how much of TeX's memory you used:
  9143 strings out of 493117
- 128262 string characters out of 6135433
+ 128542 string characters out of 6135433
  230391 words of memory out of 5000000
  12307 multiletter control sequences out of 15000+600000
  53492 words of font info for 60 fonts, out of 8000000 for 9000
  1142 hyphenation exceptions out of 8191
- 36i,11n,45p,325b,668s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 36i,11n,45p,345b,668s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2014/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/local/t
 exlive/2014/texmf-dist/fonts/type1/urw/courier/ucrb8a.pfb></usr/local/texlive/2
 014/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/local/texlive/2014/texm
@@ -992,7 +1019,7 @@ type1/urw/helvetic/uhvr8a.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/u
 rw/times/utmb8a.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/urw/times/u
 tmr8a.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/urw/times/utmri8a.pfb
 >
-Output written on AstroDataAPI.pdf (19 pages, 128691 bytes).
+Output written on AstroDataAPI.pdf (19 pages, 128736 bytes).
 PDF statistics:
  229 PDF objects out of 1000 (max. 8388607)
  193 compressed objects within 2 object streams
