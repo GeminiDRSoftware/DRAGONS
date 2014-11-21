@@ -43,7 +43,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Reduce Users Manual'
-copyright = u'2014, Kennneth Anderson'
+copyright = u'2014, Kenneth Anderson'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -187,7 +187,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index-latex', 'ReduceUsersManual.tex', u'reduce Users Manual',
-   u'Kennneth Anderson', 'manual'),
+   u'Kenneth Anderson', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -217,7 +217,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'reduceusersmanual', u'reduce Users Manual',
-     [u'Kennneth Anderson'], 1)
+     [u'Kenneth Anderson'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -231,7 +231,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'ReduceUsersManual', u'reduce Users Manual',
-   u'Kennneth Anderson', 'ReduceUsersManual', 'One line description of project.',
+   u'Kenneth Anderson', 'ReduceUsersManual', 'One line description of project.',
    'Miscellaneous'),
 ]
 
