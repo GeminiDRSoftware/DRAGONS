@@ -215,6 +215,15 @@ class Swap(object):
                                            'astrodata/adutils/reduceutils',
                                            'astrodata/eti', 'astrodata/scripts'
                                        ],
+                           "astro_new_paths": ['astrodata', 'astrodata/eti',
+                                               'astrodata/interface',
+                                               'astrodata/scripts', 
+                                               'astrodata/utils',
+                                               'recipe_system/adcc/servers',
+                                               'recipe_system/apps',
+                                               'recipe_system/cal_service',
+                                               'recipe_system/reduction'
+                                           ],
                            "gemp_paths": [ 'gempy/adlibrary', 'gempy/gemini',
                                            'gempy/gemini/eti', 'gempy/library',
                                            'gempy/scripts'
@@ -242,6 +251,7 @@ class Swap(object):
                                           join(adconfig,'descriptors/PHOENIX'),
                                           join(adconfig,'descriptors/TRECS'),
                                           join(ppif,'primdicts'),
+                                          join(ppif,'pifgemini'),
                                           join(ppif,'pifgemini/bookkeeping'),
                                           join(ppif,'pifgemini/display'),
                                           join(ppif,'pifgemini/general'),
@@ -305,14 +315,20 @@ class Swap(object):
         parameters: <void>
         return:     <void>
         """
-        astro_paths = self.search_set['astro_paths']
         gemp_paths  = self.search_set['gemp_paths']
         gem_path    = self._determine_gem_path()
         branch_path = self._determine_branch_path()
 
-        if not exists(join(gem_path, branch_path)):
+        try:
+            assert exists(join(gem_path, branch_path))
+        except AssertionError:
             msg = "Branch '" + self.branch + "' cannot be found."
             raise SystemExit(msg)
+
+        if exists(join(gem_path, branch_path, 'recipe_system')):
+            astro_paths = self.search_set['astro_new_paths']
+        else:
+            astro_paths = self.search_set['astro_paths']
 
         for path in astro_paths:
             self.full_paths.append(join(gem_path, branch_path, path))
