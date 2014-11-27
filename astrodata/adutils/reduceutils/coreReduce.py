@@ -52,13 +52,13 @@ log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 def start_proxy_servers():
     adcc_proc = None
-    pprox     = xmlrpc_proxy.PRSProxy.get_adcc(check_once=True)
+    pprox     = Proxies.PRSProxy.get_adcc(check_once=True)
     if not pprox:
-        adcc_proc = xmlrpc_proxy.start_adcc()
+        adcc_proc = Proxies.start_adcc()
 
     # launch xmlrpc interface for control and communication
-    reduceServer = xmlrpc_proxy.ReduceServer()
-    prs = xmlrpc_proxy.PRSProxy.get_adcc(reduce_server=reduceServer)
+    reduceServer = Proxies.ReduceServer()
+    prs = Proxies.PRSProxy.get_adcc(reduce_server=reduceServer)
     return (adcc_proc, reduceServer, prs)
 
 # ------------------------------------------------------------------------------
