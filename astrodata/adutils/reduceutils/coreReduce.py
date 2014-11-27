@@ -20,30 +20,28 @@ import signal
 import traceback
 from   time import sleep
 
-from astrodata import Proxies
-from astrodata import Errors
-from astrodata import Lookups
+from astrodata import AstroData
+from astrodata.utils import Errors
+from astrodata.utils import Lookups
 
-from astrodata.AstroData import AstroData
+from astrodata.utils import logutils
+from astrodata.utils.terminal import IrafStdout
+from astrodata.utils.gdpgutil import cluster_by_groupid
+from astrodata.utils.debugmodes import set_descriptor_throw
 
-from astrodata.RecipeManager import RecipeLibrary
-from astrodata.RecipeManager import ReductionContext
-from astrodata.RecipeManager import RecipeError
+from .recipeManager import RecipeLibrary
+from .recipeManager import RecipeError
+from .reductionObjects import ReductionError
+from .reductionObjects import command_clause
+from .reductionContext import ReductionContext
 
-from astrodata.ReductionObjects import ReductionError
-from astrodata.ReductionObjects import command_clause
-
-from astrodata.adutils import logutils
-from astrodata.adutils.terminal import IrafStdout
-from astrodata.adutils.usercalibrationservice import user_cal_service
-
-from astrodata.gdpgutil import cluster_by_groupid
-from astrodata.adutils.debugmodes import set_descriptor_throw
+from ..adcc.servers import xmlrpc_proxy
+from ..cal_service.usercalibrationservice import user_cal_service
 
 import parseUtils
 
-from caches import cachedirs
-from caches import stkindfile
+from .caches import cachedirs
+from .caches import stkindfile
 # ------------------------------------------------------------------------------
 PKG_type   = "Gemini"       # moved out of lookup_table call
 irafstdout = IrafStdout()   # fout = filteredstdout
@@ -52,13 +50,13 @@ log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 def start_proxy_servers():
     adcc_proc = None
-    pprox     = Proxies.PRSProxy.get_adcc(check_once=True)
+    pprox     = xmlrpc_proxy.PRSProxy.get_adcc(check_once=True)
     if not pprox:
-        adcc_proc = Proxies.start_adcc()
+        adcc_proc = xmlrpc_proxy.start_adcc()
 
     # launch xmlrpc interface for control and communication
-    reduceServer = Proxies.ReduceServer()
-    prs = Proxies.PRSProxy.get_adcc(reduce_server=reduceServer)
+    reduceServer = xmlrpc_proxy.ReduceServer()
+    prs = xmlrpc_proxy.PRSProxy.get_adcc(reduce_server=reduceServer)
     return (adcc_proc, reduceServer, prs)
 
 # ------------------------------------------------------------------------------
@@ -231,7 +229,7 @@ class Reduce(object):
                 break
             except Errors.PrimitiveError, err:
                 xstat = signal.SIGABRT
-                log.error(err)
+                log.error(str(err))
                 break
             except Exception, err:
                 xstat = signal.SIGQUIT
