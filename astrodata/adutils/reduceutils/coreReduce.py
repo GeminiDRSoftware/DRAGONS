@@ -20,28 +20,30 @@ import signal
 import traceback
 from   time import sleep
 
-from astrodata import AstroData
-from astrodata.utils import Errors
-from astrodata.utils import Lookups
+from astrodata import Proxies
+from astrodata import Errors
+from astrodata import Lookups
 
-from astrodata.utils import logutils
-from astrodata.utils.terminal import IrafStdout
-from astrodata.utils.gdpgutil import cluster_by_groupid
-from astrodata.utils.debugmodes import set_descriptor_throw
+from astrodata.AstroData import AstroData
 
-from .recipeManager import RecipeLibrary
-from .recipeManager import RecipeError
-from .reductionObjects import ReductionError
-from .reductionObjects import command_clause
-from .reductionContext import ReductionContext
+from astrodata.RecipeManager import RecipeLibrary
+from astrodata.RecipeManager import ReductionContext
+from astrodata.RecipeManager import RecipeError
 
-from ..adcc.servers import xmlrpc_proxy
-from ..cal_service.usercalibrationservice import user_cal_service
+from astrodata.ReductionObjects import ReductionError
+from astrodata.ReductionObjects import command_clause
+
+from astrodata.adutils import logutils
+from astrodata.adutils.terminal import IrafStdout
+from astrodata.adutils.usercalibrationservice import user_cal_service
+
+from astrodata.gdpgutil import cluster_by_groupid
+from astrodata.adutils.debugmodes import set_descriptor_throw
 
 import parseUtils
 
-from .caches import cachedirs
-from .caches import stkindfile
+from caches import cachedirs
+from caches import stkindfile
 # ------------------------------------------------------------------------------
 PKG_type   = "Gemini"       # moved out of lookup_table call
 irafstdout = IrafStdout()   # fout = filteredstdout
