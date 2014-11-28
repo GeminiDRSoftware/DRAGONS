@@ -303,11 +303,11 @@ class Reduce(object):
                     ad.mode = "readonly"
                 except Errors.AstroDataError, err:
                     log.warning("Can't Load Dataset: %s" % inp)
-                    log.warning(err)
+                    log.warning(str(err))
                     continue
                 except ValueError, err:
                     log.warning("Can't Load Dataset: %s" % inp)
-                    log.warning(err)
+                    log.warning(str(err))
                     continue
                 nl.append(ad)
             try:
@@ -491,12 +491,13 @@ class Reduce(object):
         except Errors.PrimitiveError, err:
             self._write_context_log(co)
             co.is_finished(True)
-            raise Errors.PrimitiveError(err)
+            raise Errors.PrimitiveError(str(err))
         except Errors.InputError, err:
             self._write_context_log(co)
             co.is_finished(True)
-            raise IOError(err)
+            raise IOError(str(err))
         except Exception:
+            print "Catching unenumerated..."
             self._write_context_log(co)
             co.is_finished(True)
             raise
