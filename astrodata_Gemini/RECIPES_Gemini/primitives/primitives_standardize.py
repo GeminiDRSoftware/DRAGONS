@@ -1,4 +1,4 @@
-#
+            #
 #                                                                     QAP Gemini
 #
 #                            RECIPES_Gemini.primitives.primitives_standardize.py
@@ -70,8 +70,8 @@ class StandardizePrimitives(GENERALPrimitives):
         adoutput_list = []
         
         # Set the data type of the data quality array
-        # It can be uint8 for now, it will get converted up as we assign higher bit values
-        # shouldn't need to force it up to 16bpp yet.
+        # It can be uint8 for now, it will get converted up as we assign higher 
+        # bit values shouldn't need to force it up to 16bpp yet.
         dq_dtype = np.dtype(np.uint8)
         #dq_dtype = np.dtype(np.uint16)
         
@@ -763,7 +763,6 @@ class StandardizePrimitives(GENERALPrimitives):
                   ext.data > 0, poisson_noise_var_value, 0)
             
             # Create the final variance array
-            var_array_final = None
             if add_read_noise and add_poisson_noise:
                 var_array_final = np.add(var_array_rn, var_array_pn)
             
@@ -828,10 +827,12 @@ class StandardizePrimitives(GENERALPrimitives):
         
         # These should probably be done using descriptors (?)
         keywords_from_sci = [
-          "AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC", "CCDSIZE", "CCDSUM",
-          "CD1_1", "CD1_2", "CD2_1", "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1",
-          "CRVAL2", "CTYPE1", "CTYPE2", "DATASEC", "DETSEC", "EXPTIME", "GAIN",
-          "GAINSET", "NONLINEA", "RDNOISE", "SATLEVEL", "LOWROW", "LOWCOL", "HIROW", "HICOL"] 
+            "AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC", "CCDSIZE", "CCDSUM",
+            "CD1_1", "CD1_2", "CD2_1", "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1",
+            "CRVAL2", "CTYPE1", "CTYPE2", "DATASEC", "DETSEC", "EXPTIME", "GAIN",
+            "GAINSET", "NONLINEA", "RDNOISE", "SATLEVEL", "LOWROW", "LOWCOL", 
+            "HIROW", "HICOL"
+        ] 
         dq_comment = "Copied from ['%s',%d]" % (SCI, sci.extver())
         
         for keyword in keywords_from_sci:
@@ -853,10 +854,12 @@ class StandardizePrimitives(GENERALPrimitives):
         
         # These should probably be done using descriptors (?)
         keywords_from_sci = [
-          "AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC", "CCDSIZE", "CCDSUM",
-          "CD1_1", "CD1_2", "CD2_1", "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1",
-          "CRVAL2", "CTYPE1", "CTYPE2", "DATASEC", "DETSEC", "EXPTIME", "GAIN",
-          "GAINSET", "NONLINEA", "RDNOISE", "SATLEVEL", "LOWROW", "LOWCOL", "HIROW", "HICOL"]
+            "AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC", "CCDSIZE", "CCDSUM",
+            "CD1_1", "CD1_2", "CD2_1", "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1",
+            "CRVAL2", "CTYPE1", "CTYPE2", "DATASEC", "DETSEC", "EXPTIME", "GAIN",
+            "GAINSET", "NONLINEA", "RDNOISE", "SATLEVEL", "LOWROW", "LOWCOL", 
+            "HIROW", "HICOL"
+        ]
         var_comment = "Copied from ['%s',%d]" % (SCI, sci.extver())
         
         for keyword in keywords_from_sci:
