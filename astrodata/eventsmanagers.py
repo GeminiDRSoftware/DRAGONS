@@ -9,7 +9,6 @@
 __version__      = '$Revision$'[11:-2]
 __version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
-import os
 import json
 import time
 
@@ -17,21 +16,15 @@ from astrodata import AstroData
 # ------------------------------------------------------------------------------
 
 class EventsManager:
-    event_list  = None
-    event_index = None
-    persist     = False
     # reject reloading events older, in secs (cur 7 days)
-    lose_duration = float(24*60*60)*7 
-    rc = None
+    lose_duration = float(24*60*60)*7
 
     def __init__(self, rc=None, persist=False):
         self.rc = rc
-        self.event_list  = []
+        self.event_list = []
         self.event_index = {}
-        self.persist     = persist   #  False or filename in .adcc
-
+        self.persist = persist   #  False or filename in .adcc
         self.persist_load()
-
 
     def get_metadict(self, ad):
         # Key: metadata dictionary key, Value: descriptor name
@@ -52,7 +45,6 @@ class EventsManager:
 
         # Make the metadata dictionary.  Start with the items that
         # do not come from descriptors
-
         mtd_dict = {"raw_filename": ad.filename, "types": ad.types,}
 
         for mtd_name, desc_name in descriptor_dict.iteritems():
@@ -67,7 +59,7 @@ class EventsManager:
                 pp = ''
 
             try:
-                exec('dv = ad.%s(%s).as_pytype()%s' % (desc_name,opt,pp))
+                exec('dv = ad.%s(%s).as_pytype()%s' % (desc_name, opt, pp))
             except:
                 dv = None
 
@@ -76,9 +68,9 @@ class EventsManager:
         return mtd
 
 
-    def append_event(self, ad = None, name=None, mdict=None, 
-                     metadata = None, msgtype="qametric"):
-        # print "em32:"+repr(metadata)
+    def append_event(self, ad=None, name=None, mdict=None, metadata=None, 
+                     msgtype="qametric", persisted=False):
+
         if isinstance(ad, AstroData):
             if metadata != None:
                 md = metadata
@@ -86,37 +78,37 @@ class EventsManager:
                 md = self.get_metadict(ad)
 
             curtime = time.time()
-            wholed = { "msgtype":msgtype,
-                       name : mdict,
-                       "timestamp": curtime
-                   }
+            wholed = {"msgtype":msgtype, name:mdict, "timestamp":curtime}
             wholed.update(md)
+
         elif type(ad) == list:
             for msg in ad:
                 if "timestamp" in msg:
                     msg.update({"reported_timestamp":msg["timestamp"]})
                 msg.update({"timestamp":time.time()})
             self.event_list.extend(ad)
-            self.persist_add(ad)    
+            if not persisted:
+                self.persist_add(ad)    
             return
+
         elif type(ad) == dict:
             if "timestamp" not in ad:
                 ad.update({"timestamp":time.time()})
             if "timestamp" in ad and "reported_timestamp" not in ad:
                 ad.update({"reported_timestamp":ad["timestamp"]})
             wholed = ad
+
         else:
             raise "EVENT ARGUMENTS ERROR"
-        import pprint
-        # print "em38:"+pprint.pformat(wholed)
+
         self.event_list.append(wholed)
-        if (self.persist):
+        if self.persist and not persisted:
             self.persist_add(wholed)
         
         timestamp = wholed["timestamp"]
-        # print "em38:timestamp %f" % timestamp
         if timestamp not in self.event_index:
             self.event_index.update({timestamp:[]})
+
         ts_list = self.event_index[timestamp]
         ts_list.append(self.event_list.index(wholed))
         return
@@ -138,31 +130,20 @@ class EventsManager:
         return
 
 
-    def persist_add(self, ev = None):
+    def persist_add(self, ev=None):
         if type(ev) == list:
             if len(ev) == 0:
-                return # raise Error("no way")
+                return
             evlist = ev
         else:
             evlist = [ev]
-        # note, only one adcc should be able to run in a given current directory
-                
-        pfile = open(".adcc/"+str(self.persist), "a+")
 
-        for ev in evlist:
-            evstr = json.dumps(ev)
-            if False:
-                print "em140: adding to", self.persist, ev["msgtype"]
-                print "em156:",ev["msgtype"],
-                qbg = "bg" in ev
-                qcc = "cc" in ev
-                qiq = "iq" in ev
-                print "bg=%s, cc=%s, iq=%s" %(qbg, qcc, qiq)
-            pfile.write(evstr)
-            pfile.write("\n")
-        pfile.close()
+        with open(".adcc/"+str(self.persist), "a+") as pfile:
+            for ev in evlist:
+                evstr = json.dumps(ev)
+                pfile.write(evstr)
+                pfile.write("\n")
         return
-
         
     def persist_load(self):
         if not self.persist:
@@ -170,7 +151,6 @@ class EventsManager:
 
         LOSEDURATION = self.lose_duration
         ppath = ".adcc/" + str(self.persist)
-        
         try:
             pfile = open(ppath)
         except IOError:
@@ -195,7 +175,7 @@ class EventsManager:
                         print "  bg=%s, cc=%s, iq=%s" % (qbg, qcc, qiq)
 
                         if age < LOSEDURATION:
-                            self.append_event(ev)
+                            self.append_event(ev, persisted=True)
                         else:
                             print "  em183: DISCARDED"
                 except ValueError, ve:
