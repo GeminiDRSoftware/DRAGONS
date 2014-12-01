@@ -773,8 +773,7 @@ class StandardizePrimitives(GENERALPrimitives):
             if not add_read_noise and add_poisson_noise:
                 var_array_final = var_array_pn
             
-            if var_array_final:
-                var_array_final = var_array_final.astype(var_dtype)
+            var_array_final = var_array_final.astype(var_dtype)
             
             # If the read noise component and the poisson noise component are
             # calculated and added separately, then a variance extension will
