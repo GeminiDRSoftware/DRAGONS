@@ -115,7 +115,7 @@ def config(mode='standard', console_lvl=None, file_lvl=None,
     # If rootlog has handlers, flush and delete them
     if len(rootlog.handlers) > 0:
         for handler in rootlog.handlers:
-            if isinstance(hand, logging.StreamHandler):
+            if isinstance(handler, logging.StreamHandler):
                 handler.flush()
             rootlog.removeHandler(handler)
 
