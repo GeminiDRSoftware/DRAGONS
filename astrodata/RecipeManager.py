@@ -1553,16 +1553,16 @@ class ReductionContext(dict):
                                                  caltype)
         else:
             addToCmdQueue = self.cdl.get_cal_req(inputs, caltype)
-            #print "RM1389:", repr(addToCmdQueue[0].as_dict())
+
         for re in addToCmdQueue:
-            # print "RM1558:",repr(dir(re))
             re.calurl_dict = self["calurl_dict"]
             re.source = source
             self.add_rq(re)
-            
+        return
+
     def save_cmd_history(self):
         print "RM1569:", repr(self.rorqs)
-        print "RM1570:saveCmdHistorythis saves nothing atm! It's for the HTML iface"
+        print "RM1570:For the HTML iface"
         
     def return_from_recipe(self):
         self._return_command = "return_from_recipe"
@@ -1575,12 +1575,11 @@ class ReductionContext(dict):
         self._return_command = None
         return rc
         
-    def report_qametric(self, ad=None, name=None, metric_report = None, metadata = None):
-        # print "RM1575:"+repr(metric_report)
-        self._metricEvents.append_event(ad, name, metric_report, metadata = metadata)
-        
+    def report_qametric(self, ad=None, name=None, metric_report=None, metadata=None):
+        self._metricEvents.append_event(ad, name, metric_report, metadata=metadata)
+        return
     
-    def get_metric_list(self, clear = False):
+    def get_metric_list(self, clear=False):
         ml = self._metricEvents.get_list()
         if clear:
             self._metricEvents.clear_list()
@@ -1635,13 +1634,14 @@ class ReductionContext(dict):
         if purpose is None:
             purpose = ""
         ver = "1_0"
-        # Not sure how version stuff is going to be done. This version stuff is temporary.
+
+        # Not sure how version stuff is going to be done.
         for orig in self.get_inputs_as_astrodata():
-            # print "RM1453: HERE!"
             Sid = purpose + idFac.generate_stackable_id(orig.ad, ver)
             stackUEv = GetStackableRequest()
             stackUEv.stk_id = Sid
             self.add_rq(stackUEv)
+        return
                 
     def rq_stack_update(self, purpose = None):
         '''
