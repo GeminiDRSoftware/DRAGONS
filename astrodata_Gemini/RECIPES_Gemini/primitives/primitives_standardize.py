@@ -135,7 +135,8 @@ class StandardizePrimitives(GENERALPrimitives):
                 # Clip the BPM data to match the size of the input AstroData
                 # object science and pad with overscan region, if necessary
                 final_bpm = gt.clip_auxiliary_data(adinput=ad, aux=bpm_ad,
-                                                   aux_type="bpm")[0]
+                                                   aux_type="bpm",
+                                                   return_dtype=dq_dtype)[0]
 
             # Get the non-linear level and the saturation level using the
             # appropriate descriptors - Individual values get checked in the
@@ -232,7 +233,8 @@ class StandardizePrimitives(GENERALPrimitives):
                     log.fullinfo("Flagging pixels in the DQ extension "
                                  "corresponding to bad pixels in %s[%s,%d] "
                                  "using the BPM %s[%s,%d]" %
-                                 (ad.filename, SCI, extver, bpmname, DQ, extver))
+                                 (ad.filename, SCI, extver, bpmname, DQ,
+                                  extver))
                     bpm_array = final_bpm[DQ, extver].data
                     dq_bit_arrays.append(bpm_array)
                 
@@ -600,14 +602,12 @@ class StandardizePrimitives(GENERALPrimitives):
         instrument = ad.instrument()
         detector_x_bin = ad.detector_x_bin()
         detector_y_bin = ad.detector_y_bin()
-        
         if (instrument is None or detector_x_bin is None or
             detector_y_bin is None):
             
             raise Errors.Error("Input parameters")
         
         key = "%s_%s_%s" % (instrument, detector_x_bin, detector_y_bin)
-        
         if "GMOS" in ad.types:
             # Note: it would probably be better to make this into
             # a primitive and put it into the type specific files.
@@ -626,7 +626,9 @@ class StandardizePrimitives(GENERALPrimitives):
                 det = "EEV"
             elif detector_type == "SDSU II e2v DD CCD42-90":
                 det = "e2v"
-            elif detector_type == "S10892-01":
+                
+            elif detector_type == "S10892":
+#            elif detector_type == "S10892-01":
                 det = "HAM"
             else:
                 det = None
@@ -826,13 +828,13 @@ class StandardizePrimitives(GENERALPrimitives):
                           comment=None, extname=DQ)
         
         # These should probably be done using descriptors (?)
-        keywords_from_sci = [
-            "AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC", "CCDSIZE", "CCDSUM",
-            "CD1_1", "CD1_2", "CD2_1", "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1",
-            "CRVAL2", "CTYPE1", "CTYPE2", "DATASEC", "DETSEC", "EXPTIME", "GAIN",
-            "GAINSET", "NONLINEA", "RDNOISE", "SATLEVEL", "LOWROW", "LOWCOL", 
-            "HIROW", "HICOL"
-        ] 
+        keywords_from_sci = ["AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC",
+                             "CCDSIZE", "CCDSUM", "CD1_1", "CD1_2", "CD2_1",
+                             "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1", "CRVAL2",
+                             "CTYPE1", "CTYPE2", "DATASEC", "DETSEC",
+                             "EXPTIME", "GAIN","GAINSET", "NONLINEA",
+                             "RDNOISE", "SATLEVEL", "LOWROW", "LOWCOL",
+                             "HIROW", "HICOL"] 
         dq_comment = "Copied from ['%s',%d]" % (SCI, sci.extver())
         
         for keyword in keywords_from_sci:
@@ -853,13 +855,13 @@ class StandardizePrimitives(GENERALPrimitives):
                           % (bunit, bunit), comment=None, extname=VAR)
         
         # These should probably be done using descriptors (?)
-        keywords_from_sci = [
-            "AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC", "CCDSIZE", "CCDSUM",
-            "CD1_1", "CD1_2", "CD2_1", "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1",
-            "CRVAL2", "CTYPE1", "CTYPE2", "DATASEC", "DETSEC", "EXPTIME", "GAIN",
-            "GAINSET", "NONLINEA", "RDNOISE", "SATLEVEL", "LOWROW", "LOWCOL", 
-            "HIROW", "HICOL"
-        ]
+        keywords_from_sci = ["AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC",
+                             "CCDSIZE", "CCDSUM", "CD1_1", "CD1_2", "CD2_1",
+                             "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1", "CRVAL2",
+                             "CTYPE1", "CTYPE2", "DATASEC", "DETSEC",
+                             "EXPTIME", "GAIN", "GAINSET", "NONLINEA",
+                             "RDNOISE", "SATLEVEL", "LOWROW", "LOWCOL",
+                             "HIROW", "HICOL"]
         var_comment = "Copied from ['%s',%d]" % (SCI, sci.extver())
         
         for keyword in keywords_from_sci:
