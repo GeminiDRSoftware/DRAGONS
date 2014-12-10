@@ -498,12 +498,12 @@ def command_clause(ro, coi):
         time.sleep(.100)
     if coi.finished:
         return
-    
+
     ml = coi.get_metric_list(clear=True)
     prs = Proxies.PRSProxy.get_adcc(check_once=True)
-    if prs is not None:
+    if ml and prs is not None:
         prs.report_qametrics(ml)
-    
+
     #process  reques
     for rq in coi.rorqs:
         rqTyp = type(rq)
@@ -599,7 +599,7 @@ def command_clause(ro, coi):
                 if os.path.exists(calfname) and caldname:
                     #coi.add_cal(fn, typ, calfname)
                     # check md5
-                    ondiskmd5 = IDFactory.generate_md5_file( calfname)
+                    ondiskmd5 = IDFactory.generate_md5_file(calfname)
                     if calmd5 == ondiskmd5:
                         log.stdinfo("File %s exists at calibration location, " \
                                 "md5 checksums match, using cached copy." % os.path.basename(calfname))
@@ -635,9 +635,9 @@ def command_clause(ro, coi):
             coi.persist_stk_index( stkindfile )
         elif rqTyp == GetStackableRequest:
             pass
-            # Don't actually do anything, because this primitive allows the control system to
-            #  retrieve the list from another resource, but reduce lets ReductionContext keep the
-            # cache.
+            # Do nothing; this primitive allows the control system to retrieve 
+            # the list from another resource, but reduce lets ReductionContext 
+            # keep the cache.
             #print "RD172: GET STACKABLE REQS:", rq
         elif rqTyp == DisplayRequest:
             # process display request
@@ -696,7 +696,7 @@ def command_clause(ro, coi):
                     import pyraf
                     from pyraf import iraf  
                     iraf.tvmark( frame=dispFrame,coords=tmpFilename,
-                    pointsize=0, color=204, label=pyraf.iraf.yes )
+                                 pointsize=0, color=204, label=pyraf.iraf.yes )
                 et = time.time()
                 #print 'RED422:', (et - st)
 
