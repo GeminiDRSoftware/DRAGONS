@@ -38,17 +38,17 @@ from gempy.gemini.opsdefs import GEMINI_NORTH, GEMINI_SOUTH, OBSPREF
 def buildArgParser():
     from argparse import ArgumentParser
 
-    usage =("autoredux [-h] [-r RECIPE] [-d DIRECTORY] [-c] [-u] [-n]\n"
-    "\t\t[-s SUFFIX] [YYYYMMDD] [filenumbers]\n\n"
-    "With no arguments, this will reduce all files in the ops\n"
-    "directory matching the current date. If a date is given\n"
-    "it will reduce all files from the selected date. If a single\n"
-    "file number is given, it will start reducing at that file.\n"
-    "If multiple file numbers are given as a range or a comma\n"
-    "separated list (eg. 1-10,42-46), only those files will be\n"
-    "reduced.\n\nPLEASE NOTE: the adcc must be started in the desired\n"
-    "output directory before launching autoredux.\n"
-    "To start the adcc, type 'adcc'.\n")
+    usage = "autoredux [-h] [-r RECIPE] [-d DIRECTORY] [-c] [-u] [-s SUFFIX]\n"\
+            "\t\t [YYYYMMDD] [filenumbers]\n\n"\
+            "With no arguments, this will reduce all files in the ops\n"\
+            "directory matching the current date. If a date is given\n"\
+            "it will reduce all files from the selected date. If a single\n"\
+            "file number is given, it will start reducing at that file.\n"\
+            "If multiple file numbers are given as a range or a comma\n"\
+            "separated list (eg. 1-10,42-46), only those files will be\n"\
+            "reduced.\n\nPLEASE NOTE: the adcc must be started in the desired\n"\
+            "output directory before launching autoredux.\n"\
+            "To start the adcc, type 'adcc >> adcclog 2>&1 &  (in bash)'.\n"
     parser = ArgumentParser(usage=usage)
 
     parser.add_argument("n_args", metavar="YYYYMMDD or filenumbers",nargs="*")
@@ -469,7 +469,12 @@ def check_niri_image(ad, calibrations=False):
         else:
             return False, reason
     elif "NIRI_IMAGE" in ad.types:
-        if re.compile('-cam_').findall(fp_mask):
+        if fp_mask is None:
+            # malformed header, eg. dataset take from DM screen 
+            # rather than seqexec.
+            reason = 'Malformed headers (from DM screen?)'
+            return False, reason
+        elif re.compile('-cam_').findall(fp_mask):
             # fp_mask is in the 'cam'era setting
             reason = "NIRI Image"
             return True, reason

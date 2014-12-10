@@ -436,7 +436,8 @@ def check_inputs_match(ad1=None, ad2=None, check_filter=True):
     return
 
 
-def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
+def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
+                        return_dtype=None):
     """
     This function clips auxiliary data like calibration files or BPMs
     to the size of the data section in the science. It will pad auxiliary
@@ -447,7 +448,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = logutils.get_logger(__name__)
-    
+
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more inputs
     adinput_list = validate_input(input=adinput)
@@ -764,7 +765,13 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
                         else:
                             # No overscan needed, just use the clipped region
                             ext.data = clipped
-                        
+
+                        # Convert the dtype if requested
+                        if return_dtype is not None:
+                            new_data = ext.data.astype(return_dtype)
+                            ext.data = new_data
+                            del new_data
+                            
                         # Set the section keywords as appropriate
                         data_section_value = sciext.get_key_value(
                           data_section_keyword)
@@ -797,7 +804,8 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None):
                 if not found:
                     raise Errors.ScienceError(
                       "No auxiliary data in %s matches the detector section "
-                      "%s in %s[%s,%d]" % (this_aux.filename, sci_detsec,
+                      "%s in %s[%s,%d]" % (this_aux.filename,
+                        science_detector_section_dv.get_value(science_extver),
                                            ad.filename, SCI, sciext.extver()))
             
             new_aux.refresh_types()

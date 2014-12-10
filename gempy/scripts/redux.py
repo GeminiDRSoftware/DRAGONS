@@ -270,6 +270,10 @@ def main():
         print "\nFile %s is a slit image." % imgname
         print "Only GMOS images can be reduced at this time.\n"
         sys.exit()
+    elif ("NIRI_IMAGE" in ad.types and fp_mask is None):
+          print "\nMalformed headers, %s" % imgname
+          print "Skipping\n"
+          sys.exit()
     elif ("NIRI_IMAGE" in ad.types and 
           not re.compile('-cam_').findall(fp_mask)):
         print "\nFile %s is a slit image." % imgname
