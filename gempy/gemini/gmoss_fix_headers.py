@@ -398,31 +398,41 @@ def fix_release_date(phu, correct_key=__CORRECT_KEY__):
 
     return True
 
-    
+
 def _update_date_object(date, months):
     """
-    Assumes only a date style object is given... Increase date by the
-    specified number of months
+    Employed here is the datetime 'timedelta' class.
+    Because a 'month' is inherently fuzzy, timedelta does not use
+    'months' to express a delta-t. Any timedelta arguments must be in 
+    'days', 'weeks' (and others, see doc on datetime.timedelta).
 
-    # ToDo add years to this
+    Conversion of months to days is fraught, but here a year == 365.25d
+    and the 'months' parameter is converted to a rounded value from
+    a calculated fraction(s) of a defined year.
+
+    Eg., For 3 months:
+         3/12 --> .25 * 365.25 --> round(91.3125) --> 91 days
+         For 18 months:
+         18/12 --> 1.5 * 365.25 --> round(547.857) --> 548 days
+
+    This may introduce some minor variations over the course of a year, 
+    and certainly for a leap year, but variations are not expected to 
+    be > ~ (+/-)1d. These are perceived variations in that they arise
+    from the common notion that one month is 30 days. 
+
+    :param date: the date from which to add the timedelta for future release.
+    :type date: <datetime.datetime>
+    
+    :param months: the number of months in the future.
+    :type months: <int>
+
+    :returns: The calculated future release date.
+    :rtype: <datetime.datetime>
     
     """
-    day = date.day
-    month = date.month
-    year = date.year
-    while (months > 11):
-        year += 1
-        months -= 12
-        
-    final_months = month + months
-    if final_months > 12:
-        year += 1
-        final_months -= 12
-
-    month = final_months
-
-    return_date = "{0}-{1:0>2d}-{2:0>2d}".format(year, month, day)
-    return datetime.datetime.strptime(return_date, "%Y-%m-%d")
+    days_future = round(365.25 * (months / 12.0))
+    delta_t = datetime.timedelta(days=days_future)
+    return (date + delta_t)
 
 
 def fix_obsepoch(phu, date_key=__CORRECT_KEY__, time_key=__CORRECT_TIME_KEY__):
