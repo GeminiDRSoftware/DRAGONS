@@ -549,7 +549,7 @@ class CalibrationPrimitives(GENERALPrimitives):
             log.stdinfo("Lamp ON is: %s %s" % (lampon.data_label(), lampon.filename))
             log.stdinfo("Lamp OFF is: %s %s" % (lampoff.data_label(), lampoff.filename))
             lampon.sub(lampoff)
-            lampon.filanme = gt.filename_updater(adinput=lampon, suffix="lampOnOff")
+            lampon.filename = gt.filename_updater(adinput=lampon, suffix="lampOnOff")
 
             adoutput_list.append(lampon)
 
