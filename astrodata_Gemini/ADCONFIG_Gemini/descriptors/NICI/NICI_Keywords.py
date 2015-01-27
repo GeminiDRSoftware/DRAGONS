@@ -8,4 +8,5 @@ NICI_KeyDict = {
     "key_exposure_time_b":"ITIME_B",
     "key_coadds_r":"NCOADD_R",
     "key_coadds_b":"NCOADD_B",
+    "key_disperser":"DICHROIC"
     }

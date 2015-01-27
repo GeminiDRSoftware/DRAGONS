@@ -16,25 +16,6 @@ class NICI_DescriptorCalc(GEMINI_DescriptorCalc):
     def __init__(self):
         GEMINI_DescriptorCalc.__init__(self)
     
-    def disperser(self, dataset, stripID=False, pretty=False, **args):
-        # The Dichroic in NICI is a disperser.
-        # Return the name of the dichroic in use
-        disperser = dataset.phu_get_key_value('DICHROIC')
-        if disperser is None:
-            # The get_key_value_dict() function returns None if a value
-            # cannot be found and stores the exception info. Re-raise the
-            # exception. It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, "exception_info"):
-                raise dataset.exception_info
-        else:
-            if pretty:
-                stripID = True
-            if stripID:
-                # Strip the component ID from the filter name value
-                    disperser = gmu.removeComponentID(disperser)
-
-        return DescriptorValue(disperser, name="disperser", ad=dataset)
-
     def exposure_time(self, dataset, **args):
         # Determine the two number of coadds and the two exposure time keywords
         # from the global keyword dictionary
