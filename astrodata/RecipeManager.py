@@ -2014,12 +2014,9 @@ class RecipeLibrary(object):
             return rs
         
     
-    def list_recipes(self, name=None, astrotype=None, as_xml = False):
-        
+    def list_recipes(self, as_xml=False):
         cri = centralRecipeIndex
-        
         recipelist = cri.keys()
-            
         if as_xml==True:
             retxml  = '<?xml version="1.0" encoding="UTF-8" ?>\n'
             retxml += "<recipes>\n"
