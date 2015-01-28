@@ -38,6 +38,10 @@ Installing AstroData
 The ``astrodata`` package has several dependencies like ``numpy``, ``astropy``, and others.
 The best way to get everything you need is to install Ureka, http://ssb.stsci.edu/ureka/.
 
+Make that you launch Ureka after you have installed it.::
+
+   $ ur_setup
+
 WARNING:  The Ureka installation script will not set up IRAF for you. You need to do
 that yourself. Here's how::
 
@@ -59,6 +63,13 @@ distributed as part of the ``gemini_python`` package.  The ``gemini_python`` pac
 
 Recommended installation
 ------------------------
+
+Note:  Before you do these steps, make sure Ureka has been launched.  A sure way
+to check is to do::
+
+   $ which python
+
+Does it point to the Ureka version of Python?  If not, type ``ur_setup``.
 
 It is recommended to install the software in a location other than the standard python
 location for modules (the default ``site-packages``). This is also the only solution if 

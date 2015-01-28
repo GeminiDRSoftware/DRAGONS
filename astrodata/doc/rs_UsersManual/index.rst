@@ -17,6 +17,7 @@ RecipeSystem Users Manual
    usage
    reduce
    customize
+   recipespkg
 
 Appendices
 ----------
