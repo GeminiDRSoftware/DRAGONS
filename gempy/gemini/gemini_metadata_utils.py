@@ -17,11 +17,12 @@ import re
 import sys
 import datetime
     
-from astrodata import Errors
-from astrodata.Descriptors import DescriptorValue
-from astrodata.structuredslice import pixel_exts, bintable_exts
+import gemini_tools as gt
 
-from gempy.gemini import gemini_tools as gt
+from astrodata.utils import Errors
+from astrodata.interface.Descriptors import DescriptorValue
+from astrodata.interface.structuredslice import pixel_exts, bintable_exts
+
 # ------------------------------------------------------------------------------
 def removeComponentID(instr):
     """

@@ -1,17 +1,18 @@
 import operator
-
 import numpy as np
+import pyfits as pf
 import scipy.ndimage as nd
 
-from gempy.library import gfit
-import pyfits as pf
 from matplotlib import pyplot as pl
+
+from ..library import gfit
 
 try:
    from skimage.morphology import skeletonize
 except ImportError:
-   from gempy.library.skeletonize import skeletonize
+   from ..library.skeletonize import skeletonize
 
+# ------------------------------------------------------------------------------
 allowed_functions = ['polynomial','legendre','chebyshev']
 
 def print_timing(func):
@@ -1123,7 +1124,7 @@ def gmos_fplen(ad):
       the slit position in the dispersion direction
       This is a take from gscut.cl
     """
-    from astrodata import Lookups
+    from astrodata.utils import Lookups
 
     gratings = Lookups.get_lookup_table('Gemini/GMOS/StandardGMOSGratings.py',
                                          'StandardGMOSGratings')
@@ -1217,7 +1218,7 @@ def f2_fplen(ad):
         extend from the slit position for F2 MOS data
         (This code is a take from f2cut.cl)
     """
-    from astrodata import Lookups
+    from astrodata.utils import Lookups
 
     yoffset_delta = Lookups.get_lookup_table('Gemini/F2/F2offsets.py',
                                          'yoffset_delta')

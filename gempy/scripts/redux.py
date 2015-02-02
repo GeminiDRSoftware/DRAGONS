@@ -19,7 +19,7 @@ import subprocess
 from optparse import OptionParser
 
 from astrodata import AstroData
-from astrodata.adutils import gemutil as gu
+from astrodata.utils import gemutil as gu
 
 from gempy.gemini.opsdefs import GEMINI_NORTH, GEMINI_SOUTH
 from gempy.gemini.opsdefs import OPSDATAPATH, OPSDATAPATHBKUP, OBSPREF

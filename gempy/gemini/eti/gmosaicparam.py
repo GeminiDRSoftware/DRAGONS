@@ -1,7 +1,8 @@
 import os
-from astrodata.eti.pyrafetiparam import PyrafETIParam, IrafStdout
 from pyraf import iraf
-from astrodata.adutils import logutils
+
+from astrodata.utils import logutils
+from astrodata.eti.pyrafetiparam import PyrafETIParam, IrafStdout
 from gempy.gemini.gemini_tools import calc_nbiascontam
 
 log = logutils.get_logger(__name__)

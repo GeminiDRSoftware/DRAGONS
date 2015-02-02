@@ -1,9 +1,10 @@
 # This module contains functions used to manipulate the AstroData object
-
 import numpy as np
-from astrodata import Errors
-from astrodata.adutils import logutils
 
+from astrodata.utils import Errors
+from astrodata.utils import logutils
+
+# ------------------------------------------------------------------------------
 def remove_single_length_dimension(adinput=None):
     """
     If there is only one single length dimension in the pixel data, the

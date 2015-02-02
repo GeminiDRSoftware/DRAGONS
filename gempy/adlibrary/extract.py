@@ -3,14 +3,16 @@ import sys, os
 import time
 
 import numpy as np
-from matplotlib import pyplot as pl
 import pyfits as pf
+from matplotlib import pyplot as pl
 
-from astrodata import AstroData, new_pyfits_version
-from astrodata import Lookups
+import segmentation as seg
+from ..library import gfit
 
-from gempy.library import gfit
-from gempy.adlibrary import segmentation as seg
+from astrodata import AstroData
+from astrodata import new_pyfits_version
+from astrodata.utils import Lookups
+
 
 # Load the timestamp keyword dictionary.
 timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",

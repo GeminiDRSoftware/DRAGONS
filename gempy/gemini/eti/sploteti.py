@@ -3,9 +3,9 @@ from copy import copy
 
 from pyraf import iraf
 
-from astrodata import Errors
-from astrodata.adutils import logutils
-from astrodata.adutils.gemutil import pyrafLoader 
+from astrodata.utils import Errors
+from astrodata.utils import logutils
+from astrodata.utils.gemutil import pyrafLoader
 from astrodata.eti.pyrafeti import PyrafETI
 from splotfile import InAtList
 from splotparam import hardcoded_params, SplotParam

@@ -53,7 +53,7 @@ import sys
 from datetime import datetime
 from argparse import ArgumentParser
 
-from astrodata.AstroData import AstroData
+from astrodata import AstroData
 
 # ------------------------------------------------------------------------------
 def ptime():

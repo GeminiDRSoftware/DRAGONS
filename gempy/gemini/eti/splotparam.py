@@ -1,6 +1,6 @@
-from astrodata.eti.pyrafetiparam import PyrafETIParam, IrafStdout
 from pyraf import iraf
-from astrodata.adutils import logutils
+from astrodata.utils import logutils
+from astrodata.eti.pyrafetiparam import PyrafETIParam, IrafStdout
 
 log = logutils.get_logger(__name__)
 

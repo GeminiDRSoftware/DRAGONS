@@ -28,9 +28,10 @@ from datetime import datetime
 
 import numpy as np
 
-from astrodata import Lookups
-from astrodata.gemconstants import SCI
-from gempy.gemini import gemini_metadata_utils as gmu
+import gemini_metadata_utils as gmu
+
+from astrodata.utils import Lookups
+from astrodata.utils.gemconstants import SCI
 # ------------------------------------------------------------------------------
 def get_bias_level(adinput=None, estimate=True):
     # Temporarily only do this for GMOS data. It would be better if we could do

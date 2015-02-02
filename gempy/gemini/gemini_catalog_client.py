@@ -33,7 +33,7 @@ except ImportError:
     except ImportError:
         raise ImportError("Unable to find VO definitions.")
 
-from astrodata.adutils import logutils
+from astrodata.utils import logutils
 # ------------------------------------------------------------------------------
 # Used  to determine the function signature of the imported conesearch function
 function_defaults = vo_conesearch.func_defaults

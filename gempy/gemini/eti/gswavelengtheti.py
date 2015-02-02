@@ -6,9 +6,9 @@ from iraf import gemini
 from iraf import gmos
 from iraf import gemtools
 
-from astrodata import Errors
-from astrodata.adutils import logutils
-from astrodata.adutils.gemutil import pyrafLoader 
+from astrodata.utils import Errors
+from astrodata.utils import logutils
+from astrodata.utils.gemutil import pyrafLoader
 from astrodata.eti.pyrafeti import PyrafETI
 from gswavelengthfile import InAtList, OutDatabase, LogFile
 from gswavelengthparam import hardcoded_params, FlInter, GswavelengthParam

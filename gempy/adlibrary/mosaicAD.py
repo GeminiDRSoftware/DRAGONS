@@ -1,18 +1,14 @@
-
-import numpy as np
 import pywcs
+import numpy as np
 import pyfits as pf
 
-try:
-    from astrodata import new_pyfits_version
-except ImportError:
-    new_pyfits_version = False
+from ..library.mosaic import Mosaic
 
+from astrodata import new_pyfits_version
 from astrodata import AstroData
-from astrodata.adutils import logutils
+from astrodata.utils import logutils
 
-from gempy.library.mosaic import Mosaic
-
+# ------------------------------------------------------------------------------
 class MosaicAD(Mosaic):
     """
       MosaicAD as a subclass of Mosaic extends its functionality by providing

@@ -23,18 +23,18 @@ import numpy  as np
 from copy import deepcopy
 from datetime import datetime
 
-import astrodata
+from ..library import astrotools as at
 
 from astrodata import AstroData
-from astrodata import Errors
-from astrodata import Lookups
+from astrodata import __version__ as ad_version
+from astrodata.utils import Errors
+from astrodata.utils import Lookups
+from astrodata.utils import logutils
+from astrodata.utils.ConfigSpace import lookup_path
+from astrodata.utils.gemconstants import SCI, VAR, DQ
+from astrodata.interface.structuredslice import pixel_exts
+from astrodata.interface.Descriptors import DescriptorValue
 
-from astrodata.adutils         import logutils
-from astrodata.ConfigSpace     import lookup_path
-from astrodata.gemconstants    import SCI, VAR, DQ
-from astrodata.structuredslice import pixel_exts
-
-from gempy.library import astrotools as at
 # ------------------------------------------------------------------------------
 # Load the standard comments for header keywords that will be updated
 # in these functions
@@ -1342,7 +1342,7 @@ def fitsstore_report(ad, rc, metric, info_dict):
     # way to access a version name or number for the primitive
     # set generating this metric
     qareport["software"] = "QAP"
-    qareport["software_version"] = astrodata.__version__
+    qareport["software_version"] = ad_version
     qareport["context"] = rc.context
     
     qametric_list = []
@@ -1895,7 +1895,7 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
         else:
             msg = "added to"
         
-        if isinstance(value, astrodata.Descriptors.DescriptorValue):
+        if isinstance(value, DescriptorValue):
             value_for_phu = value.as_pytype()
         else:
             value_for_phu = value
@@ -1924,7 +1924,7 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
                     raise Errors.Error(
                       "The dictionary provided to the 'value' parameter "
                       "contains an unknown key")
-            elif isinstance(value, astrodata.Descriptors.DescriptorValue):
+            elif isinstance(value, DescriptorValue):
                 value_for_ext = value.get_value(extver=extver)
             else:
                 value_for_ext = value

@@ -6,10 +6,11 @@ from iraf import gemini
 from iraf import gmos
 from iraf import gemtools
 
-from astrodata import Errors
-from astrodata.adutils import logutils
-from astrodata.adutils.gemutil import pyrafLoader 
+from astrodata.utils import Errors
+from astrodata.utils import logutils
+from astrodata.utils.gemutil import pyrafLoader
 from astrodata.eti.pyrafeti import PyrafETI
+
 from gmosaicfile import InAtList, OutAtList, LogFile
 from gmosaicparam import FlPaste, FlFixpix, Geointer, FlVardq, FlClean, mosaic_detectors_hardcoded_params, GmosaicParam
     

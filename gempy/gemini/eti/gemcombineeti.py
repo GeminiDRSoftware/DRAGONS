@@ -5,10 +5,11 @@ from pyraf import iraf
 from iraf import gemini
 from iraf import gemtools
 
-from astrodata import Errors
-from astrodata.adutils import logutils
-from astrodata.adutils.gemutil import pyrafLoader 
+from astrodata.utils import Errors
+from astrodata.utils import logutils
+from astrodata.utils.gemutil import pyrafLoader
 from astrodata.eti.pyrafeti import PyrafETI
+
 from gemcombinefile import InAtList, OutFile, LogFile
 from gemcombineparam import FlVardq, FlDqprop, Combine, \
     Masktype, Nlow, Nhigh, Reject, hardcoded_params, GemcombineParam

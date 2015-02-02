@@ -11,9 +11,11 @@ __version_date__ = '$Date$'[7:-3]
 # ------------------------------------------------------------------------------
 import numpy as np
 
-from astrodata import Lookups
-from gempy.library.mosaic import MosaicData, MosaicGeometry
+from astrodata.utils import Lookups
 
+from ..library.mosaic import MosaicData, MosaicGeometry
+
+# ------------------------------------------------------------------------------
 def gemini_mosaic_function(ad, ref_extname='SCI'):
     """ 
         Default function returning data arrays and instrument

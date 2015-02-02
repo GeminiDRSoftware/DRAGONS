@@ -3,8 +3,8 @@ import shutil
 import tempfile
 
 from astrodata import AstroData
+from astrodata.utils import logutils
 from astrodata.eti.pyrafetifile import PyrafETIFile
-from astrodata.adutils import logutils
 from gempy.gemini import gemini_tools
 
 log = logutils.get_logger(__name__)
