@@ -1,5 +1,4 @@
-from astrodata.adutils import logutils
-
+from ..utils import logutils
 log = logutils.get_logger(__name__)
 
 class ETIFile(object):

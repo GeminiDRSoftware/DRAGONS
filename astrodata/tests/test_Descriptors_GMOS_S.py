@@ -20,7 +20,7 @@ import os
 import sys
 import pytest
 
-from astrodata.AstroData import AstroData
+from astrodata import AstroData
 # ==================================== Set up  =================================
 # TESTFILEs are located under gemini_python/test_data/astrodata_bench/
 GEM0 = None

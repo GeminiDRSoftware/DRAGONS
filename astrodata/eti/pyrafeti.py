@@ -1,6 +1,6 @@
-from eti import ExternalTaskInterface
-from astrodata.adutils import logutils
+from .eti import ExternalTaskInterface
 
+from ..utils import logutils
 log = logutils.get_logger(__name__)
 
 class PyrafETI(ExternalTaskInterface):

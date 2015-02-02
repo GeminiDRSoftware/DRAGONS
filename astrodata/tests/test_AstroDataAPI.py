@@ -23,10 +23,10 @@ import numpy  as np
 import pyfits as pf
 from   cStringIO import StringIO
 
-from astrodata.AstroData import AstroData
-from astrodata.Errors    import OutputExists
-from astrodata.Errors    import AstroDataError
-from astrodata.Errors    import SingleHDUMemberExcept
+from astrodata import AstroData
+from astrodata.utils.Errors import OutputExists
+from astrodata.utils.Errors import AstroDataError
+from astrodata.utils.Errors import SingleHDUMemberExcept
 # ==================================== Set up  =================================
 # TESTFILEs are located under gemini_python/test_data/astrodata_bench/
 # TESTURL specifies a non-extistent file, but request on a actual service.

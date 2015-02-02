@@ -1,4 +1,4 @@
-from popenetifile import PopenFile
+from .popenetifile import PopenFile
 
 class LSFile(PopenFile):
     name = None

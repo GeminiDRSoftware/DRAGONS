@@ -1,4 +1,4 @@
-from popenetiparam import PopenParam
+from .popenetiparam import PopenParam
 
 class LSParam(PopenParam):
     rc = None

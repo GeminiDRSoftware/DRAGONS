@@ -1,6 +1,7 @@
 from copy import copy
 from subprocess import Popen
-from eti import ExternalTaskInterface
+
+from .eti import ExternalTaskInterface
 
 class PopenETI(ExternalTaskInterface):
     cmd_frag = None

@@ -1,6 +1,7 @@
-from popeneti import PopenETI
-from lsparam import LSPathParam, LSlafParam
-from lsfile import LSFile
+from .lsfile import LSFile
+from .popeneti import PopenETI
+from .lsparam import LSPathParam, LSlafParam
+
 
 class LSETI(PopenETI):
     def __init__(self, rc):

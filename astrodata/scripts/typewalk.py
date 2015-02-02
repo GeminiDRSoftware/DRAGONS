@@ -48,14 +48,14 @@ import re
 import sys
 import time
 
-from astrodata.AstroData import AstroData
-from astrodata.Errors import AstroDataError
+from astrodata import AstroData
 
-from astrodata.adutils import terminal
+from astrodata.utils import terminal
+from astrodata.utils.Errors import AstroDataError
 
 # ------------------------------------------------------------------------------
-from astrodata.LocalCalibrationService import CalibrationService
-from astrodata.CalibrationDefinitionLibrary import CalibrationDefinitionLibrary
+from recipe_system.cal_service.LocalCalibrationService import CalibrationService
+from recipe_system.cal_service.CalibrationDefinitionLibrary import CalibrationDefinitionLibrary
 
 batchno = 100
 
@@ -219,7 +219,7 @@ class DataSpider(object):
             batchno = batchnum
 
         if raiseExcept:
-            from astrodata.adutils.debugmodes import set_descriptor_throw
+            from astrodata.utils.debugmodes import set_descriptor_throw
             set_descriptor_throw(True)
 
         if stayTop == True:

@@ -1,4 +1,4 @@
-from etiparam import ETIParam
+from .etiparam import ETIParam
 
 class PopenParam(ETIParam):
     rc = None

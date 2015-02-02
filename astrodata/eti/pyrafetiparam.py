@@ -1,6 +1,6 @@
-from etiparam import ETIParam
-from astrodata.adutils import logutils
+from .etiparam import ETIParam
 
+from ..utils import logutils
 log = logutils.get_logger(__name__)
 
 class PyrafETIParam(ETIParam):

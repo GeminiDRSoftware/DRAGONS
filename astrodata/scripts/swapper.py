@@ -98,7 +98,7 @@ from os.path import basename, exists, join
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 
-from astrodata.adutils import logutils
+from astrodata.utils import logutils
 
 # ------------------------------------------------------------------------------
 version = "1.0 (r" + __version__.strip() +")"

@@ -1,4 +1,4 @@
-from etifile import ETIFile
+from .etifile import ETIFile
 
 class PopenFile(ETIFile):
     name = None

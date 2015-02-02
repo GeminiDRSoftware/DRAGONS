@@ -1,6 +1,6 @@
-from etifile import ETIFile
-from astrodata.adutils import logutils
+from .etifile import ETIFile
 
+from ..utils import logutils
 log = logutils.get_logger(__name__)
 
 class PyrafETIFile(ETIFile):

@@ -6,7 +6,7 @@ AstroData API, Methods and Properties
 Class AstroData
 +++++++++++++++
 
-.. automodule:: astrodata.AstroData
+.. automodule:: astrodata
 
 .. autoclass:: AstroData		   
    :members: __getitem__, append, close, insert, open, remove, store_original_name,
