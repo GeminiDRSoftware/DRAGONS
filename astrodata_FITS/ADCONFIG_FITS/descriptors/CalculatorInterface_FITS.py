@@ -1,10 +1,10 @@
 import sys
-from astrodata import Descriptors
-from astrodata.Descriptors import DescriptorValue
-from astrodata import Errors
+
+from astrodata.utils import Errors
+from astrodata.interface import Descriptors
+from astrodata.interface.Descriptors import DescriptorValue
 
 class CalculatorInterface(object):
-
     descriptor_calculator = None
 
     def instrument(self, format=None, **args):
