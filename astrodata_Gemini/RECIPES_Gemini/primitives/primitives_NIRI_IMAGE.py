@@ -1,13 +1,13 @@
 import sys
-
+import pywcs
 import numpy as np
+
 from astrodata import AstroData
-from astrodata.adutils import logutils
+from astrodata.utils import logutils
+from astrodata.utils import Lookups
+
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
-from astrodata import Lookups
-
-import pywcs
 
 from primitives_NIRI import NIRIPrimitives
 

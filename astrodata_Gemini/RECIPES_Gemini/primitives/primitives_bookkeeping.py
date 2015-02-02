@@ -1,9 +1,14 @@
-import os, shutil, time
+import os
+import time
+import shutil
+
 from datetime import datetime
-from astrodata import Errors
-from astrodata import IDFactory
-from astrodata.adutils import logutils
+
+from astrodata.utils import Errors
+from astrodata.utils import logutils
 from gempy.gemini import gemini_tools as gt
+from recipe_system.reduction import IDFactory
+
 from primitives_GENERAL import GENERALPrimitives
 
 class BookkeepingPrimitives(GENERALPrimitives):

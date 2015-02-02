@@ -1,7 +1,7 @@
 import numpy as np
 import pywcs
-from astrodata import Errors
-from astrodata.adutils import logutils
+from astrodata.utils import Errors
+from astrodata.utils import logutils
 from gempy.library import astrotools as at
 from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives

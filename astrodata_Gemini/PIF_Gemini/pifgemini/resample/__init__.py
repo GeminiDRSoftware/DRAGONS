@@ -1,5 +1,5 @@
 #test
-from astrodata.mkro import *
+from recipe_system.reduction.mkro import *
 
 
 def align_to_reference_frame(*args, **argv):

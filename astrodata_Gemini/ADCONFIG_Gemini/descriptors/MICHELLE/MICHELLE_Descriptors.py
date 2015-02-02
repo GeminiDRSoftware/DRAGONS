@@ -1,7 +1,5 @@
-from astrodata import Descriptors
-from astrodata import Errors
-
-from astrodata.Descriptors import DescriptorValue
+from astrodata.utils import Errors
+from astrodata.interface.Descriptors import DescriptorValue
 
 from MICHELLE_Keywords import MICHELLE_KeyDict
 from GEMINI_Descriptors import GEMINI_DescriptorCalc

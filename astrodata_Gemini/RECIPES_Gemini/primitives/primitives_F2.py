@@ -1,8 +1,12 @@
 import numpy as np
-from astrodata.adutils import logutils
-from gempy.adlibrary.manipulate_ad import remove_single_length_dimension
+
+from astrodata.utils import logutils
+
 from gempy.gemini import gemini_tools as gt
+from gempy.adlibrary.manipulate_ad import remove_single_length_dimension
+
 from primitives_GEMINI import GEMINIPrimitives
+
 
 class F2Primitives(GEMINIPrimitives):
     """

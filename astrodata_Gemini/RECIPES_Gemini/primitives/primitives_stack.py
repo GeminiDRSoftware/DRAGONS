@@ -2,11 +2,11 @@ import sys
 import math
 import numpy as np
 from copy import deepcopy
-from astrodata import Errors
-from astrodata import ReductionContextRecords as RCR
-from astrodata.adutils import logutils
-from astrodata.adutils.gemutil import pyrafLoader
-from astrodata.gemconstants import SCI, VAR, DQ
+from astrodata.utils import Errors
+from recipe_system.reduction import reductionContextRecords as RCR
+from astrodata.utils import logutils
+from astrodata.utils.gemutil import pyrafLoader
+from astrodata.utils.gemconstants import SCI, VAR, DQ
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import eti
 from primitives_GENERAL import GENERALPrimitives

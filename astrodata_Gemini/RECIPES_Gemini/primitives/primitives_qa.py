@@ -2,9 +2,9 @@ import sys
 import math
 from copy import deepcopy
 import numpy as np
-from astrodata import Errors
-from astrodata import Lookups
-from astrodata.adutils import logutils
+from astrodata.utils import Errors
+from astrodata.utils import Lookups
+from astrodata.utils import logutils
 from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 

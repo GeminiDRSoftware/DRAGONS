@@ -1,8 +1,8 @@
-from astrodata import Descriptors
-from astrodata import Errors
-from astrodata import Lookups
 
-from astrodata.Descriptors import DescriptorValue
+from astrodata.utils import Errors
+from astrodata.utils import Lookups
+from astrodata.interface.Descriptors import DescriptorValue
+
 import GemCalcUtil
 
 from TRECS_Keywords import TRECS_KeyDict

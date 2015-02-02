@@ -1,16 +1,19 @@
 import datetime, os, re
 import dateutil.parser
 
-from astrodata import Errors
-from astrodata import Lookups
-from astrodata.Descriptors import DescriptorValue
-from astrodata.structuredslice import pixel_exts, bintable_exts
-from gempy.gemini import gemini_metadata_utils as gmu
-import GemCalcUtil
+from astrodata.utils import Errors
+from astrodata.utils import Lookups
 
+from astrodata.interface.Descriptors import DescriptorValue
+from astrodata.interface.structuredslice import pixel_exts, bintable_exts
+
+from gempy.gemini import gemini_metadata_utils as gmu
+
+import GemCalcUtil
 from FITS_Descriptors import FITS_DescriptorCalc
 from GEMINI_Keywords import GEMINI_KeyDict
 
+# ------------------------------------------------------------------------------
 class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class

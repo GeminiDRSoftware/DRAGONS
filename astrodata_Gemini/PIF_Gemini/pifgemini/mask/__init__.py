@@ -1,5 +1,5 @@
 #test
-from astrodata.mkro import *
+from recipe_system.reduction.mkro import *
 
 
 def add_object_mask_to_dq(*args, **argv):

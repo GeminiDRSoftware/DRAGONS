@@ -1,18 +1,19 @@
-from datetime import datetime
 import math
 from time import strptime
+from datetime import datetime
 
-from astrodata import Descriptors
-from astrodata import Errors
-from astrodata import Lookups
+from astrodata.utils import Errors
+from astrodata.utils import Lookups
 
-from astrodata.Descriptors import DescriptorValue
-from astrodata.structuredslice import pixel_exts, bintable_exts
+from astrodata.interface.Descriptors import DescriptorValue
+from astrodata.interface.structuredslice import pixel_exts, bintable_exts
+
 from gempy.gemini import gemini_metadata_utils as gmu
 
 from F2_Keywords import F2_KeyDict
 from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
+# ------------------------------------------------------------------------------
 class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class

@@ -13,12 +13,12 @@ import os
 import numpy as np
 
 from astrodata import AstroData
-from astrodata import Errors
-from astrodata import Lookups
+from astrodata.utils import Errors
+from astrodata.utils import Lookups
 
-from astrodata.adutils import logutils
-from astrodata.ConfigSpace  import lookup_path
-from astrodata.gemconstants import SCI, VAR, DQ
+from astrodata.utils import logutils
+from astrodata.utils.ConfigSpace  import lookup_path
+from astrodata.utils.gemconstants import SCI, VAR, DQ
 
 from gempy.gemini import gemini_tools as gt
 

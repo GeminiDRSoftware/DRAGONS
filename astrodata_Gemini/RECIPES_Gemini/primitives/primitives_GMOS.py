@@ -1,21 +1,21 @@
 import os
-import datetime
 import numpy as np
 import pyfits as pf
 import pywcs
-from astrodata import AstroData
-from astrodata import Errors
-from astrodata import Lookups
-from astrodata.adutils import logutils
-from astrodata.adutils.gemutil import pyrafLoader
-from gempy.gemini import gemini_data_calculations as gdc
-from gempy.gemini import gemini_tools as gt
-from primitives_GEMINI import GEMINIPrimitives
-from gempy.gemini import eti
-import time
 
+from astrodata import AstroData
+from astrodata.utils import Errors
+from astrodata.utils import Lookups
+from astrodata.utils import logutils
+from astrodata.utils.gemutil import pyrafLoader
+
+from gempy.gemini import eti
+from gempy.gemini import gemini_tools as gt
+from gempy.gemini import gemini_data_calculations as gdc
 ##M Temporary fix
 from gempy.gemini.gmoss_fix_headers import correct_headers
+
+from primitives_GEMINI import GEMINIPrimitives
 
 
 class GMOSPrimitives(GEMINIPrimitives):

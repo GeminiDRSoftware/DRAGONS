@@ -1,12 +1,15 @@
 import os
-import numpy as np
+
 from astrodata import AstroData
-from astrodata import Errors
-from astrodata import IDFactory
-from astrodata.adutils import logutils
-from astrodata.adutils.reduceutils.prsproxyutil import upload_calibration
+from astrodata.utils import Errors
+from astrodata.utils import logutils
 from gempy.gemini import gemini_tools as gt
+
+from recipe_system.reduction import IDFactory
+from recipe_system.cal_service.prsproxyutil import upload_calibration
+
 from primitives_GENERAL import GENERALPrimitives
+
 
 class CalibrationPrimitives(GENERALPrimitives):
     astrotype = "GEMINI"

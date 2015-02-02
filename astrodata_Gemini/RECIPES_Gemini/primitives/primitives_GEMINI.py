@@ -1,9 +1,14 @@
-from astrodata.adutils import logutils
+from astrodata.utils import logutils
+from astrodata.utils import Errors
+
 from gempy.gemini import gemini_tools as gt
+from gempy.adlibrary.mosaicAD import MosaicAD
+from gempy.gemini.gemMosaicFunction import gemini_mosaic_function
+from gempy.adlibrary.extract import trace_footprints, cut_footprints
+
 from primitives_bookkeeping import BookkeepingPrimitives
 from primitives_calibration import CalibrationPrimitives
 from primitives_display import DisplayPrimitives
-from astrodata import Errors
 from primitives_mask import MaskPrimitives
 from primitives_photometry import PhotometryPrimitives
 from primitives_preprocess import PreprocessPrimitives
@@ -13,10 +18,6 @@ from primitives_resample import ResamplePrimitives
 from primitives_stack import StackPrimitives
 from primitives_standardize import StandardizePrimitives
 
-from gempy.adlibrary.mosaicAD import MosaicAD
-from gempy.gemini.gemMosaicFunction import gemini_mosaic_function
-
-from gempy.adlibrary.extract import trace_footprints,cut_footprints
 
 class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
                        DisplayPrimitives, MaskPrimitives,

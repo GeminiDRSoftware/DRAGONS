@@ -1,9 +1,13 @@
 import os
+
 from astrodata import AstroData
-from astrodata import Lookups
-from astrodata.adutils import logutils
-from astrodata.ReductionObjects import PrimitiveSet
+from astrodata.utils import Lookups
+from astrodata.utils import logutils
+
 from gempy.gemini import gemini_tools as gt
+
+from recipe_system.reduction.reductionObjects import PrimitiveSet
+
 
 class GENERALPrimitives(PrimitiveSet):
     """

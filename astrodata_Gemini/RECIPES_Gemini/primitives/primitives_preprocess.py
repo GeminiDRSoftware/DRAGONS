@@ -4,10 +4,10 @@ import datetime
 import math
 import numpy as np
 from astrodata import AstroData
-from astrodata import Errors
-from astrodata import ReductionContextRecords as RCR
-from astrodata.adutils import logutils
-from astrodata.gemconstants import SCI, VAR, DQ
+from astrodata.utils import Errors
+from recipe_system.reduction import reductionContextRecords as RCR
+from astrodata.utils import logutils
+from astrodata.utils.gemconstants import SCI, VAR, DQ
 from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 

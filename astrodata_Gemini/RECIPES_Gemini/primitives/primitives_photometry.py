@@ -7,10 +7,10 @@ import pyfits as pf
 import pywcs
 from copy import deepcopy
 from astrodata import AstroData
-from astrodata import Errors
-from astrodata import Lookups
-from astrodata.adutils import logutils
-from astrodata.ConfigSpace import lookup_path
+from astrodata.utils import Errors
+from astrodata.utils import Lookups
+from astrodata.utils import logutils
+from astrodata.utils.ConfigSpace import lookup_path
 from gempy.library import astrotools as at
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table

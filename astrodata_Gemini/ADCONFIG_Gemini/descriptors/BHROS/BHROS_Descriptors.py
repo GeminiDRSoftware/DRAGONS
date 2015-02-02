@@ -1,7 +1,8 @@
-from astrodata import Descriptors
-from astrodata import Errors
+# new BHROS descriptors from trunk @Rev4997
 
-from astrodata.Descriptors import DescriptorValue
+from astrodata.utils import Errors
+from astrodata.interface import Descriptors
+from astrodata.interface.Descriptors import DescriptorValue
 
 from GEMINI_Descriptors import GEMINI_DescriptorCalc
 import GemCalcUtil

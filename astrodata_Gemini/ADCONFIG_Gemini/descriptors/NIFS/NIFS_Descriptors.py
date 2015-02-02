@@ -1,10 +1,9 @@
 import math
 
-from astrodata import Descriptors
-from astrodata import Errors
-from astrodata import Lookups
+from astrodata.utils import Errors
+from astrodata.utils import Lookups
+from astrodata.interface.Descriptors import DescriptorValue
 
-from astrodata.Descriptors import DescriptorValue
 from gempy.gemini import gemini_metadata_utils as gmu
 
 from NIFS_Keywords import NIFS_KeyDict

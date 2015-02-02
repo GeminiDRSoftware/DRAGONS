@@ -1,12 +1,15 @@
-from copy import deepcopy 
 import numpy as np
+from copy import deepcopy 
+
 from astrodata import AstroData
-from astrodata import Errors
-from astrodata.adutils import logutils
-from astrodata.adutils.gemutil import pyrafLoader
-from primitives_GMOS import GMOSPrimitives
+from astrodata.utils import Errors
+from astrodata.utils import logutils
+from astrodata.utils.gemutil import pyrafLoader
+
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import eti
+
+from primitives_GMOS import GMOSPrimitives
 
 class GMOS_SPECTPrimitives(GMOSPrimitives):
     """

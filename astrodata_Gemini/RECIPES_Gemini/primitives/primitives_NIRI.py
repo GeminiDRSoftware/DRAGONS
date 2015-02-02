@@ -1,7 +1,10 @@
 import numpy as np
-from astrodata.adutils import logutils
+
+from astrodata.utils import logutils
 from gempy.gemini import gemini_tools as gt
+
 from primitives_GEMINI import GEMINIPrimitives
+
 
 class NIRIPrimitives(GEMINIPrimitives):
     """

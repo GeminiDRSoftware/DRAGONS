@@ -5,16 +5,19 @@ try:
 except ImportError:
     import numdisplay as nd
 
-from astrodata import Errors
-from astrodata import Lookups
-from astrodata.adutils import logutils
-from astrodata.adutils.gemutil import pyrafLoader
+from astrodata.utils import Errors
+from astrodata.utils import Lookups
+from astrodata.utils import logutils
+from astrodata.utils.gemutil import pyrafLoader
+
 from gempy.gemini import gemini_data_calculations as gdc
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import eti
-from primitives_GENERAL import GENERALPrimitives
+
 import pifgemini.standardize as sdz
 import pifgemini.gmos as gm
+
+from primitives_GENERAL import GENERALPrimitives
 
 class DisplayPrimitives(GENERALPrimitives):
     """

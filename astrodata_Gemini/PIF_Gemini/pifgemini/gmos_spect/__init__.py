@@ -1,5 +1,5 @@
 #test
-from astrodata.mkro import *
+from recipe_system.reduction.mkro import *
 
 
 def extract_1d_spectra(*args, **argv):
