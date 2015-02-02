@@ -78,8 +78,19 @@ class QAPrimitives(GENERALPrimitives):
                 if np.any(overscan) or biasim or darkim:
                     bias_level = None
                 else:
-                    # Get the bias level
-                    bias_level = gdc.get_bias_level(adinput=ad, estimate=False)
+                    try:
+                        # Get the bias level
+                        bias_level = gdc.get_bias_level(adinput=ad,
+                                                        estimate=False)
+                    except NotImplementedError:
+                        # This except is here until there is a type or somesuch
+                        # to test whether it is a appropriate to call the
+                        # function in the try clause. Possibly replace these
+                        # checks with a function that can be a bit more
+                        # observing band or instrument specific
+                        # MS - 2014-05-18
+                        log.fullinfo(sys.exc_info()[1])
+                        bias_level = None
 
                     if bias_level is None:
                         log.warning("Bias level not found for %s; " \
@@ -895,9 +906,20 @@ class QAPrimitives(GENERALPrimitives):
                                          "from data; no approximate "\
                                          "correction will be performed")
                         else:
-                            # Get the bias level
-                            bias_level = gdc.get_bias_level(adinput=ad,
-                                                            estimate=False)
+                            try:
+                                # Get the bias level
+                                bias_level = gdc.get_bias_level(adinput=ad,
+                                                                estimate=False)
+                            except NotImplementedError:
+                                # This except is here until there is a type or
+                                # somesuch to test whether it is a appropriate
+                                # to call the function in the try clause.
+                                # Possibly replace these checks with a function
+                                # that can be a bit more observing band or
+                                # instrument specific MS - 2014-05-18
+                                log.fullinfo(sys.exc_info()[1])
+                                bias_level = None
+                            
                             if bias_level is None:
                                 log.warning("Bias level not found for %s; " \
                                             "approximate bias will not be "\
