@@ -225,12 +225,12 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             # Check that there are enough input files
             adinput = rc.get_inputs_as_astrodata()
             
-            enough = True
             # ****** From KL:  This check needs to be done BEFORE we start 
             # ****** measuring BG and detecting sources!!!  Trac #527
+            # ****** Apparently, it isn't possible...
             if len(adinput)<3:
                 # Can't make a useful fringe frame without at least
-                # three input frames
+                # three input frames.
                 enough = False
                 log.stdinfo("Fewer than 3 frames provided as input. " +
                             "Not making fringe frame.")
@@ -248,9 +248,13 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 else:
                     # Allow it in the science case, but warn that it
                     # may not be helpful.
+                    enough = True
                     log.warning("Fewer than 5 frames " +
                                 "provided as input for GMOS-N data. Fringe " +
                                 "frame generation is not recommended.")
+            else:
+                # Gemini South can use 4 fringes and above
+                enough = True
 
         if enough:
 
