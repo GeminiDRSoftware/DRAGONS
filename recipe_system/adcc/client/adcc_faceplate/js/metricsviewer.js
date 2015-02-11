@@ -308,14 +308,16 @@ MetricsViewer.prototype = {
 	var bg_options = $.extend(true,{},options);
 	bg_options.ymin = 17.0;
 	bg_options.ymax = 24.0;
+	bg_options.type = "optical";
 	bg_options.title = "Sky Brightness";
+	bg_options.title = "Sky Brightness <button type=\"button\" id=\"opt_ir_switch\">Show IR</button>";
 	bg_options.invert_yaxis = true;
 	bg_options.yaxis_label = "Sky Brightness (mag/arcsec^2)";
 	bg_options.series_labels = ["u","g","r","i","z"];
 	//bg_options.series_colors = ["#86C7FF","#5C84FF","#FF9E00",
 	//			    "#F7E908","#3F35EA"];
 	bg_options.series_colors = ["#3f35ea","#5C84FF","#C30000",
-                                    "#FF9E00","#F7E908"]
+                                    "#FF9E00","#F7E908"];
         bg_options.overlay = [ //u
 	                       [{y:21.66,name:"BG20",color:'#888'},
 	                        {y:19.49,name:"BG50",color:'#888'},
@@ -610,6 +612,60 @@ MetricsViewer.prototype = {
 	    mv.help();
         });
 
+	// Add handler to switch bg plots from optical to IR
+        $(document).on("click", "#opt_ir_switch", function() {	
+	    if (bg_options.type == "optical") {
+                bg_options.ymin = 9.0;
+                bg_options.ymax = 17.0;
+                bg_options.type = "ir";
+                bg_options.title = "Sky Brightness <button type=\"button\" id=\"opt_ir_switch\">Show optical</button>";
+                bg_options.series_labels = ["J","H","K","L","M"];
+  	        bg_options.series_colors = ["#5C84FF","#C30000",
+  					    "#FF9E00","#F7E908","#3f35ea"];
+                bg_options.overlay = [
+		    // J
+  	            [{y:16.2,name:"BGAny",color:'#888'}],
+  		    // H
+  	            [{y:13.8,name:"BGAny",color:'#888'}],
+  		    // K
+  	            [{y:14.6,name:"BGAny",color:'#888'}],
+  		];	
+            } else if (bg_options.type == "ir") {
+                bg_options.ymin = 17.0;
+                bg_options.ymax = 24.0;
+                bg_options.type = "optical";
+                bg_options.title = "Sky Brightness <button type=\"button\" id=\"opt_ir_switch\">Show IR</button>";
+          	bg_options.series_labels = ["u","g","r","i","z"];
+	        bg_options.series_colors = ["#3f35ea","#5C84FF","#C30000",
+                                            "#FF9E00","#F7E908"];
+                bg_options.overlay = [
+		    // u
+	            [{y:21.66,name:"BG20",color:'#888'},
+	             {y:19.49,name:"BG50",color:'#888'},
+	             {y:17.48,name:"BG80",color:'#888'}],
+		    // g
+	            [{y:21.62,name:"BG20",color:'#888'},
+	             {y:20.68,name:"BG50",color:'#888'},
+	             {y:19.36,name:"BG80",color:'#888'}],
+		    // r
+	            [{y:21.33,name:"BG20",color:'#888'},
+	             {y:20.32,name:"BG50",color:'#888'},
+	             {y:19.34,name:"BG80",color:'#888'}],
+  		    // i
+  	            [{y:20.44,name:"BG20",color:'#888'},
+	             {y:19.97,name:"BG50",color:'#888'},
+  	             {y:19.30,name:"BG80",color:'#888'}],
+  		    // z
+	            [{y:19.51,name:"BG20",color:'#888'},
+  	             {y:19.04,name:"BG50",color:'#888'},
+  	             {y:18.37,name:"BG80",color:'#888'}],
+  		];
+            }
+	    mv.bg_plot = new TimePlot($("#bg_plot_wrapper"),"bgplot",bg_options);
+	    mv.restore();
+        }); 
+
+	
 	// Use previous turnover as initial timestamp (in UTC seconds)
 	// for adcc query
 	var timestamp = Math.round(prev_turnover.valueOf()/1000);
@@ -1627,3 +1683,4 @@ MetricsViewer.prototype = {
     }, // end formatWarningRecords
 
 }; // end prototype
+

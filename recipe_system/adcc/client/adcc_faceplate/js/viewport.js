@@ -710,15 +710,18 @@ TimePlot.prototype.init = function(record) {
 	maxdate.add(-this.ut_offset,"milliseconds");
 	this.ut = false;
     }
+    
     this.options.mindate = mindate.getTime();
     this.options.maxdate = maxdate.getTime();
-
-    if (this.ut) {
-	this.options.xaxis_label += " (UT)";
-    } else {
-	this.options.xaxis_label += " ("+this.timezone+")";
+    // Prevent multiple date labels being added to the x-axis on re-plotting
+    if (this.options.xaxis_label.substr(this.options.xaxis_label.length - 1, 1) != ')') {
+        if (this.ut) {
+	    this.options.xaxis_label += " (UT)";
+        } else {
+	    this.options.xaxis_label += " ("+this.timezone+")";
+        }
     }
-
+    
     // Check whether y-axis should be inverted
     var ymin, ymax;
     if (this.options.invert_yaxis) {
@@ -781,8 +784,8 @@ TimePlot.prototype.init = function(record) {
     this.plot = $.jqplot(this.id, data, this.config);
 
     // Store a data dictionary in the plot
-    this.plot.data_dict = {};
-
+    this.plot.data_dict = {};	
+    
     var tp = this;
     if (this.options.series_labels.length>1) {
 	// Add click handler, to track selected series if the legend is clicked
@@ -874,6 +877,12 @@ TimePlot.prototype.init = function(record) {
 	co.objects = [];
 	co.objectNames = [];
     }); // end on unhighlight
+
+    // Update the HTML to ensure the title which contains the optical/IR switch is accessible
+    tp.plot.postDrawHooks.add(function() {
+        $('#' + tp.id + ' .jqplot-title').remove().appendTo('#' + tp.id);	
+    });
+    
 }; // end init
 
 TimePlot.prototype.composeHTML = function() {
@@ -1046,20 +1055,19 @@ TimePlot.prototype.addRecord = function(records) {
 	                           .getTime();
 	this.options.maxdate = new $.jsDate(this.options.maxdate)
 		                   .add(this.ut_offset,"milliseconds")
-		                   .getTime();
+	                           .getTime();
 	var label_list = this.options.xaxis_label.split(" ");
 	this.options.xaxis_label = label_list.slice(0,-1) + " (UT)";
-
     } else if (!this.options.ut && this.ut) {
 	this.options.mindate = new $.jsDate(this.options.mindate)
 		                   .add(-this.ut_offset,"milliseconds")
 		                   .getTime();
 	this.options.maxdate = new $.jsDate(this.options.maxdate)
 		                   .add(-this.ut_offset,"milliseconds")
-		                   .getTime();
-	var label_list = this.options.xaxis_label.split(" ");
-	this.options.xaxis_label = label_list.slice(0,-1)+
-	                           " ("+this.timezone+")";
+	                           .getTime();
+        var label_list = this.options.xaxis_label.split(" ");
+	this.options.xaxis_label = label_list.slice(0,-1) +
+	    " ("+this.timezone+")";
     }
     this.config.axes.xaxis.min = this.options.mindate;
     this.config.axes.xaxis.max = this.options.maxdate;
@@ -1155,9 +1163,16 @@ TimePlot.prototype.addRecord = function(records) {
 		}
 	    }
 	};
-	tp.plot.postDrawHooks.add(updatePoints);
-    }
 
+        // Update the HTML to ensure the title which contains the optical/IR switch is accessible
+        tp.plot.postDrawHooks.add(function() {
+            $('#' + tp.id + ' .jqplot-title').remove().appendTo('#' + tp.id);	
+        });
+	
+	tp.plot.postDrawHooks.add(updatePoints);
+	
+    }
+    
     // Store the data dictionary in the plot
     this.plot.data_dict = data_dict;
 
@@ -1236,7 +1251,7 @@ TimePlot.prototype.highlightPoint = function(key) {
 TimePlot.prototype.updateDate = function(mindate,maxdate,xaxis_label) {
     // Assume incoming dates are LT
     this.ut = false;
-
+    
     // Convert to UT milliseconds
     mindate = new $.jsDate(mindate);
     maxdate = new $.jsDate(maxdate);
