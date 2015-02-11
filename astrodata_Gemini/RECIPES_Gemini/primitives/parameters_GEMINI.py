@@ -82,8 +82,8 @@
         "userOverride"  : True, 
         "uiLevel"       : "UIBASIC",
         },
-    "source":{  # sdss9 as of 2013.08.05 (KL)
-        "default"       : "sdss9",
+    "source":{  # gmos catalog is combination of sdss9, vstatlas and apass7
+        "default"       : "gmos",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,
