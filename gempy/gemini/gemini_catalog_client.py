@@ -52,7 +52,8 @@ def get_fits_table(catalog, ra, dec, sr, server=None):
     Radius, all in decimal degrees. Only circular search areas are
     currently supported.
 
-    catalog must be one of : sdss9, 2mass, ukids9
+    catalog must be one of : sdss9, 2mass, ukids9, gmos
+      - gmos is a combination of the catalogs on the server that use the sload filter set.
 
     if given, server must be one of: sdss9_mko, sdss9_cpo, sdss9_vizier,
     2mass_mko, 2mass_cpo, 2mass_vizier, ukidss9_mko, ukidss9_cpo
@@ -65,6 +66,7 @@ def get_fits_table(catalog, ra, dec, sr, server=None):
         'sdss9' : ['sdss9_mko', 'sdss9_vizier'],
         '2mass' : ['2mass_mko', '2mass_vizier'],
         'ukidss9' : ['ukidss9_mko', 'ukidss9_cpo'],
+        'gmos' : ['gmos_mko', 'gmos_cpo'],
     }
 
     # Check catalog given is valid
@@ -110,6 +112,8 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
             "http://mkocatalog2/cgi-bin/conesearch.py?CATALOG=ukidss&",
         'ukidss9_cpo': 
             "http://cpocatalog2/cgi-bin/conesearch.py?CATALOG=ukidss&",
+        'gmos_mko': "http://mkocatalog2/cgi-bin/conesearch.py?CATALOG=gmos&",
+        'gmos_cpo': "http://cpocatalog2/cgi-bin/conesearch.py?CATALOG=gmos&",
     }
 
 
@@ -124,7 +128,10 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
                    'hmag', 'hmag_err', 'kmag', 'kmag_err'],
         'ukidss9': ['catid', 'raj2000', 'dej2000', 'ymag', 'ymag_err', 
                     'zmag', 'zmag_err', 'jmag', 'jmag_err', 
-                    'hmag', 'hmag_err', 'kmag', 'kmag_err']
+                    'hmag', 'hmag_err', 'kmag', 'kmag_err'],
+        'gmos': ['name', 'raj2000', 'dej2000', 'umag', 'umag_err',
+                    'gmag', 'gmag_err', 'rmag', 'rmag_err', 'imag',
+                    'imag_err', 'zmag', 'zmag_err']
     }
 
     # This defines the column name mapping for each catalog server to our 
@@ -154,6 +161,12 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
         'ukidss9_cpo': ['id', 'raj2000', 'dej2000', 'y_mag', 'y_mag_err', 
                         'z_mag', 'z_mag_err', 'j_mag', 'j_mag_err', 
                         'h_mag', 'h_mag_err', 'k_mag', 'k_mag_err'],
+        'gmos_mko': ['name', 'raj2000', 'dej2000', 'umag', 'umag_err',
+                        'gmag', 'gmag_err', 'rmag', 'rmag_err', 'imag',
+                        'imag_err', 'zmag', 'zmag_err'],
+        'gmos_cpo': ['name', 'raj2000', 'dej2000', 'umag', 'umag_err',
+                        'gmag', 'gmag_err', 'rmag', 'rmag_err', 'imag',
+                        'imag_err', 'zmag', 'zmag_err']
     }
 
     # OK, do the query
