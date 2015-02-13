@@ -74,19 +74,24 @@ required-attributes=
 bad-functions=map,filter,apply,input
 
 # Regular expression which should only match correct module names
-module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
+module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+)|(primitives_[a-zA-Z0-9_]+))$
 
 # Regular expression which should only match correct module level names
 const-rgx=(([A-Z_][A-Z0-9_]*)|(__.*__))$
 
 # Regular expression which should only match correct class names
-class-rgx=[A-Z_][a-zA-Z0-9]+$
+class-rgx=(([A-Z_][a-zA-Z0-9]+)|([A-Z_][a-zA-Z0-9_]+Primitives))$
 
 # Regular expression which should only match correct function names
 function-rgx=[a-z_][a-z0-9_]{2,30}$
 
 # Regular expression which should only match correct method names
-method-rgx=[a-z_][a-z0-9_]{2,30}$
+#method-rgx=[a-z_][a-z0-9_]{2,30}$
+# The following expression analyze with form is predominant in the
+# file and uses that form as the valid one.  Useful for primitive
+# files since the methods (ie. the name of the primitives) use 
+# semi-camel case.
+method-rgx=(?:(?P<snake>[a-z_][a-z0-9_]{2,30})|(?P<camel>_?[a-z][a-zA-Z0-9]{2,30}))$
 
 # Regular expression which should only match correct instance attribute names
 attr-rgx=[a-z_][a-z0-9_]{2,30}$
@@ -102,7 +107,7 @@ variable-rgx=[a-z_][a-z0-9_]{2,30}$
 inlinevar-rgx=[A-Za-z_][A-Za-z0-9_]*$
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=ad,i,j,k,ex,Run,_
+good-names=ad,rc,i,j,k,ex,Run,_
 
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,bar,baz,toto,tutu,tata
