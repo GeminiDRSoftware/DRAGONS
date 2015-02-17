@@ -113,12 +113,6 @@ class ReductionObject(object):
         return a
      
     def parameter_prop(self, param, prop= "default"):
-        if self.curPrimName is 'makeFringeFrame' and param is 'subtract_median_image':
-            print "TRUNK RO START parameter_prop() report:"
-            print "curPrimName is::", self.curPrimName
-            print "param is::", param
-            print "prop  is::", prop
-
         if self.curPrimType not in self.primDict:
             return None
         prims = self.primDict[self.curPrimType]
@@ -127,9 +121,6 @@ class ReductionObject(object):
                 if ((param in prim.param_dict[self.curPrimName]) 
                     and 
                     (prop  in prim.param_dict[self.curPrimName][param])):
-                    if self.curPrimName is 'makeFringeFrame' and param is 'subtract_median_image' and prop is 'type':
-                        print "Value in dicts::",  prim.param_dict[self.curPrimName][param][prop]
-                        print "RO END report."
                     return prim.param_dict[self.curPrimName][param][prop]
         return None
 
