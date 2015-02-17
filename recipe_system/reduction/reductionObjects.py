@@ -4,10 +4,10 @@
 #
 #                                                            ReductionObjects.py
 # ------------------------------------------------------------------------------
-# $Id: reductionObjects.py 5082 2014-12-17 14:49:22Z kanderson $
+# $Id$
 # ------------------------------------------------------------------------------
-__version__      = '$Revision: 5082 $'[11:-2]
-__version_date__ = '$Date: 2014-12-17 04:49:22 -1000 (Wed, 17 Dec 2014) $'[7:-2]
+__version__      = '$Revision$'[11:-2]
+__version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
 import re 
 import os
@@ -113,6 +113,12 @@ class ReductionObject(object):
         return a
      
     def parameter_prop(self, param, prop= "default"):
+        if self.curPrimName is 'makeFringeFrame' and param is 'subtract_median_image':
+            print "TRUNK RO START parameter_prop() report:"
+            print "curPrimName is::", self.curPrimName
+            print "param is::", param
+            print "prop  is::", prop
+
         if self.curPrimType not in self.primDict:
             return None
         prims = self.primDict[self.curPrimType]
@@ -121,6 +127,9 @@ class ReductionObject(object):
                 if ((param in prim.param_dict[self.curPrimName]) 
                     and 
                     (prop  in prim.param_dict[self.curPrimName][param])):
+                    if self.curPrimName is 'makeFringeFrame' and param is 'subtract_median_image' and prop is 'type':
+                        print "Value in dicts::",  prim.param_dict[self.curPrimName][param][prop]
+                        print "RO END report."
                     return prim.param_dict[self.curPrimName][param][prop]
         return None
 
@@ -151,10 +160,10 @@ class ReductionObject(object):
         return retd
         
     def substeps(self, primname, context):
-        self.curPrimName = primname
-        prevprimname     = self.curPrimName
         savedLocalparms  = context.localparms
         context.status   = "RUNNING"
+        prevprimname     = self.curPrimName
+        self.curPrimName = primname
 
         # check to see current primitive set type is correct
         correctPrimType = self.recipeLib.discover_correct_prim_type(context)
@@ -448,8 +457,9 @@ class PrimitiveSet(object):
                             
                             wpdict[primname].update({param:pdict[primname][param]})
         # to make version that returns this instead of set it, just return wpdict
-        # but make this function call that one.                            
+        # but make this function call that one.
         self.param_dict = wpdict
+        return
         
     def get_parent_modules(self, cls, append_list):
         """This method returns a list of parent modules for primitives
