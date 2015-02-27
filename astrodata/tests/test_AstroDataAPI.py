@@ -66,7 +66,7 @@ TESTURL   = 'http://fits/file/GS_GMOS_IMAGE.fits'
 KNOWNTYPE = 'GMOS_IMAGE'
 KNOWNSTAT = 'GMOS_RAW'
 PHUTYPE   = 'GNIRS_IMAGE'
-NULLTYPES = ['UNPREPARED', 'RAW']
+NULLTYPES = ['RAW', 'UNPREPARED']
 BADFILE   = 'FOO.fits'
 
 pfob    = pf.open(TESTFILE)      # <'HDUList'>
@@ -503,7 +503,7 @@ def test_method_open_1():
 def test_method_open_2():
     ad = AstroData()
     ad.open(TESTFILE)
-    assert ad.types == NULLTYPES
+    assert set(ad.types) == set(NULLTYPES)
 
 #   remove()
 def test_method_remove_1():
@@ -576,7 +576,7 @@ def test_attr_types_3():
 
 def test_attr_types_4():
     ad = AstroData()
-    assert ad.types == NULLTYPES
+    assert set(ad.types) == set(NULLTYPES)
 
 def test_attr_types_5():
     """ Simple FITS, PHU only """
