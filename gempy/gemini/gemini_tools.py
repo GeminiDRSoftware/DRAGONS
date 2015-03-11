@@ -498,13 +498,13 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                                 science_array_section_dv,
                                 science_detector_x_bin_dv,
                                 science_detector_y_bin_dv]
-            
+
             if any([used_descriptor.is_none() for used_descriptor in
                     used_descriptors]):
                 # The descriptor functions return None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
-                if hasattr(dataset, "exception_info"):
-                    raise dataset.exception_info
+                if hasattr(ad, "exception_info"):
+                    raise ad.exception_info
             
             # Get the associated keyword for the detector section, data
             # section and array section from the DescriptorValue (DV) object
