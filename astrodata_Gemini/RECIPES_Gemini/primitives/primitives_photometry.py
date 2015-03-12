@@ -453,9 +453,12 @@ def _match_objcat_refcat(adinput=None):
         for ad in adinput_list:
             filter_name = ad.filter_name(pretty=True).as_pytype()
             filter_name = filter_name.lower()
-            if filter_name in ['u', 'g', 'r', 'i', 'z', 'j', 'h', 'k']:
+            if filter_name in ['u', 'g', 'r', 'i', 'z', 'j', 'h']:
                 magcolname = filter_name+'mag'
                 magerrcolname = filter_name+'mag_err'
+            elif filter_name in ['k', 'k(prime)', 'k(short)']:
+                magcolname = 'kmag'
+                magerrcolname = 'kmag_err'
             else:
                 log.warning("Filter %s is not in catalogs - will not be able to flux calibrate" % filter_name)
                 magcolname = None
@@ -500,11 +503,28 @@ def _match_objcat_refcat(adinput=None):
                         # and the refmag, if we can
                         for i in range(len(oi)):
                             objcat.data['REF_NUMBER'][oi[i]] = refcat.data['Id'][ri[i]]
+
                             if(magcolname):
-                                objcat.data['REF_MAG'][oi[i]] = refcat.data[magcolname][ri[i]]
-                                objcat.data['REF_MAG_ERR'][oi[i]] = refcat.data[magerrcolname][ri[i]]
+                                if filter_name not in ['k','k(prime)']:
+                                    objcat.data['REF_MAG'][oi[i]] = refcat.data[magcolname][ri[i]]
+                                    objcat.data['REF_MAG_ERR'][oi[i]] = refcat.data[magerrcolname][ri[i]]
 
+                                #if K or K(prime) -- use color terms 
+                                elif filter_name in ['k','k(prime)']: 
+                                    k_ref_mag, k_ref_mag_err = _add_color_term(filter_name, refcat, ri[i]) 
 
+                                    objcat.data['REF_MAG'][oi[i]] = k_ref_mag
+                                    objcat.data['REF_MAG_ERR'][oi[i]] = k_ref_mag_err
+
+                                    comment = ": REF_MAG corrected from K_2mass " + \
+                                              "to %s_MKO" %(filter_name.upper())
+                                    try:
+                                        if comment not in objcat.header['COMMENT'] \
+                                           and k_ref_mag != refcat.data['kmag'][ri[i]]:
+                                            objcat.header.add_comment(comment)
+                                    except KeyError:
+                                        if k_ref_mag != refcat.data['kmag'][ri[i]]:
+                                            objcat.header.add_comment(comment)
             adoutput_list.append(ad)
 
         return adoutput_list
@@ -513,6 +533,67 @@ def _match_objcat_refcat(adinput=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
+def _add_color_term(filter_name, refcat, indx):
+    """
+    K_MKO = -0.003 (+/- 0.007) - 0.026 (+/- 0.011) * (J-K)_2MASS + K_2MASS
+    K_MKO = -0.006 (+/-0.004) - 0.071 (+/-0.020) * (H-K)_2MASS + K_2MASS
+            Leggett 2008,  http://arxiv.org/pdf/astro-ph/0609461v1.pdf
+
+    NIRI K = K_mko
+    NIRI K(short) = K_2mass
+    NIRI K(prime) = K_mko + 0.22 (+/- 0.003) * (H-K)_2MASS  
+            (Wainscoat and Cowie 1992AJ.103.332W)
+    """
+
+    jk_color_term = {'C1': -0.003, 'dC1': 0.007, 'C2': -0.026, 'dC2': 0.011,
+                     'sub': refcat.data['Jmag'][indx] 
+                          - refcat.data['Hmag'][indx], 
+                     'dmag': ((refcat.data['Jmag_err'][indx])**2 
+                           + (refcat.data['Kmag_err'][indx])**2)**0.5 }
+
+    hk_color_term = {'C1': -0.006, 'dC1': 0.004, 'C2': -0.071, 'dC2': 0.020,
+                     'sub': refcat.data['Hmag'][indx] 
+                          - refcat.data['Kmag'][indx], 
+                     'dmag': ((refcat.data['Hmag_err'][indx])**2 
+                           + (refcat.data['Kmag_err'][indx])**2)**0.5 }
+
+    kp_color_term = {'C1': -0.006, 'dC1': 0.007, 'C2': 0.149, 'dC2': 0.023,
+                  'sub': hk_color_term['sub'], 'dmag': hk_color_term['dmag']}
+
+    ct = {'JK': jk_color_term, 'HK': hk_color_term, 'Kp': kp_color_term}
+    k_err = {}
+
+    if filter_name == 'k':
+        term_list = ['JK','HK']
+    else:
+        term_list = ['Kp']
+
+    for term in term_list:
+        k_err[term] = (( ct[term]['dC1']**2 
+                      + ( ((ct[term]['dC2']/ct[term]['C2'])**2 
+                      + (ct[term]['dmag']/ct[term]['sub'])**2)**0.5 
+                      * abs(ct[term]['C2']*ct[term]['sub']) )**2 
+                      + (refcat.data['kmag_err'][indx])**2 )**0.5)
+
+    # if k_mko,  use the color term with lowest error filtering out one NaN
+    if filter_name == 'k':
+        if k_err['JK'] <= k_err['HK']:
+            term = 'JK'
+        else:
+            term = 'HK'
+    else:
+        term = 'Kp'
+
+    # check that NaN is not returned in color term
+    if np.isnan(ct[term]['sub']):
+        k_correct = refcat.data['kmag_err'][indx]
+        k_cor_err = refcat.data['kmag_err'][indx]
+    else:
+        k_correct = (ct[term]['C1'] + ct[term]['C2'] * ct[term]['sub'] 
+                    + refcat.data['kmag'][indx])
+        k_cor_err = k_err[term]
+
+    return k_correct, k_cor_err
 
 
 def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5, 
@@ -1475,7 +1556,6 @@ def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
     good_source = []
     for sciext in sciexts:
         extver = sciext.extver()
-        #print 'sci',extver
 
         objcat = ad["OBJCAT",extver]
         if objcat is None:
