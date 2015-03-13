@@ -1128,9 +1128,17 @@ MetricsViewer.prototype = {
 		record["iq"]["delivered_str"] = 
 	            record["iq"]["delivered"].toFixed(2) + " \u00B1 " +
 		    record["iq"]["delivered_error"].toFixed(2);
-		record["iq"]["zenith_str"] = 
-		    record["iq"]["zenith"].toFixed(2) + " \u00B1 " +
-		    record["iq"]["zenith_error"].toFixed(2);
+
+		// fitsstore may not deliver zenith metrics
+		try {
+		    record["iq"]["zenith_str"] = 
+			record["iq"]["zenith"].toFixed(2) + " \u00B1 " +
+			record["iq"]["zenith_error"].toFixed(2);
+		  }
+		catch (e) {
+		    record["iq"]["zenith_str"] = undefined;
+		    }
+
 		if (record["iq"]["ellipticity"]) {
 		    record["iq"]["ellipticity_str"] = 
 			record["iq"]["ellipticity"].toFixed(2) + " \u00B1 " +
