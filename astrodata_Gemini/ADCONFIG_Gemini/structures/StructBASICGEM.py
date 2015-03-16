@@ -1,6 +1,6 @@
 # Structure Definitions, imported elsewhere.
 from astrodata.interface.Structures import *
-from astrodata.utils.Requirements import *
+from astrodata.interface.Requirements import *
 
 import pyfits
 
