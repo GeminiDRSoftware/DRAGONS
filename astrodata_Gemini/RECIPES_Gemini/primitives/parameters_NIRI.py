@@ -103,25 +103,8 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
-
-},
- "separateSky":{
-    "suffix":{
-        "default"       : "_skySeparated",
-        "type"          : "str",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
-    "all_on_source":{
-        "default"       : True,
-        "type"          : "bool",
-        "recipeOverride": True,
-        "userOverride"  : True,
-        "uiLevel"       : "UIBASIC",
-        },
     },
-"addReferenceCatalog":{
+ "addReferenceCatalog":{
     "suffix":{
         "default"       : "_refcatAdded",
         "type"          : "str",
