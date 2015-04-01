@@ -626,7 +626,7 @@ class QAPrimitives(GENERALPrimitives):
                 # and its error, from this OBJCAT in zp and zpe
                 nominal_zeropoint = (
                   ad["SCI", extver].nominal_photometric_zeropoint())
-                if nominal_zeropoint is None:
+                if nominal_zeropoint.is_none():
                     log.warning("No nominal photometric zeropoint "\
                                 "available for %s[SCI,%d], filter %s" %
                                 (ad.filename,extver,
