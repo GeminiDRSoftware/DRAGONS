@@ -468,6 +468,39 @@ span.problem {
     width: 11px;
 }
 
+.stack_window {
+    background-color: #FFFFD0;
+    border: 1px solid black;
+    border-radius: 6px;
+    -moz-box-shadow: 3px 3px 3px #888;
+    -webkit-box-shadow: 3px 3px 3px #888;
+    box-shadow: 3px 3px 3px #888;
+    height: 200px;
+    left: 50%;
+    margin-left: -200px;
+    margin-top: -200px;
+    overflow: hidden;
+    padding: 0px;
+    position: absolute;
+    top: 50%;
+    width: 400px;
+    z-index: 98;
+}
+.stack_wrapper {
+    height: 90%;
+    margin-bottom: 20px;
+    margin-top: 20px;
+    overflow-y: auto;
+    padding-left: 18px;
+    padding-right: 18px;
+}
+.stack_link {
+    color: #0000EE;
+}
+.stack_link:hover {
+    text-decoration: underline;
+}
+
 /*Force visible scrollbar for Lion*/
 #main ::-webkit-scrollbar {
     -webkit-appearance: none;

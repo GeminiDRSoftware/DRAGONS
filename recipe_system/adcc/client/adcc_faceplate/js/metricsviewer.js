@@ -341,7 +341,6 @@ MetricsViewer.prototype = {
 			      ];
 	this.bg_plot = new TimePlot($("#bg_plot_wrapper"),"bgplot",bg_options);
 
-
 	// Instantiate tooltips
 	this.tooltips = {};
 
@@ -639,7 +638,7 @@ MetricsViewer.prototype = {
 	        bg_options.series_colors = ["#3f35ea","#5C84FF","#C30000",
                                             "#FF9E00","#F7E908"];
                 bg_options.overlay = [
-		    // u
+ 		    // u
 	            [{y:21.66,name:"BG20",color:'#888'},
 	             {y:19.49,name:"BG50",color:'#888'},
 	             {y:17.48,name:"BG80",color:'#888'}],
@@ -996,7 +995,7 @@ MetricsViewer.prototype = {
 	// Restore all ViewPorts to default state, with current data
 
 	var records = this.database.getRecordList();
-
+	
 	// Clear all ViewPorts
 	this.metrics_table.clearRecord();
 	this.message_window.clearRecord();
@@ -1017,6 +1016,8 @@ MetricsViewer.prototype = {
 
     update: function(records, disable_warning) {
 
+	var mv = this;
+	
 	// Test input; make into an array if needed
 	if (!records) {
 	    return;
@@ -1123,22 +1124,41 @@ MetricsViewer.prototype = {
 	    if (incoming_metric[datalabel]==undefined) {
 		incoming_metric[datalabel] = [];
 	    }
+		
 	    if (record["iq"]) {
 		incoming_metric[datalabel].push("iq");
-		record["iq"]["delivered_str"] = 
-	            record["iq"]["delivered"].toFixed(2) + " \u00B1 " +
-		    record["iq"]["delivered_error"].toFixed(2);
 
-		// fitsstore may not deliver zenith metrics
+		// If the observation uses AO, there may not be a delivered IQ
+		try {
+		    record["iq"]["delivered_str"] = 
+			record["iq"]["delivered"].toFixed(2) + " \u00B1 " +
+			record["iq"]["delivered_error"].toFixed(2);
+		}
+		catch (e) {
+		    record["iq"]["delivered_str"] = undefined;
+		}
+	        // fitsstore may not deliver zenith metrics
 		try {
 		    record["iq"]["zenith_str"] = 
-			record["iq"]["zenith"].toFixed(2) + " \u00B1 " +
+		        record["iq"]["zenith"].toFixed(2) + " \u00B1 " +
 			record["iq"]["zenith_error"].toFixed(2);
-		  }
+		}
 		catch (e) {
 		    record["iq"]["zenith_str"] = undefined;
-		    }
-
+		}
+		// If an AO seeing value is provided, use this
+		if (record["iq"]["ao_seeing_zenith"]) {
+		    record["iq"]["zenith_str"] = 
+			record["iq"]["ao_seeing_zenith"].toFixed(2) + " (AO)";
+		    // Add a hack here to overwrite the zenith IQ if
+		    // there is an AO-estimated seeing value, this is
+		    // the value that will then be plotted
+		    record["iq"]["zenith"] = record["iq"]["ao_seeing_zenith"]
+		    // Putting in zero errors is obviously untrue, but prevents
+		    // formatPlotRecords from throwing out the data
+		    record["iq"]["zenith_error"] = 0.0
+		} 
+		
 		if (record["iq"]["ellipticity"]) {
 		    record["iq"]["ellipticity_str"] = 
 			record["iq"]["ellipticity"].toFixed(2) + " \u00B1 " +
@@ -1182,14 +1202,12 @@ MetricsViewer.prototype = {
 		record["bg"]["requested_str"] = 
 		    this.getBandString("bg",record["bg"]["requested"]);
 	    }
-
 	    // Add the record to the database
 	    this.database.addRecord(datalabel, record);
 
 	    // Replace the incoming record with the one from the
 	    // database, in case it contained additional information
 	    incoming.push(this.database.getRecord(datalabel));
-	    
 	} // end for-loop over records
 
 	// Don't bother continuing if there are no valid records to process
@@ -1201,9 +1219,8 @@ MetricsViewer.prototype = {
 
 	// Update table
 	if (this.metrics_table) {
-
 	    // Get the scroll position before updating, so it can be
-	    // restoredd later (Firefox 3.6 likes to reset it to 0)
+	    // restored later (Firefox 3.6 likes to reset it to 0)
 	    var scrolltop = $("#metrics_table tbody").scrollTop();
 
 	    var key = [];
@@ -1216,10 +1233,63 @@ MetricsViewer.prototype = {
 		    key.push(swapval);
 		}
 	    }
-
 	    // Add the record to the table
 	    var table_records = this.formatTableRecords(records,key);
 	    this.metrics_table.addRecord(table_records);
+
+	    // Add a pop-up box to show what is in data stacks
+	    for (var k=0; k<records.length; k++) {
+		var record = records[k];
+		var datalabel = record["metadata"]["datalabel"];
+		var stack = record["metadata"]["stack"];
+		if (stack) {
+		    // Locate the table cells that contain stacked data
+		    var jquery_results = $('tr#'+datalabel).find('td.datalabel') 
+		    var cell = jquery_results[0];
+		    var cell_value = cell.innerHTML;
+		    // Style those table cells as links to make them obvious
+		    var div_regex = /^<div class="stack_link">/;
+		    if (!(cell_value.match(div_regex))) {
+			$(cell).html('<div class="stack_link">'+cell_value+'</div>')
+		    }
+		    $(cell).click({datalabel:datalabel, stack:stack}, function(event) {
+			// Format the stack list for display
+			var stack_str = "";
+			for (var m=0; m<event.data.stack.length; m++) {
+			    stack_str += event.data.stack[m] + '<br />'
+			}
+			var stack_msg = '<div class="stack_wrapper">\
+                        <h3>Stack list for ' + event.data.datalabel + '</h3><hr>\
+                        <div id=stack_list>\
+                        <div class="text">' + stack_str + '</div></div></div>'
+			// Add a stack list window
+			var stack_id = "stack_window_" + event.data.datalabel
+			if ($('#'+stack_id).length != 0) {
+			    $('#'+stack_id).remove();
+			}
+			$("#"+mv.id).append('<div id='+stack_id+' class="stack_window" resizable=yes></div>');
+			var close_id = "close_window_" + event.data.datalabel
+			var close_button = $('<span>', {'class': 'close_icon', 'id': close_id})
+			close_button.click(function() {
+			    $('#'+stack_id).remove();
+			})
+			$("#"+stack_id).html(stack_msg)
+			.prepend(close_button)
+	                .draggable()			
+	                .resizable({handles: 'se',
+				minWidth: 180,
+				minHeight: 180,
+//				start: function(){
+//				    $(this).data("resized",true)
+//				    $('#'+stack_id).data("resized",true)
+//				}
+			});
+		    // End of cell click event	
+		    })
+		// End of stack loop    
+		}
+	    // End of loop over records
+	    };
 
 	    // Add warning icons to cells if necessary
 	    var problem = '<span class="problem_icon"></span>';
@@ -1237,9 +1307,10 @@ MetricsViewer.prototype = {
 			element = $('#'+datalabel+' td.iq');
 			value = element.text();
 
-			if ((record["iq"]["comment"].length==1 &&
-			     record["iq"]["comment"][0].indexOf("ellipticity")!=-1) ||
-			    record["metadata"]["types"].indexOf("SPECT")!=-1 ) 
+			if ( (record["iq"]["comment"].length==1 &&
+			      (record["iq"]["comment"][0].indexOf("ellipticity")!=-1) ||
+			      record["iq"]["comment"][0].indexOf("estimated AO seeing") ) ||
+			      record["metadata"]["types"].indexOf("SPECT")!=-1 )
 			{
 			    value = '<div class=outer>'+warn+value+'</div>';
 			} else {
@@ -1296,6 +1367,7 @@ MetricsViewer.prototype = {
 	    var error_key = "iq-zenith_error";
 	    plot_record = this.formatPlotRecords(records,data_key,error_key);
 	    this.iq_plot.addRecord(plot_record);
+	    
 	} else {
 	    console.log("No IQ plot");
 	}
@@ -1444,19 +1516,27 @@ MetricsViewer.prototype = {
 	    var plot_record = {};
 
 	    var dk = data_key.split("-",2);
-	    var ek = error_key.split("-",2);
+	    if (error_key != null) {
+		var ek = error_key.split("-",2);
+	    } else {
+		ek[1] = null;
+	    }
 
 	    if (record[dk[0]]) {
 		var time = record["metadata"]["local_time"];
 		var value = record[dk[0]][dk[1]];
-		var error = record[ek[0]][ek[1]];
-
+		if (ek[1] != null) {
+		    var error = record[ek[0]][ek[1]];
+		} else {
+		    var error = 0.0
+		}
+		
 		var series;
 		if (dk[0]=="iq") {
-		    var wfs = record["metadata"]["wfs"];
+		    // var wfs = record["metadata"]["wfs"];
 		    var wb = record["metadata"]["waveband"];
-		    var oi_bands = ["U","B","V","R","I","Y"];
-		    var pw_bands = ["J","H","K","L","M","N"];
+		    // var oi_bands = ["U","B","V","R","I","Y"];
+		    // var pw_bands = ["J","H","K","L","M","N"];
 		    //if (wfs=="OIWFS") {
 			//if (oi_bands.indexOf(wb)!=-1) {
 			//    series = wb;
@@ -1572,6 +1652,7 @@ MetricsViewer.prototype = {
 			    message += ", ";
 			}
 			if ((msg_array[m].indexOf("ellipticity")!=-1) ||
+			    (msg_array[m].indexOf("estimated AO seeing")!=-1) ||
 			    (record["metadata"]["types"].indexOf("SPECT")!=-1 )) {
 			    message += '<span class="outer">'+
 				       warning+"&nbsp;&nbsp;"+

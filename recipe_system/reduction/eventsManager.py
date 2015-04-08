@@ -10,6 +10,7 @@ __version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
 import json
 import time
+import re
 
 from astrodata import AstroData
 
@@ -24,6 +25,22 @@ class EventsManager:
         self.event_index = {}
         self.persist = persist   #  False or filename in .adcc
         self.persist_load()
+
+
+    def _get_stacklist(self, ad):
+        # Find a list of all images that went into a stack for a stacked image
+        raw_rgx = re.compile(r'^(tmp)(\d+)(gemcombine)(N|S)(\d{8})(S)(\d{4})(\.fits)(\[SCI,)(\d+)(\])$') 
+        # For quick reductions for the GUI, we are assuming that the same
+        # images are combined for all extensions
+        raw_list = ad['SCI',1].get_key_value('IMCMB***')
+        if raw_list:
+            stack_list = []
+            for item in raw_list:
+                tempfile = raw_list[item]
+                if raw_rgx.match(raw_list[item]):
+                    stack_list.append(''.join(re.split(raw_rgx, raw_list[item])[4:9]))
+        return stack_list            
+
 
     def get_metadict(self, ad):
         # Key: metadata dictionary key, Value: descriptor name
@@ -65,10 +82,17 @@ class EventsManager:
                 dv = None
 
             mtd_dict[mtd_name] = dv
+            
+        # If the file is a processed stack, then add the filenames of the 
+        # data that went into the stack
+        if ad.phu_get_key_value('STACKFRM'):
+            stack_list = self._get_stacklist(ad)
+            mtd_dict["stack"] = stack_list
+        
         mtd = {"metadata": mtd_dict}
         return mtd
 
-
+                            
     def append_event(self, ad=None, name=None, mdict=None, metadata=None, 
                      msgtype="qametric", persisted=False):
 
