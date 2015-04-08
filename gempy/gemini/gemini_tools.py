@@ -1326,7 +1326,7 @@ def fit_continuum(ad):
 def fitsstore_report(ad, rc, metric, info_dict):
     if metric not in ["iq","zp","sb","pe"]:
         raise Errors.InputError("Unknown metric %s" % metric )
-
+    
     # Empty qareport dictionary to build into
     qareport = {}
 
@@ -1373,30 +1373,33 @@ def fitsstore_report(ad, rc, metric, info_dict):
         if metric=="iq":
             # Build a dictionary with IQ data
             iq = {}
-
             # Check to see if there is any data for this extension
             if not source_data.has_key(key):
                 continue
 
             iqdata = source_data[key]
-            if len(iqdata)==0:
-                continue
             primdata = info_dict[key]
+            if len(iqdata)==0 and not (primdata["is_ao"] and primdata["ao_seeing"]):
+                continue
 
+            if len(iqdata)!=0:
             # Numbers from iqdata
-            iq["fwhm"] = float(iqdata["fwhm_arcsec"].mean())
-            iq["fwhm_std"] = float(iqdata["fwhm_arcsec"].std())
-            iq["isofwhm"] = float(iqdata["isofwhm_arcsec"].mean())
-            iq["isofwhm_std"] = float(iqdata["isofwhm_arcsec"].std())
-            iq["ee50d"] = float(iqdata["ee50d_arcsec"].mean())
-            iq["ee50d_std"] = float(iqdata["ee50d_arcsec"].std())
-            iq["elip"] = float(iqdata["ellipticity"].mean())
-            iq["elip_std"] = float(iqdata["ellipticity"].std())
-            iq["pa"] = float(iqdata["pa"].mean())
-            iq["pa_std"] = float(iqdata["pa"].std())
-            iq["nsamples"] = iqdata.size
+                iq["fwhm"] = float(iqdata["fwhm_arcsec"].mean())
+                iq["fwhm_std"] = float(iqdata["fwhm_arcsec"].std())
+                iq["isofwhm"] = float(iqdata["isofwhm_arcsec"].mean())
+                iq["isofwhm_std"] = float(iqdata["isofwhm_arcsec"].std())
+                iq["ee50d"] = float(iqdata["ee50d_arcsec"].mean())
+                iq["ee50d_std"] = float(iqdata["ee50d_arcsec"].std())
+                iq["elip"] = float(iqdata["ellipticity"].mean())
+                iq["elip_std"] = float(iqdata["ellipticity"].std())
+                iq["pa"] = float(iqdata["pa"].mean())
+                iq["pa_std"] = float(iqdata["pa"].std())
+                iq["nsamples"] = iqdata.size
 
             # Values produced by the measureIQ primitive
+            iq["adaptive_optics"] = primdata["is_ao"]
+            if primdata["ao_seeing"]:
+                iq["ao_seeing"] = primdata["ao_seeing"]
             iq["percentile_band"] = primdata["band"]
             iq["comment"] = primdata["comment"]
 
