@@ -475,7 +475,7 @@ span.problem {
     -moz-box-shadow: 3px 3px 3px #888;
     -webkit-box-shadow: 3px 3px 3px #888;
     box-shadow: 3px 3px 3px #888;
-    height: 200px;
+    height: 400px;
     left: 50%;
     margin-left: -200px;
     margin-top: -200px;
@@ -483,7 +483,7 @@ span.problem {
     padding: 0px;
     position: absolute;
     top: 50%;
-    width: 400px;
+    width: 250px;
     z-index: 98;
 }
 .stack_wrapper {
