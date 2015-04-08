@@ -13,6 +13,19 @@ class docstrings:
         """
         pass
     
+    def ao_seeing(self):
+        """
+        Return the AO-estimated seeing
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
+        :return: the AO-estimated seeing of the observation in arcseconds       
+        """
+        pass
+    
     def amp_read_area(self):
         """
         Return the amp_read_area value
@@ -588,6 +601,19 @@ class docstrings:
         :rtype: string as default (i.e., format=None)
         :return: the unique string that describes which stack a dataset belongs
                  to; it is based on the observation_id
+        """
+        pass
+    
+    def is_ao(self):
+        """
+        Return True if the observation uses AO
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: boolean as default (i.e., format=None)
+        :return: True if the observation uses adaptive optics, False otherwise        
         """
         pass
     

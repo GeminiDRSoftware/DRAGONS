@@ -1,5 +1,6 @@
 [
     DD("airmass", pytype=float),
+    DD("ao_seeing", pytype=float),
     DD("amp_read_area", pytype=str),
     DD("array_name", pytype=str),
     DD("array_section", pytype=list),
@@ -30,6 +31,7 @@
     DD("grating", pytype=str),
     DD("gcal_lamp", pytype=str),
     DD("group_id", pytype=str),
+    DD("is_ao", pytype=bool),
     DD("local_time", pytype=datetime),
     DD("lyot_stop", pytype=str),
     DD("mdf_row_id", pytype=int),

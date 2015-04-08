@@ -950,6 +950,30 @@ class QAPrimitives(GENERALPrimitives):
         mean_ellips = []
         for ad in rc.get_inputs_as_astrodata():
                 
+            # For AO observations, the AO-estimated seeing is used (the IQ 
+            # is also calculated from the image if possible)
+            is_ao = ad.is_ao().as_pytype()
+            if is_ao:
+                ao_seeing = ad.ao_seeing().as_pytype()
+                if not ao_seeing:
+                    log.warning("No AO-estimated seeing found for this AO "
+                                "observation")
+                else:
+                    log.warning("This is an AO observation, the AO-estimated "
+                                "seeing will be used for the IQ band "
+                                "calculation")
+            else:
+                ao_seeing = None
+            airmass = ad.airmass()
+            wvband = ad.wavelength_band()
+
+            # Format output for printing or logging
+            llen = 32
+            rlen = 24
+            dlen = llen+rlen
+            pm = "+/-"
+            fnStr = "Filename: %s" % ad.filename
+            
             if "IMAGE" in ad.types:
                 # Clip sources from the OBJCAT
                 good_source = gt.clip_sources(ad)
@@ -990,78 +1014,113 @@ class QAPrimitives(GENERALPrimitives):
                     else:
                         log.warning("No good sources found in %s" %
                                     (ad.filename))
+
                     if display:
                         iq_overlays.append(None)
                     mean_fwhms.append(None)
                     mean_ellips.append(None)
-                    continue
-
-                # Mean of clipped FWHM and ellipticity
-                mean_fwhm = src["fwhm_arcsec"].mean()
-                std_fwhm = src["fwhm_arcsec"].std()
-                if is_image:
-                    mean_ellip = src["ellipticity"].mean()
-                    std_ellip = src["ellipticity"].std()
+                    # If there is an AO-estimated seeing value, this can be 
+                    # delivered as a metric
+                    if not (is_ao and ao_seeing):
+                        continue
+                    else:
+                        ell_warn = ""
                 else:
-                    mean_ellip = None
-                    std_ellip = None
-                if len(src)==1:
-                    log.warning("Only one source found. IQ numbers may " +
-                                "not be accurate.")
+                # Mean of clipped FWHM and ellipticity
+                    mean_fwhm = src["fwhm_arcsec"].mean()
+                    std_fwhm = src["fwhm_arcsec"].std()
+                    if is_image:
+                        mean_ellip = src["ellipticity"].mean()
+                        std_ellip = src["ellipticity"].std()
+                    else:
+                        mean_ellip = None
+                        std_ellip = None
+                    if len(src)==1:
+                        log.warning("Only one source found. IQ numbers may "
+                                    "not be accurate.")
+
+                    # Warn if high ellipticity
+                    if is_image and mean_ellip>0.1:
+                        ell_warn = "\n    " + \
+                        "WARNING: high ellipticity".rjust(dlen)
+                        # Note if it is non-sidereal
+                        if('NON_SIDEREAL' in ad.types):
+                            ell_warn += "\n     - this is likely due to "
+                            "non-sidereal tracking"
+                    else:
+                        ell_warn = ""                    
 
                 # Apply the horrible 8% sextractor -> imexam kludge
                 #log.warning("Applying scale factor of 1:/1.08 to scale from "\
                 #            "sextractor value to profile fit (imexam) value")
                 #mean_fwhm /= 1.08
-
-                airmass = ad.airmass()
+                
+                # Find the corrected FWHM. For AO observations, the IQ 
+                # constraint band is taken from the AO-estimated seeing
+                if not is_ao:
+                    uncorr_iq = float(mean_fwhm)
+                    uncorr_iq_std = float(std_fwhm)
+                else:
+                    uncorr_iq = ao_seeing
+                    uncorr_iq_std = None
                 if airmass.is_none():
                     log.warning("Airmass not found, not correcting to zenith")
-                    corr = mean_fwhm
-                    corr_std = std_fwhm
+                    corr_iq = None
+                    corr_iq_std = None
                 else:
-                    corr = mean_fwhm * airmass**(-0.6)
-                    corr_std = std_fwhm * airmass**(-0.6)
-
-                # Get IQ constraint band corresponding to
-                # the corrected FWHM number
-                is_AO = ad.phu_get_key_value('AOFOLD') == 'IN'
-                if is_AO:
+                    if not uncorr_iq:
+                        log.warning("FWHM not found, not correcting to zenith")
+                        corr_iq = None
+                        corr_iq_std = None
+                    else:
+                        corr_iq = uncorr_iq * airmass**(-0.6)
+                        if uncorr_iq_std:
+                            corr_iq_std = uncorr_iq_std * airmass**(-0.6)
+                        else:
+                            corr_iq_std = None
+                        
+                # Get IQ constraint band corresponding to the corrected FWHM 
+                if corr_iq is None:
                     iq_band = None
                 else:
-                    iq_band = _iq_band(adinput=ad,fwhm=corr)[0]
+                    iq_band = _iq_band(adinput=ad, fwhm=corr_iq)[0]
 
                 # Format output for printing or logging
-                llen = 32
-                rlen = 24
-                dlen = llen+rlen
-                pm = "+/-"
-                fnStr = "Filename: %s" % ad.filename
                 if separate_ext:
                     fnStr += "[%s,%s]" % key
-                fmStr = ("FWHM Mean %s Sigma:" % pm).ljust(llen) + \
-                        ("%.3f %s %.3f arcsec" % (mean_fwhm, pm,
-                                                  std_fwhm)).rjust(rlen)
-                if is_image:
-                    srcStr = "%d sources used to measure IQ." % len(src)
-                    if('NON_SIDEREAL' in ad.types):
-                        srcStr += "\n WARNING - NON SIDEREAL tracking. IQ measurements will be unreliable"
-                    emStr = ("Ellipticity Mean %s Sigma:" % pm).ljust(llen) + \
-                            ("%.3f %s %.3f" % (mean_ellip, pm, 
-                                               std_ellip)).rjust(rlen)
-                else:
-                    srcStr = "Spectrum centered at row %d used to measure IQ." % \
-                             np.mean(src["y"])                             
-                if not airmass.is_none():
-                    csStr = (
-                        "Zenith-corrected FWHM (AM %.2f):"%airmass).ljust(llen) + \
-                        ("%.3f %s %.3f arcsec" % (corr,pm,corr_std)).rjust(rlen)
+                if len(src)!=0:
+                    fmStr = ("FWHM Mean %s Sigma:" % pm).ljust(llen) + \
+                            ("%.3f %s %.3f arcsec" % (mean_fwhm, pm,
+                            std_fwhm)).rjust(rlen)
+                    if is_image:
+                        srcStr = "%d sources used to measure IQ." % len(src)
+                        if('NON_SIDEREAL' in ad.types):
+                            srcStr += "\n WARNING - NON SIDEREAL tracking. IQ "
+                            "measurements will be unreliable"
+                        emStr = ("Ellipticity Mean %s Sigma:" % pm
+                                 ).ljust(llen) + ("%.3f %s %.3f" % (
+                                mean_ellip, pm, std_ellip)).rjust(rlen)
+                    else:
+                        srcStr = "Spectrum centered at row %d used to measure " \
+                                 "IQ." % p.mean(src["y"])                             
+                if corr_iq is not None:
+                    if corr_iq_std is not None:
+                        csStr = ("Zenith-corrected FWHM (AM %.2f):" % airmass
+                                 ).ljust(llen) + ("%.3f %s %.3f arcsec" % (
+                                corr_iq, pm, corr_iq_std)).rjust(rlen)
+                    else:
+                        csStr = ("Zenith-corrected FWHM (AM %.2f):" % airmass
+                                 ).ljust(llen) + ("%.3f arcsec" % corr_iq
+                                ).rjust(rlen)
+                        
                 else:
                     csStr = "(Zenith FWHM could not be determined)"
+                if is_ao:
+                    aoStr = ("AO-estimated seeing:").ljust(llen) + \
+                            ("%.3f arcsec" % ao_seeing).rjust(rlen)
 
                 iq_warn = ""
-                if iq_band is not None:
-
+                if iq_band is not None:                    
                     # iq_band is (percentile, lower bound, upper bound)
                     if iq_band[0]==20:
                         iq = "IQ20 (<%.2f arcsec)" % iq_band[2]
@@ -1069,43 +1128,27 @@ class QAPrimitives(GENERALPrimitives):
                         iq = "IQAny (>%.2f arcsec)" % iq_band[1]
                     else:
                         iq = "IQ%d (%.2f-%.2f arcsec)" % iq_band
- 
-                    wvband = ad.wavelength_band()
-                    iqStr = ("IQ range for %s-band:"%wvband).ljust(llen)+\
-                            iq.rjust(rlen)
+                    iqStr = ("IQ range for %s-band:" % wvband).ljust(llen) + \
+                    iq.rjust(rlen)
                 else:
-                    if is_AO:
-                        iqStr = "(Delivered IQ band does not apply to AO observations)"
-                    else:
-                        iqStr = "(IQ band could not be determined)"
-
+                    iqStr = "(IQ band could not be determined)"
+                
                 # Get requested IQ band
                 req_iq = ad.requested_iq()
                 if not req_iq.is_none():
-                    
-                    if req_iq==100:                            
+                    if req_iq == 100:                            
                         reqStr = "Requested IQ:".ljust(llen) + \
                                  "IQAny".rjust(rlen)
                     else:
                         reqStr = "Requested IQ:".ljust(llen) + \
                                  ("IQ%d" % req_iq).rjust(rlen)
                     if iq_band is not None:
-                        if req_iq<iq_band[0]:
-                            iq_warn = "\n    "+\
-                                "WARNING: IQ requirement not met".rjust(dlen)
+                        if req_iq < iq_band[0]:
+                            iq_warn = "\n    " + \
+                            "WARNING: IQ requirement not met".rjust(dlen)
                 else:
                     reqStr = "(Requested IQ could not be determined)"
-
-                # Warn if high ellipticity
-                if is_image and mean_ellip>0.1:
-                    ell_warn = "\n    "+\
-                        "WARNING: high ellipticity".rjust(dlen)
-                    # Note if it is non-sidereal
-                    if('NON_SIDEREAL' in ad.types):
-                        ell_warn += "\n     - this is likely due to non-sidereal tracking"
-                else:
-                    ell_warn = ""                    
-
+                
                 # Log final string
                 logindent = rc["logindent"]
                 if logindent == None:
@@ -1113,13 +1156,16 @@ class QAPrimitives(GENERALPrimitives):
                 ind = " " * logindent
                 log.stdinfo(" ")
                 log.stdinfo(ind + fnStr)
-                log.stdinfo(ind + srcStr)
-                log.stdinfo(ind + "-"*dlen)
-                log.stdinfo(ind + fmStr)
-                if is_image:
-                    log.stdinfo(ind + emStr)
+                if len(src)!=0:
+                    log.stdinfo(ind + srcStr)
+                    log.stdinfo(ind + "-"*dlen)
+                    log.stdinfo(ind + fmStr)
+                    if is_image:
+                        log.stdinfo(ind + emStr)
                 log.stdinfo(ind + csStr)
                 log.stdinfo(ind + iqStr)
+                if is_ao:
+                    log.stdinfo(ind + aoStr)                
                 log.stdinfo(ind + reqStr + ell_warn + iq_warn)
                 log.stdinfo(ind + "-"*dlen)
                 log.stdinfo("")
@@ -1130,31 +1176,45 @@ class QAPrimitives(GENERALPrimitives):
                     comment.append("IQ requirement not met")
                 if ell_warn:
                     comment.append("High ellipticity")
-                if not is_image:
-                    comment.append("IQ measured from spectral cross-cut")
+                if len(src)!=0:
+                    mean_fwhm = float(mean_fwhm)
+                    std_fwhm = float(std_fwhm)
+                    if not is_image:
+                        comment.append("IQ measured from spectral cross-cut")
+                        mean_ellip = None
+                        std_ellip = None
+                    else:
+                        mean_ellip = float(mean_ellip)
+                        std_ellip = float(std_ellip)
+                    if 'NON_SIDEREAL' in ad.types:
+                        comment.append("Observation is NON SIDEREAL, IQ "
+                                       "measurements will be unreliable")
+                else:
+                    mean_fwhm = None
+                    std_fwhm = None
                     mean_ellip = None
                     std_ellip = None
-                else:
-                    mean_ellip = float(mean_ellip)
-                    std_ellip = float(std_ellip)
-                if 'NON_SIDEREAL' in ad.types:
-                    comment.append("Observation is NON SIDEREAL, IQ measurements will be unreliable")
-                if is_AO:
-                    comment.append("AO observation.  Delivered IQ band is meaningless.")
-                    
+
+                if is_ao:
+                    comment.append("AO observation. IQ band from estimated AO "
+                                   "seeing.")
+
                 if iq_band is not None:
                     band = iq_band[0]
                 else: 
-                    band = None
+                    band = None  
                 qad = {"band": band,
-                       "delivered": float(mean_fwhm),
-                       "delivered_error": float(std_fwhm),
-                       "zenith": float(corr),
-                       "zenith_error": float(corr_std),
+                       "delivered": mean_fwhm,
+                       "delivered_error": std_fwhm,
                        "ellipticity": mean_ellip,
                        "ellip_error": std_ellip,
+                       "zenith": corr_iq,
+                       "zenith_error": corr_iq_std,
+                       "is_ao": is_ao,
+                       "ao_seeing": ao_seeing,
                        "requested": req_iq.as_pytype(),
                        "comment": comment,}
+
                 info_dict[key] = qad
                 rc.report_qametric(ad, "iq", qad)
                 
@@ -1165,21 +1225,23 @@ class QAPrimitives(GENERALPrimitives):
 
                 # If displaying, make a mask to display along with image
                 # that marks which stars were used
-                if display:
-                    if is_image:
-                        data_shape=ad[key].data.shape
-                        iqmask = _iq_overlay(src,data_shape)
-                        iq_overlays.append(iqmask)
-                        overlays_exist = True
-                    else:
-                        data_shape=ad[key].data.shape
-                        iqmask = _iq_overlay([{"x":data_shape[1]/2,
+                if len(src)!=0:
+                    if display:
+                        if is_image:
+                            data_shape=ad[key].data.shape
+                            iqmask = _iq_overlay(src,data_shape)
+                            iq_overlays.append(iqmask)
+                            overlays_exist = True
+                        else:
+                            data_shape=ad[key].data.shape
+                            iqmask = _iq_overlay([{"x":data_shape[1]/2,
                                                "y":np.mean(src["y"])}],data_shape)
-                        iq_overlays.append(iqmask)
-                        overlays_exist = True
+                            iq_overlays.append(iqmask)
+                            overlays_exist = True
 
             # Build a report to send to fitsstore
-            fitsdict = gt.fitsstore_report(ad,rc,"iq",info_dict)
+            if info_dict:
+                fitsdict = gt.fitsstore_report(ad, rc, "iq", info_dict)
 
         # Display image with stars used circled
         if display:
@@ -1208,25 +1270,21 @@ class QAPrimitives(GENERALPrimitives):
                         mean_fwhm = mean_fwhms[count]
                         mean_ellip = mean_ellips[count]
                         if mean_fwhm is not None:
-                            sciext.set_key_value(
-                                "MEANFWHM", mean_fwhm,
-                                comment=self.keyword_comments["MEANFWHM"])
+                            sciext.set_key_value("MEANFWHM", mean_fwhm,
+                            comment=self.keyword_comments["MEANFWHM"])
                         if mean_ellip is not None:
-                            sciext.set_key_value(
-                                "MEANELLP", mean_ellip,
-                                comment=self.keyword_comments["MEANELLP"])
+                            sciext.set_key_value("MEANELLP", mean_ellip,
+                            comment=self.keyword_comments["MEANELLP"])
                         count+=1
             if ad.count_exts("SCI")==1 or not separate_ext:
                 mean_fwhm = mean_fwhms[0]
                 mean_ellip = mean_ellips[0]
                 if mean_fwhm is not None:
-                    ad.phu_set_key_value(
-                        "MEANFWHM", mean_fwhm,
-                        comment=self.keyword_comments["MEANFWHM"])
+                    ad.phu_set_key_value("MEANFWHM", mean_fwhm,
+                    comment=self.keyword_comments["MEANFWHM"])
                 if mean_ellip is not None:
-                    ad.phu_set_key_value(
-                        "MEANELLP", mean_ellip,
-                        comment=self.keyword_comments["MEANELLP"])
+                    ad.phu_set_key_value("MEANELLP", mean_ellip,
+                    comment=self.keyword_comments["MEANELLP"])
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)

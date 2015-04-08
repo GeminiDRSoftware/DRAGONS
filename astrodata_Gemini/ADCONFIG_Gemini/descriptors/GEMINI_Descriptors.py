@@ -61,6 +61,43 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # exception if this descriptor is called.
         raise Errors.ExistError()
     
+    def ao_seeing(self, dataset, **args):
+        # For Altair observations, the AO-estimated seeing in arcseconds is
+        # provided directly in the header. For GeMS observations, the 
+        # estimated seeing must be calculated.
+        
+        # Determine the ao_seeing keyword from the global keyword dictionary
+        keyword = self.get_descriptor_key("key_ao_seeing")
+        
+        # Get the value of the ao_seeing keyword from the header of the PHU
+        ao_seeing = dataset.phu_get_key_value(keyword)
+       
+        if not ao_seeing:
+            # If there is no ao_seeing keyword, try the r_zero_val keyword
+            keyword = self.get_descriptor_key("key_r_zero_val")
+            r_zero_val = dataset.phu_get_key_value(keyword)
+            
+            if r_zero_val:
+                # If the r_zero_val keyword (Fried's parameter) is present, 
+                # a seeing estimate can be calculated (NOTE: Jo Thomas-Osip 
+                # is providing a reference for this calculation. Until then, 
+                # EJD checked using 
+                # http://www.ctio.noao.edu/~atokovin/tutorial/part1/turb.html )
+
+                # Seeing at 0.5 micron
+                seeing_ref = (206265. * 0.98 * 0.5e-6) / (r_zero_val * 0.01)
+                # Adjusting to wavelength of observation
+                keyword = self.get_descriptor_key("key_wavelength")
+                wavelength = dataset.phu_get_key_value(keyword)
+                if wavelength:
+                    ao_seeing = seeing_ref * (wavelength/5000.)**(-0.2)
+                else:
+                    raise Errors.ExistError()
+            else:
+                raise Errors.ExistError()
+            
+        return ao_seeing
+        
     def array_section(self, dataset, pretty=False, **args):
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always construct a dictionary where the
@@ -645,6 +682,25 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         
         return ret_dv
     
+    def is_ao(self, dataset, **args):
+        # Returns True if an observation uses adaptive optics, and False
+        # otherwise
+        
+        # Determine the ao_fold keyword from the global keyword dictionary
+        keyword = self.get_descriptor_key("key_ao_fold")
+        
+        # Get the value of the ao_seeing keyword from the header of the PHU
+        ao_fold = dataset.phu_get_key_value(keyword)
+        
+        if ao_fold:
+            is_ao = False
+            if ao_fold == "IN":
+                is_ao = True
+        else:
+            raise Errors.ExistError()
+           
+        return is_ao
+
     def local_time(self, dataset, **args):
         # Determine the local time keyword from the global keyword dictionary
         keyword = self.get_descriptor_key("key_local_time")
