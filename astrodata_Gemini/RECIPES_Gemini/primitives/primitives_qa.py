@@ -1074,10 +1074,7 @@ class QAPrimitives(GENERALPrimitives):
                         corr_iq_std = None
                     else:
                         corr_iq = uncorr_iq * airmass**(-0.6)
-                        if uncorr_iq_std:
-                            corr_iq_std = uncorr_iq_std * airmass**(-0.6)
-                        else:
-                            corr_iq_std = None
+                        corr_iq_std = uncorr_iq_std * airmass**(-0.6)
                         
                 # Get IQ constraint band corresponding to the corrected FWHM 
                 if corr_iq is None:
@@ -1104,14 +1101,9 @@ class QAPrimitives(GENERALPrimitives):
                         srcStr = "Spectrum centered at row %d used to measure " \
                                  "IQ." % p.mean(src["y"])                             
                 if corr_iq is not None:
-                    if corr_iq_std is not None:
-                        csStr = ("Zenith-corrected FWHM (AM %.2f):" % airmass
-                                 ).ljust(llen) + ("%.3f %s %.3f arcsec" % (
-                                corr_iq, pm, corr_iq_std)).rjust(rlen)
-                    else:
-                        csStr = ("Zenith-corrected FWHM (AM %.2f):" % airmass
-                                 ).ljust(llen) + ("%.3f arcsec" % corr_iq
-                                ).rjust(rlen)
+                    csStr = ("Zenith-corrected FWHM (AM %.2f):" % airmass
+                            ).ljust(llen) + ("%.3f %s %.3f arcsec" % (
+                            corr_iq, pm, corr_iq_std)).rjust(rlen)
                         
                 else:
                     csStr = "(Zenith FWHM could not be determined)"
