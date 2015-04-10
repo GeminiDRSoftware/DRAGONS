@@ -34,6 +34,7 @@ from astrodata.utils.ConfigSpace import lookup_path
 from astrodata.utils.gemconstants import SCI, VAR, DQ
 from astrodata.interface.structuredslice import pixel_exts
 from astrodata.interface.Descriptors import DescriptorValue
+from astrodata.utils.Errors import DescriptorValueTypeError
 
 # ------------------------------------------------------------------------------
 # Load the standard comments for header keywords that will be updated
@@ -529,7 +530,7 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
             if abs(ad1.exposure_time() - ad2.exposure_time()) > 0.01:
                 result = False
                 log.fullinfo('Exposure times differ')
-        except TypeError:
+        except (TypeError, DescriptorValueTypeError):
             log.error('Non-numeric type from exposure_time() descriptor')
 
     if ad1.camera().as_pytype() != ad2.camera().as_pytype():
@@ -546,7 +547,7 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
     # This is the tolerance Paul used for NIRI & F2 in FITS store:
     try:
         same = abs(ad1.central_wavelength() - ad2.central_wavelength()) < 0.001
-    except TypeError:
+    except (TypeError, DescriptorValueTypeError):
         same = ad1.central_wavelength().as_pytype() == \
                ad2.central_wavelength().as_pytype()
     if not same:
