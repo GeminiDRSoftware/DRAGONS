@@ -436,6 +436,152 @@ def check_inputs_match(ad1=None, ad2=None, check_filter=True):
     return
 
 
+def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
+    """
+    Compare two AstroData instances and report whether their instrument
+    configurations are identical, including the exposure time (but excluding
+    the telescope pointing). This function was added for NIR images but
+    should probably be merged with check_inputs_match() above, after checking
+    carefully that the changes needed won't break any GMOS processing.
+
+    :param ad1: input AstroData instance to check against ad2
+    :type ad1: AstroData
+    
+    :param ad2: input AstroData instance to check against ad1
+    :type ad2: AstroData
+
+    :param check_exposure: Require exposure times to match?
+    :type check_exposure: bool
+    """
+    log = logutils.get_logger(__name__)
+
+    log.fullinfo('Comparing instrument config for AstroData instances:')
+
+    if not isinstance(ad1, AstroData) or not isinstance(ad2, AstroData):
+        raise Errors.ToolboxError('Inputs must be AstroData instances')
+
+    # Some of the following repetition could probably be cleaned up using a
+    # list of descriptors but there would still be exceptions and it's not
+    # really all that cumbersome.
+
+    result = True
+
+    # Don't bother checking instrument(), as it has to match within an OBSID
+    # and the following things couldn't all match anyway were it to differ.
+
+    if ad1.count_exts('SCI') != ad2.count_exts('SCI'):
+        result = False
+        log.fullinfo('Number of SCI extensions differ')
+
+    # I don't *think* reading the shape attribute causes the arrays to be
+    # loaded into memory here -- in any case I can't see a way to unload an
+    # array from an AstroData instance, as with "del ext['SCI'].data" in
+    # PyFITS, so there's not much that can be done about it...
+    for ext1, ext2 in zip(ad1['SCI'], ad2['SCI']):
+        if ext1.data.shape != ext2.data.shape:
+            result = False
+            log.fullinfo('Array dimensions differ')
+            break
+
+    # Some of these checks seem a bit redundant, but I think some are used
+    # for some instruments and others for others.
+
+    # Descriptor comparisons fail for values of None, so use as_pytype(),
+    # which seems to be harmless, if in any doubt.
+
+    if ad1.data_section().as_pytype() != ad2.data_section().as_pytype():
+        result = False
+        log.fullinfo('Data sections differ')
+
+    if ad1.detector_roi_setting().as_pytype() != \
+       ad2.detector_roi_setting().as_pytype():
+        result = False
+        log.fullinfo('Detector regions of interest differ')
+
+    if ad1.read_mode().as_pytype() != ad2.read_mode().as_pytype():
+        result = False
+        log.fullinfo('Read modes differ')
+
+    if ad1.well_depth_setting().as_pytype() != \
+       ad2.well_depth_setting().as_pytype():
+        result = False
+        log.fullinfo('Well depths differ')
+
+    if ad1.gain_setting().as_pytype() != ad2.gain_setting().as_pytype():
+        result = False
+        log.fullinfo('Gain settings differ')
+
+    if ad1.detector_x_bin() != ad2.detector_x_bin() or \
+       ad1.detector_y_bin() != ad2.detector_y_bin():
+        result = False
+        log.fullinfo('Detector binnings differ')
+
+    # It may or may not be critical for coadds to match, depending on
+    # whether they are added or averaged for the instrument concerned,
+    # but it's safest to require that they do:
+    if ad1.coadds().as_pytype() != ad2.coadds().as_pytype():
+        result = False
+        log.fullinfo('Number of co-adds differ')
+
+    if check_exposure:
+        try:
+            # This is the tolerance Paul used for NIRI in FITS store:
+            if abs(ad1.exposure_time() - ad2.exposure_time()) > 0.01:
+                result = False
+                log.fullinfo('Exposure times differ')
+        except TypeError:
+            log.error('Non-numeric type from exposure_time() descriptor')
+
+    if ad1.camera().as_pytype() != ad2.camera().as_pytype():
+        result = False
+        log.fullinfo('Cameras differ')
+
+    # This apparently works for GMOS so don't bother with grating() and
+    # prism() as well. This may need checking for GNIRS XD but I would expect
+    # it to incorporate the cross-disperser info. in that case.
+    if ad1.disperser().as_pytype() != ad2.disperser().as_pytype():
+        result = False
+        log.fullinfo('Dispersers differ')
+
+    # This is the tolerance Paul used for NIRI & F2 in FITS store:
+    try:
+        same = abs(ad1.central_wavelength() - ad2.central_wavelength()) < 0.001
+    except TypeError:
+        same = ad1.central_wavelength().as_pytype() == \
+               ad2.central_wavelength().as_pytype()
+    if not same:
+        result = False
+        log.fullinfo('Central wavelengths differ')
+
+    if ad1.focal_plane_mask().as_pytype() != \
+       ad2.focal_plane_mask().as_pytype():
+        result = False
+        log.fullinfo('Focal plane masks differ')
+
+    if ad1.filter_name().as_pytype() != ad2.filter_name().as_pytype():
+        result = False
+        log.fullinfo('Filters differ')
+    
+    if ad1.lyot_stop().as_pytype() != ad2.lyot_stop().as_pytype():
+        result = False
+        log.fullinfo('Lyot stop settings differ')
+
+    if ad1.decker().as_pytype() != ad2.decker().as_pytype():
+        result = False
+        log.fullinfo('Decker settings differ')
+
+    if ad1.pupil_mask().as_pytype() != ad2.pupil_mask().as_pytype():
+        result = False
+        log.fullinfo('Pupil mask settings differ')
+
+    # Should beam splitter be added? I can't see a descriptor for it.
+
+    if result:
+        log.fullinfo('Configurations match')
+    
+    return result
+
+
 def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                         return_dtype=None):
     """
