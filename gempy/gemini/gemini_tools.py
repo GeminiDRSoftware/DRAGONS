@@ -456,7 +456,7 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
     """
     log = logutils.get_logger(__name__)
 
-    log.fullinfo('Comparing instrument config for AstroData instances:')
+    log.debug('Comparing instrument config for AstroData instances:')
 
     if not isinstance(ad1, AstroData) or not isinstance(ad2, AstroData):
         raise Errors.ToolboxError('Inputs must be AstroData instances')
@@ -472,7 +472,7 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
 
     if ad1.count_exts('SCI') != ad2.count_exts('SCI'):
         result = False
-        log.fullinfo('Number of SCI extensions differ')
+        log.debug('  Number of SCI extensions differ')
 
     # I don't *think* reading the shape attribute causes the arrays to be
     # loaded into memory here -- in any case I can't see a way to unload an
@@ -481,7 +481,7 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
     for ext1, ext2 in zip(ad1['SCI'], ad2['SCI']):
         if ext1.data.shape != ext2.data.shape:
             result = False
-            log.fullinfo('Array dimensions differ')
+            log.debug('  Array dimensions differ')
             break
 
     # Some of these checks seem a bit redundant, but I think some are used
@@ -492,57 +492,57 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
 
     if ad1.data_section().as_pytype() != ad2.data_section().as_pytype():
         result = False
-        log.fullinfo('Data sections differ')
+        log.debug('  Data sections differ')
 
     if ad1.detector_roi_setting().as_pytype() != \
        ad2.detector_roi_setting().as_pytype():
         result = False
-        log.fullinfo('Detector regions of interest differ')
+        log.debug('  Detector regions of interest differ')
 
     if ad1.read_mode().as_pytype() != ad2.read_mode().as_pytype():
         result = False
-        log.fullinfo('Read modes differ')
+        log.debug('  Read modes differ')
 
     if ad1.well_depth_setting().as_pytype() != \
        ad2.well_depth_setting().as_pytype():
         result = False
-        log.fullinfo('Well depths differ')
+        log.debug('  Well depths differ')
 
     if ad1.gain_setting().as_pytype() != ad2.gain_setting().as_pytype():
         result = False
-        log.fullinfo('Gain settings differ')
+        log.debug('  Gain settings differ')
 
     if ad1.detector_x_bin() != ad2.detector_x_bin() or \
        ad1.detector_y_bin() != ad2.detector_y_bin():
         result = False
-        log.fullinfo('Detector binnings differ')
+        log.debug('  Detector binnings differ')
 
     # It may or may not be critical for coadds to match, depending on
     # whether they are added or averaged for the instrument concerned,
     # but it's safest to require that they do:
     if ad1.coadds().as_pytype() != ad2.coadds().as_pytype():
         result = False
-        log.fullinfo('Number of co-adds differ')
+        log.debug('  Number of co-adds differ')
 
     if check_exposure:
         try:
             # This is the tolerance Paul used for NIRI in FITS store:
             if abs(ad1.exposure_time() - ad2.exposure_time()) > 0.01:
                 result = False
-                log.fullinfo('Exposure times differ')
+                log.debug('  Exposure times differ')
         except (TypeError, DescriptorValueTypeError):
             log.error('Non-numeric type from exposure_time() descriptor')
 
     if ad1.camera().as_pytype() != ad2.camera().as_pytype():
         result = False
-        log.fullinfo('Cameras differ')
+        log.debug('  Cameras differ')
 
     # This apparently works for GMOS so don't bother with grating() and
     # prism() as well. This may need checking for GNIRS XD but I would expect
     # it to incorporate the cross-disperser info. in that case.
     if ad1.disperser().as_pytype() != ad2.disperser().as_pytype():
         result = False
-        log.fullinfo('Dispersers differ')
+        log.debug('  Dispersers differ')
 
     # This is the tolerance Paul used for NIRI & F2 in FITS store:
     try:
@@ -552,33 +552,33 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
                ad2.central_wavelength().as_pytype()
     if not same:
         result = False
-        log.fullinfo('Central wavelengths differ')
+        log.debug('  Central wavelengths differ')
 
     if ad1.focal_plane_mask().as_pytype() != \
        ad2.focal_plane_mask().as_pytype():
         result = False
-        log.fullinfo('Focal plane masks differ')
+        log.debug('  Focal plane masks differ')
 
     if ad1.filter_name().as_pytype() != ad2.filter_name().as_pytype():
         result = False
-        log.fullinfo('Filters differ')
+        log.debug('  Filters differ')
     
     if ad1.lyot_stop().as_pytype() != ad2.lyot_stop().as_pytype():
         result = False
-        log.fullinfo('Lyot stop settings differ')
+        log.debug('  Lyot stop settings differ')
 
     if ad1.decker().as_pytype() != ad2.decker().as_pytype():
         result = False
-        log.fullinfo('Decker settings differ')
+        log.debug('  Decker settings differ')
 
     if ad1.pupil_mask().as_pytype() != ad2.pupil_mask().as_pytype():
         result = False
-        log.fullinfo('Pupil mask settings differ')
+        log.debug('  Pupil mask settings differ')
 
     # Should beam splitter be added? I can't see a descriptor for it.
 
     if result:
-        log.fullinfo('Configurations match')
+        log.debug('  Configurations match')
     
     return result
 
