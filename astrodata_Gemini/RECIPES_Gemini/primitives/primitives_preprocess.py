@@ -155,7 +155,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                 tmp_list.append(sky)
             ad_sky_list = tmp_list
         else:
-            # The seperateSky primitive puts the sky AstroData objects in the
+            # The separateSky primitive puts the sky AstroData objects in the
             # sky stream. The get_stream function returns a list of AstroData
             # objects when style="AD"
             ad_sky_list = rc.get_stream(stream="sky", style="AD")
@@ -224,6 +224,12 @@ class PreprocessPrimitives(GENERALPrimitives):
                     # Loop over each sky AstroData object in the sky list
                     for ad_sky in ad_sky_list:
                     
+                        # Make sure the candidate sky exposures actually match
+                        # the science configuration (eg. if sequenced over
+                        # different filters or exposure times):
+                        same_cfg = gt.matching_inst_config(ad_science, ad_sky,
+                            check_exposure=True)
+
                         # Get the datetime object of the sky AstroData object
                         # using the appropriate descriptor
                         ad_sky_datetime = ad_sky.ut_datetime()
@@ -234,8 +240,9 @@ class PreprocessPrimitives(GENERALPrimitives):
                         
                         # Select only those sky AstroData objects observed
                         # within "time" seconds of the science AstroData object
-                        if (abs(ad_science_datetime - ad_sky_datetime) <
-                            seconds):
+                        if (same_cfg and \
+                            abs(ad_science_datetime - ad_sky_datetime) \
+                            < seconds):
                             
                             # Get the distance of the science and sky AstroData
                             # objects using the x_offset and y_offset
