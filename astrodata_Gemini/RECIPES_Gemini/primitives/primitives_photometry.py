@@ -511,7 +511,7 @@ def _match_objcat_refcat(adinput=None):
 
                                 #if K or K(prime) -- use color terms 
                                 elif filter_name in ['k','k(prime)']: 
-                                    k_ref_mag, k_ref_mag_err = _add_color_term(filter_name, refcat, ri[i]) 
+                                    k_ref_mag, k_ref_mag_err = _add_K_color_term(filter_name, refcat, ri[i]) 
 
                                     objcat.data['REF_MAG'][oi[i]] = k_ref_mag
                                     objcat.data['REF_MAG_ERR'][oi[i]] = k_ref_mag_err
@@ -533,7 +533,7 @@ def _match_objcat_refcat(adinput=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def _add_color_term(filter_name, refcat, indx):
+def _add_K_color_term(filter_name, refcat, indx):
     """
     K_MKO = -0.003 (+/- 0.007) - 0.026 (+/- 0.011) * (J-K)_2MASS + K_2MASS
     K_MKO = -0.006 (+/-0.004) - 0.071 (+/-0.020) * (H-K)_2MASS + K_2MASS
@@ -563,10 +563,14 @@ def _add_color_term(filter_name, refcat, indx):
     ct = {'JK': jk_color_term, 'HK': hk_color_term, 'Kp': kp_color_term}
     k_err = {}
 
+    # associate the filter and terms,  return if an unkown filter is encountered
     if filter_name == 'k':
         term_list = ['JK','HK']
-    else:
+    elif filter_name == 'k(prime)':
         term_list = ['Kp']
+        term = 'Kp'
+    else:
+        return refcat.data['kmag'][indx],refcat.data['kmag_err'][indx]
 
     for term in term_list:
         k_err[term] = (( ct[term]['dC1']**2 
@@ -581,12 +585,10 @@ def _add_color_term(filter_name, refcat, indx):
             term = 'JK'
         else:
             term = 'HK'
-    else:
-        term = 'Kp'
 
     # check that NaN is not returned in color term
     if np.isnan(ct[term]['sub']):
-        k_correct = refcat.data['kmag_err'][indx]
+        k_correct = refcat.data['kmag'][indx]
         k_cor_err = refcat.data['kmag_err'][indx]
     else:
         k_correct = (ct[term]['C1'] + ct[term]['C2'] * ct[term]['sub'] 
