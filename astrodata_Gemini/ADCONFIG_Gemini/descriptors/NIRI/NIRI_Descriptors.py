@@ -615,6 +615,11 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     niriSpecDict = None
     
     def saturation_level(self, dataset, **args):
+        # Note that this descriptor does not currently account for any image 
+        # stacking. If stacked images are averaged, this saturation level will 
+        # be correct, but if they are added, the saturation level will need to 
+        # be multiplied by the number of stacked images.
+        
         # Get the number of coadds, the gain and the well depth setting values
         # using the appropriate descriptors
         coadds = dataset.coadds()

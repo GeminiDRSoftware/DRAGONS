@@ -231,7 +231,7 @@ class PhotometryPrimitives(GENERALPrimitives):
 
             # Get a seeing estimate from the header, if available
             seeing_est = ad.phu_get_key_value("MEANFWHM")
-
+            
             if method=="sextractor":
                 # Check sextractor version, go to daofind if task not
                 # found or wrong version
@@ -1136,27 +1136,30 @@ def _sextractor(ad=None,seeing_estimate=None):
         
             extnum = ad.ext_index(("DQ",extver))
             dqtmpfn = "%s[%d]" % (tmpfn,extnum)
-
-            # Get correct default files for this mode
-            dd = default_dict['dq'].copy()
-            for key in dd:
-                default_file = lookup_path(dd[key])
-                if default_file.endswith(".py"):
-                    default_file = default_file[:-3]
-                dd[key] = default_file
+            dq_type = "dq"
 
         else:
             # Dummy temporary DQ file name
             dqtmpfn = ""
+            dq_type = "no_dq"
 
-            # Get correct default files for this mode
-            dd = default_dict['no_dq'].copy()
-            for key in dd:
-                default_file = lookup_path(dd[key])
-                if default_file.endswith(".py"):
-                    default_file = default_file[:-3]
-                dd[key] = default_file
-    
+        # Check if there are config files for this instrument
+        inst = ad.instrument().as_pytype().lower()        
+        if (inst + '_' + dq_type) in default_dict:
+            dd = default_dict[inst + '_' + dq_type].copy()
+        # Otherwise use default config files
+        else:
+            dd = default_dict[dq_type].copy()
+
+        # Each file in the dictionary needs the correct path added                
+        for key in dd:
+            dict_file = lookup_path(dd[key])
+            # lookup_path adds .py on automatically, so needs to be removed.
+            # Not ideal!
+            if dict_file.endswith(".py"):
+                dict_file = dict_file[:-3]
+            dd[key] = dict_file
+                        
         # Temporary output name for this extension
         if tmpfn.endswith(".fits"):
             basename = tmpfn[:-5]
@@ -1172,6 +1175,25 @@ def _sextractor(ad=None,seeing_estimate=None):
         else:
             iter = [0]
     
+        # The saturation level is only set dynamically for NIRI at the moment. The
+        # correct saturation level should be implemented and tested for GMOS as 
+        # well (see Trac ticket #756)
+        if "NIRI" in ad.type():
+        # Setting the saturation level according to the image (this is necessary
+        # for coadded NIRI images). If the keyword BUNIT is not present, assume the
+        # image is in ADU. Note that this saturation level assumes that any stacked
+        # images are averaged rather than added, and at some point this will need
+        # to be addressed (probably in the descriptor).
+            if sciext.get_key_value('BUNIT') == 'electron':
+                satur_level = ad.saturation_level().as_pytype() * ad.gain().as_pytype()
+            else:
+                satur_level = ad.saturation_level().as_pytype()
+        else:
+            for line in open(dd["sex"]):
+                if line.startswith('SATUR_LEVEL'):
+                    satur_level = float(line.split()[1])
+                    break
+                    
         problem = False
         for i in iter:
             # this horrible hack doesn't use the seeing estimate from the previous
@@ -1187,6 +1209,7 @@ def _sextractor(ad=None,seeing_estimate=None):
                           "-PARAMETERS_NAME",dd["param"],
                           "-FILTER_NAME",dd["conv"],
                           "-STARNNW_NAME",dd["nnw"],
+                          "-SATUR_LEVEL","%f" % satur_level,
                           "-CHECKIMAGE_NAME",objtmpfn,
                           "-CHECKIMAGE_TYPE","OBJECTS",
                           ]
@@ -1200,6 +1223,7 @@ def _sextractor(ad=None,seeing_estimate=None):
                           "-PARAMETERS_NAME",dd["param"],
                           "-FILTER_NAME",dd["conv"],
                           "-STARNNW_NAME",dd["nnw"],
+                          "-SATUR_LEVEL","%f" % satur_level,
                           "-SEEING_FWHM","%f" % seeing_estimate,
                           "-CHECKIMAGE_NAME",objtmpfn,
                           "-CHECKIMAGE_TYPE","OBJECTS",
@@ -1223,7 +1247,8 @@ def _sextractor(ad=None,seeing_estimate=None):
                 hdulist = pf.open(outtmpfn)
             except IOError:
                 problem = True
-                log.stdinfo("No sources found in %s[SCI,%d]" %
+                log.stdinfo("No sources found in %s[SCI,%d] "
+                            "(SExtractor output not available)" %
                             (ad.filename,extver))
                 break
 
@@ -1234,15 +1259,15 @@ def _sextractor(ad=None,seeing_estimate=None):
             # next iteration
             if len(hdulist) <= 1:
                 problem = True
-                log.stdinfo("No sources found in %s[SCI,%d]" %
+                log.stdinfo("No sources found in %s[SCI,%d] " 
+                            "(SExtractor returned no data)" %
                             (ad.filename,extver))
                 break
             else:
                 tdata = hdulist[1].data
                 tcols = hdulist[1].columns
 
-
-            # Convert FWHM_WORLD to arcsec
+            # Convert FWHM_WORLD to arcsec   
             fwhm = tdata["FWHM_WORLD"]
             fwhm *= 3600.0
             
@@ -1265,8 +1290,11 @@ def _sextractor(ad=None,seeing_estimate=None):
 
             # Bitwise-or all the flags
             flags = sxflag | dqflag | aflag | eflag | sflag | snflag
-            good_fwhm = fwhm[flags==0]
+            flagged_fwhm = fwhm[flags==0]
 
+            # Throw out FWHM values of zero which means SExtractor has 
+            # not found a FWHM for these objects
+            good_fwhm = flagged_fwhm[flagged_fwhm!=0]
             if len(good_fwhm)>3:
                 # Clip outliers in FWHM - single 1-sigma clip if 
                 # more than 3 sources.
