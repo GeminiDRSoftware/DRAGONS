@@ -1174,61 +1174,52 @@ def _sextractor(ad=None,seeing_estimate=None):
             iter = [0,1]
         else:
             iter = [0]
-    
-        # The saturation level is only set dynamically for NIRI at the moment. The
-        # correct saturation level should be implemented and tested for GMOS as 
-        # well (see Trac ticket #756)
-        if "NIRI" in ad.type():
-        # Setting the saturation level according to the image (this is necessary
-        # for coadded NIRI images). If the keyword BUNIT is not present, assume the
-        # image is in ADU. Note that this saturation level assumes that any stacked
-        # images are averaged rather than added, and at some point this will need
-        # to be addressed (probably in the descriptor).
-            if sciext.get_key_value('BUNIT') == 'electron':
-                satur_level = ad.saturation_level().as_pytype() * ad.gain().as_pytype()
-            else:
-                satur_level = ad.saturation_level().as_pytype()
-        else:
-            for line in open(dd["sex"]):
-                if line.startswith('SATUR_LEVEL'):
-                    satur_level = float(line.split()[1])
-                    break
-                    
+                        
         problem = False
         for i in iter:
-            # this horrible hack doesn't use the seeing estimate from the previous
-            # pass if the seeing is less than 0.2 - ie niri AO.
-            # Might be better to make it say 4*pixel_scale rather than hard wired
-            if (seeing_estimate is None) or (seeing_estimate < 0.2):
-                # use default seeing estimate for a first pass
-                sx_cmd = ["sex",
-                          scitmpfn,
-                          "-c",dd["sex"],
-                          "-FLAG_IMAGE",dqtmpfn,
-                          "-CATALOG_NAME",outtmpfn,
-                          "-PARAMETERS_NAME",dd["param"],
-                          "-FILTER_NAME",dd["conv"],
-                          "-STARNNW_NAME",dd["nnw"],
-                          "-SATUR_LEVEL","%f" % satur_level,
-                          "-CHECKIMAGE_NAME",objtmpfn,
-                          "-CHECKIMAGE_TYPE","OBJECTS",
-                          ]
-            else:
-                # run with provided seeing estimate
-                sx_cmd = ["sex",
-                          scitmpfn,
-                          "-c",dd["sex"],
-                          "-FLAG_IMAGE",dqtmpfn,
-                          "-CATALOG_NAME",outtmpfn,
-                          "-PARAMETERS_NAME",dd["param"],
-                          "-FILTER_NAME",dd["conv"],
-                          "-STARNNW_NAME",dd["nnw"],
-                          "-SATUR_LEVEL","%f" % satur_level,
-                          "-SEEING_FWHM","%f" % seeing_estimate,
-                          "-CHECKIMAGE_NAME",objtmpfn,
-                          "-CHECKIMAGE_TYPE","OBJECTS",
-                          ]
+            
+            print "iteration", i, ", seeing estimate = ", seeing_estimate
+            sx_cmd = ["sex", scitmpfn,
+                      "-c",dd["sex"],
+                      "-FLAG_IMAGE",dqtmpfn,
+                      "-CATALOG_NAME",outtmpfn,
+                      "-PARAMETERS_NAME",dd["param"],
+                      "-FILTER_NAME",dd["conv"],
+                      "-STARNNW_NAME",dd["nnw"],
+                      "-CHECKIMAGE_NAME",objtmpfn,
+                      "-CHECKIMAGE_TYPE","OBJECTS",
+                      ]
 
+            # The saturation level is only set dynamically for NIRI at the 
+            # moment. The correct saturation level should be implemented and 
+            # tested for GMOS as well (see Trac ticket #756)
+            if "NIRI" in ad.type():
+                # Setting the saturation level according to the image (this is
+                # necessary for coadded NIRI images). If the keyword BUNIT is 
+                # not present, assume the image is in ADU. Note that this 
+                # saturation level assumes that any stacked images are 
+                # averaged rather than added, and at some point this will need
+                # to be addressed (probably in the descriptor).
+                if sciext.get_key_value('BUNIT') == 'electron':
+                    satur_level = ad.saturation_level().as_pytype() * \
+                        ad.gain().as_pytype()
+                else:
+                    satur_level = ad.saturation_level().as_pytype()
+                extend_line = ("-SATUR_LEVEL,", str(satur_level))
+                sx_cmd.extend(extend_line)
+                
+            # If there is a seeing estimate available, use it
+            if seeing_estimate is not None:
+                extend_line = ("-SEEING_FWHM", str(seeing_estimate))
+                sx_cmd.extend(extend_line)
+            # Otherwise, if the observation is AO, then set a static low 
+            # starting value
+            elif ad.phu_get_key_value('AOFOLD') == "IN":
+#                ao_seeing_est = ad.pixel_scale().as_pytype() * 3.0
+#                extend_line = ("-SEEING_FWHM", str(ao_seeing_est))                
+                extend_line = ("-SEEING_FWHM", "0.4")
+                sx_cmd.extend(extend_line)       
+               
             log.fullinfo("Calling SExtractor on [SCI,%d] with "\
                          "seeing estimate %s" % (extver,str(seeing_estimate)))
             try:
