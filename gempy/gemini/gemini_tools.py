@@ -1038,7 +1038,7 @@ def clip_sources(ad):
         # Ignore criterion if all undefined (-999)
         if not np.all(dqflag==-999):
             is_odd=np.mod(dqflag, 2)
-            modified_dqflag=np.where(is_odd, 0, dqflag)
+            modified_dqflag=np.where(np.logical_not(is_odd), 0, dqflag)
             flags |= modified_dqflag
 
         # Ignore source that hae too many flagged pixels in them
