@@ -6,6 +6,7 @@ class IFU(DataClassification):
     parent = "SPECT"
     requirement = OR([  ISCLASS("GMOS_IFU"),
                         ISCLASS("NIFS_SPECT"),
+                        ISCLASS("GPI_SPECT"),
                         ISCLASS("GNIRS_IFU")])
 
 newtypes.append(IFU())
