@@ -57,7 +57,8 @@ class DisplayPrimitives(GENERALPrimitives):
         if ignore:
             log.warning("display turned off per user request")
             rc.report_output(orig_input)
-            yield rc 
+            yield rc
+            return
 
         # Threshold and bias parameters only make sense for SCI extension;
         # turn it off for others
