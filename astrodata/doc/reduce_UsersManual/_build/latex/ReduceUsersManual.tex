@@ -530,7 +530,7 @@ Input fits file(s):      fitsfile.fits
 
 
 \subsection{Configuration Switches, Options}
-\label{interfaces:configuration-switches-options}\begin{description}
+\label{interfaces:configuration-switches-options}\label{interfaces:options}\begin{description}
 \item[{\textbf{--addprimset \textless{}PRIMSETNAME\textgreater{}}}] \leavevmode
 Add this path to user-supplied primitives for reduction. eg., path to a
 primitives module.
@@ -1016,14 +1016,6 @@ instance. Once an instance of Reduce() is instantiated and instance attributes
 set as needed, there is one (1) method to call, \textbf{runr()}. This is the only
 public method on the class.
 
-\begin{notice}{note}{Note:}
-When using Reduce() directly, callers must configure their own logger.
-Reduce() does not configure logutils prior to using a logger as
-returned by logutils.get\_logger(). The following example will illustrate
-how this is easily done. It is \emph{highly recommended} that callers
-configure the logger.
-\end{notice}
-
 Eg.,
 
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -1036,9 +1028,68 @@ Eg.,
 \PYG{g+go}{[\PYGZsq{}S20130616S0019.fits\PYGZsq{}]}
 \end{Verbatim}
 
-Once an instance of Reduce has been made, callers can then configure logutils
-with the appropriate settings supplied on the instance. This is precisely what
-\code{reduce} does when it configures logutils.
+On the command line, users may specify a recipe with the \code{-r} {[} \code{-{-}recipe} {]}
+flag. Programmatically, users directly set the recipe:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{recipename} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{recipe.MyRecipe}\PYG{l+s}{\PYGZsq{}}
+\end{Verbatim}
+
+All other public attributes may be set in standard pythonic ways.
+
+
+\subsubsection{Configure the logger}
+\label{interfaces:configure-the-logger}
+\begin{notice}{note}{Note:}
+When using an instance of Reduce() directly, callers must configure
+their own logger. Reduce() does not configure logutils prior to using
+a logger as returned by logutils.get\_logger(). The following discussion
+demonstrates how this is easily done. It is \emph{highly recommended}
+that callers configure the logger.
+\end{notice}
+
+Once an instance of Reduce has been made, callers should then configure logutils
+with the appropriate settings supplied on this instance. Instances of \code{Reduce()}
+provide the following logger parameters as attributes on the instance:
+\begin{itemize}\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}
+\item {} 
+logfile
+
+\item {} 
+loglevel
+
+\item {} 
+logmode
+
+\item {} 
+logindent
+
+\end{itemize}
+
+The \code{reduce} command line provides access to the first three of these
+attributes, as described in Sec. {\hyperref[interfaces:options]{\emph{Configuration Switches, Options}}}, but \code{logindent}, which
+controls the indention levels of logging output, is accessible only through the
+public interface on an instance of \code{Reduce()}. It is not anticipated that users
+will need, or even want, to change the value of \code{logindent}.
+
+An instance of \code{Reduce()} provides the following attributes that may be passed
+to the \code{logutils.config()}. The default values provided for these logging
+configuration parameters may be inspected directly on the instance:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logfile}
+\PYG{g+go}{\PYGZsq{}reduce.log\PYGZsq{}}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logmode}
+\PYG{g+go}{\PYGZsq{}standard\PYGZsq{}}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{loglevel}
+\PYG{g+go}{\PYGZsq{}stdinfo\PYGZsq{}}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logindent}
+\PYG{g+go}{3}
+\end{Verbatim}
+
+Users may adjust these values and then pass them to the \code{logutils.config()}
+function. This is precisely what \code{reduce} does when it configures logutils. See
+Sec. {\hyperref[interfaces:options]{\emph{Configuration Switches, Options}}} for allowable and default values of these and other options.
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{astrodata.utils} \PYG{k+kn}{import} \PYG{n}{logutils}
@@ -1046,8 +1097,17 @@ with the appropriate settings supplied on the instance. This is precisely what
 \PYG{g+go}{                    console\PYGZus{}lvl=reduce.loglevel)}
 \end{Verbatim}
 
-At this point, the caller is able to call the runr() method on the ``reduce''
-instance.
+\begin{notice}{note}{Note:}
+logutils.config() should be called only once. Multiple calls on
+config() may produce unexpected results.
+\end{notice}
+
+
+\subsubsection{Call the runr() method}
+\label{interfaces:call-the-runr-method}
+Once a user is satisfied that all attributes are set to the desired values, and
+the logger is configured, the runr() method on the ``reduce'' instance may then be
+called:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{runr}\PYG{p}{(}\PYG{p}{)}
