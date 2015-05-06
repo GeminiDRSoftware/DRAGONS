@@ -119,7 +119,7 @@ Input fits file(s):      fitsfile.fits
 </dl>
 </div>
 <div class="section" id="configuration-switches-options">
-<h3>3.2.2. Configuration Switches, Options<a class="headerlink" href="#configuration-switches-options" title="Permalink to this headline">¶</a></h3>
+<span id="options"></span><h3>3.2.2. Configuration Switches, Options<a class="headerlink" href="#configuration-switches-options" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt><strong>&#8211;addprimset &lt;PRIMSETNAME&gt;</strong></dt>
 <dd>Add this path to user-supplied primitives for reduction. eg., path to a
@@ -499,74 +499,31 @@ RECIPE:           recipe.FOO
 <h2>3.3. Application Programming Interface (API)<a class="headerlink" href="#application-programming-interface-api" title="Permalink to this headline">¶</a></h2>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">This section discusses and describes programming interfaces
-available on <tt class="docutils literal"><span class="pre">reduce</span></tt> and the underlying class Reduce.  This section
-is for advanced users wishing to code with <tt class="docutils literal"><span class="pre">reduce</span></tt> rather than just
-using it on the command line.  The common user can safely skip this
+<p class="last">This section discusses and describes programming interface
+available on the class Reduce.  This section is for advanced
+users wishing to code with <tt class="docutils literal"><span class="pre">Reduce</span></tt> class, rather than just using
+<tt class="docutils literal"><span class="pre">reduce</span></tt> at the command line.  The common user may safely skip this
 section.</p>
 </div>
 <p>The <tt class="docutils literal"><span class="pre">reduce</span></tt> application is essentially a skeleton script providing the
 described command line interface. After parsing the command line, the script
 then passes the parsed arguments to its main() function, which in turn calls
 the Reduce() class constructor with &#8220;args&#8221;. Class Reduce() is defined
-in the module <tt class="docutils literal"><span class="pre">coreReduce.py</span></tt>. <tt class="docutils literal"><span class="pre">reduce</span></tt> and class Reduce are both
-scriptable, as the following discussion will illustrate.</p>
-<div class="section" id="reduce-main">
-<span id="main"></span><h3>3.3.1. reduce.main()<a class="headerlink" href="#reduce-main" title="Permalink to this headline">¶</a></h3>
-<p>The main() function of reduce receives one (1) parameter that is a Namespace
-object as returned by a call on ArgumentParser.parse_args(). Specific to reduce,
-the caller can supply this object by a call on the parseUtils.buildParser()
-function, which returns a fully defined reduce parser. The parser
-object should then be called with the parse_args() method to return a valid
-reduce parser Namespace. Since there is no interaction with sys.argv, as in
-a command line call, all Namespace attributes have only their defined default
-values. It is for the caller to set these values as needed.</p>
-<p>As the example below demonstrates, once the &#8220;args&#8221; Namespace object is
-instantiated, a caller can set any arguments as needed. Bu they must be set
-to the correct type. The caller should examine the various &#8220;args&#8221; types to
-determine how to set values. For example, args.files is type list, whereas
-args.recipename is type string.</p>
-<p>Eg.,</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">astrodata.adutils.reduceutils</span> <span class="kn">import</span> <span class="nb">reduce</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">astrodata.adutils.reduceutils</span> <span class="kn">import</span> <span class="n">parseUtils</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">args</span> <span class="o">=</span> <span class="n">parseUtils</span><span class="o">.</span><span class="n">buildParser</span><span class="p">(</span><span class="s">&quot;Reduce,v2.0&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">args</span><span class="o">.</span><span class="n">files</span>
-<span class="go">[]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">args</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;S20130616S0019.fits&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">args</span><span class="o">.</span><span class="n">recipename</span> <span class="o">=</span> <span class="s">&quot;recipe.FOO&quot;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-<span class="go">--- reduce, v2.0 ---</span>
-<span class="go">Starting Reduction on set #1 of 1</span>
-<span class="go">Processing dataset(s):</span>
-<span class="go">S20130616S0019.fits</span>
-<span class="gp">...</span>
-</pre></div>
-</div>
-<p>Processing will proceed as usual.</p>
-</div>
+in the module <tt class="docutils literal"><span class="pre">coreReduce.py</span></tt>. The Reduce class is scriptable, as the following
+discussion will illustrate.</p>
 <div class="section" id="class-reduce-and-the-runr-method">
-<h3>3.3.2. Class Reduce and the runr() method<a class="headerlink" href="#class-reduce-and-the-runr-method" title="Permalink to this headline">¶</a></h3>
-<p>Class Reduce is defined in <tt class="docutils literal"><span class="pre">astrodata.adutils.reduceutils</span></tt> module,
-<tt class="docutils literal"><span class="pre">coreReduce.py</span></tt>.</p>
-<p>The reduce.main() function serves mainly as a callable for the command line
-interface. While main() is callable by users supplying the correct &#8220;args&#8221;
-parameter (See <a class="reference internal" href="#main"><em>reduce.main()</em></a>), the Reduce() class is also callable and
-can be used directly, and more appropriately. Callers need not supply an &#8220;args&#8221;
-parameter to the class constructor. The instance of Reduce will have all the
+<h3>3.3.1. Class Reduce and the runr() method<a class="headerlink" href="#class-reduce-and-the-runr-method" title="Permalink to this headline">¶</a></h3>
+<p>The Reduce class is defined under the <tt class="docutils literal"><span class="pre">gemini_python</span></tt> code base in the
+<tt class="docutils literal"><span class="pre">recipe_system.reduction</span></tt> module, <tt class="docutils literal"><span class="pre">coreReduce.py</span></tt>.</p>
+<p>The Reduce() class is importable and provides settable attributes and a callable
+that can be used directly. Callers need not supply an &#8220;args&#8221; parameter to the
+class initializer, i.e. __init__(). An instance of Reduce will have all the
 same arguments as in a command line scenario, available as attributes on the
 instance. Once an instance of Reduce() is instantiated and instance attributes
 set as needed, there is one (1) method to call, <strong>runr()</strong>. This is the only
 public method on the class.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">When using Reduce() directly, callers must configure their own logger.
-Reduce() does not configure logutils prior to using a logger as
-returned by logutils.get_logger(). The following example will illustrate
-how this is easily done. It is <cite>highly recommended</cite> that callers
-configure the logger.</p>
-</div>
 <p>Eg.,</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">astrodata.adutils.reduceutils.coreReduce</span> <span class="kn">import</span> <span class="n">Reduce</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">recipe_system.reduction.coreReduce</span> <span class="kn">import</span> <span class="n">Reduce</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span> <span class="o">=</span> <span class="n">Reduce</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">files</span>
 <span class="go">[]</span>
@@ -575,16 +532,69 @@ configure the logger.</p>
 <span class="go">[&#39;S20130616S0019.fits&#39;]</span>
 </pre></div>
 </div>
-<p>Once an instance of Reduce has been made, callers can then configure logutils
-with the appropriate settings supplied on the instance. This is precisely what
-<tt class="docutils literal"><span class="pre">reduce</span></tt> does when it configures logutils.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">astrodata.adutils</span> <span class="kn">import</span> <span class="n">logutils</span>
+<p>On the command line, users may specify a recipe with the <tt class="docutils literal"><span class="pre">-r</span></tt> [ <tt class="docutils literal"><span class="pre">--recipe</span></tt> ]
+flag. Programmatically, users directly set the recipe:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">recipename</span> <span class="o">=</span> <span class="s">&#39;recipe.MyRecipe&#39;</span>
+</pre></div>
+</div>
+<p>All other public attributes may be set in standard pythonic ways.</p>
+<div class="section" id="configure-the-logger">
+<h4>3.3.1.1. Configure the logger<a class="headerlink" href="#configure-the-logger" title="Permalink to this headline">¶</a></h4>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">When using an instance of Reduce() directly, callers must configure
+their own logger. Reduce() does not configure logutils prior to using
+a logger as returned by logutils.get_logger(). The following discussion
+demonstrates how this is easily done. It is <cite>highly recommended</cite>
+that callers configure the logger.</p>
+</div>
+<p>Once an instance of Reduce has been made, callers should then configure logutils
+with the appropriate settings supplied on this instance. Instances of <tt class="docutils literal"><span class="pre">Reduce()</span></tt>
+provide the following logger parameters as attributes on the instance:</p>
+<table class="hlist"><tr><td><ul class="simple">
+<li>logfile</li>
+<li>loglevel</li>
+<li>logmode</li>
+<li>logindent</li>
+</ul>
+</td></tr></table>
+<p>The <tt class="docutils literal"><span class="pre">reduce</span></tt> command line provides access to the first three of these
+attributes, as described in Sec. <a class="reference internal" href="#options"><em>Configuration Switches, Options</em></a>, but <tt class="docutils literal"><span class="pre">logindent</span></tt>, which
+controls the indention levels of logging output, is accessible only through the
+public interface on an instance of <tt class="docutils literal"><span class="pre">Reduce()</span></tt>. It is not anticipated that users
+will need, or even want, to change the value of <tt class="docutils literal"><span class="pre">logindent</span></tt>.</p>
+<p>An instance of <tt class="docutils literal"><span class="pre">Reduce()</span></tt> provides the following attributes that may be passed
+to the <tt class="docutils literal"><span class="pre">logutils.config()</span></tt>. The default values provided for these logging
+configuration parameters may be inspected directly on the instance:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">logfile</span>
+<span class="go">&#39;reduce.log&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">logmode</span>
+<span class="go">&#39;standard&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">loglevel</span>
+<span class="go">&#39;stdinfo&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">logindent</span>
+<span class="go">3</span>
+</pre></div>
+</div>
+<p>Users may adjust these values and then pass them to the <tt class="docutils literal"><span class="pre">logutils.config()</span></tt>
+function. This is precisely what <tt class="docutils literal"><span class="pre">reduce</span></tt> does when it configures logutils. See
+Sec. <a class="reference internal" href="#options"><em>Configuration Switches, Options</em></a> for allowable and default values of these and other options.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">astrodata.utils</span> <span class="kn">import</span> <span class="n">logutils</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">logutils</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="n">file_name</span><span class="o">=</span><span class="nb">reduce</span><span class="o">.</span><span class="n">logfile</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="nb">reduce</span><span class="o">.</span><span class="n">logmode</span><span class="p">,</span>
 <span class="go">                    console_lvl=reduce.loglevel)</span>
 </pre></div>
 </div>
-<p>At this point, the caller is able to call the runr() method on the &#8220;reduce&#8221;
-instance.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">logutils.config() should be called only once. Multiple calls on
+config() may produce unexpected results.</p>
+</div>
+</div>
+<div class="section" id="call-the-runr-method">
+<h4>3.3.1.2. Call the runr() method<a class="headerlink" href="#call-the-runr-method" title="Permalink to this headline">¶</a></h4>
+<p>Once a user is satisfied that all attributes are set to the desired values, and
+the logger is configured, the runr() method on the &#8220;reduce&#8221; instance may then be
+called:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">runr</span><span class="p">()</span>
 <span class="go">All submitted files appear valid</span>
 <span class="go">Starting Reduction on set #1 of 1</span>
@@ -594,6 +604,7 @@ instance.</p>
 </pre></div>
 </div>
 <p>Processing will then proceed in the usual manner.</p>
+</div>
 </div>
 </div>
 </div>
@@ -619,8 +630,11 @@ instance.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#application-programming-interface-api">3.3. Application Programming Interface (API)</a><ul>
-<li><a class="reference internal" href="#reduce-main">3.3.1. reduce.main()</a></li>
-<li><a class="reference internal" href="#class-reduce-and-the-runr-method">3.3.2. Class Reduce and the runr() method</a></li>
+<li><a class="reference internal" href="#class-reduce-and-the-runr-method">3.3.1. Class Reduce and the runr() method</a><ul>
+<li><a class="reference internal" href="#configure-the-logger">3.3.1.1. Configure the logger</a></li>
+<li><a class="reference internal" href="#call-the-runr-method">3.3.1.2. Call the runr() method</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

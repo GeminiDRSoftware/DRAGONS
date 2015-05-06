@@ -74,6 +74,8 @@ Informational switches
        
        Input fits file(s):	fitsfile.fits
 
+.. _options:
+
 Configuration Switches, Options
 +++++++++++++++++++++++++++++++
 **--addprimset <PRIMSETNAME>** 
@@ -486,82 +488,37 @@ Eg. 4) Override a recipe and specify another fits file.  The file names in the @
 
 Application Programming Interface (API)
 ---------------------------------------
-.. note:: This section discusses and describes programming interfaces
-          available on ``reduce`` and the underlying class Reduce.  This section
-          is for advanced users wishing to code with ``reduce`` rather than just 
-          using it on the command line.  The common user can safely skip this 
+.. note:: This section discusses and describes programming interface
+          available on the class Reduce.  This section is for advanced 
+	  users wishing to code with ``Reduce`` class, rather than just using 
+	  ``reduce`` at the command line.  The common user may safely skip this 
           section.
 
 The ``reduce`` application is essentially a skeleton script providing the 
 described command line interface. After parsing the command line, the script 
 then passes the parsed arguments to its main() function, which in turn calls 
 the Reduce() class constructor with "args". Class Reduce() is defined 
-in the module ``coreReduce.py``. ``reduce`` and class Reduce are both 
-scriptable, as the following discussion will illustrate.
+in the module ``coreReduce.py``. The Reduce class is scriptable, as the following 
+discussion will illustrate.
 
-.. _main:
-
-reduce.main()
-+++++++++++++
-
-The main() function of reduce receives one (1) parameter that is a Namespace 
-object as returned by a call on ArgumentParser.parse_args(). Specific to reduce, 
-the caller can supply this object by a call on the parseUtils.buildParser() 
-function, which returns a fully defined reduce parser. The parser 
-object should then be called with the parse_args() method to return a valid 
-reduce parser Namespace. Since there is no interaction with sys.argv, as in 
-a command line call, all Namespace attributes have only their defined default 
-values. It is for the caller to set these values as needed.
-
-As the example below demonstrates, once the "args" Namespace object is 
-instantiated, a caller can set any arguments as needed. Bu they must be set 
-to the correct type. The caller should examine the various "args" types to 
-determine how to set values. For example, args.files is type list, whereas 
-args.recipename is type string.
-
-Eg.,
-
-    >>> from astrodata.adutils.reduceutils import reduce
-    >>> from astrodata.adutils.reduceutils import parseUtils
-    >>> args = parseUtils.buildParser("Reduce,v2.0").parse_args()
-    >>> args.files
-    []
-    >>> args.files.append('S20130616S0019.fits')
-    >>> args.recipename = "recipe.FOO"
-    >>> reduce.main(args)
-    --- reduce, v2.0 ---
-    Starting Reduction on set #1 of 1
-    Processing dataset(s):
-    S20130616S0019.fits
-    ...
-
-Processing will proceed as usual.
 
 Class Reduce and the runr() method
 ++++++++++++++++++++++++++++++++++
 
-Class Reduce is defined in ``astrodata.adutils.reduceutils`` module, 
-``coreReduce.py``.
+The Reduce class is defined under the ``gemini_python`` code base in the 
+``recipe_system.reduction`` module, ``coreReduce.py``.
 
-The reduce.main() function serves mainly as a callable for the command line 
-interface. While main() is callable by users supplying the correct "args" 
-parameter (See :ref:`main`), the Reduce() class is also callable and 
-can be used directly, and more appropriately. Callers need not supply an "args" 
-parameter to the class constructor. The instance of Reduce will have all the 
+The Reduce() class is importable and provides settable attributes and a callable 
+that can be used directly. Callers need not supply an "args" parameter to the 
+class initializer, i.e. __init__(). An instance of Reduce will have all the 
 same arguments as in a command line scenario, available as attributes on the 
 instance. Once an instance of Reduce() is instantiated and instance attributes 
 set as needed, there is one (1) method to call, **runr()**. This is the only 
 public method on the class.
 
-.. note:: When using Reduce() directly, callers must configure their own logger. 
-	  Reduce() does not configure logutils prior to using a logger as 
-	  returned by logutils.get_logger(). The following example will illustrate 
-	  how this is easily done. It is `highly recommended` that callers
-	  configure the logger. 
-
 Eg.,
 
->>> from astrodata.adutils.reduceutils.coreReduce import Reduce
+>>> from recipe_system.reduction.coreReduce import Reduce
 >>> reduce = Reduce()
 >>> reduce.files
 []
@@ -569,16 +526,70 @@ Eg.,
 >>> reduce.files
 ['S20130616S0019.fits']
 
-Once an instance of Reduce has been made, callers can then configure logutils 
-with the appropriate settings supplied on the instance. This is precisely what 
-``reduce`` does when it configures logutils.
+On the command line, users may specify a recipe with the ``-r`` [ ``--recipe`` ]
+flag. Programmatically, users directly set the recipe::
 
->>> from astrodata.adutils import logutils
+>>> reduce.recipename = 'recipe.MyRecipe'
+
+All other public attributes may be set in standard pythonic ways.
+
+Configure the logger
+^^^^^^^^^^^^^^^^^^^^
+
+.. note:: When using an instance of Reduce() directly, callers must configure 
+	  their own logger. Reduce() does not configure logutils prior to using 
+	  a logger as returned by logutils.get_logger(). The following discussion 
+	  demonstrates how this is easily done. It is `highly recommended` 
+	  that callers configure the logger. 
+
+Once an instance of Reduce has been made, callers should then configure logutils 
+with the appropriate settings supplied on this instance. Instances of ``Reduce()`` 
+provide the following logger parameters as attributes on the instance:
+
+.. hlist::
+   :columns: 1
+
+   * logfile
+   * loglevel
+   * logmode
+   * logindent
+
+The ``reduce`` command line provides access to the first three of these 
+attributes, as described in Sec. :ref:`options`, but ``logindent``, which 
+controls the indention levels of logging output, is accessible only through the 
+public interface on an instance of ``Reduce()``. It is not anticipated that users
+will need, or even want, to change the value of ``logindent``.
+
+An instance of ``Reduce()`` provides the following attributes that may be passed 
+to the ``logutils.config()``. The default values provided for these logging 
+configuration parameters may be inspected directly on the instance::
+
+  >>> reduce.logfile
+  'reduce.log'
+  >>> reduce.logmode
+  'standard'
+  >>> reduce.loglevel
+  'stdinfo'
+  >>> reduce.logindent
+  3
+
+Users may adjust these values and then pass them to the ``logutils.config()`` 
+function. This is precisely what ``reduce`` does when it configures logutils. See 
+Sec. :ref:`options` for allowable and default values of these and other options.
+
+>>> from astrodata.utils import logutils
 >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode, 
                     console_lvl=reduce.loglevel)
 
-At this point, the caller is able to call the runr() method on the "reduce" 
-instance.
+.. note:: logutils.config() should be called only once. Multiple calls on
+	  config() may produce unexpected results.
+
+Call the runr() method
+^^^^^^^^^^^^^^^^^^^^^^
+
+Once a user is satisfied that all attributes are set to the desired values, and 
+the logger is configured, the runr() method on the "reduce" instance may then be
+called::
 
    >>> reduce.runr()
    All submitted files appear valid
