@@ -29,6 +29,7 @@ calculatorIndex = {
     "NIFS":"NIFS_Descriptors.NIFS_DescriptorCalc()",
     "NIRI":"NIRI_Descriptors.NIRI_DescriptorCalc()",
     "OSCIR":"GEMINI_Descriptors.GEMINI_DescriptorCalc()",
+    "TEXES":"GEMINI_Descriptors.GEMINI_DescriptorCalc()",
     "PHOENIX":"PHOENIX_Descriptors.PHOENIX_DescriptorCalc()",
     "TRECS":"TRECS_Descriptors.TRECS_DescriptorCalc()",
     "BHROS":"BHROS_Descriptors.BHROS_DescriptorCalc()",
