@@ -22,6 +22,7 @@ calculatorIndex = {
     "GNIRS":"GNIRS_Descriptors.GNIRS_DescriptorCalc()",
     "GSAOI":"GSAOI_Descriptors.GSAOI_DescriptorCalc()",
     "HOKUPAAQUIRC":"GEMINI_Descriptors.GEMINI_DescriptorCalc()",
+    "ABU":"GEMINI_Descriptors.GEMINI_DescriptorCalc()",
     "HRWFS":"GEMINI_Descriptors.GEMINI_DescriptorCalc()",
     "MICHELLE":"MICHELLE_Descriptors.MICHELLE_DescriptorCalc()",
     "NICI":"NICI_Descriptors.NICI_DescriptorCalc()",
