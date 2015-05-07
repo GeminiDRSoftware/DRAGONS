@@ -7,7 +7,7 @@ class GMOS(DataClassification):
         '''
         
     parent = "GEMINI"
-    requirement = ISCLASS("GMOS_N") | ISCLASS("GMOS_S")
+    requirement = ISCLASS("GMOS_N") | ISCLASS("GMOS_S") | PHU(INSTRUME='GMOS')
     # equivalent to...
     #requirement = OR(   
     #                    ClassReq("GMOS_N"), 
