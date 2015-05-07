@@ -4,6 +4,6 @@ class NIRI(DataClassification):
     usage = "Applies to any data from the NIRI instrument."
     parent = "GEMINI"
 
-    requirement = PHU(INSTRUME='NIRI')
+    requirement = PHU(INSTRUME='NIRI') | PHU(INSTRUME='niri')
 
 newtypes.append(NIRI())
