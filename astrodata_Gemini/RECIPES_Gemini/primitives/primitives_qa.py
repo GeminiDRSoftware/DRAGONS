@@ -480,9 +480,7 @@ class QAPrimitives(GENERALPrimitives):
 
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
-            
             found_mag = True
-
             detzp_means=[]
             detzp_clouds=[]
             detzp_sigmas=[]
@@ -728,26 +726,31 @@ class QAPrimitives(GENERALPrimitives):
                 # Evaluate the test statistic for each CC band boundary,
                 # with one sided tests in both directions
                 cc_canbe={50: True, 70: True, 80: True, 100: True}
+                H0_MSG1 = "95%% confidence test indicates worse than CC%s " \
+                          "(normalized test statistic %.3f > 1.645)"
+                H0_MSG2 = "95%% confidence test indicates CC%d or better " \
+                          "(normalised test statistic %.3f < -1.645)"
+                H0_MSG3 = "95%% confidence test indicates borderline CC%d or one band worse " \
+                          "(normalised test statistic -1.645 < %.3f < 1.645)"
                 for cc in [50, 70, 80]:
                   ce = ccConstraints[str(cc)]
-                  #print "Test Statistic: n=%d mu=%.2f sig=%.2f msig = %.2f" % (len(all_cloud), (cloud-ce), (clouderr+pop_sigma), (clouderr+pop_sigma)/math.sqrt(len(all_cloud)))
                   ts =(cloud-ce) / ((clouderr+pop_sigma)/(math.sqrt(len(all_cloud))))
                   if(ts>1.645):
                       #H0 fails - cc is worse than the worst end of this cc band
-                      log.fullinfo("95%% confidence test indicates it is worse than CC%s (normalized test statistic %.3f > 1.645)" % (cc, ts))
+                      log.fullinfo(H0_MSG1 % (cc, ts))
                       for c in cc_canbe.keys():
                           if(c <= cc):
                               cc_canbe[c]=False
                   if(ts<-1.645):
                       #H0 fails - cc is better than the worst end of the CC band
-                      log.fullinfo("95%% confidence test indicates it is CC%d or better (normalised test statistic %.3f < -1.645)" % (cc, ts))
+                      log.fullinfo(H0_MSG2 % (cc, ts))
                       for c in cc_canbe.keys():
                           if(c > cc):
                               cc_canbe[c]=False
 
                   if((ts<1.645) and (ts>-1.645)):
                       #H0 passes - it's consistent with the boundary
-                      log.fullinfo("95%% confidence test indicates it is borderline CC%d or one band worse (normalised test statistic -1.645 < %.3f < 1.645)" % (cc, ts))
+                      log.fullinfo(H0_MSG3 % (cc, ts))
 
                 # For QA dictionary
                 qad["band"] = []
@@ -774,13 +777,18 @@ class QAPrimitives(GENERALPrimitives):
                     # Just do that one hypothesis test here
                     # Can't test for CCany, always applies
                     if(req_cc != 100):
-                        ce = ccConstraints[str(req_cc)]
-                        ts = (cloud-ce) / ((clouderr+pop_sigma)/(math.sqrt(len(all_cloud))))
-                        if(ts>1.645):
-                          #H0 fails - cc is worse than the worst end of this cc band
-                          cc_warn = "WARNING: CC requirement not met at the 95% confidence level"
-                          qad["comment"].append("CC requirement not met at "\
-                                                "the 95% confidence level")
+                        try:
+                            ce = ccConstraints[str(req_cc)]
+                            ts = (cloud-ce) / ((clouderr+pop_sigma)/(math.sqrt(len(all_cloud))))
+                            if(ts>1.645):
+                                #H0 fails - cc is worse than the worst end of this cc band
+                                cc_warn = "WARNING: CC requirement not met at the 95% confidence level"
+                                qad["comment"].append(cc_warn)
+                        except KeyError:
+                            log.warning("Requested CC value of '%s-percentile' NOT VALID" % \
+                                        req_cc)
+                            qad['comment'].append("Requested CC: '%s-percentile' NOT VALID" % \
+                                                  req_cc)
 
                     if req_cc==100:
                         req_cc = "CCAny"
