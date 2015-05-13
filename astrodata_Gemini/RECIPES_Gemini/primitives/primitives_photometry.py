@@ -1178,7 +1178,6 @@ def _sextractor(ad=None,seeing_estimate=None):
         problem = False
         for i in iter:
             
-            print "iteration", i, ", seeing estimate = ", seeing_estimate
             sx_cmd = ["sex", scitmpfn,
                       "-c",dd["sex"],
                       "-FLAG_IMAGE",dqtmpfn,
