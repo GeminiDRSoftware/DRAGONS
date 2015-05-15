@@ -14,7 +14,7 @@
 \usepackage{appendix} \setcounter{tocdepth}{0}
 
 \title{reduce Users Manual}
-\date{May 06, 2015}
+\date{May 15, 2015}
 \release{X1.0.1}
 \author{Kenneth Anderson}
 \newcommand{\sphinxlogo}{}
@@ -971,7 +971,8 @@ Parameters:       tpar=100, report\PYGZus{}inputs=True
 RECIPE:           recipe.FOO
 \end{Verbatim}
 
-Eg. 4) Override a recipe and specify another fits file.  The file names in the @file will be ignored:
+Eg. 4) Override a recipe and specify another fits file. The file names in
+the @file will be ignored:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYGZdl{} reduce @parfile \PYGZhy{}r=recipe.FOO test\PYGZus{}data/N20100311S0090\PYGZus{}1.fits
@@ -988,7 +989,7 @@ RECIPE:           recipe.FOO
 \section{Application Programming Interface (API)}
 \label{interfaces:application-programming-interface-api}
 \begin{notice}{note}{Note:}
-This section discusses and describes programming interface
+This section discusses and describes the programmatic interface
 available on the class Reduce.  This section is for advanced
 users wishing to code with \code{Reduce} class, rather than just using
 \code{reduce} at the command line.  The common user may safely skip this
@@ -999,12 +1000,13 @@ The \code{reduce} application is essentially a skeleton script providing the
 described command line interface. After parsing the command line, the script
 then passes the parsed arguments to its main() function, which in turn calls
 the Reduce() class constructor with ``args''. Class Reduce() is defined
-in the module \code{coreReduce.py}. The Reduce class is scriptable, as the following
-discussion will illustrate.
+in the module \code{coreReduce.py} under the \code{gemini\_python} directory
+\code{recipe\_system/reduction}. The Reduce class is scriptable, as the following
+discussion illustrates.
 
 
-\subsection{Class Reduce and the runr() method}
-\label{interfaces:class-reduce-and-the-runr-method}
+\subsection{Class Reduce, logging, and the runr() method}
+\label{interfaces:class-reduce-logging-and-the-runr-method}
 The Reduce class is defined under the \code{gemini\_python} code base in the
 \code{recipe\_system.reduction} module, \code{coreReduce.py}.
 
@@ -1048,9 +1050,10 @@ demonstrates how this is easily done. It is \emph{highly recommended}
 that callers configure the logger.
 \end{notice}
 
-Once an instance of Reduce has been made, callers should then configure logutils
-with the appropriate settings supplied on this instance. Instances of \code{Reduce()}
-provide the following logger parameters as attributes on the instance:
+Once an instance of Reduce has been made, callers should then configure the logutils
+facility provided with the \code{astrodata} package, which is found in
+\code{astrodata/utils}. Instances of \code{Reduce()} provide the following logger
+parameters as attributes on the instance with appropriate default values:
 \begin{itemize}\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}
 \item {} 
 logfile
@@ -1077,6 +1080,7 @@ to the \code{logutils.config()}. The default values provided for these logging
 configuration parameters may be inspected directly on the instance:
 
 \begin{Verbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce} \PYG{o}{=} \PYG{n}{Reduce}\PYG{p}{(}\PYG{p}{)}
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logfile}
 \PYG{g+go}{\PYGZsq{}reduce.log\PYGZsq{}}
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logmode}
@@ -1107,9 +1111,18 @@ config() may produce unexpected results.
 \label{interfaces:call-the-runr-method}
 Once a user is satisfied that all attributes are set to the desired values, and
 the logger is configured, the runr() method on the ``reduce'' instance may then be
-called:
+called. The following brings the examples above into one ``end-to-end'' use of
+Reduce and logutils:
 
 \begin{Verbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{recipe\PYGZus{}system.reduction.coreReduce} \PYG{k+kn}{import} \PYG{n}{Reduce}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{astrodata.utils} \PYG{k+kn}{import} \PYG{n}{logutils}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce} \PYG{o}{=} \PYG{n}{Reduce}\PYG{p}{(}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{files}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{S20130616S0019.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{recipename} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{recipe.MyRecipe}\PYG{l+s}{\PYGZsq{}}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logfile} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{my\PYGZus{}reduce\PYGZus{}run.log}\PYG{l+s}{\PYGZsq{}}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{logutils}\PYG{o}{.}\PYG{n}{config}\PYG{p}{(}\PYG{n}{file\PYGZus{}name}\PYG{o}{=}\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logfile}\PYG{p}{,} \PYG{n}{mode}\PYG{o}{=}\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logmode}\PYG{p}{,}
+\PYG{g+go}{                    console\PYGZus{}lvl=reduce.loglevel)}
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{runr}\PYG{p}{(}\PYG{p}{)}
 \PYG{g+go}{All submitted files appear valid}
 \PYG{g+go}{Starting Reduction on set \PYGZsh{}1 of 1}

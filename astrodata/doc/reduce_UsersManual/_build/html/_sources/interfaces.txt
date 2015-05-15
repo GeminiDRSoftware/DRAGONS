@@ -474,7 +474,8 @@ Eg. 3) Override the recipe::
   Parameters:       tpar=100, report_inputs=True
   RECIPE:           recipe.FOO
 
-Eg. 4) Override a recipe and specify another fits file.  The file names in the @file will be ignored::
+Eg. 4) Override a recipe and specify another fits file. The file names in 
+the @file will be ignored::
 
   $ reduce @parfile -r=recipe.FOO test_data/N20100311S0090_1.fits
   
@@ -488,7 +489,7 @@ Eg. 4) Override a recipe and specify another fits file.  The file names in the @
 
 Application Programming Interface (API)
 ---------------------------------------
-.. note:: This section discusses and describes programming interface
+.. note:: This section discusses and describes the programmatic interface
           available on the class Reduce.  This section is for advanced 
 	  users wishing to code with ``Reduce`` class, rather than just using 
 	  ``reduce`` at the command line.  The common user may safely skip this 
@@ -498,12 +499,13 @@ The ``reduce`` application is essentially a skeleton script providing the
 described command line interface. After parsing the command line, the script 
 then passes the parsed arguments to its main() function, which in turn calls 
 the Reduce() class constructor with "args". Class Reduce() is defined 
-in the module ``coreReduce.py``. The Reduce class is scriptable, as the following 
-discussion will illustrate.
+in the module ``coreReduce.py`` under the ``gemini_python`` directory 
+``recipe_system/reduction``. The Reduce class is scriptable, as the following 
+discussion illustrates.
 
 
-Class Reduce and the runr() method
-++++++++++++++++++++++++++++++++++
+Class Reduce, logging, and the runr() method
+++++++++++++++++++++++++++++++++++++++++++++
 
 The Reduce class is defined under the ``gemini_python`` code base in the 
 ``recipe_system.reduction`` module, ``coreReduce.py``.
@@ -542,9 +544,10 @@ Configure the logger
 	  demonstrates how this is easily done. It is `highly recommended` 
 	  that callers configure the logger. 
 
-Once an instance of Reduce has been made, callers should then configure logutils 
-with the appropriate settings supplied on this instance. Instances of ``Reduce()`` 
-provide the following logger parameters as attributes on the instance:
+Once an instance of Reduce has been made, callers should then configure the logutils
+facility provided with the ``astrodata`` package, which is found in 
+``astrodata/utils``. Instances of ``Reduce()`` provide the following logger 
+parameters as attributes on the instance with appropriate default values:
 
 .. hlist::
    :columns: 1
@@ -564,6 +567,7 @@ An instance of ``Reduce()`` provides the following attributes that may be passed
 to the ``logutils.config()``. The default values provided for these logging 
 configuration parameters may be inspected directly on the instance::
 
+  >>> reduce = Reduce()
   >>> reduce.logfile
   'reduce.log'
   >>> reduce.logmode
@@ -589,13 +593,22 @@ Call the runr() method
 
 Once a user is satisfied that all attributes are set to the desired values, and 
 the logger is configured, the runr() method on the "reduce" instance may then be
-called::
+called. The following brings the examples above into one "end-to-end" use of 
+Reduce and logutils::
 
-   >>> reduce.runr()
-   All submitted files appear valid
-   Starting Reduction on set #1 of 1
-   Processing dataset(s):
-   S20130616S0019.fits
-   ...
+  >>> from recipe_system.reduction.coreReduce import Reduce
+  >>> from astrodata.utils import logutils
+  >>> reduce = Reduce()
+  >>> reduce.files.append('S20130616S0019.fits')
+  >>> reduce.recipename = 'recipe.MyRecipe'
+  >>> reduce.logfile = 'my_reduce_run.log'
+  >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode, 
+                      console_lvl=reduce.loglevel)
+  >>> reduce.runr()
+  All submitted files appear valid
+  Starting Reduction on set #1 of 1
+  Processing dataset(s):
+  S20130616S0019.fits
+  ...
 
 Processing will then proceed in the usual manner.

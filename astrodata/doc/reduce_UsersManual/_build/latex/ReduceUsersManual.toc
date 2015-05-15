@@ -19,7 +19,7 @@
 \contentsline {subsection}{\numberline {3.2.6}Recursive @file processing}{12}{subsection.3.2.6}
 \contentsline {subsection}{\numberline {3.2.7}Overriding @file values}{13}{subsection.3.2.7}
 \contentsline {section}{\numberline {3.3}Application Programming Interface (API)}{14}{section.3.3}
-\contentsline {subsection}{\numberline {3.3.1}Class Reduce and the runr() method}{14}{subsection.3.3.1}
+\contentsline {subsection}{\numberline {3.3.1}Class Reduce, logging, and the runr() method}{14}{subsection.3.3.1}
 \contentsline {subsubsection}{Configure the logger}{15}{subsubsection*.3}
 \contentsline {subsubsection}{Call the runr() method}{15}{subsubsection*.4}
 \contentsline {chapter}{\numberline {4}Supplemental tools}{17}{chapter.4}
