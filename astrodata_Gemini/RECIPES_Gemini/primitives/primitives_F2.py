@@ -170,7 +170,8 @@ class F2Primitives(GEMINIPrimitives):
             
             # Raw FLAMINGOS-2 pixel data have three dimensions (e.g.,
             # 2048x2048x1). Remove the single length dimension from the pixel
-            # data.
+            # data. CD3_3 keyword must also be removed or alignAndStack 
+            # complains.
             ad = remove_single_length_dimension(adinput=ad)
             
             # Raw FLAMINGOS-2 pixel data have a data type of int32 (BITPIX=32),
