@@ -25,7 +25,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     def __init__(self):
         self.f2ArrayDict = Lookups.get_lookup_table(
             "Gemini/F2/F2ArrayDict", "f2ArrayDict")
-        self.nifsConfigDict = Lookups.get_lookup_table(
+        self.f2ConfigDict = Lookups.get_lookup_table(
             "Gemini/F2/F2ConfigDict", "f2ConfigDict")
         GEMINI_DescriptorCalc.__init__(self)
     
