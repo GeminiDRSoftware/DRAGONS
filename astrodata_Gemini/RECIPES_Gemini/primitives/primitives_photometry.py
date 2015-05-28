@@ -15,6 +15,7 @@ from gempy.library import astrotools as at
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
 from primitives_GENERAL import GENERALPrimitives
+from IPython.zmq.tests.test_message_spec import OInfoReply
 
 # Define the earliest acceptable SExtractor version
 # Currently: 2.8.6
@@ -498,13 +499,13 @@ def _match_objcat_refcat(adinput=None):
                             oi = []
 
                         log.stdinfo("Matched %d objects in ['OBJCAT',%d] against ['REFCAT',%d]" % (len(oi), extver, extver))
-
+                                     
                         # Loop through the reference list updating the refid in the objcat
-                        # and the refmag, if we can
+                        # and the refmag, if we can                            
                         for i in range(len(oi)):
                             objcat.data['REF_NUMBER'][oi[i]] = refcat.data['Id'][ri[i]]
 
-                            if(magcolname):
+                            if magcolname in refcat.data.names:
                                 if filter_name not in ['k','k(prime)']:
                                     objcat.data['REF_MAG'][oi[i]] = refcat.data[magcolname][ri[i]]
                                     objcat.data['REF_MAG_ERR'][oi[i]] = refcat.data[magerrcolname][ri[i]]
