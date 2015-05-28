@@ -56,7 +56,8 @@ def remove_single_length_dimension(adinput=None):
             # WAT0_001='system=image', WAT1_001='wtype=tan axtype=ra' and
             # WAT2_001= 'wtype=tan axtype=dec' when doing e.g., imcopy
             # f2.fits[*,*,1], so perhaps these should be removed as well?)
-            keywords = ("NAXIS%(dn)s, AXISLAB%(dn)s" % {"dn":dimension_number})
+            keywords = ("NAXIS%(dn)s, AXISLAB%(dn)s, CD%(dn)s_%(dn)s" % 
+                        {"dn":dimension_number})
             keyword_list = keywords.split(",")
             for keyword in keyword_list:
                 del ext.header[keyword]
