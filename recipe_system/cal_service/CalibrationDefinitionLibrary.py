@@ -115,6 +115,7 @@ class CalibrationDefinitionLibrary(object):
                                'focal_plane_mask',
                                'gain_setting',
                                'instrument',
+                               'lyot_stop',
                                'nod_count',
                                'nod_pixels',
                                'object',
@@ -151,7 +152,7 @@ class CalibrationDefinitionLibrary(object):
                     desc_dict[desc_name] = dv.for_db()
                 else:
                     desc_dict[desc_name] = None
-                
+
             cr.descriptors = desc_dict
             cr.types = ad.types
             reqEvents.append(cr)
