@@ -1253,27 +1253,27 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Determine the amplifier integration time keyword (ampinteg) from the
         # global keyword dictionary
         keyword = self.get_descriptor_key("key_ampinteg")
-        
-        # Get the amplifier integration time from the header of the PHU
         ampinteg = dataset.phu_get_key_value(keyword)
-        
+
         if ampinteg is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
             # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
-        
-        if ampinteg == 1000:
-            ret_read_speed_setting = "fast"
+
+       # ampinteg depends on CCD type (EEV, Hamamatsu)
+        detector = dataset.detector_name(pretty=True)
+        if detector == "Hamamatsu":
+            ret_read_speed_setting = "slow" if ampinteg > 8000 else "fast"
         else:
-            ret_read_speed_setting = "slow"
-        
+            ret_read_speed_setting = "slow" if ampinteg > 2000 else "fast"
+
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_read_speed_setting,
                                  name="read_speed_setting", ad=dataset)
         return ret_dv
-    
+
     def saturation_level(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always construct a dictionary where the
