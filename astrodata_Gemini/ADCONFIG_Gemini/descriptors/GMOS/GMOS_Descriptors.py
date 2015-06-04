@@ -1097,14 +1097,23 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # instruments' detector, which are determined by the gain setting and
         # the read speed setting.
 
-        # Read mode name mapping: key=read_mode; value=[gain_setting,
-        #                                               read_speed_setting]
-        ## Move this to a look up table?
-        read_mode_mapping_dict = {"Normal": ["low", "slow"],
-                                  "Bright": ["low", "fast"],
-                                  "Acquisition": ["high", "fast"],
-                                  "Engineering": ["high", "slow"],
-                                  }
+        # Read mode name mapping: 
+        # key=read_mode; value= [ gain_setting, read_speed_setting ]
+        #
+        # mapping_dict moved to lookups
+        # As there was no separate definitions for EEV and e2v CCDs,
+        # 'default' applies for both EEV and the super old e2v detector
+        # names.
+        # 04-06-2015, kra
+
+        read_mode_table = Lookups.get_lookup_table(
+            "Gemini/GMOS/GMOSReadModes", "read_mode_map")
+
+        detector = dataset.detector_name(pretty=True).as_pytype()
+        if detector == 'Hamamatsu':
+            read_mode_mapping_dict = read_mode_table[detector]
+        else:
+            read_mode_mapping_dict = read_mode_table['default']
 
         # Required descriptors
         read_mode_descriptors = ["gain_setting", "read_speed_setting"]
