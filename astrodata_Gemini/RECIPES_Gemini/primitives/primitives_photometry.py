@@ -15,7 +15,6 @@ from gempy.library import astrotools as at
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
 from primitives_GENERAL import GENERALPrimitives
-from IPython.zmq.tests.test_message_spec import OInfoReply
 
 # Define the earliest acceptable SExtractor version
 # Currently: 2.8.6
