@@ -980,11 +980,25 @@ class docstrings:
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the read mode (either 'Very Faint Object(s)', 
-                 'Faint Object(s)', 'Medium Object', 'Bright Object(s)', 
-                 'Very Bright Object(s)', 'Low Background', 
-                 'Medium Background', 'High Background' or 'Invalid') of the 
-                 observation
+        :return: GNIRS/NIFS: one of
+                 'Very Faint Object(s)', 
+                 'Faint Object(s)', 
+                 'Medium Object(s)', 
+                 'Bright Object(s)', 
+                 'Very Bright Object(s)', 
+
+                 NIRI: one of 
+                 'Low Background', 
+                 'Medium Background', 
+                 'High Background',
+                 'Invalid'
+
+                 GMOS: one of 
+                 'Normal',
+                 'Bright',
+                 'Acquisition',
+                 'Engineering'
+
         """
         pass
     
