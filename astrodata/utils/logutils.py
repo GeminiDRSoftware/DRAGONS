@@ -123,12 +123,8 @@ def config(mode='standard', console_lvl=None, file_lvl=None,
         return
 
     rootlog = logging.getLogger('')
-    # If rootlog has handlers, flush and delete them
-    if len(rootlog.handlers) > 0:
-        for handler in rootlog.handlers:
-            if isinstance(handler, logging.StreamHandler):
-                handler.flush()
-            rootlog.removeHandler(handler)
+    # every call on config clears the handlers list.
+    rootlog.handlers = []
 
     # Add the new levels
     logging.addLevelName(ll['STATUS'], 'STATUS')
