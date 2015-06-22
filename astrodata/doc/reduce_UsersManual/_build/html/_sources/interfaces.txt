@@ -1,6 +1,7 @@
 .. interfaces:
 .. include discuss
 
+
 Interfaces
 ==========
 
@@ -94,7 +95,14 @@ Configuration Switches, Options
     Boolean indicating that reduce was invoked by the control center.
 
 **--logmode <LOGMODE>**
-    Set logging mode. One of 'standard', 'console', 'quiet', 'debug', or 'null',
+    Set logging mode. One of 
+
+    * standard
+    * console
+    * quiet
+    * debug
+    * null
+
     where 'console' writes only to screen and 'quiet' writes only to the log
     file. Default is 'standard'.
 
@@ -103,23 +111,31 @@ Configuration Switches, Options
 
 **--loglevel <LOGLEVEL>**
     Set the verbose level for console logging. One of
-    'critical', 'error', 'warning', 'status', 'stdinfo', 'fullinfo', 'debug'.
+
+    * critical
+    * error
+    * warning
+    * status
+    * stdinfo
+    * fullinfo
+    * debug
+
     Default is 'stdinfo'.
 
 **--override_cal <USER_CALS [USER_CALS ...]>**
     The option allows users to provide their own calibrations to ``reduce``.
     Add a calibration to User Calibration Service. 
     '--override_cal CALTYPE:CAL_PATH'
-    Eg.,:
+    Eg.,
 
-      --override_cal processed_arc:wcal/gsTest_arc.fits
+    ``--override_cal processed_arc:wcal/gsTest_arc.fits``
 
 **-p <USERPARAM [USERPARAM ...]>, --param <USERPARAM [USERPARAM ...]>**
     Set a primitive parameter from the command line. The form '-p par=val' sets 
     the parameter in the reduction context such that all primitives will 'see' it.
-    The form ::
+    The form
 
-    -p ASTROTYPE:primitivename:par=val
+    ``-p ASTROTYPE:primitivename:par=val``
 
     sets the parameter such that it applies only when the current reduction type 
     (type of current reference image) is 'ASTROTYPE' and the primitive is 
@@ -158,7 +174,7 @@ dataset by providing calibration files with the  --overrride_cal option.
 
 For example::
 
-  $ reduce --override_cal processed_arc:wcal/gsTest_arc.fits <dataset.fits>
+  $ reduce --override_cal processed_bias:FOO_bias.fits <dataset.fits>
 
 Such a command for complex processing of data is possible because AstroData 
 and the Recipe System do all the necessary work in determining how the data are to 
@@ -166,12 +182,13 @@ be processed, which is critcially based upon the determination of the `typeset`
 that applies to that data.
 
 Without any user-specified recipe (-r --recipe), the default recipe is 
-``qaReduce``, which is defined for various AstroDataTypes and currently used at 
-the summit. The Recipe System uses a combination of index, AstroDataTypes, and
-recipe naming convention to identify the appropriate recipe to run. 
+``qaReduce``, which is defined for various AstroDataTypes and currently used 
+during summit operations. The Recipe System uses a combination of index, 
+AstroDataTypes, and recipe naming convention to identify the appropriate 
+recipe to run. 
 
 The ``qaReduce`` recipe for a GMOS_IMAGE, named ``recipe.qaReduce.GMOS_IMAGE``, 
-specifies that the following primitives are called on the data::
+specifies that the following primitives are called on the data ::
 
  prepare
  addDQ
@@ -489,19 +506,16 @@ the @file will be ignored::
 
 Application Programming Interface (API)
 ---------------------------------------
-.. note:: This section discusses and describes the programmatic interface
-          available on the class Reduce.  This section is for advanced 
-	  users wishing to code with ``Reduce`` class, rather than just using 
-	  ``reduce`` at the command line.  The common user may safely skip this 
-          section.
+.. note:: This section describes and discusses the programmatic interface
+	 available on the class Reduce.  This section is for advanced 
+	 users wishing to code using the ``Reduce`` class, rather than using 
+	 ``reduce`` at the command line.
 
 The ``reduce`` application is essentially a skeleton script providing the 
 described command line interface. After parsing the command line, the script 
 then passes the parsed arguments to its main() function, which in turn calls 
-the Reduce() class constructor with "args". Class Reduce() is defined 
-in the module ``coreReduce.py`` under the ``gemini_python`` directory 
-``recipe_system/reduction``. The Reduce class is scriptable, as the following 
-discussion illustrates.
+the Reduce() class constructor with "args". The Reduce class is scriptable by
+any user as the following discussion illustrates.
 
 
 Class Reduce, logging, and the runr() method
@@ -511,9 +525,9 @@ The Reduce class is defined under the ``gemini_python`` code base in the
 ``recipe_system.reduction`` module, ``coreReduce.py``.
 
 The Reduce() class is importable and provides settable attributes and a callable 
-that can be used directly. Callers need not supply an "args" parameter to the 
-class initializer, i.e. __init__(). An instance of Reduce will have all the 
-same arguments as in a command line scenario, available as attributes on the 
+that can be used programmatically. Callers need not supply an "args" parameter 
+to the class initializer, i.e. __init__(). An instance of Reduce will have all 
+the same arguments as in a command line scenario, available as attributes on the 
 instance. Once an instance of Reduce() is instantiated and instance attributes 
 set as needed, there is one (1) method to call, **runr()**. This is the only 
 public method on the class.
@@ -528,15 +542,23 @@ Eg.,
 >>> reduce.files
 ['S20130616S0019.fits']
 
+Or callers may simply set the ``files`` attribute to be an existing list of files
+
+>>> fits_list = ['FOO.fits', 'BAR.fits']
+>>> reduce.files = fits_list
+
 On the command line, users may specify a recipe with the ``-r`` [ ``--recipe`` ]
 flag. Programmatically, users directly set the recipe::
 
 >>> reduce.recipename = 'recipe.MyRecipe'
 
-All other public attributes may be set in standard pythonic ways.
+All other properties and  attributes on the API may be set in standard pythonic 
+ways. See Appendix 
+:ref:`Class Reduce: Settable properties and attributes <props>` for further 
+discussion and more examples.
 
-Configure the logger
-^^^^^^^^^^^^^^^^^^^^
+Using the logger
+^^^^^^^^^^^^^^^^
 
 .. note:: When using an instance of Reduce() directly, callers must configure 
 	  their own logger. Reduce() does not configure logutils prior to using 
@@ -544,10 +566,27 @@ Configure the logger
 	  demonstrates how this is easily done. It is `highly recommended` 
 	  that callers configure the logger. 
 
-Once an instance of Reduce has been made, callers should then configure the logutils
-facility provided with the ``astrodata`` package, which is found in 
-``astrodata/utils``. Instances of ``Reduce()`` provide the following logger 
-parameters as attributes on the instance with appropriate default values:
+It is recommended that callers of Reduce use a logger supplied by the astrodata
+module ``logutils``. This module employs the python logger module, but with 
+recipe system specific features and embellishments. The recipe system 
+expects to have access to a logutils logger object, which callers should provide
+prior to calling the ``runr()`` method.
+
+To use ``logutils``, import, configure, and get it::
+
+  from astrodata.utils import logutils
+  logutils.config()
+  log = logutils.get_logger(__name__)
+
+where ``__name__`` is usually the calling module's __name__ property, but can
+be any string value. Once configured and instantiated, the ``log`` object is 
+ready to use. See section :ref:`options` for logging levels described on the 
+``--loglevel`` option.
+
+Once an instance of Reduce has been made, callers may (should) configure the 
+logutils facility with attributes available on the instance. Instances of 
+``Reduce()`` provide the following logger parameters as attributes on the 
+instance with appropriate default values:
 
 .. hlist::
    :columns: 1
@@ -561,11 +600,11 @@ The ``reduce`` command line provides access to the first three of these
 attributes, as described in Sec. :ref:`options`, but ``logindent``, which 
 controls the indention levels of logging output, is accessible only through the 
 public interface on an instance of ``Reduce()``. It is not anticipated that users
-will need, or even want, to change the value of ``logindent``.
+will need, or even want, to change the value of ``logindent``, but it is possible.
 
 An instance of ``Reduce()`` provides the following attributes that may be passed 
 to the ``logutils.config()``. The default values provided for these logging 
-configuration parameters may be inspected directly on the instance::
+configuration parameters may be through direct inspection::
 
   >>> reduce = Reduce()
   >>> reduce.logfile
@@ -578,15 +617,17 @@ configuration parameters may be inspected directly on the instance::
   3
 
 Users may adjust these values and then pass them to the ``logutils.config()`` 
-function. This is precisely what ``reduce`` does when it configures logutils. See 
-Sec. :ref:`options` for allowable and default values of these and other options.
+function, or pass other values directly to ``config()``. This is precisely what 
+``reduce`` does when it configures logutils. See Sec. :ref:`options`  and 
+Appendix :ref:`Class Reduce: Settable properties and attributes <props>` for 
+allowable and default values of these and other options.
 
 >>> from astrodata.utils import logutils
 >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode, 
                     console_lvl=reduce.loglevel)
 
-.. note:: logutils.config() should be called only once. Multiple calls on
-	  config() may produce unexpected results.
+.. note:: logutils.config() may be called mutliply, should callers, for example,
+	want to change logfile names for different calls on runr().
 
 Call the runr() method
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -611,4 +652,36 @@ Reduce and logutils::
   S20130616S0019.fits
   ...
 
-Processing will then proceed in the usual manner.
+Processing will then proceed in the usual manner. Astute readers will note that
+callers need not create more than one Reduce instance in order to call runr() 
+with a different dataset or options.
+
+Eg.,::
+
+ >>> from recipe_system.reduction.coreReduce import Reduce
+ >>> from astrodata.utils import logutils
+ >>> reduce = Reduce()
+ >>> reduce.files.append('S20130616S0019.fits')
+ >>> reduce.recipename = 'recipe.MyRecipe'
+ >>> reduce.logfile = 'my_reduce_run.log'
+ >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode, 
+                      console_lvl=reduce.loglevel)
+ >>> reduce.runr()
+   ...
+ reduce completed successfully.
+
+ >>> reduce.recipename = 'recipe.NewRecipe'
+ >>> reduce.files = ['newfile.fits']
+ >>> reduce.userparam = ['clobber=True']
+ >>> runr()
+
+Once an attribute is set on an instance, such as above with ``userparam``, it is
+always set on the instance. If, on another call of runr() the caller does not
+wish to have ``clobber=True``, simply reset the property::
+
+>>> reduce.userparam = []
+>>> runr()
+
+
+Readers may wish to examine the examples in Appendix 
+:ref:`Class Reduce: Settable properties and attributes <props>` 

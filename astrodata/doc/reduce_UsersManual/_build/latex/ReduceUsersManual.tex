@@ -14,7 +14,7 @@
 \usepackage{appendix} \setcounter{tocdepth}{0}
 
 \title{reduce Users Manual}
-\date{May 15, 2015}
+\date{June 22, 2015}
 \release{X1.0.1}
 \author{Kenneth Anderson}
 \newcommand{\sphinxlogo}{}
@@ -547,7 +547,25 @@ When not specified, the context defaults to `QA'.
 Boolean indicating that reduce was invoked by the control center.
 
 \item[{\textbf{--logmode \textless{}LOGMODE\textgreater{}}}] \leavevmode
-Set logging mode. One of `standard', `console', `quiet', `debug', or `null',
+Set logging mode. One of
+\begin{itemize}
+\item {} 
+standard
+
+\item {} 
+console
+
+\item {} 
+quiet
+
+\item {} 
+debug
+
+\item {} 
+null
+
+\end{itemize}
+
 where `console' writes only to screen and `quiet' writes only to the log
 file. Default is `standard'.
 
@@ -556,27 +574,46 @@ Set the log file name. Default is `reduce.log' in the current directory.
 
 \item[{\textbf{--loglevel \textless{}LOGLEVEL\textgreater{}}}] \leavevmode
 Set the verbose level for console logging. One of
-`critical', `error', `warning', `status', `stdinfo', `fullinfo', `debug'.
+\begin{itemize}
+\item {} 
+critical
+
+\item {} 
+error
+
+\item {} 
+warning
+
+\item {} 
+status
+
+\item {} 
+stdinfo
+
+\item {} 
+fullinfo
+
+\item {} 
+debug
+
+\end{itemize}
+
 Default is `stdinfo'.
 
 \item[{\textbf{--override\_cal \textless{}USER\_CALS {[}USER\_CALS ...{]}\textgreater{}}}] \leavevmode
 The option allows users to provide their own calibrations to \code{reduce}.
 Add a calibration to User Calibration Service.
 `--override\_cal CALTYPE:CAL\_PATH'
-Eg.,:
-\begin{quote}
+Eg.,
 
---override\_cal processed\_arc:wcal/gsTest\_arc.fits
-\end{quote}
+\code{-{-}override\_cal processed\_arc:wcal/gsTest\_arc.fits}
 
 \item[{\textbf{-p \textless{}USERPARAM {[}USERPARAM ...{]}\textgreater{}, --param \textless{}USERPARAM {[}USERPARAM ...{]}\textgreater{}}}] \leavevmode
 Set a primitive parameter from the command line. The form `-p par=val' sets
 the parameter in the reduction context such that all primitives will `see' it.
 The form
 
-\begin{Verbatim}[commandchars=\\\{\}]
-\PYGZhy{}p ASTROTYPE:primitivename:par=val
-\end{Verbatim}
+\code{-p ASTROTYPE:primitivename:par=val}
 
 sets the parameter such that it applies only when the current reduction type
 (type of current reference image) is `ASTROTYPE' and the primitive is
@@ -621,7 +658,7 @@ dataset by providing calibration files with the  --overrride\_cal option.
 For example:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\PYGZdl{} reduce \PYGZhy{}\PYGZhy{}override\PYGZus{}cal processed\PYGZus{}arc:wcal/gsTest\PYGZus{}arc.fits \PYGZlt{}dataset.fits\PYGZgt{}
+\PYGZdl{} reduce \PYGZhy{}\PYGZhy{}override\PYGZus{}cal processed\PYGZus{}bias:FOO\PYGZus{}bias.fits \PYGZlt{}dataset.fits\PYGZgt{}
 \end{Verbatim}
 
 Such a command for complex processing of data is possible because AstroData
@@ -630,12 +667,13 @@ be processed, which is critcially based upon the determination of the \emph{type
 that applies to that data.
 
 Without any user-specified recipe (-r --recipe), the default recipe is
-\code{qaReduce}, which is defined for various AstroDataTypes and currently used at
-the summit. The Recipe System uses a combination of index, AstroDataTypes, and
-recipe naming convention to identify the appropriate recipe to run.
+\code{qaReduce}, which is defined for various AstroDataTypes and currently used
+during summit operations. The Recipe System uses a combination of index,
+AstroDataTypes, and recipe naming convention to identify the appropriate
+recipe to run.
 
 The \code{qaReduce} recipe for a GMOS\_IMAGE, named \code{recipe.qaReduce.GMOS\_IMAGE},
-specifies that the following primitives are called on the data:
+specifies that the following primitives are called on the data
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{n}{prepare}
@@ -989,20 +1027,17 @@ RECIPE:           recipe.FOO
 \section{Application Programming Interface (API)}
 \label{interfaces:application-programming-interface-api}
 \begin{notice}{note}{Note:}
-This section discusses and describes the programmatic interface
+This section describes and discusses the programmatic interface
 available on the class Reduce.  This section is for advanced
-users wishing to code with \code{Reduce} class, rather than just using
-\code{reduce} at the command line.  The common user may safely skip this
-section.
+users wishing to code using the \code{Reduce} class, rather than using
+\code{reduce} at the command line.
 \end{notice}
 
 The \code{reduce} application is essentially a skeleton script providing the
 described command line interface. After parsing the command line, the script
 then passes the parsed arguments to its main() function, which in turn calls
-the Reduce() class constructor with ``args''. Class Reduce() is defined
-in the module \code{coreReduce.py} under the \code{gemini\_python} directory
-\code{recipe\_system/reduction}. The Reduce class is scriptable, as the following
-discussion illustrates.
+the Reduce() class constructor with ``args''. The Reduce class is scriptable by
+any user as the following discussion illustrates.
 
 
 \subsection{Class Reduce, logging, and the runr() method}
@@ -1011,9 +1046,9 @@ The Reduce class is defined under the \code{gemini\_python} code base in the
 \code{recipe\_system.reduction} module, \code{coreReduce.py}.
 
 The Reduce() class is importable and provides settable attributes and a callable
-that can be used directly. Callers need not supply an ``args'' parameter to the
-class initializer, i.e. \_\_init\_\_(). An instance of Reduce will have all the
-same arguments as in a command line scenario, available as attributes on the
+that can be used programmatically. Callers need not supply an ``args'' parameter
+to the class initializer, i.e. \_\_init\_\_(). An instance of Reduce will have all
+the same arguments as in a command line scenario, available as attributes on the
 instance. Once an instance of Reduce() is instantiated and instance attributes
 set as needed, there is one (1) method to call, \textbf{runr()}. This is the only
 public method on the class.
@@ -1030,6 +1065,13 @@ Eg.,
 \PYG{g+go}{[\PYGZsq{}S20130616S0019.fits\PYGZsq{}]}
 \end{Verbatim}
 
+Or callers may simply set the \code{files} attribute to be an existing list of files
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{fits\PYGZus{}list} \PYG{o}{=} \PYG{p}{[}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{FOO.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{BAR.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{]}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{files} \PYG{o}{=} \PYG{n}{fits\PYGZus{}list}
+\end{Verbatim}
+
 On the command line, users may specify a recipe with the \code{-r} {[} \code{-{-}recipe} {]}
 flag. Programmatically, users directly set the recipe:
 
@@ -1037,11 +1079,14 @@ flag. Programmatically, users directly set the recipe:
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{recipename} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{recipe.MyRecipe}\PYG{l+s}{\PYGZsq{}}
 \end{Verbatim}
 
-All other public attributes may be set in standard pythonic ways.
+All other properties and  attributes on the API may be set in standard pythonic
+ways. See Appendix
+{\hyperref[appendices/reduce_properties:props]{\emph{Class Reduce: Settable properties and attributes}}} for further
+discussion and more examples.
 
 
-\subsubsection{Configure the logger}
-\label{interfaces:configure-the-logger}
+\subsubsection{Using the logger}
+\label{interfaces:using-the-logger}
 \begin{notice}{note}{Note:}
 When using an instance of Reduce() directly, callers must configure
 their own logger. Reduce() does not configure logutils prior to using
@@ -1050,10 +1095,29 @@ demonstrates how this is easily done. It is \emph{highly recommended}
 that callers configure the logger.
 \end{notice}
 
-Once an instance of Reduce has been made, callers should then configure the logutils
-facility provided with the \code{astrodata} package, which is found in
-\code{astrodata/utils}. Instances of \code{Reduce()} provide the following logger
-parameters as attributes on the instance with appropriate default values:
+It is recommended that callers of Reduce use a logger supplied by the astrodata
+module \code{logutils}. This module employs the python logger module, but with
+recipe system specific features and embellishments. The recipe system
+expects to have access to a logutils logger object, which callers should provide
+prior to calling the \code{runr()} method.
+
+To use \code{logutils}, import, configure, and get it:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k+kn}{from} \PYG{n+nn}{astrodata.utils} \PYG{k+kn}{import} \PYG{n}{logutils}
+\PYG{n}{logutils}\PYG{o}{.}\PYG{n}{config}\PYG{p}{(}\PYG{p}{)}
+\PYG{n}{log} \PYG{o}{=} \PYG{n}{logutils}\PYG{o}{.}\PYG{n}{get\PYGZus{}logger}\PYG{p}{(}\PYG{n}{\PYGZus{}\PYGZus{}name\PYGZus{}\PYGZus{}}\PYG{p}{)}
+\end{Verbatim}
+
+where \code{\_\_name\_\_} is usually the calling module's \_\_name\_\_ property, but can
+be any string value. Once configured and instantiated, the \code{log} object is
+ready to use. See section {\hyperref[interfaces:options]{\emph{Configuration Switches, Options}}} for logging levels described on the
+\code{-{-}loglevel} option.
+
+Once an instance of Reduce has been made, callers may (should) configure the
+logutils facility with attributes available on the instance. Instances of
+\code{Reduce()} provide the following logger parameters as attributes on the
+instance with appropriate default values:
 \begin{itemize}\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}
 \item {} 
 logfile
@@ -1073,11 +1137,11 @@ The \code{reduce} command line provides access to the first three of these
 attributes, as described in Sec. {\hyperref[interfaces:options]{\emph{Configuration Switches, Options}}}, but \code{logindent}, which
 controls the indention levels of logging output, is accessible only through the
 public interface on an instance of \code{Reduce()}. It is not anticipated that users
-will need, or even want, to change the value of \code{logindent}.
+will need, or even want, to change the value of \code{logindent}, but it is possible.
 
 An instance of \code{Reduce()} provides the following attributes that may be passed
 to the \code{logutils.config()}. The default values provided for these logging
-configuration parameters may be inspected directly on the instance:
+configuration parameters may be through direct inspection:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce} \PYG{o}{=} \PYG{n}{Reduce}\PYG{p}{(}\PYG{p}{)}
@@ -1092,8 +1156,10 @@ configuration parameters may be inspected directly on the instance:
 \end{Verbatim}
 
 Users may adjust these values and then pass them to the \code{logutils.config()}
-function. This is precisely what \code{reduce} does when it configures logutils. See
-Sec. {\hyperref[interfaces:options]{\emph{Configuration Switches, Options}}} for allowable and default values of these and other options.
+function, or pass other values directly to \code{config()}. This is precisely what
+\code{reduce} does when it configures logutils. See Sec. {\hyperref[interfaces:options]{\emph{Configuration Switches, Options}}}  and
+Appendix {\hyperref[appendices/reduce_properties:props]{\emph{Class Reduce: Settable properties and attributes}}} for
+allowable and default values of these and other options.
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{astrodata.utils} \PYG{k+kn}{import} \PYG{n}{logutils}
@@ -1102,8 +1168,8 @@ Sec. {\hyperref[interfaces:options]{\emph{Configuration Switches, Options}}} for
 \end{Verbatim}
 
 \begin{notice}{note}{Note:}
-logutils.config() should be called only once. Multiple calls on
-config() may produce unexpected results.
+logutils.config() may be called mutliply, should callers, for example,
+want to change logfile names for different calls on runr().
 \end{notice}
 
 
@@ -1131,7 +1197,42 @@ Reduce and logutils:
 \PYG{g+gp}{...}
 \end{Verbatim}
 
-Processing will then proceed in the usual manner.
+Processing will then proceed in the usual manner. Astute readers will note that
+callers need not create more than one Reduce instance in order to call runr()
+with a different dataset or options.
+
+Eg.,:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{recipe\PYGZus{}system.reduction.coreReduce} \PYG{k+kn}{import} \PYG{n}{Reduce}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{astrodata.utils} \PYG{k+kn}{import} \PYG{n}{logutils}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce} \PYG{o}{=} \PYG{n}{Reduce}\PYG{p}{(}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{files}\PYG{o}{.}\PYG{n}{append}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{S20130616S0019.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{recipename} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{recipe.MyRecipe}\PYG{l+s}{\PYGZsq{}}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logfile} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{my\PYGZus{}reduce\PYGZus{}run.log}\PYG{l+s}{\PYGZsq{}}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{logutils}\PYG{o}{.}\PYG{n}{config}\PYG{p}{(}\PYG{n}{file\PYGZus{}name}\PYG{o}{=}\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logfile}\PYG{p}{,} \PYG{n}{mode}\PYG{o}{=}\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logmode}\PYG{p}{,}
+\PYG{g+go}{                     console\PYGZus{}lvl=reduce.loglevel)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{runr}\PYG{p}{(}\PYG{p}{)}
+\PYG{g+go}{  ...}
+\PYG{g+go}{reduce completed successfully.}
+
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{recipename} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{recipe.NewRecipe}\PYG{l+s}{\PYGZsq{}}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{files} \PYG{o}{=} \PYG{p}{[}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{newfile.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{]}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{userparam} \PYG{o}{=} \PYG{p}{[}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{clobber=True}\PYG{l+s}{\PYGZsq{}}\PYG{p}{]}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{runr}\PYG{p}{(}\PYG{p}{)}
+\end{Verbatim}
+
+Once an attribute is set on an instance, such as above with \code{userparam}, it is
+always set on the instance. If, on another call of runr() the caller does not
+wish to have \code{clobber=True}, simply reset the property:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{userparam} \PYG{o}{=} \PYG{p}{[}\PYG{p}{]}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{runr}\PYG{p}{(}\PYG{p}{)}
+\end{Verbatim}
+
+Readers may wish to examine the examples in Appendix
+{\hyperref[appendices/reduce_properties:props]{\emph{Class Reduce: Settable properties and attributes}}}
 
 
 \chapter{Supplemental tools}
@@ -1777,6 +1878,134 @@ The RecipeSystem currently does not handle memory usage in a very smart way.
 The number of files one can pass on to \code{reduce} is directly limited by the
 memory of the user's computer.  This demo ran successfully on a Mac laptop
 with 4 GB of memory.
+
+
+\chapter{Class Reduce: Settable properties and attributes}
+\label{appendices/reduce_properties:class-reduce-settable-properties-and-attributes}\label{appendices/reduce_properties::doc}\label{appendices/reduce_properties:props}
+The public interface on an instance of the Reduce() class provides a
+number of properties and attributes that allow the user to set and reset
+options as they might through the reduce command line interface. The following
+table is an enumerated set of those attributes.
+
+An instance of Reduce() provides the following attributes. (Note: defaults
+are not necessarily indicative of the actual type that is expected on
+the instance. Use the type specified in the type column.):
+
+\begin{Verbatim}[commandchars=\\\{\}]
+Attribute                  Python type         Default
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
+astrotype                  \PYGZlt{}type \PYGZsq{}str\PYGZsq{}\PYGZgt{}         None
+cal\PYGZus{}mgr                    \PYGZlt{}type \PYGZsq{}str\PYGZsq{}\PYGZgt{}         None
+displayflags               \PYGZlt{}type \PYGZsq{}bool\PYGZsq{}\PYGZgt{}        False
+files                      \PYGZlt{}type \PYGZsq{}list\PYGZsq{}\PYGZgt{}        []
+invoked                    \PYGZlt{}type \PYGZsq{}bool\PYGZsq{}\PYGZgt{}        False
+logfile                    \PYGZlt{}type \PYGZsq{}str\PYGZsq{}\PYGZgt{}         \PYGZsq{}reduce.log\PYGZsq{}
+loglevel                   \PYGZlt{}type \PYGZsq{}str\PYGZsq{}\PYGZgt{}         \PYGZsq{}stdinfo\PYGZsq{}
+logmode                    \PYGZlt{}type \PYGZsq{}str\PYGZsq{}\PYGZgt{}         \PYGZsq{}standard\PYGZsq{}
+primsetname                \PYGZlt{}type \PYGZsq{}str\PYGZsq{}\PYGZgt{}         None
+recipename                 \PYGZlt{}type \PYGZsq{}str\PYGZsq{}\PYGZgt{}         None
+running\PYGZus{}contexts           \PYGZlt{}type \PYGZsq{}str\PYGZsq{}\PYGZgt{}         None
+suffix                     \PYGZlt{}type \PYGZsq{}str\PYGZsq{}\PYGZgt{}         None
+throwDescriptorExceptions  \PYGZlt{}type \PYGZsq{}bool\PYGZsq{}\PYGZgt{}        False
+user\PYGZus{}cals                  \PYGZlt{}type \PYGZsq{}str\PYGZsq{}\PYGZgt{}         None
+userparam                  \PYGZlt{}type \PYGZsq{}list\PYGZsq{}\PYGZgt{}        None
+\end{Verbatim}
+
+
+\section{Examples}
+\label{appendices/reduce_properties:examples}
+Setting attributes on a Reduce object:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce} \PYG{o}{=} \PYG{n}{Reduce}\PYG{p}{(}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{logfile} \PYG{o}{=} \PYG{l+s}{\PYGZdq{}}\PYG{l+s}{my\PYGZus{}reduction.log}\PYG{l+s}{\PYGZdq{}}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{recipe} \PYG{o}{=} \PYG{l+s}{\PYGZdq{}}\PYG{l+s}{recipe.my\PYGZus{}recipe}\PYG{l+s}{\PYGZdq{}}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{files} \PYG{o}{=} \PYG{p}{[}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{UVW.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{XYZ.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{]}
+\end{Verbatim}
+
+Or in other pythonic ways:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{file\PYGZus{}list} \PYG{o}{=} \PYG{p}{[}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{FOO.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{BAR.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{]}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{files}\PYG{o}{.}\PYG{n}{extend}\PYG{p}{(}\PYG{n}{file\PYGZus{}list}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{files}
+\PYG{g+go}{[\PYGZsq{}UVW.fits\PYGZsq{}, \PYGZsq{}XYZ.fits\PYGZsq{}, \PYGZsq{}FOO.fits\PYGZsq{}, \PYGZsq{}BAR.fits\PYGZsq{}]}
+\end{Verbatim}
+
+Users wishing to pass primtive parameters to the recipe\_system need only set
+the one (1) attribute, \code{userparam}, on the Reduce instance:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{userparam} \PYG{o}{=} \PYG{p}{[}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{clobber=True}\PYG{l+s}{\PYGZsq{}}\PYG{p}{]}
+\end{Verbatim}
+
+This is the API equivalent to the command line option:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYGZdl{} reduce \PYGZhy{}p clobber=True [...]
+\end{Verbatim}
+
+For muliple primitive parameters, the `userparam' attribute is a list of `par=val' strings, as in:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{userparam} \PYG{o}{=} \PYG{p}{[} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{par1=val1}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{par2=val2}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{o}{.}\PYG{o}{.}\PYG{o}{.} \PYG{p}{]}
+\end{Verbatim}
+
+
+\section{Example function}
+\label{appendices/reduce_properties:example-function}
+The following function shows a potential usage of class Reduce. When
+conditions are met, the function \code{reduce\_conditions\_met()} is called
+passing several lists of files, \code{procfiles} (a list of lists of fits
+files). Here, each list of \code{procfiles} is then passed to the internal
+\code{launch\_reduce()} function.
+
+\begin{Verbatim}[commandchars=\\\{\},numbers=left,firstnumber=1,stepnumber=1]
+\PYG{k+kn}{from} \PYG{n+nn}{astrodata.utils} \PYG{k+kn}{import} \PYG{n}{logutils}
+\PYG{k+kn}{from} \PYG{n+nn}{recipe\PYGZus{}system.reduction.coreReduce} \PYG{k+kn}{import} \PYG{n}{Reduce}
+
+\PYG{k}{def} \PYG{n+nf}{reduce\PYGZus{}conditions\PYGZus{}are\PYGZus{}met}\PYG{p}{(}\PYG{n}{procfiles}\PYG{p}{,} \PYG{n}{control\PYGZus{}options}\PYG{o}{=}\PYG{p}{\PYGZob{}}\PYG{p}{\PYGZcb{}}\PYG{p}{)}\PYG{p}{:}
+    \PYG{n}{reduce\PYGZus{}object} \PYG{o}{=} \PYG{n}{Reduce}\PYG{p}{(}\PYG{p}{)}
+    \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{logfile} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{my\PYGZus{}reduce.log}\PYG{l+s}{\PYGZsq{}}
+    \PYG{c}{\PYGZsh{} write logfile only, no stdout.}
+    \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{logmode} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{quiet}\PYG{l+s}{\PYGZsq{}}
+
+    \PYG{n}{logutils}\PYG{o}{.}\PYG{n}{config}\PYG{p}{(}\PYG{n}{file\PYGZus{}name}\PYG{o}{=}\PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{logfile}\PYG{p}{,}
+                    \PYG{n}{mode}\PYG{o}{=}\PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{logmode}\PYG{p}{,}
+                    \PYG{n}{console\PYGZus{}lvl}\PYG{o}{=}\PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{loglevel}\PYG{p}{)}
+
+    \PYG{k}{def} \PYG{n+nf}{launch\PYGZus{}reduce}\PYG{p}{(}\PYG{n}{datasets}\PYG{p}{,} \PYG{n}{recipe}\PYG{o}{=}\PYG{n+nb+bp}{None}\PYG{p}{,} \PYG{n}{upload}\PYG{o}{=}\PYG{n+nb+bp}{False}\PYG{p}{)}\PYG{p}{:}
+        \PYG{c}{\PYGZsh{} set the \PYGZsq{}files\PYGZsq{} = [] for the function.}
+        \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{files} \PYG{o}{=} \PYG{n}{datasets}
+        \PYG{k}{if} \PYG{n}{recipe}\PYG{p}{:}
+            \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{recipename} \PYG{o}{=} \PYG{n}{recipe}
+        \PYG{k}{if} \PYG{n}{upload}\PYG{p}{:}
+            \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{running\PYGZus{}contexts} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{upload}\PYG{l+s}{\PYGZsq{}}
+        \PYG{k}{else}\PYG{p}{:}
+            \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{running\PYGZus{}contexts} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{qa}\PYG{l+s}{\PYGZsq{}}
+        \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{userparam} \PYG{o}{=} \PYG{p}{[}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{clobber=True}\PYG{l+s}{\PYGZsq{}}\PYG{p}{]}
+        \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{runr}\PYG{p}{(}\PYG{p}{)}
+        \PYG{k}{return}
+
+    \PYG{k}{for} \PYG{n}{files} \PYG{o+ow}{in} \PYG{n}{procfiles}\PYG{p}{:}
+        \PYG{c}{\PYGZsh{} Use a different recipe if FOO.fits is present}
+        \PYG{k}{if} \PYG{l+s}{\PYGZdq{}}\PYG{l+s}{FOO.fits}\PYG{l+s}{\PYGZdq{}} \PYG{o+ow}{in} \PYG{n}{files}\PYG{p}{:}
+            \PYG{n}{launch\PYGZus{}reduce}\PYG{p}{(}\PYG{n+nb}{sorted}\PYG{p}{(}\PYG{n}{files}\PYG{p}{)}\PYG{p}{,} \PYG{n}{recipe}\PYG{o}{=}\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{recipe.FOO}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}\PYG{p}{)}
+        \PYG{k}{else}\PYG{p}{:}
+            \PYG{n}{launch\PYGZus{}reduce}\PYG{p}{(}\PYG{n+nb}{sorted}\PYG{p}{(}\PYG{n}{files}\PYG{p}{)}\PYG{p}{,} \PYG{n}{upload}\PYG{o}{=}\PYG{n}{control\PYGZus{}options}\PYG{o}{.}\PYG{n}{get}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{upload}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}\PYG{p}{)}
+
+    \PYG{k}{return}
+
+\PYG{n}{procfiles} \PYG{o}{=} \PYG{p}{[} \PYG{p}{[}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{FOO.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{BAR.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{]}\PYG{p}{,}
+              \PYG{p}{[}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{UVW.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{XYZ.fits}\PYG{l+s}{\PYGZsq{}}\PYG{p}{]}
+           \PYG{p}{]}
+\PYG{k}{if} \PYG{n}{conditions\PYGZus{}are\PYGZus{}met}\PYG{p}{:}
+    \PYG{n}{reduce\PYGZus{}conditions\PYGZus{}are\PYGZus{}met}\PYG{p}{(}\PYG{n}{procfiles}\PYG{p}{)}
+\end{Verbatim}
+
+Readers will see here that calling \code{reduce\_conditions\_are\_met()} without the
+\code{control\_options} parameter will result in the \code{running\_contexts} attribute
+being set to \code{'qa'}.
 
 
 

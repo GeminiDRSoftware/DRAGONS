@@ -9,7 +9,7 @@
 
 .. toctree::
    :numbered:
-   :maxdepth: 2
+   :maxdepth: 3
 
    intro
    userenv
@@ -26,6 +26,7 @@ Appendix
    :maxdepth: 1
    
    appendices/appendix_demo
+   appendices/reduce_properties
 
 Indices and tables
 ==================

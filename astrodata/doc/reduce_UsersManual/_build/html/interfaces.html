@@ -133,30 +133,44 @@ When not specified, the context defaults to &#8216;QA&#8217;.</dd>
 <dt><strong>&#8211;invoked</strong></dt>
 <dd>Boolean indicating that reduce was invoked by the control center.</dd>
 <dt><strong>&#8211;logmode &lt;LOGMODE&gt;</strong></dt>
-<dd>Set logging mode. One of &#8216;standard&#8217;, &#8216;console&#8217;, &#8216;quiet&#8217;, &#8216;debug&#8217;, or &#8216;null&#8217;,
-where &#8216;console&#8217; writes only to screen and &#8216;quiet&#8217; writes only to the log
-file. Default is &#8216;standard&#8217;.</dd>
+<dd><p class="first">Set logging mode. One of</p>
+<ul class="simple">
+<li>standard</li>
+<li>console</li>
+<li>quiet</li>
+<li>debug</li>
+<li>null</li>
+</ul>
+<p class="last">where &#8216;console&#8217; writes only to screen and &#8216;quiet&#8217; writes only to the log
+file. Default is &#8216;standard&#8217;.</p>
+</dd>
 <dt><strong>&#8211;logfile &lt;LOGFILE&gt;</strong></dt>
 <dd>Set the log file name. Default is &#8216;reduce.log&#8217; in the current directory.</dd>
 <dt><strong>&#8211;loglevel &lt;LOGLEVEL&gt;</strong></dt>
-<dd>Set the verbose level for console logging. One of
-&#8216;critical&#8217;, &#8216;error&#8217;, &#8216;warning&#8217;, &#8216;status&#8217;, &#8216;stdinfo&#8217;, &#8216;fullinfo&#8217;, &#8216;debug&#8217;.
-Default is &#8216;stdinfo&#8217;.</dd>
+<dd><p class="first">Set the verbose level for console logging. One of</p>
+<ul class="simple">
+<li>critical</li>
+<li>error</li>
+<li>warning</li>
+<li>status</li>
+<li>stdinfo</li>
+<li>fullinfo</li>
+<li>debug</li>
+</ul>
+<p class="last">Default is &#8216;stdinfo&#8217;.</p>
+</dd>
 <dt><strong>&#8211;override_cal &lt;USER_CALS [USER_CALS ...]&gt;</strong></dt>
 <dd><p class="first">The option allows users to provide their own calibrations to <tt class="docutils literal"><span class="pre">reduce</span></tt>.
 Add a calibration to User Calibration Service.
 &#8216;&#8211;override_cal CALTYPE:CAL_PATH&#8217;
-Eg.,:</p>
-<blockquote class="last">
-<div>&#8211;override_cal processed_arc:wcal/gsTest_arc.fits</div></blockquote>
+Eg.,</p>
+<p class="last"><tt class="docutils literal"><span class="pre">--override_cal</span> <span class="pre">processed_arc:wcal/gsTest_arc.fits</span></tt></p>
 </dd>
 <dt><strong>-p &lt;USERPARAM [USERPARAM ...]&gt;, &#8211;param &lt;USERPARAM [USERPARAM ...]&gt;</strong></dt>
 <dd><p class="first">Set a primitive parameter from the command line. The form &#8216;-p par=val&#8217; sets
 the parameter in the reduction context such that all primitives will &#8216;see&#8217; it.
 The form</p>
-<div class="highlight-python"><div class="highlight"><pre>-p ASTROTYPE:primitivename:par=val
-</pre></div>
-</div>
+<p><tt class="docutils literal"><span class="pre">-p</span> <span class="pre">ASTROTYPE:primitivename:par=val</span></tt></p>
 <p>sets the parameter such that it applies only when the current reduction type
 (type of current reference image) is &#8216;ASTROTYPE&#8217; and the primitive is
 &#8216;primitivename&#8217;. Separate parameter-value pairs by whitespace:
@@ -189,7 +203,7 @@ development switch.</dd>
 likely true for most users &#8211; users should call <tt class="docutils literal"><span class="pre">reduce</span></tt> on a specified
 dataset by providing calibration files with the  &#8211;overrride_cal option.</p>
 <p>For example:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ reduce --override_cal processed_arc:wcal/gsTest_arc.fits &lt;dataset.fits&gt;
+<div class="highlight-python"><div class="highlight"><pre>$ reduce --override_cal processed_bias:FOO_bias.fits &lt;dataset.fits&gt;
 </pre></div>
 </div>
 <p>Such a command for complex processing of data is possible because AstroData
@@ -197,11 +211,12 @@ and the Recipe System do all the necessary work in determining how the data are 
 be processed, which is critcially based upon the determination of the <cite>typeset</cite>
 that applies to that data.</p>
 <p>Without any user-specified recipe (-r &#8211;recipe), the default recipe is
-<tt class="docutils literal"><span class="pre">qaReduce</span></tt>, which is defined for various AstroDataTypes and currently used at
-the summit. The Recipe System uses a combination of index, AstroDataTypes, and
-recipe naming convention to identify the appropriate recipe to run.</p>
+<tt class="docutils literal"><span class="pre">qaReduce</span></tt>, which is defined for various AstroDataTypes and currently used
+during summit operations. The Recipe System uses a combination of index,
+AstroDataTypes, and recipe naming convention to identify the appropriate
+recipe to run.</p>
 <p>The <tt class="docutils literal"><span class="pre">qaReduce</span></tt> recipe for a GMOS_IMAGE, named <tt class="docutils literal"><span class="pre">recipe.qaReduce.GMOS_IMAGE</span></tt>,
-specifies that the following primitives are called on the data:</p>
+specifies that the following primitives are called on the data</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">prepare</span>
 <span class="n">addDQ</span>
 <span class="n">addVAR</span>
@@ -500,27 +515,24 @@ RECIPE:           recipe.FOO
 <h2>3.3. Application Programming Interface (API)<a class="headerlink" href="#application-programming-interface-api" title="Permalink to this headline">¶</a></h2>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">This section discusses and describes the programmatic interface
+<p class="last">This section describes and discusses the programmatic interface
 available on the class Reduce.  This section is for advanced
-users wishing to code with <tt class="docutils literal"><span class="pre">Reduce</span></tt> class, rather than just using
-<tt class="docutils literal"><span class="pre">reduce</span></tt> at the command line.  The common user may safely skip this
-section.</p>
+users wishing to code using the <tt class="docutils literal"><span class="pre">Reduce</span></tt> class, rather than using
+<tt class="docutils literal"><span class="pre">reduce</span></tt> at the command line.</p>
 </div>
 <p>The <tt class="docutils literal"><span class="pre">reduce</span></tt> application is essentially a skeleton script providing the
 described command line interface. After parsing the command line, the script
 then passes the parsed arguments to its main() function, which in turn calls
-the Reduce() class constructor with &#8220;args&#8221;. Class Reduce() is defined
-in the module <tt class="docutils literal"><span class="pre">coreReduce.py</span></tt> under the <tt class="docutils literal"><span class="pre">gemini_python</span></tt> directory
-<tt class="docutils literal"><span class="pre">recipe_system/reduction</span></tt>. The Reduce class is scriptable, as the following
-discussion illustrates.</p>
+the Reduce() class constructor with &#8220;args&#8221;. The Reduce class is scriptable by
+any user as the following discussion illustrates.</p>
 <div class="section" id="class-reduce-logging-and-the-runr-method">
 <h3>3.3.1. Class Reduce, logging, and the runr() method<a class="headerlink" href="#class-reduce-logging-and-the-runr-method" title="Permalink to this headline">¶</a></h3>
 <p>The Reduce class is defined under the <tt class="docutils literal"><span class="pre">gemini_python</span></tt> code base in the
 <tt class="docutils literal"><span class="pre">recipe_system.reduction</span></tt> module, <tt class="docutils literal"><span class="pre">coreReduce.py</span></tt>.</p>
 <p>The Reduce() class is importable and provides settable attributes and a callable
-that can be used directly. Callers need not supply an &#8220;args&#8221; parameter to the
-class initializer, i.e. __init__(). An instance of Reduce will have all the
-same arguments as in a command line scenario, available as attributes on the
+that can be used programmatically. Callers need not supply an &#8220;args&#8221; parameter
+to the class initializer, i.e. __init__(). An instance of Reduce will have all
+the same arguments as in a command line scenario, available as attributes on the
 instance. Once an instance of Reduce() is instantiated and instance attributes
 set as needed, there is one (1) method to call, <strong>runr()</strong>. This is the only
 public method on the class.</p>
@@ -534,14 +546,22 @@ public method on the class.</p>
 <span class="go">[&#39;S20130616S0019.fits&#39;]</span>
 </pre></div>
 </div>
+<p>Or callers may simply set the <tt class="docutils literal"><span class="pre">files</span></tt> attribute to be an existing list of files</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">fits_list</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;FOO.fits&#39;</span><span class="p">,</span> <span class="s">&#39;BAR.fits&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">files</span> <span class="o">=</span> <span class="n">fits_list</span>
+</pre></div>
+</div>
 <p>On the command line, users may specify a recipe with the <tt class="docutils literal"><span class="pre">-r</span></tt> [ <tt class="docutils literal"><span class="pre">--recipe</span></tt> ]
 flag. Programmatically, users directly set the recipe:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">recipename</span> <span class="o">=</span> <span class="s">&#39;recipe.MyRecipe&#39;</span>
 </pre></div>
 </div>
-<p>All other public attributes may be set in standard pythonic ways.</p>
-<div class="section" id="configure-the-logger">
-<h4>3.3.1.1. Configure the logger<a class="headerlink" href="#configure-the-logger" title="Permalink to this headline">¶</a></h4>
+<p>All other properties and  attributes on the API may be set in standard pythonic
+ways. See Appendix
+<a class="reference internal" href="appendices/reduce_properties.html#props"><em>Class Reduce: Settable properties and attributes</em></a> for further
+discussion and more examples.</p>
+<div class="section" id="using-the-logger">
+<h4>3.3.1.1. Using the logger<a class="headerlink" href="#using-the-logger" title="Permalink to this headline">¶</a></h4>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">When using an instance of Reduce() directly, callers must configure
@@ -550,10 +570,25 @@ a logger as returned by logutils.get_logger(). The following discussion
 demonstrates how this is easily done. It is <cite>highly recommended</cite>
 that callers configure the logger.</p>
 </div>
-<p>Once an instance of Reduce has been made, callers should then configure the logutils
-facility provided with the <tt class="docutils literal"><span class="pre">astrodata</span></tt> package, which is found in
-<tt class="docutils literal"><span class="pre">astrodata/utils</span></tt>. Instances of <tt class="docutils literal"><span class="pre">Reduce()</span></tt> provide the following logger
-parameters as attributes on the instance with appropriate default values:</p>
+<p>It is recommended that callers of Reduce use a logger supplied by the astrodata
+module <tt class="docutils literal"><span class="pre">logutils</span></tt>. This module employs the python logger module, but with
+recipe system specific features and embellishments. The recipe system
+expects to have access to a logutils logger object, which callers should provide
+prior to calling the <tt class="docutils literal"><span class="pre">runr()</span></tt> method.</p>
+<p>To use <tt class="docutils literal"><span class="pre">logutils</span></tt>, import, configure, and get it:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata.utils</span> <span class="kn">import</span> <span class="n">logutils</span>
+<span class="n">logutils</span><span class="o">.</span><span class="n">config</span><span class="p">()</span>
+<span class="n">log</span> <span class="o">=</span> <span class="n">logutils</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <tt class="docutils literal"><span class="pre">__name__</span></tt> is usually the calling module&#8217;s __name__ property, but can
+be any string value. Once configured and instantiated, the <tt class="docutils literal"><span class="pre">log</span></tt> object is
+ready to use. See section <a class="reference internal" href="#options"><em>Configuration Switches, Options</em></a> for logging levels described on the
+<tt class="docutils literal"><span class="pre">--loglevel</span></tt> option.</p>
+<p>Once an instance of Reduce has been made, callers may (should) configure the
+logutils facility with attributes available on the instance. Instances of
+<tt class="docutils literal"><span class="pre">Reduce()</span></tt> provide the following logger parameters as attributes on the
+instance with appropriate default values:</p>
 <table class="hlist"><tr><td><ul class="simple">
 <li>logfile</li>
 <li>loglevel</li>
@@ -565,10 +600,10 @@ parameters as attributes on the instance with appropriate default values:</p>
 attributes, as described in Sec. <a class="reference internal" href="#options"><em>Configuration Switches, Options</em></a>, but <tt class="docutils literal"><span class="pre">logindent</span></tt>, which
 controls the indention levels of logging output, is accessible only through the
 public interface on an instance of <tt class="docutils literal"><span class="pre">Reduce()</span></tt>. It is not anticipated that users
-will need, or even want, to change the value of <tt class="docutils literal"><span class="pre">logindent</span></tt>.</p>
+will need, or even want, to change the value of <tt class="docutils literal"><span class="pre">logindent</span></tt>, but it is possible.</p>
 <p>An instance of <tt class="docutils literal"><span class="pre">Reduce()</span></tt> provides the following attributes that may be passed
 to the <tt class="docutils literal"><span class="pre">logutils.config()</span></tt>. The default values provided for these logging
-configuration parameters may be inspected directly on the instance:</p>
+configuration parameters may be through direct inspection:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span> <span class="o">=</span> <span class="n">Reduce</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">logfile</span>
 <span class="go">&#39;reduce.log&#39;</span>
@@ -581,8 +616,10 @@ configuration parameters may be inspected directly on the instance:</p>
 </pre></div>
 </div>
 <p>Users may adjust these values and then pass them to the <tt class="docutils literal"><span class="pre">logutils.config()</span></tt>
-function. This is precisely what <tt class="docutils literal"><span class="pre">reduce</span></tt> does when it configures logutils. See
-Sec. <a class="reference internal" href="#options"><em>Configuration Switches, Options</em></a> for allowable and default values of these and other options.</p>
+function, or pass other values directly to <tt class="docutils literal"><span class="pre">config()</span></tt>. This is precisely what
+<tt class="docutils literal"><span class="pre">reduce</span></tt> does when it configures logutils. See Sec. <a class="reference internal" href="#options"><em>Configuration Switches, Options</em></a>  and
+Appendix <a class="reference internal" href="appendices/reduce_properties.html#props"><em>Class Reduce: Settable properties and attributes</em></a> for
+allowable and default values of these and other options.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">astrodata.utils</span> <span class="kn">import</span> <span class="n">logutils</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">logutils</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="n">file_name</span><span class="o">=</span><span class="nb">reduce</span><span class="o">.</span><span class="n">logfile</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="nb">reduce</span><span class="o">.</span><span class="n">logmode</span><span class="p">,</span>
 <span class="go">                    console_lvl=reduce.loglevel)</span>
@@ -590,8 +627,8 @@ Sec. <a class="reference internal" href="#options"><em>Configuration Switches, O
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">logutils.config() should be called only once. Multiple calls on
-config() may produce unexpected results.</p>
+<p class="last">logutils.config() may be called mutliply, should callers, for example,
+want to change logfile names for different calls on runr().</p>
 </div>
 </div>
 <div class="section" id="call-the-runr-method">
@@ -616,7 +653,37 @@ Reduce and logutils:</p>
 <span class="gp">...</span>
 </pre></div>
 </div>
-<p>Processing will then proceed in the usual manner.</p>
+<p>Processing will then proceed in the usual manner. Astute readers will note that
+callers need not create more than one Reduce instance in order to call runr()
+with a different dataset or options.</p>
+<p>Eg.,:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">recipe_system.reduction.coreReduce</span> <span class="kn">import</span> <span class="n">Reduce</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">astrodata.utils</span> <span class="kn">import</span> <span class="n">logutils</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span> <span class="o">=</span> <span class="n">Reduce</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;S20130616S0019.fits&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">recipename</span> <span class="o">=</span> <span class="s">&#39;recipe.MyRecipe&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">logfile</span> <span class="o">=</span> <span class="s">&#39;my_reduce_run.log&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">logutils</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="n">file_name</span><span class="o">=</span><span class="nb">reduce</span><span class="o">.</span><span class="n">logfile</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="nb">reduce</span><span class="o">.</span><span class="n">logmode</span><span class="p">,</span>
+<span class="go">                     console_lvl=reduce.loglevel)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">runr</span><span class="p">()</span>
+<span class="go">  ...</span>
+<span class="go">reduce completed successfully.</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">recipename</span> <span class="o">=</span> <span class="s">&#39;recipe.NewRecipe&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;newfile.fits&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">userparam</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;clobber=True&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">runr</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Once an attribute is set on an instance, such as above with <tt class="docutils literal"><span class="pre">userparam</span></tt>, it is
+always set on the instance. If, on another call of runr() the caller does not
+wish to have <tt class="docutils literal"><span class="pre">clobber=True</span></tt>, simply reset the property:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">userparam</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">runr</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Readers may wish to examine the examples in Appendix
+<a class="reference internal" href="appendices/reduce_properties.html#props"><em>Class Reduce: Settable properties and attributes</em></a></p>
 </div>
 </div>
 </div>
@@ -644,7 +711,7 @@ Reduce and logutils:</p>
 </li>
 <li><a class="reference internal" href="#application-programming-interface-api">3.3. Application Programming Interface (API)</a><ul>
 <li><a class="reference internal" href="#class-reduce-logging-and-the-runr-method">3.3.1. Class Reduce, logging, and the runr() method</a><ul>
-<li><a class="reference internal" href="#configure-the-logger">3.3.1.1. Configure the logger</a></li>
+<li><a class="reference internal" href="#using-the-logger">3.3.1.1. Using the logger</a></li>
 <li><a class="reference internal" href="#call-the-runr-method">3.3.1.2. Call the runr() method</a></li>
 </ul>
 </li>
