@@ -59,7 +59,8 @@ This is the API equivalent to the command line option::
 
  $ reduce -p clobber=True [...]
 
-For muliple primitive parameters, the 'userparam' attribute is a list of 'par=val' strings, as in::
+For muliple primitive parameters, the 'userparam' attribute is a list of 
+'par=val' strings, as in::
 
  >>> reduce.userparam = [ 'par1=val1', 'par2=val2', ... ]
 
@@ -89,7 +90,6 @@ files). Here, each list of ``procfiles`` is then passed to the internal
                         console_lvl=reduce_object.loglevel)
 
         def launch_reduce(datasets, recipe=None, upload=False):
-            # set the 'files' = [] for the function.
             reduce_object.files = datasets
             if recipe:
                 reduce_object.recipename = recipe

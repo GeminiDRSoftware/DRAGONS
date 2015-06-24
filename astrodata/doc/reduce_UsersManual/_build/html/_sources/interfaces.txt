@@ -463,7 +463,7 @@ Eg. 1)  Accumulate a new parameter::
   $ reduce @parfile --param FOO=BARSOOM
   
   parsed options:
-  --------------------
+  ---------------
   AstroDataType: GMOS_IMAGE
   FITS files:    ['S20130616S0019.fits', 'N20100311S0090.fits']
   Parameters:    tpar=100, report_inputs=True, FOO=BARSOOM
@@ -474,7 +474,7 @@ Eg. 2) Override a parameter in the @file::
   $ reduce @parfile --param tpar=99
   
   parsed options:
-  --------------------
+  ---------------
   AstroDataType: GMOS_IMAGE
   FITS files:    ['S20130616S0019.fits', 'N20100311S0090.fits']
   Parameters:    tpar=99, report_inputs=True
@@ -485,11 +485,11 @@ Eg. 3) Override the recipe::
   $ reduce @parfile -r=recipe.FOO
   
   parsed options:
-  --------------------
-  AstroDataType:    GMOS_IMAGE
-  FITS files:       ['S20130616S0019.fits', 'N20100311S0090.fits']
-  Parameters:       tpar=100, report_inputs=True
-  RECIPE:           recipe.FOO
+  ---------------
+  AstroDataType: GMOS_IMAGE
+  FITS files:    ['S20130616S0019.fits', 'N20100311S0090.fits']
+  Parameters:    tpar=100, report_inputs=True
+  RECIPE:        recipe.FOO
 
 Eg. 4) Override a recipe and specify another fits file. The file names in 
 the @file will be ignored::
@@ -497,11 +497,11 @@ the @file will be ignored::
   $ reduce @parfile -r=recipe.FOO test_data/N20100311S0090_1.fits
   
   parsed options:
-  --------------------
-  AstroDataType:    GMOS_IMAGE
-  FITS files:       ['test_data/N20100311S0090_1.fits']
-  Parameters:       tpar=100, report_inputs=True
-  RECIPE:           recipe.FOO
+  ---------------
+  AstroDataType: GMOS_IMAGE
+  FITS files:    ['test_data/N20100311S0090_1.fits']
+  Parameters:    tpar=100, report_inputs=True
+  RECIPE:        recipe.FOO
 
 
 Application Programming Interface (API)

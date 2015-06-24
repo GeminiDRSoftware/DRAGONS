@@ -29,7 +29,7 @@ reduce Users Manual
    :maxdepth: 1
    
    appendices/appendix_demo
-   
+   appendices/reduce_properties   
    
 .. todolist::
 

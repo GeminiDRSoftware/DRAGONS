@@ -468,7 +468,7 @@ are passed on the command line, <cite>all fits files appearing as positional arg
 <div class="highlight-python"><div class="highlight"><pre>$ reduce @parfile --param FOO=BARSOOM
 
 parsed options:
---------------------
+---------------
 AstroDataType: GMOS_IMAGE
 FITS files:    [&#39;S20130616S0019.fits&#39;, &#39;N20100311S0090.fits&#39;]
 Parameters:    tpar=100, report_inputs=True, FOO=BARSOOM
@@ -479,7 +479,7 @@ RECIPE:        recipe.ArgsTest
 <div class="highlight-python"><div class="highlight"><pre>$ reduce @parfile --param tpar=99
 
 parsed options:
---------------------
+---------------
 AstroDataType: GMOS_IMAGE
 FITS files:    [&#39;S20130616S0019.fits&#39;, &#39;N20100311S0090.fits&#39;]
 Parameters:    tpar=99, report_inputs=True
@@ -490,11 +490,11 @@ RECIPE:        recipe.ArgsTest
 <div class="highlight-python"><div class="highlight"><pre>$ reduce @parfile -r=recipe.FOO
 
 parsed options:
---------------------
-AstroDataType:    GMOS_IMAGE
-FITS files:       [&#39;S20130616S0019.fits&#39;, &#39;N20100311S0090.fits&#39;]
-Parameters:       tpar=100, report_inputs=True
-RECIPE:           recipe.FOO
+---------------
+AstroDataType: GMOS_IMAGE
+FITS files:    [&#39;S20130616S0019.fits&#39;, &#39;N20100311S0090.fits&#39;]
+Parameters:    tpar=100, report_inputs=True
+RECIPE:        recipe.FOO
 </pre></div>
 </div>
 <p>Eg. 4) Override a recipe and specify another fits file. The file names in
@@ -502,11 +502,11 @@ the &#64;file will be ignored:</p>
 <div class="highlight-python"><div class="highlight"><pre>$ reduce @parfile -r=recipe.FOO test_data/N20100311S0090_1.fits
 
 parsed options:
---------------------
-AstroDataType:    GMOS_IMAGE
-FITS files:       [&#39;test_data/N20100311S0090_1.fits&#39;]
-Parameters:       tpar=100, report_inputs=True
-RECIPE:           recipe.FOO
+---------------
+AstroDataType: GMOS_IMAGE
+FITS files:    [&#39;test_data/N20100311S0090_1.fits&#39;]
+Parameters:    tpar=100, report_inputs=True
+RECIPE:        recipe.FOO
 </pre></div>
 </div>
 </div>

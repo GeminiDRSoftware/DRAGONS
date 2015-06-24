@@ -976,7 +976,7 @@ Eg. 1)  Accumulate a new parameter:
 \PYGZdl{} reduce @parfile \PYGZhy{}\PYGZhy{}param FOO=BARSOOM
 
 parsed options:
-\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
 AstroDataType: GMOS\PYGZus{}IMAGE
 FITS files:    [\PYGZsq{}S20130616S0019.fits\PYGZsq{}, \PYGZsq{}N20100311S0090.fits\PYGZsq{}]
 Parameters:    tpar=100, report\PYGZus{}inputs=True, FOO=BARSOOM
@@ -989,7 +989,7 @@ Eg. 2) Override a parameter in the @file:
 \PYGZdl{} reduce @parfile \PYGZhy{}\PYGZhy{}param tpar=99
 
 parsed options:
-\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
 AstroDataType: GMOS\PYGZus{}IMAGE
 FITS files:    [\PYGZsq{}S20130616S0019.fits\PYGZsq{}, \PYGZsq{}N20100311S0090.fits\PYGZsq{}]
 Parameters:    tpar=99, report\PYGZus{}inputs=True
@@ -1002,11 +1002,11 @@ Eg. 3) Override the recipe:
 \PYGZdl{} reduce @parfile \PYGZhy{}r=recipe.FOO
 
 parsed options:
-\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
-AstroDataType:    GMOS\PYGZus{}IMAGE
-FITS files:       [\PYGZsq{}S20130616S0019.fits\PYGZsq{}, \PYGZsq{}N20100311S0090.fits\PYGZsq{}]
-Parameters:       tpar=100, report\PYGZus{}inputs=True
-RECIPE:           recipe.FOO
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
+AstroDataType: GMOS\PYGZus{}IMAGE
+FITS files:    [\PYGZsq{}S20130616S0019.fits\PYGZsq{}, \PYGZsq{}N20100311S0090.fits\PYGZsq{}]
+Parameters:    tpar=100, report\PYGZus{}inputs=True
+RECIPE:        recipe.FOO
 \end{Verbatim}
 
 Eg. 4) Override a recipe and specify another fits file. The file names in
@@ -1016,11 +1016,11 @@ the @file will be ignored:
 \PYGZdl{} reduce @parfile \PYGZhy{}r=recipe.FOO test\PYGZus{}data/N20100311S0090\PYGZus{}1.fits
 
 parsed options:
-\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
-AstroDataType:    GMOS\PYGZus{}IMAGE
-FITS files:       [\PYGZsq{}test\PYGZus{}data/N20100311S0090\PYGZus{}1.fits\PYGZsq{}]
-Parameters:       tpar=100, report\PYGZus{}inputs=True
-RECIPE:           recipe.FOO
+\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
+AstroDataType: GMOS\PYGZus{}IMAGE
+FITS files:    [\PYGZsq{}test\PYGZus{}data/N20100311S0090\PYGZus{}1.fits\PYGZsq{}]
+Parameters:    tpar=100, report\PYGZus{}inputs=True
+RECIPE:        recipe.FOO
 \end{Verbatim}
 
 
