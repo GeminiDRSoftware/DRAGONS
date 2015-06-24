@@ -14,7 +14,7 @@
 \usepackage{appendix} \setcounter{tocdepth}{0}
 
 \title{reduce Users Manual}
-\date{June 22, 2015}
+\date{June 24, 2015}
 \release{X1.0.1}
 \author{Kenneth Anderson}
 \newcommand{\sphinxlogo}{}
@@ -540,8 +540,8 @@ This is a URL specifying a calibration manager service. A calibration manager
 overides Recipe System table. Not available outside Gemini operations.
 
 \item[{\textbf{--context \textless{}RUNNING\_CONTEXTS\textgreater{}}}] \leavevmode
-Use \textless{}RUNNING\_CONTEXTS\textgreater{} for primitives sensitive to context. Eg., --context QA
-When not specified, the context defaults to `QA'.
+Use \textless{}RUNNING\_CONTEXTS\textgreater{} for primitives sensitive to context. Eg.,
+\code{-{-}context QA}. When not specified, the context defaults to `QA'.
 
 \item[{\textbf{--invoked}}] \leavevmode
 Boolean indicating that reduce was invoked by the control center.
@@ -598,7 +598,7 @@ debug
 
 \end{itemize}
 
-Default is `stdinfo'.
+Default setting is `stdinfo.'
 
 \item[{\textbf{--override\_cal \textless{}USER\_CALS {[}USER\_CALS ...{]}\textgreater{}}}] \leavevmode
 The option allows users to provide their own calibrations to \code{reduce}.
@@ -1141,7 +1141,7 @@ will need, or even want, to change the value of \code{logindent}, but it is poss
 
 An instance of \code{Reduce()} provides the following attributes that may be passed
 to the \code{logutils.config()}. The default values provided for these logging
-configuration parameters may be through direct inspection:
+configuration parameters may be examined through direct inspection:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce} \PYG{o}{=} \PYG{n}{Reduce}\PYG{p}{(}\PYG{p}{)}
@@ -1945,7 +1945,8 @@ This is the API equivalent to the command line option:
 \PYGZdl{} reduce \PYGZhy{}p clobber=True [...]
 \end{Verbatim}
 
-For muliple primitive parameters, the `userparam' attribute is a list of `par=val' strings, as in:
+For muliple primitive parameters, the `userparam' attribute is a list of
+`par=val' strings, as in:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n+nb}{reduce}\PYG{o}{.}\PYG{n}{userparam} \PYG{o}{=} \PYG{p}{[} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{par1=val1}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{par2=val2}\PYG{l+s}{\PYGZsq{}}\PYG{p}{,} \PYG{o}{.}\PYG{o}{.}\PYG{o}{.} \PYG{p}{]}
@@ -1969,13 +1970,13 @@ files). Here, each list of \code{procfiles} is then passed to the internal
     \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{logfile} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{my\PYGZus{}reduce.log}\PYG{l+s}{\PYGZsq{}}
     \PYG{c}{\PYGZsh{} write logfile only, no stdout.}
     \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{logmode} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{quiet}\PYG{l+s}{\PYGZsq{}}
+    \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{userparam} \PYG{o}{=} \PYG{p}{[}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{clobber=True}\PYG{l+s}{\PYGZsq{}}\PYG{p}{]}
 
     \PYG{n}{logutils}\PYG{o}{.}\PYG{n}{config}\PYG{p}{(}\PYG{n}{file\PYGZus{}name}\PYG{o}{=}\PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{logfile}\PYG{p}{,}
                     \PYG{n}{mode}\PYG{o}{=}\PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{logmode}\PYG{p}{,}
                     \PYG{n}{console\PYGZus{}lvl}\PYG{o}{=}\PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{loglevel}\PYG{p}{)}
 
     \PYG{k}{def} \PYG{n+nf}{launch\PYGZus{}reduce}\PYG{p}{(}\PYG{n}{datasets}\PYG{p}{,} \PYG{n}{recipe}\PYG{o}{=}\PYG{n+nb+bp}{None}\PYG{p}{,} \PYG{n}{upload}\PYG{o}{=}\PYG{n+nb+bp}{False}\PYG{p}{)}\PYG{p}{:}
-        \PYG{c}{\PYGZsh{} set the \PYGZsq{}files\PYGZsq{} = [] for the function.}
         \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{files} \PYG{o}{=} \PYG{n}{datasets}
         \PYG{k}{if} \PYG{n}{recipe}\PYG{p}{:}
             \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{recipename} \PYG{o}{=} \PYG{n}{recipe}
@@ -1983,14 +1984,13 @@ files). Here, each list of \code{procfiles} is then passed to the internal
             \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{running\PYGZus{}contexts} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{upload}\PYG{l+s}{\PYGZsq{}}
         \PYG{k}{else}\PYG{p}{:}
             \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{running\PYGZus{}contexts} \PYG{o}{=} \PYG{l+s}{\PYGZsq{}}\PYG{l+s}{qa}\PYG{l+s}{\PYGZsq{}}
-        \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{userparam} \PYG{o}{=} \PYG{p}{[}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{clobber=True}\PYG{l+s}{\PYGZsq{}}\PYG{p}{]}
         \PYG{n}{reduce\PYGZus{}object}\PYG{o}{.}\PYG{n}{runr}\PYG{p}{(}\PYG{p}{)}
         \PYG{k}{return}
 
     \PYG{k}{for} \PYG{n}{files} \PYG{o+ow}{in} \PYG{n}{procfiles}\PYG{p}{:}
         \PYG{c}{\PYGZsh{} Use a different recipe if FOO.fits is present}
         \PYG{k}{if} \PYG{l+s}{\PYGZdq{}}\PYG{l+s}{FOO.fits}\PYG{l+s}{\PYGZdq{}} \PYG{o+ow}{in} \PYG{n}{files}\PYG{p}{:}
-            \PYG{n}{launch\PYGZus{}reduce}\PYG{p}{(}\PYG{n+nb}{sorted}\PYG{p}{(}\PYG{n}{files}\PYG{p}{)}\PYG{p}{,} \PYG{n}{recipe}\PYG{o}{=}\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{recipe.FOO}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}\PYG{p}{)}
+            \PYG{n}{launch\PYGZus{}reduce}\PYG{p}{(}\PYG{n+nb}{sorted}\PYG{p}{(}\PYG{n}{files}\PYG{p}{)}\PYG{p}{,} \PYG{n}{recipe}\PYG{o}{=}\PYG{l+s}{\PYGZdq{}}\PYG{l+s}{recipe.FOO}\PYG{l+s}{\PYGZdq{}}\PYG{p}{)}
         \PYG{k}{else}\PYG{p}{:}
             \PYG{n}{launch\PYGZus{}reduce}\PYG{p}{(}\PYG{n+nb}{sorted}\PYG{p}{(}\PYG{n}{files}\PYG{p}{)}\PYG{p}{,} \PYG{n}{upload}\PYG{o}{=}\PYG{n}{control\PYGZus{}options}\PYG{o}{.}\PYG{n}{get}\PYG{p}{(}\PYG{l+s}{\PYGZsq{}}\PYG{l+s}{upload}\PYG{l+s}{\PYGZsq{}}\PYG{p}{)}\PYG{p}{)}
 

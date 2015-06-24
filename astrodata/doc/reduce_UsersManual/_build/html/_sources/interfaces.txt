@@ -88,14 +88,14 @@ Configuration Switches, Options
     overides Recipe System table. Not available outside Gemini operations.
 
 **--context <RUNNING_CONTEXTS>**
-    Use <RUNNING_CONTEXTS> for primitives sensitive to context. Eg., --context QA
-    When not specified, the context defaults to 'QA'. 
+    Use <RUNNING_CONTEXTS> for primitives sensitive to context. Eg., 
+    ``--context QA``. When not specified, the context defaults to 'QA'. 
 
 **--invoked**
     Boolean indicating that reduce was invoked by the control center.
 
 **--logmode <LOGMODE>**
-    Set logging mode. One of 
+    Set logging mode. One of
 
     * standard
     * console
@@ -120,7 +120,7 @@ Configuration Switches, Options
     * fullinfo
     * debug
 
-    Default is 'stdinfo'.
+    Default setting is 'stdinfo.'
 
 **--override_cal <USER_CALS [USER_CALS ...]>**
     The option allows users to provide their own calibrations to ``reduce``.
@@ -604,7 +604,7 @@ will need, or even want, to change the value of ``logindent``, but it is possibl
 
 An instance of ``Reduce()`` provides the following attributes that may be passed 
 to the ``logutils.config()``. The default values provided for these logging 
-configuration parameters may be through direct inspection::
+configuration parameters may be examined through direct inspection::
 
   >>> reduce = Reduce()
   >>> reduce.logfile

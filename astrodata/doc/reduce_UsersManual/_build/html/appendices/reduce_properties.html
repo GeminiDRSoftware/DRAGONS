@@ -158,6 +158,7 @@ files). Here, each list of <tt class="docutils literal"><span class="pre">procfi
     <span class="n">reduce_object</span><span class="o">.</span><span class="n">logfile</span> <span class="o">=</span> <span class="s">&#39;my_reduce.log&#39;</span>
     <span class="c"># write logfile only, no stdout.</span>
     <span class="n">reduce_object</span><span class="o">.</span><span class="n">logmode</span> <span class="o">=</span> <span class="s">&#39;quiet&#39;</span>
+    <span class="n">reduce_object</span><span class="o">.</span><span class="n">userparam</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;clobber=True&#39;</span><span class="p">]</span>
 
     <span class="n">logutils</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="n">file_name</span><span class="o">=</span><span class="n">reduce_object</span><span class="o">.</span><span class="n">logfile</span><span class="p">,</span>
                     <span class="n">mode</span><span class="o">=</span><span class="n">reduce_object</span><span class="o">.</span><span class="n">logmode</span><span class="p">,</span>
@@ -171,14 +172,13 @@ files). Here, each list of <tt class="docutils literal"><span class="pre">procfi
             <span class="n">reduce_object</span><span class="o">.</span><span class="n">running_contexts</span> <span class="o">=</span> <span class="s">&#39;upload&#39;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">reduce_object</span><span class="o">.</span><span class="n">running_contexts</span> <span class="o">=</span> <span class="s">&#39;qa&#39;</span>
-        <span class="n">reduce_object</span><span class="o">.</span><span class="n">userparam</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;clobber=True&#39;</span><span class="p">]</span>
         <span class="n">reduce_object</span><span class="o">.</span><span class="n">runr</span><span class="p">()</span>
         <span class="k">return</span>
 
     <span class="k">for</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">procfiles</span><span class="p">:</span>
         <span class="c"># Use a different recipe if FOO.fits is present</span>
         <span class="k">if</span> <span class="s">&quot;FOO.fits&quot;</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
-            <span class="n">launch_reduce</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">files</span><span class="p">),</span> <span class="n">recipe</span><span class="o">=</span><span class="s">&quot;recipe.FOO&quot;</span><span class="p">))</span>
+            <span class="n">launch_reduce</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">files</span><span class="p">),</span> <span class="n">recipe</span><span class="o">=</span><span class="s">&quot;recipe.FOO&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">launch_reduce</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">files</span><span class="p">),</span> <span class="n">upload</span><span class="o">=</span><span class="n">control_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;upload&#39;</span><span class="p">))</span>
 

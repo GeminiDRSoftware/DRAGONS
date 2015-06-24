@@ -128,8 +128,8 @@ primitives module.</dd>
 <dd>This is a URL specifying a calibration manager service. A calibration manager
 overides Recipe System table. Not available outside Gemini operations.</dd>
 <dt><strong>&#8211;context &lt;RUNNING_CONTEXTS&gt;</strong></dt>
-<dd>Use &lt;RUNNING_CONTEXTS&gt; for primitives sensitive to context. Eg., &#8211;context QA
-When not specified, the context defaults to &#8216;QA&#8217;.</dd>
+<dd>Use &lt;RUNNING_CONTEXTS&gt; for primitives sensitive to context. Eg.,
+<tt class="docutils literal"><span class="pre">--context</span> <span class="pre">QA</span></tt>. When not specified, the context defaults to &#8216;QA&#8217;.</dd>
 <dt><strong>&#8211;invoked</strong></dt>
 <dd>Boolean indicating that reduce was invoked by the control center.</dd>
 <dt><strong>&#8211;logmode &lt;LOGMODE&gt;</strong></dt>
@@ -157,7 +157,7 @@ file. Default is &#8216;standard&#8217;.</p>
 <li>fullinfo</li>
 <li>debug</li>
 </ul>
-<p class="last">Default is &#8216;stdinfo&#8217;.</p>
+<p class="last">Default setting is &#8216;stdinfo.&#8217;</p>
 </dd>
 <dt><strong>&#8211;override_cal &lt;USER_CALS [USER_CALS ...]&gt;</strong></dt>
 <dd><p class="first">The option allows users to provide their own calibrations to <tt class="docutils literal"><span class="pre">reduce</span></tt>.
@@ -603,7 +603,7 @@ public interface on an instance of <tt class="docutils literal"><span class="pre
 will need, or even want, to change the value of <tt class="docutils literal"><span class="pre">logindent</span></tt>, but it is possible.</p>
 <p>An instance of <tt class="docutils literal"><span class="pre">Reduce()</span></tt> provides the following attributes that may be passed
 to the <tt class="docutils literal"><span class="pre">logutils.config()</span></tt>. The default values provided for these logging
-configuration parameters may be through direct inspection:</p>
+configuration parameters may be examined through direct inspection:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span> <span class="o">=</span> <span class="n">Reduce</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">reduce</span><span class="o">.</span><span class="n">logfile</span>
 <span class="go">&#39;reduce.log&#39;</span>
