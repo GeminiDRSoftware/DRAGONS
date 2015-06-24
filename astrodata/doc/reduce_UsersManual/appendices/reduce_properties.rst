@@ -84,6 +84,7 @@ files). Here, each list of ``procfiles`` is then passed to the internal
         reduce_object.logfile = 'my_reduce.log'
         # write logfile only, no stdout.
         reduce_object.logmode = 'quiet'
+        reduce_object.userparam = ['clobber=True']
 
         logutils.config(file_name=reduce_object.logfile, 
                         mode=reduce_object.logmode,
@@ -97,14 +98,13 @@ files). Here, each list of ``procfiles`` is then passed to the internal
                 reduce_object.running_contexts = 'upload'
             else:
                 reduce_object.running_contexts = 'qa'
-            reduce_object.userparam = ['clobber=True']
             reduce_object.runr()
             return
 
         for files in procfiles:
             # Use a different recipe if FOO.fits is present
             if "FOO.fits" in files:
-                launch_reduce(sorted(files), recipe="recipe.FOO"))
+                launch_reduce(sorted(files), recipe="recipe.FOO")
             else:
                 launch_reduce(sorted(files), upload=control_options.get('upload'))
 

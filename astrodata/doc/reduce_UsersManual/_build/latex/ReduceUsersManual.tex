@@ -196,7 +196,7 @@ interact with at a programmatic level.
 \textbf{AstroDataType} -- Represents a data classification. A dataset will be
 classified by a number of types that describe both the data and its processing
 state. The AstroDataTypes are hierarchical, from generic to specific.  For
-example, a typical GMOS image might have a set of types like
+example, a typical unprocessed GMOS image would have a set of types like
 
 `GMOS\_S', `GMOS\_IMAGE', `GEMINI', `SIDEREAL', `IMAGE', `GMOS', `GEMINI\_SOUTH',
 `GMOS\_RAW', `UNPREPARED', `RAW' (see \textbf{types} below).
@@ -1509,7 +1509,7 @@ directory: ../test\PYGZus{}data/output
    (PREPARED) (SIDEREAL)
 \end{Verbatim}
 
-Exclude ACQUISITION images that have already had some processing done:
+Exclude GMOS\_IMAGE ACQUISITION images and GMOS\_IMAGE datasets that have been `prepared':
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYGZdl{} typewalk \PYGZhy{}\PYGZhy{}types GMOS\PYGZus{}IMAGE \PYGZhy{}\PYGZhy{}xtypes ACQUISITION PREPARED

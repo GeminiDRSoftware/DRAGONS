@@ -69,7 +69,7 @@ Glossary
   **AstroDataType** -- Represents a data classification. A dataset will be 
   classified by a number of types that describe both the data and its processing 
   state. The AstroDataTypes are hierarchical, from generic to specific.  For 
-  example, a typical GMOS image might have a set of types like
+  example, a typical unprocessed GMOS image would have a set of types like
 
   'GMOS_S', 'GMOS_IMAGE', 'GEMINI', 'SIDEREAL', 'IMAGE', 'GMOS', 'GEMINI_SOUTH', 
   'GMOS_RAW', 'UNPREPARED', 'RAW' (see **types** below).

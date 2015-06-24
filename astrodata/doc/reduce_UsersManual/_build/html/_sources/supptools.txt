@@ -263,7 +263,7 @@ For example, find GMOS_IMAGE types, but exclude ACQUISITION images from reportin
      (GMOS_S) (IMAGE) (NEEDSFLUXCAL) (OVERSCAN_SUBTRACTED) (OVERSCAN_TRIMMED) 
      (PREPARED) (SIDEREAL)
 
-Exclude ACQUISITION images that have already had some processing done::
+Exclude GMOS_IMAGE ACQUISITION images and GMOS_IMAGE datasets that have been 'prepared'::
 
   $ typewalk --types GMOS_IMAGE --xtypes ACQUISITION PREPARED
 
