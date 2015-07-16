@@ -31,9 +31,6 @@ between the instruments.
 
 - the azimuth (in degrees between 0 and 360) of the observation
 
-``bias_level``
-
-- the bias level (in ADU) of the observation
 
 ``camera``
 
