@@ -70,6 +70,7 @@ def _get_bias_level(adinput=None):
     # Create a dictionary where the key of the dictionary is an EXTVER integer
     overscan_section_dict = overscan_section_dv.collapse_by_extver()
     
+    print "!!!!"
     if not overscan_section_dv.validate_collapse_by_extver(
             overscan_section_dict):
         # The validate_collapse_by_extver function returns False if the values
@@ -91,7 +92,7 @@ def _get_bias_level(adinput=None):
             nbiascontam = 4
         elif detector_name_dv == "e2vDD":
             nbiascontam = 5
-        elif detector_name_dv == "Hamamastu":
+        elif detector_name_dv == "Hamamatsu":
             nbiascontam = 4
         else:
             nbiascontam = 4
@@ -112,6 +113,7 @@ def _get_bias_level(adinput=None):
             overscan_data = adinput[SCI,extver].data[
                 overscan_section[2]:overscan_section[3],
                 overscan_section[0]:overscan_section[1]]
+            print overscan_data.size
             bias_level = np.median(overscan_data)
             
             # Update the dictionary with the bias level value
