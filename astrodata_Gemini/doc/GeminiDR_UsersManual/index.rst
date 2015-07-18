@@ -18,7 +18,7 @@ Gemini Data Reduction Users Manual
    RecipeSystem/usage
    RecipeSystem/reduce
    F2contents
-   GHOScontents
+   GHOSTcontents
    GMOScontents
    GNIRScontents
    GSAOIcontents
