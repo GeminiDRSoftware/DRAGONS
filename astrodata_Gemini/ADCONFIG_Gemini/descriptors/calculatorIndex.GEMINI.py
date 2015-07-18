@@ -34,5 +34,6 @@ calculatorIndex = {
     "TRECS":"TRECS_Descriptors.TRECS_DescriptorCalc()",
     "BHROS":"BHROS_Descriptors.BHROS_DescriptorCalc()",
     "GPI":"GPI_Descriptors.GPI_DescriptorCalc()",
-    "FLAMINGOS":"GEMINI_Descriptors.GEMINI_DescriptorCalc()"
+    "FLAMINGOS":"GEMINI_Descriptors.GEMINI_DescriptorCalc()",
+    "CIRPASS":"GEMINI_Descriptors.GEMINI_DescriptorCalc()"
     }
