@@ -83,8 +83,20 @@ Description:
   otherwise changed the above organisation, the -u option should be used to 
   pass the location of this code base to swapper. If -u is passed, search 
   packages should be directly under this path and any -b option will be ignored.
-"""
 
+  Examples:
+
+  -- a standard gemini_python repo checkout in ~ :
+
+  $ export GEM=~/gemini_python  [or setenv ... for csh-ish]
+  $ swapper -c -r "looking for a string" "found a string"
+
+  -- astrodata, gempy, and other astrodata packages are in directory
+     ~/foobar/ . I.e. there is no 'trunk' subdir. Use -u:
+
+  @ swapper -r -c -u ~/foobar "looking for a string" "found a string"
+
+"""
 import os
 import sys
 import glob
@@ -318,6 +330,12 @@ class Swap(object):
         gemp_paths  = self.search_set['gemp_paths']
         gem_path    = self._determine_gem_path()
         branch_path = self._determine_branch_path()
+
+        try:
+            assert exists(gem_path)
+        except AssertionError:
+            msg = "Supplied path '" + gem_path + "' cannot be found."
+            raise SystemExit(msg)
 
         try:
             assert exists(join(gem_path, branch_path))
