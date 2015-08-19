@@ -88,13 +88,13 @@ Description:
 
   -- a standard gemini_python repo checkout in ~ :
 
-  $ export GEM=~/gemini_python  [or setenv ... for csh-ish]
-  $ swapper -c -r "looking for a string" "found a string"
+      $ export GEM=~/gemini_python  [or setenv ... for csh-ish]
+      $ swapper -c -r "old string" "new string"
 
   -- astrodata, gempy, and other astrodata packages are in directory
      ~/foobar/ . I.e. there is no 'trunk' subdir. Use -u:
 
-  @ swapper -r -c -u ~/foobar "looking for a string" "found a string"
+      $ swapper -r -c -u ~/foobar "old string" "new string"
 
 """
 import os
