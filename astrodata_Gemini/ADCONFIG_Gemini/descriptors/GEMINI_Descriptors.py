@@ -847,13 +847,16 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                 raise dataset.exception_info
 
         if offset:
+            raoffset = 0 if raoffset is None else raoffset
+            targ_raoffset = 0 if targ_raoffset is None else targ_raoffset
             raoffset /= 3600.0
             targ_raoffset /= 3600.0
             raoffset += targ_raoffset
-            raoffset /= math.cos(math.radians(dataset.target_dec(offset=True).as_pytype()))
+            raoffset /= math.cos(math.radians(dataset.dec(offset=True).as_pytype()))
             ra += raoffset
 
-        if pm:
+        pmra = 0 if pmra is None else pmra
+        if pm and pmra != 0:
             dt = dataset.ut_datetime().as_pytype()
             year = dt.year
             startyear = datetime.datetime(year, 1, 1, 0, 0, 0)
@@ -880,8 +883,6 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         pmdec = dataset.phu_get_key_value('PMDEC')
         epoch = dataset.phu_get_key_value('EPOCH')
 
-        decoffset /= 3600.0
-        targ_decoffset /= 3600.0
         if dec is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -890,9 +891,14 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                 raise dataset.exception_info
 
         if offset:
+            decoffset = 0.0 if decoffset is None else decoffset
+            targ_decoffset = 0.0 if targ_decoffset is None else targ_decoffset
+            decoffset /= 3600.0
+            targ_decoffset /= 3600.0
             dec += decoffset + targ_decoffset
 
-        if pm:
+        pmdec = 0 if pmdec is None else pmdec
+        if pm and pmdec != 0:
             dt = dataset.ut_datetime().as_pytype()
             year = dt.year
             startyear = datetime.datetime(year, 1, 1, 0, 0, 0)
