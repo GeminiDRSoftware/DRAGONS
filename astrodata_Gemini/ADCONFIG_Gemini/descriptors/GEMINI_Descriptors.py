@@ -1,5 +1,6 @@
 import datetime, os, re
 import dateutil.parser
+import math
 
 from astrodata.utils import Errors
 from astrodata.utils import Lookups
@@ -830,6 +831,86 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # exception if this descriptor is called.
         raise Errors.ExistError()
     
+    def ra(self, dataset, offset=False, pm=True, **args):
+        # Return the target RA from the RA header
+        # Optionally also apply RAOFFSET
+        ra = dataset.phu_get_key_value('RA')
+        raoffset = dataset.phu_get_key_value('RAOFFSET')
+        targ_raoffset = dataset.phu_get_key_value('RATRGOFF')
+        pmra = dataset.phu_get_key_value('PMRA')
+        epoch = dataset.phu_get_key_value('EPOCH')
+        if ra is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+
+        if offset:
+            raoffset /= 3600.0
+            targ_raoffset /= 3600.0
+            raoffset += targ_raoffset
+            raoffset /= math.cos(math.radians(dataset.target_dec(offset=True).as_pytype()))
+            ra += raoffset
+
+        if pm:
+            dt = dataset.ut_datetime().as_pytype()
+            year = dt.year
+            startyear = datetime.datetime(year, 1, 1, 0, 0, 0)
+            # Handle leap year properly
+            nextyear = datetime.datetime(year+1, 1, 1, 0, 0, 0)
+            thisyear = nextyear - startyear
+            sofar = dt - startyear
+            fraction = sofar.total_seconds() / thisyear.total_seconds()
+            obsepoch = year + fraction
+            years = obsepoch - epoch
+            pmra *= years
+            pmra *= 15.0*math.cos(math.radians(dataset.target_dec(offset=True).as_pytype()))
+            pmra /= 3600.0
+            ra += pmra
+
+        return DescriptorValue(ra, name="ra", ad=dataset)
+
+    def dec(self, dataset, offset=False, pm=True, **args):
+        # Return the target Dec from the DEC header
+        # Optionally also apply DECOFFSET and proper motion
+        dec = dataset.phu_get_key_value('DEC')
+        decoffset = dataset.phu_get_key_value('DECOFFSE')
+        targ_decoffset = dataset.phu_get_key_value('DECTRGOF')
+        pmdec = dataset.phu_get_key_value('PMDEC')
+        epoch = dataset.phu_get_key_value('EPOCH')
+
+        decoffset /= 3600.0
+        targ_decoffset /= 3600.0
+        if dec is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+
+        if offset:
+            dec += decoffset + targ_decoffset
+
+        if pm:
+            dt = dataset.ut_datetime().as_pytype()
+            year = dt.year
+            startyear = datetime.datetime(year, 1, 1, 0, 0, 0)
+            # Handle leap year properly
+            nextyear = datetime.datetime(year+1, 1, 1, 0, 0, 0)
+            thisyear = nextyear - startyear
+            sofar = dt - startyear
+            fraction = sofar.total_seconds() / thisyear.total_seconds()
+            obsepoch = year + fraction
+            years = obsepoch - epoch
+            pmdec *= years
+            pmdec /= 3600.0
+            dec += pmdec
+
+
+        return DescriptorValue(dec, name="dec", ad=dataset)
+
+
     def raw_bg(self, dataset, **args):
         # Determine the raw background keyword from the global keyword
         # dictionary 
