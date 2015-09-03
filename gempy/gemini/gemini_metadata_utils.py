@@ -20,8 +20,8 @@ import datetime
 import gemini_tools as gt
 
 from astrodata.utils import Errors
+from astrodata.interface.slices import pixel_exts
 from astrodata.interface.Descriptors import DescriptorValue
-from astrodata.interface.structuredslice import pixel_exts, bintable_exts
 
 # ------------------------------------------------------------------------------
 def removeComponentID(instr):
