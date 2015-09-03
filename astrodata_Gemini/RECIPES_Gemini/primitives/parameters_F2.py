@@ -1,6 +1,31 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_F2.py file, in alphabetical order.
-{"standardizeInstrumentHeaders":{
+{
+ "addReferenceCatalog":{
+    "suffix":{
+        "default"       : "_refcatAdded",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "radius":{
+        # in degrees; default is 2 arcmin
+        "default"       : 0.033,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True, 
+        "uiLevel"       : "UIBASIC",
+        },
+    "source":{  # gmos catalog is combination of sdss9, vstatlas and apass7
+        "default"       : "2mass",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+"standardizeInstrumentHeaders":{
     "suffix":{
         "default"       : "_instrumentHeadersStandardized",
         "type"          : "str",
