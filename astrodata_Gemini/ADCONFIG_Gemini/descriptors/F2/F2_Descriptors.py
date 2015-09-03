@@ -4,9 +4,8 @@ from datetime import datetime
 
 from astrodata.utils import Errors
 from astrodata.utils import Lookups
-
+from astrodata.interface.slices import pixel_exts
 from astrodata.interface.Descriptors import DescriptorValue
-from astrodata.interface.structuredslice import pixel_exts, bintable_exts
 
 from gempy.gemini import gemini_metadata_utils as gmu
 

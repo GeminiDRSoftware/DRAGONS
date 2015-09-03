@@ -5,9 +5,8 @@ from time import strptime
 
 from astrodata.utils import Errors
 from astrodata.utils import Lookups
-
+from astrodata.interface.slices import pixel_exts
 from astrodata.interface.Descriptors import DescriptorValue
-from astrodata.interface.structuredslice import pixel_exts, bintable_exts
 
 from gempy.gemini import gemini_data_calculations as gdc
 from gempy.gemini import gemini_metadata_utils as gmu
@@ -1042,7 +1041,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_overscan_section_dict,
-                                 name="overscan_section", ad=dataset)
+                                 name="overscan_section") #, ad=dataset)
         return ret_dv
     
     def pixel_scale(self, dataset, **args):
