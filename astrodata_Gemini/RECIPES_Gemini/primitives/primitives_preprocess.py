@@ -839,6 +839,79 @@ class PreprocessPrimitives(GENERALPrimitives):
         
         yield rc
 
+#    def scaleByExposureTime(self, rc):
+#        """
+#        This primitive scales input images to match the exposure time of
+#        the first image. 
+#        """
+#        # Instantiate the log
+#        log = logutils.get_logger(__name__)
+#
+#        # Log the standard "starting primitive" debug message
+#        log.debug(gt.log_message("primitive", "scaleByExposureTime", "starting"))
+#
+#        # Define the keyword to be used for the time stamp for this primitive
+#        timestamp_key = self.timestamp_keys["scaleByExposureTime"]
+#
+#        # Initialize the list of output AstroData objects
+#        adoutput_list = []
+#
+#        # First check if any scaling is actually required
+#        exptimes = []
+#        for ad in rc.get_inputs_as_astrodata():
+#            exptimes.append(ad.exposure_time())
+#        if set(exptimes) == 1:
+#            log.fullinfo("Exposure times are the same therefore no scaling"
+#                         "is required.")
+#            adoutput_list = rc.get_inputs_as_astrodata()
+#        else:
+#            first = True
+#            reference_exptime = 1.0
+#            # Loop over each input AstroData object in the input list
+#            for ad in rc.get_inputs_as_astrodata():
+#
+#                exptime = ad.exposure_time()
+#                # Scale by the relative exposure time
+#                if first:
+#                    reference_exptime = exptime
+#                    scale = 1.0
+#                    first = False
+#                    first_filename = ad.filename
+#                else:
+#                    scale = reference_exptime / exptime
+#
+#                # Log and save the scale factor. Also change the exposure time
+#                # (not sure if this is OK, since I'd rather leave this as the
+#                # original value, but a lot of primitives match/select on 
+#                # this - ED)
+#                log.fullinfo("Intensity scaled to match exposure time of %s: "
+#                             "%.3f" % (first_filename, scale))
+##                ad.phu_set_key_value("EXPSCALE", scale,
+##                                 comment=self.keyword_comments["EXPSCALE"])
+#                ad.phu_set_key_value("EXPTIME", reference_exptime.as_pytype(),
+#                                 comment=self.keyword_comments["EXPTIME"])
+#
+#                # Multiply by the scaling factor
+#                ad.mult(scale)
+#
+#                # Add the appropriate time stamps to the PHU
+#                gt.mark_history(adinput=ad, keyword=timestamp_key)
+#
+#                # Change the filename
+#                ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+#                                              strip=True)
+#
+#                # Append the output AstroData object to the list
+#                # of output AstroData objects
+#                adoutput_list.append(ad)
+#
+#        # Report the list of output AstroData objects to the reduction
+#        # context
+#        rc.report_output(adoutput_list)
+#        
+#        yield rc     
+
+
     def separateSky(self, rc):
 
         """
@@ -1371,5 +1444,65 @@ class PreprocessPrimitives(GENERALPrimitives):
         # Report the list of output AstroData objects to the reduction
         # context
         rc.report_output(ad_output_list)
+        
+        yield rc
+
+
+    def subtractSkyBackground(self, rc):
+        """
+        This primitive is used to subtract the sky background specified by 
+        the keyword SKYLEVEL.
+        """
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "subtractSkyBackground", "starting"))
+
+        # Define the keyword to be used for the time stamp for this primitive
+        timestamp_key = self.timestamp_keys["subtractSkyBackground"]
+
+        # Initialize the list of output AstroData objects
+        adoutput_list = []
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+
+            # Check whether the myScienceStep primitive has been run previously
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to %s, since it has "
+                            "already been processed by subtractSkyBackground"
+                            % ad.filename)
+
+                # Append the input AstroData object to the list of output
+                # AstroData objects without further processing
+                adoutput_list.append(ad)
+                continue
+            
+            # Get the sky background
+            for sciext in ad[SCI]:
+                bg = sciext.get_key_value("SKYLEVEL")
+                
+                if bg is None:
+                    log.warning("No changes will be made to %s, since there "
+                                "is no sky background measured" % ad.filename)
+                else:    
+                    log.fullinfo("Subtracting %.0f to remove sky level from "
+                                 "image %s" % (bg, ad.filename))
+                    sciext.sub(bg)
+                    
+            # Add the appropriate time stamps to the PHU
+            gt.mark_history(adinput=ad, keyword=timestamp_key)
+
+            # Change the filename
+            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
+                                              strip=True)
+
+            # Append the output AstroData object to the list of output
+            # AstroData objects
+            adoutput_list.append(ad)
+
+        # Report the list of output AstroData objects to the reduction context
+        rc.report_output(adoutput_list)
         
         yield rc

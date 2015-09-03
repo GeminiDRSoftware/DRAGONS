@@ -139,7 +139,36 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         ret_dv = DescriptorValue(ret_array_section, name="array_section",
                                  ad=dataset)
         return ret_dv
-    
+
+    def camera(self, dataset, stripID=False, pretty=False, **args):
+        """
+        Return the camera name, stripping the ID and making pretty as appropriate
+        """
+
+        keyword = self.get_descriptor_key("key_camera")
+        camera = dataset.phu_get_key_value(keyword)
+
+        if camera is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+
+        if pretty:
+            stripID = True
+        if stripID:
+            # Return the camera string with the component ID stripped
+            ret_camera = gmu.removeComponentID(camera)
+        else:
+            # Return the decker string
+            ret_camera = str(camera)
+
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_camera, name="camera", ad=dataset)
+
+        return ret_dv
+
     def cass_rotator_pa(self, dataset, **args):
         # Determine the cassegrain rotator position angle keyword from the
         # global keyword dictionary
@@ -284,6 +313,42 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         ret_dv = DescriptorValue(ret_data_section, name="data_section",
                                  ad=dataset)
         return ret_dv
+
+    def dec(self, dataset):
+        """
+        The dec is defined from the world coordinate system, referenced
+        at the central pixel of the image. It is assumed that there are 
+        two dimensions (F2 has a third dimension before prepare is run, 
+        but this dimension is empty).
+        """
+        # Getting the WCS information from the header
+        keyword = self.get_descriptor_key("key_cd21")
+        cd21 = dataset['SCI',1].get_key_value(keyword)
+        keyword = self.get_descriptor_key("key_cd22")
+        cd22 = dataset['SCI',1].get_key_value(keyword)
+        keyword = self.get_descriptor_key("key_crpix1")
+        crpix1 = dataset['SCI',1].get_key_value(keyword)
+        keyword = self.get_descriptor_key("key_crpix2")
+        crpix2 = dataset['SCI',1].get_key_value(keyword)
+        keyword = self.get_descriptor_key("key_crval2")
+        crval2 = dataset['SCI',1].get_key_value(keyword)
+        keyword = self.get_descriptor_key("key_naxis1")
+        naxis1 = dataset['SCI',1].get_key_value(keyword)
+        keyword = self.get_descriptor_key("key_naxis2")
+        naxis2 = dataset['SCI',1].get_key_value(keyword)
+        
+        # Determining the central pixel of the array
+        cx = naxis1 / 2.0
+        cy = naxis2 / 2.0
+        
+        # Calculating the dec
+        dec = crval2 + (cd21 * (cx - crpix1)) + (cd22 * (cy - crpix2))
+
+#        dec = dataset.phu_get_key_value("DEC")        
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(dec, name="dec", ad=dataset)
+        
+        return ret_dv
     
     def decker(self, dataset, stripID=False, pretty=False, **args):
         """
@@ -318,36 +383,6 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         ret_dv = DescriptorValue(ret_decker, name="decker", ad=dataset)
         
         return ret_dv
-    
-    def camera(self, dataset, stripID=False, pretty=False, **args):
-        """
-        Return the camera name, stripping the ID and making pretty as appropriate
-        """
-
-        keyword = self.get_descriptor_key("key_camera")
-        camera = dataset.phu_get_key_value(keyword)
-
-        if camera is None:
-            # The phu_get_key_value() function returns None if a value cannot
-            # be found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, "exception_info"):
-                raise dataset.exception_info
-
-        if pretty:
-            stripID = True
-        if stripID:
-            # Return the camera string with the component ID stripped
-            ret_camera = gmu.removeComponentID(camera)
-        else:
-            # Return the decker string
-            ret_camera = str(camera)
-
-        # Instantiate the return DescriptorValue (DV) object
-        ret_dv = DescriptorValue(ret_camera, name="camera", ad=dataset)
-
-        return ret_dv
-
 
     def detector_roi_setting(self, dataset, **args):
         # For instruments that do not support setting the ROI, return "Fixed"
@@ -821,14 +856,80 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # an AstroData Type of "GMOS". For all other Gemini data, raise an
         # exception if this descriptor is called.
         raise Errors.ExistError()
-    
-    def read_speed_setting(self, dataset, **args):
-        # The read_speed_setting descriptor is only specific to GMOS data. The
-        # code below will be replaced with the GMOS specific read_speed_setting
-        # descriptor function located in GMOS/GMOS_Descriptor.py for data with
-        # an AstroData Type of "GMOS". For all other Gemini data, raise an
-        # exception if this descriptor is called.
-        raise Errors.ExistError()
+
+    def qa_state(self, dataset, **args):
+        # Determine the keywords for whether the PI requirements were met
+        # (rawpireq) and the raw Gemini Quality Assessment (rawgemqa) from the
+        # global keyword dictionary
+        keyword1 = self.get_descriptor_key("key_raw_pi_requirements_met")
+        keyword2 = self.get_descriptor_key("key_raw_gemini_qa")
+        
+        # Get the value for whether the PI requirements were met and the value
+        # for the raw Gemini Quality Assessment keywords from the header of the
+        # PHU
+        rawpireq = dataset.phu_get_key_value(keyword1)
+        rawgemqa = dataset.phu_get_key_value(keyword2)
+        
+        if rawpireq is None or rawgemqa is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
+        # Calculate the derived QA state
+        ret_qa_state = "%s:%s" % (rawpireq, rawgemqa)
+        if rawpireq == "UNKNOWN" or rawgemqa == "UNKNOWN":
+            ret_qa_state = "Undefined"
+        if rawpireq.upper() == "YES" and rawgemqa.upper() == "USABLE":
+            ret_qa_state = "Pass"
+        if rawpireq.upper() == "NO" and rawgemqa.upper() == "USABLE":
+            ret_qa_state = "Usable"
+        if rawgemqa.upper() == "BAD":
+            ret_qa_state = "Fail"
+        if rawpireq.upper() == "CHECK" or rawgemqa.upper() == "CHECK":
+            ret_qa_state = "CHECK"
+        
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_qa_state, name="qa_state", ad=dataset)
+        
+        return ret_dv
+
+    def ra(self, dataset):
+        """
+        The RA is defined from the world coordinate system, referenced
+        at the central pixel of the image. It is assumed that there are 
+        two dimensions (F2 has a third dimension before prepare is run, 
+        but this dimension is empty).
+        """
+        # Getting the WCS information from the header
+        keyword = self.get_descriptor_key("key_cd11")
+        cd11 = dataset['SCI',1].get_key_value(keyword)
+        keyword = self.get_descriptor_key("key_cd12")
+        cd12 = dataset['SCI',1].get_key_value(keyword)
+        keyword = self.get_descriptor_key("key_crpix1")
+        crpix1 = dataset['SCI',1].get_key_value(keyword)
+        keyword = self.get_descriptor_key("key_crpix2")
+        crpix2 = dataset['SCI',1].get_key_value(keyword)
+        keyword = self.get_descriptor_key("key_crval1")
+        crval1 = dataset['SCI',1].get_key_value(keyword)
+        keyword = self.get_descriptor_key("key_naxis1")
+        naxis1 = dataset['SCI',1].get_key_value(keyword)
+        keyword = self.get_descriptor_key("key_naxis2")
+        naxis2 = dataset['SCI',1].get_key_value(keyword)
+        
+        # Determining the central pixel of the array
+        cx = naxis1 / 2.0
+        cy = naxis2 / 2.0
+        
+        # Calculating the ra
+        ra = crval1 + (cd11 * (cx - crpix1)) + (cd12 * (cy - crpix2))
+        
+#        ra = dataset.phu_get_key_value("RA")
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ra, name="ra", ad=dataset)
+        
+        return ret_dv
     
     def ra(self, dataset, offset=False, pm=True, **args):
         # Return the target RA from the RA header
@@ -1031,6 +1132,14 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         ret_dv = DescriptorValue(ret_raw_wv, name="raw_wv", ad=dataset)
         
         return ret_dv
+
+    def read_speed_setting(self, dataset, **args):
+        # The read_speed_setting descriptor is only specific to GMOS data. The
+        # code below will be replaced with the GMOS specific read_speed_setting
+        # descriptor function located in GMOS/GMOS_Descriptor.py for data with
+        # an AstroData Type of "GMOS". For all other Gemini data, raise an
+        # exception if this descriptor is called.
+        raise Errors.ExistError()
     
     def requested_bg(self, dataset, **args):
         # Determine the requested background keyword from the global keyword
@@ -1146,44 +1255,6 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_requested_wv, name="requested_wv",
                                  ad=dataset)
-        return ret_dv
-    
-    def qa_state(self, dataset, **args):
-        # Determine the keywords for whether the PI requirements were met
-        # (rawpireq) and the raw Gemini Quality Assessment (rawgemqa) from the
-        # global keyword dictionary
-        keyword1 = self.get_descriptor_key("key_raw_pi_requirements_met")
-        keyword2 = self.get_descriptor_key("key_raw_gemini_qa")
-        
-        # Get the value for whether the PI requirements were met and the value
-        # for the raw Gemini Quality Assessment keywords from the header of the
-        # PHU
-        rawpireq = dataset.phu_get_key_value(keyword1)
-        rawgemqa = dataset.phu_get_key_value(keyword2)
-        
-        if rawpireq is None or rawgemqa is None:
-            # The phu_get_key_value() function returns None if a value cannot
-            # be found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, "exception_info"):
-                raise dataset.exception_info
-        
-        # Calculate the derived QA state
-        ret_qa_state = "%s:%s" % (rawpireq, rawgemqa)
-        if rawpireq == "UNKNOWN" or rawgemqa == "UNKNOWN":
-            ret_qa_state = "Undefined"
-        if rawpireq.upper() == "YES" and rawgemqa.upper() == "USABLE":
-            ret_qa_state = "Pass"
-        if rawpireq.upper() == "NO" and rawgemqa.upper() == "USABLE":
-            ret_qa_state = "Usable"
-        if rawgemqa.upper() == "BAD":
-            ret_qa_state = "Fail"
-        if rawpireq.upper() == "CHECK" or rawgemqa.upper() == "CHECK":
-            ret_qa_state = "CHECK"
-        
-        # Instantiate the return DescriptorValue (DV) object
-        ret_dv = DescriptorValue(ret_qa_state, name="qa_state", ad=dataset)
-        
         return ret_dv
     
     def ut_date(self, dataset, **args):

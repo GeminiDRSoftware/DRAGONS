@@ -209,6 +209,7 @@ class RegisterPrimitives(GENERALPrimitives):
             if method=="header":
                 reg_ad = _header_align(reference, adinput[1:])
                 adoutput_list.extend(reg_ad)
+                log.stdinfo("Using WCS specified in header for alignment")
             elif method!="sources":
                 raise Errors.InputError("Did not recognize method " + method)
             
@@ -275,7 +276,9 @@ class RegisterPrimitives(GENERALPrimitives):
                         else:
                             log.fullinfo("Number of correlated sources: %d" % 
                                          n_corr)
-                            
+                            log.stdinfo("%s: Using source correlation for "
+                                        "alignment" % ad.filename)
+
                             # Check the fit geometry depending on the 
                             # number of objects
                             if n_corr == 1:

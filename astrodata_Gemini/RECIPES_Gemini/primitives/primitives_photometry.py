@@ -216,6 +216,24 @@ class PhotometryPrimitives(GENERALPrimitives):
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
 
+            # Masking data outside the F2 FOV with 0.0. This should probably 
+            # go somewhere else. EJD
+            if "F2" in ad.instrument().as_pytype():
+                for sciext in ad["SCI"]:
+                    datasec = ad.data_section().as_pytype()
+                    central_i = (datasec[1] - datasec[0]) / 2.0
+                    central_j = (datasec[3] - datasec[2]) / 2.0
+                    radius = (central_i + central_j) / 2.0
+#                    print "datasec = ", datasec
+#                    print "central_i = ", central_i
+#                    print "central_j = ", central_j
+#                    print "radius = ", radius
+                    for i in range(len(sciext.data)):
+                        for j in range(len(sciext.data[i])):
+                            if (i - central_i)**2 + (j - central_j)**2 >= radius**2:
+#                                sciext.data[i][j] = float('NaN')
+                                sciext.data[i][j] = 0.0
+                                
             # Get the necessary parameters from the RC
             sigma = rc["sigma"]
             threshold = rc["threshold"]
@@ -456,7 +474,7 @@ def _match_objcat_refcat(adinput=None):
             if filter_name in ['u', 'g', 'r', 'i', 'z', 'j', 'h']:
                 magcolname = filter_name+'mag'
                 magerrcolname = filter_name+'mag_err'
-            elif filter_name in ['k', 'k(prime)', 'k(short)']:
+            elif filter_name in ['k', 'k(prime)', 'k(short)', 'ks']:
                 magcolname = 'kmag'
                 magerrcolname = 'kmag_err'
             else:
@@ -479,11 +497,26 @@ def _match_objcat_refcat(adinput=None):
                     if(not(refcat)):
                         log.warning("Missing [REFCAT,%d] in %s - Cannot match objcat against missing refcat" % (extver,ad.filename))
                     else:
-                        # Get the x and y position lists from both catalogs
+                        # Get the x and y position lists from both catalogs in
+                        # degrees. NOTE: This is a bug that needs to be fixed,
+                        # committed for now with this bug present, as fixing
+                        # it seems to cause other issues.
                         xx = objcat.data['X_WORLD']
                         yy = objcat.data['Y_WORLD']
                         sx = refcat.data['RAJ2000']
                         sy = refcat.data['DEJ2000']
+                        # Get the x and y position lists from both catalogs in
+                        # pixels
+#                        xx = objcat.data['X_IMAGE']
+#                        yy = objcat.data['Y_IMAGE']
+                        
+                        # The coordinates of the reference sources are 
+                        # corrected to pixel positions using the WCS of the 
+                        # object frame
+#                        sra = refcat.data['RAJ2000']
+#                        sdec = refcat.data['DEJ2000']
+#                        wcsobj = pywcs.WCS(ad["SCI"].header)
+#                        sx, sy = wcsobj.wcs_sky2pix(sra,sdec,1)
     
                         # FIXME - need to address the wraparound problem here
                         # if we straddle ra = 360.00 = 0.00
@@ -491,9 +524,12 @@ def _match_objcat_refcat(adinput=None):
                         initial = 10.0/3600.0 # 10 arcseconds in degrees
                         final = 0.5/3600.0 # 0.5 arcseconds in degrees
 
+#                        initial = 10.0/ad.pixel_scale().as_pytype() # 10 arcseconds in pixels
+#                        final = 0.5/ad.pixel_scale().as_pytype() # 0.5 arcseconds in pixels
+
                         (oi, ri) = at.match_cxy(xx,sx,yy,sy, firstPass=initial, delta=final, log=log)
-    
-                        # If too few matches, assume the match was bad
+
+                       # If too few matches, assume the match was bad
                         if len(oi)<2:
                             oi = []
 

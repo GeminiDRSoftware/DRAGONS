@@ -236,7 +236,7 @@ class docstrings:
     
     def dec(self):
         """
-        Return the dec value
+        Return the dec value, defined for most Gemini instruments at the central pixel
         
         :param dataset: the dataset
         :type dataset: AstroData
@@ -904,7 +904,7 @@ class docstrings:
     
     def ra(self):
         """
-        Return the ra value
+        Return the ra value, defined for most Gemini instruments at the central pixel
         
         :param dataset: the dataset
         :type dataset: AstroData

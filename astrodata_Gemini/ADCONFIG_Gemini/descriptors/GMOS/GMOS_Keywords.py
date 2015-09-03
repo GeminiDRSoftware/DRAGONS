@@ -6,6 +6,7 @@ GMOS_KeyDict = {
     "key_ccdsum":"CCDSUM",
     "key_central_wavelength":"GRWLEN",
     "key_array_name":"CCDNAME",
+    "key_dec": "DEC",
     "key_detector_name":"DETID",
     "key_detector_type":"DETTYPE",
     "key_disperser":"GRATING",
@@ -17,5 +18,6 @@ GMOS_KeyDict = {
     "key_masktype":"MASKTYP",
     "key_overscan_value":"OVERSCAN",
     "key_overscan_section":"BIASSEC",
+    "key_ra": "RA",
     "key_wavelength_reference_pixel":"CRPIX1",
     }

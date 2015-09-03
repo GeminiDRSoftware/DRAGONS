@@ -22,6 +22,7 @@ keyword_comments = {
     "DEC": "Declination of Target",
     "DETSEC": "Detector section(s)",
     "DISPAXIS": "Dispersion axis",
+#    "EXPSCALE": "Scaling factor to match exposure time",
     "EXPTIME": "Exposure time [seconds]",
     "FILTER": "Combined filter name",
     "FLATIM": "Flat image used",
@@ -53,6 +54,7 @@ keyword_comments = {
     "RELINT": "Relative intensity factor",
     "SATLEVEL": "Saturation level [ADU]",
     "SKYLEVEL": "Estimated sky level",
+    "SUBSKYBG": "Sky background subtracted",
     "TRIMMED": "Overscan section trimmed",
     "TRIMSEC": "Data section prior to trimming",
 }

@@ -191,7 +191,60 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_dv = DescriptorValue(ret_lyot_stop, name="lyot_stop", ad=dataset)
         
         return ret_dv
-    
+
+    def nominal_photometric_zeropoint(self, dataset, **args):
+        # Since this descriptor function accesses keywords in the headers of
+        # the pixel data extensions, always construct a dictionary where the
+        # key of the dictionary is an (EXTNAME, EXTVER) tuple
+        ret_nominal_photometric_zeropoint = {}
+        
+        table = Lookups.get_lookup_table("Gemini/F2/Nominal_Zeropoints",
+                                         "nominal_zeropoints")
+        # Get the values of the gain, detector name and filter name using the
+        # appropriate descriptors. Use as_pytype() to return the values as the
+        # default python type rather than an object.
+        gain = dataset.gain().as_pytype()
+        camera = dataset.camera(pretty=True).as_pytype()
+        filter_name = dataset.filter_name(pretty=True).as_pytype()
+        
+        if gain is None or camera is None or filter_name is None:
+            # The descriptor functions return None if a value cannot be
+            # found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
+        # Get the value of the BUNIT keyword from the header of each pixel data
+        # extension as a dictionary where the key of the dictionary is an
+        # ("*", EXTVER) tuple 
+        bunit_dict = gmu.get_key_value_dict(adinput=dataset, keyword="BUNIT")
+        
+        for ext_name_ver, bunit in bunit_dict.iteritems():
+            # If bunit is "electron" or None, set the gain factor to 0.0 
+            gain_factor = 0.0
+            
+            if bunit == "adu":
+                gain_factor = 2.5 * math.log10(gain)
+                
+            nominal_zeropoint_key = (filter_name, camera)
+            
+            if nominal_zeropoint_key in table:
+                nominal_photometric_zeropoint = (
+                    table[nominal_zeropoint_key] - gain_factor)
+            else:
+                raise Errors.TableKeyError()
+            
+            # Update the dictionary with the nominal photometric zeropoint
+            # value 
+            ret_nominal_photometric_zeropoint.update({
+                ext_name_ver:nominal_photometric_zeropoint})
+        
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_nominal_photometric_zeropoint,
+                                 name="nominal_photometric_zeropoint",
+                                 ad=dataset)
+        return ret_dv
+        
     def non_linear_level(self, dataset, **args):
         # Determine the number of non-destructive read pairs keyword (lnrs)
         # from the global keyword dictionary

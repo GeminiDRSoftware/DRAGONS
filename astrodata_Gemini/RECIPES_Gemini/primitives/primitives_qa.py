@@ -1053,8 +1053,8 @@ class QAPrimitives(GENERALPrimitives):
                         "WARNING: high ellipticity".rjust(dlen)
                         # Note if it is non-sidereal
                         if('NON_SIDEREAL' in ad.types):
-                            ell_warn += "\n     - this is likely due to "
-                            "non-sidereal tracking"
+                            ell_warn += ("\n     - this is likely due to "
+                            "non-sidereal tracking")
                     else:
                         ell_warn = ""                    
 
