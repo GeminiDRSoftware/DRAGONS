@@ -32,7 +32,7 @@ from astrodata.utils import Lookups
 from astrodata.utils import logutils
 from astrodata.utils.ConfigSpace import lookup_path
 from astrodata.utils.gemconstants import SCI, VAR, DQ
-from astrodata.interface.structuredslice import pixel_exts
+from astrodata.interface.slices import pixel_exts
 from astrodata.interface.Descriptors import DescriptorValue
 from astrodata.utils.Errors import DescriptorValueTypeError
 
