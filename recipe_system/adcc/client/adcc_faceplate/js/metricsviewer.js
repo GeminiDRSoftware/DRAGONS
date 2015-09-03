@@ -1033,175 +1033,196 @@ MetricsViewer.prototype = {
 	for (var i in records) {
 	    var record = records[i];
 
-	    // Add a few more useful fields to the record
+	    // Wrap this whole section in a try/except clause. It
+	    // isn't a pretty way of doing things, but it can catch
+	    // engineering data with missing metrics without stopping
+	    // the whole GUI for a night and inconveniencing the
+	    // observers.
+	    try {
+		
+		// Add a few more useful fields to the record
 
-	    // Replace the local time with a datetime string,
-	    // derived from the ut_time field
-	    // Input format: "YYYY-MM-DD HH:MM:SS.SSS"
-	    var udt = record["metadata"]["ut_time"].split(" ");
-	    var ud = udt[0].split("-");
-	    var ut = udt[1].split(":");
-	    ut[3] = (parseFloat(ut[2])-parseInt(ut[2],10))*1000;
-	    ut[2] = parseInt(ut[2],10);
+		// Replace the local time with a datetime string,
+		// derived from the ut_time field
+		// Input format: "YYYY-MM-DD HH:MM:SS.SSS"
+		var udt = record["metadata"]["ut_time"].split(" ");
+		var ud = udt[0].split("-");
+		var ut = udt[1].split(":");
+		ut[3] = (parseFloat(ut[2])-parseInt(ut[2],10))*1000;
+		ut[2] = parseInt(ut[2],10);
 
-	    var ldate = new Date(Date.UTC(ud[0],ud[1]-1,ud[2],
+		var ldate = new Date(Date.UTC(ud[0],ud[1]-1,ud[2],
 					  ut[0],ut[1],ut[2], ut[3]));
-	    ldate.setHours(ldate.getHours()-this.tz_offset);
+		ldate.setHours(ldate.getHours()-this.tz_offset);
 
-	    // Skip this record if it is not within the current date
-	    var remote_start = new Date(this.prev_turnover);
-	    remote_start.setHours(remote_start.getHours()-this.tz_offset);
-	    var remote_end = new Date(this.turnover);
-	    remote_end.setHours(remote_end.getHours()-this.tz_offset);
-	    if (ldate<remote_start || ldate>remote_end) {
-		continue;
-	    }
+		// Skip this record if it is not within the current date
+		var remote_start = new Date(this.prev_turnover);
+		remote_start.setHours(remote_start.getHours()-this.tz_offset);
+		var remote_end = new Date(this.turnover);
+		remote_end.setHours(remote_end.getHours()-this.tz_offset);
+		if (ldate<remote_start || ldate>remote_end) {
+		    continue;
+		}
 
-	    // Pad with zeroes if necessary
-	    var month = ldate.getMonth() + 1;
-	    month = (month <10 ? "0" : "") +  month;
-	    var day = ldate.getDate();
-	    day = (day <10 ? "0" : "") +  day;
-	    var hour = ldate.getHours();
-	    hour = (hour <10 ? "0" : "") +  hour;
-	    var min = ldate.getMinutes();
-	    min = (min <10 ? "0" : "") +  min;
-	    var sec = ldate.getSeconds()+ldate.getMilliseconds()/1000.0;
-	    sec = (sec <10 ? "0" : "") +  sec;
+		// Pad with zeroes if necessary
+		var month = ldate.getMonth() + 1;
+		month = (month <10 ? "0" : "") +  month;
+		var day = ldate.getDate();
+		day = (day <10 ? "0" : "") +  day;
+		var hour = ldate.getHours();
+		hour = (hour <10 ? "0" : "") +  hour;
+		var min = ldate.getMinutes();
+		min = (min <10 ? "0" : "") +  min;
+		var sec = ldate.getSeconds()+ldate.getMilliseconds()/1000.0;
+		sec = (sec <10 ? "0" : "") +  sec;
 
-	    var ld = [ldate.getFullYear(),month,day];
-	    var lt = [hour,min,sec];
-	    record["metadata"]["local_time"] = ld.join("-") + " " +
+		var ld = [ldate.getFullYear(),month,day];
+		var lt = [hour,min,sec];
+		record["metadata"]["local_time"] = ld.join("-") + " " +
 	                                       lt.join(":");
 
-	    // Get just the hours and minutes from the local/ut time
-	    record["metadata"]["local_time_str"] = lt[0]+":"+lt[1];
-	    record["metadata"]["ut_time_str"] = ut[0]+":"+ut[1];
+		// Get just the hours and minutes from the local/ut time
+		record["metadata"]["local_time_str"] = lt[0]+":"+lt[1];
+		record["metadata"]["ut_time_str"] = ut[0]+":"+ut[1];
 
-	    // Strip any suffixes from the "raw" filename
-	    var fn_regex = /.*((N|S)\d{8}S(\d{4}))(_[a-zA-Z0-9]+)?(\.fits?)?/;
-	    var fn = record["metadata"]["raw_filename"];
-	    if (fn.match(fn_regex)) {
-		record["metadata"]["raw_filename"] = 
-		    fn.replace(fn_regex,'$1$5');
-	    }
+		// Strip any suffixes from the "raw" filename
+		var fn_regex = /.*((N|S)\d{8}S(\d{4}))(_[a-zA-Z0-9]+)?(\.fits?)?/;
+		var fn = record["metadata"]["raw_filename"];
+		if (fn.match(fn_regex)) {
+		    record["metadata"]["raw_filename"] = 
+			fn.replace(fn_regex,'$1$5');
+		}
 
-	    // Get the image number from the filename
-	    var imgnum = record["metadata"]["raw_filename"];
-	    if (imgnum.match(fn_regex)) {
-		imgnum = parseInt(imgnum.replace(fn_regex,'$3'),10);
-	    } else {
-		imgnum = "--";
-	    }
-	    record["metadata"]["image_number"] = imgnum;
+		// Get the image number from the filename
+		var imgnum = record["metadata"]["raw_filename"];
+		if (imgnum.match(fn_regex)) {
+		    imgnum = parseInt(imgnum.replace(fn_regex,'$3'),10);
+		} else {
+		    imgnum = "--";
+		}
+		record["metadata"]["image_number"] = imgnum;
 
-	    // Turn the types list into a readable string
-	    var obstype = record["metadata"]["instrument"];
-	    var types = record["metadata"]["types"];
-	    if (types.indexOf("ACQUISITION")!=-1) {
-	        obstype += " acq";
-	    }
-	    if (types.indexOf("SPECT")!=-1) {
-	        obstype += " spect";
-	    }
-	    obstype += " "+record["metadata"]["object"];
-	    record["metadata"]["obstype"] = obstype;
+		// Turn the types list into a readable string
+		var obstype = record["metadata"]["instrument"];
+		var types = record["metadata"]["types"];
+		if (types.indexOf("ACQUISITION")!=-1) {
+	            obstype += " acq";
+		}
+		if (types.indexOf("SPECT")!=-1) {
+	            obstype += " spect";
+		}
+		obstype += " "+record["metadata"]["object"];
+		record["metadata"]["obstype"] = obstype;
 
-	    // Format the wavelength into a more readable string
-	    if (types.indexOf("SPECT")!=-1) {
-		var wlen = record["metadata"]["wavelength"];
-		wlen = parseFloat(wlen).toFixed(3) + "\u00B5m";
-		record["metadata"]["wavelength_str"] = wlen;
-	    } else {
-		record["metadata"]["wavelength_str"] = 
-		    record["metadata"]["filter"];
-	    }
+		// Format the wavelength into a more readable string
+		if (types.indexOf("SPECT")!=-1) {
+		    var wlen = record["metadata"]["wavelength"];
+		    wlen = parseFloat(wlen).toFixed(3) + "\u00B5m";
+		    record["metadata"]["wavelength_str"] = wlen;
+		} else {
+		    record["metadata"]["wavelength_str"] = 
+			record["metadata"]["filter"];
+		}
 	    
-	    // Format some metrics into strings including errors
-	    // and format integer bands into strings
-	    // (eg. 50 -> "CC50")
-	    var datalabel = record["metadata"]["datalabel"];
-	    if (incoming_metric[datalabel]==undefined) {
-		incoming_metric[datalabel] = [];
-	    }
+		// Format some metrics into strings including errors
+		// and format integer bands into strings
+		// (eg. 50 -> "CC50")
+		var datalabel = record["metadata"]["datalabel"];
+		if (incoming_metric[datalabel]==undefined) {
+		    incoming_metric[datalabel] = [];
+		}
 		
-	    if (record["iq"]) {
-		incoming_metric[datalabel].push("iq");
+		if (record["iq"]) {
+		    incoming_metric[datalabel].push("iq");
 
-		// If the observation uses AO, there may not be a delivered IQ
-		try {
-		    record["iq"]["delivered_str"] = 
-			record["iq"]["delivered"].toFixed(2) + " \u00B1 " +
-			record["iq"]["delivered_error"].toFixed(2);
-		}
-		catch (e) {
-		    record["iq"]["delivered_str"] = undefined;
-		}
-	        // fitsstore may not deliver zenith metrics
-		try {
-		    record["iq"]["zenith_str"] = 
-		        record["iq"]["zenith"].toFixed(2) + " \u00B1 " +
-			record["iq"]["zenith_error"].toFixed(2);
-		}
-		catch (e) {
-		    record["iq"]["zenith_str"] = undefined;
-		}
-		// If an AO seeing value is provided, use this
-		if (record["iq"]["ao_seeing_zenith"]) {
-		    record["iq"]["zenith_str"] = 
-			record["iq"]["ao_seeing_zenith"].toFixed(2) + " (AO)";
-		    // Add a hack here to overwrite the zenith IQ if
-		    // there is an AO-estimated seeing value, this is
-		    // the value that will then be plotted
-		    record["iq"]["zenith"] = record["iq"]["ao_seeing_zenith"]
-		    // Putting in zero errors is obviously untrue, but prevents
-		    // formatPlotRecords from throwing out the data
-		    record["iq"]["zenith_error"] = 0.0
-		} 
+		    // If the observation uses AO, there may not be a
+		    // delivered IQ
+		    try {
+			record["iq"]["delivered_str"] = 
+			    record["iq"]["delivered"].toFixed(2) + " \u00B1 " +
+			    record["iq"]["delivered_error"].toFixed(2);
+		    }
+		    catch (e) {
+			record["iq"]["delivered_str"] = undefined;
+		    }		
+		    // FITSStore may not deliver zenith metrics
+		    if (record["iq"]["zenith"] && record["iq"]["zenith_error"]) {
+			record["iq"]["zenith_str"] = 
+		            record["iq"]["zenith"].toFixed(2) + " \u00B1 " +
+			    record["iq"]["zenith_error"].toFixed(2);
+		    } else if (record["iq"]["zenith"] && !(record["iq"]["zenith_error"])) {
+			record["iq"]["zenith_str"] = 
+		            record["iq"]["zenith"].toFixed(2);	    
+		    } else {
+			record["iq"]["zenith_str"] = undefined;
+		    }
+
+		    // If an AO seeing value is provided, use this
+		    if (record["iq"]["ao_seeing_zenith"]) {
+			record["iq"]["zenith_str"] = 
+			    record["iq"]["ao_seeing_zenith"].toFixed(2) + " (AO)";
+			// Add a hack here to overwrite the zenith IQ if
+			// there is an AO-estimated seeing value, this is
+			// the value that will then be plotted
+			record["iq"]["zenith"] = record["iq"]["ao_seeing_zenith"]
+			// Putting in zero errors is obviously untrue, but prevents
+			// formatPlotRecords from throwing out the data
+			record["iq"]["zenith_error"] = 0.0
+		    } 
 		
-		if (record["iq"]["ellipticity"]) {
-		    record["iq"]["ellipticity_str"] = 
-			record["iq"]["ellipticity"].toFixed(2) + " \u00B1 " +
-			record["iq"]["ellip_error"].toFixed(2);
+		    if (record["iq"]["ellipticity"]) {
+			record["iq"]["ellipticity_str"] = 
+			    record["iq"]["ellipticity"].toFixed(2) + " \u00B1 " +
+			    record["iq"]["ellip_error"].toFixed(2);
+		    }
+		    record["iq"]["band_str"] = 
+			this.getBandString("iq",record["iq"]["band"]);
+		    record["iq"]["requested_str"] = 
+			this.getBandString("iq",record["iq"]["requested"]);
 		}
-		record["iq"]["band_str"] = 
-		    this.getBandString("iq",record["iq"]["band"]);
-		record["iq"]["requested_str"] = 
-		    this.getBandString("iq",record["iq"]["requested"]);
-	    }
-	    if (record["cc"]) {
-		incoming_metric[datalabel].push("cc");
-		record["cc"]["extinction_str"] = 
-	            record["cc"]["extinction"].toFixed(2) + " \u00B1 " +
-		    record["cc"]["extinction_error"].toFixed(2);
+		if (record["cc"]) {
+		    incoming_metric[datalabel].push("cc");
+		    record["cc"]["extinction_str"] = 
+			record["cc"]["extinction"].toFixed(2) + " \u00B1 " +
+			record["cc"]["extinction_error"].toFixed(2);
 
-		// Average the reported zeropoints to get a single number
-		var zp_dict = record["cc"]["zeropoint"];
-		var zp=0, zperr=0, count=0;
-		for (var key in zp_dict) {
-		    zp += zp_dict[key]["value"];
-		    zperr += Math.pow(zp_dict[key]["error"],2);
-		    count++;
+		    // Average the reported zeropoints to get a single number
+		    var zp_dict = record["cc"]["zeropoint"];
+		    var zp=0, zperr=0, count=0;
+		    for (var key in zp_dict) {
+			zp += zp_dict[key]["value"];
+			zperr += Math.pow(zp_dict[key]["error"],2);
+			count++;
+		    }
+		    zp = zp / count;
+		    zperr = Math.sqrt(zperr);
+		    record["cc"]["zeropoint_str"] = zp.toFixed(2) +" \u00B1 " + zperr.toFixed(2);
+		    record["cc"]["band_str"] = 
+			this.getBandString("cc",record["cc"]["band"]);
+		    record["cc"]["requested_str"] = 
+			this.getBandString("cc",record["cc"]["requested"]);
 		}
-		zp = zp / count;
-		zperr = Math.sqrt(zperr);
-		record["cc"]["zeropoint_str"] = zp.toFixed(2) +" \u00B1 " +
-		                                zperr.toFixed(2);
-		record["cc"]["band_str"] = 
-		    this.getBandString("cc",record["cc"]["band"]);
-		record["cc"]["requested_str"] = 
-		    this.getBandString("cc",record["cc"]["requested"]);
+		if (record["bg"]) {
+		    incoming_metric[datalabel].push("bg");
+		    record["bg"]["brightness_str"] = 
+			record["bg"]["brightness"].toFixed(2) + " \u00B1 " +
+			record["bg"]["brightness_error"].toFixed(2);
+		    record["bg"]["band_str"] = 
+			this.getBandString("bg",record["bg"]["band"]);
+		    record["bg"]["requested_str"] = 
+			this.getBandString("bg",record["bg"]["requested"]);
+		}
+
+	    // Catch for missing metrics
+	    } catch (e) {
+		var datalabel = record["metadata"]["datalabel"];
+		if (incoming_metric[datalabel]==undefined) {
+		    incoming_metric[datalabel] = "No datalabel";
+		}
+		record["iq"]["comment"] = ["This observation may have missing metrics, please report this problem to SUSD"]
 	    }
-	    if (record["bg"]) {
-		incoming_metric[datalabel].push("bg");
-		record["bg"]["brightness_str"] = 
-	            record["bg"]["brightness"].toFixed(2) + " \u00B1 " +
-	            record["bg"]["brightness_error"].toFixed(2);
-		record["bg"]["band_str"] = 
-		    this.getBandString("bg",record["bg"]["band"]);
-		record["bg"]["requested_str"] = 
-		    this.getBandString("bg",record["bg"]["requested"]);
-	    }
+
+		
 	    // Add the record to the database
 	    this.database.addRecord(datalabel, record);
 
@@ -1243,8 +1264,16 @@ MetricsViewer.prototype = {
 		var datalabel = record["metadata"]["datalabel"];
 		var stack = record["metadata"]["stack"];
 		if (stack) {
+		    // Locate the table cells that contain BG and sky magnitude as
+		    // these are not measured for stacked data
+		    var jquery_results = $('tr#'+datalabel).find('td.bg')
+		    var cell = jquery_results[0];
+		    $(cell).html('N/A');		    
+		    var jquery_results = $('tr#'+datalabel).find('td.sky')
+		    var cell = jquery_results[0];
+		    $(cell).html('N/A');		    
 		    // Locate the table cells that contain stacked data
-		    var jquery_results = $('tr#'+datalabel).find('td.datalabel') 
+		    var jquery_results = $('tr#'+datalabel).find('td.datalabel')
 		    var cell = jquery_results[0];
 		    var cell_value = cell.innerHTML;
 		    // Style those table cells as links to make them obvious
