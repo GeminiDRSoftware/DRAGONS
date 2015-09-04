@@ -11,6 +11,16 @@ class GPI_DescriptorCalc(GEMINI_DescriptorCalc):
     def __init__(self):
         GEMINI_DescriptorCalc.__init__(self)
 
+    # For GPI, the WCS is completely bogus, so for ra and dec we
+    # reference the target_ra/dec. If the software gets fixed, this
+    # should call the wcs_ra/dec functions if the ut_datetime is after
+    # the date of the fix
+    def ra(self, dataset, **args):
+        return target_ra(offset=True, icrs=True)
+
+    def dec(self, dataset, **args):
+        return target_dec(offset=True, icrs=True)
+
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         # Determine the two filter name keywords from the global keyword
         # dictionary

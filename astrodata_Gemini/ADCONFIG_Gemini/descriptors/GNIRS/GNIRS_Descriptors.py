@@ -324,6 +324,47 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         return ret_dv
     
+    def ra(self, dataset, **args):
+        # In general, the GNIRS WCS is the way to go. But sometimes the DC
+        # has a bit of a senior moment and the WCS is miles off (presumably
+        # still has values from the previous observation or something. Who knows.
+        # So we do a sanity check on it and use the target values if it's messed up
+        wcs_ra = dataset.wcs_ra().as_pytype()
+        target_ra = dataset.target_ra(offset=True, icrs=True).as_pytype()
+        delta = abs(wcs_ra - target_ra)
+        # wraparound?
+        if delta > 180.0:
+            delta = abs(delta-360.0)
+        delta *= 3600.0 # put in arcsecs
+
+        # And account for cos(dec) factor
+        delta /= math.cos(math.radians(dataset.dec().as_pytype()))
+
+        # If more than 1000" arcsec different, WCS is probably bad
+        if delta > 1000:
+            return dataset.target_ra(offset=True, icrs=True)
+        else:
+            return dataset.wcs_ra()
+
+    def dec(self, dataset, **args):
+        # In general, the GNIRS WCS is the way to go. But sometimes the DC
+        # has a bit of a senior moment and the WCS is miles off (presumably
+        # still has values from the previous observation or something. Who knows.
+        # So we do a sanity check on it and use the target values if it's messed up
+        wcs_dec = dataset.wcs_dec().as_pytype()
+        target_dec = dataset.target_dec(offset=True, icrs=True).as_pytype()
+        delta = abs(wcs_dec - target_dec)
+        # wraparound?
+        if delta > 180.0:
+            delta = abs(delta-360.0)
+        delta *= 3600.0 # put in arcsecs
+
+        # If more than 1000" arcsec different, WCS is probably bad
+        if delta > 1000:
+            return dataset.target_dec(offset=True, icrs=True)
+        else:
+            return dataset.wcs_dec()
+
     def read_mode(self, dataset, **args):
         # Determine the number of non-destructive read pairs (lnrs) and the
         # number of digital averages (ndavgs) keywords from the global keyword

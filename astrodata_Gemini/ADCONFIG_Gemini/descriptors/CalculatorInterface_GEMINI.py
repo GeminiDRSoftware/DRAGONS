@@ -788,7 +788,7 @@ class CalculatorInterface(object):
 
     def dec(self, format=None, **args):
         """
-        Return the dec value
+        Return the dec value, defined for most Gemini instruments at the central pixel
         
         :param dataset: the dataset
         :type dataset: AstroData
@@ -839,66 +839,6 @@ class CalculatorInterface(object):
                 ret = DescriptorValue( None,
                                        format = format,
                                        name = "dec",
-                                       keyword = keyword,
-                                       ad = self,
-                                       pytype = None )
-                return ret
-        except:
-            raise
-
-    def target_dec(self, format=None, **args):
-        """
-        Return the target_dec value
-
-        :param dataset: the data set
-        :type dataset: AstroData
-        :param format: the return format
-        :type format: string
-        :rtype: float as default (i.e., format=None)
-        :return: the target_dec value
-        """
-        try:
-            self._lazyloadCalculator()
-            keydict = self.descriptor_calculator._specifickey_dict
-            key = "key_target_dec"
-            keyword = None
-            if key in keydict:
-                keyword = keydict[key]
-
-            if not hasattr(self.descriptor_calculator, "target_dec"):
-                if keyword is not None:
-                    retval = self.phu_get_key_value(keyword)
-                    if retval is None:
-                        if hasattr(self, "exception_info"):
-                            raise Errors.DescriptorError(self.exception_info)
-                else:
-                    msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for 'target_dec'")
-                    raise Errors.DescriptorInfrastructureError(msg)
-            else:
-                try:
-                    retval = self.descriptor_calculator.target_dec(self, **args)
-                except Exception as e:
-                    raise Errors.DescriptorError(e)
-
-            
-            ret = DescriptorValue( retval,
-                                   format = format,
-                                   name = "target_dec",
-                                   keyword = keyword,
-                                   ad = self,
-                                   pytype = float )
-            return ret
-
-        except Errors.DescriptorError:
-            if self.descriptor_calculator.throwExceptions == True:
-                raise
-            else:
-                if not hasattr(self, "exception_info"):
-                    setattr(self, "exception_info", sys.exc_info()[1])
-                ret = DescriptorValue( None,
-                                       format = format,
-                                       name = "target_dec",
                                        keyword = keyword,
                                        ad = self,
                                        pytype = None )
@@ -3368,7 +3308,7 @@ class CalculatorInterface(object):
 
     def ra(self, format=None, **args):
         """
-        Return the ra value
+        Return the ra value, defined for most Gemini instruments at the central pixel
         
         :param dataset: the dataset
         :type dataset: AstroData
@@ -3396,10 +3336,7 @@ class CalculatorInterface(object):
                            "function or a default keyword for 'ra'")
                     raise Errors.DescriptorInfrastructureError(msg)
             else:
-                try:
-                    retval = self.descriptor_calculator.ra(self, **args)
-                except Exception as e:
-                    raise Errors.DescriptorError(e)
+                retval = self.descriptor_calculator.ra(self, **args)
 
             
             ret = DescriptorValue( retval,
@@ -3419,66 +3356,6 @@ class CalculatorInterface(object):
                 ret = DescriptorValue( None,
                                        format = format,
                                        name = "ra",
-                                       keyword = keyword,
-                                       ad = self,
-                                       pytype = None )
-                return ret
-        except:
-            raise
-
-    def target_ra(self, format=None, **args):
-        """
-        Return the target_ra value
-
-        :param dataset: the data set
-        :type dataset: AstroData
-        :param format: the return format
-        :type format: string
-        :rtype: float as default (i.e., format=None)
-        :return: the target_ra value
-        """
-        try:
-            self._lazyloadCalculator()
-            keydict = self.descriptor_calculator._specifickey_dict
-            key = "key_target_ra"
-            keyword = None
-            if key in keydict:
-                keyword = keydict[key]
-
-            if not hasattr(self.descriptor_calculator, "target_ra"):
-                if keyword is not None:
-                    retval = self.phu_get_key_value(keyword)
-                    if retval is None:
-                        if hasattr(self, "exception_info"):
-                            raise Errors.DescriptorError(self.exception_info)
-                else:
-                    msg = ("Unable to find an appropriate descriptor "
-                           "function or a default keyword for 'target_ra'")
-                    raise Errors.DescriptorInfrastructureError(msg)
-            else:
-                try:
-                    retval = self.descriptor_calculator.target_ra(self, **args)
-                except Exception as e:
-                    raise Errors.DescriptorError(e)
-
-            
-            ret = DescriptorValue( retval,
-                                   format = format,
-                                   name = "target_ra",
-                                   keyword = keyword,
-                                   ad = self,
-                                   pytype = float )
-            return ret
-
-        except Errors.DescriptorError:
-            if self.descriptor_calculator.throwExceptions == True:
-                raise
-            else:
-                if not hasattr(self, "exception_info"):
-                    setattr(self, "exception_info", sys.exc_info()[1])
-                ret = DescriptorValue( None,
-                                       format = format,
-                                       name = "target_ra",
                                        keyword = keyword,
                                        ad = self,
                                        pytype = None )
@@ -3739,11 +3616,25 @@ class CalculatorInterface(object):
         :param format: the return format
         :type format: string
         :rtype: string as default (i.e., format=None)
-        :return: the read mode (either 'Very Faint Object(s)', 
-                 'Faint Object(s)', 'Medium Object', 'Bright Object(s)', 
-                 'Very Bright Object(s)', 'Low Background', 
-                 'Medium Background', 'High Background' or 'Invalid') of the 
-                 observation
+        :return: GNIRS/NIFS: one of
+                 'Very Faint Object(s)', 
+                 'Faint Object(s)', 
+                 'Medium Object(s)', 
+                 'Bright Object(s)', 
+                 'Very Bright Object(s)', 
+
+                 NIRI: one of 
+                 'Low Background', 
+                 'Medium Background', 
+                 'High Background',
+                 'Invalid'
+
+                 GMOS: one of 
+                 'Normal',
+                 'Bright',
+                 'Acquisition',
+                 'Engineering'
+
         """
         try:
             self._lazyloadCalculator()
@@ -4231,6 +4122,123 @@ class CalculatorInterface(object):
         except:
             raise
 
+    def target_dec(self, format=None, **args):
+        """
+        Return the target_dec value
+
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
+        :return: the target_dec value
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_target_dec"
+            keyword = None
+            if key in keydict:
+                keyword = keydict[key]
+
+            if not hasattr(self.descriptor_calculator, "target_dec"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for 'target_dec'")
+                    raise Errors.DescriptorInfrastructureError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.target_dec(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+
+            
+            ret = DescriptorValue( retval,
+                                   format = format,
+                                   name = "target_dec",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = float )
+            return ret
+
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                ret = DescriptorValue( None,
+                                       format = format,
+                                       name = "target_dec",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = None )
+                return ret
+        except:
+            raise
+
+    def target_ra(self, format=None, **args):
+        """
+        Return the target_ra value
+
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
+        :return: the target_ra value
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_target_ra"
+            keyword = None
+            if key in keydict:
+                keyword = keydict[key]
+
+            if not hasattr(self.descriptor_calculator, "target_ra"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for 'target_ra'")
+                    raise Errors.DescriptorInfrastructureError(msg)
+            else:
+                retval = self.descriptor_calculator.target_ra(self, **args)
+
+            
+            ret = DescriptorValue( retval,
+                                   format = format,
+                                   name = "target_ra",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = float )
+            return ret
+
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                ret = DescriptorValue( None,
+                                       format = format,
+                                       name = "target_ra",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = None )
+                return ret
+        except:
+            raise
+
     def slit(self, format=None, **args):
         """
         Return the slit value
@@ -4627,6 +4635,126 @@ class CalculatorInterface(object):
                 ret = DescriptorValue( None,
                                        format = format,
                                        name = "wavelength_reference_pixel",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = None )
+                return ret
+        except:
+            raise
+
+    def wcs_ra(self, format=None, **args):
+        """
+        Return the wcs_ra value
+
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
+        :return: the wcs_ra value
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_wcs_ra"
+            keyword = None
+            if key in keydict:
+                keyword = keydict[key]
+
+            if not hasattr(self.descriptor_calculator, "wcs_ra"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for 'wcs_ra'")
+                    raise Errors.DescriptorInfrastructureError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.wcs_ra(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+
+            
+            ret = DescriptorValue( retval,
+                                   format = format,
+                                   name = "wcs_ra",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = float )
+            return ret
+
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                ret = DescriptorValue( None,
+                                       format = format,
+                                       name = "wcs_ra",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = None )
+                return ret
+        except:
+            raise
+
+    def wcs_dec(self, format=None, **args):
+        """
+        Return the wcs_dec value
+
+        :param dataset: the data set
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
+        :return: the wcs_dec value
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_wcs_dec"
+            keyword = None
+            if key in keydict:
+                keyword = keydict[key]
+
+            if not hasattr(self.descriptor_calculator, "wcs_dec"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for 'wcs_dec'")
+                    raise Errors.DescriptorInfrastructureError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.wcs_dec(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+
+            
+            ret = DescriptorValue( retval,
+                                   format = format,
+                                   name = "wcs_dec",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = float )
+            return ret
+
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                ret = DescriptorValue( None,
+                                       format = format,
+                                       name = "wcs_dec",
                                        keyword = keyword,
                                        ad = self,
                                        pytype = None )

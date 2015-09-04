@@ -8,10 +8,13 @@ from astrodata.interface.slices import pixel_exts
 from astrodata.interface.Descriptors import DescriptorValue
 
 from gempy.gemini import gemini_metadata_utils as gmu
+from gempy.gemini.coordinate_utils import toicrs
 
 import GemCalcUtil
 from FITS_Descriptors import FITS_DescriptorCalc
 from GEMINI_Keywords import GEMINI_KeyDict
+
+import pywcs
 
 # ------------------------------------------------------------------------------
 class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
@@ -314,42 +317,6 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                                  ad=dataset)
         return ret_dv
 
-    def dec(self, dataset):
-        """
-        The dec is defined from the world coordinate system, referenced
-        at the central pixel of the image. It is assumed that there are 
-        two dimensions (F2 has a third dimension before prepare is run, 
-        but this dimension is empty).
-        """
-        # Getting the WCS information from the header
-        keyword = self.get_descriptor_key("key_cd21")
-        cd21 = dataset['SCI',1].get_key_value(keyword)
-        keyword = self.get_descriptor_key("key_cd22")
-        cd22 = dataset['SCI',1].get_key_value(keyword)
-        keyword = self.get_descriptor_key("key_crpix1")
-        crpix1 = dataset['SCI',1].get_key_value(keyword)
-        keyword = self.get_descriptor_key("key_crpix2")
-        crpix2 = dataset['SCI',1].get_key_value(keyword)
-        keyword = self.get_descriptor_key("key_crval2")
-        crval2 = dataset['SCI',1].get_key_value(keyword)
-        keyword = self.get_descriptor_key("key_naxis1")
-        naxis1 = dataset['SCI',1].get_key_value(keyword)
-        keyword = self.get_descriptor_key("key_naxis2")
-        naxis2 = dataset['SCI',1].get_key_value(keyword)
-        
-        # Determining the central pixel of the array
-        cx = naxis1 / 2.0
-        cy = naxis2 / 2.0
-        
-        # Calculating the dec
-        dec = crval2 + (cd21 * (cx - crpix1)) + (cd22 * (cy - crpix2))
-
-#        dec = dataset.phu_get_key_value("DEC")        
-        # Instantiate the return DescriptorValue (DV) object
-        ret_dv = DescriptorValue(dec, name="dec", ad=dataset)
-        
-        return ret_dv
-    
     def decker(self, dataset, stripID=False, pretty=False, **args):
         """
         In GNIRS, the decker is used to basically mask off the ends of the
@@ -895,128 +862,6 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         
         return ret_dv
 
-    def ra(self, dataset):
-        """
-        The RA is defined from the world coordinate system, referenced
-        at the central pixel of the image. It is assumed that there are 
-        two dimensions (F2 has a third dimension before prepare is run, 
-        but this dimension is empty).
-        """
-        # Getting the WCS information from the header
-        keyword = self.get_descriptor_key("key_cd11")
-        cd11 = dataset['SCI',1].get_key_value(keyword)
-        keyword = self.get_descriptor_key("key_cd12")
-        cd12 = dataset['SCI',1].get_key_value(keyword)
-        keyword = self.get_descriptor_key("key_crpix1")
-        crpix1 = dataset['SCI',1].get_key_value(keyword)
-        keyword = self.get_descriptor_key("key_crpix2")
-        crpix2 = dataset['SCI',1].get_key_value(keyword)
-        keyword = self.get_descriptor_key("key_crval1")
-        crval1 = dataset['SCI',1].get_key_value(keyword)
-        keyword = self.get_descriptor_key("key_naxis1")
-        naxis1 = dataset['SCI',1].get_key_value(keyword)
-        keyword = self.get_descriptor_key("key_naxis2")
-        naxis2 = dataset['SCI',1].get_key_value(keyword)
-        
-        # Determining the central pixel of the array
-        cx = naxis1 / 2.0
-        cy = naxis2 / 2.0
-        
-        # Calculating the ra
-        ra = crval1 + (cd11 * (cx - crpix1)) + (cd12 * (cy - crpix2))
-        
-#        ra = dataset.phu_get_key_value("RA")
-        # Instantiate the return DescriptorValue (DV) object
-        ret_dv = DescriptorValue(ra, name="ra", ad=dataset)
-        
-        return ret_dv
-    
-    def ra(self, dataset, offset=False, pm=True, **args):
-        # Return the target RA from the RA header
-        # Optionally also apply RAOFFSET
-        ra = dataset.phu_get_key_value('RA')
-        raoffset = dataset.phu_get_key_value('RAOFFSET')
-        targ_raoffset = dataset.phu_get_key_value('RATRGOFF')
-        pmra = dataset.phu_get_key_value('PMRA')
-        epoch = dataset.phu_get_key_value('EPOCH')
-        if ra is None:
-            # The phu_get_key_value() function returns None if a value cannot
-            # be found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, "exception_info"):
-                raise dataset.exception_info
-
-        if offset:
-            raoffset = 0 if raoffset is None else raoffset
-            targ_raoffset = 0 if targ_raoffset is None else targ_raoffset
-            raoffset /= 3600.0
-            targ_raoffset /= 3600.0
-            raoffset += targ_raoffset
-            raoffset /= math.cos(math.radians(dataset.dec(offset=True).as_pytype()))
-            ra += raoffset
-
-        pmra = 0 if pmra is None else pmra
-        if pm and pmra != 0:
-            dt = dataset.ut_datetime().as_pytype()
-            year = dt.year
-            startyear = datetime.datetime(year, 1, 1, 0, 0, 0)
-            # Handle leap year properly
-            nextyear = datetime.datetime(year+1, 1, 1, 0, 0, 0)
-            thisyear = nextyear - startyear
-            sofar = dt - startyear
-            fraction = sofar.total_seconds() / thisyear.total_seconds()
-            obsepoch = year + fraction
-            years = obsepoch - epoch
-            pmra *= years
-            pmra *= 15.0*math.cos(math.radians(dataset.target_dec(offset=True).as_pytype()))
-            pmra /= 3600.0
-            ra += pmra
-
-        return DescriptorValue(ra, name="ra", ad=dataset)
-
-    def dec(self, dataset, offset=False, pm=True, **args):
-        # Return the target Dec from the DEC header
-        # Optionally also apply DECOFFSET and proper motion
-        dec = dataset.phu_get_key_value('DEC')
-        decoffset = dataset.phu_get_key_value('DECOFFSE')
-        targ_decoffset = dataset.phu_get_key_value('DECTRGOF')
-        pmdec = dataset.phu_get_key_value('PMDEC')
-        epoch = dataset.phu_get_key_value('EPOCH')
-
-        if dec is None:
-            # The phu_get_key_value() function returns None if a value cannot
-            # be found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, "exception_info"):
-                raise dataset.exception_info
-
-        if offset:
-            decoffset = 0.0 if decoffset is None else decoffset
-            targ_decoffset = 0.0 if targ_decoffset is None else targ_decoffset
-            decoffset /= 3600.0
-            targ_decoffset /= 3600.0
-            dec += decoffset + targ_decoffset
-
-        pmdec = 0 if pmdec is None else pmdec
-        if pm and pmdec != 0:
-            dt = dataset.ut_datetime().as_pytype()
-            year = dt.year
-            startyear = datetime.datetime(year, 1, 1, 0, 0, 0)
-            # Handle leap year properly
-            nextyear = datetime.datetime(year+1, 1, 1, 0, 0, 0)
-            thisyear = nextyear - startyear
-            sofar = dt - startyear
-            fraction = sofar.total_seconds() / thisyear.total_seconds()
-            obsepoch = year + fraction
-            years = obsepoch - epoch
-            pmdec *= years
-            pmdec /= 3600.0
-            dec += pmdec
-
-
-        return DescriptorValue(dec, name="dec", ad=dataset)
-
-
     def raw_bg(self, dataset, **args):
         # Determine the raw background keyword from the global keyword
         # dictionary 
@@ -1257,6 +1102,114 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                                  ad=dataset)
         return ret_dv
     
+    def target_ra(self, dataset, offset=False, pm=True, icrs=False, **args):
+        # Return the target RA from the RA header
+        # Optionally also apply RAOFFSET
+        # Optionally also apply proper motion
+        # Optioanlly convert to ICRS. This works even for APPT.
+
+        ra = dataset.phu_get_key_value('RA')
+        raoffset = dataset.phu_get_key_value('RAOFFSET')
+        targ_raoffset = dataset.phu_get_key_value('RATRGOFF')
+        pmra = dataset.phu_get_key_value('PMRA')
+        epoch = dataset.phu_get_key_value('EPOCH')
+        frame = dataset.phu_get_key_value('FRAME')
+        equinox = dataset.phu_get_key_value('EQUINOX')
+        if ra is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+
+        if offset:
+            raoffset = 0 if raoffset is None else raoffset
+            targ_raoffset = 0 if targ_raoffset is None else targ_raoffset
+            raoffset /= 3600.0
+            targ_raoffset /= 3600.0
+            raoffset += targ_raoffset
+            raoffset /= math.cos(math.radians(dataset.target_dec(offset=True).as_pytype()))
+            ra += raoffset
+
+        pmra = 0 if pmra is None else pmra
+        if pm and pmra != 0:
+            dt = dataset.ut_datetime().as_pytype()
+            year = dt.year
+            startyear = datetime.datetime(year, 1, 1, 0, 0, 0)
+            # Handle leap year properly
+            nextyear = datetime.datetime(year+1, 1, 1, 0, 0, 0)
+            thisyear = nextyear - startyear
+            sofar = dt - startyear
+            fraction = sofar.total_seconds() / thisyear.total_seconds()
+            obsepoch = year + fraction
+            years = obsepoch - epoch
+            pmra *= years
+            pmra *= 15.0*math.cos(math.radians(dataset.target_dec(offset=True).as_pytype()))
+            pmra /= 3600.0
+            ra += pmra
+
+        if icrs:
+            ra, dec = toicrs(frame,
+                             dataset.target_ra(offset=offset, pm=pm, icrs=False).as_pytype(),
+                             dataset.target_dec(offset=offset, pm=pm, icrs=False).as_pytype(),
+                             equinox=2000.0,
+                             ut_datetime=dataset.ut_datetime().as_pytype())
+
+        return DescriptorValue(ra, name="target_ra", ad=dataset)
+
+    def target_dec(self, dataset, offset=False, pm=True, icrs=False, **args):
+        # Return the target Dec from the DEC header
+        # Optionally also apply DECOFFSET
+        # Optionally also apply proper motion
+        # Optioanlly convert to ICRS. This works even for APPT.
+
+        dec = dataset.phu_get_key_value('DEC')
+        decoffset = dataset.phu_get_key_value('DECOFFSE')
+        targ_decoffset = dataset.phu_get_key_value('DECTRGOF')
+        pmdec = dataset.phu_get_key_value('PMDEC')
+        epoch = dataset.phu_get_key_value('EPOCH')
+        frame = dataset.phu_get_key_value('FRAME')
+        equinox = dataset.phu_get_key_value('EQUINOX')
+
+        if dec is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+
+        if offset:
+            decoffset = 0.0 if decoffset is None else decoffset
+            targ_decoffset = 0.0 if targ_decoffset is None else targ_decoffset
+            decoffset /= 3600.0
+            targ_decoffset /= 3600.0
+            dec += decoffset + targ_decoffset
+
+        pmdec = 0 if pmdec is None else pmdec
+        if pm and pmdec != 0:
+            dt = dataset.ut_datetime().as_pytype()
+            year = dt.year
+            startyear = datetime.datetime(year, 1, 1, 0, 0, 0)
+            # Handle leap year properly
+            nextyear = datetime.datetime(year+1, 1, 1, 0, 0, 0)
+            thisyear = nextyear - startyear
+            sofar = dt - startyear
+            fraction = sofar.total_seconds() / thisyear.total_seconds()
+            obsepoch = year + fraction
+            years = obsepoch - epoch
+            pmdec *= years
+            pmdec /= 3600.0
+            dec += pmdec
+
+        if icrs:
+            ra, dec = toicrs(frame,
+                             dataset.target_ra(offset=offset, pm=pm, icrs=False).as_pytype(),
+                             dataset.target_dec(offset=offset, pm=pm, icrs=False).as_pytype(),
+                             equinox=2000.0,
+                             ut_datetime=dataset.ut_datetime().as_pytype())
+
+        return DescriptorValue(dec, name="target_dec", ad=dataset)
+
     def ut_date(self, dataset, **args):
         # Call ut_datetime(strict=True, dateonly=True) to return a valid
         # ut_date, if possible.
@@ -1593,6 +1546,53 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                                  name="wavelength_reference_pixel", ad=dataset)
         return ret_dv
     
+    def wcs_ra(self, dataset, **args):
+        # This generic version finds the mid point of the data array
+        # in ['SCI', 1] and uses that.
+        # The WCS is taken from ['SCI', 1] if it exists, otherwise
+        # we look in the PHU
+        ext = dataset['SCI', 1]
+        if ext.get_key_value('CTYPE1'):
+            wcs = pywcs.WCS(ext.header)
+        else:
+            wcs = pywcs.WCS(dataset.phu.header)
+
+        naxis1 = ext.get_key_value('NAXIS1')
+        naxis2 = ext.get_key_value('NAXIS1')
+        (x, y) = (0.5 * naxis1, 0.5 * naxis2)
+        result = wcs.wcs_pix2sky([[x,y]], 1)
+        ra = result[0][0]
+
+        return DescriptorValue(ra, name="wcs_ra", ad=dataset)
+
+
+    def wcs_dec(self, dataset, **args):
+        # This generic version finds the mid point of the data array
+        # in ['SCI', 1] and uses that.
+        # The WCS is taken from ['SCI', 1] if it exists, otherwise
+        # we look in the PHU
+        ext = dataset['SCI', 1]
+        if ext.get_key_value('CTYPE1'):
+            wcs = pywcs.WCS(ext.header)
+        else:
+            wcs = pywcs.WCS(dataset.phu.header)
+        naxis1 = ext.get_key_value('NAXIS1')
+        naxis2 = ext.get_key_value('NAXIS1')
+        (x, y) = (0.5 * naxis1, 0.5 * naxis2)
+        result = wcs.wcs_pix2sky([[x,y]], 1)
+        dec = result[0][1]
+
+        return DescriptorValue(dec, name="wcs_dec", ad=dataset)
+
+    # In the Generic GEMINI case, we trust the WCS (yeah... I know)
+    # Specific instrument cases can over rise this of course
+    # and the caller can still call wcs_ra/dec or target_ra/dec as required
+    def ra(self, dataset, **args):
+        return dataset.wcs_ra()
+
+    def dec(self, dataset, **args):
+        return dataset.wcs_dec()
+
     def well_depth_setting(self, dataset, **args):
         # The well_depth_setting descriptor is only specific to GNIRS and NIRI
         # data. The code below will be replaced with the GNIRS or NIRI specific

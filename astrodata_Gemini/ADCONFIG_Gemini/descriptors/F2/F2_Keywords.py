@@ -1,9 +1,5 @@
 F2_KeyDict = {
     "key_camera":"LYOT",
-    "key_cd11":"CD1_1",
-    "key_cd12":"CD1_2",
-    "key_cd21":"CD2_1",
-    "key_cd22":"CD2_2",
     "key_central_wavelength":"GRWLEN",
     "key_disperser":"GRISM",
     "key_filter1":"FILTER1",

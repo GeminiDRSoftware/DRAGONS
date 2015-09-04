@@ -12,6 +12,9 @@ from gempy.gemini import gemini_metadata_utils as gmu
 from F2_Keywords import F2_KeyDict
 from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
+import pywcs
+from gempy.gemini.coordinate_utils import toicrs
+
 # ------------------------------------------------------------------------------
 class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
@@ -535,6 +538,46 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
                                  ad=dataset)
         return ret_dv
     
+    def wcs_ra(self, dataset, **args):
+        ext = dataset['SCI', 1]
+        wcs = pywcs.WCS(ext.header)
+        # Pixel coordinate of cass rotator center from Andy Stephens from gacq
+        (x, y) = (1034, 1054)
+        # Data can be 3d - Assume 1 on the z axis
+        if ext.get_key_value('NAXIS') == 3:
+            result = wcs.wcs_pix2sky([[x,y,1]], 1)
+        else:
+            result = wcs.wcs_pix2sky([[x,y]], 1)
+        ra = result[0][0]
+        dec = result[0][1]
+
+        # As of 2015-09-01 F2 is broken in non sidereal mode in that
+        # The WCS purports to be in FK5 but seems to be actually in APPT
+        # Once this is fixed, we will need a conditional on ut_datetime here
+        if 'NON_SIDEREAL' in dataset.types:
+            (ra, dec) = toicrs('APPT', ra, dec, ut_datetime=dataset.ut_datetime().as_pytype())
+
+        return DescriptorValue(ra, name="wcs_ra", ad=dataset)
+
+
+    def wcs_dec(self, dataset, **args):
+        ext = dataset['SCI', 1]
+        wcs = pywcs.WCS(ext.header)
+        # Pixel coordinate of cass rotator center from Andy Stephens from gacq
+        (x, y) = (1034, 1054)
+        # Data is 3d. Assume 1 on the z axis
+        result = wcs.wcs_pix2sky([[x,y,1]], 1)
+        ra = result[0][0]
+        dec = result[0][1]
+
+        # As of 2015-09-01 F2 is broken in non sidereal mode in that
+        # The WCS purports to be in FK5 but seems to be actually in APPT
+        # Once this is fixed, we will need a conditional on ut_datetime here
+        if 'NON_SIDEREAL' in dataset.types:
+            (ra, dec) = toicrs('APPT', ra, dec, ut_datetime=dataset.ut_datetime().as_pytype())
+
+        return DescriptorValue(dec, name="wcs_dec", ad=dataset)
+
     def x_offset(self, dataset, **args):
         # Determine the y offset keyword from the global keyword dictionary
         keyword = self.get_descriptor_key("key_y_offset")
