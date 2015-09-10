@@ -104,8 +104,8 @@ class PhotometryPrimitives(GENERALPrimitives):
             # so for now at least I'm moving it to do one query and store the same refcat for each extver.
             # PH 20111202
             try:
-                ra = ad.ra().as_pytype()
-                dec = ad.dec().as_pytype()
+                ra = ad.wcs_ra().as_pytype()
+                dec = ad.wcs_dec().as_pytype()
             except:
                 if "qa" in rc.context:
                     log.warning("No RA/Dec in header of %s; cannot find "\
@@ -498,38 +498,33 @@ def _match_objcat_refcat(adinput=None):
                         log.warning("Missing [REFCAT,%d] in %s - Cannot match objcat against missing refcat" % (extver,ad.filename))
                     else:
                         # Get the x and y position lists from both catalogs in
-                        # degrees. NOTE: This is a bug that needs to be fixed,
-                        # committed for now with this bug present, as fixing
-                        # it seems to cause other issues.
-                        xx = objcat.data['X_WORLD']
-                        yy = objcat.data['Y_WORLD']
-                        sx = refcat.data['RAJ2000']
-                        sy = refcat.data['DEJ2000']
-                        # Get the x and y position lists from both catalogs in
                         # pixels
-#                        xx = objcat.data['X_IMAGE']
-#                        yy = objcat.data['Y_IMAGE']
+                        xx = objcat.data['X_IMAGE']
+                        yy = objcat.data['Y_IMAGE']
                         
                         # The coordinates of the reference sources are 
                         # corrected to pixel positions using the WCS of the 
                         # object frame
-#                        sra = refcat.data['RAJ2000']
-#                        sdec = refcat.data['DEJ2000']
-#                        wcsobj = pywcs.WCS(ad["SCI"].header)
-#                        sx, sy = wcsobj.wcs_sky2pix(sra,sdec,1)
+                        sra = refcat.data['RAJ2000']
+                        sdec = refcat.data['DEJ2000']
+                        wcsobj = pywcs.WCS(ad["SCI"].header)
+                        sx, sy = wcsobj.wcs_sky2pix(sra,sdec,1)
     
                         # FIXME - need to address the wraparound problem here
                         # if we straddle ra = 360.00 = 0.00
 
-                        initial = 10.0/3600.0 # 10 arcseconds in degrees
-                        final = 0.5/3600.0 # 0.5 arcseconds in degrees
-
-#                        initial = 10.0/ad.pixel_scale().as_pytype() # 10 arcseconds in pixels
-#                        final = 0.5/ad.pixel_scale().as_pytype() # 0.5 arcseconds in pixels
+                        initial = 10.0/ad.pixel_scale().as_pytype() # 10 arcseconds in pixels
+                        final = 0.5/ad.pixel_scale().as_pytype() # 0.5 arcseconds in pixels
 
                         (oi, ri) = at.match_cxy(xx,sx,yy,sy, firstPass=initial, delta=final, log=log)
-
-                       # If too few matches, assume the match was bad
+    
+                        print "+++++++++++++++++++++++++++"
+                        print "matched data:"
+                        print "NUMBER X_WORLD Y_WORLD Id RAJ2000 DEJ2000"
+                        for i in range(len(oi)):
+                            print ad['OBJCAT'].data.field('NUMBER')[oi[i]], ad['OBJCAT'].data.field('X_WORLD')[oi[i]], ad['OBJCAT'].data.field('Y_WORLD')[oi[i]], ad['OBJCAT'].data.field('MAG_AUTO')[oi[i]], ad['REFCAT'].data.field('Id')[ri[i]], ad['REFCAT'].data.field('RAJ2000')[ri[i]], ad['REFCAT'].data.field('DEJ2000')[ri[i]], ad['REFCAT'].data.field('jmag')[ri[i]]
+                        print "+++++++++++++++++++++++++++"
+                        # If too few matches, assume the match was bad
                         if len(oi)<2:
                             oi = []
 
