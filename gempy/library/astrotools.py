@@ -331,13 +331,14 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
     larger delta and adjust the reference positions by the median 
     of the x,y offset. The second pass takes 'delta' value and 
     look for those x,y now closer to the reference positions.
-    The units are pixels for the deltas. If you are passing
-    degrees, the deltas need to be consistent.
+    The units are pixels for the deltas. Positions in degrees 
+    should not be passed to this function, since at least a 
+    cos(dec) correction is required!
 
 
     OUTPUT:
     - obj_index: Index array of the objects matched.
-    - ref_index: Index array of the referecences matched.
+    - ref_index: Index array of the references matched.
     """
 
     # turn to numpy arrays
@@ -404,7 +405,7 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
     ig,r,mx,my,stdx,stdy = getg(xx,sx,yy,sy, deltax=firstPass,deltay=firstPass)
     log.info('Median differences (x,y):%.2f %.2f, %.2f %.2f' % 
              (mx,my,stdx,stdy)+"[First iteration]")
-
+    print "Median differences (x,y):", mx, my, stdx, stdy
     if len(r) == 0:
         return ig,r
         
@@ -422,6 +423,7 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
                                 deltax=deltax, deltay=deltay)
     log.info('Median differences (x,y):%.2f %.2f %.2f %.2f' %
              (mx,my,stdx,stdy)+"[Second iteration]")
+    print "Median differences (x,y):", mx, my, stdx, stdy
 
     if g.size == 0:
         indxy,indr=[],[]
