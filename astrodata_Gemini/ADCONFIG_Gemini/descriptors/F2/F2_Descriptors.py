@@ -165,9 +165,9 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     def group_id(self, dataset, **args):
         # essentially a copy of the NIRI group_id descriptor, 
         # adapted for F2.
-                # Descriptors used for all image types
-        unique_id_descriptor_list_all = ["read_mode", "well_depth_setting",
-                                         "detector_section"]
+        
+        # Descriptors used for all image types
+        unique_id_descriptor_list_all = ["read_mode", "detector_section"]
                                          
 
         # List to format descriptor calls using 'pretty=True' parameter
