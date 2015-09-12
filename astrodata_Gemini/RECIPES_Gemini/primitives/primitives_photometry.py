@@ -507,7 +507,7 @@ def _match_objcat_refcat(adinput=None):
                         # object frame
                         sra = refcat.data['RAJ2000']
                         sdec = refcat.data['DEJ2000']
-                        wcsobj = pywcs.WCS(ad["SCI"].header)
+                        wcsobj = pywcs.WCS(ad["SCI",extver].header)
                         sx, sy = wcsobj.wcs_sky2pix(sra,sdec,1)
     
                         # FIXME - need to address the wraparound problem here
@@ -518,12 +518,6 @@ def _match_objcat_refcat(adinput=None):
 
                         (oi, ri) = at.match_cxy(xx,sx,yy,sy, firstPass=initial, delta=final, log=log)
     
-                        print "+++++++++++++++++++++++++++"
-                        print "matched data:"
-                        print "NUMBER X_WORLD Y_WORLD Id RAJ2000 DEJ2000"
-                        for i in range(len(oi)):
-                            print ad['OBJCAT'].data.field('NUMBER')[oi[i]], ad['OBJCAT'].data.field('X_WORLD')[oi[i]], ad['OBJCAT'].data.field('Y_WORLD')[oi[i]], ad['OBJCAT'].data.field('MAG_AUTO')[oi[i]], ad['REFCAT'].data.field('Id')[ri[i]], ad['REFCAT'].data.field('RAJ2000')[ri[i]], ad['REFCAT'].data.field('DEJ2000')[ri[i]], ad['REFCAT'].data.field('jmag')[ri[i]]
-                        print "+++++++++++++++++++++++++++"
                         # If too few matches, assume the match was bad
                         if len(oi)<2:
                             oi = []
