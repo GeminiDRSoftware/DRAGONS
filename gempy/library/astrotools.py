@@ -405,7 +405,6 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
     ig,r,mx,my,stdx,stdy = getg(xx,sx,yy,sy, deltax=firstPass,deltay=firstPass)
     log.info('Median differences (x,y):%.2f %.2f, %.2f %.2f' % 
              (mx,my,stdx,stdy)+"[First iteration]")
-    print "Median differences (x,y):", mx, my, stdx, stdy
     if len(r) == 0:
         return ig,r
         
@@ -423,7 +422,6 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
                                 deltax=deltax, deltay=deltay)
     log.info('Median differences (x,y):%.2f %.2f %.2f %.2f' %
              (mx,my,stdx,stdy)+"[Second iteration]")
-    print "Median differences (x,y):", mx, my, stdx, stdy
 
     if g.size == 0:
         indxy,indr=[],[]
