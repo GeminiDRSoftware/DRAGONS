@@ -17,6 +17,7 @@ from astrodata.utils.Lookups import get_lookup_table
 # ------------------------------------------------------------------------------
 CALURL_DICT   = get_lookup_table("Gemini/calurl_dict","calurl_dict")
 UPLOADPROCCAL = CALURL_DICT["UPLOADPROCCAL"]
+UPLOADCOOKIE = CALURL_DICT["UPLOADCOOKIE"]
 _CALMGR       = CALMGR      = CALURL_DICT["CALMGR"]
 _LOCALCALMGR  = LOCALCALMGR = CALURL_DICT["LOCALCALMGR"]
 # ------------------------------------------------------------------------------
@@ -56,8 +57,13 @@ def upload_calibration(filename):
     url = join(UPLOADPROCCAL, fn)
     postdata = open(filename).read()
 
+    #"UPLOADCOOKIE": "qap_upload_processed_cal_ok",
+
     try:
         rq = urllib2.Request(url)
+        rq.add_header('Content-Length', '%d' % len(postdata))
+        rq.add_header('Content-Type', 'application/octet-stream')
+        rq.add_header('Cookie', 'gemini_fits_upload_auth=%s' % UPLOADCOOKIE)
         u = urllib2.urlopen(rq, postdata)
         response = u.read()
     except urllib2.HTTPError, error:
