@@ -29,6 +29,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         if pretty:
             stripID = True
         
+        # If the acquisition mirror is in, the disperser is "MIRROR"
+        if dataset.phu_get_key_value('ACQMIR') == 'In':
+            return DescriptorValue('MIRROR', name="disperser", ad=dataset)
+
         # GNIRS contains two dispersers - the grating and the prism. Get the
         # grating and the prism values using the appropriate descriptors
         grating = dataset.grating(stripID=stripID, pretty=pretty).as_pytype()
