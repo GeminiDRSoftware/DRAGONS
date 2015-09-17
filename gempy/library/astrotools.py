@@ -5,6 +5,7 @@ import re
 import math
 import numpy as np
 import scipy.optimize as opt
+import pandas as pd
 
 import warnings
 
@@ -384,15 +385,57 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
                     r.append(k)
                             
         dax,day = map(np.asarray, (dax,day))
-        # When dax and/or day are empty, np.median and np.std issue a 
-        # RuntimeWarning.  We are suppressing that warning.  NaN are 
-        # returned when median and std are applied to an empty array.
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            mx = np.median(dax); stdx = np.std(dax)
-            my = np.median(day); stdy = np.std(day)
+        
+        #DEBUG # For debugging or improvement purpose, save the match offsets
+        #DEBUG # to disk.  Uncomment if necessary.
+        #DEBUG fout = open('daxy-'+str(deltax)+'.dat', mode='w')
+        #DEBUG for i in range(len(dax)):
+        #DEBUG     fout.write(str(dax[i])+'\t'+str(day[i])+'\n')
+        #DEBUG fout.close()
+
+        # Identify the location of the clump of good matches then do find
+        # its center.  This technique helps when the WCS is not too good
+        # and the sources are above some density causing several "matches"
+        # to be completely wrong.  Even in those cases, there is generally
+        # an obviously clump of good matches around the correct x, y offset
+        
+        # Get an histogram of dax and day offsets to locate the clump.
+        # The clump approximate position will be where the tallest histogram
+        # bar is located.
+        df = pd.DataFrame({'dx' : dax, 'dy' : day})
+        apprx_xoffset = df['dx'].value_counts(bins=10).idxmax()
+        apprx_yoffset = df['dy'].value_counts(bins=10).idxmax()
+        
+        # Get the center of that clump, the actually x, y offsets.
+        # Focus on the area around the clump.  Use the standard deviation
+        # to set a box around the clump on which stats will be derived.
+        # We already know now that anything outside that box is a bad match.
+        # Median appears to work better than mean for this.  
+        stdx, stdy = (df['dx'].std(), df['dy'].std())
+        llimitx, ulimitx = (apprx_xoffset - stdx, apprx_xoffset + stdx)
+        llimity, ulimity = (apprx_yoffset - stdy, apprx_yoffset + stdy)
+        
+        xoffset = df[(df['dx'] > llimitx) & (df['dx'] < ulimitx)]['dx'].median()
+        yoffset = df[(df['dy'] > llimity) & (df['dy'] < ulimity)]['dy'].median()
+        stdx = df[(df['dx'] > llimitx) & (df['dx'] < ulimitx)]['dx'].std()
+        stdy = df[(df['dy'] > llimity) & (df['dy'] < ulimity)]['dy'].std()
+        
+        return np.asarray(g), np.asarray(r), xoffset, yoffset ,stdx, stdy
+        
+        # Below is the old code that was just doing the median instead
+        # of trying to find the clump of good matches.  I (KL) keep it
+        # here for now until I have confirmed that the new clump-detection
+        # technique works well on a variety of data.
+        #
+        ## When dax and/or day are empty, np.median and np.std issue a 
+        ## RuntimeWarning.  We are suppressing that warning.  NaN are 
+        ## returned when median and std are applied to an empty array.
+        #with warnings.catch_warnings():
+        #    warnings.simplefilter("ignore")
+        #    mx = np.median(dax); stdx = np.std(dax)
+        #    my = np.median(day); stdy = np.std(day)
             
-        return np.asarray(g),np.asarray(r),mx,my,stdx,stdy 
+        #return np.asarray(g),np.asarray(r),mx,my,stdx,stdy 
 
 
     # Select only those standards with less than 10 pixels from objects.
