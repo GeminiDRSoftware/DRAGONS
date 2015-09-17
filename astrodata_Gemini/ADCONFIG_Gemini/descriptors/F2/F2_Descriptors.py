@@ -185,8 +185,13 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
 
         # Additional descriptors required for each frame type
         dark_id = ["exposure_time", "coadds"]
+        flat_id = ["filter_name", "camera", "exposure_time", "observation_id"]
         flat_twilight_id = ["filter_name", "camera"]
-        science_id = ["observation_id", "filter_name", "camera"]
+        science_id = ["observation_id", "filter_name", "camera", "exposure_time"]
+        ## !!! KL: added exposure_time to science_id for QAP.  The sky subtraction
+        ## !!! seems unable to deal with difference exposure time circa Sep 2015.
+        ## !!! The on-target dither sky-sub falls over completely.
+        ## !!! Also, we do not have a fully tested scale by exposure routine.
 
         # This is used for imaging flats and twilights to distinguish between
         # the two type
@@ -200,7 +205,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         if "F2_DARK" in  data_types:
             id_descriptor_list = dark_id
         elif "F2_IMAGE_FLAT" in data_types:
-            id_descriptor_list = flat_twilight_id
+            id_descriptor_list = flat_id
             additional_item_to_include = "F2_IMAGE_FLAT"
         elif "F2_IMAGE_TWILIGHT" in data_types:
             id_descriptor_list = flat_twilight_id

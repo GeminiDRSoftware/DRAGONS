@@ -2,6 +2,22 @@
 # in the primitives_F2_IMAGE.py file, in alphabetical order.
 
 {
+ "associateSky":{
+    "time":{
+        "default"       : 600.,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "distance":{
+        "default"       : 1.,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
 # "scaleByExposureTime":{
 #    "suffix":{
 #        "default"       : "_scaled",
