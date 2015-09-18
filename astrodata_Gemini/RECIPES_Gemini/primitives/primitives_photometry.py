@@ -513,8 +513,8 @@ def _match_objcat_refcat(adinput=None):
                         # FIXME - need to address the wraparound problem here
                         # if we straddle ra = 360.00 = 0.00
 
-                        initial = 10.0/ad.pixel_scale().as_pytype() # 10 arcseconds in pixels
-                        final = 0.5/ad.pixel_scale().as_pytype() # 0.5 arcseconds in pixels
+                        initial = 10.0/ad.pixel_scale() # 10 arcseconds in pixels
+                        final = 0.5/ad.pixel_scale() # 0.5 arcseconds in pixels
 
                         (oi, ri) = at.match_cxy(xx,sx,yy,sy, firstPass=initial, delta=final, log=log)
     

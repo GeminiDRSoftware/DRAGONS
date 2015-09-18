@@ -247,7 +247,9 @@ class RegisterPrimitives(GENERALPrimitives):
                         
                         log.fullinfo("Cross-correlating sources in %s, %s" %
                                    (reference.filename, ad.filename))
+                        firstpass = 10.0 / ad.pixel_scale()   # 10 arcsec
                         obj_list = _correlate_sources(reference, ad, 
+                                                      firstPass=firstpass,
                                                       cull_sources=cull_sources)
                         
                         n_corr = len(obj_list[0])
