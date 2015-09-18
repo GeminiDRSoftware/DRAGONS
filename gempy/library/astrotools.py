@@ -401,7 +401,7 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
         # to be completely wrong.  Even in those cases, there is generally
         # an obviously clump of good matches around the correct x, y offset
         
-        if len(dax) > 0 and len(day) > 0:
+        if len(dax) > 1 and len(day) > 1:
             # Get an histogram of dax and day offsets to locate the clump.
             # The clump approximate position will be where the tallest histogram
             # bar is located.
@@ -422,6 +422,11 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
             yoffset = df[(df['dy'] > llimity) & (df['dy'] < ulimity)]['dy'].median()
             stdx = df[(df['dx'] > llimitx) & (df['dx'] < ulimitx)]['dx'].std()
             stdy = df[(df['dy'] > llimity) & (df['dy'] < ulimity)]['dy'].std()
+        elif len(dax) == 1 and len(day) == 1:
+            xoffset = dax[0]
+            yoffset = day[0]
+            stdx = 0.0
+            stdy = 0.0
         else:
             xoffset = float('nan')
             yoffset = float('nan')
