@@ -607,18 +607,22 @@ class QAPrimitives(GENERALPrimitives):
                     zps = zps[clip]
                     zperrs = zperrs[clip]
 
-                # Because these are magnitude (log) values, we weight
-                # directly from the 1/variance, not signal / variance
-                weights = 1.0 / (zperrs * zperrs)
+                # If there is only one good source from which to 
+                # measure the ZP, no weighting is applied
+                if len(zps) == 1:
+                    zp = float(zps[0])
+                    zpe = float(zperrs[0])
+                else:
+                    # Because these are magnitude (log) values, we weight
+                    # directly from the 1/variance, not signal / variance
+                    weights = 1.0 / (zperrs * zperrs)
 
-                wzps = zps * weights
-                zp = wzps.sum() / weights.sum()
-
-
-                d = zps - zp
-                d = d*d * weights
-                zpv = d.sum() / weights.sum()
-                zpe = math.sqrt(zpv)
+                    wzps = zps * weights
+                    zp = wzps.sum() / weights.sum()
+                    d = zps - zp
+                    d = d*d * weights
+                    zpv = d.sum() / weights.sum()
+                    zpe = math.sqrt(zpv)
 
                 # Now, in addition, we have the weighted mean zeropoint
                 # and its error, from this OBJCAT in zp and zpe
@@ -697,8 +701,14 @@ class QAPrimitives(GENERALPrimitives):
                         zp_str += ("%.2f +/- %.2f" % 
                                  (detzp_means[i], detzp_sigmas[i])).rjust(dlen)
 
-                cloud = np.mean(all_cloud)
-                clouderr = np.std(all_cloud)
+                # It does not make sense to take the standard deviation
+                # of a single value
+                if len(all_cloud) == 1:
+                    cloud = float(all_cloud[0])
+                    clouderr = zpe
+                else:
+                    cloud = np.mean(all_cloud)
+                    clouderr = np.std(all_cloud)
 
                 # Calculate which CC band we're in. 
                 # OK, the philosophy here is to do a hypothesis test for
