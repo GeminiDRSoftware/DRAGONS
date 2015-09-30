@@ -551,9 +551,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         else:
             # Get the lookup table containing the gain values by amplifier
-            gmosampsGain, gmosampsGainBefore20060831 = (
+            gmosampsGain, gmosampsGainBefore20150826, \
+                gmosampsGainBefore20060831 = (
                 Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
                                          "gmosampsGain",
+                                         "gmosampsGainBefore20150826",
                                          "gmosampsGainBefore20060831"))
             
             # Determine the amplifier integration time keyword (ampinteg) from
@@ -594,7 +596,12 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             read_speed_setting = read_speed_setting_dv.as_pytype()
             
             obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
-            old_ut_date = datetime(2006, 8, 31, 0, 0)
+            # These dates really shouldn't be hard wired so sloppily all over
+            # the place (including gempy gemini_data_calculations.py) but that
+            # goes as far as the dictionary names so leave it for a possible
+            # future clean up of how the dictionaries are keyed.
+            change_2015_ut = datetime(2015, 8, 26, 0, 0)
+            change_2006_ut = datetime(2006, 8, 31, 0, 0)
             
             # Determine the name of the detector amplifier keyword (ampname)
             # from the global keyword dictionary 
@@ -620,17 +627,18 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 else:
                     gain_key = (read_speed_setting, gain_setting, ampname)
                     
-                    if obs_ut_date > old_ut_date:
-                        if gain_key in gmosampsGain:
-                            gain = gmosampsGain[gain_key]
-                        else:
-                            raise Errors.TableKeyError()
+                    if obs_ut_date > change_2015_ut:
+                        gain_dict = gmosampsGain
+                    elif obs_ut_date > change_2006_ut:
+                        gain_dict = gmosampsGainBefore20150826
                     else:
-                        if gain_key in gmosampsGainBefore20060831:
-                            gain = gmosampsGainBefore20060831[gain_key]
-                        else:
-                            raise Errors.TableKeyError()
-                
+                        gain_dict = gmosampsGainBefore20060831
+
+                    if gain_key in gain_dict:
+                        gain = gain_dict[gain_key]
+                    else:
+                        raise Errors.TableKeyError()
+
                 # Update the dictionary with the gain value
                 ret_gain_dict.update({ext_name_ver:gain})
         
@@ -1184,9 +1192,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             # Get the lookup table containing the read noise values by
             # amplifier
-            gmosampsRdnoise, gmosampsRdnoiseBefore20060831 = (
+            gmosampsRdnoise, gmosampsRdnoiseBefore20150826, \
+                gmosampsRdnoiseBefore20060831 = (
                 Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
                                          "gmosampsRdnoise",
+                                         "gmosampsRdnoiseBefore20150826",
                                          "gmosampsRdnoiseBefore20060831"))
             
             # Get the UT date, gain setting and read speed setting values using
@@ -1211,7 +1221,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             read_speed_setting = read_speed_setting_dv.as_pytype()
             
             obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
-            old_ut_date = datetime(2006, 8, 31, 0, 0)
+            change_2015_ut = datetime(2015, 8, 26, 0, 0)
+            change_2006_ut = datetime(2006, 8, 31, 0, 0)
             # Determine the name of the detector amplifier keyword (ampname)
             # from the global keyword dictionary 
             keyword = self.get_descriptor_key("key_ampname")
@@ -1236,18 +1247,18 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 else:
                     read_noise_key = (
                         read_speed_setting, gain_setting, ampname)
-                    
-                    if obs_ut_date > old_ut_date:
-                        if read_noise_key in gmosampsRdnoise:
-                            read_noise = gmosampsRdnoise[read_noise_key]
-                        else:
-                            raise Errors.TableKeyError()
+
+                    if obs_ut_date > change_2015_ut:
+                        read_noise_dict = gmosampsRdnoise
+                    elif obs_ut_date > change_2006_ut:
+                        read_noise_dict = gmosampsRdnoiseBefore20150826
                     else:
-                        if read_noise_key in gmosampsRdnoiseBefore20060831:
-                            read_noise = gmosampsRdnoiseBefore20060831[
-                                read_noise_key]
-                        else:
-                            raise Errors.TableKeyError()
+                        read_noise_dict = gmosampsRdnoiseBefore20060831
+
+                    if read_noise_key in read_noise_dict:
+                        read_noise = read_noise_dict[read_noise_key]
+                    else:
+                        raise Errors.TableKeyError()
                 
                 # Update the dictionary with the read noise value
                 ret_read_noise_dict.update({ext_name_ver:read_noise})
