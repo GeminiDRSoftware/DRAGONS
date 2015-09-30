@@ -222,9 +222,11 @@ def _get_static_bias_level(adinput=None):
     static_bias_level = {}
     
     # Get the static bias level lookup table
-    gmosampsBias, gmosampsBiasBefore20060831 = Lookups.get_lookup_table(
-            "Gemini/GMOS/GMOSAmpTables", "gmosampsBias",
-            "gmosampsBiasBefore20060831")
+    gmosampsBias, gmosampsBiasBefore20150826, gmosampsBiasBefore20060831 = \
+        Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
+                                 "gmosampsBias",
+                                 "gmosampsBiasBefore20150826",
+                                 "gmosampsBiasBefore20060831")
     
     # Get the UT date, read speed setting and gain setting values using the
     # appropriate descriptors
@@ -255,19 +257,23 @@ def _get_static_bias_level(adinput=None):
             raise Errors.CollapseError()
         
         obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
-        old_ut_date = datetime(2006, 8, 31, 0, 0)
+        change_2015_ut = datetime(2015, 8, 26, 0, 0)
+        change_2006_ut = datetime(2006, 8, 31, 0, 0)
         
         for extver, gain_setting in gain_setting_dict.iteritems():
             ampname  = ampname_dict[extver]
             bias_key = (read_speed_setting, gain_setting, ampname)
 
             bias_level = None
-            if obs_ut_date > old_ut_date:
-                if bias_key in gmosampsBias:
-                    bias_level = gmosampsBias[bias_key]
+            if obs_ut_date > change_2015_ut:
+                bias_dict = gmosampsBias
+            elif obs_ut_date > change_2006_ut:
+                bias_dict = gmosampsBiasBefore20150826
             else:
-                if bias_key in gmosampsBiasBefore20060831:
-                    bias_level = gmosampsBiasBefore20060831[bias_key]
+                bias_dict = gmosampsBiasBefore20060831
+
+            if bias_key in bias_dict:
+                bias_level = bias_dict[bias_key]
             
             # Update the dictionary with the bias level value
             static_bias_level.update({extver: bias_level})
@@ -295,9 +301,11 @@ def _get_static_bias_level_for_ext(adinput=None):
     """
 
     # Get the static bias level lookup table
-    gmosampsBias, gmosampsBiasBefore20060831 = Lookups.get_lookup_table(
-        "Gemini/GMOS/GMOSAmpTables", "gmosampsBias",
-        "gmosampsBiasBefore20060831")
+    gmosampsBias, gmosampsBiasBefore20150826, gmosampsBiasBefore20060831 = \
+        Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
+                                  "gmosampsBias",
+                                  "gmosampsBiasBefore20150826",
+                                  "gmosampsBiasBefore20060831")
     
     # Get the UT date, read speed setting and gain setting values using the
     # appropriate descriptors
@@ -319,16 +327,20 @@ def _get_static_bias_level_for_ext(adinput=None):
         read_speed_setting = adinput.read_speed_setting().as_pytype()
 
         obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
-        old_ut_date = datetime(2006, 8, 31, 0, 0)
+        change_2015_ut = datetime(2015, 8, 26, 0, 0)
+        change_2006_ut = datetime(2006, 8, 31, 0, 0)
         
         bias_key = (read_speed_setting, gain_setting, ampname)
         ret_static_bias_level = None
 
-        if obs_ut_date > old_ut_date:
-            if bias_key in gmosampsBias:
-                ret_static_bias_level = gmosampsBias[bias_key]
+        if obs_ut_date > change_2015_ut:
+            bias_dict = gmosampsBias
+        elif obs_ut_date > change_2006_ut:
+            bias_dict = gmosampsBiasBefore20150826
         else:
-            if bias_key in gmosampsBiasBefore20060831:
-                ret_static_bias_level = gmosampsBiasBefore20060831[bias_key]
+            bias_dict = gmosampsBiasBefore20060831
+
+        if bias_key in bias_dict:
+            ret_static_bias_level = bias_dict[bias_key]
     
     return ret_static_bias_level
