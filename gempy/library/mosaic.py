@@ -698,7 +698,7 @@ class MosaicData(object):
             self.data_list = data_list
             # Check that data elements are of the same size
             shapes = [data.shape for data in data_list]
-            if len(np.unique(shapes)) > 1:
+            if len(set(shapes)) > 1:
                 raise ValueError(
                    ("MosaicData:: 'data_list' elements are "
 			 "not of the same size."))
