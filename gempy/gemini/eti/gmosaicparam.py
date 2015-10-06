@@ -110,19 +110,7 @@ class FlClean(GmosaicParam):
     def __init__(self, rc=None, ad=None):
         log.debug("FlClean __init__")
         GmosaicParam.__init__(self, rc)
-        # Check whether the default statistics section can be used
-        # if not, turn off fl_clean to avoid crashes
-        # Current default is [2150:3970,100:4400], unbinned
-        xbin = ad.detector_x_bin().as_pytype()
-        ybin = ad.detector_x_bin().as_pytype()
-        default_sec = [2150/xbin,3970/xbin,100/ybin,4400/ybin]
         self.fl_clean = iraf.yes
-        for ext in ad["SCI"]:
-            shape = ext.data.shape
-            # Check y only, for 6-amp data the x will be too small
-            if shape[0]<default_sec[3]:
-                self.fl_clean = iraf.no
-                break
 
     def prepare(self):
         log.debug("FlClean prepare()")
