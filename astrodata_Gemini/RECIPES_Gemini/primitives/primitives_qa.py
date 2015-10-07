@@ -571,10 +571,17 @@ class QAPrimitives(GENERALPrimitives):
                     zperrs = np.where((iflags == 0), zperrs, None)
                     ids = np.where((iflags == 0), ids, None)
 
-                # Trim out where zeropoint error > 0.1
-                zps = np.where((zperrs < 0.1), zps, None)
-                zperrs = np.where((zperrs < 0.1), zperrs, None)
-                ids = np.where((zperrs < 0.1), ids, None)
+                # Trim out where zeropoint error > err_threshold
+                if len(filter(lambda z: z is not None, zps)) <= 5:
+                    # 5 sources or less.  Beggars are not choosers.
+                    # Raise the threshold a bit
+                    err_threshold = 0.2
+                else:
+                    # Use the default threshold
+                    err_threshold = 0.1
+                zps = np.where((zperrs < err_threshold), zps, None)
+                zperrs = np.where((zperrs < err_threshold), zperrs, None)
+                ids = np.where((zperrs < err_threshold), ids, None)
                 
                 # Discard the None values we just patched in
                 zps = zps[np.flatnonzero(zps)]

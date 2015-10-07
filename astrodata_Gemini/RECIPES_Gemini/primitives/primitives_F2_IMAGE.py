@@ -24,12 +24,9 @@ class F2_IMAGEPrimitives(F2Primitives):
         adinput = rc.get_inputs_as_astrodata()        
         recipe_list = []
         
-        print "waveband = ", adinput[0].wavelength_band().as_pytype()
         if adinput[0].wavelength_band().as_pytype() == 'K':
-            print "thermalEmissionCorrect"
             recipe_list.append("makeLampOffFlat")
         else:
-            print "makeFlat"
             recipe_list.append("makeLampOnLampOffFlat")
             
         rc.run("\n".join(recipe_list))
