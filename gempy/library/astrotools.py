@@ -395,26 +395,68 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
         #DEBUG     fout.write(str(dax[i])+'\t'+str(day[i])+'\n')
         #DEBUG fout.close()
 
+        # KL: The clump finding code needs to be functionalize.
+        # KL: This was done in a hurry while preparing for deployment
+        # KL: It works with several type of fields, sparse and crowded
+        # KL: and several types of instruments.  It just needs to be
+        # KL: cleaned up a bit.
+        #
         # Identify the location of the clump of good matches then do find
         # its center.  This technique helps when the WCS is not too good
         # and the sources are above some density causing several "matches"
         # to be completely wrong.  Even in those cases, there is generally
         # an obviously clump of good matches around the correct x, y offset
         
-        if len(dax) > 1 and len(day) > 1:
+        if len(dax) > 10 and len(day) > 10:
             # Get an histogram of dax and day offsets to locate the clump.
             # The clump approximate position will be where the tallest histogram
             # bar is located.
             df = pd.DataFrame({'dx' : dax, 'dy' : day})
-            apprx_xoffset = df['dx'].value_counts(bins=10).idxmax()
-            apprx_yoffset = df['dy'].value_counts(bins=10).idxmax()
+            counts, divisions = np.histogram(df['dx'], bins=10)
+            xbinsize = abs(divisions[0] - divisions[1])
+            counts, divisions = np.histogram(df['dy'], bins=10)
+            ybinsize = abs(divisions[0] - divisions[1])
             
+            apprx_xoffset = df['dx'].value_counts(bins=10).idxmax() + \
+                            (xbinsize / 2.0)
+            apprx_yoffset = df['dy'].value_counts(bins=10).idxmax() + \
+                            (ybinsize / 2.0)
+            stdx, stdy = (df['dx'].std(), df['dy'].std())
+            
+            # For crowded field with good matches, the histogram might have
+            # most sources in one bin, which might be wide.  To increase
+            # precision, we catch those cases and focus on that populous bin.
+            # Otherwise, all the data is used.
+            # threshold: fraction of matches in the top bin.
+            # thr_binsize: size of the bin, we do this only if the bin is large.
+            threshold = 0.7
+            thr_binsize = 10
+            if df['dx'].value_counts(bins=10).max() / float(len(df['dx'])) \
+                  >= threshold:
+                if xbinsize >= thr_binsize:
+                    dfsub =  df[(df['dx'] > apprx_xoffset - 2*thr_binsize) & \
+                                (df['dx'] < apprx_xoffset + 2*thr_binsize)]
+                    counts, divisions = np.histogram(dfsub['dx'], bins=10)
+                    subbinsize = abs(divisions[0] - divisions[1])
+                    apprx_xoffset = dfsub['dx'].value_counts(bins=10).idxmax() + \
+                                    (subbinsize / 2.0)
+                    stdx = dfsub['dx'].std()
+            if df['dy'].value_counts(bins=10).max() / float(len(df['dy'])) \
+                  >= threshold:
+                if ybinsize >= thr_binsize:
+                    dfsub =  df[(df['dy'] > apprx_xoffset - 2*thr_binsize) & \
+                                (df['dy'] < apprx_xoffset + 2*thr_binsize)]
+                    counts, divisions = np.histogram(dfsub['dy'], bins=10)
+                    subbinsize = abs(divisions[0] - divisions[1])
+                    apprx_yoffset = dfsub['dy'].value_counts(bins=10).idxmax() + \
+                                    (subbinsize / 2.0)
+                    stdy = dfsub['dy'].std()
+
             # Get the center of that clump, the actually x, y offsets.
             # Focus on the area around the clump.  Use the standard deviation
             # to set a box around the clump on which stats will be derived.
             # We already know now that anything outside that box is a bad match.
             # Median appears to work better than mean for this.  
-            stdx, stdy = (df['dx'].std(), df['dy'].std())
             llimitx, ulimitx = (apprx_xoffset - stdx, apprx_xoffset + stdx)
             llimity, ulimity = (apprx_yoffset - stdy, apprx_yoffset + stdy)
             
@@ -422,6 +464,12 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
             yoffset = df[(df['dy'] > llimity) & (df['dy'] < ulimity)]['dy'].median()
             stdx = df[(df['dx'] > llimitx) & (df['dx'] < ulimitx)]['dx'].std()
             stdy = df[(df['dy'] > llimity) & (df['dy'] < ulimity)]['dy'].std()
+        elif len(dax) > 1 and len(day) > 1:
+            # Too few source for clump-finding.  Use the old technique.
+            xoffset = np.median(dax)
+            yoffset = np.median(day)
+            stdx = np.std(dax)
+            stdy = np.std(day)
         elif len(dax) == 1 and len(day) == 1:
             xoffset = dax[0]
             yoffset = day[0]
