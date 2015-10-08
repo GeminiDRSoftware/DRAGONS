@@ -17,7 +17,7 @@ skyCorrect
 detectSources
 measureIQ(display=True)
 measureCCAndAstrometry
-alignAndStack
+#alignAndStack
 detectSources
 measureIQ(display=True)
 measureCCAndAstrometry
