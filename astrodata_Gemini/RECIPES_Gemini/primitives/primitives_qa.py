@@ -1538,8 +1538,12 @@ def _iq_band(adinput=None,fwhm=None):
             # should be checked against the webpage from time to time
             # to ensure that they match.  ('cause they don't tell us
             # when they change it...)
-            
-            waveband = ad.wavelength_band().as_pytype()
+            #
+            # However, if AO and using AOSEEING, the WFS matters.
+            if ad.is_ao().as_pytype():
+                waveband = 'AO'
+            else:
+                waveband = ad.wavelength_band().as_pytype()
 
             # default value for iq band
             iq = None
