@@ -57,230 +57,233 @@ class StandardizePrimitives(GENERALPrimitives):
                     appropriate BPM.
         :type bpm: string or list of strings
         """
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "addDQ", "starting"))
-        
-        # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["addDQ"]
-        
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-        
-        # Set the data type of the data quality array
-        # It can be uint8 for now, it will get converted up as we assign higher 
-        # bit values shouldn't need to force it up to 16bpp yet.
-        dq_dtype = np.dtype(np.uint8)
-        #dq_dtype = np.dtype(np.uint16)
-        
-        # Get the input AstroData objects
-        adinput = rc.get_inputs_as_astrodata()
-        
-        # Loop over each input AstroData object in the input list
-        for ad in adinput:
+        from timer import Timer
+        with Timer() as t:
+            # Instantiate the log
+            log = logutils.get_logger(__name__)
             
-            # Check whether the addDQ primitive has been run previously
-            if ad.phu_get_key_value(timestamp_key):
-                log.warning("No changes will be made to %s, since it has "
-                            "already been processed by addDQ" % ad.filename)
-                
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
-                continue
+            # Log the standard "starting primitive" debug message
+            log.debug(gt.log_message("primitive", "addDQ", "starting"))
             
-            # Parameters specified on the command line to reduce are converted
-            # to strings, including None
-            ##M What about if a user doesn't want to add a BPM at all?
-            ##M Are None's not converted to Nonetype from the command line?
-            if rc["bpm"] and rc["bpm"] != "None":
-                # The user supplied an input to the bpm parameter
-                bpm = rc["bpm"]
-            else:
-                # The user did not supply an input to the bpm parameter, so try
-                # to find an appropriate one. Get the dictionary containing the
-                # list of BPMs for all instruments and modes.
-                all_bpm_dict = Lookups.get_lookup_table("Gemini/BPMDict",
-                                                        "bpm_dict")
+            # Define the keyword to be used for the time stamp for this primitive
+            timestamp_key = self.timestamp_keys["addDQ"]
+            
+            # Initialize the list of output AstroData objects
+            adoutput_list = []
+            
+            # Set the data type of the data quality array
+            # It can be uint8 for now, it will get converted up as we assign higher 
+            # bit values shouldn't need to force it up to 16bpp yet.
+            dq_dtype = np.dtype(np.uint8)
+            #dq_dtype = np.dtype(np.uint16)
+            
+            # Get the input AstroData objects
+            adinput = rc.get_inputs_as_astrodata()
+            
+            # Loop over each input AstroData object in the input list
+            for ad in adinput:
                 
-                # Call the _get_bpm_key helper function to get the key for the
-                # lookup table 
-                key = self._get_bpm_key(ad)
-                
-                # Get the appropriate BPM from the look up table
-                if key in all_bpm_dict:
-                    bpm = lookup_path(all_bpm_dict[key])
-                else:
-                    bpm = None
-                    log.warning("No BPM found for %s, no BPM will be "
-                                "included" % ad.filename)
-
-            # Ensure that the BPMs are AstroData objects
-            bpm_ad = None
-            if bpm is not None:
-                log.fullinfo("Using %s as BPM" % str(bpm))
-                if isinstance(bpm, AstroData):
-                    bpm_ad = bpm
-                else:
-                    bpm_ad = AstroData(bpm)
-                    ##M Do we want to fail here depending on context?
-                    if bpm_ad is None:
-                        log.warning("Cannot convert %s into an AstroData "
-                                    "object, no BPM will be added" % bpm)
-
-            final_bpm = None
-            if bpm_ad is not None:
-                # Clip the BPM data to match the size of the input AstroData
-                # object science and pad with overscan region, if necessary
-                final_bpm = gt.clip_auxiliary_data(adinput=ad, aux=bpm_ad,
-                                                   aux_type="bpm",
-                                                   return_dtype=dq_dtype)[0]
-
-            # Get the non-linear level and the saturation level using the
-            # appropriate descriptors - Individual values get checked in the
-            # next loop 
-            non_linear_level_dv = ad.non_linear_level()
-            saturation_level_dv = ad.saturation_level()
-
-            # Loop over each science extension in each input AstroData object
-            for ext in ad[SCI]:
-                
-                # Retrieve the extension number for this extension
-                extver = ext.extver()
-                
-                # Check whether an extension with the same name as the DQ
-                # AstroData object already exists in the input AstroData object
-                if ad[DQ, extver]:
-                    log.warning("A [%s,%d] extension already exists in %s"
-                                % (DQ, extver, ad.filename))
+                # Check whether the addDQ primitive has been run previously
+                if ad.phu_get_key_value(timestamp_key):
+                    log.warning("No changes will be made to %s, since it has "
+                                "already been processed by addDQ" % ad.filename)
+                    
+                    # Append the input AstroData object to the list of output
+                    # AstroData objects without further processing
+                    adoutput_list.append(ad)
                     continue
                 
-                # Get the non-linear level and the saturation level for this
-                # extension
-                non_linear_level = non_linear_level_dv.get_value(extver=extver)
-                saturation_level = saturation_level_dv.get_value(extver=extver)
-
-                # To store individual arrays created for each of the DQ bit
-                # types
-                dq_bit_arrays = []
-
-                # Create an array that contains pixels that have a value of 2
-                # when that pixel is in the non-linear regime in the input
-                # science extension
-                if non_linear_level is not None:
-                    non_linear_array = None
-                    if saturation_level is not None:
-                        # Test the saturation level against non_linear level
-                        # They can be the same or the saturation level can be
-                        # greater than but not less than the non-linear level.
-                        # If they are the same then only flag saturated pixels
-                        # below. This just means not creating an unneccessary
-                        # intermediate array.
-                        if saturation_level > non_linear_level:
+                # Parameters specified on the command line to reduce are converted
+                # to strings, including None
+                ##M What about if a user doesn't want to add a BPM at all?
+                ##M Are None's not converted to Nonetype from the command line?
+                if rc["bpm"] and rc["bpm"] != "None":
+                    # The user supplied an input to the bpm parameter
+                    bpm = rc["bpm"]
+                else:
+                    # The user did not supply an input to the bpm parameter, so try
+                    # to find an appropriate one. Get the dictionary containing the
+                    # list of BPMs for all instruments and modes.
+                    all_bpm_dict = Lookups.get_lookup_table("Gemini/BPMDict",
+                                                            "bpm_dict")
+                    
+                    # Call the _get_bpm_key helper function to get the key for the
+                    # lookup table 
+                    key = self._get_bpm_key(ad)
+                    
+                    # Get the appropriate BPM from the look up table
+                    if key in all_bpm_dict:
+                        bpm = lookup_path(all_bpm_dict[key])
+                    else:
+                        bpm = None
+                        log.warning("No BPM found for %s, no BPM will be "
+                                    "included" % ad.filename)
+    
+                # Ensure that the BPMs are AstroData objects
+                bpm_ad = None
+                if bpm is not None:
+                    log.fullinfo("Using %s as BPM" % str(bpm))
+                    if isinstance(bpm, AstroData):
+                        bpm_ad = bpm
+                    else:
+                        bpm_ad = AstroData(bpm)
+                        ##M Do we want to fail here depending on context?
+                        if bpm_ad is None:
+                            log.warning("Cannot convert %s into an AstroData "
+                                        "object, no BPM will be added" % bpm)
+    
+                final_bpm = None
+                if bpm_ad is not None:
+                    # Clip the BPM data to match the size of the input AstroData
+                    # object science and pad with overscan region, if necessary
+                    final_bpm = gt.clip_auxiliary_data(adinput=ad, aux=bpm_ad,
+                                                       aux_type="bpm",
+                                                       return_dtype=dq_dtype)[0]
+    
+                # Get the non-linear level and the saturation level using the
+                # appropriate descriptors - Individual values get checked in the
+                # next loop 
+                non_linear_level_dv = ad.non_linear_level()
+                saturation_level_dv = ad.saturation_level()
+    
+                # Loop over each science extension in each input AstroData object
+                for ext in ad[SCI]:
+                    
+                    # Retrieve the extension number for this extension
+                    extver = ext.extver()
+                    
+                    # Check whether an extension with the same name as the DQ
+                    # AstroData object already exists in the input AstroData object
+                    if ad[DQ, extver]:
+                        log.warning("A [%s,%d] extension already exists in %s"
+                                    % (DQ, extver, ad.filename))
+                        continue
+                    
+                    # Get the non-linear level and the saturation level for this
+                    # extension
+                    non_linear_level = non_linear_level_dv.get_value(extver=extver)
+                    saturation_level = saturation_level_dv.get_value(extver=extver)
+    
+                    # To store individual arrays created for each of the DQ bit
+                    # types
+                    dq_bit_arrays = []
+    
+                    # Create an array that contains pixels that have a value of 2
+                    # when that pixel is in the non-linear regime in the input
+                    # science extension
+                    if non_linear_level is not None:
+                        non_linear_array = None
+                        if saturation_level is not None:
+                            # Test the saturation level against non_linear level
+                            # They can be the same or the saturation level can be
+                            # greater than but not less than the non-linear level.
+                            # If they are the same then only flag saturated pixels
+                            # below. This just means not creating an unneccessary
+                            # intermediate array.
+                            if saturation_level > non_linear_level:
+                                log.fullinfo("Flagging pixels in the DQ extension "
+                                             "corresponding to non linear pixels "
+                                             "in %s[%s,%d] using non linear "
+                                             "level = %.2f" % (ad.filename, SCI,
+                                                               extver,
+                                                               non_linear_level))
+    
+                                non_linear_array = np.where(
+                                    ((ext.data >= non_linear_level) &
+                                    (ext.data < saturation_level)), 2, 0)
+                                
+                            elif saturation_level < non_linear_level:
+                                log.warning("%s[%s,%d] saturation_level value is"
+                                            "less than the non_linear_level not"
+                                            "flagging non linear pixels" %
+                                            (ad.filname, SCI, extver))
+                            else:
+                                log.fullinfo("Saturation and non-linear values "
+                                             "for %s[%s,%d] are the same. Only "
+                                             "flagging saturated pixels."
+                                             % (ad.filename, SCI, extver))
+                                
+                        else:
                             log.fullinfo("Flagging pixels in the DQ extension "
                                          "corresponding to non linear pixels "
                                          "in %s[%s,%d] using non linear "
-                                         "level = %.2f" % (ad.filename, SCI,
-                                                           extver,
+                                         "level = %.2f" % (ad.filename, SCI, extver,
                                                            non_linear_level))
-
+    
                             non_linear_array = np.where(
-                                ((ext.data >= non_linear_level) &
-                                (ext.data < saturation_level)), 2, 0)
-                            
-                        elif saturation_level < non_linear_level:
-                            log.warning("%s[%s,%d] saturation_level value is"
-                                        "less than the non_linear_level not"
-                                        "flagging non linear pixels" %
-                                        (ad.filname, SCI, extver))
-                        else:
-                            log.fullinfo("Saturation and non-linear values "
-                                         "for %s[%s,%d] are the same. Only "
-                                         "flagging saturated pixels."
-                                         % (ad.filename, SCI, extver))
-                            
-                    else:
+                                (ext.data >= non_linear_level), 2, 0)
+                        
+                        dq_bit_arrays.append(non_linear_array)
+    
+                    # Create an array that contains pixels that have a value of 4
+                    # when that pixel is saturated in the input science extension
+                    if saturation_level is not None:
+                        saturation_array = None
                         log.fullinfo("Flagging pixels in the DQ extension "
-                                     "corresponding to non linear pixels "
-                                     "in %s[%s,%d] using non linear "
-                                     "level = %.2f" % (ad.filename, SCI, extver,
-                                                       non_linear_level))
-
-                        non_linear_array = np.where(
-                            (ext.data >= non_linear_level), 2, 0)
+                                     "corresponding to saturated pixels in "
+                                     "%s[%s,%d] using saturation level = %.2f" %
+                                     (ad.filename, SCI, extver, saturation_level))
+                        saturation_array = np.where(
+                            ext.data >= saturation_level, 4, 0)
+                        dq_bit_arrays.append(saturation_array)
                     
-                    dq_bit_arrays.append(non_linear_array)
-
-                # Create an array that contains pixels that have a value of 4
-                # when that pixel is saturated in the input science extension
-                if saturation_level is not None:
-                    saturation_array = None
-                    log.fullinfo("Flagging pixels in the DQ extension "
-                                 "corresponding to saturated pixels in "
-                                 "%s[%s,%d] using saturation level = %.2f" %
-                                 (ad.filename, SCI, extver, saturation_level))
-                    saturation_array = np.where(
-                        ext.data >= saturation_level, 4, 0)
-                    dq_bit_arrays.append(saturation_array)
+                    # BPMs have an EXTNAME equal to DQ
+                    bpmname = None
+                    if final_bpm is not None:
+                        bpm_array = None
+                        bpmname = os.path.basename(final_bpm.filename)
+                        log.fullinfo("Flagging pixels in the DQ extension "
+                                     "corresponding to bad pixels in %s[%s,%d] "
+                                     "using the BPM %s[%s,%d]" %
+                                     (ad.filename, SCI, extver, bpmname, DQ,
+                                      extver))
+                        bpm_array = final_bpm[DQ, extver].data
+                        dq_bit_arrays.append(bpm_array)
+                    
+                    # Create a single DQ extension from the three arrays (BPM,
+                    # non-linear and saturated)
+                    if not dq_bit_arrays:
+                        # The BPM, non-linear and saturated arrays were not
+                        # created. Create a single DQ array with all pixels set
+                        # equal to 0 
+                        log.fullinfo("The BPM, non-linear and saturated arrays "
+                                     "were not created. Creating a single DQ "
+                                     "array with all the pixels set equal to zero")
+                        final_dq_array = np.zeros(ext.data.shape).astype(dq_dtype)
+    
+                    else:
+                        final_dq_array = self._bitwise_OR_list(dq_bit_arrays)
+                        final_dq_array = final_dq_array.astype(dq_dtype)
+                    
+                    # Create a data quality AstroData object
+                    dq = AstroData(data=final_dq_array)
+                    dq.rename_ext(DQ, ver=extver)
+                    dq.filename = ad.filename
+                    
+                    # Call the _update_dq_header helper function to update the
+                    # header of the data quality extension with some useful
+                    # keywords
+                    dq = self._update_dq_header(sci=ext, dq=dq, bpmname=bpmname)
+                    
+                    # Append the DQ AstroData object to the input AstroData object
+                    log.fullinfo("Adding extension [%s,%d] to %s"
+                                 % (DQ, extver, ad.filename))
+                    ad.append(moredata=dq)
                 
-                # BPMs have an EXTNAME equal to DQ
-                bpmname = None
-                if final_bpm is not None:
-                    bpm_array = None
-                    bpmname = os.path.basename(final_bpm.filename)
-                    log.fullinfo("Flagging pixels in the DQ extension "
-                                 "corresponding to bad pixels in %s[%s,%d] "
-                                 "using the BPM %s[%s,%d]" %
-                                 (ad.filename, SCI, extver, bpmname, DQ,
-                                  extver))
-                    bpm_array = final_bpm[DQ, extver].data
-                    dq_bit_arrays.append(bpm_array)
+                # Add the appropriate time stamps to the PHU
+                gt.mark_history(adinput=ad, keyword=timestamp_key)
                 
-                # Create a single DQ extension from the three arrays (BPM,
-                # non-linear and saturated)
-                if not dq_bit_arrays:
-                    # The BPM, non-linear and saturated arrays were not
-                    # created. Create a single DQ array with all pixels set
-                    # equal to 0 
-                    log.fullinfo("The BPM, non-linear and saturated arrays "
-                                 "were not created. Creating a single DQ "
-                                 "array with all the pixels set equal to zero")
-                    final_dq_array = np.zeros(ext.data.shape).astype(dq_dtype)
-
-                else:
-                    final_dq_array = self._bitwise_OR_list(dq_bit_arrays)
-                    final_dq_array = final_dq_array.astype(dq_dtype)
+                # Change the filename
+                ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
+                                                  strip=True)
                 
-                # Create a data quality AstroData object
-                dq = AstroData(data=final_dq_array)
-                dq.rename_ext(DQ, ver=extver)
-                dq.filename = ad.filename
-                
-                # Call the _update_dq_header helper function to update the
-                # header of the data quality extension with some useful
-                # keywords
-                dq = self._update_dq_header(sci=ext, dq=dq, bpmname=bpmname)
-                
-                # Append the DQ AstroData object to the input AstroData object
-                log.fullinfo("Adding extension [%s,%d] to %s"
-                             % (DQ, extver, ad.filename))
-                ad.append(moredata=dq)
-            
-            # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
-            
-            # Change the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
-                                              strip=True)
-            
-            # Append the output AstroData object to the list of output
-            # AstroData objects
-            adoutput_list.append(ad)
-
-        # Report the list of output AstroData objects to the reduction context
-        rc.report_output(adoutput_list)
+                # Append the output AstroData object to the list of output
+                # AstroData objects
+                adoutput_list.append(ad)
+    
+            # Report the list of output AstroData objects to the reduction context
+            rc.report_output(adoutput_list)
+        t.writelog('addDQ', 'tprofile.log')
         
         yield rc
     
@@ -589,6 +592,56 @@ class StandardizePrimitives(GENERALPrimitives):
         rc.report_output(adoutput_list)
         
         yield rc
+    
+    def prepare(self, rc):
+        """
+        Validate and standardize the datasets to ensure compatibility
+        with the subsequent primitives.  The outputs, if written to
+        disk will be given the suffix "_prepared".
+        
+        Currently, there are no input parameters associated with 
+        this primitive.
+        """
+        # Initialize
+        log  = logutils.get_logger(__name__)
+        log.debug(gt.log_message('primitive', 'prepare', 'starting'))
+        timestamp_key = self.timestamp_keys['prepare']
+        
+        # Call the primitive that do the checks and the changes.
+        rc.run('validateData')
+        rc.run('standardizeStructure')
+        rc.run('standardizeHeaders')
+        #rc.run('validateWCS')
+        rc.run('markAsPrepared')
+        
+        # no need to rename the file or mark_history since
+        # that is taken care of in markAsPrepared.
+        # The report_output is already done by markAsPrepared.
+        #
+        # TODO: see if we can move that stuff here and retire
+        # markAsPrepared.  Seems silly to have a special
+        # primitive call for this now that prepare is a primitive.
+        # 
+        # TODO: might want to get fancy and check for the prepare
+        # timestamp in the header and skip the whole set of
+        # rc.run() if the files have been prepared already.
+        
+        # the rc.run on stream is faster than using the PIFs
+        # in the for loop in this case.  The speed is equivalent
+        # to the subrecipe form.
+#             from pifgemini import standardize as std
+#             adoutput_list = []
+#             for ad in rc.get_inputs_as_astrodata():
+#                 ad = std.validate_data(ad)
+#                 ad = std.standardize_structure(ad)
+#                 ad = std.standardize_headers(ad)
+#                 ad = std.mark_as_prepared(ad)
+#                 print 'new name = ', ad.filename
+#                 adoutput_list.append(ad)
+#             rc.report_output(adoutput_list)
+        
+        yield rc    
+    
     
     ##########################################################################
     # Below are the helper functions for the primitives in this module       #
