@@ -3336,7 +3336,10 @@ class CalculatorInterface(object):
                            "function or a default keyword for 'ra'")
                     raise Errors.DescriptorInfrastructureError(msg)
             else:
-                retval = self.descriptor_calculator.ra(self, **args)
+                try:
+                    retval = self.descriptor_calculator.ra(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
 
             
             ret = DescriptorValue( retval,
@@ -4212,7 +4215,10 @@ class CalculatorInterface(object):
                            "function or a default keyword for 'target_ra'")
                     raise Errors.DescriptorInfrastructureError(msg)
             else:
-                retval = self.descriptor_calculator.target_ra(self, **args)
+                try:
+                    retval = self.descriptor_calculator.target_ra(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
 
             
             ret = DescriptorValue( retval,
