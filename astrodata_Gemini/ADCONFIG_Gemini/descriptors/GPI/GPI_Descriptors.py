@@ -16,10 +16,10 @@ class GPI_DescriptorCalc(GEMINI_DescriptorCalc):
     # should call the wcs_ra/dec functions if the ut_datetime is after
     # the date of the fix
     def ra(self, dataset, **args):
-        return target_ra(offset=True, icrs=True)
+        return dataset.target_ra(offset=True, icrs=True)
 
     def dec(self, dataset, **args):
-        return target_dec(offset=True, icrs=True)
+        return dataset.target_dec(offset=True, icrs=True)
 
     def filter_name(self, dataset, stripID=False, pretty=False, **args):
         # Determine the two filter name keywords from the global keyword
