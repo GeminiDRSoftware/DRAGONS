@@ -66,7 +66,7 @@ def server_time():
     timezone = time.timezone / 3600
     if timezone == 10:
         local_site = 'gemini-north'
-    elif timezone == 4:
+    elif timezone in [3, 4]:   # TZ -4 but +1hr DST applied inconsistently
         local_site = 'gemini-south'
     else:
         local_site = 'remote'
