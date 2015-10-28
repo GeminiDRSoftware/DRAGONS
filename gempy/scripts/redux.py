@@ -141,9 +141,9 @@ def main():
         sys.exit()
 
     # Get local site
-    if time.timezone / 3600 == 10:      # HST = UTC + 10
+    if time.timezone / 3600 == 10:        # HST = UTC + 10
         localsite = GEMINI_NORTH
-    elif time.timezone / 3600 == 4:     # CST = UTC + 4
+    elif time.timezone / 3600 in [3, 4]:  # CST = UTC + 4 with erratic +1h DST
         localsite = GEMINI_SOUTH
     else:
         print "ERROR - timezone is not HST or CST. Local site cannot " + \

@@ -583,8 +583,8 @@ def get_localsite():
     """
     if time.timezone / 3600 == 10:        # HST = UTC+10
         localsite = GEMINI_NORTH
-    elif time.timezone / 3600 < 5:       # CST = UTC+4
-        # Set to < 5 due to inconsitent setting of timezones due to DST in
+    elif time.timezone / 3600 in [3,4]:   # CST = UTC+4
+        # Set to 3 or 4 due to inconsitent setting of timezones due to DST in
         # Chile being extended at will by the Chilean government.
         localsite = GEMINI_SOUTH
     else:
