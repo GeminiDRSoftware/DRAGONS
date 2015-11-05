@@ -615,11 +615,11 @@ MetricsViewer.prototype = {
         $(document).on("click", "#opt_ir_switch", function() {	
 	    if (bg_options.type == "optical") {
                 bg_options.ymin = 9.0;
-                bg_options.ymax = 17.0;
+                bg_options.ymax = 19.0;
                 bg_options.type = "ir";
                 bg_options.title = "Sky Brightness <button type=\"button\" id=\"opt_ir_switch\">Show optical</button>";
-                bg_options.series_labels = ["J","H","K","L","M"];
-  	        bg_options.series_colors = ["#5C84FF","#C30000",
+                bg_options.series_labels = ["Y", "J","H","K","L","M"];
+  	        bg_options.series_colors = ["#3F35EA","#5C84FF","#C30000",
   					    "#FF9E00","#F7E908","#3f35ea"];
                 bg_options.overlay = [
 		    // J
@@ -1583,7 +1583,7 @@ MetricsViewer.prototype = {
 		    //}
 		    series = wb;
 		} else if (dk[0]=="bg") {
-		    series = record["metadata"]["filter"];
+		    series = record["metadata"]["waveband"];
 		} else {
 		    series = dk[0];
 		}
