@@ -373,7 +373,35 @@ class CalibrationPrimitives(GENERALPrimitives):
         rc.run("storeCalibration")
         
         yield rc
-    
+
+    def storeBPM(self, rc):
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "storeProcessedBPM",
+                                 "starting"))
+
+        # Loop over each input AstroData object in the input list
+        for ad in rc.get_inputs_as_astrodata():
+
+            # Updating the file name with the suffix for this primitive and
+            # then report the new file to the reduction context
+            ad.filename = gt.filename_updater(adinput=ad, suffix="_bpm",
+                                              strip=True)
+
+            # Adding a BPM time stamp to the PHU
+            gt.mark_history(adinput=ad, keyword="BPM")
+
+            # Refresh the AD types to reflect new processed status
+            ad.refresh_types()
+
+        # Upload to cal system
+
+        rc.run("storeCalibration")
+
+        yield rc
+
     def storeProcessedDark(self, rc):
         # Instantiate the log
         log = logutils.get_logger(__name__)
@@ -502,6 +530,61 @@ class CalibrationPrimitives(GENERALPrimitives):
 
         yield rc
 
+    def separateFlatsDarks(self, rc):
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "separateFlatsDarks", "starting"))
+
+        # Initialize the list of AstroData objects to be added to the streams
+        dark_list = []
+        flat_list = []
+
+        # Loop over the input frames
+        for ad in rc.get_inputs_as_astrodata():
+            all_types = "+".join(ad.types)
+            if "DARK" in all_types:
+                    dark_list.append(ad)
+                    log.stdinfo("Dark : %s, %s" % (ad.data_label(), 
+                                                        ad.filename))
+            elif "FLAT" in all_types:
+                    flat_list.append(ad)
+                    log.stdinfo("Flat : %s, %s" % (ad.data_label(), 
+                                                        ad.filename))
+            else:
+                log.warning("Not a Dark or a Flat : %s %s" % (
+                                       ad.data_label(), ad.filename))
+        if dark_list == []:
+            log.warning("No Darks in input list")
+        if flat_list == []:
+            log.warning("No Flats in input list")
+
+        rc.report_output(flat_list, stream="flats")
+        rc.report_output(dark_list, stream="darks")
+
+        yield rc
+
+    def stackDarks(self, rc):
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "stackDarks", "starting"))
+
+        # Check darks for equal exposure time
+        dark_list = rc.get_stream(stream="darks", style="AD")
+        first_exp = dark_list[0].exposure_time().as_pytype()
+        for ad in dark_list[1:]:
+            file_exp = ad[0].exposure_time().as_pytype()
+            if first_exp != file_exp:
+                raise Errors.InputError("DARKS ARE NOT OF EQUAL EXPTIME")
+
+        # stack the darks stream
+        rc.run("showInputs(stream=darks)")
+        rc.run("stackFrames(stream=darks)")
+
+        yield rc
 
     def stackLampOnLampOff(self, rc):
         """
@@ -548,7 +631,6 @@ class CalibrationPrimitives(GENERALPrimitives):
             lampon = lampon_list[0]
             lampoff = lampoff_list[0]
  
-
             log.stdinfo("Lamp ON is: %s %s" % (lampon.data_label(), lampon.filename))
             log.stdinfo("Lamp OFF is: %s %s" % (lampoff.data_label(), lampoff.filename))
             lampon.sub(lampoff)
@@ -561,3 +643,95 @@ class CalibrationPrimitives(GENERALPrimitives):
 
         rc.report_output(adoutput_list)
         yield rc
+
+    def makeBPM(self, rc):
+        """
+        To be run after from recipe makeProcessedBPM.NIRI
+        Input is a stacked short darks and flats On/Off (1 filter)
+        The flats are stacked and subtracted(ON - OFF)
+        The Dark is stack of short darks
+        """
+
+        # avoid loading when BPM not required (lazy load)
+        import numpy.ma as ma
+
+        # instantiate variables - set limits the same as niflat defaults
+        # used to exclude hot pixels from stddev calculation
+        DARK_CLIP_THRESH = 5.0
+
+        # Threshold above/below the N_SIGMA clipped median
+        FLAT_HI_THRESH = 1.2
+        FLAT_LO_THRESH = 0.8
+        N_SIGMA = 3.0
+
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "BPM", "starting"))
+
+        # Get the subtracted, stacked flat from the on lampOn stream
+        flat_stack = rc.get_stream(stream="lampOn", style="AD")
+
+        if not flat_stack:
+            raise Errors.InputError("A SET OF FLATS IS REQUIRED INPUT")
+        else:
+            flat = flat_stack[0]
+
+        # Get the stacked dark on the dark stream
+        dark_stack = rc.get_stream(stream="darks", style="AD")
+        if not dark_stack:
+            raise Errors.InputError("A SET OF DARKS IS REQUIRED INPUT")
+        else:
+            dark = dark_stack[0]
+
+        # work with the Flats -- cold pixels
+        # mask pixels of clipped mean (3 sigma) with a threshold.
+        mean = ma.mean(flat.data)
+        stddev = ma.std(flat.data)
+        upper_lim = mean + stddev * N_SIGMA
+        lower_lim = mean - stddev * N_SIGMA
+
+        clipped_median = ma.median(ma.masked_outside(flat.data,
+                                           lower_lim, upper_lim))
+
+        upper_lim = FLAT_HI_THRESH * clipped_median
+        lower_lim = FLAT_LO_THRESH * clipped_median
+
+        log.stdinfo("BPM Flat Mask Lower < > Upper Limit: %s < > %s "% (
+                                                    lower_lim, upper_lim))
+
+        flat_mask = ma.masked_outside(flat.data, lower_lim, upper_lim)
+
+        # work with the darks -- hot pixels
+        # mask pixels outside 3 sigma * clipped standard deviation of median
+        mean = ma.mean(dark.data)
+        upper_lim = mean + (DARK_CLIP_THRESH * mean)
+        lower_lim = mean - (DARK_CLIP_THRESH * mean)
+        stddev = ma.std(ma.masked_outside(dark.data, lower_lim, upper_lim))
+
+        clipped_median = ma.median(ma.masked_outside(dark.data, lower_lim, 
+                                                                upper_lim))
+
+        upper_lim = clipped_median + (N_SIGMA * stddev)
+        lower_lim = clipped_median - (N_SIGMA * stddev)
+
+        log.stdinfo("BPM Dark Mask Lower < > Upper Limit: %s < > %s "% (
+                                                    lower_lim, upper_lim))
+
+        # create the mask -- darks (hot pixels)
+        dark_mask = ma.masked_outside(dark.data, upper_lim, lower_lim)
+
+        # combine masks and write to bpm file
+        data_mask = ma.mask_or(dark_mask.mask, flat_mask.mask)
+        flat.data = data_mask.astype(float)
+
+        flat.filename = gt.filename_updater(adinput=flat, suffix="_bpm")
+        flat.set_key_value('OBJECT', 'BPM')
+        flat.set_key_value('EXTNAME', 'DQ')
+        rc.report_output(flat)
+
+        yield rc
+
+
+
