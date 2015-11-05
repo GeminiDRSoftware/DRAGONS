@@ -318,7 +318,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
 
         # Additional descriptors required for each frame type
         dark_id = ["exposure_time", "coadds"]
-        flat_twilight_id = ["filter_name", "camera"]
+        flat_twilight_id = ["observation_id", "filter_name", "camera"]
         science_id = ["observation_id", "filter_name", "camera"]
 
         # This is used for imaging flats and twilights to distinguish between
