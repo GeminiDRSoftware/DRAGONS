@@ -1,7 +1,7 @@
 # This recipe performs the standardization and corrections needed to convert 
-# the raw input flat images and processed dark image into a BPM file. The output 
-# processed dark is stored on disk using storeProcessedBPM and has a name 
-# equal to the name of the first input flat image with "_BPM.fits" appended.
+# the raw input flat and dark image into a BPM file. The output BPM is stored 
+# on disk using storeProcessedBPM and has a name equal to the name of the 
+# first input flat image with "_bpm.fits" appended.
 
 prepare
 ADUToElectrons
