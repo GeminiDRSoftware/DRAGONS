@@ -313,7 +313,7 @@ MetricsViewer.prototype = {
 	bg_options.title = "Sky Brightness <button type=\"button\" id=\"opt_ir_switch\">Show IR</button>";
 	bg_options.invert_yaxis = true;
 	bg_options.yaxis_label = "Sky Brightness (mag/arcsec^2)";
-	bg_options.series_labels = ["u","g","r","i","z"];
+	bg_options.series_labels = ["u","g","r","i","Z"];
 	//bg_options.series_colors = ["#86C7FF","#5C84FF","#FF9E00",
 	//			    "#F7E908","#3F35EA"];
 	bg_options.series_colors = ["#3f35ea","#5C84FF","#C30000",
@@ -334,7 +334,7 @@ MetricsViewer.prototype = {
 	                       [{y:20.44,name:"BG20",color:'#888'},
 	                        {y:19.97,name:"BG50",color:'#888'},
 	                        {y:19.30,name:"BG80",color:'#888'}],
-			       //z
+			       //Z
 	                       [{y:19.51,name:"BG20",color:'#888'},
 	                        {y:19.04,name:"BG50",color:'#888'},
 	                        {y:18.37,name:"BG80",color:'#888'}],
@@ -634,7 +634,7 @@ MetricsViewer.prototype = {
                 bg_options.ymax = 24.0;
                 bg_options.type = "optical";
                 bg_options.title = "Sky Brightness <button type=\"button\" id=\"opt_ir_switch\">Show IR</button>";
-          	bg_options.series_labels = ["u","g","r","i","z"];
+          	bg_options.series_labels = ["u","g","r","i","Z"];
 	        bg_options.series_colors = ["#3f35ea","#5C84FF","#C30000",
                                             "#FF9E00","#F7E908"];
                 bg_options.overlay = [
@@ -654,7 +654,7 @@ MetricsViewer.prototype = {
   	            [{y:20.44,name:"BG20",color:'#888'},
 	             {y:19.97,name:"BG50",color:'#888'},
   	             {y:19.30,name:"BG80",color:'#888'}],
-  		    // z
+  		    // Z
 	            [{y:19.51,name:"BG20",color:'#888'},
   	             {y:19.04,name:"BG50",color:'#888'},
   	             {y:18.37,name:"BG80",color:'#888'}],
@@ -1583,7 +1583,7 @@ MetricsViewer.prototype = {
 		    //}
 		    series = wb;
 		} else if (dk[0]=="bg") {
-		    series = record["metadata"]["waveband"].toLowerCase();
+		    series = record["metadata"]["waveband"];
 		} else {
 		    series = dk[0];
 		}
