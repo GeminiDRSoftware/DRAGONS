@@ -1220,28 +1220,32 @@ TimePlot.prototype.highlightPoint = function(key) {
     var point = rec["point"];
 
     // Check whether point is currently visible
-    if (this.options.invert_yaxis) {
-	if (point.data[0]>this.plot.axes.xaxis.max || 
-	    point.data[0]<this.plot.axes.xaxis.min || 
-	    point.data[1]>this.plot.axes.yaxis.min || 
-	    point.data[1]<this.plot.axes.yaxis.max) {
+    try {
+	if (this.options.invert_yaxis) {
+	    if (point.data[0]>this.plot.axes.xaxis.max || 
+		point.data[0]<this.plot.axes.xaxis.min || 
+		point.data[1]>this.plot.axes.yaxis.min || 
+		point.data[1]<this.plot.axes.yaxis.max) {
 
-	    // If not, clear existing highlights
-	    highlight_fn(this.plot);
-	    return;
-	}
-    } else {
-	if (point.data[0]>this.plot.axes.xaxis.max || 
-	    point.data[0]<this.plot.axes.xaxis.min || 
-	    point.data[1]>this.plot.axes.yaxis.max || 
-	    point.data[1]<this.plot.axes.yaxis.min) {
+		// If not, clear existing highlights
+		highlight_fn(this.plot);
+		return;
+	    }
+	} else {
+	    if (point.data[0]>this.plot.axes.xaxis.max || 
+		point.data[0]<this.plot.axes.xaxis.min || 
+		point.data[1]>this.plot.axes.yaxis.max || 
+		point.data[1]<this.plot.axes.yaxis.min) {
 
-	    // If not, clear existing highlights
-	    highlight_fn(this.plot);
-	    return;
+		// If not, clear existing highlights
+		highlight_fn(this.plot);
+		return;
+	    }
 	}
+    } catch (e) {
+	console.log("Cannot highlight point: currently not visible");
+	return;
     }
-
     // Highlight the point
     highlight_fn(this.plot, point);
 

@@ -223,8 +223,20 @@ MetricsViewer.prototype = {
 	iq_options.title = "Zenith IQ";
 	iq_options.ymax = 2.5;
 	iq_options.yaxis_label = "Zenith IQ (arcsec)";
-	iq_options.series_labels = ["u","g","r","i","Z","Y",
-				    "J","H","K","L","M","N","Q"];
+	iq_options.series_labels = ["u","g","r","i","Z","Y","X",
+			         "J","H","K","L","M","N","Q"];
+
+	// These colors were tested for distinctiveness under common
+	// color-blindness conditions at http://newmanservices.com/colorblind
+	// iq_options.series_colors = ["#3F35EA","#566AF5","#FF9E00","#9AB3FF",
+	//			  "#9CCF31","#C9E198","#F7E908","#F7F2A1",
+	//			  "#CE0000","#E64B4B","#86C7FF","#B9DFFF"];
+
+        iq_options.series_colors = ["#3F35EA", "#5C84FF", "#C30000", "#FF9E00",
+			       "#F7E908", "#9CCF99", "#D672E8", "#86B7FF", 
+			       "#C9E166", "#E64B4B", "#AA5E00", "#F7ff55", 
+			       "#9DDF00","#6C99FF"];
+
 	// This got very long.  It should probably be moved somewhere else.
 	iq_options.overlay = [
 			      //u
@@ -280,15 +292,6 @@ MetricsViewer.prototype = {
 	                       {y:0.00,name:"IQ70",color:'#888'},
 	                       {y:0.54,name:"IQ85",color:'#888'}]];
 
-	// These colors were tested for distinctiveness under common
-	// color-blindness conditions at http://newmanservices.com/colorblind
-	//iq_options.series_colors = ["#3F35EA","#566AF5","#FF9E00","#9AB3FF",
-	//			    "#9CCF31","#C9E198","#F7E908","#F7F2A1",
-	//			    "#CE0000","#E64B4B","#86C7FF","#B9DFFF"];
-        iq_options.series_colors = ["#3F35EA","#5C84FF","#C30000","#FF9E00",
-                                    "#F7E908","#9CCF99",
-                                    "#86B7FF","#C9E166","#E64B4B","#AA5E00",
-                                    "#F7ff55","#9DDF00","#6C99FF"]
 	this.iq_plot = new TimePlot($("#iq_plot_wrapper"),"iqplot",iq_options);
 
 	// CC Plot
@@ -314,10 +317,8 @@ MetricsViewer.prototype = {
 	bg_options.invert_yaxis = true;
 	bg_options.yaxis_label = "Sky Brightness (mag/arcsec^2)";
 	bg_options.series_labels = ["u","g","r","i","Z"];
-	//bg_options.series_colors = ["#86C7FF","#5C84FF","#FF9E00",
-	//			    "#F7E908","#3F35EA"];
 	bg_options.series_colors = ["#3f35ea","#5C84FF","#C30000",
-                                    "#FF9E00","#F7E908"];
+                                     "#FF9E00","#F7E908"];
         bg_options.overlay = [ //u
 	                       [{y:21.66,name:"BG20",color:'#888'},
 	                        {y:19.49,name:"BG50",color:'#888'},
@@ -618,9 +619,12 @@ MetricsViewer.prototype = {
                 bg_options.ymax = 19.0;
                 bg_options.type = "ir";
                 bg_options.title = "Sky Brightness <button type=\"button\" id=\"opt_ir_switch\">Show optical</button>";
-                bg_options.series_labels = ["Y", "J","H","K","L","M"];
-  	        bg_options.series_colors = ["#3F35EA","#5C84FF","#C30000",
-  					    "#FF9E00","#F7E908","#3f35ea"];
+                bg_options.series_labels = ["Y","X","J","H","K","L","M"];
+	      bg_options.series_colors = ["#9CCF99","#D672E8", "#86B7FF","#C9E166",
+			               "#E64B4B", "#AA5E00", "#F7ff55"]
+
+  	       //bg_options.series_colors = ["#3F35EA","#5C84FF","#C30000",
+  	      //			       "#FF9E00","#F7E908","#3f35ea"];
                 bg_options.overlay = [
 		    // J
   	            [{y:16.2,name:"BGAny",color:'#888'}],
@@ -1421,15 +1425,15 @@ MetricsViewer.prototype = {
 	// associated point in the plots
 	var dl = $("#metrics_table tr.highlight").attr("id");
 	if (dl) {
-            if (!this.isHover($("#plot_wrapper"))) {
-                this.iq_plot.highlightPoint(dl);
-                this.cc_plot.highlightPoint(dl);
-	        this.bg_plot.highlightPoint(dl);
+	    if (!this.isHover($("#plot_wrapper"))) {
+		this.iq_plot.highlightPoint(dl);
+		this.cc_plot.highlightPoint(dl);
+		this.bg_plot.highlightPoint(dl);
 		$("#"+dl).addClass("highlight");
-            } else {
+	    } else {
 		this.iq_plot.highlightPoint();
-                this.cc_plot.highlightPoint();
-	        this.bg_plot.highlightPoint();
+		this.cc_plot.highlightPoint();
+		this.bg_plot.highlightPoint();
 	    }
 	}
 
