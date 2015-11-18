@@ -261,6 +261,10 @@ MetricsViewer.prototype = {
 	                       {y:0.95,name:"IQ85",color:'#888'}],
 			      //Y
 			      [{y:0.40,name:"IQ20",color:'#888'},
+	                       {y:0.70,name:"IQ70",color:'#888'},
+	                       {y:0.95,name:"IQ85",color:'#888'}],
+			      //X
+			      [{y:0.40,name:"IQ20",color:'#888'},
 	                       {y:0.65,name:"IQ70",color:'#888'},
 	                       {y:0.90,name:"IQ85",color:'#888'}],
 			      //J
@@ -273,7 +277,7 @@ MetricsViewer.prototype = {
 	                       {y:0.85,name:"IQ85",color:'#888'}],
 			      //K
 			      [{y:0.35,name:"IQ20",color:'#888'},
-	                       {y:0.50,name:"IQ70",color:'#888'},
+	                       {y:0.55,name:"IQ70",color:'#888'},
 	                       {y:0.80,name:"IQ85",color:'#888'}],
 			      //L
 			      [{y:0.35,name:"IQ20",color:'#888'},
