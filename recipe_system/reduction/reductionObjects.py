@@ -33,6 +33,10 @@ from ..cal_service.usercalibrationservice import user_cal_service
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
 
+# ------------------------------------------------------------------------------
+proxy_server = xmlrpc_proxy.PRSProxy.get_adcc(check_once=True)
+
+# ------------------------------------------------------------------------------
 heap_dump = False
 if heap_dump:
     #import heapy
@@ -86,6 +90,7 @@ class ReductionObject(object):
     recipeLib   = None
     curPrimType = None
     curPrimName = None
+    reduce_status = None
     funccommand_clause = None
     primstype_order = None
     
@@ -150,7 +155,10 @@ class ReductionObject(object):
                                       else param["default"]})
         return retd
         
-    def substeps(self, primname, context):
+    def substeps(self, primname, context, adobj=None):
+        # @@NOTE: substeps does not execute the command clause because it 
+        # yields to a caller which either runs/calls it at the top of the loop.
+        # see .runstep().
         savedLocalparms  = context.localparms
         context.status   = "RUNNING"
         prevprimname     = self.curPrimName
@@ -161,7 +169,6 @@ class ReductionObject(object):
         
         # will be NONE if no current inputs, maintain current curPrimType
         if correctPrimType and correctPrimType != self.curPrimType:
-            # print "RO98:", repr(correctPrimType), repr(self.curPrimType)
             newprimset = self.recipeLib.retrieve_primitive_set(astrotype=correctPrimType)
             self.add_prim_set(newprimset, add_to_front=True)
             self.curPrimType = correctPrimType
@@ -221,7 +228,6 @@ class ReductionObject(object):
             nonStandardStream = context.switch_stream(context["stream"])
         
         context.begin(primname)
-        
         try:
             for rc in prim(context):
                 # @@note: call the command clause callback here
@@ -261,6 +267,11 @@ class ReductionObject(object):
             context.restore_stream(from_stream = nonStandardStream)
             
         context.localparms = savedLocalparms
+        if not primname.startswith("proxy_"):
+            self.reduce_status[0]['status']['current'] = primname
+            if self.reduce_status and proxy_server is not None:
+                proxy_server.report_qametrics(self.reduce_status)            
+
         if context['index'] == None:
             # top-level recipe, add some extra demarcation
             logutils.update_indent(0, context['logmode'])
@@ -280,28 +291,38 @@ class ReductionObject(object):
 
         yield context
         
-    def runstep(self, primname, cfgobj):
+    def runstep(self, primname, cfgobj, reduce_status=None):
         """
-        runstep(primitiveName, reductionContext)
+        :parameter primname: a primitive or recipe name
+        :type primname: <str>
+
+        :parameter cfgobj: a ReductionContext instance.
+        :type cfgobj: <class 'ReductionContext'>
+
+        :parameter reduce_status: metadata on the state of processing.
+        :type reduce_status: <dict>, formed as an EventManager event.
+
+        :returns: a context object.
+        :rtype: <class 'ReductionContext'>
+
         """
-        #print "RO275:", repr(cfgobj.inputs)
-        # this is just a blocking thunk to substeps which executes the 
-        # command clause.
-        # @@NOTE: substeps does not execute the command clause because it 
-        # yields to a caller which either runs/calls it at the top of the loop.
+        if reduce_status:
+            self.reduce_status = reduce_status
+
         for cfg in self.substeps(primname, cfgobj):
             ## call command clause
             if cfg.is_finished():
                 break
-
             self.execute_command_clause(cfg)
             if cfg.is_finished():
                 break
             pass
         return cfg
+    run = runstep 
 
-    # run is alias for runstep -- Why?
-    run = runstep
+    def _primitive_status(self, primname, ad, logname):
+        status = {"adinput": ad, "current": primname, "logfile": logname }
+        return status        
     
     def register_command_clause(self, function):
         self.funccommand_clause = function
@@ -484,6 +505,7 @@ def command_clause(ro, coi):
     ml = coi.get_metric_list(clear=True)
     prs = xmlrpc_proxy.PRSProxy.get_adcc(check_once=True)
     if ml and prs is not None:
+        log.info("Reporting metrics to ADCC")
         prs.report_qametrics(ml)
     
     #process  reques

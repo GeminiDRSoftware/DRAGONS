@@ -84,15 +84,16 @@ def getPersistDir(dirtitle = "adcc"):
     return dirs[dirtitle]
 
 def writeADCCSR(filename, vals=None):
-    if filename == None:
-        print "adcc177: no filename for sr"
+    if filename is None:
+        print "adcc.writeADCCSR(): no filename for sr"
         filename = ".adcc/adccReport"
-    print "adcc179: startup report going to", filename
-    sr = open(filename, "w+")
-    if vals == None:
-        sr.write("ADCC ALREADY RUNNING\n")
-    else:
-        sr.write(repr(vals))
+
+    print "adcc.writeADCCSR(): startup report in {}".format(filename)
+    with open(filename, "w+") as sr:
+        if vals is None:
+            sr.write("ADCC ALREADY RUNNING\n")
+        else:
+            sr.write(repr(vals))
     return
 
 def get_args():
@@ -112,11 +113,11 @@ def main(args):
     clfn = args.adccsrn
     adccdir = getPersistDir()
     if os.path.exists(racefile):
-        print "adcc246: adcc already has lockfile"
+        print "adcc.main(): adcc lockfile present."
         from recipe_system.adcc.servers.xmlrpc_proxy import PRSProxy
         adcc = PRSProxy.get_adcc(check_once=True)
         if adcc == None:
-            print "adcc250: no adcc running, clearing lockfile"
+            print "adcc.main(): no adcc running, clearing lockfile."
             os.remove(racefile)
         else:
             adcc.unregister()

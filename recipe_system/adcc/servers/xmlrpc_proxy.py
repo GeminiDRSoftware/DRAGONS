@@ -89,12 +89,12 @@ class ReduceCommands(object):
         self.prsready = True
         reduceServer.prsready = True
 
-
+# -----------------------------------------------------------------------------
 class ReduceServer(object):
-    finished     = False
-    prsready     = False
-    reducecmds   = None
-    listenport   = 54530    
+    finished = False
+    prsready = False
+    reducecmds = None
+    listenport = 54530    
     xmlrpcthread = None
 
     def __init__(self):
@@ -133,7 +133,7 @@ class ReduceServer(object):
             server.socket.close()
         return
 
-
+# -----------------------------------------------------------------------------
 class PRSProxy(object):
     # the xmlrpc interface is saved
     _class_prs = None
@@ -164,26 +164,26 @@ class PRSProxy(object):
         PRSProxy._class_prs = self
  
     def __del__(self):
-        if hasattr(self.prs,"found"):
+        if hasattr(self.prs, "found"):
             self.prs.unregister(os.getpid())
 
     @classmethod
     def get_adcc(cls, reduce_server=None, check_once=False):
         # note: the correct ADCC will store it's info in .adcc/adccinfo.py
         racefile = ".adcc/adccinfo.py"
-
-        if not os.path.exists(racefile):
+        try:
+            with open(racefile) as rfile:
+                info = eval(rfile.read())
+        except IOError:
             if check_once is True:
-                return None
-            comm_err = "SYSTEM ERROR: ADCC not found after attempt to start"
+                return None            
+            comm_err = "\n\tSYSTEM ERROR:: "
+            comm_err += "ADCC not found or the configuration has been corrupted."
             raise ADCCCommunicationError(comm_err)
-
-        with open(racefile) as rfile:
-            info = eval(rfile.read())
 
         if (cls._class_prs) is not None:
             return cls._class_prs
-                    
+
         found    = False
         newProxy = None
         newProxy = PRSProxy(reduce_server=reduce_server, port=info["xmlrpc_port"])
@@ -198,13 +198,12 @@ class PRSProxy(object):
                 newProxy.version = newProxy.get_version()
                 newProxy.found = True
                 found = True
-
                 if reduce_server:
                     details =  {"port":reduce_server.listenport}
                 else:
                     details = {}
-                newProxy.register( details)
 
+                newProxy.register(details)
             except socket.error:
                 newProxy.found = False
                 stdout.write(".")
@@ -212,21 +211,23 @@ class PRSProxy(object):
                 if check_once:
                     newProxy = None
                     break
+
         log.info("reduce--><--adcc") 
         return newProxy
 
-    def unregister(self):
-        if self.registered:
-            self.prs.unregister(os.getpid())
-            self.registered=False
-            log.info("Unregistering with adcc (P243)")
-        else:
-            log.warning("P245: not registering with adcc due to exception.")
-        return
-
-    def register(self, details = None):
+    def register(self, details=None):
+        log.info("XMLRPC_proxy: Registering with adcc.")
         self.prs.register(os.getpid(), details)
         self.registered = True
+        return
+
+    def unregister(self):
+        if self.registered:
+            log.info("XMLRPC_proxy: Unregistering with adcc.")
+            self.prs.unregister(os.getpid())
+            self.registered=False
+        else:
+            log.warning("XMLRPC_proxy: Cannot unregister; Not registered.")
         return
 
     def calibration_search(self, cal_rq):
@@ -237,10 +238,10 @@ class PRSProxy(object):
             try:
                 cal = self.prs.calibration_search(calrqdict)
             except:
-                print "P265: Calibration search fault"
+                print "XMLRPC_proxy: Calibration search fault"
                 import traceback
                 traceback.print_exc()
-                log.error("P268: EXCEPTION from ADCC, no calibration to return")
+                log.error("XMLRPC_proxy: ADCC EXCEPTION: No calibration.")
                 return None
             return cal
 
