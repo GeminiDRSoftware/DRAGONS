@@ -666,7 +666,7 @@ class CalibrationPrimitives(GENERALPrimitives):
         log = logutils.get_logger(__name__)
 
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "BPM", "starting"))
+        log.debug(gt.log_message("primitive", "makeBPM", "starting"))
 
         # Get the subtracted, stacked flat from the on lampOn stream
         flat_stack = rc.get_stream(stream="lampOn", style="AD")
