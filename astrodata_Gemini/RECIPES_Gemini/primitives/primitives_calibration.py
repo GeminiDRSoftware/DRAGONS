@@ -162,7 +162,7 @@ class CalibrationPrimitives(GENERALPrimitives):
                                             ad.filename)
         
         yield rc
-    
+
     def getProcessedDark(self, rc):
         # Instantiate the log
         log = logutils.get_logger(__name__)
@@ -258,7 +258,7 @@ class CalibrationPrimitives(GENERALPrimitives):
                                                      ad.filename))
         
         yield rc
-    
+
     def showCals(self, rc):
         # Instantiate the log
         log = logutils.get_logger(__name__)
@@ -379,8 +379,7 @@ class CalibrationPrimitives(GENERALPrimitives):
         log = logutils.get_logger(__name__)
 
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "storeProcessedBPM",
-                                 "starting"))
+        log.debug(gt.log_message("primitive", "storeBPM","starting"))
 
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
@@ -397,7 +396,6 @@ class CalibrationPrimitives(GENERALPrimitives):
             ad.refresh_types()
 
         # Upload to cal system
-
         rc.run("storeCalibration")
 
         yield rc
@@ -499,7 +497,7 @@ class CalibrationPrimitives(GENERALPrimitives):
     def separateLampOff(self, rc):
         """
         This primitive is intended to run on gcal imaging flats. 
-        It goes through the input list and figures out which ones are lamp-on
+        It goes through the input list and figures gout which ones are lamp-on
         and which ones are lamp-off
         """
         # Instantiate the log
@@ -646,7 +644,7 @@ class CalibrationPrimitives(GENERALPrimitives):
 
     def makeBPM(self, rc):
         """
-        To be run after from recipe makeProcessedBPM.NIRI
+        To be run from recipe makeProcessedBPM.NIRI
         Input is a stacked short darks and flats On/Off (1 filter)
         The flats are stacked and subtracted(ON - OFF)
         The Dark is stack of short darks
@@ -655,7 +653,7 @@ class CalibrationPrimitives(GENERALPrimitives):
         # avoid loading when BPM not required (lazy load)
         import numpy.ma as ma
 
-        # instantiate variables - set limits the same as niflat defaults
+        # instantiate variables - set limits using niflat defaults
         # used to exclude hot pixels from stddev calculation
         DARK_CLIP_THRESH = 5.0
 
@@ -685,7 +683,6 @@ class CalibrationPrimitives(GENERALPrimitives):
         else:
             dark = dark_stack[0]
 
-        # work with the Flats -- cold pixels
         # mask pixels of clipped mean (3 sigma) with a threshold.
         mean = ma.mean(flat.data)
         stddev = ma.std(flat.data)
@@ -693,17 +690,17 @@ class CalibrationPrimitives(GENERALPrimitives):
         lower_lim = mean - stddev * N_SIGMA
 
         clipped_median = ma.median(ma.masked_outside(flat.data,
-                                           lower_lim, upper_lim))
+                                   lower_lim, upper_lim))
 
         upper_lim = FLAT_HI_THRESH * clipped_median
         lower_lim = FLAT_LO_THRESH * clipped_median
 
-        log.stdinfo("BPM Flat Mask Lower < > Upper Limit: %s < > %s "% (
+        log.stdinfo("BPM Flat Mask Lower < > Upper Limit: %s < > %s " % (
                                                     lower_lim, upper_lim))
 
+        # mask Flats -- cold pixels
         flat_mask = ma.masked_outside(flat.data, lower_lim, upper_lim)
 
-        # work with the darks -- hot pixels
         # mask pixels outside 3 sigma * clipped standard deviation of median
         mean = ma.mean(dark.data)
         upper_lim = mean + (DARK_CLIP_THRESH * mean)
@@ -711,12 +708,12 @@ class CalibrationPrimitives(GENERALPrimitives):
         stddev = ma.std(ma.masked_outside(dark.data, lower_lim, upper_lim))
 
         clipped_median = ma.median(ma.masked_outside(dark.data, lower_lim, 
-                                                                upper_lim))
+                                                     upper_lim))
 
         upper_lim = clipped_median + (N_SIGMA * stddev)
         lower_lim = clipped_median - (N_SIGMA * stddev)
 
-        log.stdinfo("BPM Dark Mask Lower < > Upper Limit: %s < > %s "% (
+        log.stdinfo("BPM Dark Mask Lower < > Upper Limit: %s < > %s " % (
                                                     lower_lim, upper_lim))
 
         # create the mask -- darks (hot pixels)
