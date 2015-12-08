@@ -1,8 +1,11 @@
 import numpy as np
 import pywcs
+import math
+from astrodata import AstroData
 from astrodata.utils import Errors
-from astrodata.utils import Lookups
 from astrodata.utils import logutils
+from astrodata.utils import Lookups
+from astrodata.utils.ConfigSpace  import lookup_path
 from gempy.library import astrotools as at
 from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
@@ -85,6 +88,22 @@ class RegisterPrimitives(GENERALPrimitives):
                          cannot be used as the fallback.
         :type fallback: string, either 'header' or None.
         
+        :param use_wcs: the alignment method will use the encoded WCS in the 
+                        header for the initial adjustment of the frames. The
+                        alternative is that the shifts and rotation from the
+                        header will be used.
+        :type use_wcs: bool
+
+        :param first_pass: estimated maximum distance between correlated
+                           sources. This distance represents the expected
+                           mismatch between the WCSs or header shifts of 
+                           the input images.
+        :type first_pass: float
+        
+        :param min_sources: minimum number of sources to use for cross-
+                            correlation, depending on the instrument used.
+        :type min_sources: int                    
+                            
         :param cull_sources: flag to indicate whether sub-optimal sources 
                              should be rejected before attempting a direct
                              mapping. If True, sources that are saturated,
@@ -136,6 +155,9 @@ class RegisterPrimitives(GENERALPrimitives):
             # Get the necessary parameters from the RC
             method = rc["method"]
             fallback = rc["fallback"]
+            use_wcs = rc["use_wcs"]
+            first_pass = rc["first_pass"]
+            min_sources = rc["min_sources"]
             cull_sources = rc["cull_sources"]
             rotate = rc["rotate"]
             scale = rc["scale"]
@@ -207,9 +229,9 @@ class RegisterPrimitives(GENERALPrimitives):
             # If no OBJCAT/no sources in reference image, or user choice,
             # use indirect alignment for all images at once
             if method=="header":
+                log.stdinfo("Using WCS specified in header for alignment")
                 reg_ad = _header_align(reference, adinput[1:])
                 adoutput_list.extend(reg_ad)
-                log.stdinfo("Using WCS specified in header for alignment")
             elif method!="sources":
                 raise Errors.InputError("Did not recognize method " + method)
             
@@ -220,7 +242,7 @@ class RegisterPrimitives(GENERALPrimitives):
                 for i in range(1,len(adinput)):
                 
                     ad = adinput[i]
-
+                    
                     if n_test[i] == 0:
                         log.warning("No objects found in "+ ad.filename)
                         if fallback is not None:
@@ -242,18 +264,25 @@ class RegisterPrimitives(GENERALPrimitives):
                             adoutput_list.append(ad)
                             continue
                     else:
+                        
                         log.fullinfo("Number of objects in image %s: %d" %
                                      (ad.filename, n_test[i]))
                         
                         log.fullinfo("Cross-correlating sources in %s, %s" %
                                    (reference.filename, ad.filename))
-                        firstpass = 10.0 / ad.pixel_scale()   # 10 arcsec
-                        obj_list = _correlate_sources(reference, ad, 
-                                                      firstPass=firstpass,
-                                                      cull_sources=cull_sources)
-                        
+                        firstpasspix = first_pass / ad.pixel_scale()
+                        if use_wcs is True:
+                            obj_list = _correlate_sources(reference, ad, 
+                                                          firstPass=firstpasspix,
+                                                          min_sources=min_sources,
+                                                          cull_sources=cull_sources)
+                        else:
+                            obj_list = _correlate_sources_offsets(reference, ad, 
+                                                          firstPass=firstpasspix,
+                                                          min_sources=min_sources,
+                                                          cull_sources=cull_sources)
+                            
                         n_corr = len(obj_list[0])
-                        
                         if n_corr==0:
                             log.warning("No correlated sources found.")
                             if fallback is not None:
@@ -305,7 +334,7 @@ class RegisterPrimitives(GENERALPrimitives):
                             
                             adoutput = _align_wcs(reference, ad, [obj_list], 
                                                   rotate=rotate, scale=scale)
-    
+                    
                     adoutput_list.extend(adoutput)
 
             # Change the filenames and add the appropriate timestamps
@@ -613,12 +642,12 @@ class RegisterPrimitives(GENERALPrimitives):
 # Below are the helper functions for the user level functions in this module #
 ##############################################################################
 
-def _correlate_sources(ad1, ad2, delta=None, firstPass=10, cull_sources=False):
+def _correlate_sources(ad1, ad2, delta=None, firstPass=10, min_sources=1, cull_sources=False):
     """
     This function takes sources from the OBJCAT extensions in two
-    images and attempts to correlate them. It returns a list of 
-    reference source positions and their correlated image source 
-    positions.
+    images and attempts to correlate them, using the WCS encoded in the
+    headers as a first approximation. It returns a list of reference source 
+    positions and their correlated image source positions.
     
     :param ad1: reference image
     :type ad1: AstroData instance
@@ -636,19 +665,22 @@ def _correlate_sources(ad1, ad2, delta=None, firstPass=10, cull_sources=False):
                       mismatch between the WCSs of the input images.
     :type firstPass: float
     
+    :param min_sources: minimum number of sources to use for cross-
+                        correlation, depending on the instrument used.
+    :type min_sources: int                    
+
     :param cull_sources: flag to indicate whether to reject sources that
-                   are insufficiently star-like
+                         are insufficiently star-like
     :type cull_sources: bool
     """
     
     log = logutils.get_logger(__name__)
-    
+
     # If desired, clip out the most star-like sources in the OBJCAT
     if cull_sources:
         good_src_1 = gt.clip_sources(ad1)[("SCI",1)]
         good_src_2 = gt.clip_sources(ad2)[("SCI",1)]
-
-        if len(good_src_1)<3 or len(good_src_2)<3:
+        if len(good_src_1) < min_sources or len(good_src_2) < min_sources:
             log.warning("Too few sources in culled list, using full set "\
                         "of sources")
             x1 = ad1["OBJCAT"].data.field("X_IMAGE")
@@ -680,7 +712,132 @@ def _correlate_sources(ad1, ad2, delta=None, firstPass=10, cull_sources=False):
     # find matches
     ind1,ind2 = at.match_cxy(x1,conv_x2,y1,conv_y2,
                              delta=delta, firstPass=firstPass, log=log)
+
+    if len(ind1)!=len(ind2):
+        raise Errors.ScienceError("Mismatched arrays returned from match_cxy")
     
+    if len(ind1)<1 or len(ind2)<1:
+        return [[],[]]
+    else:
+        obj_list = [zip(x1[ind1], y1[ind1]),
+                    zip(x2[ind2], y2[ind2])]
+        return obj_list
+
+def _correlate_sources_offsets(ad1, ad2, delta=None, firstPass=10, min_sources=1, cull_sources=False):
+    """
+    This function takes sources from the OBJCAT extensions in two
+    images and attempts to correlate them, using the offsets provided 
+    in the header as a first approximation. It returns a list of 
+    reference source positions and their correlated image source 
+    positions. This is currently GNIRS-specific.
+    
+    :param ad1: reference image
+    :type ad1: AstroData instance
+    
+    :param ad2: input image
+    :type ad2: AstroData instance
+    
+    :param delta: maximum distance in pixels to allow a match. If
+                  left as None, it will attempt to find an appropriate
+                  number (recommended).
+    :type delta: float
+    
+    :param firstPass: estimated maximum distance between correlated
+                      sources. This distance represents the expected
+                      mismatch between the header shifts of the input 
+                      images.
+    :type firstPass: float
+    
+    :param min_sources: minimum number of sources to use for cross-
+                        correlation, depending on the instrument used.
+    :type min_sources: int                    
+
+    :param cull_sources: flag to indicate whether to reject sources that
+                         are insufficiently star-like
+    :type cull_sources: bool
+    """
+    
+    log = logutils.get_logger(__name__)
+
+    # If desired, clip out the most star-like sources in the OBJCAT
+    if cull_sources:
+        good_src_1 = gt.clip_sources(ad1)[("SCI",1)]
+        good_src_2 = gt.clip_sources(ad2)[("SCI",1)]
+        if len(good_src_1) < min_sources or len(good_src_2) < min_sources:
+            log.warning("Too few sources in culled list, using full set "\
+                        "of sources")
+            x1 = ad1["OBJCAT"].data.field("X_IMAGE")
+            y1 = ad1["OBJCAT"].data.field("Y_IMAGE")
+            x2 = ad2["OBJCAT"].data.field("X_IMAGE")
+            y2 = ad2["OBJCAT"].data.field("Y_IMAGE")
+        else:
+            x1 = good_src_1["x"]
+            y1 = good_src_1["y"]
+            x2 = good_src_2["x"]
+            y2 = good_src_2["y"]
+    else:
+        # Otherwise, just get all sources
+        x1 = ad1["OBJCAT"].data.field("X_IMAGE")
+        y1 = ad1["OBJCAT"].data.field("Y_IMAGE")
+        x2 = ad2["OBJCAT"].data.field("X_IMAGE")
+        y2 = ad2["OBJCAT"].data.field("Y_IMAGE")    
+
+    # Shift the catalog of image to be aligned using the header offsets.
+    # The instrument alignment angle should be used to check how to 
+    # use the offsets.
+    poffset1 = ad1.phu_get_key_value("POFFSET")
+    qoffset1 = ad1.phu_get_key_value("QOFFSET")
+    poffset2 = ad2.phu_get_key_value("POFFSET")
+    qoffset2 = ad2.phu_get_key_value("QOFFSET")
+    pixscale = ad1.pixel_scale()
+    xdiff = -1.0 * (qoffset1 - qoffset2) / pixscale
+    ydiff = (poffset1 - poffset2) / pixscale
+    
+    pa1 = ad1.phu_get_key_value("PA")
+    pa2 = ad2.phu_get_key_value("PA")
+    if (abs(pa1 - pa2) < 1.0):
+        conv_x2 = [(item - xdiff) for item in x2]
+        conv_y2 = [(item - ydiff) for item in y2]
+        log.fullinfo("Less than 1 degree of rotation between the frames, "
+                    "no rotation applied.")
+        log.fullinfo("dx = {} px, dy = {} px applied from the headers"
+                    "".format(xdiff, ydiff, pa1 - pa2))
+    else:
+        theta = math.radians(pa1 - pa2)
+    
+        # Fetch the center of the frame
+        inst = ad1.instrument()
+        instlow = ad1.instrument().as_pytype().lower()
+        lookup_dir = "Gemini/" + inst + "/" + inst + "CenterDict"
+        lookup_name = instlow + "CenterDict"
+        center_dict = Lookups.get_lookup_table(lookup_dir,
+                                               lookup_name)
+        
+        key = "IMAGE"
+        if key in center_dict:
+            centerx, centery = center_dict[key]
+            x2temp = [(item - xdiff - centerx) for item in x2]
+            y2temp = [(item - ydiff - centery) for item in y2]
+            x2trans = [((xt * math.cos(theta)) - (yt * math.sin(theta))) 
+                       for xt, yt in zip(x2temp, y2temp)]
+            y2trans = [((xt * math.sin(theta)) + (yt * math.cos(theta))) 
+                       for xt, yt in zip(x2temp, y2temp)]
+            conv_x2 = [(xt + centerx) for xt in x2trans]
+            conv_y2 = [(yt + centery) for yt in y2trans]
+            log.fullinfo("dx = {} px, dy = {} px, rotation = {} degrees "
+                        "applied from the headers".format(xdiff, ydiff, pa1 - pa2))
+        else:
+            log.warning("No frame center found for {}, no rotation can "
+                        "be applied.".format(ad2.filename))
+            conv_x2 = [(item - xdiff) for item in x2]
+            conv_y2 = [(item - ydiff) for item in y2]
+            log.fullinfo("dx = {} px, dy = {} px applied from the headers"
+                        "".format(xdiff, ydiff, pa1 - pa2))
+   
+    # find matches
+    ind1,ind2 = at.match_cxy(x1,conv_x2,y1,conv_y2,
+                             delta=delta, firstPass=firstPass, log=log)
+
     if len(ind1)!=len(ind2):
         raise Errors.ScienceError("Mismatched arrays returned from match_cxy")
     
@@ -838,12 +995,10 @@ def _align_wcs(reference, adinput, objIns, rotate=False, scale=False):
 
 def _header_align(reference, adinput):
     """
-    This function uses the POFFSET and QOFFSET header keywords
+    This function uses the POFFSET, QOFFSET and PA header keywords 
     to get reference points to use in correcting an input WCS to
-    a reference WCS. Positive POFFSET is assumed to mean higher x
-    value, and positive QOFFSET is assumed to mean higher y value.
-    This function only allows for relative shifts between the images;
-    rotations and scales will not be handled properly
+    a reference WCS. This function allows for relative shifts between 
+    the images. Rotation and scaling will not be handled properly. 
     
     :param reference: reference image to register other images to. Must
                       have only one SCI extension.
@@ -860,35 +1015,42 @@ def _header_align(reference, adinput):
         adinput = [adinput]
     
     # get starting offsets from reference image (first one given)
-    pixscale = float(reference.pixel_scale())
-    ref_xoff = reference.phu_get_key_value("POFFSET")/pixscale
-    ref_yoff = reference.phu_get_key_value("QOFFSET")/pixscale
-    
-    # reference position is the center of the reference frame
+    ref_pixscale = float(reference.pixel_scale())
+    ref_poff = reference.phu_get_key_value("POFFSET")/ref_pixscale
+    ref_qoff = reference.phu_get_key_value("QOFFSET")/ref_pixscale
+    ref_pa = reference.phu_get_key_value("PA")
+    ref_theta = math.radians(ref_pa)
+    ref_xoff = (ref_poff * math.cos(ref_theta)) - (ref_qoff * math.sin(ref_theta))
+    ref_yoff =  (ref_poff * math.sin(ref_theta)) + (ref_qoff * math.cos(ref_theta))                 
+    log.fullinfo("Pixel scale: %.4f" % ref_pixscale)
+
+    # Reference position is the center of the reference frame
     data_shape = reference["SCI"].data.shape
     ref_coord = [data_shape[1]/2,data_shape[0]/2]
-    
-    log.fullinfo("Pixel scale: %.4f" % pixscale)
-    log.fullinfo("Reference offsets: %.4f %.4f" % (ref_xoff, ref_yoff))
-    log.fullinfo("Reference coordinates: %.1f %.1f" % 
-                 (ref_coord[0], ref_coord[1]))
-    
+        
     objIns = []
     for i in range(len(adinput)):
         ad = adinput[i]
         pixscale = float(ad.pixel_scale())
-        xoff = ad.phu_get_key_value("POFFSET")/pixscale
-        yoff = ad.phu_get_key_value("QOFFSET")/pixscale
+        poff = ad.phu_get_key_value("POFFSET")/pixscale
+        qoff = ad.phu_get_key_value("QOFFSET")/pixscale
+        pa = ad.phu_get_key_value("PA")
+        theta = math.radians(pa - ref_pa)
+        pdiff = poff - ref_poff
+        qdiff = qoff - ref_qoff
+        xoff = (pdiff * math.cos(theta)) + (qdiff * math.sin(theta))
+        yoff = (pdiff * math.sin(theta)) - (qdiff * math.cos(theta))
         
-        img_x = xoff-ref_xoff + ref_coord[0]
-        img_y = yoff-ref_yoff + ref_coord[1]
+        img_x = ref_coord[0] - yoff
+        img_y = ref_coord[1] - xoff
         
+        log.fullinfo("Reference coordinates: %.1f %.1f" % 
+                     (ref_coord[0], ref_coord[1]))
         log.fullinfo("For image " + ad.filename + ":")
-        log.fullinfo("   Image offsets: %.4f %.4f" % (xoff, yoff))
+        log.fullinfo("   Relative image offsets: %.4f %.4f" % (xoff, yoff))
         log.fullinfo("   Coordinates to transform: %.4f %.4f" % (img_x, img_y))
-        
         objIns.append(np.array([[ref_coord],[[img_x,img_y]]]))
-    
+
     adoutput_list = _align_wcs(reference, adinput, objIns, 
                                rotate=False, scale=False)
     

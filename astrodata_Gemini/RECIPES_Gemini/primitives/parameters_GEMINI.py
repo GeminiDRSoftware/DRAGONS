@@ -131,6 +131,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "alignAndStack":{
+    "check_if_stack":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "alignToReferenceFrame":{
     "suffix":{
         "default"       : "_align",
@@ -273,6 +282,27 @@
     "fallback":{
         "default"       : None,
         "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "use_wcs":{
+        "default"       : True,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "first_pass":{
+        "default"       : 10.0,
+        "type"          : "float",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "min_sources":{
+        "default"       : 3,
+        "type"          : "int",
         "recipeOverride": True,
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",

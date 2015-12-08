@@ -26,6 +26,17 @@ class StackPrimitives(GENERALPrimitives):
     init.pt_hide = True
     
     def alignAndStack(self, rc):
+        """
+        This primitive calls a set of primitives to perform the steps
+        needed for alignment of frames to a reference image and stacking.
+        
+        :param check_if_stack: Parameter to call a check as to whether 
+                               stacking should be performed. If not, this
+                               part of the recipe is skipped and the single
+                               input file returned.
+        :type check_if_stack: bool
+        """
+        
         # Instantiate the log
         log = logutils.get_logger(__name__)
         
@@ -34,6 +45,7 @@ class StackPrimitives(GENERALPrimitives):
          
         # Add the input frame to the forStack list and 
         # get other available frames from the same list
+        single_ad = rc.get_inputs_as_astrodata()
         rc.run("addToList(purpose=forStack)")
         rc.run("getList(purpose=forStack)")
 
@@ -45,32 +57,40 @@ class StackPrimitives(GENERALPrimitives):
                         "for alignAndStack")
             rc.report_output(adinput)
         else:
-            recipe_list = []
+            # If required, perform a check as to whether stacking should
+            # be performed, and if it is not, return only the single 
+            # original AstroData input
+            check_if_stack = rc["check_if_stack"]
+            if (check_if_stack and not _is_stack(adinput)):
+                rc.report_output(single_ad)
 
-            # Check to see if detectSources needs to be run
-            run_ds = False
-            for ad in adinput:
-                objcat = ad["OBJCAT"]
-                if objcat is None:
-                    run_ds = True
-                    break
-            if run_ds:
-                recipe_list.append("detectSources")
-            
-            # Register all images to the first one
-            recipe_list.append("correctWCSToReferenceFrame")
-            
-            # Align all images to the first one
-            recipe_list.append("alignToReferenceFrame")
-            
-            # Correct background level in all images to the first one
-            recipe_list.append("correctBackgroundToReferenceImage")
+            else:
+                recipe_list = []
 
-            # Stack all frames
-            recipe_list.append("stackFrames") 
+                # Check to see if detectSources needs to be run
+                run_ds = False
+                for ad in adinput:
+                    objcat = ad["OBJCAT"]
+                    if objcat is None:
+                        run_ds = True
+                        break
+                if run_ds:
+                    recipe_list.append("detectSources")
             
-            # Run all the needed primitives
-            rc.run("\n".join(recipe_list))
+                # Register all images to the first one
+                recipe_list.append("correctWCSToReferenceFrame")
+            
+                # Align all images to the first one
+                recipe_list.append("alignToReferenceFrame")
+            
+                # Correct background level in all images to the first one
+                recipe_list.append("correctBackgroundToReferenceImage")
+
+                # Stack all frames
+                recipe_list.append("stackFrames") 
+            
+                # Run all the needed primitives
+                rc.run("\n".join(recipe_list))
         
         yield rc
     
@@ -413,3 +433,30 @@ class StackPrimitives(GENERALPrimitives):
         rc.report_output(ad_science_output_list)
         
         yield rc
+        
+##############################################################################
+# Below are the helper functions for the user level functions in this module #
+##############################################################################
+def _is_stack(adinput):
+    """
+    This function checks for a set of AstroData input frames whether there is
+    more than 1 degree of rotation between the first frame and successive 
+    frames. If so, stacking will not be performed.
+    
+    :param adinput: List of AstroData instances
+    :type adinput: List of AstroData instances
+    """    
+
+    # Instantiate the log
+    log = logutils.get_logger(__name__)
+    
+    ref_pa = adinput[0].phu_get_key_value("PA")
+    for i in range(len(adinput)-1):
+        pa = adinput[i+1].phu_get_key_value("PA")
+        if abs(pa - ref_pa) >= 1.0:
+            log.warning("No stacking will be performed, since a frame varies "
+                        "from the reference image by more than 1 degree")
+            return False
+    
+    return True
+

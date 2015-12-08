@@ -1,7 +1,10 @@
 import os
 from copy import deepcopy
+from astrodata import AstroData
 from astrodata.utils import Errors
 from astrodata.utils import logutils
+from astrodata.utils import Lookups
+from astrodata.utils.ConfigSpace  import lookup_path
 from gempy.gemini import gemini_tools as gt
 from primitives_GENERAL import GENERALPrimitives
 
@@ -70,4 +73,4 @@ class MaskPrimitives(GENERALPrimitives):
         rc.report_output(adoutput_list)
         
         yield rc
-    
+

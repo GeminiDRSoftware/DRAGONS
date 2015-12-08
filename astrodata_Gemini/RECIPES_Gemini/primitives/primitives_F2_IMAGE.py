@@ -21,13 +21,27 @@ class F2_IMAGEPrimitives(F2Primitives):
 
     def selectFlatRecipe(self, rc):
 
+        # Instantiate the log
+        log = logutils.get_logger(__name__)
+        
+        # Log the standard "starting primitive" debug message
+        log.debug(gt.log_message("primitive", "selectFlatRecipe", "starting"))
+ 
         adinput = rc.get_inputs_as_astrodata()        
         recipe_list = []
         
         if adinput[0].wavelength_band().as_pytype() == 'K':
-            recipe_list.append("makeLampOffFlat")
+            recipe = "makeLampOffFlat"
+            recipe_list.append(recipe)
+            log.stdinfo("For {} band, the {} recipe is selected to make the "
+                        "flats".format(adinput[0].wavelength_band().as_pytype(), 
+                                       recipe))
         else:
-            recipe_list.append("makeLampOnLampOffFlat")
+            recipe = "makeLampOnLampOffFlat"
+            recipe_list.append(recipe)
+            log.stdinfo("For {} band, the {} recipe is selected to make the "
+                        "flats".format(adinput[0].wavelength_band().as_pytype(), 
+                                       recipe))
             
         rc.run("\n".join(recipe_list))
         

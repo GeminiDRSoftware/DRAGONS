@@ -1,0 +1,16 @@
+# Initial work in progress GNIRS recipe
+prepare
+addDQ
+addIllumMaskToDQ
+ADUToElectrons
+addVAR(read_noise=True, poisson_noise=True)
+flatCorrect
+applyIllumMask
+detectSources
+measureIQ(display=True)
+measureBG
+measureCCAndAstrometry
+alignAndStack
+detectSources
+measureIQ(display=True)
+measureCCAndAstrometry

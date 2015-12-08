@@ -8,7 +8,9 @@ class CAL(DataClassification):
     parent = "GENERIC"
     requirement = OR([  ISCLASS("F2_CAL"),
                         ISCLASS("GMOS_CAL"),
+                        ISCLASS("GNIRS_CAL"),
                         ISCLASS("GSAOI_CAL"),
-                        ISCLASS("NICI_CAL")])
+                        ISCLASS("NICI_CAL"),
+                        ISCLASS("NIRI_CAL")])
 
 newtypes.append(CAL())
