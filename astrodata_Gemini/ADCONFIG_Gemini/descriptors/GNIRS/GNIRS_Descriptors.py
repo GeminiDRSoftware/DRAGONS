@@ -304,7 +304,6 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
             
         # Create the final group_id string
         ret_group_id = '_'.join(descriptor_object_string_list)            
-        print "ret_group_id = ", ret_group_id
         
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_group_id, name="group_id", ad=dataset)
