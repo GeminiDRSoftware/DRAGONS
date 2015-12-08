@@ -344,7 +344,7 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
 
     # turn to numpy arrays
     xx, sx, yy, sy = map(np.asarray,(xx,sx,yy,sy))
-
+        
     def getg(xx, sx, yy, sy, deltax=2.5, deltay=2.5):
         """ Return object(xx) and reference(sx) indices of
         common positions.
@@ -509,7 +509,10 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
     ig,r,mx,my,stdx,stdy = getg(xx,sx,yy,sy, deltax=firstPass,deltay=firstPass)
     log.info('Median differences (x,y):%.2f %.2f, %.2f %.2f' % 
              (mx,my,stdx,stdy)+"[First iteration]")
-    if len(r) == 0:
+    if len(r) == 0 or len(r) == 1:
+        if len(r) == 1:
+            log.info('Only one good source is available, so the '
+                     'cross-correlation routine will be run once only')
         return ig,r
         
     # Now shift reference position by adding the median of the
