@@ -246,6 +246,8 @@ def _position_illum_mask(adinput=None):
     matched
     :type adinput: Single astrodata object
     """
+    from skimage.morphology import binary_dilation
+    
     # Instantiate the log
     log = logutils.get_logger(__name__)
 
@@ -286,31 +288,21 @@ def _position_illum_mask(adinput=None):
                         "DQ plane" % illum)                
             return None
 
-    # Averaging and thresholding the science data to get a rough 
-    # illumination mask
+    # Normalizing and thresholding the science data to get a rough 
+    # illumination mask.  A 5x5 box around non-illuminated pixels 
+    # is also flagged as non-illuminated to better handle the edge effects.
     addata = adinput['SCI',1].data
-    adpixdata = np.copy(addata) 
-    adpixdata /= np.average(adpixdata)
-    (irange, jrange) = adpixdata.shape
-    threshpixdata = np.empty(adpixdata.shape, np.int16)
-    for i in [i+2 for i in range(irange-4)]:
-        for j in [j+2 for j in range(jrange-4)]:
-            if ((adpixdata[i,j] < 2) or (adpixdata[i+1,j] < 2) or 
-                (adpixdata[i+2,j] < 2) or (adpixdata[i-1,j] < 2) or 
-                (adpixdata[i-2,j] < 2) or (adpixdata[i,j+1] < 2) or 
-                (adpixdata[i+1,j+1] < 2) or (adpixdata[i+2,j+1] < 2) or 
-                (adpixdata[i-1,j+1] < 2) or (adpixdata[i-2,j+1] < 2) or 
-                (adpixdata[i,j+2] < 2) or (adpixdata[i+1,j+2] < 2) or 
-                (adpixdata[i+2,j+2] < 2) or (adpixdata[i-1,j+2] < 2) or 
-                (adpixdata[i-2,j+2] < 2) or (adpixdata[i,j-1] < 2) or 
-                (adpixdata[i+1,j-1] < 2) or (adpixdata[i+2,j-1] < 2) or 
-                (adpixdata[i-1,j-1] < 2) or (adpixdata[i-2,j-1] < 2) or 
-                (adpixdata[i,j-2] < 2) or (adpixdata[i+1,j-2] < 2) or 
-                (adpixdata[i+2,j-2] < 2) or (adpixdata[i-1,j-2] < 2) or 
-                (adpixdata[i-2,j-2] < 2)):
-                threshpixdata[i,j] = 64
-            else:
-                threshpixdata[i,j] = 0
+    adpixdata = np.copy(addata) / addata.mean()
+    
+    threshpixdata = np.zeros(adpixdata.shape, np.int16)
+    threshpixdata[np.where(adpixdata < 2.)] = 1
+    structure = np.ones((5,5))
+    threshpixdata = binary_dilation(threshpixdata, structure)
+    
+    # this mask identify the non-illumnated pixels.  We want
+    # to feed the keyhole to the center_of_mass.  We invert
+    # the mask.
+    # keyhole = 1 - threshpixdata
 
     # Finding the centre of mass of the rough pixel mask and using
     # this in comparison with the centre of mass of the illumination
