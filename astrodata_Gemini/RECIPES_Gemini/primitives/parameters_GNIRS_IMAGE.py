@@ -32,7 +32,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
-    "correctWCSToReferenceFrame":{
+ "correctWCSToReferenceFrame":{
     "suffix":{
         "default"       : "_wcsCorrected",
         "type"          : "str",
@@ -121,5 +121,55 @@
         "uiLevel"       : "UIBASIC",
         },
     },
-
+ "display":{ 
+    "extname":{
+        "default"       : "SCI",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "frame":{
+        "default"       : 1,
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "ignore":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       :"UIBASIC"
+        },
+    "remove_bias":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "threshold":{
+        "default"       : "auto",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "tile":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "zscale":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
 }
