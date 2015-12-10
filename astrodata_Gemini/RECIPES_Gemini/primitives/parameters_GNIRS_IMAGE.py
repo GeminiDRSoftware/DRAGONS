@@ -14,7 +14,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
-    "alignAndStack":{
+ "alignAndStack":{
     "check_if_stack":{
         "default"       : True,
         "type"          : "bool",
@@ -23,7 +23,7 @@
         "uiLevel"       : "UIBASIC",
         },
     },
-    "applyIllumMask":{
+ "applyIllumMask":{
     "suffix":{
         "default"       : "_illumMaskApplied",
         "type"          : "str",
