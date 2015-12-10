@@ -73,8 +73,8 @@ class GNIRS_IMAGEPrimitives(GNIRSPrimitives):
             # region, if necessary
             final_illum = gt.clip_auxiliary_data(adinput=ad, 
                                                  aux=corr_illum_ad,
-                                                 aux_type="cal")[0]
-            illum_data = final_illum['SCI'].data
+                                                 aux_type="bpm")[0]
+            illum_data = final_illum['DQ'].data
 
             # Loop over each science extension in each input AstroData object
             for sciext in ad['SCI']:
@@ -90,8 +90,7 @@ class GNIRS_IMAGEPrimitives(GNIRSPrimitives):
                     if dqext is not None:
                         ad["DQ",extver].data = dqext.data | illum_data
                     else:
-                        dqext = deepcopy(final_illum['SCI'])
-                        dqext.rename_ext("DQ",extver)
+                        dqext = deepcopy(final_illum['DQ'])
                         ad.append(dqext)
 
             # Change the filename
@@ -325,9 +324,9 @@ def _position_illum_mask(adinput=None):
                                "frame")
 
     # Applying the offsets to the illumination mask
-    illumpixdata1 = illum_ad['SCI',1].data
+    illumpixdata1 = illum_ad['DQ',1].data
     illumpixdata2 = np.roll(illumpixdata1, dx, 1)
     illumpixdata3 = np.roll(illumpixdata2, dy, 0)
-    illum_ad['SCI',1].data = illumpixdata3
+    illum_ad['DQ',1].data = illumpixdata3
 
     return illum_ad
