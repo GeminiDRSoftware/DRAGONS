@@ -251,7 +251,7 @@ class ReductionObject(object):
         except SettingFixedParam, e:
             print str(e)
         except TypeError,e:
-            print 'Recieved TypeError: "%s" during iteration' % e
+            print 'Received TypeError: "%s" during iteration' % e
             msg = "The running primitive, '%s'." % primname
             raise # IterationError(msg)
         except:
@@ -267,7 +267,7 @@ class ReductionObject(object):
             context.restore_stream(from_stream = nonStandardStream)
             
         context.localparms = savedLocalparms
-        if not primname.startswith("proxy_"):
+        if not primname.startswith("proxy_") and self.reduce_status:
             self.reduce_status[0]['status']['current'] = primname
             if self.reduce_status and proxy_server is not None:
                 proxy_server.report_qametrics(self.reduce_status)            
