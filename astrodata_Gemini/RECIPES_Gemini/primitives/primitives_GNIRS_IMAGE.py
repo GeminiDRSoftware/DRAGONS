@@ -289,8 +289,11 @@ def _position_illum_mask(adinput=None):
             return None
 
     # Normalizing and thresholding the science data to get a rough 
-    # illumination mask.  A 5x5 box around non-illuminated pixels 
-    # is also flagged as non-illuminated to better handle the edge effects.
+    # illumination mask. A 5x5 box around non-illuminated pixels is also 
+    # flagged as non-illuminated to better handle the edge effects. The
+    # limit for thresholding is set to an empirically determined value of
+    # 2 for the moment - ideally, this should be replaced with a 
+    # statistically determined value or function.
     addata = adinput['SCI',1].data
     adpixdata = np.copy(addata) / addata.mean()
     
@@ -299,21 +302,20 @@ def _position_illum_mask(adinput=None):
     structure = np.ones((5,5))
     threshpixdata = binary_dilation(threshpixdata, structure)
     
-    # this mask identify the non-illumnated pixels.  We want
-    # to feed the keyhole to the center_of_mass.  We invert
-    # the mask.
-    # keyhole = 1 - threshpixdata
+    # This mask identifies the non-illuminated pixels.  We want
+    # to feed the keyhole to the center_of_mass. We invert the mask.
+    keyhole = 1 - threshpixdata
 
     # Finding the centre of mass of the rough pixel mask and using
     # this in comparison with the centre of mass of the illumination
-    # mass to adjust the keyholes to align        
-    x, y = scipy.ndimage.measurements.center_of_mass(threshpixdata)
+    # mass to adjust the keyholes to align. Note that the  
+    # center_of_mass function has switched x and y axes compared to normal.        
+    y, x = scipy.ndimage.measurements.center_of_mass(keyhole)
     comx_illummask = illum_ad.phu_get_key_value('CENMASSX')
     comy_illummask = illum_ad.phu_get_key_value('CENMASSY')
-    # 20. is a fudge factor found empirically
-    dy = int((x - comx_illummask) * -20.)
-    dx = int((y - comy_illummask) * -20.)
-
+    dx = int(x - comx_illummask)
+    dy = int(y - comy_illummask)
+    
     # Recording the shifts in the header of the illumination mask
     log.stdinfo("Applying shifts to the illumination mask: dx = {}px, dy = "
                 "{}px.".format(dx, dy))
