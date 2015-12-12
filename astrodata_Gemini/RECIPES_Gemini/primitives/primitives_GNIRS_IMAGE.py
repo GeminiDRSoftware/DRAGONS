@@ -41,57 +41,65 @@ class GNIRS_IMAGEPrimitives(GNIRSPrimitives):
         # Define the keyword to be used for the time stamp for this primitive
         timestamp_key = self.timestamp_keys["addIllumMaskToDQ"]
 
-        # Fetching a corrected illumination mask with a keyhole that aligns 
-        # with the science data
-        reference = None
-        for ad in rc.get_inputs_as_astrodata():
-            if reference is None:
-                reference = ad
-            if('GCAL_IR_ON' in ad.types):
-                reference = ad
-                break
-        corr_illum_ad = _position_illum_mask(reference['SCI'][0])
-            
         # Initialize the list of output AstroData objects
         adoutput_list = []
 
-        # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
-
-            # Check that the illumination mask is present
+        # Get list of input and identify a suitable reference frame.
+        # In most case it will be the first image, but for lamp-on, lamp-off
+        # flats, one wants the reference frame to be a lamp-on since there's
+        # next to no signal in the lamp-off.
+        #
+        # BEWARE: See note on the only GCAL_IR_OFF case below this block.   
+        inputs = rc.get_inputs_as_astrodata()
+        if len(inputs) > 0:
+            lampons = [ad for ad in inputs if 'GCAL_IR_ON' in ad.types]
+            if len(lampons) > 0:
+                reference = lampons[0]
+            else:
+                reference = inputs[0]
+        else:
+            log.warning("No inputs provided to addIllumMaskToDQ")
+            reference = None
+                   
+        # When only a GCAL_IR_OFF is available:
+        # To cover the one-at-a-time mode check for a compatible list
+        # if list found, try to find a lamp-on in there to use as
+        # reference for the mask and the shifts.
+        # The mask's name and the shifts should stored in the headers 
+        # of the reference to simplify this and speed things up.
+        #
+        # NOT NEEDED NOW because we calling addIllumMask after the
+        # lamp-offs have been subtracted.  But kept the idea here
+        # in case we needed.
+        
+        # Fetching a corrected illumination mask with a keyhole that aligns 
+        # with the science data
+        if reference:
+            corr_illum_ad = _position_illum_mask(reference['SCI'][0])
             if corr_illum_ad is None:
                 log.warning("No illumination mask found for %s, no mask can "
-                            "be added to the DQ plane" % ad.filename)
+                            "be added to the DQ planes of the inputs" % 
+                            reference.filename)
                 # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
-                continue
-                
-            final_illum = None
+                # AstroData objects without further processing (empty 'inputs')
+                adoutput_list.extend(inputs)
+                inputs = []
+
+        # Loop over each input AstroData object
+        for ad in inputs:
+            
             # Clip the illumination mask to match the size of the 
-            # input AstroData object science and pad with overscan 
-            # region, if necessary
+            # input AstroData object science.
             final_illum = gt.clip_auxiliary_data(adinput=ad, 
                                                  aux=corr_illum_ad,
                                                  aux_type="bpm")[0]
-            illum_data = final_illum['DQ'].data
-
-            # Loop over each science extension in each input AstroData object
-            for sciext in ad['SCI']:
-
-                extver = sciext.extver()
-                dqext = ad["DQ",extver]
-                
-                if illum_data is None:
-                    log.warning("No illumination mask present for %s[SCI,%d]; "
-                                "cannot apply illumination mask" % 
-                                (ad.filename,extver))
-                else:
-                    if dqext is not None:
-                        ad["DQ",extver].data = dqext.data | illum_data
-                    else:
-                        dqext = deepcopy(final_illum['DQ'])
-                        ad.append(dqext)
+ 
+            # binary_OR the illumination mask or create a DQ plane from it.
+            if ad['DQ',1]:
+                ad['DQ',1].data = ad['DQ',1].data | final_illum['DQ',1].data
+            else:
+                dqext = deepcopy(final_illum['DQ',1])
+                ad.append(dqext)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 

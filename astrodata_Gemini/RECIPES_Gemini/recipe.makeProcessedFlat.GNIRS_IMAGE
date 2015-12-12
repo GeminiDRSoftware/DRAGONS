@@ -6,7 +6,6 @@
 
 prepare
 addDQ
-addIllumMaskToDQ
 addVAR(read_noise=True)
 #nonlinearityCorrect
 ADUToElectrons
@@ -14,6 +13,7 @@ addVAR(poisson_noise=True)
 addToList(purpose=forFlat)
 getList(purpose=forFlat)
 lampOnLampOff
+addIllumMaskToDQ
 normalizeFlat
 thresholdFlatfield
 storeProcessedFlat

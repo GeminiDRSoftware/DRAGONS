@@ -638,6 +638,14 @@ class CalibrationPrimitives(GENERALPrimitives):
 
         else:
             log.warning("Cannot subtract lamp on - lamp off flats as do not have some of each")
+            if len(lampon_list) > 0:
+                log.warning("Returning stacked lamp on flats")
+                adoutput_list.extend(lampon_list)
+            elif len(lampoff_list) > 0:
+                log.warning("Returning stacked lamp off flats")
+                adoutput_list.extend(lampoff_list)
+            else:
+                log.warning("Something is not quite right, no flats were accessible.")
 
         rc.report_output(adoutput_list)
         yield rc

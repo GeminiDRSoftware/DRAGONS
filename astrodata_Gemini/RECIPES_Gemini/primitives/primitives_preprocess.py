@@ -755,11 +755,14 @@ class PreprocessPrimitives(GENERALPrimitives):
                 log.fullinfo("ThresholdFlatfield set bit '64' for values"
                              " outside the range [%.2f,%.2f]"%(lower,upper))
 
-                # Set the sci value to 1.0 where it is less that 0.001
+                # Set the sci value to 1.0 where it is less that 0.001 and
+                # where the DQ says it's non-illuminated.
                 sci_data = np.where(sci_data < 0.001, 1.0, sci_data)
+                sci_data = np.where(dq_data == 64, 1.0, sci_data)
                 ad['SCI',extver].data=sci_data
 
-                log.fullinfo("ThresholdFlatfield set flatfield pixels to 1.0 for values below 0.001")
+                log.fullinfo("ThresholdFlatfield set flatfield pixels to 1.0"
+                             " for values below 0.001 and non-illuminated pixels.")
 
 
             # Add the appropriate time stamps to the PHU
