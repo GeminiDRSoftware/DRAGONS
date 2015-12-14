@@ -52,26 +52,33 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
         from astrodata.utils import Lookups
         from astrodata.utils.ConfigSpace  import lookup_path
         from gempy.gemini import gemini_tools as gt
-        all_bpm_dict = Lookups.get_lookup_table("Gemini/BPMDict", "bpm_dict")
-        key = ad.instrument().as_pytype() + '_illum'
-        if key in all_bpm_dict:
-            illum = lookup_path(all_bpm_dict[key])
+        illum_mask_dict = Lookups.get_lookup_table("Gemini/GNIRS/IllumMaskDict",
+                                                   "illum_masks")
+        key1 = ad.camera().as_pytype()
+        filter = ad.filter_name(pretty=True).as_pytype()
+        if filter in ['Y', 'J', 'H', 'K']:
+            key2 = 'Broadband'
+        elif filter in ['JPHOT', 'HPHOT', 'KPHOT', 'H2', 'PAH']:
+            key2 = 'Narrowband'
         else:
-            illum = None
-            raise IOError("No illumination mask found for %s, the pointing "
-                        "in field cannot be determined" % ad.filename)
-
-        # Ensure that the illumination mask is an AstroData object
+            raise ValueError("Unrecognised filter, no illumination mask can "
+                             "be found for %s, so the pointing in field "
+                             "cannot be determined" % ad.filename)
+        key = (key1,key2)
+        if key in illum_mask_dict:
+            illum = lookup_path(illum_mask_dict[key])
+        else:
+            raise IOError("No illumination mask found for %s, the pointing in " 
+                          "field cannot be determined " % ad.filename)
         illum_ad = None
-        if illum is not None:
-            if isinstance(illum, AstroData):
-                illum_ad = illum
-            else:
-                illum_ad = AstroData(illum)
-                if illum_ad is None:
-                    raise TypeError("Cannot convert %s into an AstroData "
-                                    "object, no illumination mask can be used" 
-                                    % illum)                
+        if isinstance(illum, AstroData):
+            illum_ad = illum
+        else:
+            illum_ad = AstroData(illum)
+            if illum_ad is None:
+                raise TypeError("Cannot convert %s into an AstroData object, "
+                                "the point in field cannot be determined" 
+                                % illum)                
                 
         # Checking the size of the illumination mask                
         final_illum = None
@@ -79,8 +86,8 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
             # Clip the illumination mask to match the size of the input 
             # AstroData object science 
             final_illum = gt.clip_auxiliary_data(adinput=ad, aux=illum_ad,
-                                                aux_type="cal")[0]
-        illum_data = final_illum['SCI'].data
+                                                aux_type="bpm")[0]
+        illum_data = final_illum['DQ'].data
 
 #        # Defining the cass rotator center of GNIRS
 #        center_dict = Lookups.get_lookup_table("Gemini/GNIRS/gnirsCenterDict", 
