@@ -317,11 +317,17 @@ def _position_illum_mask(adinput=None):
     # this in comparison with the centre of mass of the illumination
     # mass to adjust the keyholes to align. Note that the  
     # center_of_mass function has switched x and y axes compared to normal.        
-    y, x = scipy.ndimage.measurements.center_of_mass(keyhole)
     comx_illummask = illum_ad.phu_get_key_value('CENMASSX')
     comy_illummask = illum_ad.phu_get_key_value('CENMASSY')
-    dx = int(x - comx_illummask)
-    dy = int(y - comy_illummask)
+    y, x = scipy.ndimage.measurements.center_of_mass(keyhole)
+    if not np.isnan(x) and not np.isnan(y):        
+        dx = int(x - comx_illummask)
+        dy = int(y - comy_illummask)
+    else:
+        log.warning("The centre of mass of %s cannot be measured, so "
+                    "the illumination mask cannot be positioned and "
+                    "will be used without adjustment" % adinput)
+        return illum_ad
     
     # Recording the shifts in the header of the illumination mask
     log.stdinfo("Applying shifts to the illumination mask: dx = {}px, dy = "
