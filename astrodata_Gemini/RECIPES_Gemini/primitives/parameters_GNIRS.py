@@ -1,6 +1,15 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_GNIRS.py file, in alphabetical order.
-{"standardizeInstrumentHeaders":{
+{   "measureBG":{
+    "remove_bias":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+    "standardizeInstrumentHeaders":{
     "suffix":{
         "default"       : "_instrumentHeadersStandardized",
         "type"          : "str",
