@@ -8,6 +8,7 @@ from astrodata.utils import Lookups
 from astrodata.utils.ConfigSpace  import lookup_path
 import numpy as np
 import scipy.ndimage
+from copy import deepcopy
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
