@@ -186,7 +186,7 @@ class ReductionObject(object):
         # set type of prim for logging
         btype = primset.btype
         logstring = "%s: %s" % (btype,primname)
-        if context['index'] == None:
+        if context['index'] is None:
             # top-level recipe, set indent=0, add some extra demarcation
             logutils.update_indent(0, context['logmode'])
             context.update({'index':0})
@@ -234,7 +234,7 @@ class ReductionObject(object):
                 # @@note2: no, this yields and the command loop act that way
                 # @@.....: and it is in run, which caps the yields which must
                 # @@.....: call the command clause.
-                if rc == None:
+                if rc is None:
                     msg = "Primitive '%s' returned None on rc yield\n" % primname
                     raise ReductionError(msg)
  
@@ -269,10 +269,10 @@ class ReductionObject(object):
         context.localparms = savedLocalparms
         if not primname.startswith("proxy_") and self.reduce_status:
             self.reduce_status[0]['status']['current'] = primname
-            if self.reduce_status and proxy_server is not None:
+            if proxy_server is not None:
                 proxy_server.report_qametrics(self.reduce_status)            
 
-        if context['index'] == None:
+        if context['index'] is None:
             # top-level recipe, add some extra demarcation
             logutils.update_indent(0, context['logmode'])
             context.update({'index':0})
@@ -347,7 +347,7 @@ class ReductionObject(object):
                 self.add_prim_set(ps, add_to_front = add_to_front)
             return
             
-        if primset.astrotype == None:
+        if primset.astrotype is None:
             raise ReductionError("Primitive Set astrotype is None, fatal error, corrupt configuration")
         if primset.btype == "RECIPE":
             if hasattr(primset,"param_dict") and primset.param_dict != None:
@@ -523,10 +523,10 @@ def command_clause(ro, coi):
             calname = None
             ## THIS IS THE CACHE CHECK, DISABLED NOW: calname = coi.get_cal(fn, typ)
             calmd5 = None
-            if calname == None:
+            if calname is None:
                 # Do the calibration search
                 calurl = None
-                if usePRS and prs == None:
+                if usePRS and prs is None:
                     prs = xmlrpc_proxy.PRSProxy.get_adcc()
                     
                 if usePRS:
@@ -536,14 +536,14 @@ def command_clause(ro, coi):
                             #print "488: calurl", repr(calurl)
                             #if calname:
                             #    return calname
-                            if calurl and len(calurl) and calurl[0] == None:
+                            if calurl and len(calurl) and calurl[0] is None:
                                 log.warning(calurl[1])
                                 calurl = None
-                        if calurl == None:
+                        if calurl is None:
                             # print "RO492", repr(rq)
                             calurl = prs.calibration_search( rq )
                             if calurl is not None:
-                                if len(calurl) and calurl[0] == None:
+                                if len(calurl) and calurl[0] is None:
                                     adcc_msg = calurl[1]                                    
                                     calurl = None
                                     log.error("CALIBRATION SERVICE REPORT:\n"*2)
@@ -556,7 +556,7 @@ def command_clause(ro, coi):
                         calurl = None
                         raise
                         
-                if calurl == None:
+                if calurl is None:
                     log.warning('No '+str(typ)+' calibration file found for '+\
                                 str(fn))
                     # this is not fatal because perhaps there isn't a calibration
@@ -638,7 +638,7 @@ def command_clause(ro, coi):
         elif rqTyp == DisplayRequest:
             # process display request
             nd = rq.to_nested_dicts()
-            if usePRS and prs == None:
+            if usePRS and prs is None:
                 prs = xmlrpc_proxy.PRSProxy.get_adcc()
             prs.display_request(nd)
                 
