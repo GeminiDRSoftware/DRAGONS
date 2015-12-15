@@ -237,7 +237,8 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
 
         # Descriptors used for all image types
         unique_id_descriptor_list_all = ["well_depth_setting", 
-                                         "detector_section"]
+                                         "detector_section", "disperser",
+                                         "focal_plane_mask"]
                                          
 
         # List to format descriptor calls using 'pretty=True' parameter
