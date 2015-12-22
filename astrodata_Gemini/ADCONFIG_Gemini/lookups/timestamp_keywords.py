@@ -13,7 +13,7 @@ timestamp_keys = {
     "addVAR": "ADDVAR",
     "ADUToElectrons": "ADUTOELE",
     "alignToReferenceFrame": "ALIGN",
-    "applyIllumMask": "ILLUMASK",
+    "applyDQPlane": "APLDQPLN",
     "associateSky": "ASSOCSKY",
     "attachWavelengthSolution": "ATTWVSOL",
     "correctBackgroundToReferenceImage": "CORRBG",

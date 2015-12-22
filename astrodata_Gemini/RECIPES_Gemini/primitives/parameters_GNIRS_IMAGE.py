@@ -23,9 +23,23 @@
         "uiLevel"       : "UIBASIC",
         },
     },
- "applyIllumMask":{
+ "applyDQPlane":{
     "suffix":{
-        "default"       : "_illumMaskApplied",
+        "default"       : "_dqPlaneApplied",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "replace_flags":{
+        "default"       : 255,
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "replace_value":{
+        "default"       : "median",
         "type"          : "str",
         "recipeOverride": True,
         "userOverride"  : True,

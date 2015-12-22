@@ -1,6 +1,7 @@
 import sys
 import pywcs
 import numpy as np
+import math
 
 from astrodata import AstroData
 from astrodata.utils import logutils
@@ -116,55 +117,91 @@ class GNIRS_IMAGEPrimitives(GNIRSPrimitives):
         
         yield rc
 
-    def applyIllumMask(self, rc):
+    def applyDQPlane(self, rc):
         """
-        This primitive applies the illumination mask for GNIRS, setting all 
-        data not in the illuminated region to zero.
+        This primitive sets the value of pixels in the science plane according
+        to flags from the DQ plane for GNIRS. If generalised for another 
+        instrument, this may require looping through science extensions.
+
+        :param replace_flags: An integer indicating which DQ plane flags are 
+                              to be applied, e.g. a flag of 70 indicates 
+                              2 + 4 + 64. The default of 255 flags all values 
+                              up to 128.
+        :type replace_flags: str
+
+        :param replace_value: Either "median" or "average" to replace the 
+                              bad pixels specified by replace_flags with 
+                              the median or average of the other pixels, or
+                              a numerical value with which to replace the
+                              bad pixels. 
+        :type replace_value: str        
         """
         # Instantiate the log
         log = logutils.get_logger(__name__)
 
         # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "applyIllumMask", "starting"))
+        log.debug(gt.log_message("primitive", "applyDQPlane", "starting"))
 
         # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["applyIllumMask"]
+        timestamp_key = self.timestamp_keys["applyDQPlane"]
 
         # Initialize the list of output AstroData objects
         adoutput_list = []
 
+        # Get the inputs from the rc
+        replace_flags = rc["replace_flags"]
+        replace_value = rc["replace_value"]
+        
+        # Check which flags should be replaced
+        count = 0
+        flag_list = []
+        for digit in str(bin(replace_flags)[2:])[::-1]:
+            if digit == "1":
+                flag_list.append(int(math.pow(2,count)))
+            count +=1
+        log.stdinfo("The flags {} will be applied".format(flag_list))  
+        
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
-
-            # Check whether the myScienceStep primitive has been run previously
-            if ad.phu_get_key_value(timestamp_key):
-                log.warning("No changes will be made to %s, since it has "
-                            "already been processed by applyIllumMask"
-                            % ad.filename)
-
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
-                continue
-
+            
             # Check that there is a DQ extension
             if ad['DQ'] is None:
-                log.warning("No DQ plane exists for %s, so the illumination"
-                            "mask cannot be applied" % ad.filename)
+                log.warning("No DQ plane exists for %s, so the correction "
+                            "cannot be applied" % ad.filename)
                 # Append the input AstroData object to the list of output
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
-                    
-            # Loop over each science extension in each input AstroData object
-            for ext in ad['SCI']:
+        
+            # If we need the median or average, we need to find where the 
+            # pixels are good
+            if replace_value in ["median", "average"]:
+                good_pixels = np.where(ad['DQ'].data & replace_flags == 0)
+                if replace_value == "median":
+                    rep_val = np.median(ad['SCI',1].data[good_pixels])
+                    log.stdinfo("Replacing bad pixels with the median of the "
+                                "good data: {0:.2f}".format(rep_val))
+                else:
+                    rep_val = np.average(ad['SCI',1].data[good_pixels])
+                    log.stdinfo("Replacing bad pixels with the average of the "
+                                "good data: {0:.2f}".format(rep_val))
+            else:
+                try:
+                    rep_val = float(replace_value)
+                    log.stdinfo("Replacing bad pixels with the user input "
+                                "value: {0:.2f}".format(rep_val))
+                except:
+                    log.warning("Value for replacement should be specified as "
+                                "'median', 'average', or as a number")
+                    # Append the input AstroData object to the list of output
+                    # AstroData objects without further processing
+                    adoutput_list.append(ad)
+                    continue
 
-                # Find the median value of the region inside the FOV
-                median = np.median(ext.data[np.where(ad['DQ'].data != 64)])
-                
-                # Set values outside of the GNIRS FOV to match the median
-                ext.data[np.where(ad['DQ'].data == 64)] = median
-                
+            # Replacing the bad pixel values
+            bad_pixels = np.where(ad['DQ'].data & replace_flags != 0)    
+            ad['SCI',1].data[bad_pixels] = rep_val
+            
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, keyword=timestamp_key)
 
