@@ -10,43 +10,43 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
 
     No inputs are validated at this level; that's the responsibility of the
     calling function, for reasons of efficiency.
-
+    
+    The GNIRS FOV is determined by whether the calculated center point 
+    (according to the center of mass of the illumination mask) of the
+    image falls within the illumination mask of the reference image.
+    
+    :param pos: AstroData instance to be checked for whether it belongs
+                in the same sky grouping as refpos
     :type pos: AstroData instance
+    
+    :param refpos: This is the POFFSET and QOFFSET of the reference image
     :type refpos: tuple of floats
+    
+    :param frac_FOV: For use with spectroscopy data
     :type frac_FOV: float
+    
+    :param frac_slit: For use with spectroscopy data
     :type frac_slit: float
     """
-
-    # Since this function gets looked up & evaled, we have to do any
-    # essential imports in-line (but Python caches them):
-    import math, re
-
-    # Use the first argument for looking up instrument & configuration
-    # properties, since the second position doesn't always correspond to a
-    # single exposure, ie. AstroData instance.
-    ad = pos
-
-    # Extract pointing info. (currently p/q but this will be replaced with
-    # RA/Dec/PA) from the AstroData instance.
-    position = (ad.phu_get_key_value('POFFSET'),
-                ad.phu_get_key_value('QOFFSET'))
-
-    # TO DO: References to the field size will need changing to decimal
-    # degrees once we pass absolute co-ordinates?
-
-    # TO DO: The following is used because as of r4619, the pixel_scale()
-    # descriptor slows us down by 50x for some reason (and prepare has
-    # already updated the header from the descriptor anyway so it doesn't
-    # need recalculating here). The first branch of this condition can be
-    # removed once pixel_scale() is improved or has the same check has
-    # been added to it:
-    if 'PREPARED' in ad.types:
-        scale = ad.phu_get_key_value('PIXSCALE')
-    else:
-        scale = ad.pixel_scale().get_value()
-
+    # Since this function gets looked up and evaluated, we have to do any
+    # essential imports in-line (but Python caches them)
+    import math
+    
+    # Extract pointing info in terms of the x and y offsets
+    # Since we are only looking at the center position of the image relative
+    # to the reference image, the PA of the image to be classified is 
+    # sufficient (luckily!)
+    theta = math.radians(pos.phu_get_key_value("PA"))
+    scale = pos.pixel_scale()
+    position = (pos.phu_get_key_value('POFFSET'),
+                pos.phu_get_key_value('QOFFSET'))
+    deltap = (refpos[0] - position[0]) / scale
+    deltaq = (refpos[1] - position[1]) / scale
+    xshift = (deltap * math.cos(theta)) - (deltaq * math.sin(theta))
+    yshift =  (deltap * math.sin(theta)) + (deltaq * math.cos(theta))                 
+    
     # Imaging:
-    if 'GNIRS_IMAGE' in ad.types:
+    if 'GNIRS_IMAGE' in pos.types:
         # Need to fetch the illumination mask
         from astrodata import AstroData
         from astrodata.utils import Lookups
@@ -54,8 +54,8 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
         from gempy.gemini import gemini_tools as gt
         illum_mask_dict = Lookups.get_lookup_table("Gemini/GNIRS/IllumMaskDict",
                                                    "illum_masks")
-        key1 = ad.camera().as_pytype()
-        filter = ad.filter_name(pretty=True).as_pytype()
+        key1 = pos.camera().as_pytype()
+        filter = pos.filter_name(pretty=True).as_pytype()
         if filter in ['Y', 'J', 'H', 'K']:
             key2 = 'Broadband'
         elif filter in ['JPHOT', 'HPHOT', 'KPHOT', 'H2', 'PAH']:
@@ -77,7 +77,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
             illum_ad = AstroData(illum)
             if illum_ad is None:
                 raise TypeError("Cannot convert %s into an AstroData object, "
-                                "the point in field cannot be determined" 
+                                "the pointing in field cannot be determined" 
                                 % illum)                
                 
         # Checking the size of the illumination mask                
@@ -85,25 +85,24 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
         if illum_ad is not None:
             # Clip the illumination mask to match the size of the input 
             # AstroData object science 
-            final_illum = gt.clip_auxiliary_data(adinput=ad, aux=illum_ad,
+            final_illum = gt.clip_auxiliary_data(adinput=pos, aux=illum_ad,
                                                 aux_type="bpm")[0]
         illum_data = final_illum['DQ'].data
 
-#        # Defining the cass rotator center of GNIRS
-#        center_dict = Lookups.get_lookup_table("Gemini/GNIRS/gnirsCenterDict", 
-#                                               "gnirsCenterDict")
-#        key = ad.observation_type().as_pytype()
-#        if key in center_dict:
-#            center = lookup_path(center_dict[key])
-#        else:
-#            center = None
-#            log.warning("The cass rotator center of the image %s cannot be"
-#                        "determined" % ad.filename)
-#
-#        # Next, finding the dx, dy between the cass center and the reference
-#        (dx, dy) = (center[0] - refpos[0], center[1] - refpos[1])
+        # Finding the center of the illumination mask
+        center_illum = (final_illum.phu_get_key_value('CENMASSX'), 
+                        final_illum.phu_get_key_value('CENMASSY'))
+        checkpos = (int(center_illum[0] + xshift),
+                    int(center_illum[1] + yshift))
+        
+        # If the position to check is going to fall outside the illumination
+        # mask, return straight away to avoid an error
+        if ((abs(xshift) >= abs(center_illum[0])) or 
+            (abs(yshift) >= abs(center_illum[1]))):
+            return False
 
-        return illum_data[refpos[0],refpos[1]] == 0 
+        # Note that numpy data arrays are reversed in x and y    
+        return illum_data[checkpos[1], checkpos[0]] == 0 
 
     # Spectroscopy:
     elif 'GNIRS_SPECT' in ad.types:

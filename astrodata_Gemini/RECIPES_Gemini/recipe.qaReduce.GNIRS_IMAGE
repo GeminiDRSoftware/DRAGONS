@@ -10,10 +10,10 @@ detectSources
 measureIQ(display=True)
 measureBG
 measureCCAndAstrometry
-#addToList(purpose=forSky)
-#getList(purpose=forSky)
-#makeSky
-#skyCorrect
+addToList(purpose=forSky)
+getList(purpose=forSky)
+makeSky
+skyCorrect
 alignAndStack
 applyDQPlane
 detectSources

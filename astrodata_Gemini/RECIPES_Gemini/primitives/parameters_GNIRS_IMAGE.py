@@ -186,4 +186,48 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "stackFrames":{
+    "suffix":{
+        "default"       : "_stack",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "mask":{
+        "default"       : True,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        }, 
+    "operation":{
+        "default"       : "median",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    "reject_method":{
+        "default"       : "avsigclip",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+        "nhigh":{
+        "default"       : "1",
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+        "nlow":{
+        "default"       : "0",
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
 }
