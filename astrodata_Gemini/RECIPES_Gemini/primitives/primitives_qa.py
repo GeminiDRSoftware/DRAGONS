@@ -517,6 +517,7 @@ class QAPrimitives(GENERALPrimitives):
                 mag_errs = objcat.data["MAGERR_AUTO"]
                 flags = objcat.data["FLAGS"]
                 iflags = objcat.data["IMAFLAGS_ISO"]
+                isoarea = objcat.data["ISOAREA_IMAGE"]
                 ids = objcat.data["NUMBER"]
                 if np.all(mags==-999):
                     log.warning("No magnitudes found in %s[OBJCAT,%d]"%
@@ -557,11 +558,14 @@ class QAPrimitives(GENERALPrimitives):
                 zperrs = np.sqrt((refmag_errs * refmag_errs) + (mag_errs * mag_errs))
  
                 # OK, trim out bad values
+                zps = np.where(isoarea >= 30, zps, None)
                 zps = np.where((zps > -500), zps, None)
                 zps = np.where((flags == 0), zps, None)
                 zps = np.where((mags < 90), zps, None)
+                zperrs = np.where(isoarea >= 30, zperrs, None)
                 zperrs = np.where((zps > -500), zperrs, None)
                 zperrs = np.where((flags == 0), zperrs, None)
+                ids = np.where(isoarea >= 30, ids, None)
                 ids = np.where((zps > -500), ids, None)
                 ids = np.where((flags == 0), ids, None)
                 if not np.all(iflags==-999):

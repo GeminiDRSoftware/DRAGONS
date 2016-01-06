@@ -5,6 +5,7 @@ import subprocess
 import numpy as np
 import pyfits as pf
 import pywcs
+#from itertools import compress
 from copy import deepcopy
 from astrodata import AstroData
 from astrodata.utils import Errors
@@ -497,10 +498,27 @@ def _match_objcat_refcat(adinput=None):
                     if(not(refcat)):
                         log.warning("Missing [REFCAT,%d] in %s - Cannot match objcat against missing refcat" % (extver,ad.filename))
                     else:
+                        #KL  Elegant solution can only be implemented in 
+                        #KL  somewhat elegant code.  This piece of crap
+                        #KL  algorithm using indices won't allow an
+                        #KL  elegant solution for the culling.
+                        
+                        # Create a mask to cull bogus or very faint sources, and keep
+                        # only the best sources.
+                        #keep_mask = np.where(objcat.data['ISOAREA_IMAGE'] >= 30, 1, 0)
+                        
                         # Get the x and y position lists from both catalogs in
-                        # pixels
-                        xx = objcat.data['X_IMAGE']
-                        yy = objcat.data['Y_IMAGE']
+                        # pixels, keeping only the best sources
+                        #xx = list(compress(objcat.data['X_IMAGE'], keep_mask))
+                        #yy = list(compress(objcat.data['Y_IMAGE'], keep_mask))
+                        
+                        
+                        #KL  Implementing an ugly culling instead. To preserve indices...
+                        xx = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, objcat.data['X_IMAGE'], -999)
+                        yy = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, objcat.data['Y_IMAGE'], -999)
+                        
+                        #xx = objcat.data['X_IMAGE']
+                        #yy = objcat.data['Y_IMAGE']
                         
                         # The coordinates of the reference sources are 
                         # corrected to pixel positions using the WCS of the 
@@ -517,8 +535,8 @@ def _match_objcat_refcat(adinput=None):
                         final = 0.5/ad.pixel_scale() # 0.5 arcseconds in pixels
 
                         (oi, ri) = at.match_cxy(xx,sx,yy,sy, firstPass=initial, delta=final, log=log)
-    
-                        #KL: But there might be only one source in teh field of view with
+                            
+                        #KL: But there might be only one source in the field of view with
                         #KL: a good reference!  Think small near-IR fields. I'm turning this
                         #KL: this rejection off.
                         ## If too few matches, assume the match was bad
