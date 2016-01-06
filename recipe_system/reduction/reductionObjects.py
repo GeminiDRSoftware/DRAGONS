@@ -34,17 +34,6 @@ from ..cal_service.usercalibrationservice import user_cal_service
 log = logutils.get_logger(__name__)
 
 # ------------------------------------------------------------------------------
-proxy_server = xmlrpc_proxy.PRSProxy.get_adcc(check_once=True)
-
-# ------------------------------------------------------------------------------
-heap_dump = False
-if heap_dump:
-    #import heapy
-    print "HEAPTRACKFILE CREATIONS: heapdump.log\n"*5
-    heap_dump_file = open("heapdump.log", "w+")
-else:
-    heap_dump_file = None
-
 usePRS = True
 prs    = None
 
@@ -52,27 +41,6 @@ prs    = None
 adatadir = "./recipedata/"
 calindfile = "./.reducecache/calindex.pkl"
 stkindfile = "./.reducecache/stkindex.pkl"
-
-# ------------------------------------------------------------------------------
-def dump_heap(ro, fout):
-    msg = ro.curPrimName
-    fout.write("ro.curPrimName=%s\n" % ro.curPrimName)
-    statusfile = open(os.path.join("/proc", str(os.getpid()), "status"))
-    stats = statusfile.read()
-    stats = stats.split(os.linesep)
-    statdict = {}
-    for statline in stats:
-        stat = statline.split(":")
-        if len(stat)>1:
-            statdict.update({stat[0]:stat[1]})
-    
-    statnames = ["VmSize","VmRSS"]
-    statrow = "\n".join(["%10s: %s" %( statname,statdict[statname])
-                             for statname in statnames])+"\n"
-    
-    fout.write(statrow)
-    fout.flush()
-    return
 
 # ------------------------------------------------------------------------------
 class ReductionError(Exception):
@@ -97,6 +65,7 @@ class ReductionObject(object):
     def __init__(self):
         self.primDict= {}
         self.primstype_order = []
+        self.proxy_server = xmlrpc_proxy.PRSProxy.get_adcc(check_once=True)
     
     def init(self, rc):
         """ This member is purely for overwriting.  Controllers should call this
@@ -105,8 +74,6 @@ class ReductionObject(object):
         return rc
     
     def execute_command_clause(self, rc):
-        if heap_dump_file:
-            dump_heap(self, heap_dump_file)
         cmdclause = self.funccommand_clause
         if cmdclause:
             cmdclause(self, rc)
@@ -269,8 +236,8 @@ class ReductionObject(object):
         context.localparms = savedLocalparms
         if not primname.startswith("proxy_") and self.reduce_status:
             self.reduce_status[0]['status']['current'] = primname
-            if proxy_server is not None:
-                proxy_server.report_qametrics(self.reduce_status)            
+            if self.proxy_server is not None:
+                self.proxy_server.report_qametrics(self.reduce_status)            
 
         if context['index'] is None:
             # top-level recipe, add some extra demarcation
