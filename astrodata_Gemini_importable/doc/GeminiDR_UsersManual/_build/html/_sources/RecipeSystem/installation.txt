@@ -1,5 +1,0 @@
-.. installation:
-
-*************************
-Installation Instructions
-*************************
