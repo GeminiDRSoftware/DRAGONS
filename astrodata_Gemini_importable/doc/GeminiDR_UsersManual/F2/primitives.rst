@@ -1,1 +1,0 @@
-../../usermanuals/F2_UsersManual/primitives.rst
