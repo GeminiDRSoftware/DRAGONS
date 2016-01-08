@@ -1,0 +1,7 @@
+#prepare
+#addDQ
+addVAR(read_noise=True)
+#detectSources
+#measureIQ(display=True)
+#measureCCAndAstrometry
+#measureBG

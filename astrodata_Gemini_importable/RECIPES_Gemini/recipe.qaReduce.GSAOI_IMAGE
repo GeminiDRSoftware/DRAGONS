@@ -1,0 +1,21 @@
+# Initial work in progress GSAOI recipe
+prepare
+addDQ
+ADUToElectrons
+addVAR(read_noise=True, poisson_noise=True)
+flatCorrect
+detectSources
+measureIQ(display=True)
+measureBG
+measureCCAndAstrometry
+addToList(purpose=forSky)
+getList(purpose=forSky)
+makeSky
+skyCorrect
+detectSources
+measureIQ(display=True)
+measureCCAndAstrometry
+alignAndStack
+detectSources
+measureIQ(display=True)
+measureCCAndAstrometry

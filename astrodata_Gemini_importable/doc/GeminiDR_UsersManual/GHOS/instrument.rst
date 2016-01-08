@@ -1,0 +1,1 @@
+../../usermanuals/GHOS_UsersManual/instrument.rst

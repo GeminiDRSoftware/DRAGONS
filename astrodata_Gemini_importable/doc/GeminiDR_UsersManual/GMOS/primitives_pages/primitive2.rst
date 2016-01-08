@@ -1,0 +1,1 @@
+../../../usermanuals/GMOS_UsersManual/primitives_pages/primitive2.rst
