@@ -1,0 +1,20 @@
+# recipe.reduceDemo
+
+prepare
+addDQ
+addVAR(read_noise=True)
+overscanCorrect
+biasCorrect
+ADUToElectrons
+addVAR(poisson_noise=True)
+flatCorrect
+makeFringe
+fringeCorrect
+mosaicDetectors
+detectSources
+addToList(purpose=forStack)
+getList(purpose=forStack)
+alignAndStack
+detectSources
+measureIQ(display=True)
+

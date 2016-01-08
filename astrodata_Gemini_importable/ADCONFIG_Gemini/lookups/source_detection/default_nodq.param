@@ -1,0 +1,178 @@
+# Sextractor catalog parameters
+NUMBER # Running ID number
+#
+# Position Parameters
+X_IMAGE # Detection barycenter in pixel coordinates
+Y_IMAGE # Detection barycenter in pixel coordinates
+ERRX2_IMAGE # Variance estimate on X_IMAGE
+ERRY2_IMAGE # Variance estimate on Y_IMAGE
+ERRXY_IMAGE # Co-Variance estimate X_IMAGE,Y_IMAGE
+X_WORLD # Detection barycenter in world coordinates
+Y_WORLD # Detection barycenter in world coordinates
+ERRX2_WORLD # Variance estimate on X_WORLD
+ERRY2_WORLD # Variance estimate on Y_WORLD
+ERRXY_WORLD # Co-Variance estimate on X_WORLD,Y_WORLD
+#XWIN_WORLD
+#YWIN_WORLD
+#XWIN_IMAGE
+#YWIN_IMAGE
+#X_PIXEL
+#Y_PIXEL
+#
+# Shape Parameters
+A_IMAGE # Semi-major axis length in pixels
+B_IMAGE # Semi-minor axis length in pixels
+THETA_IMAGE # Position anlge between semi-major axis and NAXIS1 image axis, measures counter-clockwise
+ERRA_IMAGE # Variance on A_IMAGE
+ERRB_IMAGE # Variance on B_IMAGE
+ERRTHETA_IMAGE # Variance on THETA_IMAGE
+A_WORLD # Semi-major axis length in degrees
+B_WORLD # Semi-minor axis length in degrees
+THETA_WORLD # Position anlge between semi-major axis and 1st axis of WCS
+ERRA_WORLD # Variance on A_WORLD
+ERRB_WORLD # Variance on B_WORLD
+ERRTHETA_WORLD # Variance on THETA_WORLD
+FWHM_IMAGE # FWHM in pixels
+FWHM_WORLD # FWHM in degrees
+FLUX_RADIUS # EE50 radius
+ELLIPTICITY # Ellipticity
+#
+#
+# Photometry
+FLUX_AUTO # Flux measurement, automatically sized apperture
+FLUXERR_AUTO # Standard Deviation on FLUX_AUTO
+MAG_AUTO # As FLUX_AUTO but in magnitudes
+MAGERR_AUTO # Standard Deviation on MAG_AUTO
+FLUX_MAX # Peak flux level. We'll need this to calculate Strehl ratio
+#
+# Classification
+CLASS_STAR
+#
+# Flags etc
+ISOAREA_IMAGE # Number of pixels covered by object.
+FLAGS # Sextractor detection flags
+#IMAFLAGS_ISO # DQ values from data over area of object
+#
+# Background flux level
+BACKGROUND
+#
+#MAG_ISO
+#MAGERR_ISO
+#FLUX_ISOCOR
+#FLUXERR_ISOCOR
+#MAG_ISOCOR
+#MAGERR_ISOCOR
+#FLUX_APER
+#FLUXERR_APER
+#MAG_APER
+#MAGERR_APER
+#FLUX_PETRO
+#FLUXERR_PETRO
+#MAG_PETRO
+#MAGERR_PETRO
+#FLUX_BEST
+#FLUXERR_BEST
+#MAG_BEST
+#MAGERR_BEST
+#FLUX_WIN
+#FLUXERR_WIN
+#MAG_WIN
+#MAGERR_WIN
+#KRON_RADIUS
+#PETRO_RADIUS
+#THRESHOLD
+#FLUX_MAX
+#ISOAREAF_IMAGE
+#XMIN_IMAGE
+#YMIN_IMAGE
+#XMAX_IMAGE
+#YMAX_IMAGE
+#ALPHA_SKY
+#DELTA_SKY
+#ALPHA_J2000
+#DELTA_J2000
+#ALPHA_B1950
+#DELTA_B1950
+#X2_IMAGE
+#Y2_IMAGE
+#XY_IMAGE
+#X2_WORLD
+#Y2_WORLD
+#XY_WORLD
+#CXX_IMAGE
+#CYY_IMAGE
+#CXY_IMAGE
+#CXX_WORLD
+#CYY_WORLD
+#CXY_WORLD
+#A_IMAGE
+#B_IMAGE
+#THETA_IMAGE
+#A_WORLD
+#B_WORLD
+#THETA_WORLD
+#THETA_SKY
+#THETA_J2000
+#THETA_B1950
+#ERRX2_IMAGE
+#ERRY2_IMAGE
+#ERRXY_IMAGE
+#ERRX2_WORLD
+#ERRY2_WORLD
+#ERRXY_WORLD
+#ERRCXX_IMAGE
+#ERRCYY_IMAGE
+#ERRCXY_IMAGE
+#ERRCXX_WORLD
+#ERRCYY_WORLD
+#ERRCXY_WORLD
+#ERRA_IMAGE
+#ERRB_IMAGE
+#ERRTHETA_IMAGE
+#ERRA_WORLD
+#ERRB_WORLD
+#ERRTHETA_WORLD
+#ERRTHETA_SKY
+#ERRTHETA_J2000
+#ERRTHETA_B1950
+#ERRAWIN_IMAGE
+#ERRBWIN_IMAGE
+#ERRTHETAWIN_IMAGE
+#AWIN_IMAGE
+#BWIN_IMAGE
+#THETA_WINIMAGE
+#X2WIN_IMAGE
+#Y2WIN_IMAGE
+#XYWIN_IMAGE
+#CXXWIN_IMAGE
+#CYYWIN_IMAGE
+#CXYWIN_IMAGE
+#MU_THRESHOLD
+#MU_MAX
+#ISOAREA_WORLD
+#ISO0
+#ISO1
+#ISO2
+#ISO3
+#ISO4
+#ISO5
+#ISO6
+#ISO7
+#RAD0
+#RAD1
+#RAD2
+#RAD3
+#RAD4
+#RAD5
+#RAD6
+#RAD7
+#RAD8
+#RAD9
+#RAD10
+#RAD11
+#RAD12
+#RAD13
+#RAD14
+#RAD15
+#VIGNET
+
