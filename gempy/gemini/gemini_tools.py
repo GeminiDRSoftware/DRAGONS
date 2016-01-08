@@ -662,6 +662,8 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
             # Get the detector section, data section and array section values
             # for the auxiliary AstroData object using the appropriate
             # descriptors
+            log.fullinfo(" bpm BPM extname %s" %(extname))
+            log.fullinfo(" bpm BPM this aux %s" %(this_aux))
             aux_detector_section_dv = this_aux[extname].detector_section()
             aux_data_section_dv     = this_aux[extname].data_section()
             aux_array_section_dv    = this_aux[extname].array_section()
@@ -1006,7 +1008,10 @@ def clip_sources(ad):
         area = objcat.data.field("ISOAREA_IMAGE")
         flux = objcat.data.field("FLUX_AUTO")
         fluxerr = objcat.data.field("FLUXERR_AUTO")
+        flux_max = objcat.data.field("FLUX_MAX")
+        flux_radius = objcat.data.field("FLUX_radius")
         semiminor_axis = objcat.data.field("B_IMAGE")
+        background = objcat.data.field("BACKGROUND")
 
         # Source is good if fwhm is defined
         fwflag = np.where(fwhm_pix==-999,1,0)
@@ -1048,17 +1053,16 @@ def clip_sources(ad):
 
         # Use flags=0 to find good data
         good = (flags==0)
+
         rec = np.rec.fromarrays(
-            [x[good],y[good],
-             fwhm_pix[good],fwhm_arcsec[good],
-             isofwhm_pix[good],isofwhm_arcsec[good],
-             ee50d_pix[good],ee50d_arcsec[good],
-             ellip[good],pa[good]],            
-            names=["x","y",
-                   "fwhm","fwhm_arcsec",
-                   "isofwhm","isofwhm_arcsec",
-                   "ee50d","ee50d_arcsec",
-                   "ellipticity","pa"])
+                [x[good], y[good], fwhm_pix[good],fwhm_arcsec[good],
+                 isofwhm_pix[good], isofwhm_arcsec[good], ee50d_pix[good],
+                 ee50d_arcsec[good], ellip[good], pa[good], flux[good],
+                 flux_max[good], background[good], flux_radius[good]],
+                names=["x", "y", "fwhm", "fwhm_arcsec",
+                       "isofwhm", "isofwhm_arcsec", "ee50d",
+                       "ee50d_arcsec", "ellipticity", "pa", "flux",
+                       "flux_max", "background", "flux_radius"])
 
         # Clip outliers in FWHM - single 1-sigma clip if more than 3 sources.
         num_total = len(rec)
@@ -1073,7 +1077,6 @@ def clip_sources(ad):
         good_source[(SCI,extver)] = rec
 
     return good_source
-
 
 
 def convert_to_cal_header(adinput=None, caltype=None):
@@ -1547,6 +1550,8 @@ def fitsstore_report(ad, rc, metric, info_dict):
             iq["adaptive_optics"] = primdata["is_ao"]
             if primdata["ao_seeing"]:
                 iq["ao_seeing"] = primdata["ao_seeing"]
+            if primdata["strehl"] and primdata != None:
+                iq["strehl"] = primdata["strehl"]
             iq["percentile_band"] = primdata["band"]
             iq["comment"] = primdata["comment"]
 
