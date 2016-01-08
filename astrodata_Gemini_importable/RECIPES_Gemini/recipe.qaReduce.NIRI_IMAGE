@@ -1,0 +1,22 @@
+# Initial work in progress NIRI_IMAGE recipe.
+prepare
+addDQ
+ADUToElectrons
+addVAR(read_noise=True, poisson_noise=True)
+darkCorrect
+flatCorrect
+detectSources
+measureIQ(display=True)
+measureBG
+measureCCAndAstrometry
+addToList(purpose=forSky)
+getList(purpose=forSky)
+makeSky
+skyCorrect
+detectSources
+measureIQ(display=True)
+measureCCAndAstrometry
+alignAndStack
+detectSources
+measureIQ(display=True)
+measureCCAndAstrometry

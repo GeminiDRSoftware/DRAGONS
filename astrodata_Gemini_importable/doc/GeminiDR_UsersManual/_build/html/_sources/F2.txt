@@ -1,0 +1,18 @@
+.. F2:
+
+.. _F2_Users_Manual:
+
+***
+Flamingos 2 Users Manual
+***
+
+.. toctree::
+   :numbered:
+   :maxdepth: 2
+
+   instrument
+   recipes
+   tipstricks
+   issueslimitations
+   primitives
+

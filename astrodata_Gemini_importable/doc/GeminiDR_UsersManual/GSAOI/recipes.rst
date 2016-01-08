@@ -1,0 +1,1 @@
+../../usermanuals/GSAOI_UsersManual/recipes.rst
