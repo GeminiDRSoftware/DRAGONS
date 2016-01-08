@@ -1,1 +1,0 @@
-../../usermanuals/GHOS_UsersManual/primitives.rst
