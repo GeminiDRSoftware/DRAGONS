@@ -1,0 +1,1 @@
+../../../usermanuals/GNIRS_UsersManual/primitives_pages/primitive1.rst
