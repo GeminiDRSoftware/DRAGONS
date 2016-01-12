@@ -59,7 +59,6 @@ class QAPrimitives(GENERALPrimitives):
 
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
-
             # Get the necessary parameters from the RC
             separate_ext = rc["separate_ext"]
 
@@ -138,6 +137,7 @@ class QAPrimitives(GENERALPrimitives):
                                  "median of data instead." % 
                                  (ad.filename,extver))
                     bg = None
+
                 else:
                     bg = objcat.data["BACKGROUND"]
                     if len(bg)==0 or np.all(bg==-999):
@@ -196,6 +196,10 @@ class QAPrimitives(GENERALPrimitives):
                     median = np.median(scidata)
                     sigma = np.std(scidata)
                     scidata = scidata[scidata<median+sigma]
+
+                    # disregard 0 (masked) values from median
+                    # F2 non-illuminated values are masked as 0
+                    scidata = scidata[scidata != 0]
 
                     sci_bg = np.median(scidata)
                     sci_std = np.std(scidata)
@@ -1351,8 +1355,12 @@ class QAPrimitives(GENERALPrimitives):
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "measureStrehl", "starting"))
 
+        # reasonable upper strehl limit for Gemini
+        STREHL_LIMIT = 0.6
+
         # read required header values
         number_pixels = ad.array_section().get_value()[1]
+
         # wavelength in microns
         effective_wavelength = ad.phu_get_key_value('WAVELENG') / 10000.
         plate_scale = ad.pixel_scale().get_value()
@@ -1381,7 +1389,7 @@ class QAPrimitives(GENERALPrimitives):
             strehl = float((source.flux_max / source_flx) /
                            (psf_peak / psf_flx))
 
-            if strehl <= 0.5:
+            if strehl <= STREHL_LIMIT:
                 all_strehl.append(strehl)
 
         length = len(all_strehl)
@@ -1842,10 +1850,11 @@ def _apphot(pixel_data, aperture, center_pos, sky_value, number_pixels):
         aperture = aperture[0]
 
     (x, y) = np.where(radial_array <= aperture)
+
+    phot = 0
+    values = []
     num_elements = len(x)
 
-    values = []
-    phot = 0
     if num_elements > 0:
         for k in range(0, num_elements):
             values.append(pixel_data[x[k], y[k]] - sky_value)
