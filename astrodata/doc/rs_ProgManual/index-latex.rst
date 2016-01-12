@@ -17,6 +17,7 @@ RecipeSystem Programmer's Manual
    pkgstructure
    rsUI
    calib
+   metrics
 
 .. raw:: latex
 
