@@ -1239,7 +1239,8 @@ class QAPrimitives(GENERALPrimitives):
                 if iq_band is not None:
                     band = iq_band[0]
                 else: 
-                    band = None  
+                    band = None
+
                 qad = {"band": band,
                        "delivered": mean_fwhm,
                        "delivered_error": std_fwhm,
@@ -1766,7 +1767,7 @@ def _pupil(number_pixels, meter_pixel, instrument):
 
     :param number_pixels: integer 1-dimensional number of pixels
     :param meter_pixel: pixels per meter
-    :param rotator_angle: angle of cassegrain rotator
+    :param rotator_angle: angle of cassegrain rotatorpych
     :return: pupil: numpy array representing pupil with psf
     """
 
@@ -1775,12 +1776,11 @@ def _pupil(number_pixels, meter_pixel, instrument):
         PUPIL_DIMENSION = [x / 2.534 for x in [3.10, 19.50, 0.1]]
         LYOT_PSCALE = 1.0
     else:
-        return np.zeros((number_pixels, number_pixels))
+        return np.ones((number_pixels, number_pixels))
 
     pupil = np.zeros((number_pixels, number_pixels))
     center = number_pixels / 2.0 - 0.5
     circle_array = _distCircle(number_pixels, center, center)
-
     adjusted_array = circle_array * meter_pixel * LYOT_PSCALE
     w = np.where((adjusted_array > PUPIL_DIMENSION[0] / 2) &
                  (adjusted_array < PUPIL_DIMENSION[1] / 2))
