@@ -1094,6 +1094,8 @@ class QAPrimitives(GENERALPrimitives):
                 
                 # Find the corrected FWHM. For AO observations, the IQ 
                 # constraint band is taken from the AO-estimated seeing
+                #KL TODO: This below is a messy bit of logic.  Needs to be
+                #         reviewed and rethought.
                 if not is_ao:
                     uncorr_iq = float(mean_fwhm)
                     uncorr_iq_std = float(std_fwhm)
@@ -1147,7 +1149,7 @@ class QAPrimitives(GENERALPrimitives):
                                 corr_iq, pm, corr_iq_std)).rjust(rlen)
                     else:
                         csStr = ("Zenith-corrected FWHM (AM %.2f):" % airmass
-                                 ).ljust(llen) + ("%.3f arcsec" % corr_iq
+                                 ).ljust(llen) + ("(AO) %.3f arcsec" % corr_iq
                                 ).rjust(rlen)
                         
                 else:
@@ -1199,10 +1201,10 @@ class QAPrimitives(GENERALPrimitives):
                     log.stdinfo(ind + fmStr)
                     if is_image:
                         log.stdinfo(ind + emStr)
-                log.stdinfo(ind + csStr)
-                log.stdinfo(ind + iqStr)
                 if is_ao:
                     log.stdinfo(ind + aoStr)                
+                log.stdinfo(ind + csStr)
+                log.stdinfo(ind + iqStr)
                 log.stdinfo(ind + reqStr + ell_warn + iq_warn)
                 log.stdinfo(ind + "-"*dlen)
                 log.stdinfo("")
