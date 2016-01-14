@@ -340,17 +340,44 @@ class PreprocessPrimitives(GENERALPrimitives):
                                     "images do not match")
         else:
 
-            # Check whether measureBG needs to be run
-            bg_list = [sciext.get_key_value("SKYLEVEL") \
+            # Check if the images have been sky subtracted. If so, 
+            # check whether detectSources has been run more recently. 
+            # If not, it must be run to ensure that measureBG is working 
+            # on the most recent catalog. 
+            # NOTE: This check should really be replaced with a call to
+            # a new general background calculating primitive that simply
+            # takes the median of the background with the stars masked
+            # (the recentness of the catalog shouldn't matter too much 
+            # for this).
+            rerun_ds = False
+            for ad in adinput:
+                subsky = ad.phu_get_key_value('SUBSKY')
+                if subsky is not None:
+                    detecsrc = ad.phu_get_key_value('DETECSRC')
+                    if detecsrc is not None:
+                        if subsky > detecsrc:
+                            rerun_ds = True
+                            break
+                    else:
+                        rerun_ds = True
+                        break
+            if rerun_ds:
+                log.fullinfo("This data has been sky subtracted, so the " \
+                             "background level will be re-measured") 
+                rc.run("detectSources")
+                rc.run("measureBG(separate_ext=True,remove_bias=False)")
+            else:
+                # Check whether measureBG needs to be run
+                bg_list = [sciext.get_key_value("SKYLEVEL") \
                            for ad in adinput for sciext in ad[SCI]]
-            if None in bg_list:
-                log.fullinfo("SKYLEVEL not found, measuring background")
-                if rc["logLevel"]=="stdinfo":
-                    log.changeLevels(logLevel="status")
-                    rc.run("measureBG(separate_ext=True,remove_bias=False)")
-                    log.changeLevels(logLevel=rc["logLevel"])
-                else:
-                    rc.run("measureBG(separate_ext=True,remove_bias=False)")
+                if None in bg_list:
+                    log.fullinfo("SKYLEVEL not found, measuring background")
+                    if rc["logLevel"]=="stdinfo":
+                        log.changeLevels(logLevel="status")
+                        rc.run("measureBG(separate_ext=True,remove_bias=False)")
+                        log.changeLevels(logLevel=rc["logLevel"])
+                    else:
+                        rc.run("measureBG(separate_ext=True,remove_bias=False)")
 
             # Loop over input files
             for ad in adinput:
