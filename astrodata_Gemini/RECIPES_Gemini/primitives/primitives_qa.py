@@ -982,21 +982,6 @@ class QAPrimitives(GENERALPrimitives):
         mean_fwhms = []
         mean_ellips = []
         for ad in rc.get_inputs_as_astrodata():
-                
-            # For AO observations, the AO-estimated seeing is used (the IQ 
-            # is also calculated from the image if possible)
-            is_ao = ad.is_ao().as_pytype()
-            if is_ao:
-                ao_seeing = ad.ao_seeing().as_pytype()
-                if not ao_seeing:
-                    log.warning("No AO-estimated seeing found for this AO "
-                                "observation")
-                else:
-                    log.warning("This is an AO observation, the AO-estimated "
-                                "seeing will be used for the IQ band "
-                                "calculation")
-            else:
-                ao_seeing = None
 
             airmass = ad.airmass()
             wvband = ad.wavelength_band()
@@ -1008,13 +993,10 @@ class QAPrimitives(GENERALPrimitives):
             pm = "+/-"
             fnStr = "Filename: %s" % ad.filename
 
-            strehl = None
             if "IMAGE" in ad.types:
                 # Clip sources from the OBJCAT
                 good_source = gt.clip_sources(ad)
                 is_image=True
-                if is_ao and "NIRI" in ad.instrument().as_pytype():
-                    strehl = self.measureStrehl(ad, good_source)
             elif "SPECT" in ad.types:
                 # Fit Gaussians to the brightest continuum
                 good_source = gt.fit_continuum(ad)
@@ -1025,6 +1007,26 @@ class QAPrimitives(GENERALPrimitives):
                 mean_fwhms.append(None)
                 mean_ellips.append(None)
                 continue
+
+            # For AO observations, the AO-estimated seeing is used (the IQ
+            # is also calculated from the image if possible)
+            # measure Strehl if it is a NIRI or GNIRS Image
+            strehl = None
+            is_ao = ad.is_ao().as_pytype()
+            if is_ao:
+                ao_seeing = ad.ao_seeing().as_pytype()
+                if "NIRI_IMAGE" in ad.types or "GNIRS_IMAGE" in ad.types:
+                    strehl = _strehl(ad, good_source)
+
+                if not ao_seeing:
+                    log.warning("No AO-estimated seeing found for this AO "
+                                "observation")
+                else:
+                    log.warning("This is an AO observation, the AO-estimated "
+                                "seeing will be used for the IQ band "
+                                "calculation")
+            else:
+                ao_seeing = None
 
             keys = good_source.keys()
 
@@ -1344,65 +1346,6 @@ class QAPrimitives(GENERALPrimitives):
         
         yield rc
 
-    def measureStrehl(self, ad, sources):
-        """
-        Measure the Strehl Ratio (r0) on an input image.
-
-        :param ad: astrodata image object
-        :param sources: filtered sources from clip_sources
-        """
-
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "measureStrehl", "starting"))
-
-        # reasonable upper strehl limit for Gemini
-        STREHL_LIMIT = 0.6
-
-        # read required header values
-        number_pixels = ad.array_section().get_value()[1]
-
-        # wavelength in microns
-        effective_wavelength = ad.phu_get_key_value('WAVELENG') / 10000.
-        plate_scale = ad.pixel_scale().get_value()
-        rotator_angle = ad.cass_rotator_pa().get_value()
-
-        all_strehl = []
-        for source in sources['SCI', 1]:
-            source_flx = source.flux - source.background
-            source_position = [source.x - number_pixels / 2.,
-                               source.y - number_pixels / 2.]
-
-            # compute perfect PSF at position of source
-            psf = _idealPsf(number_pixels, rotator_angle,
-                            plate_scale, effective_wavelength,
-                            source_position, ad.instrument().as_pytype())
-
-            # sky value of perfect psf
-            psf_sky = 0.0
-
-            source_position = [source.x, source.y]
-
-            psf_flx, psf_peak = _apphot(psf, source.flux_radius,
-                                        source_position, psf_sky,
-                                        number_pixels)
-
-            strehl = float((source.flux_max / source_flx) /
-                           (psf_peak / psf_flx))
-
-            if strehl <= STREHL_LIMIT:
-                all_strehl.append(strehl)
-
-        length = len(all_strehl)
-        if length != 0:
-            strehl = sum(all_strehl) / float(length)
-            log.stdinfo("Strehl for %s: %s" % (ad.filename, strehl))
-        else:
-            strehl = None
-
-        return strehl
 
     def testReportQAMetric(self, rc):
         """
@@ -1715,6 +1658,67 @@ def _iq_overlay(stars,data_shape):
     return iqmask
 
 
+def _strehl(ad, sources):
+    """
+    Measure the Strehl Ratio (r0) on an input image.
+
+    :param ad: astrodata image object
+    :param sources: filtered sources from clip_sources
+    """
+
+    # Instantiate the log
+    log = logutils.get_logger(__name__)
+
+    # Log the standard "starting primitive" debug message
+    log.debug(gt.log_message("primitive", "measureStrehl", "starting"))
+
+    # reasonable upper strehl limit for Gemini
+    STREHL_LIMIT = 0.6
+
+    # read required header values
+    number_pixels = ad.array_section().get_value()[1]
+
+    # wavelength in microns
+    effective_wavelength = ad.phu_get_key_value('WAVELENG') / 10000.
+    plate_scale = ad.pixel_scale().get_value()
+    rotator_angle = ad.cass_rotator_pa().get_value()
+
+    all_strehl = []
+    for source in sources['SCI', 1]:
+        source_flx = source.flux - source.background
+        source_position = [source.x - number_pixels / 2.,
+                           source.y - number_pixels / 2.]
+
+        # compute perfect PSF at position of source
+        psf = _idealPsf(number_pixels, rotator_angle,
+                        plate_scale, effective_wavelength,
+                        source_position, ad.instrument().as_pytype())
+
+        # sky value of perfect psf
+        psf_sky = 0.0
+
+        source_position = [source.x, source.y]
+
+        psf_flx, psf_peak = _apphot(psf, source.flux_radius,
+                                    source_position, psf_sky,
+                                    number_pixels)
+
+        strehl = float((source.flux_max / source_flx) /
+                       (psf_peak / psf_flx))
+
+        if strehl <= STREHL_LIMIT:
+            all_strehl.append(strehl)
+
+    length = len(all_strehl)
+    if length != 0:
+        strehl = sum(all_strehl) / float(length)
+        log.stdinfo("Strehl for %s: %s" % (ad.filename, strehl))
+    else:
+        strehl = None
+
+    return strehl
+
+
 def _idealPsf(number_pixels, rotator_angle, plate_scale,
               effective_wavelength, center_xy, instrument):
     """
@@ -1769,7 +1773,7 @@ def _pupil(number_pixels, meter_pixel, instrument):
 
     :param number_pixels: integer 1-dimensional number of pixels
     :param meter_pixel: pixels per meter
-    :param rotator_angle: angle of cassegrain rotatorpych
+    :param rotator_angle: angle of cassegrain rotator
     :return: pupil: numpy array representing pupil with psf
     """
 
