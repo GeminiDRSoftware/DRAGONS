@@ -1015,9 +1015,6 @@ class QAPrimitives(GENERALPrimitives):
             is_ao = ad.is_ao().as_pytype()
             if is_ao:
                 ao_seeing = ad.ao_seeing().as_pytype()
-                if "NIRI_IMAGE" in ad.types or "GNIRS_IMAGE" in ad.types:
-                    strehl = _strehl(ad, good_source)
-
                 if not ao_seeing:
                     log.warning("No AO-estimated seeing found for this AO "
                                 "observation")
@@ -1025,6 +1022,9 @@ class QAPrimitives(GENERALPrimitives):
                     log.warning("This is an AO observation, the AO-estimated "
                                 "seeing will be used for the IQ band "
                                 "calculation")
+
+                if "NIRI_IMAGE" in ad.types or "GNIRS_IMAGE" in ad.types:
+                    strehl = _strehl(ad, good_source)
             else:
                 ao_seeing = None
 
