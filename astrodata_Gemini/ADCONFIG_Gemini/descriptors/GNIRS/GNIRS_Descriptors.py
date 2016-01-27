@@ -599,8 +599,16 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             raise Errors.TableKeyError()
         
+        coadds = dataset.coadds()
+        if coadds is None:
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
         # Return the read noise float
-        ret_read_noise = float(read_noise)
+        ret_read_noise = float(read_noise * math.sqrt(coadds))
         
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_read_noise, name="read_noise", ad=dataset)
