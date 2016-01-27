@@ -10,7 +10,7 @@ illum_masks = {
     ('ShortBlue_G5538', 'Broadband'): 'Gemini/GNIRS/BPM/illum_mask1.fits',
     ('ShortBlue_G5538', 'Narrowband'): 'Gemini/GNIRS/BPM/illum_mask3.fits',
     ('LongBlue_G5542', 'Broadband'): 'Gemini/GNIRS/BPM/illum_mask2.fits',
-#    ('LongBlue_G5542', 'Narrowband'): 'Gemini/GNIRS/BPM/illum_mask4.fits',
+    ('LongBlue_G5542', 'Narrowband'): 'Gemini/GNIRS/BPM/illum_mask4.fits',
 #    ('ShortRed_G5539', 'Broadband'): 'Gemini/GNIRS/BPM/illum_maskx.fits',
 #    ('ShortRed_G5539', 'Narrowband'): 'Gemini/GNIRS/BPM/illum_maskx.fits',
 #    ('LongRed_G5516', 'Broadband'): 'Gemini/GNIRS/BPM/illum_maskx.fits',
