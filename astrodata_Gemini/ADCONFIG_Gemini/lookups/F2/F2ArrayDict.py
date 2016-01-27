@@ -9,6 +9,7 @@ f2ArrayDict = {
     # 22 kADU = 97680e-
     # Non-linear limit: Saturation starts at ~35 kADU,
     # 35 kADU = 155400e-
+    # readnoise and well are in units of electrons
     1:(11.7, 4.44, 155400, 0.6286, 1.0, 0.0, 0.0, 1.0),
     4:(6.0, 4.44, 155400, 0.6286, 1.0, 0.0, 0.0, 1.0),
     8:(5.0, 4.44, 155400, 0.6286, 1.0, 0.0, 0.0, 1.0)    

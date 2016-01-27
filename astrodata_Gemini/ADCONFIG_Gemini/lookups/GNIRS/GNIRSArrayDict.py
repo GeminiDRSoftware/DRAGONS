@@ -3,6 +3,7 @@ gnirsArrayDict = {
     # Dictionary key is the read mode and well depth setting
     # Dictionary values are in the following order:
     # readnoise, gain, well, linearlimit, nonlinearlimit
+    # readnoise and well are in units of electrons
     ('Very Bright Objects', 'Shallow'): (155., 13.5, 90000., 0.714286, 1.0),
     ('Bright Objects', 'Shallow'): (30., 13.5, 90000., 0.714286, 1.0),
     ('Faint Objects', 'Shallow'): (10., 13.5, 90000., 0.714286, 1.0),

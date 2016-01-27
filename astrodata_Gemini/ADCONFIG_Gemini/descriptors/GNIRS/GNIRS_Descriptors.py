@@ -610,9 +610,10 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     gnirsArrayDict = None
    
     def saturation_level(self, dataset, **args):
-        # Get the number of coadds using the appropriate descriptor
-        coadds = dataset.coadds().as_pytype()
-        if coadds is None:
+        # Get the gain and number of coadds using the appropriate descriptor
+        gain = dataset.gain()
+        coadds = dataset.coadds()
+        if gain is None or coadds is None:
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
 
@@ -630,8 +631,8 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             raise Errors.TableKeyError()
         
-        # Return the saturation level
-        ret_saturation_level = int(well * coadds) 
+        # Return the saturation level in units of ADU
+        ret_saturation_level = int(well * coadds / gain) 
                
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_saturation_level, name="saturation_level", 

@@ -348,7 +348,6 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Determine the number of non-destructive read pairs keyword (lnrs)
         # from the global keyword dictionary
         keyword = self.get_descriptor_key("key_lnrs")
-        
         # Get the number of non-destructive read pairs from the header of the
         # PHU
         lnrs = dataset.phu_get_key_value(keyword)
@@ -359,6 +358,11 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             # It will be dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
+
+        if lnrs in getattr(self, "f2ArrayDict"):
+            non_linear_fraction = self.f2ArrayDict[lnrs][3]
+        else:
+            raise Errors.TableKeyError()
         
         # Get the saturation level using the appropriate descriptor
         saturation_level_dv = dataset.saturation_level()
@@ -369,11 +373,6 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             # dealt with by the CalculatorInterface.
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
-        
-        if lnrs in getattr(self, "f2ArrayDict"):
-            non_linear_fraction = self.f2ArrayDict[lnrs][3]
-        else:
-            raise Errors.TableKeyError()
         
         # Return the read noise float
         ret_non_linear_level = int(saturation_level_dv * non_linear_fraction)
@@ -575,7 +574,6 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Determine the number of non-destructive read pairs keyword (lnrs)
         # from the global keyword dictionary
         keyword = self.get_descriptor_key("key_lnrs")
-        
         # Get the number of non-destructive read pairs from the header of the
         # PHU
         lnrs = dataset.phu_get_key_value(keyword)
@@ -592,8 +590,15 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             raise Errors.TableKeyError()
         
+        # Get the gain using the appropriate descriptor, to return in units
+        # of ADU
+        gain = dataset.gain()
+        if gain is None:
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+
         # Return the saturation_level integer
-        ret_saturation_level = int(saturation_level)
+        ret_saturation_level = int(saturation_level / gain)
         
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_saturation_level, name="saturation_level",

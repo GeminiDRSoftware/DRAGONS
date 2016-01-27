@@ -644,7 +644,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         else:
             raise Errors.TableKeyError()
         
-        # Return the saturation level integer
+        # Return the saturation level integer in units of ADU
         ret_saturation_level = int(well * coadds / gain)
         
         # Instantiate the return DescriptorValue (DV) object
