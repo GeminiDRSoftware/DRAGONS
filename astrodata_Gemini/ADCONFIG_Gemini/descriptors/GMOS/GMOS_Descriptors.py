@@ -1406,7 +1406,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 
                 # Get the base saturation value from the lookup table
                 if ampname in gmosThresholds:
-                    # saturation value is an integer with units ADU
+                    # Saturation value from the lookup table is an integer 
+                    # with units of electrons
                     saturation = gmosThresholds[ampname]
                 else:
                     # This error condition will be hit for all mosaicked
@@ -1420,7 +1421,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 
                 # The saturation level is reported in electrons; convert
                 # it to ADU if needed
-                if bunit != "electron" or bunit != "electrons":
+                if bunit not in ("electron", "electrons"):
                     saturation = saturation / gain
                 
                 # The saturation level does not contain the bias; add it
