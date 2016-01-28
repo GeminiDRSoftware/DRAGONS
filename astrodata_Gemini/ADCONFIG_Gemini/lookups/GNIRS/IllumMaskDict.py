@@ -16,6 +16,7 @@ illum_masks = {
 #    ('LongRed_G5516', 'Broadband'): 'Gemini/GNIRS/BPM/illum_maskx.fits',
 #    ('LongBlue_G5516', 'Narrowband'): 'Gemini/GNIRS/BPM/illum_maskx.fits',
     ('LongRed_G5543', 'Broadband'): 'Gemini/GNIRS/BPM/illum_mask_LongRed_G5543_Broad.fits',
+    ('LongRed_G5543', 'Narrowband'): 'Gemini/GNIRS/BPM/illum_mask_LongRed_G5543_Narrow.fits',
 #    ('LongBlue_G5543', 'Narrowband'): 'Gemini/GNIRS/BPM/illum_maskx.fits',
 
 }
