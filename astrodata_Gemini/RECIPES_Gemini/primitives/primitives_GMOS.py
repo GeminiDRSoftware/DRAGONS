@@ -565,6 +565,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adout.append(objmask)
             
             gt.mark_history(adinput=adout, keyword=timestamp_key)
+            adout.refresh_types()
             adoutput_list.append(adout)
         
         rc.report_output(adoutput_list)
