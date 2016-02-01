@@ -1,10 +1,10 @@
 .. primitives:
 
-.. _GHOS_Primitives:
+.. _GHOST_Primitives:
 
-*******************
-Primitives for GHOS 
-*******************
+********************
+Primitives for GHOST
+********************
 
 .. toctree::
    :numbered:

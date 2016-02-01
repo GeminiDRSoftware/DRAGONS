@@ -1,10 +1,10 @@
 .. recipes:
 
-.. _GHOS_Recipes_and_Flows:
+.. _GHOST_Recipes_and_Flows:
 
-***********************
-Recipes for GHOS
-***********************
+*****************
+Recipes for GHOST
+*****************
 
 Typical Processing Flows
 ========================

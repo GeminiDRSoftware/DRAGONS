@@ -1,14 +1,14 @@
 .. tipstricks:
 
-.. _GHOS_Tips_Tricks:
+.. _GHOST_Tips_Tricks:
 
-******************************************
-Tips and Tricks for Processing GHOS 
-******************************************
+************************************
+Tips and Tricks for Processing GHOST
+************************************
 
 Some title depending on content
 ===============================
-Describe the quirks of GHOS data, give tips
+Describe the quirks of GHOST data, give tips
 and tricks, what to watch for.  Screenshots are encourages.
 
 Example

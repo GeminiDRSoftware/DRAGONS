@@ -1,6 +1,6 @@
 .. primitive2:
 
-.. _GHOS_Primitive_2:
+.. _GHOST_Primitive_2:
 
 Primitive #2  (alphabetical)
 ============================

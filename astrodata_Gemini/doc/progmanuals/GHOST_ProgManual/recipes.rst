@@ -6,7 +6,8 @@ Recipes and Contexts
 
 Contexts
 ========
-list the contexts
+list the contexts.  Typically those are QA, QL, and SQ, for Quality 
+Assessment, QuickLook, and Science Quality, respectively.
 
 Recipes
 =======

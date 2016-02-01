@@ -13,6 +13,6 @@ Description of the Modes
 Required Calibration and Associated Observations
 ================================================
 
-Important Instrument Characteristics or Issues
-==============================================
+Important Instrument Characteristics and Issues
+===============================================
 
