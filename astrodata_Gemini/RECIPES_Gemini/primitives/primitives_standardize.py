@@ -347,7 +347,7 @@ class StandardizePrimitives(GENERALPrimitives):
                 continue
             
             # Parameters specified on the command line to reduce are converted
-            # to strings, including None
+            # to strings, including None            log.warning("Hello there %s" % rc["mdf"])
             if rc["mdf"] and rc["mdf"] != "None":
                 # The user supplied an input to the mdf parameter
                 mdf = rc["mdf"]
@@ -363,7 +363,7 @@ class StandardizePrimitives(GENERALPrimitives):
                 # descriptors 
                 instrument = ad.instrument()
                 mask_name = ad.phu_get_key_value("MASKNAME")
-                
+
                 # Create the key for the lookup table
                 if instrument is None or mask_name is None:
                     log.warning("Unable to create the key for the lookup "
@@ -386,17 +386,17 @@ class StandardizePrimitives(GENERALPrimitives):
                         mdf = "%s.fits" % mask_name
                     else:
                         mdf = str(mask_name)
-                    
+                   
                     # Check if the MDF exists in the current working directory
                     if not os.path.exists(mdf):
                         log.warning("The MDF %s was not found in the current "
                                     "working directory, so no MDF will be "
                                     "added" % mdf)
                     
-                    # Append the input AstroData object to the list of output
-                    # AstroData objects without further processing
-                    adoutput_list.append(ad)
-                    continue
+                        # Append the input AstroData object to the list of output
+                        # AstroData objects without further processing
+                        adoutput_list.append(ad)
+                        continue
             
             # Ensure that the MDFs are AstroData objects
             if not isinstance(mdf, AstroData):
