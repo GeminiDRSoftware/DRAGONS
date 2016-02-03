@@ -63,12 +63,10 @@ for root, dirs, files in os.walk('doc-local'):
         DATA_FILES.append( (os.path.join(DOC_DIR,dest), DOC_FILES) )
     
 # SCRIPTS
-GEMPY_SCRIPTS = [ os.path.join('scripts','autoredux'),
-                  #os.path.join('scritps','cleanir.py'),  #needs to be standardized first
+GEMPY_SCRIPTS = [ #os.path.join('scritps','cleanir.py'),  #needs to be standardized first
                   os.path.join('scripts','fwhm_histogram'),
                   os.path.join('scripts','profile_all_obj'),
                   os.path.join('scripts','psf_plot'),
-                  os.path.join('scripts','redux'),
                   os.path.join('scripts','zp_histogram')
                  ]
 
