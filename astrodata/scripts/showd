@@ -52,7 +52,7 @@ def parse_args(command_line_args):
     parser.add_argument('inputs', type=str, nargs="*",
                         help="Input FITS files")
     parser.add_argument('--descriptors', '-d', type=str, nargs='*',
-                        dest='descriptors', action='store',
+                        dest='descriptors', action='store', required=True,
                         help='descriptor to return')
     parser.add_argument('--debug', default=False, action='store_true',
                         help='Toggle debug mode')
