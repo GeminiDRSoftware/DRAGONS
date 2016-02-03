@@ -56,20 +56,20 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
                                                    "illum_masks")
         key1 = pos.camera().as_pytype()
         filter = pos.filter_name(pretty=True).as_pytype()
-        if filter in ['Y', 'J', 'H', 'K']:
-            key2 = 'Broadband'
-        elif filter in ['JPHOT', 'HPHOT', 'KPHOT', 'H2', 'PAH']:
-            key2 = 'Narrowband'
+        if filter in ['Y', 'J', 'H', 'K', 'H2', 'PAH']:
+            key2 = 'Wings'
+        elif filter in ['JPHOT', 'HPHOT', 'KPHOT']:
+            key2 = 'NoWings'
         else:
             raise ValueError("Unrecognised filter, no illumination mask can "
                              "be found for %s, so the pointing in field "
-                             "cannot be determined" % ad.filename)
+                             "cannot be determined" % pos.filename)
         key = (key1,key2)
         if key in illum_mask_dict:
             illum = lookup_path(illum_mask_dict[key])
         else:
             raise IOError("No illumination mask found for %s, the pointing in " 
-                          "field cannot be determined " % ad.filename)
+                          "field cannot be determined " % pos.filename)
         illum_ad = None
         if isinstance(illum, AstroData):
             illum_ad = illum
