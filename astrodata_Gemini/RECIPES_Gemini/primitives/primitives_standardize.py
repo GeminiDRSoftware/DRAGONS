@@ -194,7 +194,7 @@ class StandardizePrimitives(GENERALPrimitives):
                             log.warning("%s[%s,%d] saturation_level value is"
                                         "less than the non_linear_level not"
                                         "flagging non linear pixels" %
-                                        (ad.filname, SCI, extver))
+                                        (ad.filename, SCI, extver))
                         else:
                             log.fullinfo("Saturation and non-linear values "
                                          "for %s[%s,%d] are the same. Only "
