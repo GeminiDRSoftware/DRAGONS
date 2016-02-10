@@ -1,6 +1,8 @@
 from GPI_Keywords import GPI_KeyDict
 from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
+from gempy.gemini import gemini_metadata_utils as gmu
+
 from astrodata.interface.Descriptors import DescriptorValue
 
 class GPI_DescriptorCalc(GEMINI_DescriptorCalc):
@@ -91,4 +93,32 @@ class GPI_DescriptorCalc(GEMINI_DescriptorCalc):
                                  ad=dataset)
         return ret_dv
 
+    def pupil_mask(self, dataset, stripID=False, pretty=False, **args):
+        if pretty:
+            stripID = True
+
+        # Determine the pupil_mask keyword from the global keyword dictionary
+        keyword = self.get_descriptor_key("key_pupil_mask")
+
+        # Get the value of the filter name keyword from the header of the PHU
+        pupil_mask = dataset.phu_get_key_value(keyword)
+
+        if pupil_mask is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+
+        if stripID:
+            # Return the pupil mask string with the component ID stripped
+            ret_pupil_mask = gmu.removeComponentID(pupil_mask)
+        else:
+            # Return the pupil_mask string
+            ret_pupil_mask = str(pupil_mask)
+
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_pupil_mask, name="pupil_mask", ad=dataset)
+
+        return ret_dv
 
