@@ -12,6 +12,8 @@ from gempy.gemini import gemini_metadata_utils as gmu
 from F2_Keywords import F2_KeyDict
 from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
+import GemCalcUtil
+
 import pywcs
 from gempy.gemini.coordinate_utils import toicrs
 
@@ -31,6 +33,68 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             "Gemini/F2/F2ConfigDict", "f2ConfigDict")
         GEMINI_DescriptorCalc.__init__(self)
     
+    # This is a slightly modified copy of the GEMINI central_wavelength
+    # descriptor. All we do here is fix the value with the K-long filter
+    # which comes out as 0 in the header. See FRS #36101
+    def central_wavelength(self, dataset, asMicrometers=False,
+                           asNanometers=False, asAngstroms=False, **args):
+        # For most Gemini data, the central wavelength is recorded in
+        # micrometers
+        input_units = "micrometers"
+
+        # Determine the output units to use
+        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
+
+        if unit_arg_list.count(True) == 1:
+            # Just one of the unit arguments was set to True. Return the
+            # central wavelength in these units
+            if asMicrometers:
+                output_units = "micrometers"
+            if asNanometers:
+                output_units = "nanometers"
+            if asAngstroms:
+                output_units = "angstroms"
+        else:
+            # Either none of the unit arguments were set to True or more than
+            # one of the unit arguments was set to True. In either case,
+            # return the central wavelength in the default units of meters.
+            output_units = "meters"
+
+        # Determine the central wavelength keyword from the global keyword
+        # dictionary
+        keyword = self.get_descriptor_key("key_central_wavelength")
+
+        # Get the value of the central wavelength keyword from the header of
+        # the PHU
+        raw_central_wavelength = dataset.phu_get_key_value(keyword)
+
+        if dataset.phu_get_key_value('FILTER1') == 'K-long_G0812':
+            raw_central_wavelength = 2.2
+
+        if raw_central_wavelength is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        else:
+            central_wavelength = float(raw_central_wavelength)
+
+        # Validate the central wavelength value
+        if central_wavelength < 0.0:
+            raise Errors.InvalidValueError()
+        else:
+            # Use the utilities function convert_units to convert the central
+            # wavelength value from the input units to the output units
+            ret_central_wavelength = GemCalcUtil.convert_units(
+              input_units=input_units, input_value=central_wavelength,
+              output_units=output_units)
+
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_central_wavelength,
+                                 name="central_wavelength", ad=dataset)
+        return ret_dv
+
     def data_section(self, dataset, pretty=False, **args):
         raw_data_section = "[1:2048,1:2048]"
         
