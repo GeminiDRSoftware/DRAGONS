@@ -14,6 +14,8 @@ class SPECT(DataClassification):
                         ISCLASS("NIRI_SPECT"),
                         ISCLASS("TRECS_SPECT"),
                         ISCLASS("BHROS"),
-                        ISCLASS("GPI_SPECT")])
+                        ISCLASS("GPI_SPECT"),
+                        ISCLASS("GRACES")
+                    ])
 
 newtypes.append(SPECT())

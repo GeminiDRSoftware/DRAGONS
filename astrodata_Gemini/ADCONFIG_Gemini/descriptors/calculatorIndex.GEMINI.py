@@ -35,5 +35,6 @@ calculatorIndex = {
     "BHROS":"BHROS_Descriptors.BHROS_DescriptorCalc()",
     "GPI":"GPI_Descriptors.GPI_DescriptorCalc()",
     "FLAMINGOS":"GEMINI_Descriptors.GEMINI_DescriptorCalc()",
-    "CIRPASS":"GEMINI_Descriptors.GEMINI_DescriptorCalc()"
+    "CIRPASS":"GEMINI_Descriptors.GEMINI_DescriptorCalc()",
+    "GRACES":"GRACES_Descriptors.GRACES_DescriptorCalc()"
     }
