@@ -1400,6 +1400,7 @@ class PreprocessPrimitives(GENERALPrimitives):
         
         # Initialize the list of output sky corrected AstroData objects
         ad_output_list = []
+        sky_dict = {}
         
         if rc["sky"]:
             # Use the list of sky frames provided by the user. Generate a
