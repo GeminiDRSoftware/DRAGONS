@@ -1023,8 +1023,9 @@ class QAPrimitives(GENERALPrimitives):
                                 "seeing will be used for the IQ band "
                                 "calculation")
 
-                if "NIRI_IMAGE" in ad.types or "GNIRS_IMAGE" in ad.types:
-                    strehl = _strehl(ad, good_source)
+                ao_insts = {'GSAOI_IMAGE', 'NIRI_IMAGE', 'GNIRS_IMAGE'}
+                if (typ in ao_insts for typ in ad.types):
+                    strehl, strehl_std = _strehl(ad, good_source)
             else:
                 ao_seeing = None
 
@@ -1159,6 +1160,10 @@ class QAPrimitives(GENERALPrimitives):
                 if is_ao:
                     aoStr = ("AO-estimated seeing:").ljust(llen) + \
                             ("%.3f arcsec" % ao_seeing).rjust(rlen)
+                    if strehl:
+                        strehlStr = (("Strehl (r0):").ljust(llen) +
+                                     ("%.3f +/- %.3f" % (strehl,
+                                      strehl_std)).rjust(rlen))
 
                 iq_warn = ""
                 if iq_band is not None:                    
@@ -1203,10 +1208,10 @@ class QAPrimitives(GENERALPrimitives):
                     log.stdinfo(ind + fmStr)
                     if is_image:
                         log.stdinfo(ind + emStr)
-                if is_ao:
-                    log.stdinfo(ind + aoStr)                
                 log.stdinfo(ind + csStr)
                 log.stdinfo(ind + iqStr)
+                if is_ao and strehl:
+                    log.stdinfo(ind + strehlStr)
                 log.stdinfo(ind + reqStr + ell_warn + iq_warn)
                 log.stdinfo(ind + "-"*dlen)
                 log.stdinfo("")
@@ -1666,92 +1671,107 @@ def _strehl(ad, sources):
     :param sources: filtered sources from clip_sources
     """
 
+    # reasonable upper strehl limit,  number of sources to use
+    STREHL_LIMIT = 0.6
+    RADIAN_ARCSEC = 206265
+    PSF_SKY = 0.0
+    PUPIL_FILE = '.strehl_pupil.npz'
+
+    # number of sources to use
+    allow_nsources = 12
+    allow_nsources /= len(sources)
+
+    all_strehl = []
+    pupil = np.array([])
+
     # Instantiate the log
     log = logutils.get_logger(__name__)
 
-    # Log the standard "starting primitive" debug message
-    log.debug(gt.log_message("primitive", "measureStrehl", "starting"))
+    # read required header values (wavelength in microns)
+    n_pixels = ad.array_section().get_value()[1]
+    wavelength = ad.phu_get_key_value('WAVELENG') / 10000.
+    inst = ad.instrument().as_pytype()
 
-    # reasonable upper strehl limit for Gemini
-    STREHL_LIMIT = 0.6
+    # phase parameters
+    phase_param = {'vv': _rebin(np.arange(0, n_pixels, 1, dtype=float
+                                          ).reshape((1, n_pixels)), n_pixels),
+                   'uu': _rebin(np.arange(0, n_pixels, 1, dtype=float
+                                          ).reshape((n_pixels, 1)), n_pixels)}
 
-    # read required header values
-    number_pixels = ad.array_section().get_value()[1]
+    # key for saved pupil
+    pupil_key = inst + '_' + str(wavelength) + '_' + str(n_pixels)
 
-    # wavelength in microns
-    effective_wavelength = ad.phu_get_key_value('WAVELENG') / 10000.
-    plate_scale = ad.pixel_scale().get_value()
-    rotator_angle = ad.cass_rotator_pa().get_value()
+    try:
+        pupil = np.load(PUPIL_FILE)[pupil_key]
+    except (KeyError, IOError):
+        pass
 
-    all_strehl = []
-    for source in sources['SCI', 1]:
-        source_flx = source.flux - source.background
-        source_position = [source.x - number_pixels / 2.,
-                           source.y - number_pixels / 2.]
+    for ext in sources:
+        # read extension pixel scale
+        pixel_scale = ad[ext].pixel_scale().as_pytype()
+        pixel_radians = pixel_scale / RADIAN_ARCSEC
 
-        # compute perfect PSF at position of source
-        psf = _idealPsf(number_pixels, rotator_angle,
-                        plate_scale, effective_wavelength,
-                        source_position, ad.instrument().as_pytype())
+        meter_pixel = ((wavelength * 1e-6) / (n_pixels * pixel_radians))
 
-        # sky value of perfect psf
-        psf_sky = 0.0
+        # use only brightest nsources in field
+        if sources[ext].size > allow_nsources:
+            sources[ext].sort(order='flux_max')
+            sources[ext] = sources[ext][-allow_nsources:]
 
-        source_position = [source.x, source.y]
+        # retrieve or create pupil if loaded
+        if pupil.size == 0:
+            pupil = _pupil(n_pixels, meter_pixel, inst, pupil_key, PUPIL_FILE)
 
-        psf_flx, psf_peak = _apphot(psf, source.flux_radius,
-                                    source_position, psf_sky,
-                                    number_pixels)
+        # determine strehl for each source
+        for source in sources[ext]:
 
-        strehl = float((source.flux_max / source_flx) /
-                       (psf_peak / psf_flx))
+            source_flx = source.flux - source.background
+            source_pos = {'x': source.x - n_pixels / 2.,
+                          'y': source.y - n_pixels / 2.}
 
-        if strehl <= STREHL_LIMIT:
-            all_strehl.append(strehl)
+            # compute perfect PSF at position of source
+            psf = _ideal_psf(n_pixels, source_pos, phase_param, pupil)
 
-    length = len(all_strehl)
-    if length != 0:
-        strehl = sum(all_strehl) / float(length)
-        log.stdinfo("Strehl for %s: %s" % (ad.filename, strehl))
+            source_pos = {'x': source.x, 'y': source.y}
+
+            # num pix her could be radius
+            psf_flx, psf_peak = _apphot(psf, source.flux_radius,
+                                        source_pos, PSF_SKY, n_pixels)
+
+            strehl = float((source.flux_max / source_flx) /
+                           (psf_peak / psf_flx))
+
+            if strehl <= STREHL_LIMIT:
+                all_strehl.append(strehl)
+
+    # find average and standard deviation of calculated strehl
+    if len(all_strehl) != 0:
+        strehl = np.average(all_strehl).item()
+        strehl_std = np.std(all_strehl)
+        log.stdinfo("Strehl (average) for %s: %s +/- %s" % (
+            ad.filename, strehl, strehl_std))
     else:
         strehl = None
+        strehl_std = None
 
-    return strehl
+    return strehl, strehl_std
 
 
-def _idealPsf(number_pixels, rotator_angle, plate_scale,
-              effective_wavelength, center_xy, instrument):
+def _ideal_psf(n_pixels, center, phase_param, pupil):
     """
     Create an ideal psf for the Gemini telescope, to be used
     in the calculation of the Strehl Ratio r0
 
-    :param number_pixels: number of pixels of the array
-    :param rotator_angle: observation's rotator angle
-    :param plate_scale: pixel scale in arcseconds
-    :param effective_wavelength: effective wavelength in um
-    :param center_xy: pixel coordinate of source wrt to center
+    :param n_pixels: number of pixels of the array
+    :param center: pixel coordinate of source wrt to center
                       a psf centered on the array would be (0,0)
+    :param phase_param: dictionary of phase parameters
+    :param pupil: ndarray representing instrument pupil
     :return: the ideal psf
     """
 
-    RADIAN_ARCSEC = 206265
-    pixel_radians = plate_scale / RADIAN_ARCSEC
-
-    meter_pixel = ((effective_wavelength * 1e-6) /
-                   (number_pixels * pixel_radians))
-
-    # currently only used for NIRI
-    pupil = _pupil(number_pixels, meter_pixel, instrument)
-
-    vv = _rebin(np.arange(0, number_pixels, 1, dtype=float).reshape(
-                                     (1, number_pixels)), number_pixels)
-    uu = _rebin(np.arange(0, number_pixels, 1, dtype=float).reshape(
-                                     (number_pixels, 1)), number_pixels)
-
-    radial_xy = [p - 0.5 for p in center_xy]
-
-    phase = 2. * np.pi * (uu * radial_xy[0] +
-                          vv * radial_xy[1]) / number_pixels
+    phase = 2. * np.pi * (phase_param['uu'] * center['x'] +
+                          phase_param['vv'] * center['y']) / n_pixels
 
     wavefront = pupil * np.exp(1j * phase)
 
@@ -1759,40 +1779,48 @@ def _idealPsf(number_pixels, rotator_angle, plate_scale,
     fft_2d = abs(1. / (np.size(wavefront)) * np.fft.fft2(wavefront)) ** 2
 
     # "shift" the array at the middle of both axes
-    psf = np.roll(np.roll(fft_2d, int(number_pixels / 2),
-                          axis=1), int(number_pixels / 2), axis=0)
+    psf = np.roll(np.roll(fft_2d, int(n_pixels / 2), axis=1),
+                  int(n_pixels / 2), axis=0)
 
-    return psf / sum(map(sum, psf))
+    psf = psf / np.sum(map(np.sum, psf))
+
+    return psf
 
 
-def _pupil(number_pixels, meter_pixel, instrument):
+def _pupil(n_pixels, meter_pixel, inst, pupil_key, PUPIL_FILE):
     """
     Calculates the diffraction-limited monochromatic point
     spread function (PSF) from NIRI's pupil stop, and pupil angle.
     Based on idl routines niripsf and nircs2psf
 
-    :param number_pixels: integer 1-dimensional number of pixels
+    :param n_pixels: integer 1-dimensional number of pixels
     :param meter_pixel: pixels per meter
-    :param rotator_angle: angle of cassegrain rotator
+    :param inst: string of instrument name
+    :param pupil_key: dictionary key string inst+filter+npixels
+    :param PUPIL_FILE: file containing the saved pupils
     :return: pupil: numpy array representing pupil with psf
     """
 
-    if instrument == "NIRI":
-        # Define dimensions of pupil in inches from NIRI engineering drawings.
-        PUPIL_DIMENSION = [x / 2.534 for x in [3.10, 19.50, 0.1]]
-        LYOT_PSCALE = 1.0
+    # Define pupil dimensions
+    if inst == "GSAOI":
+        PUPIL_DIMENSION = [0.2, 7.9]
     else:
-        return np.ones((number_pixels, number_pixels))
+        PUPIL_DIMENSION = [1.223, 7.695]
 
-    pupil = np.zeros((number_pixels, number_pixels))
-    center = number_pixels / 2.0 - 0.5
-    circle_array = _distCircle(number_pixels, center, center)
-    adjusted_array = circle_array * meter_pixel * LYOT_PSCALE
+    pupil = np.zeros((n_pixels, n_pixels))
+    center_point = n_pixels / 2.0 - 0.5
+    center = {'x': center_point, 'y': center_point}
+
+    radial_array = _dist_circle(n_pixels, center, int(n_pixels / 2))
+
+    adjusted_array = radial_array * meter_pixel
     w = np.where((adjusted_array > PUPIL_DIMENSION[0] / 2) &
                  (adjusted_array < PUPIL_DIMENSION[1] / 2))
 
     if np.size(w) != 0:
         pupil[w] = 1
+
+    _save_pupil(pupil, pupil_key, PUPIL_FILE)
 
     return pupil
 
@@ -1815,50 +1843,56 @@ def _rebin(a, new_shape):
         return np.repeat(np.repeat(a, m / M, axis=0), n / N, axis=1)
 
 
-def _distCircle(array_size, xcenter, ycenter):
+def _dist_circle(array_size, center, radius):
     """
     Form a square array where each value is its distance to a given center.
 
-    :param array_size: size of array to return
-    :param xcenter: x coordinate of center
-    :param ycenter: y coordinate of center
-    :return: square array of values equal to element's distance to center.
+    :param array_size: size of square ndarray to return
+    :param center: dict of x,y coordinate of center
+    :return: square ndarray of values equal to element's distance to center.
     """
 
-    output_array = np.empty([array_size,array_size], dtype=float)
+    squared = {}
+    start = {}
+    end = {}
 
-    # square distances to center
-    x_2 = (np.arange(array_size, dtype=float) - xcenter) ** 2
-    y_2 = (np.arange(array_size, dtype=float) - ycenter) ** 2
+    output_array = np.zeros([array_size, array_size], dtype=float)
 
-    for i in range(0, array_size):
-        for j in range(0, array_size):
-            output_array[i,j] = np.sqrt(x_2[i] + y_2[j])
+    for c in ['x', 'y']:
+        squared[c] = (np.arange(array_size, dtype=float) - center[c]) ** 2
+        start[c] = int(center[c] - radius)
+        end[c] = int(center[c] + radius) + 1
+
+    for x in range(start['x'], end['x']):
+        for y in range(start['y'], end['y']):
+            output_array[x, y] = np.sqrt(squared['x'][x] + squared['y'][y])
+
     return output_array
 
 
-def _apphot(pixel_data, aperture, center_pos, sky_value, number_pixels):
+def _apphot(pixel_data, aperture, center, sky_value, n_pixels):
     """
     Simple aperture photometry of a numpy array of values.
     For use in calculating the ideal psf for a Strehl calculation
 
     :param pixel_data: an array containing pixel values
     :param aperture: pixel radius of aperture to use
-    :param center_pos: x,y coordinates of center of aperture
+    :param center: x,y coordinates of center of aperture
     :param sky_value: value of sky background
-    :param number_pixels: number of pixels in one coordinate
+    :param n_pixels: number of pixels in one coordinate
     :return: total flux within aperture and peak flux
     """
 
-    radial_array = _distCircle(number_pixels, center_pos[0], center_pos[1])
+    phot = 0
+    values = [0]
 
     if np.size(aperture) > 1:
-        aperture = aperture[0]
+        aperture = np.ceil(aperture[0])
 
-    (x, y) = np.where(radial_array <= aperture)
+    radial_array = _dist_circle(n_pixels, center, aperture)
 
-    phot = 0
-    values = []
+    (x, y) = np.where((radial_array <= aperture) & (radial_array != 0.0))
+
     num_elements = len(x)
 
     if num_elements > 0:
@@ -1867,3 +1901,18 @@ def _apphot(pixel_data, aperture, center_pos, sky_value, number_pixels):
             phot += (pixel_data[x[k], y[k]] - sky_value)
 
     return phot, max(values)
+
+
+def _save_pupil(pupil, pupil_key, PUPIL_FILE):
+
+    vals_to_save = {}
+    try:
+        file_data = np.load(PUPIL_FILE)
+        for val in file_data.files:
+            vals_to_save[val] = file_data[val]
+    except IOError:
+        pass
+
+    vals_to_save[pupil_key] = pupil
+
+    np.savez(PUPIL_FILE, **vals_to_save)
