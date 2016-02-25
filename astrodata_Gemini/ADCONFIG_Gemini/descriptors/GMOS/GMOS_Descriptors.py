@@ -141,13 +141,20 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             # return the central wavelength in the default units of meters.
             output_units = "meters"
         
-        # Determine the central wavelength keyword from the global keyword
-        # dictionary
-        keyword = self.get_descriptor_key("key_central_wavelength")
+        # GMOS has a grating wavelength keyword GRWLEN and also a 
+        # Central wavelength header CENTWAVE. Generally they are the same, 
+        # except for when the slit is offset from the center of the focal plane
+        # as with IFU-1. Central wavelength is the one we want, but this header
+        # was only added circa 2007, so older data do not have it, in which case
+        # fall back to grating wavelenth. Hopefully in a future version we can
+        # add the calculation to correct the value for older data.
         
         # Get the value of the central wavelength keyword from the header of
         # the PHU
-        raw_central_wavelength = dataset.phu_get_key_value(keyword)
+        raw_central_wavelength = dataset.phu_get_key_value('CENTWAVE')
+        if raw_central_wavelength is None:
+            # Probaly it's old data that doesn't have the CENTWAVE header
+            raw_central_wavelength = dataset.phu_get_key_value('GRWLEN')
         
         if raw_central_wavelength is None:
             # The phu_get_key_value() function returns None if a value cannot
