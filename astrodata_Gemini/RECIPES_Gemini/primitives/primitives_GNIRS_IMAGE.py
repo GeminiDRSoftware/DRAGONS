@@ -301,10 +301,10 @@ def _position_illum_mask(adinput=None):
                                                "illum_masks")
     key1 = adinput.camera().as_pytype()
     filter = adinput.filter_name(pretty=True).as_pytype()
-    if filter in ['Y', 'J', 'H', 'K']:
-        key2 = 'Broadband'
-    elif filter in ['JPHOT', 'HPHOT', 'KPHOT', 'H2', 'PAH']:
-        key2 = 'Narrowband'
+    if filter in ['Y', 'J', 'H', 'K', 'H2', 'PAH']:
+        key2 = 'Wings'
+    elif filter in ['JPHOT', 'HPHOT', 'KPHOT']:
+        key2 = 'NoWings'
     else:
         log.warning("Unrecognised filter, no illumination mask can "
                     "be found for" % adinput.filename)
