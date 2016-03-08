@@ -2022,16 +2022,16 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
     
     # Validate remaining input parameters
     if keyword is None:
-        raise Errors.Error("No keyword provided")
+        raise Errors.FITSError("No keyword provided")
     if value is None:
-        raise Errors.Error("No value provided")
+        raise Errors.FITSError("No value provided")
     if extname is None:
-        raise Errors.Error("No extension name provided")
-    if extname != "PHU":
+        raise Errors.FITSError("No extension name provided")
+    if extname is not "PHU":
         if extname == "pixel_exts":
             extname = pixel_exts
         if not ad[extname]:
-            raise Errors.Error("Extension %s does not exist in %s"
+            raise Errors.FITSError("Extension %s does not exist in %s"
                                % (extname, ad.filename))
     
     # Get the comment for the keyword, if available
@@ -2039,7 +2039,7 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
         if keyword in keyword_comments:
             comment = keyword_comments[keyword]
     
-    if extname == "PHU":
+    if extname is "PHU":
         # Check to see whether the keyword is already in the PHU
         original_value = ad.phu_get_key_value(keyword)
         if original_value is not None:
@@ -2076,9 +2076,9 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
                 elif extver in value:
                     value_for_ext = value[extver]
                 else:
-                    raise Errors.Error(
-                      "The dictionary provided to the 'value' parameter "
-                      "contains an unknown key")
+                    raise Errors.FITSError( "The dictionary provided to the"
+                                " 'value' parameter contains an unknown key")
+
             elif isinstance(value, DescriptorValue):
                 value_for_ext = value.get_value(extver=extver)
             else:
@@ -2089,8 +2089,10 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
             original_value = ext.get_key_value(keyword)
             if original_value is not None:
                 # The keyword exists
-                log.debug("Keyword %s=%s already exists in extension "
-                          "%s,%s" % (keyword, original_value, extname, extver))
+                log.debug("Keyword %s=%s exists in ext %s,%s" % (keyword, 
+                                                                 original_value, 
+                                                                 extname, 
+                                                                 extver))
                 msg = "updated in"
             else:
                 msg = "added to"
