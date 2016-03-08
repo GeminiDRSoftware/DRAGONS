@@ -5,22 +5,28 @@ import subprocess
 import numpy as np
 import pyfits as pf
 import pywcs
+
 #from itertools import compress
 from copy import deepcopy
+
 from astrodata import AstroData
 from astrodata.utils import Errors
 from astrodata.utils import Lookups
 from astrodata.utils import logutils
 from astrodata.utils.ConfigSpace import lookup_path
+
 from gempy.library import astrotools as at
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
+
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.source_detection import sextractor_default_dict
+
 from primitives_GENERAL import GENERALPrimitives
 
-# Define the earliest acceptable SExtractor version
-# Currently: 2.8.6
+# Define the earliest acceptable SExtractor version, currently: 2.8.6
 SEXTRACTOR_VERSION = [2,8,6]
 
+# ------------------------------------------------------------------------------
 class PhotometryPrimitives(GENERALPrimitives):
     """
     This is the class containing all of the photometry primitives for
@@ -1151,9 +1157,7 @@ def _sextractor(ad=None,seeing_estimate=None):
     log = logutils.get_logger(__name__)
 
     # Get path to default sextractor parameter files
-    default_dict = Lookups.get_lookup_table(
-                             "Gemini/source_detection/sextractor_default_dict",
-                             "sextractor_default_dict")
+    default_dict = sextractor_default_dict.sextractor_default_dict
     
     # Write the AD instance to a temporary FITS file on disk
     tmpfn = "tmp%ssx%s" % (str(os.getpid()),

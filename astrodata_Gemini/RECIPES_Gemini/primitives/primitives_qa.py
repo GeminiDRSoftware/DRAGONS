@@ -1,15 +1,22 @@
 import sys
 import math
-from copy import deepcopy
 import numpy as np
+from copy import deepcopy
+
 from astrodata.utils import Errors
 from astrodata.utils import Lookups
 from astrodata.utils import logutils
-from gempy.gemini import gemini_tools as gt
-from primitives_GENERAL import GENERALPrimitives
 
+from gempy.gemini import gemini_tools as gt
 from gempy.gemini import gemini_data_calculations as gdc
 
+from astrodata_Gemini.ADCONFIG_Gemini.lookups import BGConstraints
+from astrodata_Gemini.ADCONFIG_Gemini.lookups import CCConstraints
+from astrodata_Gemini.ADCONFIG_Gemini.lookups import IQConstraints
+
+from primitives_GENERAL import GENERALPrimitives
+
+# ------------------------------------------------------------------------------
 class QAPrimitives(GENERALPrimitives):
     """
     This is the class containing all of the primitives for the GEMINI level of
@@ -49,8 +56,7 @@ class QAPrimitives(GENERALPrimitives):
         adoutput_list = []
 
         # Get the BG band definitions from a lookup table
-        bgConstraints = Lookups.get_lookup_table("Gemini/BGConstraints",
-                                                 "bgConstraints")
+        bgConstraints = BGConstraints.bgConstraints
 
         # Define a few useful numbers for formatting output
         llen = 23
@@ -474,8 +480,7 @@ class QAPrimitives(GENERALPrimitives):
         adoutput_list = []
 
         # Get the CC band definitions from a lookup table
-        ccConstraints = Lookups.get_lookup_table("Gemini/CCConstraints",
-                                                 "ccConstraints")
+        ccConstraints = CCConstraints.ccConstraints
 
         # Define a few useful numbers for formatting output
         llen = 32
@@ -1536,8 +1541,7 @@ def _iq_band(adinput=None,fwhm=None):
     try:
 
         # get the IQ band definitions from a lookup table
-        iqConstraints = Lookups.get_lookup_table("Gemini/IQConstraints",
-                                                 "iqConstraints")
+        iqConstraints = IQConstraints.iqConstraints
 
         # if there is only one FWHM listed for all adinput, copy
         # that entry into a list that matches the length of the

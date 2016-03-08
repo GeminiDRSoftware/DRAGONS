@@ -1,20 +1,23 @@
+import math
 import numpy as np
 import pywcs
-import math
+
 from astrodata import AstroData
 from astrodata.utils import Errors
 from astrodata.utils import logutils
 from astrodata.utils import Lookups
-from astrodata.utils.ConfigSpace  import lookup_path
+
 from gempy.library import astrotools as at
 from gempy.gemini import gemini_tools as gt
+
+from astrodata_Gemini.ADCONFIG_Gemini.lookups import keyword_comments
+
 from primitives_GENERAL import GENERALPrimitives
 
-# Load the standard comments for header keywords that will be updated
-# in these functions
-keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
-                                            "keyword_comments")
+# Load standard comments for header keywords to be updated by these functions
+keyword_comments = keyword_comments.keyword_comments
 
+# ------------------------------------------------------------------------------
 class RegisterPrimitives(GENERALPrimitives):
     """
     This is the class containing all of the registration primitives for the
@@ -281,7 +284,7 @@ class RegisterPrimitives(GENERALPrimitives):
                                                           firstPass=firstpasspix,
                                                           min_sources=min_sources,
                                                           cull_sources=cull_sources)
-                            
+
                         n_corr = len(obj_list[0])
                         if n_corr==0:
                             log.warning("No correlated sources found.")

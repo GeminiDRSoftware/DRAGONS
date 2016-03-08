@@ -1,7 +1,14 @@
+from astrodata import AstroData
+from astrodata.utils import Lookups
+from astrodata.utils.ConfigSpace  import lookup_path
+from gempy.gemini import gemini_tools as gt
+
+from . import IllumMaskDict
+
+# ------------------------------------------------------------------------------
 # This code is looked up by gempy as part of the configuration for the
 # appropriate instrument and evaled by the infrastructure. It has initially
 # been written to support gemini_tools.ExposureGroup. 
-
 def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
 
     """
@@ -48,12 +55,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     # Imaging:
     if 'GNIRS_IMAGE' in pos.types:
         # Need to fetch the illumination mask
-        from astrodata import AstroData
-        from astrodata.utils import Lookups
-        from astrodata.utils.ConfigSpace  import lookup_path
-        from gempy.gemini import gemini_tools as gt
-        illum_mask_dict = Lookups.get_lookup_table("Gemini/GNIRS/IllumMaskDict",
-                                                   "illum_masks")
+        illum_mask_dict = IllumMaskDict.illum_masks
         key1 = pos.camera().as_pytype()
         filter = pos.filter_name(pretty=True).as_pytype()
         if filter in ['Y', 'J', 'H', 'K', 'H2', 'PAH']:

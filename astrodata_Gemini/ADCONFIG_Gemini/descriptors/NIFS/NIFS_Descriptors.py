@@ -1,7 +1,6 @@
 import math
 
 from astrodata.utils import Errors
-from astrodata.utils import Lookups
 from astrodata.interface.Descriptors import DescriptorValue
 
 from gempy.gemini import gemini_metadata_utils as gmu
@@ -9,6 +8,10 @@ from gempy.gemini import gemini_metadata_utils as gmu
 from NIFS_Keywords import NIFS_KeyDict
 from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.NIFS import NIFSArrayDict
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.NIFS import NIFSConfigDict
+
+# ------------------------------------------------------------------------------
 class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
@@ -18,10 +21,8 @@ class NIFS_DescriptorCalc(GEMINI_DescriptorCalc):
     nifsConfigDict = None
     
     def __init__(self):
-        self.nifsArrayDict = Lookups.get_lookup_table(
-            "Gemini/NIFS/NIFSArrayDict", "nifsArrayDict")
-        self.nifsConfigDict = Lookups.get_lookup_table(
-            "Gemini/NIFS/NIFSConfigDict", "nifsConfigDict")
+        self.nifsArrayDict = NIFSArrayDict.nifsArrayDict
+        self.nifsConfigDict = NIFSConfigDict.nifsConfigDict
         GEMINI_DescriptorCalc.__init__(self)
     
     def disperser(self, dataset, stripID=False, pretty=False, **args):

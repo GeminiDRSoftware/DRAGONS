@@ -2,25 +2,30 @@ import sys
 import pywcs
 import numpy as np
 import math
+import numpy as np
+import scipy.ndimage
+
+from copy import deepcopy
 
 from astrodata import AstroData
 from astrodata.utils import logutils
 from astrodata.utils import Lookups
 from astrodata.utils.ConfigSpace  import lookup_path
-import numpy as np
-import scipy.ndimage
-from copy import deepcopy
 
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
 
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GNIRS import IllumMaskDict
+
 from primitives_GNIRS import GNIRSPrimitives
 
+# ------------------------------------------------------------------------------
 class GNIRS_IMAGEPrimitives(GNIRSPrimitives):
     """
     This is the class containing all of the primitives for the GNIRS_IMAGE
     level of the type hierarchy tree. It inherits all the primitives from the
     level above, 'GNIRSPrimitives'.
+
     """
     astrotype = "GNIRS_IMAGE"
     
@@ -297,8 +302,7 @@ def _position_illum_mask(adinput=None):
     log = logutils.get_logger(__name__)
 
     # Fetch the illumination mask
-    illum_mask_dict = Lookups.get_lookup_table("Gemini/GNIRS/IllumMaskDict",
-                                               "illum_masks")
+    illum_mask_dict = IllumMaskDict.illum_masks
     key1 = adinput.camera().as_pytype()
     filter = adinput.filter_name(pretty=True).as_pytype()
     if filter in ['Y', 'J', 'H', 'K', 'H2', 'PAH']:

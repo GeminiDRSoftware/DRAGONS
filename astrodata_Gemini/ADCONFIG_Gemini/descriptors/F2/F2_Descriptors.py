@@ -1,22 +1,24 @@
 import math
+import pywcs
+
 from time import strptime
 from datetime import datetime
 
 from astrodata.utils import Errors
-from astrodata.utils import Lookups
 from astrodata.interface.slices import pixel_exts
 from astrodata.interface.Descriptors import DescriptorValue
 
+import GemCalcUtil
+from gempy.gemini.coordinate_utils import toicrs
 from gempy.gemini import gemini_metadata_utils as gmu
 
 from F2_Keywords import F2_KeyDict
 from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
-import GemCalcUtil
-
-import pywcs
-from gempy.gemini.coordinate_utils import toicrs
-
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.F2 import F2ArrayDict
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.F2 import F2ConfigDict
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.F2 import Nominal_Zeropoints
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.F2 import F2FilterWavelength
 # ------------------------------------------------------------------------------
 class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
@@ -27,10 +29,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     f2ConfigDict = None
     
     def __init__(self):
-        self.f2ArrayDict = Lookups.get_lookup_table(
-            "Gemini/F2/F2ArrayDict", "f2ArrayDict")
-        self.f2ConfigDict = Lookups.get_lookup_table(
-            "Gemini/F2/F2ConfigDict", "f2ConfigDict")
+        self.f2ArrayDict = F2ArrayDict.f2ArrayDict
+        self.f2ConfigDict = F2ConfigDict.f2ConfigDict
         GEMINI_DescriptorCalc.__init__(self)
     
     # This is a slightly modified copy of the GEMINI central_wavelength
@@ -360,9 +360,8 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # the pixel data extensions, always construct a dictionary where the
         # key of the dictionary is an (EXTNAME, EXTVER) tuple
         ret_nominal_photometric_zeropoint = {}
-        
-        table = Lookups.get_lookup_table("Gemini/F2/Nominal_Zeropoints",
-                                         "nominal_zeropoints")
+        table = Nominal_Zeropoints.nominal_zeropoints
+
         # Get the values of the gain, detector name and filter name using the
         # appropriate descriptors. Use as_pytype() to return the values as the
         # default python type rather than an object.
@@ -412,6 +411,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Determine the number of non-destructive read pairs keyword (lnrs)
         # from the global keyword dictionary
         keyword = self.get_descriptor_key("key_lnrs")
+        
         # Get the number of non-destructive read pairs from the header of the
         # PHU
         lnrs = dataset.phu_get_key_value(keyword)
@@ -638,6 +638,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Determine the number of non-destructive read pairs keyword (lnrs)
         # from the global keyword dictionary
         keyword = self.get_descriptor_key("key_lnrs")
+        
         # Get the number of non-destructive read pairs from the header of the
         # PHU
         lnrs = dataset.phu_get_key_value(keyword)
@@ -674,8 +675,7 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     def wavelength_band(self, dataset, **args):
         if "IMAGE" in dataset.types:
             # If imaging, associate the filter name with a central wavelength
-            filter_table = Lookups.get_lookup_table(
-                "Gemini/F2/F2FilterWavelength", "filter_wavelength")
+            filter_table = F2FilterWavelength.filter_wavelength
             filter = str(dataset.filter_name(pretty=True))
             if filter in filter_table:
                 ctrl_wave = filter_table[filter]

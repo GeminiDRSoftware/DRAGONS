@@ -10,6 +10,14 @@ import GemCalcUtil
 from NIRI_Keywords import NIRI_KeyDict
 from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.NIRI import NIRISpecDict
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.NIRI import NIRIFilterMap
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.NIRI import Nominal_Zeropoints
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.NIRI import NIRIFilterWavelength
+
+# replaces the former lookup of the FITS bintable, nsappwavepp.fits
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.IR import nsappwavepp
+# ------------------------------------------------------------------------------
 class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
@@ -20,12 +28,9 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     niriSpecDict = None
     
     def __init__(self):
-        self.niriSpecDict = Lookups.get_lookup_table(
-            "Gemini/NIRI/NIRISpecDict", "niriSpecDict")
-        self.niriFilternameMapConfig = Lookups.get_lookup_table(
-            "Gemini/NIRI/NIRIFilterMap", "niriFilternameMapConfig")
-        self.nsappwave = Lookups.get_lookup_table(
-            "Gemini/IR/nsappwavepp.fits", 1)
+        self.niriSpecDict = NIRISpecDict.niriSpecDict
+        self.niriFilternameMapConfig = NIRIFilterMap.niriFilternameMapConfig
+        self.nsappwave = nsappwavepp.nsappwavepp
         
         filternamemap = {}
         for line in self.niriFilternameMapConfig:
@@ -74,16 +79,16 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
                 # It will be dealt with by the CalculatorInterface.
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
-            
+
             # Get the central wavelength value from the nsappwave lookup
             # table
             count = 0
-            for row in self.nsappwave.data:
-                if (focal_plane_mask == row.field("MASK") and
-                    disperser == row.field("GRATING")):
+            for row in self.nsappwave:
+                if (focal_plane_mask == row["MASK"] and
+                    disperser == row["GRATING"]):
                     count += 1
-                    if row.field("LAMBDA"):
-                        raw_central_wavelength = float(row.field("LAMBDA"))
+                    if row["LAMBDA"]:
+                        raw_central_wavelength = float(row["LAMBDA"])
                     else:
                         raise Errors.TableValueError()
             if count == 0:
@@ -391,9 +396,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         # the pixel data extensions, always construct a dictionary where the
         # key of the dictionary is an (EXTNAME, EXTVER) tuple
         ret_nominal_photometric_zeropoint = {}
-        
-        table = Lookups.get_lookup_table("Gemini/NIRI/Nominal_Zeropoints",
-                                         "nominal_zeropoints")
+        table = Nominal_Zeropoints.nominal_zeropoints
         
         # Get the values of the gain, detector name and filter name using the
         # appropriate descriptors. Use as_pytype() to return the values as the
@@ -657,8 +660,7 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
     def wavelength_band(self, dataset, **args):
         if "IMAGE" in dataset.types:
             # If imaging, associate the filter name with a central wavelength
-            filter_table = Lookups.get_lookup_table(
-                "Gemini/NIRI/NIRIFilterWavelength", "filter_wavelength")
+            filter_table = NIRIFilterWavelength,filter_wavelength
             filter = str(dataset.filter_name(pretty=True))
             if filter in filter_table:
                 ctrl_wave = filter_table[filter]

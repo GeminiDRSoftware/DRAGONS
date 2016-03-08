@@ -1,9 +1,9 @@
 import datetime, os, re
 import dateutil.parser
 import math
+import pywcs
 
 from astrodata.utils import Errors
-from astrodata.utils import Lookups
 from astrodata.interface.slices import pixel_exts
 from astrodata.interface.Descriptors import DescriptorValue
 
@@ -14,8 +14,8 @@ import GemCalcUtil
 from FITS_Descriptors import FITS_DescriptorCalc
 from GEMINI_Keywords import GEMINI_KeyDict
 
-import pywcs
-
+from astrodata_Gemini.ADCONFIG_Gemini.lookups import NominalExtinction
+from astrodata_Gemini.ADCONFIG_Gemini.lookups import WavelengthBand
 # ------------------------------------------------------------------------------
 class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
@@ -25,10 +25,8 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
     std_wavelength_band = None
     
     def __init__(self):
-        self.nominal_extinction_table = Lookups.get_lookup_table(
-          "Gemini/NominalExtinction", "nominal_extinction")
-        self.std_wavelength_band = Lookups.get_lookup_table(
-          "Gemini/WavelengthBand", "wavelength_band")
+        self.std_wavelength_band = WavelengthBand.wavelength_band
+        self.nominal_extinction_table =  NominalExtinction.nominal_extinction
         FITS_DescriptorCalc.__init__(self)
     
     def airmass(self, dataset, **args):

@@ -22,6 +22,9 @@ from astrodata.utils.gemconstants import SCI, VAR, DQ
 
 from gempy.gemini import gemini_tools as gt
 
+from astrodata_Gemini.ADCONFIG_Gemini.lookups import BPMDict
+from astrodata_Gemini.ADCONFIG_Gemini.lookups import MDFDict
+
 from primitives_GENERAL import GENERALPrimitives
 # ------------------------------------------------------------------------------
 
@@ -30,6 +33,7 @@ class StandardizePrimitives(GENERALPrimitives):
     This is the class containing all of the primitives used to standardize an
     AstroData object. It inherits all the primitives from the
     'GENERALPrimitives' class.
+
     """
     astrotype = "GENERAL"
     
@@ -102,8 +106,7 @@ class StandardizePrimitives(GENERALPrimitives):
                 # The user did not supply an input to the bpm parameter, so try
                 # to find an appropriate one. Get the dictionary containing the
                 # list of BPMs for all instruments and modes.
-                all_bpm_dict = Lookups.get_lookup_table("Gemini/BPMDict",
-                                                        "bpm_dict")
+                all_bpm_dict = BPMDict.bpm_dict
                 
                 # Call the _get_bpm_key helper function to get the key for the
                 # lookup table 
@@ -114,8 +117,7 @@ class StandardizePrimitives(GENERALPrimitives):
                     bpm = lookup_path(all_bpm_dict[key])
                 else:
                     bpm = None
-                    log.warning("No BPM found for %s, no BPM will be "
-                                "included" % ad.filename)
+                    log.warning("No BPM for %s; No BPM included." % ad.filename)
 
             # Ensure that the BPMs are AstroData objects
             bpm_ad = None
@@ -347,7 +349,7 @@ class StandardizePrimitives(GENERALPrimitives):
                 continue
             
             # Parameters specified on the command line to reduce are converted
-            # to strings, including None            log.warning("Hello there %s" % rc["mdf"])
+            # to strings, including None
             if rc["mdf"] and rc["mdf"] != "None":
                 # The user supplied an input to the mdf parameter
                 mdf = rc["mdf"]
@@ -355,8 +357,7 @@ class StandardizePrimitives(GENERALPrimitives):
                 # The user did not supply an input to the mdf parameter, so try
                 # to find an appropriate one. Get the dictionary containing the
                 # list of MDFs for all instruments and modes.
-                all_mdf_dict = Lookups.get_lookup_table("Gemini/MDFDict",
-                                                        "mdf_dict")
+                all_mdf_dict = MDFDict.mdf_dict
                 
                 # The MDFs are keyed by the instrument and the MASKNAME. Get
                 # the instrument and the MASKNAME values using the appropriate

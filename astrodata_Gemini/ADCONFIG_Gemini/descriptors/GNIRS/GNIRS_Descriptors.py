@@ -1,7 +1,6 @@
 import math, re
 
 from astrodata.utils import Errors
-from astrodata.utils import Lookups
 from astrodata.interface.Descriptors import DescriptorValue
 
 from gempy.gemini import gemini_metadata_utils as gmu
@@ -9,20 +8,22 @@ from gempy.gemini import gemini_metadata_utils as gmu
 from GNIRS_Keywords import GNIRS_KeyDict
 from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GNIRS import GNIRSArrayDict
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GNIRS import GNIRSConfigDict
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GNIRS import Nominal_Zeropoints
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GNIRS import GNIRSFilterWavelength
+
 # ------------------------------------------------------------------------------
 class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
     _update_stdkey_dict = GNIRS_KeyDict
-    
     gnirsArrayDict = None
     gnirsConfigDict = None
     
     def __init__(self):
-        self.gnirsArrayDict = Lookups.get_lookup_table(
-            "Gemini/GNIRS/GNIRSArrayDict", "gnirsArrayDict")
-        self.gnirsConfigDict = Lookups.get_lookup_table(
-            "Gemini/GNIRS/GNIRSConfigDict", "gnirsConfigDict")
+        self.gnirsArrayDict = GNIRSArrayDict.gnirsArrayDict
+        self.gnirsConfigDict = GNIRSConfigDict.gnirsConfigDict
         GEMINI_DescriptorCalc.__init__(self)
 
     def data_section(self, dataset, pretty=False, **args):
@@ -317,8 +318,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
         # key of the dictionary is an (EXTNAME, EXTVER) tuple
         ret_nominal_photometric_zeropoint = {}
         
-        table = Lookups.get_lookup_table("Gemini/GNIRS/Nominal_Zeropoints",
-                                         "nominal_zeropoints")
+        table = Nominal_Zeropoints.nominal_zeropoints
         # Get the values of the gain, detector name and filter name using the
         # appropriate descriptors. 
         gain = dataset.gain().as_pytype()
@@ -689,8 +689,7 @@ class GNIRS_DescriptorCalc(GEMINI_DescriptorCalc):
     def wavelength_band(self, dataset, **args):
         if "IMAGE" in dataset.types:
             # If imaging, associate the filter name with a central wavelength
-            filter_table = Lookups.get_lookup_table(
-                "Gemini/GNIRS/GNIRSFilterWavelength", "filter_wavelength")
+            filter_table = GNIRSFilterWavelength.filter_wavelength
             filter = str(dataset.filter_name(pretty=True))
             if filter in filter_table:
                 ctrl_wave = filter_table[filter]

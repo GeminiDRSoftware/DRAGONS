@@ -1,5 +1,8 @@
 import os
 
+import glob as gl
+from copy import deepcopy
+
 from astrodata import AstroData
 from astrodata.utils import Lookups
 from astrodata.utils import logutils
@@ -8,7 +11,10 @@ from gempy.gemini import gemini_tools as gt
 
 from recipe_system.reduction.reductionObjects import PrimitiveSet
 
+from astrodata_Gemini.ADCONFIG_Gemini.lookups import keyword_comments
+from astrodata_Gemini.ADCONFIG_Gemini.lookups import timestamp_keywords
 
+# ------------------------------------------------------------------------------
 class GENERALPrimitives(PrimitiveSet):
     """
     This is the class containing all of the primitives for the GENERAL level of
@@ -22,13 +28,11 @@ class GENERALPrimitives(PrimitiveSet):
         # keyword to be used for the time stamp for all the primitives and user
         # level function. This only needs to be done once in the highest level
         # primitive due to primitive inheritance.
-        self.timestamp_keys = Lookups.get_lookup_table(
-            "Gemini/timestamp_keywords", "timestamp_keys")
+        self.timestamp_keys = timestamp_keywords.timestamp_keys
 
         # Also load the standard comments for header keywords that will be
         # updated in the primitives
-        self.keyword_comments = Lookups.get_lookup_table(
-            "Gemini/keyword_comments", "keyword_comments")
+        self.keyword_comments = keyword_comments.keyword_comments
 
         return 
     init.pt_hide = True
@@ -36,9 +40,7 @@ class GENERALPrimitives(PrimitiveSet):
     def addInputs(self, rc):
         # Instantiate the log
         log = logutils.get_logger(__name__)
-
         
-        import glob as gl
         if rc["files"] == None:
             glob = "./*.fits"
         else:
@@ -64,7 +66,6 @@ class GENERALPrimitives(PrimitiveSet):
     
     def copy(self, rc):
         for ad in rc.get_inputs_as_astro_data():
-            from copy import deepcopy
             nd = deepcopy(ad)
             nd.filename = "copy_"+os.path.basename(ad.filename)
             rc.report_output(nd)
@@ -150,7 +151,6 @@ class GENERALPrimitives(PrimitiveSet):
             inputs_copy = []
             for ad in inputs:
                 if do_deepcopy:
-                    from copy import deepcopy
                     ad_copy = deepcopy(ad)
                 else:
                     ad_copy = ad

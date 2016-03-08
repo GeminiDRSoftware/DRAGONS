@@ -4,7 +4,6 @@ from datetime import datetime
 from time import strptime
 
 from astrodata.utils import Errors
-from astrodata.utils import Lookups
 from astrodata.interface.slices import pixel_exts
 from astrodata.interface.Descriptors import DescriptorValue
 
@@ -16,6 +15,15 @@ import GemCalcUtil
 from GMOS_Keywords import GMOS_KeyDict
 from GEMINI_Descriptors import GEMINI_DescriptorCalc
 
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import ROItable
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSAmpTables
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import Nominal_Zeropoints
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSPixelScale
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSReadModes
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSThresholdValues
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSFilterWavelength
+
+# ------------------------------------------------------------------------------
 class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
@@ -267,9 +275,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         """
         # Get the lookup table containing the ROI sections
-        gmosRoiSettings = Lookups.get_lookup_table("Gemini/GMOS/ROItable",
-                                                   "gmosRoiSettings")
-        
+        gmosRoiSettings = ROItable.gmosRoiSettings
         ret_detector_roi_setting = "Undefined"
         rois = dataset.detector_rois_requested()
         if rois.is_none():
@@ -558,12 +564,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         else:
             # Get the lookup table containing the gain values by amplifier
-            gmosampsGain, gmosampsGainBefore20150826, \
-                gmosampsGainBefore20060831 = (
-                Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
-                                         "gmosampsGain",
-                                         "gmosampsGainBefore20150826",
-                                         "gmosampsGainBefore20060831"))
+            gmosampsGain = GMOSAmpTables.gmosampsGain
+            gmosampsGainBefore20150826 = GMOSAmpTables.gmosampsGainBefore20150826
+            gmosampsGainBefore20060831 = GMOSAmpTables.gmosampsGainBefore20060831
             
             # Determine the amplifier integration time keyword (ampinteg) from
             # the global keyword dictionary
@@ -929,8 +932,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_nominal_photometric_zeropoint_dict = {}
         
         # Get the lookup table containing the nominal zeropoints
-        table = Lookups.get_lookup_table("Gemini/GMOS/Nominal_Zeropoints",
-                                         "nominal_zeropoints")
+        table = Nominal_Zeropoints.nominal_zeropoints
         
         # Get the values of the gain, detector name and filter name using the
         # appropriate descriptors.
@@ -1061,8 +1063,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def pixel_scale(self, dataset, **args):
         # Get the lookup table containing the pixel scale values
-        gmosPixelScales = Lookups.get_lookup_table(
-            "Gemini/GMOS/GMOSPixelScale", "gmosPixelScales")
+        gmosPixelScales = GMOSPixelScale.gmosPixelScales
         
         # Get the values of the instrument and the binning of the y-axis using
         # the appropriate descriptors
@@ -1119,11 +1120,9 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # 'default' applies for both EEV and the super old e2v detector
         # names.
         # 04-06-2015, kra
-
-        read_mode_table = Lookups.get_lookup_table(
-            "Gemini/GMOS/GMOSReadModes", "read_mode_map")
-
+        read_mode_table = GMOSReadModes.read_mode_map
         detector = dataset.detector_name(pretty=True).as_pytype()
+
         if detector == 'Hamamatsu':
             read_mode_mapping_dict = read_mode_table[detector]
         else:
@@ -1196,15 +1195,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 # Update the dictionary with the read noise value
                 ret_read_noise_dict.update({ext_name_ver:read_noise})
         else:
-            
             # Get the lookup table containing the read noise values by
             # amplifier
-            gmosampsRdnoise, gmosampsRdnoiseBefore20150826, \
-                gmosampsRdnoiseBefore20060831 = (
-                Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
-                                         "gmosampsRdnoise",
-                                         "gmosampsRdnoiseBefore20150826",
-                                         "gmosampsRdnoiseBefore20060831"))
+            gmosampsRdnoise = GMOSAmpTables.gmosampsRdnoise
+            gmosampsRdnoiseBefore20150826 = GMOSAmpTables.gmosampsRdnoiseBefore20150826
+            gmosampsRdnoiseBefore20060831 = GMOSAmpTables.gmosampsRdnoiseBefore20060831
             
             # Get the UT date, gain setting and read speed setting values using
             # the appropriate descriptors
@@ -1307,8 +1302,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_saturation_level_dict = {}
         
         # Get the lookup table containing the saturation values by amplifier
-        gmosThresholds = Lookups.get_lookup_table(
-            "Gemini/GMOS/GMOSThresholdValues", "gmosThresholds")
+        gmosThresholds = GMOSThresholdValues.gmosThresholds
 
         # The hard limit for saturation is the controller digitization limit
         controller_limit = 65535
@@ -1451,8 +1445,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
     def wavelength_band(self, dataset, **args):
         if "IMAGE" in dataset.types:
             # If imaging, associate the filter name with a central wavelength
-            filter_table = Lookups.get_lookup_table(
-                "Gemini/GMOS/GMOSFilterWavelength", "filter_wavelength")
+            filter_table = GMOSFilterWavelength.filter_wavelength
             filter = str(dataset.filter_name(pretty=True))
             if filter in filter_table:
                 ctrl_wave = filter_table[filter]
