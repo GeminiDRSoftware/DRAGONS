@@ -1,6 +1,4 @@
-import operator
 import numpy as np
-import pyfits as pf
 import scipy.ndimage as nd
 
 from matplotlib import pyplot as pl
@@ -12,9 +10,18 @@ try:
 except ImportError:
    from ..library.skeletonize import skeletonize
 
+# Lookup replacements; Gemini-specific functions only.
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import StandardGMOSGratings
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSfilters
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSgratingTilt
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSPixelScale
+
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.F2   import F2offsets
+
 # ------------------------------------------------------------------------------
 allowed_functions = ['polynomial','legendre','chebyshev']
 
+# ------------------------------------------------------------------------------
 def print_timing(func):
     # Decorator function to time a function
     def wrapper(*arg,**kargs):
@@ -1124,32 +1131,19 @@ def gmos_fplen(ad):
       the slit position in the dispersion direction
       This is a take from gscut.cl
     """
-    from astrodata.utils import Lookups
-
-    gratings = Lookups.get_lookup_table('Gemini/GMOS/StandardGMOSGratings.py',
-                                         'StandardGMOSGratings')
-    filters = Lookups.get_lookup_table('Gemini/GMOS/GMOSfilters.py',
-                                         'GMOSfilters')
-    grating_tilt = Lookups.get_lookup_table('Gemini/GMOS/GMOSgratingTilt.py',
-                                        'grating_tilt')
-
+    filters = GMOSfilters.GMOSfilters
+    gratings = StandardGMOSGratings.StandardGMOSGratings
+    grating_tilt = GMOSgratingTilt.grating_tilt
+    pixscale = GMOSPixelScale.gmosPixelScales
 
     # Define the spectral cut-off limit (red limit) according to the iccd
     # (detector type). Value is in nm. If needed, this can be changed to also
     # accomodate different values for GMOS-N and GMOS-S, see pixscale
-
-    pixscale = {   #(instrument,detector_type)
-        ('GMOS-N','SDSU II CCD'):             0.0727, # GMOS-N EEV pixscale
-        ('GMOS-N','SDSU II e2v DD CCD42-90'): 0.07288, # GMOS-N e2vDD pixscale
-        ('GMOS-N','S10892-01'):               0.0727, # GMOS-N Hamamatsu pixscale 
-        ('GMOS-S','SDSU II CCD'):             0.073, # GMOS-S EEV pixscale
-               }
-
     detector_upper_spec_limit = {
-        'SDSU II CCD':             1025,   # EEV CCDs
-        'SDSU II e2v DD CCD42-90': 1050,   # e2vDD CCDs
-        'S10892-01':               1080,   # Hamamatsu CCDs
-                                }
+       'SDSU II CCD':             1025,   # EEV CCDs
+       'SDSU II e2v DD CCD42-90': 1050,   # e2vDD CCDs
+       'S10892-01':               1080,   # Hamamatsu CCDs
+    }
 
     npix_y, npix_x = ad.data.shape
     xbin = ad.detector_x_bin()
@@ -1167,24 +1161,24 @@ def gmos_fplen(ad):
     tilt = phu('GRTILT')
     tilt = np.radians(tilt) 
 
-    xscale = pixscale[instrument,dettype]*xbin
-    yscale = pixscale[instrument,dettype]*ybin
+    xscale = pixscale[instrument, dettype] * xbin
+    yscale = pixscale[instrument, dettype] * ybin
 
     # Get grating info from lookup table
     grule, gblaze, gR, gcoverage, gwave1, gwave2,\
         wavoffset, l_yoff = gratings[grating_name]
 
-    greq=(cwave*grule)/1.e6
+    greq=(cwave * grule) / 1.e6
 
     # grating_tilt is a list of tuples
-    greqs  = [g for g,t in grating_tilt]
-    gtilts = [t for g,t in grating_tilt]
+    greqs  = [g for g, t in grating_tilt]
+    gtilts = [t for g, t in grating_tilt]
     # Interpolate at greq
     gtilt = np.interp(greq, greqs, gtilts)
 
     gtilt = np.radians(gtilt)
-    a = np.sin(gtilt+0.872665) / np.sin(gtilt)
-    gR = 206265. * greq/(0.5*81.0*np.sin(gtilt))
+    a = np.sin(gtilt + 0.872665) / np.sin(gtilt)
+    gR = 206265. * greq / (0.5 * 81.0 * np.sin(gtilt))
     nmppx = a*xscale*cwave*81.0*np.sin(gtilt)/(206265.*greq)
     wave1 = gwave1
     wave2 = gwave2
@@ -1218,15 +1212,10 @@ def f2_fplen(ad):
         extend from the slit position for F2 MOS data
         (This code is a take from f2cut.cl)
     """
-    from astrodata.utils import Lookups
-
-    yoffset_delta = Lookups.get_lookup_table('Gemini/F2/F2offsets.py',
-                                         'yoffset_delta')
-    filter_table = Lookups.get_lookup_table('Gemini/F2/F2offsets.py',
-                                         'filter_table')
+    yoffset_delta = F2offsets.yoffset_delta
+    filter_table  = F2offsets.filter_table
 
     header = ad.phu.header
-
     if 'grism' in header:
         grism = header['grism']
     elif 'grismpos' in header:

@@ -1,22 +1,20 @@
 #! /usr/bin/env python
-import sys, os
+import os
+import sys
 import time
 
 import numpy as np
 import pyfits as pf
-from matplotlib import pyplot as pl
 
 import segmentation as seg
-from ..library import gfit
+
+from matplotlib import pyplot as pl
 
 from astrodata import AstroData
 from astrodata import new_pyfits_version
-from astrodata.utils import Lookups
 
-
-# Load the timestamp keyword dictionary.
-timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
-                                          "timestamp_keys")
+from ..library import gfit
+# ------------------------------------------------------------------------------
 def print_timing(func):
     def wrapper(*arg,**kargs):
         t1 = time.time()
