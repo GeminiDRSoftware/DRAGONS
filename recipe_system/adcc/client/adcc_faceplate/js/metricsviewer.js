@@ -1159,36 +1159,36 @@ MetricsViewer.prototype = {
 
             // FITSStore may not deliver zenith metrics
             if (record["iq"]["zenith"] && record["iq"]["zenith_error"]) {
-            record["iq"]["zenith_str"] =
+            	record["iq"]["zenith_str"] =
                     record["iq"]["zenith"].toFixed(2) + " \u00B1 " +
-                record["iq"]["zenith_error"].toFixed(2);
+                    record["iq"]["zenith_error"].toFixed(2);
             } else if (record["iq"]["zenith"] && !(record["iq"]["zenith_error"])) {
                 // AO seeing corrected is iq-zenith
                 if (record["iq"]["is_ao"]) {
                     record["iq"]["zenith_str"] =
-                        record["iq"]["zenith"].toFixed(2) + " (AO)";
+                        record["iq"]["zenith"].toFixed(2) + " (AOtest)";
                 } else {
                     record["iq"]["zenith_str"] =
                         record["iq"]["zenith"].toFixed(2);
                     }
             } else {
-            record["iq"]["zenith_str"] = undefined;
+            	record["iq"]["zenith_str"] = undefined;
             }
 
             // If an AO seeing value is provided, use this
             if (record["iq"]["ao_seeing_zenith"]) {
-            record["iq"]["zenith_str"] =
-                record["iq"]["ao_seeing_zenith"].toFixed(2) + " (AO)";
+            	record["iq"]["zenith_str"] =
+            		record["iq"]["ao_seeing_zenith"].toFixed(2) + " (AO)";
 
-            // Add a hack here to overwrite the zenith IQ if
-            // there is an AO-estimated seeing value, this is
-            // the value that will then be plotted
+            	// Add a hack here to overwrite the zenith IQ if
+            	// there is an AO-estimated seeing value, this is
+            	// the value that will then be plotted
                 record["iq"]["zenith"] =
                     record["iq"]["ao_seeing_zenith"];
 
-            // Putting in zero errors is obviously untrue, but prevents
-            // formatPlotRecords from throwing out the data
-            record["iq"]["zenith_error"] = 0.0;
+                // Putting in zero errors is obviously untrue, but prevents
+                // formatPlotRecords from throwing out the data
+                record["iq"]["zenith_error"] = 0.0;
             }
 
             try {
