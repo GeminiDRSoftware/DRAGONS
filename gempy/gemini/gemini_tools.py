@@ -46,7 +46,7 @@ keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
 _FOV_lookup = None
 # ------------------------------------------------------------------------------
 
-def add_objcat(adinput=None, extver=1, replace=False, columns=None):
+def add_objcat(adinput=None, extver=1, replace=False, columns=None, sxdict=None):
     """
     Add OBJCAT table if it does not exist, update or replace it if it does.
     
@@ -69,6 +69,13 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None):
     :type columns: dictionary of Pyfits Column objects with column names
                    as keys
     """
+
+    # ensure caller passes the sextractor default dictionary of parameters.
+    try:
+        assert isinstance(sxdict, dict) and sxdict.has_key('dq')
+    except AssertionError:
+        logutils.error("TypeError: A sextractor dictionary was not received.")
+        raise TypeError("Require sextractor parameter dictionary.")
     
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
@@ -83,7 +90,7 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None):
     try:
         
         # Parse sextractor parameters for the list of expected columns
-        expected_columns = parse_sextractor_param()
+        expected_columns = parse_sextractor_param(sxdict)
 
         # Append a few more that don't come from directly from sextractor
         expected_columns.extend(["REF_NUMBER","REF_MAG","REF_MAG_ERR",
@@ -1798,12 +1805,9 @@ def obsmode_del(ad):
     return ad
     
 
-def parse_sextractor_param():
-
+def parse_sextractor_param(default_dict):
+    # default_dict used to be made with a get_lookup_table() call.
     # Get path to default sextractor parameter files
-    default_dict = Lookups.get_lookup_table(
-                             "Gemini/source_detection/sextractor_default_dict",
-                             "sextractor_default_dict")
     param_file = lookup_path(default_dict["dq"]["param"])
     if param_file.endswith(".py"):
         param_file = param_file[:-3]
