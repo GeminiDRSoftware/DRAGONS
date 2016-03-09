@@ -13,6 +13,7 @@ from recipe_system.reduction.reductionObjects import PrimitiveSet
 
 from astrodata_Gemini.ADCONFIG_Gemini.lookups import keyword_comments
 from astrodata_Gemini.ADCONFIG_Gemini.lookups import timestamp_keywords
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.source_detection import sextractor_default_dict
 
 # ------------------------------------------------------------------------------
 class GENERALPrimitives(PrimitiveSet):
@@ -33,7 +34,7 @@ class GENERALPrimitives(PrimitiveSet):
         # Also load the standard comments for header keywords that will be
         # updated in the primitives
         self.keyword_comments = keyword_comments.keyword_comments
-
+        self.sx_default_dict = sextractor_default_dict.sextractor_default_dict
         return 
     init.pt_hide = True
     

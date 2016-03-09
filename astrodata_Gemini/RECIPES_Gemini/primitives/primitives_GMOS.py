@@ -944,7 +944,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                 
                 # Update and attach OBJCAT if needed
                 if ad["OBJCAT"] is not None:
-                    adoutput = _tile_objcat(ad,adoutput,mapping_dict)[0]
+                    adoutput = _tile_objcat(adinput=ad, adoutput=adoutput, 
+                                            mapping_dict=mapping_dict, 
+                                            sx_dict=self.sx_default_dict)[0]
 
                 # Refresh AstroData types in output file (original ones
                 # were lost when new AD was created)
@@ -1145,7 +1147,7 @@ def _obtain_arraygap(adinput=None):
                                   "found for %s" % (detector_type)) 
     return arraygap
 
-def _tile_objcat(adinput=None,adoutput=None,mapping_dict=None):
+def _tile_objcat(adinput=None, adoutput=None, mapping_dict=None, sx_dict=None):
     """
     This function tiles together separate OBJCAT extensions, converting
     the pixel coordinates to the new WCS.
@@ -1219,7 +1221,7 @@ def _tile_objcat(adinput=None,adoutput=None,mapping_dict=None):
                                           array=col_data[name])
 
             adout = gt.add_objcat(adinput=adout, extver=out_extver,
-                                  columns=columns)[0]
+                        columns=columns, sxdict=sx_dict)[0]
 
         adoutput_list.append(adout)
 
