@@ -1678,8 +1678,11 @@ def _strehl(ad, sources):
     # reasonable upper strehl limit,  number of sources to use
     STREHL_LIMIT = 0.6
     RADIAN_ARCSEC = 206265
-    PSF_SKY = 0.0
     PUPIL_FILE = '.strehl_pupil.npz'
+
+    # number of sources to use
+    allow_nsources = 16
+    allow_nsources /= len(sources)
 
     all_strehl = []
     pupil = np.array([])
@@ -1696,7 +1699,7 @@ def _strehl(ad, sources):
     div_n = 1.0
     # for large arrays,  for speed approximate strehl by 'binning' pixels
     if n_pixels > 1024:
-        div_n = 10.0
+        div_n = 8.0
 
     n_pixels /= int(div_n)
 
@@ -1721,12 +1724,16 @@ def _strehl(ad, sources):
         meter_pixel = ((effective_wavelength * 1e-6) /
                        (n_pixels * pixel_radians))
 
+        # use only brightest nsources in field
+        if sources[ext].size > allow_nsources:
+            sources[ext].sort(order='flux_max')
+            sources[ext] = sources[ext][-allow_nsources:]
+
         if pupil.size == 0:
             pupil = _pupil(n_pixels, meter_pixel, inst, pupil_key, PUPIL_FILE)
 
         for source in sources[ext]:
 
-            source_flx = source.flux - source.background
             source_pos = {'x': source.x / div_n - n_pixels / 2.,
                           'y': source.y / div_n - n_pixels / 2.}
 
@@ -1735,10 +1742,10 @@ def _strehl(ad, sources):
 
             source_pos = {'x': source.x / div_n, 'y': source.y / div_n}
 
-            psf_flx, psf_peak = _psf_phot(psf, source.flux_radius, source_pos,
-                                          PSF_SKY, n_pixels)
+            psf_flx, psf_peak = _psf_phot(psf, 4.0*source.flux_radius,
+                                          source_pos, n_pixels)
 
-            strehl = float((source.flux_max / source_flx) /
+            strehl = float(((source.flux_max) / source.flux) /
                            (psf_peak / psf_flx))
 
             if strehl <= STREHL_LIMIT:
@@ -1875,7 +1882,7 @@ def _dist_circle(array_size, center, radius):
     return output_array
 
 
-def _psf_phot(pixel_data, aperture, center, sky_value, n_pixels):
+def _psf_phot(pixel_data, aperture, center, n_pixels):
     """
     Simple aperture photometry of a numpy array of values.
     For use in calculating the ideal psf for a Strehl calculation
@@ -1883,7 +1890,6 @@ def _psf_phot(pixel_data, aperture, center, sky_value, n_pixels):
     :param pixel_data: an array containing pixel values
     :param aperture: pixel radius of aperture to use
     :param center: x,y coordinates of center of aperture
-    :param sky_value: value of sky background
     :param n_pixels: number of pixels in one coordinate
     :return: total flux within aperture and peak flux
     """
@@ -1902,8 +1908,8 @@ def _psf_phot(pixel_data, aperture, center, sky_value, n_pixels):
 
     if num_elements > 0:
         for k in range(0, num_elements):
-            values.append(pixel_data[x[k], y[k]] - sky_value)
-            phot += (pixel_data[x[k], y[k]] - sky_value)
+            values.append(pixel_data[x[k], y[k]])
+            phot += (pixel_data[x[k], y[k]])
 
     return phot, max(values)
 
