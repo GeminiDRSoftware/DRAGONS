@@ -1332,7 +1332,7 @@ class QAPrimitives(GENERALPrimitives):
             if ad.count_exts("SCI")==1 or not separate_ext:
                 mean_fwhm = mean_fwhms[0]
                 mean_ellip = mean_ellips[0]
-                if mean_fwhm is not None:tim
+                if mean_fwhm is not None:
                     ad.phu_set_key_value("MEANFWHM", mean_fwhm,
                     comment=self.keyword_comments["MEANFWHM"])
                 if mean_ellip is not None:
