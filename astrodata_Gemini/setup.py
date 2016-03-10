@@ -23,6 +23,7 @@ import glob
 from distutils.core import setup
 
 svndir = re.compile('.svn')
+fitsfile = re.compile('.fits')
 
 PACKAGENAME = 'astrodata_Gemini'
 VERSION = '0.1.0'
@@ -42,6 +43,14 @@ for root, dirs, files in os.walk(os.path.join(PIFNAME,'pifgemini')):
         pifmodules = map((lambda d: slash.sub('.','/'.join([PACKAGENAME,root,d]))),\
                          filter((lambda d: not svndir.search(d)), dirs))
         PACKAGES.extend( pifmodules )
+PACKAGES.append('.'.join([PACKAGENAME,CONFIGNAME]))
+PACKAGES.append('.'.join([PACKAGENAME,CONFIGNAME,'descriptors']))
+PACKAGES.append('.'.join([PACKAGENAME,CONFIGNAME,'lookups']))
+for root, dirs, files in os.walk(os.path.join(CONFIGNAME,'lookups')):
+    if not svndir.search(root) and len(files) > 0:
+        lutmodules = map((lambda d: slash.sub('.','/'.join([PACKAGENAME,root,d]))),\
+                         filter((lambda d: not svndir.search(d)), dirs))
+        PACKAGES.extend( lutmodules )
         
 #for m in SUBMODULES:
 #    PACKAGES.append('.'.join([MODULENAME,m]))
@@ -64,9 +73,11 @@ PACKAGE_DATA[PACKAGENAME].extend(glob.glob(os.path.join(RECIPENAME,'demos','reci
 PACKAGE_DATA[PACKAGENAME].extend(glob.glob(os.path.join(RECIPENAME,'tests','recipe.*')))
 
 
-PACKAGE_DATA[PACKAGENAME].append(os.path.join(CONFIGNAME,'structures','*.py'))
 for root, dirs, files in os.walk(os.path.join(CONFIGNAME,'lookups')):
+    # picking up the FITS files (BPMs and MDFs)
+    # all other LUT should be .py files and picked up above.
     if not svndir.search(root) and len(files) > 0:
+        files = [f for f in files if fitsfile.search(f)]
         PACKAGE_DATA[PACKAGENAME].extend( map((lambda f: os.path.join(root, f)), files) )
 for root, dirs, files in os.walk(os.path.join(CONFIGNAME,'descriptors')):
     if not svndir.search(root) and len(files) > 0:
