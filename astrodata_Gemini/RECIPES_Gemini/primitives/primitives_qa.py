@@ -1734,20 +1734,14 @@ def _strehl(ad, sources):
 
         for source in sources[ext]:
 
+            # position calculated from the center
             source_pos = {'x': source.x / div_n - n_pixels / 2.,
                           'y': source.y / div_n - n_pixels / 2.}
 
             # compute perfect PSF at position of source
             psf = _perfect_psf(n_pixels, source_pos, phase_param, pupil)
 
-            source_pos = {'x': source.x / div_n, 'y': source.y / div_n}
-
-            psf_flx, psf_peak = _psf_phot(psf, 4.0*source.flux_radius,
-                                          source_pos, n_pixels)
-
-            strehl = float(((source.flux_max) / source.flux) /
-                           (psf_peak / psf_flx))
-
+            strehl = float(((source.flux_max) / source.flux) / np.amax(psf))
             if strehl <= STREHL_LIMIT:
                 all_strehl.append(strehl)
 
@@ -1880,38 +1874,6 @@ def _dist_circle(array_size, center, radius):
             output_array[x, y] = np.sqrt(squared['x'][x] + squared['y'][y])
 
     return output_array
-
-
-def _psf_phot(pixel_data, aperture, center, n_pixels):
-    """
-    Simple aperture photometry of a numpy array of values.
-    For use in calculating the ideal psf for a Strehl calculation
-
-    :param pixel_data: an array containing pixel values
-    :param aperture: pixel radius of aperture to use
-    :param center: x,y coordinates of center of aperture
-    :param n_pixels: number of pixels in one coordinate
-    :return: total flux within aperture and peak flux
-    """
-
-    phot = 0
-    values = [0]
-
-    if np.size(aperture) > 1:
-        aperture = np.ceil(aperture[0])
-
-    radial_array = _dist_circle(n_pixels, center, aperture)
-
-    (x, y) = np.where((radial_array <= aperture) & (radial_array != 0.0))
-
-    num_elements = len(x)
-
-    if num_elements > 0:
-        for k in range(0, num_elements):
-            values.append(pixel_data[x[k], y[k]])
-            phot += (pixel_data[x[k], y[k]])
-
-    return phot, max(values)
 
 
 def _save_pupil(pupil, pupil_key, PUPIL_FILE):
