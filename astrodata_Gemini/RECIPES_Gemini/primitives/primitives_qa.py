@@ -1699,7 +1699,7 @@ def _strehl(ad, sources):
     div_n = 1.0
     # for large arrays,  for speed approximate strehl by 'binning' pixels
     if n_pixels > 1024:
-        div_n = 8.0
+        div_n = n_pixels / 256.0
 
     n_pixels /= int(div_n)
 
