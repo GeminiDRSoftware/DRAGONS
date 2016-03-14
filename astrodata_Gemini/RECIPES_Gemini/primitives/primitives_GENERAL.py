@@ -1,8 +1,7 @@
 import os
-
 import glob as gl
 from copy import deepcopy
-
+from inspect import stack
 from astrodata import AstroData
 from astrodata.utils import Lookups
 from astrodata.utils import logutils
@@ -11,6 +10,7 @@ from gempy.gemini import gemini_tools as gt
 
 from recipe_system.reduction.reductionObjects import PrimitiveSet
 
+from astrodata_Gemini.ADCONFIG_Gemini.lookups import calurl_dict
 from astrodata_Gemini.ADCONFIG_Gemini.lookups import keyword_comments
 from astrodata_Gemini.ADCONFIG_Gemini.lookups import timestamp_keywords
 from astrodata_Gemini.ADCONFIG_Gemini.lookups.source_detection import sextractor_default_dict
@@ -35,6 +35,9 @@ class GENERALPrimitives(PrimitiveSet):
         # updated in the primitives
         self.keyword_comments = keyword_comments.keyword_comments
         self.sx_default_dict = sextractor_default_dict.sextractor_default_dict
+        self.calurl_dict = calurl_dict.calurl_dict
+        # This lambda will return the name of the current caller.
+        self.myself = lambda: stack()[1][3]
         return 
     init.pt_hide = True
     
@@ -236,6 +239,8 @@ class GENERALPrimitives(PrimitiveSet):
         # Instantiate the log
         log = logutils.get_logger(__name__)
 
+        # the function name, passed to mark_history()
+        # primname = __str__().split('.')[-1].replace(">","")
 
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "add", "starting"))
@@ -249,7 +254,7 @@ class GENERALPrimitives(PrimitiveSet):
         # Get data to be added from the RC
         operand = rc["operand"]
         if operand is None:
-            log.stdinfo("No operand to add; no changes will be "\
+            log.stdinfo("No operand to add; no changes will be "
                         "made to input")
         elif type(operand)==AstroData:
             log.stdinfo("Adding %s to input" % 
@@ -266,7 +271,7 @@ class GENERALPrimitives(PrimitiveSet):
                 ad.add(operand)
 
                 # Add the appropriate time stamps to the PHU
-                gt.mark_history(adinput=ad, keyword=timestamp_key)
+                gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
                 # Change the filename
                 ad.filename = gt.filename_updater(
@@ -321,7 +326,7 @@ class GENERALPrimitives(PrimitiveSet):
                 ad.div(operand)
 
                 # Add the appropriate time stamps to the PHU
-                gt.mark_history(adinput=ad, keyword=timestamp_key)
+                gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
                 # Change the filename
                 ad.filename = gt.filename_updater(
@@ -376,7 +381,7 @@ class GENERALPrimitives(PrimitiveSet):
                 ad.mult(operand)
 
                 # Add the appropriate time stamps to the PHU
-                gt.mark_history(adinput=ad, keyword=timestamp_key)
+                gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
                 # Change the filename
                 ad.filename = gt.filename_updater(
@@ -431,7 +436,7 @@ class GENERALPrimitives(PrimitiveSet):
                 ad.sub(operand)
 
                 # Add the appropriate time stamps to the PHU
-                gt.mark_history(adinput=ad, keyword=timestamp_key)
+                gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
                 # Change the filename
                 ad.filename = gt.filename_updater(

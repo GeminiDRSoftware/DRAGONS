@@ -222,7 +222,8 @@ class StackPrimitives(GENERALPrimitives):
                     if bunit is not None:
                         gt.update_key(adinput=ext, keyword="BUNIT",
                                       value="%s*%s" % (bunit, bunit),
-                                      comment=None, extname=VAR)
+                                      comment=None, extname=VAR,
+                                      keyword_comments=self.keyword_comments)
             
             # Revert the dtype and BUNIT for the data quality extension
             # (gemcombine sets them to int32 and the same value as the science
@@ -232,8 +233,9 @@ class StackPrimitives(GENERALPrimitives):
                     ext.data = ext.data.astype(dq_dtype)
                     
                     if bunit is not None:
-                        gt.update_key(adinput=ext, keyword="BUNIT",
-                                      value="bit", comment=None, extname=DQ)
+                        gt.update_key(adinput=ext, keyword="BUNIT", value="bit",
+                                      comment=None, extname=DQ, 
+                                      keyword_comments=self.keyword_comments)
             
             # Gemcombine sets the GAIN keyword to the sum of the gains; 
             # reset it to the average instead. Set the RDNOISE to the
@@ -246,17 +248,21 @@ class StackPrimitives(GENERALPrimitives):
                 read_noise = read_noise_dict[extver]
                 
                 gt.update_key(adinput=ext, keyword="GAIN", value=gain,
-                              comment=None, extname="pixel_exts")
+                              comment=None, extname="pixel_exts", 
+                              keyword_comments=self.keyword_comments)
                 gt.update_key(adinput=ext, keyword="RDNOISE", value=read_noise,
-                              comment=None, extname="pixel_exts")
+                              comment=None, extname="pixel_exts", 
+                              keyword_comments=self.keyword_comments)
             
             gain = gain_dict[1]
             read_noise = read_noise_dict[1]
             
-            gt.update_key(adinput=ad_output, keyword="GAIN", value=gain,
-                          comment=None, extname="PHU")
-            gt.update_key(adinput=ad_output, keyword="RDNOISE",
-                          value=read_noise, comment=None, extname="PHU")
+            gt.update_key(adinput=ad_output, keyword="GAIN", value=gain, comment=None,
+                          extname="PHU", keyword_comments=self.keyword_comments)
+
+            gt.update_key(adinput=ad_output, keyword="RDNOISE", value=read_noise,
+                          comment=None, extname="PHU", 
+                          keyword_comments=self.keyword_comments)
             
             suffix = rc["suffix"]
             
@@ -273,11 +279,12 @@ class StackPrimitives(GENERALPrimitives):
             # frame 
             orig_datalab = ad_output.phu_get_key_value("DATALAB")
             new_datalab = "%s%s" % (orig_datalab, suffix)
-            gt.update_key(adinput=ad_output, keyword="DATALAB",
-                          value=new_datalab, comment=None, extname="PHU")
+            gt.update_key(adinput=ad_output, keyword="DATALAB", value=new_datalab,
+                          comment=None, extname="PHU", 
+                          keyword_comments=self.keyword_comments)
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad_output, keyword=timestamp_key)
+            gt.mark_history(adinput=ad_output, primname=self.myself(), keyword=timestamp_key)
             
             # Change the filename
             ad_output.filename = gt.filename_updater(adinput=ad_output,
@@ -400,7 +407,8 @@ class StackPrimitives(GENERALPrimitives):
                         adr_stacked_sky = adr_stacked_sky_list[0]
                         
                         # Add the appropriate time stamps to the PHU
-                        gt.mark_history(adinput=adr_stacked_sky.ad,
+                        gt.mark_history(adinput=adr_stacked_sky.ad, 
+                                        primname=self.myself(),
                                         keyword=timestamp_key)
                         
                         ad_sky_for_correction_output_list.append(

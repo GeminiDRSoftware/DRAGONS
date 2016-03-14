@@ -539,7 +539,7 @@ class ResamplePrimitives(GENERALPrimitives):
                     ad.mult(matrix_det)
                 
                 # Add time stamp to PHU
-                gt.mark_history(adinput=ad, keyword=timestamp_key)
+                gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
                 # Change the filename
                 ad.filename = gt.filename_updater(adinput=ad, 

@@ -74,15 +74,15 @@ class PreprocessPrimitives(GENERALPrimitives):
             
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
-            gt.update_key(adinput=ad, keyword="BUNIT", value="electron",
-                          comment=None, extname=SCI)
+            gt.update_key(adinput=ad, keyword="BUNIT", value="electron", comment=None,
+                          extname=SCI, keyword_comments=self.keyword_comments)
             if ad[VAR]:
-                gt.update_key(adinput=ad, keyword="BUNIT",
-                              value="electron*electron", comment=None,
-                              extname=VAR)
+                gt.update_key(adinput=ad, keyword="BUNIT", value="electron*electron",
+                              comment=None, extname=VAR, 
+                              keyword_comments=self.keyword_comments)
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
             
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
@@ -427,7 +427,7 @@ class PreprocessPrimitives(GENERALPrimitives):
 
                 # Add time stamps, change the filename, and
                 # append to output list
-                gt.mark_history(adinput=ad, keyword=timestamp_key)
+                gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
                 ad.filename = gt.filename_updater(adinput=ad, 
                                                   suffix=rc["suffix"], 
                                                   strip=True)
@@ -522,8 +522,8 @@ class PreprocessPrimitives(GENERALPrimitives):
                 # of the science data
                 # For a GMOS example, this allows a full frame flat to
                 # be used for a CCD2-only science frame. 
-                flat = gt.clip_auxiliary_data(
-                    adinput=ad,aux=flat,aux_type="cal")[0]
+                flat = gt.clip_auxiliary_data(adinput=ad,aux=flat,aux_type="cal",
+                                              keyword_comments=self.keyword_comments)[0]
 
                 # Check again, but allow it to fail if they still don't match
                 gt.check_inputs_match(ad1=ad, ad2=flat)
@@ -542,7 +542,7 @@ class PreprocessPrimitives(GENERALPrimitives):
 
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
@@ -710,7 +710,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                          % total_exposure_time)
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
@@ -793,7 +793,7 @@ class PreprocessPrimitives(GENERALPrimitives):
 
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
@@ -853,7 +853,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                 ext = ext.div(mean)
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
@@ -925,7 +925,7 @@ class PreprocessPrimitives(GENERALPrimitives):
 #                ad.mult(scale)
 #
 #                # Add the appropriate time stamps to the PHU
-#                gt.mark_history(adinput=ad, keyword=timestamp_key)
+#                gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 #
 #                # Change the filename
 #                ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
@@ -1353,7 +1353,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                                  comment=self.keyword_comments["DARKIM"])
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
@@ -1523,7 +1523,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                     sciext.sub(bg)
                     
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],

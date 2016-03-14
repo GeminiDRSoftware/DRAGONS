@@ -160,7 +160,7 @@ class PhotometryPrimitives(GENERALPrimitives):
                 log.warning("No OBJCAT found; not matching OBJCAT to REFCAT")
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
@@ -359,7 +359,7 @@ class PhotometryPrimitives(GENERALPrimitives):
             ad = _profile_sources(ad)
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 

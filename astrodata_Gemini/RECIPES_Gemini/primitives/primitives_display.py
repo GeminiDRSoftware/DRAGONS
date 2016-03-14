@@ -117,7 +117,12 @@ class DisplayPrimitives(GENERALPrimitives):
                                  "will be performed")
                 else:
                     # Get the bias level
-                    bias_level = gdc.get_bias_level(adinput=ad)
+                    try:
+                        bias_level = gdc.get_bias_level(adinput=ad)
+                    except NotImplementedError:
+                        log.fullinfo(sys.exc_info()[1])
+                        bias_level = None
+
                     if bias_level is not None:
                         # Subtract the bias level from each science extension
                         log.stdinfo("Subtracting approximate bias level "

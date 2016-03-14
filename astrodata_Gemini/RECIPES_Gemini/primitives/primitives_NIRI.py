@@ -57,40 +57,48 @@ class NIRIPrimitives(GEMINIPrimitives):
             
             # Filter name (required for IRAF?)
             gt.update_key_from_descriptor(
-              adinput=ad, descriptor="filter_name(stripID=True, pretty=True)",
-              keyword="FILTER", extname="PHU")
+                adinput=ad, descriptor="filter_name(stripID=True, pretty=True)",
+                keyword="FILTER", extname="PHU", 
+                keyword_comments=self.keyword_comments)
             
             # Pixel scale
             gt.update_key_from_descriptor(
-              adinput=ad, descriptor="pixel_scale()", extname="PHU")
+                adinput=ad, descriptor="pixel_scale()", extname="PHU",
+                keyword_comments=self.keyword_comments)
             
             # Read noise (new keyword, should it be written?)
             gt.update_key_from_descriptor(
-              adinput=ad, descriptor="read_noise()", extname="SCI")
+                adinput=ad, descriptor="read_noise()", extname="SCI",
+                keyword_comments=self.keyword_comments)
             
             # Gain (new keyword, should it be written?)
             gt.update_key_from_descriptor(
-              adinput=ad, descriptor="gain()", extname="SCI")
+                adinput=ad, descriptor="gain()", extname="SCI",
+                keyword_comments=self.keyword_comments)
             
             # Non linear level
             gt.update_key_from_descriptor(
-              adinput=ad, descriptor="non_linear_level()", extname="SCI")
+                adinput=ad, descriptor="non_linear_level()", extname="SCI",
+                keyword_comments=self.keyword_comments)
             
             # Saturation level
             gt.update_key_from_descriptor(
-              adinput=ad, descriptor="saturation_level()", extname="SCI")
+                adinput=ad, descriptor="saturation_level()", extname="SCI",
+                keyword_comments=self.keyword_comments)
             
             # Dispersion axis (new keyword, should it be written?)
             if "SPECT" in ad.types:
                 gt.update_key_from_descriptor(
-                  adinput=ad, descriptor="dispersion_axis()", extname="SCI")
+                    adinput=ad, descriptor="dispersion_axis()", extname="SCI",
+                    keyword_comments=self.keyword_comments)
             
-            # Convention seems to be to multiply the exposure time by coadds in prepared data
+            # Convention is multiply the exposure time by coadds in prepared data
             gt.update_key_from_descriptor(
-              adinput=ad, descriptor="exposure_time()", extname="PHU")
+                adinput=ad, descriptor="exposure_time()", extname="PHU",
+                keyword_comments=self.keyword_comments)
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
             
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
@@ -194,7 +202,7 @@ class NIRIPrimitives(GEMINIPrimitives):
                 attach_mdf = False
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
             
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
@@ -247,7 +255,7 @@ class NIRIPrimitives(GEMINIPrimitives):
             log.status("No validation required for %s" % ad.filename)
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
             
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],

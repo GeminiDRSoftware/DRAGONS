@@ -97,9 +97,9 @@ class GNIRS_IMAGEPrimitives(GNIRSPrimitives):
             
             # Clip the illumination mask to match the size of the 
             # input AstroData object science.
-            final_illum = gt.clip_auxiliary_data(adinput=ad, 
-                                                 aux=corr_illum_ad,
-                                                 aux_type="bpm")[0]
+            final_illum = gt.clip_auxiliary_data(adinput=ad, aux=corr_illum_ad,
+                                                 aux_type="bpm",
+                                            keyword_comments=self.keyword_comments)[0]
  
             # binary_OR the illumination mask or create a DQ plane from it.
             if ad['DQ',1]:
@@ -208,7 +208,7 @@ class GNIRS_IMAGEPrimitives(GNIRSPrimitives):
             ad['SCI',1].data[bad_pixels] = rep_val
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
@@ -267,7 +267,7 @@ class GNIRS_IMAGEPrimitives(GNIRSPrimitives):
                 ext = ext.div(mean)
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 

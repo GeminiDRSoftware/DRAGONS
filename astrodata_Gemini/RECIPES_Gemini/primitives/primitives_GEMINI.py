@@ -88,20 +88,19 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
             ad.store_original_name()
             
             # Number of science extensions
-            gt.update_key(adinput=ad, keyword="NSCIEXT",
-                          value=ad.count_exts("SCI"), comment=None,
-                          extname="PHU") 
+            gt.update_key(adinput=ad, keyword="NSCIEXT", value=ad.count_exts("SCI"),
+                comment=None, extname="PHU", keyword_comments=self.keyword_comments)
             
             # Number of extensions
-            gt.update_key(adinput=ad, keyword="NEXTEND", value=len(ad),
-                          comment=None, extname="PHU")
+            gt.update_key(adinput=ad, keyword="NEXTEND", value=len(ad), comment=None, 
+                          extname="PHU", keyword_comments=self.keyword_comments)
             
             # Physical units (assuming raw data has units of ADU)
-            gt.update_key(adinput=ad, keyword="BUNIT", value="adu",
-                          comment=None, extname="SCI")
+            gt.update_key(adinput=ad, keyword="BUNIT", value="adu", comment=None,
+                          extname="SCI", keyword_comments=self.keyword_comments)
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
             
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
@@ -186,7 +185,7 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
                             " was successfully mosaicked")
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=adout, keyword=timestamp_key)
+            gt.mark_history(adinput=adout, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             adout.filename = gt.filename_updater(
@@ -375,7 +374,7 @@ class GEMINIPrimitives(BookkeepingPrimitives,CalibrationPrimitives,
                 ad.append(wavecal)
 
                 # Add the appropriate time stamps to the PHU
-                gt.mark_history(adinput=ad, keyword=timestamp_key)
+                gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
                 # Change the filename
                 ad.filename = gt.filename_updater(adinput=ad, 

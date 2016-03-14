@@ -454,7 +454,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                     sciext.data[mask] = 1.0
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
@@ -555,7 +555,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             ad.mult(scale)
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
@@ -656,8 +656,8 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 # science data
                 # For a GMOS example, this allows a full frame fringe to
                 # be used for a CCD2-only science frame. 
-                fringe = gt.clip_auxiliary_data(
-                    adinput=ad, aux=fringe, aux_type="cal")[0]
+                fringe = gt.clip_auxiliary_data(adinput=ad, aux=fringe, aux_type="cal", 
+                                            keyword_comments=self.keyword_comments)[0]
 
                 # Check again, but allow it to fail if they still don't match
                 gt.check_inputs_match(ad1=ad, ad2=fringe)
@@ -687,10 +687,10 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 # affecting the original
                 statsad = deepcopy(ad)
                 statsfringe = deepcopy(fringe)
-
+                adyfringe = [statsad, statsfringe]
                 # Trim off any overscan region still present
-                statsad,statsfringe = gt.trim_to_data_section([statsad,
-                                                               statsfringe])
+                statsad,statsfringe = gt.trim_to_data_section(adinput=adyfringe,
+                                        keyword_comments=self.keyword_comments)
 
                 # Check the number of science extensions; if more than
                 # one, use CCD2 data only
@@ -822,7 +822,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
             scaled_fringe = fringe.mult(float(scale))
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=scaled_fringe, keyword=timestamp_key)
+            gt.mark_history(adinput=scaled_fringe, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             scaled_fringe.filename = gt.filename_updater(
@@ -968,9 +968,9 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                 # science data
                 # For a GMOS example, this allows a full frame fringe to
                 # be used for a CCD2-only science frame. 
-                fringe = gt.clip_auxiliary_data(
-                    adinput=ad, aux=fringe, aux_type="cal")[0]
-
+                fringe = gt.clip_auxiliary_data(adinput=ad,aux=fringe,aux_type="cal",
+                                            keyword_comments=self.keyword_comments)[0]
+                
                 # Check again, but allow it to fail if they still don't match
                 gt.check_inputs_match(ad1=ad, ad2=fringe)
 
@@ -984,7 +984,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
                                  comment=self.keyword_comments["FRINGEIM"])
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 

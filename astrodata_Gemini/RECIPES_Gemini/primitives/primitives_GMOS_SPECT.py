@@ -60,7 +60,7 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                                               "=True")
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=adout, keyword=timestamp_key)
+            gt.mark_history(adinput=adout, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             adout.filename = gt.filename_updater(
@@ -99,7 +99,7 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
             adout = gsextract_task.run()
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=adout, keyword=timestamp_key)
+            gt.mark_history(adinput=adout, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             adout.filename = gt.filename_updater(
@@ -145,10 +145,11 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
 
         # Blank out any position or program information in the
         # header (spectroscopy flats are often taken with science data)
-        adout = gt.convert_to_cal_header(adinput=adout,caltype="flat")[0]
+        adout = gt.convert_to_cal_header(adinput=adout, caltype="flat",
+                                         keyword_comments=self.keyword_comments)[0]
 
         # Add the appropriate time stamps to the PHU
-        gt.mark_history(adinput=adout, keyword=timestamp_key)
+        gt.mark_history(adinput=adout, primname=self.myself(), keyword=timestamp_key)
 
         adoutput_list.append(adout)
 
@@ -180,7 +181,7 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
             adout = gscrrej_task.run()
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=adout, keyword=timestamp_key)
+            gt.mark_history(adinput=adout, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             adout.filename = gt.filename_updater(
@@ -250,7 +251,7 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
                 adout = gstransform_task.run()
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=adout, keyword=timestamp_key)
+            gt.mark_history(adinput=adout, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             adout.filename = gt.filename_updater(
@@ -303,7 +304,7 @@ class GMOS_SPECTPrimitives(GMOSPrimitives):
             adout = gsskysub_task.run()
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=adout, keyword=timestamp_key)
+            gt.mark_history(adinput=adout, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             adout.filename = gt.filename_updater(

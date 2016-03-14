@@ -415,10 +415,11 @@ class QAPrimitives(GENERALPrimitives):
                     rc.report_qametric(ad, "bg", qad)
 
             # Report measurement to fitsstore
-            fitsdict = gt.fitsstore_report(ad,rc,"sb",info_dict)
+            fitsdict = gt.fitsstore_report(ad, rc, "sb", info_dict, 
+                                           self.calurl_dict)
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
@@ -861,7 +862,8 @@ class QAPrimitives(GENERALPrimitives):
                     info_dict[key]["comment"] = qad["comment"]
 
                 # Also report to fitsstore
-                fitsdict = gt.fitsstore_report(ad,rc,"zp",info_dict)
+                fitsdict = gt.fitsstore_report(ad, rc, "zp", info_dict, 
+                                               self.calurl_dict)
 
             else:
                 ind = " " * rc["logindent"]
@@ -869,7 +871,7 @@ class QAPrimitives(GENERALPrimitives):
                 log.stdinfo(ind+"Could not measure zeropoint - no catalog sources associated")
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
@@ -1294,7 +1296,8 @@ class QAPrimitives(GENERALPrimitives):
 
             # Build a report to send to fitsstore
             if info_dict:
-                fitsdict = gt.fitsstore_report(ad, rc, "iq", info_dict)
+                fitsdict = gt.fitsstore_report(ad, rc, "iq", info_dict, 
+                                               self.calurl_dict)
 
         # Display image with stars used circled
         if display:
@@ -1340,7 +1343,7 @@ class QAPrimitives(GENERALPrimitives):
                     comment=self.keyword_comments["MEANELLP"])
 
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 

@@ -337,7 +337,7 @@ class CalibrationPrimitives(GENERALPrimitives):
                                               strip=True)
             
             # Adding a PROCARC time stamp to the PHU
-            gt.mark_history(adinput=ad, keyword="PROCARC")
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCARC")
             
             # Refresh the AD types to reflect new processed status
             ad.refresh_types()
@@ -364,7 +364,7 @@ class CalibrationPrimitives(GENERALPrimitives):
                                               strip=True)
             
             # Adding a PROCBIAS time stamp to the PHU
-            gt.mark_history(adinput=ad, keyword="PROCBIAS")
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCBIAS")
             
             # Refresh the AD types to reflect new processed status
             ad.refresh_types()
@@ -390,7 +390,7 @@ class CalibrationPrimitives(GENERALPrimitives):
                                               strip=True)
 
             # Adding a BPM time stamp to the PHU
-            gt.mark_history(adinput=ad, keyword="BPM")
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword="BPM")
 
             # Refresh the AD types to reflect new processed status
             ad.refresh_types()
@@ -417,7 +417,7 @@ class CalibrationPrimitives(GENERALPrimitives):
                                               strip=True)
             
             # Adding a PROCDARK time stamp to the PHU
-            gt.mark_history(adinput=ad, keyword="PROCDARK")
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCDARK")
             
             # Refresh the AD types to reflect new processed status
             ad.refresh_types()
@@ -444,7 +444,7 @@ class CalibrationPrimitives(GENERALPrimitives):
                                               strip=True)
             
             # Adding a PROCFLAT time stamp to the PHU
-            gt.mark_history(adinput=ad, keyword="PROCFLAT")
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCFLAT")
             
             # Refresh the AD types to reflect new processed status
             ad.refresh_types()
@@ -475,10 +475,11 @@ class CalibrationPrimitives(GENERALPrimitives):
             
             # Sanitize the headers of the file so that it looks like
             # a public calibration file rather than a science file
-            ad = gt.convert_to_cal_header(adinput=ad, caltype="fringe")[0]
+            ad = gt.convert_to_cal_header(adinput=ad, caltype="fringe", 
+                                          keyword_comments=self.keyword_comments)[0]
             
             # Adding a PROCFRNG time stamp to the PHU
-            gt.mark_history(adinput=ad, keyword="PROCFRNG")
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCFRNG")
             
             # Refresh the AD types to reflect new processed status
             ad.refresh_types()

@@ -1,4 +1,4 @@
-            #
+#
 #                                                                     QAP Gemini
 #
 #                            RECIPES_Gemini.primitives.primitives_standardize.py
@@ -28,6 +28,7 @@ from astrodata_Gemini.ADCONFIG_Gemini.lookups import MDFDict
 from primitives_GENERAL import GENERALPrimitives
 # ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
 class StandardizePrimitives(GENERALPrimitives):
     """
     This is the class containing all of the primitives used to standardize an
@@ -136,9 +137,9 @@ class StandardizePrimitives(GENERALPrimitives):
             if bpm_ad is not None:
                 # Clip the BPM data to match the size of the input AstroData
                 # object science and pad with overscan region, if necessary
-                final_bpm = gt.clip_auxiliary_data(adinput=ad, aux=bpm_ad,
-                                                   aux_type="bpm",
-                                                   return_dtype=dq_dtype)[0]
+                final_bpm = gt.clip_auxiliary_data(adinput=ad, aux=bpm_ad, aux_type="bpm",
+                                                return_dtype=dq_dtype,
+                                                keyword_comments=self.keyword_comments)[0]
 
             # Get the non-linear level and the saturation level using the
             # appropriate descriptors - Individual values get checked in the
@@ -271,7 +272,7 @@ class StandardizePrimitives(GENERALPrimitives):
                 ad.append(moredata=dq)
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
             
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
@@ -431,7 +432,7 @@ class StandardizePrimitives(GENERALPrimitives):
             ad.append(moredata=mdf_ad)
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
             
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
@@ -534,7 +535,7 @@ class StandardizePrimitives(GENERALPrimitives):
                                      add_poisson_noise=poisson_noise)
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
             
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
@@ -572,7 +573,7 @@ class StandardizePrimitives(GENERALPrimitives):
         for ad in rc.get_inputs_as_astrodata():
             
             # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, keyword=timestamp_key)
+            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
             
             # Update the AstroData type so that the AstroData object is
             # recognised as being prepared
@@ -869,14 +870,17 @@ class StandardizePrimitives(GENERALPrimitives):
 
 
     def _update_dq_header(self, sci=None, dq=None, bpmname=None):
+        # NOTE:: re: update_key(): keyword_comments passed only if 
+        # comment is None or not passed to update_key().
+
         # Add the physical units keyword
-        gt.update_key(adinput=dq, keyword="BUNIT", value="bit", comment=None,
-                      extname=DQ)
+        gt.update_key(adinput=dq, keyword="BUNIT", value="bit", extname=DQ, 
+                      keyword_comments=self.keyword_comments)
         
         # Add the name of the bad pixel mask
         if bpmname is not None:
-            gt.update_key(adinput=dq, keyword="BPMNAME", value=bpmname,
-                          comment=None, extname=DQ)
+            gt.update_key(adinput=dq, keyword="BPMNAME", value=bpmname, extname=DQ,
+                          keyword_comments=self.keyword_comments)
         
         # These should probably be done using descriptors (?)
         keywords_from_sci = ["AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC",
@@ -895,7 +899,7 @@ class StandardizePrimitives(GENERALPrimitives):
             if keyword_value is not None:
                 gt.update_key(adinput=dq, keyword=keyword, value=keyword_value,
                               comment=dq_comment, extname=DQ)
-        
+
         return dq
 
 
@@ -903,7 +907,8 @@ class StandardizePrimitives(GENERALPrimitives):
         # Add the physical units keyword
         if bunit is not None:
             gt.update_key(adinput=var, keyword="BUNIT", value="%s*%s"
-                          % (bunit, bunit), comment=None, extname=VAR)
+                          % (bunit, bunit), extname=VAR,
+                          keyword_comments=self.keyword_comments)
         
         # These should probably be done using descriptors (?)
         keywords_from_sci = ["AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC",
@@ -920,10 +925,9 @@ class StandardizePrimitives(GENERALPrimitives):
             # extension
             keyword_value = sci.get_key_value(key=keyword)
             if keyword_value is not None:
-                gt.update_key(adinput=var, keyword=keyword,
-                              value=keyword_value, comment=var_comment,
-                              extname=VAR)
-        
+                gt.update_key(adinput=var, keyword=keyword, value=keyword_value,
+                              comment=var_comment, extname=VAR)
+
         return var
 
 

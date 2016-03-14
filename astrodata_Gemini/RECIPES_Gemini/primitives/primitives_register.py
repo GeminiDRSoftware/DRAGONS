@@ -342,7 +342,7 @@ class RegisterPrimitives(GENERALPrimitives):
 
             # Change the filenames and add the appropriate timestamps
             for ad in adoutput_list:
-                gt.mark_history(adinput=ad, keyword=timestamp_key)
+                gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
                 ad.filename = gt.filename_updater(adinput=ad, 
                                                   suffix=rc["suffix"], 
@@ -497,7 +497,7 @@ class RegisterPrimitives(GENERALPrimitives):
                             ad.filename)
                 
             # Report the measurement to the fitsstore
-            fitsdict = gt.fitsstore_report(ad,rc,"pe",info_dict)
+            fitsdict = gt.fitsstore_report(ad,rc,"pe",info_dict, self.calurl_dict)
 
             adoutput_list.append(ad)
 
@@ -626,7 +626,7 @@ class RegisterPrimitives(GENERALPrimitives):
             
 
                 # Add the appropriate time stamps to the PHU
-                gt.mark_history(adinput=ad, keyword=timestamp_key)
+                gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
                 # Change the filename
                 ad.filename = gt.filename_updater(adinput=ad, 
