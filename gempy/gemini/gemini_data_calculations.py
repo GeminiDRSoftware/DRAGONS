@@ -51,7 +51,6 @@ def get_bias_level(adinput=None, estimate=True):
         ret_bias_level = _get_bias_level(adinput=adinput)
     return ret_bias_level
 
-    
 def _get_bias_level(adinput=None):
     """
     Determine the bias level value from the science extensions of the input

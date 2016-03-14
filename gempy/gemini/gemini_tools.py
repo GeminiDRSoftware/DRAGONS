@@ -37,15 +37,10 @@ from astrodata.interface.Descriptors import DescriptorValue
 from astrodata.utils.Errors import DescriptorValueTypeError
 
 # ------------------------------------------------------------------------------
-# Load the standard comments for header keywords that will be updated
-# in these functions
-keyword_comments = Lookups.get_lookup_table("Gemini/keyword_comments",
-                                            "keyword_comments")
-
 # Initialize pointing_in_field() caching of FOV table look-ups:
 _FOV_lookup = None
-# ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
 def add_objcat(adinput=None, extver=1, replace=False, columns=None, sxdict=None):
     """
     Add OBJCAT table if it does not exist, update or replace it if it does.
@@ -590,8 +585,8 @@ def matching_inst_config(ad1=None, ad2=None, check_exposure=False):
     return result
 
 
-def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
-                        return_dtype=None):
+def clip_auxiliary_data(adinput=None, aux=None, aux_type=None, 
+                        return_dtype=None, keyword_comments=None):
     """
     This function clips auxiliary data like calibration files or BPMs
     to the size of the data section in the science. It will pad auxiliary
@@ -599,6 +594,13 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
     requires that the auxiliary data contain the science data.
     
     """
+    # ensure caller passes the sextractor default dictionary of parameters.
+    try:
+        assert isinstance(keyword_comments, dict)
+    except AssertionError:
+        logutils.error("TypeError: keyword comments dict was not received.")
+        raise TypeError("keyword comments dict required")
+
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = logutils.get_logger(__name__)
@@ -1086,7 +1088,7 @@ def clip_sources(ad):
     return good_source
 
 
-def convert_to_cal_header(adinput=None, caltype=None):
+def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
     """
     This function replaces position, object, and program information 
     in the headers of processed calibration files that are generated
@@ -1100,6 +1102,11 @@ def convert_to_cal_header(adinput=None, caltype=None):
                     'sky', or 'flat'
     :type caltype: string
     """
+    try:
+        assert isinstance(keyword_comments, dict)
+    except AssertionError:
+        logutils.error("TypeError: keyword comments dict was not received.")
+        raise TypeError("keyword comments dict required")
 
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
@@ -1480,7 +1487,7 @@ def fit_continuum(ad):
     return good_source
 
 
-def fitsstore_report(ad, rc, metric, info_dict):
+def fitsstore_report(ad, rc, metric, info_dict, calurl_dict):
     if metric not in ["iq","zp","sb","pe"]:
         raise Errors.InputError("Unknown metric %s" % metric )
     
@@ -1619,13 +1626,11 @@ def fitsstore_report(ad, rc, metric, info_dict):
     # I suspect that rc will return a boolean when reduce is called from the 
     # command line.
     if rc["upload_metrics"] == 'True' or rc["upload_metrics"] == True:  
-        send_fitsstore_report(qareport)
+        send_fitsstore_report(qareport, calurl_dict)
     return qareport
 
 
-def send_fitsstore_report(qareport):
-    # from astrodata_Gemini/ADCONFIG_Gemini/lookups/calurl_dict.py    
-    calurl_dict = Lookups.get_lookup_table("Gemini/calurl_dict", "calurl_dict")
+def send_fitsstore_report(qareport, calurl_dict):
     qalist = [qareport]
     req = urllib2.Request(url=calurl_dict["QAMETRICURL"], data=json.dumps(qalist))
     f = urllib2.urlopen(req)
@@ -1692,7 +1697,7 @@ def make_dict(key_list=None, value_list=None):
     
     return ret_dict
 
-def mark_history(adinput=None, keyword=None, comment=None):
+def mark_history(adinput=None, keyword=None, primname=None, comment=None):
     """
     Add or update a keyword with the UT time stamp as the value (in the form
     <YYYY>-<MM>-<DD>T<HH>:<MM>:<SS>) to the header of the PHU of the AstroData
@@ -1714,7 +1719,14 @@ def mark_history(adinput=None, keyword=None, comment=None):
                     if the timestamp_keywords.py module cannot be found, the
                     comment 'UT time stamp for <keyword>' will instead be used.
     :type comment: string
+
     """
+    try:
+        assert keyword
+    except AssertionError:
+        logutils.error("TypeError: A keyword was not received.")
+        raise TypeError("argument 'keyword' required")
+
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more inputs
     adinput_list = validate_input(input=adinput)
@@ -1723,16 +1735,12 @@ def mark_history(adinput=None, keyword=None, comment=None):
     tlm = datetime.now().isoformat()[0:-7]
     
     # Construct the default comment
-    timestamp_keys = None
     if comment is None:
-        timestamp_keys = Lookups.get_lookup_table("Gemini/timestamp_keywords",
-                                                  "timestamp_keys")
-        comment_suffix = keyword
-        if timestamp_keys is not None:
-            for primitive_name, key in timestamp_keys.iteritems():
-                if key == keyword:
-                    comment_suffix = primitive_name
-        
+        if primname:
+            comment_suffix = primname
+        else:
+            comment_suffix = keyword
+
         final_comment = "UT time stamp for %s" % comment_suffix
     else:
         final_comment = comment
@@ -1858,7 +1866,7 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
         ad.append(table_ad)
     return ad
 
-def trim_to_data_section(adinput=None):
+def trim_to_data_section(adinput=None, keyword_comments=None):
     """
     This function trims the data in each SCI extension to the
     the section returned by its data_section descriptor.  VAR and DQ
@@ -1867,6 +1875,12 @@ def trim_to_data_section(adinput=None):
     This is intended for use in removing overscan sections, or other
     unused parts of the data array.
     """
+    try:
+        assert isinstance(keyword_comments, dict)
+    except AssertionError:
+        logutils.error("TypeError: keyword comments dict was not received.")
+        raise TypeError("keyword comments dict required")
+
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = logutils.get_logger(__name__)
@@ -1992,7 +2006,7 @@ def trim_to_data_section(adinput=None):
         raise
 
 def update_key(adinput=None, keyword=None, value=None, comment=None,
-               extname=None):
+               extname=None, keyword_comments=None):
     """
     Add or update a keyword in the specified header of the AstroData object.
     
@@ -2011,7 +2025,13 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
     :param extname: Name of the extension to add or update the keyword, e.g.,
                    'PHU', 'SCI', 'VAR', 'DQ'
     :type extname: string
+
     """
+
+    if keyword_comments is None and comment is None:
+        logutils.error("TypeError: One of comment or keyword_comments"
+                       "must be passed.")
+        raise TypeError("Missing parameter: comment or keyword_comments")
     # Instantiate the log
     log = logutils.get_logger(__name__)
     
@@ -2108,7 +2128,7 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
                   extname, extver, keyword, value_for_ext, msg, ad.filename))
 
 def update_key_from_descriptor(adinput=None, descriptor=None, keyword=None,
-                               extname=None):
+                               extname=None, keyword_comments=None):
     """
     Add or update a keyword in the specified header of the AstroData object
     with a value determined from the specified descriptor.
@@ -2152,8 +2172,8 @@ def update_key_from_descriptor(adinput=None, descriptor=None, keyword=None,
     if key is None:
         raise Errors.Error("No keyword found for descriptor %s" % descriptor)
     
-    update_key(adinput=ad, keyword=key, value=dv, comment=None,
-               extname=extname)
+    update_key(adinput=ad, keyword=key, value=dv, extname=extname, 
+               keyword_comments=keyword_comments)
     return
 
 def validate_input(input=None, dtype=None):
