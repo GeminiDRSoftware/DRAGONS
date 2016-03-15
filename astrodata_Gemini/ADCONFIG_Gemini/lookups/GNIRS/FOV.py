@@ -3,7 +3,7 @@ from astrodata.utils import Lookups
 from astrodata.utils.ConfigSpace  import lookup_path
 from gempy.gemini import gemini_tools as gt
 
-from . import IllumMaskDict
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GNIRS import IllumMaskDict
 
 # ------------------------------------------------------------------------------
 # This code is looked up by gempy as part of the configuration for the
