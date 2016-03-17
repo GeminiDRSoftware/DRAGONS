@@ -1,16 +1,24 @@
 import os
-from copy import deepcopy
-import datetime
 import math
+import datetime
 import numpy as np
+
+from copy import deepcopy
+
 from astrodata import AstroData
 from astrodata.utils import Errors
-from recipe_system.reduction import reductionContextRecords as RCR
 from astrodata.utils import logutils
 from astrodata.utils.gemconstants import SCI, VAR, DQ
-from gempy.gemini import gemini_tools as gt
-from primitives_GENERAL import GENERALPrimitives
 
+from gempy.gemini import gemini_tools as gt
+
+from recipe_system.reduction import reductionContextRecords as RCR
+
+from primitives_GENERAL import GENERALPrimitives
+# ------------------------------------------------------------------------------
+pkgname =  __file__.split('astrodata_')[1].split('/')[0]
+
+# ------------------------------------------------------------------------------
 class PreprocessPrimitives(GENERALPrimitives):
     """
     This is the class containing all of the preprocessing primitives
@@ -1116,7 +1124,7 @@ class PreprocessPrimitives(GENERALPrimitives):
 
         # Analyze the spatial clustering of exposures and attempt to sort them
         # into dither groups around common nod positions.
-        groups = gt.group_exposures(ad_input_list, frac_FOV=frac_FOV)
+        groups = gt.group_exposures(ad_input_list, pkgname, frac_FOV=frac_FOV)
         ngroups = len(groups)
 
         log.fullinfo("Identified %d group(s) of exposures" % ngroups)

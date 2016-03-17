@@ -1,11 +1,12 @@
 import math
-import numpy as np
 import pywcs
+import numpy as np
+
+from importlib import import_module
 
 from astrodata import AstroData
 from astrodata.utils import Errors
 from astrodata.utils import logutils
-from astrodata.utils import Lookups
 
 from gempy.library import astrotools as at
 from gempy.gemini import gemini_tools as gt
@@ -14,9 +15,9 @@ from astrodata_Gemini.ADCONFIG_Gemini.lookups import keyword_comments
 
 from primitives_GENERAL import GENERALPrimitives
 
-# Load standard comments for header keywords to be updated by these functions
+# ------------------------------------------------------------------------------
+pkgname = __file__.split('astrodata_')[1].split('/')[0]
 keyword_comments = keyword_comments.keyword_comments
-
 # ------------------------------------------------------------------------------
 class RegisterPrimitives(GENERALPrimitives):
     """
@@ -231,21 +232,18 @@ class RegisterPrimitives(GENERALPrimitives):
             
             # If no OBJCAT/no sources in reference image, or user choice,
             # use indirect alignment for all images at once
-            if method=="header":
+            if method == "header":
                 log.stdinfo("Using WCS specified in header for alignment")
                 reg_ad = _header_align(reference, adinput[1:])
                 adoutput_list.extend(reg_ad)
-            elif method!="sources":
+            elif method != "sources":
                 raise Errors.InputError("Did not recognize method " + method)
             
             # otherwise try to do direct alignment for each image by correlating
             # sources in the reference and input images
             else:
-                
                 for i in range(1,len(adinput)):
-                
                     ad = adinput[i]
-                    
                     if n_test[i] == 0:
                         log.warning("No objects found in "+ ad.filename)
                         if fallback is not None:
@@ -258,7 +256,6 @@ class RegisterPrimitives(GENERALPrimitives):
                                 raise Errors.InputError(
                                     "Did not recognize fallback method " + 
                                     fallback)
-                        
                         else:
                             log.warning(
                                 "WCS can only be corrected indirectly "+
@@ -267,20 +264,27 @@ class RegisterPrimitives(GENERALPrimitives):
                             adoutput_list.append(ad)
                             continue
                     else:
-                        
                         log.fullinfo("Number of objects in image %s: %d" %
                                      (ad.filename, n_test[i]))
-                        
                         log.fullinfo("Cross-correlating sources in %s, %s" %
-                                   (reference.filename, ad.filename))
+                                     (reference.filename, ad.filename))
+
                         firstpasspix = first_pass / ad.pixel_scale()
-                        if use_wcs is True:
-                            obj_list = _correlate_sources(reference, ad, 
-                                                          firstPass=firstpasspix,
-                                                          min_sources=min_sources,
-                                                          cull_sources=cull_sources)
+                        is_gnirs = 'GNIRS' in ad.type()
+                        if is_gnirs and use_wcs is False:
+                            try:
+                                obj_list = _correlate_sources_offsets(reference, ad, 
+                                                             firstPass=firstpasspix,
+                                                             min_sources=min_sources,
+                                                             cull_sources=cull_sources)
+                            except ImportError, msg:
+                                log.warning("{}: No object list.".format(msg))
+                                obj_list = [[],[]]
                         else:
-                            obj_list = _correlate_sources_offsets(reference, ad, 
+                            if use_wcs is False:
+                                log.warning("Parameter 'use_wcs' is False.")
+                                log.warning("Using source correlation anyway.")
+                            obj_list = _correlate_sources(reference, ad, 
                                                           firstPass=firstpasspix,
                                                           min_sources=min_sources,
                                                           cull_sources=cull_sources)
@@ -592,21 +596,21 @@ class RegisterPrimitives(GENERALPrimitives):
                         log.fullinfo("CD: "+repr(ext_wcs.wcs.cd))
 
                         ext.set_key_value("CRVAL1", ext_wcs.wcs.crval[0],
-                                          comment=keyword_comments["CRVAL1"])
+                                          comment=self.keyword_comments["CRVAL1"])
                         ext.set_key_value("CRVAL2", ext_wcs.wcs.crval[1],
-                                          comment=keyword_comments["CRVAL2"])
+                                          comment=self.keyword_comments["CRVAL2"])
                         ext.set_key_value("CRPIX1", ext_wcs.wcs.crpix[0],
-                                          comment=keyword_comments["CRPIX1"])
+                                          comment=self.keyword_comments["CRPIX1"])
                         ext.set_key_value("CRPIX2", ext_wcs.wcs.crpix[1],
-                                          comment=keyword_comments["CRPIX2"])
+                                          comment=self.keyword_comments["CRPIX2"])
                         ext.set_key_value("CD1_1", ext_wcs.wcs.cd[0,0],
-                                          comment=keyword_comments["CD1_1"])
+                                          comment=self.keyword_comments["CD1_1"])
                         ext.set_key_value("CD1_2", ext_wcs.wcs.cd[0,1],
-                                          comment=keyword_comments["CD1_2"])
+                                          comment=self.keyword_comments["CD1_2"])
                         ext.set_key_value("CD2_1", ext_wcs.wcs.cd[1,0],
-                                          comment=keyword_comments["CD2_1"])
+                                          comment=self.keyword_comments["CD2_1"])
                         ext.set_key_value("CD2_2", ext_wcs.wcs.cd[1,1],
-                                          comment=keyword_comments["CD2_2"])
+                                          comment=self.keyword_comments["CD2_2"])
 
                     # If objcat, fix the RA/Dec columns
                     elif extname=="OBJCAT":
@@ -767,7 +771,7 @@ def _correlate_sources_offsets(ad1, ad2, delta=None, firstPass=10, min_sources=1
         good_src_1 = gt.clip_sources(ad1)[("SCI",1)]
         good_src_2 = gt.clip_sources(ad2)[("SCI",1)]
         if len(good_src_1) < min_sources or len(good_src_2) < min_sources:
-            log.warning("Too few sources in culled list, using full set "\
+            log.warning("Too few sources in culled list, using full set "
                         "of sources")
             x1 = ad1["OBJCAT"].data.field("X_IMAGE")
             y1 = ad1["OBJCAT"].data.field("Y_IMAGE")
@@ -807,15 +811,14 @@ def _correlate_sources_offsets(ad1, ad2, delta=None, firstPass=10, min_sources=1
                     "".format(xdiff, ydiff, pa1 - pa2))
     else:
         theta = math.radians(pa1 - pa2)
-    
         # Fetch the center of the frame
         inst = ad1.instrument()
         instlow = ad1.instrument().as_pytype().lower()
-        lookup_dir = "Gemini/" + inst + "/" + inst + "CenterDict"
         lookup_name = instlow + "CenterDict"
-        center_dict = Lookups.get_lookup_table(lookup_dir,
-                                               lookup_name)
-        
+        lookup_path = "astrodata_{0}.ADCONFIG_{0}.lookups.{1}.{1}CenterDict"
+        centerdict_mod = lookup_path.format(pkgname, inst)
+        CenterDict = import_module(centerdict_mod)
+        center_dict = eval("CenterDict.{}".format(lookup_name))
         key = "IMAGE"
         if key in center_dict:
             centerx, centery = center_dict[key]

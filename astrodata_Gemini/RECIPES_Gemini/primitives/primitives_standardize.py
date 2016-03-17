@@ -27,7 +27,7 @@ from astrodata_Gemini.ADCONFIG_Gemini.lookups import MDFDict
 
 from primitives_GENERAL import GENERALPrimitives
 # ------------------------------------------------------------------------------
-
+pkgname = __file__.split('astrodata_')[1].split('/')[0]
 # ------------------------------------------------------------------------------
 class StandardizePrimitives(GENERALPrimitives):
     """
@@ -600,6 +600,7 @@ class StandardizePrimitives(GENERALPrimitives):
         
         Currently, there are no input parameters associated with 
         this primitive.
+
         """
         # Initialize
         log  = logutils.get_logger(__name__)

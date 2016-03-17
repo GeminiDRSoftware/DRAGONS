@@ -3,7 +3,11 @@ from astrodata.utils import Lookups
 from astrodata.utils.ConfigSpace  import lookup_path
 from gempy.gemini import gemini_tools as gt
 
-from astrodata_Gemini.ADCONFIG_Gemini.lookups.GNIRS import IllumMaskDict
+from . import IllumMaskDict
+from .. import keyword_comments
+
+# ------------------------------------------------------------------------------
+keyword_comments = keyword_comments.keyword_comments
 
 # ------------------------------------------------------------------------------
 # This code is looked up by gempy as part of the configuration for the
@@ -87,8 +91,9 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
         if illum_ad is not None:
             # Clip the illumination mask to match the size of the input 
             # AstroData object science 
-            final_illum = gt.clip_auxiliary_data(adinput=pos, aux=illum_ad,
-                                                aux_type="bpm")[0]
+            final_illum = gt.clip_auxiliary_data(adinput=pos, aux=illum_ad, 
+                                                 aux_type="bpm", 
+                                                 keyword_comments=keyword_comments)[0]
         illum_data = final_illum['DQ'].data
 
         # Finding the center of the illumination mask
