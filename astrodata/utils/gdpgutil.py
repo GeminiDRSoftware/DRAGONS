@@ -173,7 +173,7 @@ def deadfunctioninherit_config(typ, index, cl=None):
             return cfgs
 
 
-def inherit_index(typ = None, index = None, for_child = None):
+def inherit_index(typ=None, index=None, for_child=None):
     if not typ and not index:
         return None
         
@@ -181,14 +181,14 @@ def inherit_index(typ = None, index = None, for_child = None):
         return (typ, index[typ])
     else:
         cl = get_classification_library()
-        if type(typ) == str:
+        if isinstance(typ, str):
             typo = cl.get_type_obj(typ)
         
         if typo.parent:
-            if for_child == None:
+            if for_child is None:
                 for_child = typ
             
-            return inherit_index(typo.parent, index, for_child = for_child)
+            return inherit_index(typo.parent, index, for_child=for_child)
         else:
             return None  
 
