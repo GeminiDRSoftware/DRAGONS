@@ -14,7 +14,6 @@ import re
 import sys
 import json
 import urllib2
-import math
 import numbers
 
 import pyfits as pf
@@ -22,23 +21,19 @@ import numpy  as np
 
 from copy import deepcopy
 from datetime import datetime
+from importlib import import_module
 
 from ..library import astrotools as at
 
 from astrodata import AstroData
 from astrodata import __version__ as ad_version
 from astrodata.utils import Errors
-from astrodata.utils import Lookups
 from astrodata.utils import logutils
 from astrodata.utils.ConfigSpace import lookup_path
 from astrodata.utils.gemconstants import SCI, VAR, DQ
 from astrodata.interface.slices import pixel_exts
 from astrodata.interface.Descriptors import DescriptorValue
 from astrodata.utils.Errors import DescriptorValueTypeError
-
-# ------------------------------------------------------------------------------
-# Initialize pointing_in_field() caching of FOV table look-ups:
-_FOV_lookup = None
 
 # ------------------------------------------------------------------------------
 def add_objcat(adinput=None, extver=1, replace=False, columns=None, sxdict=None):
@@ -64,17 +59,16 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None, sxdict=None)
     :type columns: dictionary of Pyfits Column objects with column names
                    as keys
     """
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = logutils.get_logger(__name__)
 
     # ensure caller passes the sextractor default dictionary of parameters.
     try:
         assert isinstance(sxdict, dict) and sxdict.has_key('dq')
     except AssertionError:
-        logutils.error("TypeError: A sextractor dictionary was not received.")
+        log.error("TypeError: A sextractor dictionary was not received.")
         raise TypeError("Require sextractor parameter dictionary.")
-    
-    # Instantiate the log. This needs to be done outside of the try block,
-    # since the log object is used in the except block 
-    log = logutils.get_logger(__name__)
     
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more inputs
@@ -594,16 +588,16 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
     requires that the auxiliary data contain the science data.
     
     """
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = logutils.get_logger(__name__)
+
     # ensure caller passes the sextractor default dictionary of parameters.
     try:
         assert isinstance(keyword_comments, dict)
     except AssertionError:
-        logutils.error("TypeError: keyword comments dict was not received.")
+        log.error("TypeError: keyword comments dict was not received.")
         raise TypeError("keyword comments dict required")
-
-    # Instantiate the log. This needs to be done outside of the try block,
-    # since the log object is used in the except block 
-    log = logutils.get_logger(__name__)
 
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more inputs
@@ -1101,16 +1095,17 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
     :param caltype: type of calibration.  Accepted values are 'fringe',
                     'sky', or 'flat'
     :type caltype: string
-    """
-    try:
-        assert isinstance(keyword_comments, dict)
-    except AssertionError:
-        logutils.error("TypeError: keyword comments dict was not received.")
-        raise TypeError("keyword comments dict required")
 
+    """
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = logutils.get_logger(__name__)
+
+    try:
+        assert isinstance(keyword_comments, dict)
+    except AssertionError:
+        log.error("TypeError: keyword comments dict was not received.")
+        raise TypeError("keyword comments dict required")
     
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more inputs
@@ -1721,10 +1716,14 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
     :type comment: string
 
     """
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = logutils.get_logger(__name__)
+
     try:
         assert keyword
     except AssertionError:
-        logutils.error("TypeError: A keyword was not received.")
+        log.error("TypeError: A keyword was not received.")
         raise TypeError("argument 'keyword' required")
 
     # The validate_input function ensures that the input is not None and
@@ -1814,7 +1813,7 @@ def obsmode_del(ad):
     
 
 def parse_sextractor_param(default_dict):
-    # default_dict used to be made with a get_lookup_table() call.
+    # default_dict formerly made with a get_lookup_table() call.
     # Get path to default sextractor parameter files
     param_file = lookup_path(default_dict["dq"]["param"])
     if param_file.endswith(".py"):
@@ -1874,16 +1873,17 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
     corresponding SCI extension.
     This is intended for use in removing overscan sections, or other
     unused parts of the data array.
-    """
-    try:
-        assert isinstance(keyword_comments, dict)
-    except AssertionError:
-        logutils.error("TypeError: keyword comments dict was not received.")
-        raise TypeError("keyword comments dict required")
 
+    """
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = logutils.get_logger(__name__)
+
+    try:
+        assert isinstance(keyword_comments, dict)
+    except AssertionError:
+        log.error("TypeError: keyword comments dict was not received.")
+        raise TypeError("keyword comments dict required")
     
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more inputs
@@ -2027,14 +2027,15 @@ def update_key(adinput=None, keyword=None, value=None, comment=None,
     :type extname: string
 
     """
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = logutils.get_logger(__name__)
 
     if keyword_comments is None and comment is None:
-        logutils.error("TypeError: One of comment or keyword_comments"
+        log.error("TypeError: One of comment or keyword_comments"
                        "must be passed.")
         raise TypeError("Missing parameter: comment or keyword_comments")
-    # Instantiate the log
-    log = logutils.get_logger(__name__)
-    
+                            
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more inputs
     adinput_list = validate_input(input=adinput)
@@ -2252,12 +2253,14 @@ class ExposureGroup:
     # pass around nddata instances rather than lists or dictionaries but
     # that's not even well defined within AstroPy yet.
 
-    def __init__(self, adinputs, frac_FOV=1.0):
+    def __init__(self, adinputs, pkg, frac_FOV=1.0):
 
         """
         :param adinputs: an exposure list from which to initialize the group
             (currently may not be empty)
         :type adinputs: list of AstroData instances
+
+        :param pkg: Package name of the 
 
         :param frac_FOV: proportion by which to scale the area in which
             points are considered to be within the same field, for tweaking
@@ -2274,8 +2277,9 @@ class ExposureGroup:
             raise Errors.InputError('frac_FOV must be >= 0.')
 
         # Initialize members:
-        self._frac_FOV = frac_FOV
         self.members = {}
+        self.package = pkg
+        self._frac_FOV = frac_FOV
         self.group_cen = (0., 0.)
         self.add_members(adinputs)
 
@@ -2304,7 +2308,7 @@ class ExposureGroup:
 
         # Check co-ordinates WRT the group centre & field of view as
         # appropriate for the instrument:
-        return pointing_in_field(position, self.group_cen,
+        return pointing_in_field(position, self.package, self.group_cen,
                                  frac_FOV=self._frac_FOV)
 
     def __len__(self):
@@ -2372,7 +2376,7 @@ class ExposureGroup:
           for cval, nval in zip(self.group_cen, newsum)]
 
 
-def group_exposures(adinputs, frac_FOV=1.0):
+def group_exposures(adinputs, pkg, frac_FOV=1.0):
 
     """
     Sort a list of AstroData instances into dither groups around common
@@ -2380,6 +2384,11 @@ def group_exposures(adinputs, frac_FOV=1.0):
 
     :param adinputs: A list of exposures to sort into groups.
     :type adinputs: list of AstroData instances
+
+    :param pkg: Package name of the calling primitive. Used to determine
+                correct package lookup tables. Passed through to
+                ExposureGroup() call.
+    :type pkg: <str>
 
     :param frac_FOV: proportion by which to scale the area in which
         points are considered to be within the same field, for tweaking
@@ -2389,8 +2398,8 @@ def group_exposures(adinputs, frac_FOV=1.0):
 
     :returns: One group of exposures per identified nod position.
     :rtype: tuple of ExposureGroup instances
-    """
 
+    """
     # In principle divisive clustering algorithms have the best chance of
     # robust separation because of their top-down view of the problem.
     # However, an agglomerative algorithm is probably more practical to
@@ -2420,7 +2429,7 @@ def group_exposures(adinputs, frac_FOV=1.0):
 
         # If unassociated, start a new group:
         if not found:
-            groups.append(ExposureGroup(ad, frac_FOV=frac_FOV))
+            groups.append(ExposureGroup(ad, pkg, frac_FOV=frac_FOV))
             # if debug: print 'New group', groups[-1]
 
     # Here this simple algorithm could be made more robust for borderline
@@ -2434,7 +2443,7 @@ def group_exposures(adinputs, frac_FOV=1.0):
     return tuple(groups)
 
 
-def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=None):
+def pointing_in_field(pos, package, refpos, frac_FOV=1.0, frac_slit=None):
 
     """
     Determine whether two telescope pointings fall within each other's
@@ -2473,7 +2482,9 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=None):
     :returns: Whether or not the pointing falls within the field (after
       adjusting for frac_FOV & frac_slit). 
     :rtype: boolean
+
     """
+    log = logutils.get_logger(__name__)
 
     # This function needs an AstroData instance rather than just 2
     # co-ordinate tuples and a PA in order to look up the instrument for
@@ -2516,17 +2527,16 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=None):
     global _FOV_lookup, _FOV_pointing_in_field
 
     # Look up the back-end implementation for the appropriate instrument,
-    # or use the previously-cached one. Currently we have to hard-wire the
-    # name "Gemini" because that's how AD configuration packages work :-(.
-    FOV_lookup = "Gemini/" + inst + "/FOV"
-    if FOV_lookup != _FOV_lookup:
-        try:
-            _FOV_pointing_in_field = Lookups.get_lookup_table(FOV_lookup,
-              "pointing_in_field")
-        except (IOError, NameError):
-            raise NameError("FOV.pointing_in_field() function not " \
-              "implemented for %s" % inst)
-        _FOV_lookup = FOV_lookup
+    # or use the previously-cached one.
+    # Build the lookup name to the instrument specific FOV module. In all 
+    # likelihood this is 'Gemini'.
+    FOV_mod = "astrodata_{0}.ADCONFIG_{0}.lookups.{1}.FOV".format(package, inst)
+
+    try:
+        FOV = import_module(FOV_mod)
+        _FOV_pointing_in_field = FOV.pointing_in_field
+    except (ImportError, AttributeError):
+        raise NameError("FOV.pointing_in_field() function not implemented for %s" % inst)
 
     # Execute it & return the results:
     return _FOV_pointing_in_field(pos, pointing, frac_FOV=frac_FOV,

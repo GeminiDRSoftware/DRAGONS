@@ -23,15 +23,21 @@ Functions provided:
 The functions work as a cascade, where callers need only call get_bias_level()
 
 """
+import numpy as np
+
 from time import strptime
 from datetime import datetime
 
-import numpy as np
+from astrodata.utils import Errors
+from astrodata.utils.gemconstants import SCI
 
 import gemini_metadata_utils as gmu
-
-from astrodata.utils import Lookups
-from astrodata.utils.gemconstants import SCI
+# ------------------------------------------------------------------------------
+try:
+    from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSAmpTables
+except ImportError:
+    raise Errors.ConfigurationError("This module requires the astrodata_Gemini package")
+    
 # ------------------------------------------------------------------------------
 def get_bias_level(adinput=None, estimate=True):
     # Temporarily only do this for GMOS data. It would be better if we could do
@@ -221,11 +227,9 @@ def _get_static_bias_level(adinput=None):
     static_bias_level = {}
     
     # Get the static bias level lookup table
-    gmosampsBias, gmosampsBiasBefore20150826, gmosampsBiasBefore20060831 = \
-        Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
-                                 "gmosampsBias",
-                                 "gmosampsBiasBefore20150826",
-                                 "gmosampsBiasBefore20060831")
+    gmosampsBias = GMOSAmpTables.gmosampsBias
+    gmosampsBiasBefore20150826 = GMOSAmpTables.gmosampsBiasBefore20150826
+    gmosampsBiasBefore20060831 = GMOSAmpTables.gmosampsBiasBefore20060831
     
     # Get the UT date, read speed setting and gain setting values using the
     # appropriate descriptors
@@ -237,7 +241,7 @@ def _get_static_bias_level(adinput=None):
     # extension as a dictionary
     ampname_dict = gmu.get_key_value_dict(
         adinput=adinput, keyword="AMPNAME", dict_key_extver=True)
-    
+
     if not (ut_date_dv.is_none() and read_speed_setting_dv.is_none() and
             gain_setting_dv.is_none()) and ampname_dict is not None:
         
@@ -297,14 +301,12 @@ def _get_static_bias_level(adinput=None):
 def _get_static_bias_level_for_ext(adinput=None):
     """
     Determine the static bias level value from GMOS data.
-    """
 
+    """
     # Get the static bias level lookup table
-    gmosampsBias, gmosampsBiasBefore20150826, gmosampsBiasBefore20060831 = \
-        Lookups.get_lookup_table("Gemini/GMOS/GMOSAmpTables",
-                                  "gmosampsBias",
-                                  "gmosampsBiasBefore20150826",
-                                  "gmosampsBiasBefore20060831")
+    gmosampsBias = GMOSAmpTables.gmosampsBias
+    gmosampsBiasBefore20150826 = GMOSAmpTables.gmosampsBiasBefore20150826
+    gmosampsBiasBefore20060831 = GMOSAmpTables.gmosampsBiasBefore20060831
     
     # Get the UT date, read speed setting and gain setting values using the
     # appropriate descriptors
