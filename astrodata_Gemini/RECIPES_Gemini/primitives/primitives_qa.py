@@ -1699,16 +1699,15 @@ def _strehl(ad, sources):
     inst = ad.instrument().as_pytype()
     filt = ad.filter_name(pretty=True).as_pytype()
 
-    div_n = 1.0
-    # for large arrays,  for speed approximate strehl by 'binning' pixels
-    if n_pixels > 1024:
-        div_n = n_pixels / 256.0
+    # for speed - reduce the array size for strehl by 'binning' pixels
+    div_n = n_pixels / 256.0
 
     n_pixels /= int(div_n)
 
     # phase parameters
     vv_array = np.arange(0, n_pixels, 1, dtype=float).reshape((1, n_pixels))
     uu_array = np.arange(0, n_pixels, 1, dtype=float).reshape((n_pixels, 1))
+
     phase_param = {'vv': _rebin(vv_array, n_pixels, n_pixels),
                    'uu': _rebin(uu_array, n_pixels, n_pixels)}
 
@@ -1737,14 +1736,22 @@ def _strehl(ad, sources):
 
         for source in sources[ext]:
 
+            # for binned pixels,  keep location in the pixel
+            x_decimal = source.x - np.fix(source.x)
+            y_decimal = source.y - np.fix(source.y)
+
+            x_binned = int(source.x / div_n) + x_decimal
+            y_binned = int(source.y / div_n) + y_decimal
+
             # position calculated from the center
-            source_pos = {'x': source.x / div_n - n_pixels / 2.,
-                          'y': source.y / div_n - n_pixels / 2.}
+            source_pos = {'x': x_binned - n_pixels / 2.,
+                          'y': y_binned - n_pixels / 2.}
 
             # compute perfect PSF at position of source
             psf = _perfect_psf(n_pixels, source_pos, phase_param, pupil)
 
-            strehl = float(((source.flux_max) / source.flux) / np.amax(psf))
+            strehl = (source.flux_max / source.flux) / np.amax(psf)
+
             if strehl <= STREHL_LIMIT:
                 all_strehl.append(strehl)
 
@@ -1812,7 +1819,7 @@ def _pupil(n_pixels, meter_pixel, inst, pupil_key, PUPIL_FILE):
         PUPIL_DIMENSION = [1.223, 7.695]
 
     pupil = np.zeros((n_pixels, n_pixels))
-    center_point = n_pixels / 2.0
+    center_point = n_pixels / 2.0 - 0.5
     center = {'x': center_point, 'y': center_point}
 
     radial_array = _dist_circle(n_pixels, center, int(n_pixels / 2))
