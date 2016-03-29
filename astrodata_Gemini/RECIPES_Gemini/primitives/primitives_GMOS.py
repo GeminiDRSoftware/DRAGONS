@@ -188,7 +188,7 @@ class GMOSPrimitives(GEMINIPrimitives):
                     ext.set_key_value("DATASEC",new_datasec,
                                       comment=self.keyword_comments["DATASEC"])
 
-            gt.mark_history(adinput=ad_out, keyword=timestamp_key)
+            gt.mark_history(adinput=ad_out, primname=self.myself(), keyword=timestamp_key)
             adoutput_list.append(ad_out)
         rc.report_output(adoutput_list)
         yield rc
