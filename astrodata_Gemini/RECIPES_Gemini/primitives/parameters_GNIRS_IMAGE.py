@@ -230,4 +230,20 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "stackSkyFrames":{
+        "nhigh":{
+        "default"       : "1",
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+        "nlow":{
+        "default"       : "0",
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
 }
