@@ -111,6 +111,10 @@ class PhotometryPrimitives(GENERALPrimitives):
             try:
                 ra = ad.wcs_ra().as_pytype()
                 dec = ad.wcs_dec().as_pytype()
+                if type(ra) is not float:
+                    raise ValueError("wcs_ra descriptor did not return a float.")
+                if type(ra) is not float:
+                    raise ValueError("wcs_dec descriptor did not return a float.")
             except:
                 if "qa" in rc.context:
                     log.warning("No RA/Dec in header of %s; cannot find "\
