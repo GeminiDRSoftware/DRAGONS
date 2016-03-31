@@ -1070,6 +1070,15 @@ class GMOSPrimitives(GEMINIPrimitives):
                 adoutput_list.append(ad)
                 continue
             
+            # Issue a warning message if the data is an image with non-square
+            # binning
+            if 'GMOS_IMAGE' in ad.type():
+                xbin = ad.detector_x_bin()
+                ybin = ad.detector_y_bin()
+                if xbin != ybin:
+                    log.warning("Image {} is {} x {} binned data"
+                                "".format(ad.filename, xbin, ybin))
+                                
             # Get the repair parameter from the reduction context
             repair = rc["repair"]
             

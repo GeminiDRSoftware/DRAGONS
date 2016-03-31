@@ -990,6 +990,19 @@ class QAPrimitives(GENERALPrimitives):
         mean_ellips = []
         for ad in rc.get_inputs_as_astrodata():
 
+            # Check that the data is not an image with non-square binning
+            if 'IMAGE' in ad.type():
+                xbin = ad.detector_x_bin()
+                ybin = ad.detector_y_bin()
+                if xbin != ybin:
+                    log.warning("No IQ measurement possible, image {} is {} x "
+                                "{} binned data".format(ad.filename, xbin, ybin))
+                    if display:
+                        iq_overlays.append(None)
+                    mean_fwhms.append(None)
+                    mean_ellips.append(None)
+                    continue
+
             airmass = ad.airmass()
             wvband = ad.wavelength_band()
 
