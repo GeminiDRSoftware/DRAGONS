@@ -3,7 +3,6 @@ from astrodata.utils import Lookups
 from astrodata.utils.ConfigSpace  import lookup_path
 from gempy.gemini import gemini_tools as gt
 
-from . import IllumMaskDict
 from .. import keyword_comments
 
 # ------------------------------------------------------------------------------
@@ -58,34 +57,8 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     
     # Imaging:
     if 'GNIRS_IMAGE' in pos.types:
-        # Need to fetch the illumination mask
-        illum_mask_dict = IllumMaskDict.illum_masks
-        key1 = pos.camera().as_pytype()
-        filter = pos.filter_name(pretty=True).as_pytype()
-        if filter in ['Y', 'J', 'H', 'K', 'H2', 'PAH']:
-            key2 = 'Wings'
-        elif filter in ['JPHOT', 'HPHOT', 'KPHOT']:
-            key2 = 'NoWings'
-        else:
-            raise ValueError("Unrecognised filter, no illumination mask can "
-                             "be found for %s, so the pointing in field "
-                             "cannot be determined" % pos.filename)
-        key = (key1,key2)
-        if key in illum_mask_dict:
-            illum = lookup_path(illum_mask_dict[key])
-        else:
-            raise IOError("No illumination mask found for %s, the pointing in " 
-                          "field cannot be determined " % pos.filename)
-        illum_ad = None
-        if isinstance(illum, AstroData):
-            illum_ad = illum
-        else:
-            illum_ad = AstroData(illum)
-            if illum_ad is None:
-                raise TypeError("Cannot convert %s into an AstroData object, "
-                                "the pointing in field cannot be determined" 
-                                % illum)                
-                
+        illum_ad = fetch_illum_mask(pos)
+        
         # Checking the size of the illumination mask                
         final_illum = None
         if illum_ad is not None:
@@ -121,3 +94,38 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
         raise ValueError("Can't determine FOV for unrecognized GNIRS config " \
           "(%s, %s)" % (str(ad.focal_plane_mask()), str(ad.disperser())))
 
+    ##########################################################################
+    # Below are the helper functions                                         #
+    ##########################################################################
+
+def fetch_illum_mask(ad):
+    # Fetches the appropriate illumination mask for an astrodata instance
+        
+    from . import IllumMaskDict
+        
+    illum_mask_dict = IllumMaskDict.illum_masks
+    key1 = ad.camera().as_pytype()
+    filter = ad.filter_name(pretty=True).as_pytype()
+    if filter in ['Y', 'J', 'H', 'K', 'H2', 'PAH']:
+        key2 = 'Wings'
+    elif filter in ['JPHOT', 'HPHOT', 'KPHOT']:
+        key2 = 'NoWings'
+    else:
+        raise ValueError("Unrecognised filter, no illumination mask can "
+                         "be found for %s" % ad.filename)
+    key = (key1,key2)
+    if key in illum_mask_dict:
+        illum = lookup_path(illum_mask_dict[key])
+    else:
+        raise IOError("No illumination mask found for %s" % pos.filename)
+    
+    illum_ad = None
+    if isinstance(illum, AstroData):
+        illum_ad = illum
+    else:
+        illum_ad = AstroData(illum)
+        if illum_ad is None:
+            raise TypeError("Cannot convert %s into an AstroData object" 
+                            % illum)                
+                
+    return illum_ad

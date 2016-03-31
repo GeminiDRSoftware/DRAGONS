@@ -15,7 +15,7 @@ from astrodata.utils.ConfigSpace  import lookup_path
 from gempy.gemini import gemini_tools as gt
 from gempy.library import astrotools as at
 
-from astrodata_Gemini.ADCONFIG_Gemini.lookups.GNIRS import IllumMaskDict
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GNIRS import FOV as fov
 
 from primitives_GNIRS import GNIRSPrimitives
 
@@ -302,40 +302,7 @@ def _position_illum_mask(adinput=None):
     log = logutils.get_logger(__name__)
 
     # Fetch the illumination mask
-    illum_mask_dict = IllumMaskDict.illum_masks
-    key1 = adinput.camera().as_pytype()
-    filter = adinput.filter_name(pretty=True).as_pytype()
-    if filter in ['Y', 'J', 'H', 'K', 'H2', 'PAH']:
-        key2 = 'Wings'
-    elif filter in ['JPHOT', 'HPHOT', 'KPHOT']:
-        key2 = 'NoWings'
-    else:
-        log.warning("Unrecognised filter, no illumination mask can "
-                    "be found for" % adinput.filename)
-        return None
-                
-    key = (key1,key2)
-    if key in illum_mask_dict:
-        illum = lookup_path(illum_mask_dict[key])
-    else:
-        illum = None
-        log.warning("No illumination mask found for %s, no mask can "
-                    "be added to the DQ plane" % adinput.filename)
-        return None
-        
-    # Ensure that the illumination mask is an AstroData object
-    illum_ad = None
-    if illum is not None:
-        log.fullinfo("Using %s as illumination mask" % str(illum))
-    if isinstance(illum, AstroData):
-        illum_ad = illum
-    else:
-        illum_ad = AstroData(illum)
-        if illum_ad is None:
-            log.warning("Cannot convert %s into an AstroData object, "
-                        "no illumination mask will be added to the "
-                        "DQ plane" % illum)                
-            return None
+    illum_ad = fov.fetch_illum_mask(adinput)
 
     # Normalizing and thresholding the science data to get a rough 
     # illumination mask. A 5x5 box around non-illuminated pixels is also 
