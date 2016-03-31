@@ -1367,7 +1367,7 @@ MetricsViewer.prototype = {
 
             if ( record["iq"]["comment"].length==1 &&
                  (record["iq"]["comment"][0].indexOf("ellipticity")!=-1 ||
-                  record["iq"]["comment"][0].indexOf("no error available")!=-1 ||
+                  record["iq"]["comment"][0].indexOf("Single source")!=-1 ||
 		  record["iq"]["comment"][0].indexOf("estimated AO seeing")!=-1 ||
                   record["metadata"]["types"].indexOf("SPECT")!=-1 ) )
             {
@@ -1711,7 +1711,7 @@ MetricsViewer.prototype = {
                     message += ", ";
                 }
                 if ((msg_array[m].indexOf("ellipticity")!=-1) ||
-                    (msg_array[m].indexOf("no error available")!=-1) ||
+                    (msg_array[m].indexOf("Single source")!=-1) ||
                     (msg_array[m].indexOf("estimated AO seeing")!=-1) ||
                     (record["metadata"]["types"].indexOf("SPECT")!=-1 )) {
                     message += '<span class="outer">'+
