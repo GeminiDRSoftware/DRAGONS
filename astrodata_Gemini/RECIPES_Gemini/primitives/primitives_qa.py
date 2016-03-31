@@ -1088,7 +1088,7 @@ class QAPrimitives(GENERALPrimitives):
                         log.warning("Only one source found. IQ numbers may "
                                     "not be accurate.")
                         single_warn = "\n    " + \
-                        "WARNING: single source IQ measurement, no error available".rjust(dlen)
+                        "WARNING: single source IQ measurement - no error available".rjust(dlen)
                     else:
                         single_warn = ""                    
 
