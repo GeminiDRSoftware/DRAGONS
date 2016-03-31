@@ -4,6 +4,7 @@ from astrodata.utils.ConfigSpace  import lookup_path
 from gempy.gemini import gemini_tools as gt
 
 from .. import keyword_comments
+from . import IllumMaskDict
 
 # ------------------------------------------------------------------------------
 keyword_comments = keyword_comments.keyword_comments
@@ -94,15 +95,9 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
         raise ValueError("Can't determine FOV for unrecognized GNIRS config " \
           "(%s, %s)" % (str(ad.focal_plane_mask()), str(ad.disperser())))
 
-    ##########################################################################
-    # Below are the helper functions                                         #
-    ##########################################################################
-
 def fetch_illum_mask(ad):
     # Fetches the appropriate illumination mask for an astrodata instance
-        
-    from . import IllumMaskDict
-        
+            
     illum_mask_dict = IllumMaskDict.illum_masks
     key1 = ad.camera().as_pytype()
     filter = ad.filter_name(pretty=True).as_pytype()
