@@ -16,6 +16,13 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    "illum_mask":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     },
  "addMDF":{
     "suffix":{

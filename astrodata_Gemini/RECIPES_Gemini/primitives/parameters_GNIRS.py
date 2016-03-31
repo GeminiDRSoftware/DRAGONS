@@ -1,6 +1,15 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_GNIRS.py file, in alphabetical order.
-{"measureBG":{
+{"addDQ":{
+    "illum_mask":{
+        "default"       : True,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "measureBG":{
     "remove_bias":{
         "default"       : False,
         "type"          : "bool",

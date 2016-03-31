@@ -1,7 +1,6 @@
 # GNIRS recipe
 prepare
 addDQ
-addIllumMaskToDQ
 ADUToElectrons
 addVAR(read_noise=True, poisson_noise=True)
 flatCorrect

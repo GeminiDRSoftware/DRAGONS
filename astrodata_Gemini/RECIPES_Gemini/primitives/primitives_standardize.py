@@ -281,6 +281,15 @@ class StandardizePrimitives(GENERALPrimitives):
             # Append the output AstroData object to the list of output
             # AstroData objects
             adoutput_list.append(ad)
+            
+        # If an illumination mask exists, add this to the DQ plane
+        if rc["illum_mask"]:
+            suffix=rc["suffix"]
+            rc.run("addIllumMaskToDQ")
+            for ad in adinput:
+                ad.filename = gt.filename_updater(adinput=ad, 
+                                                  suffix=rc["suffix"],
+                                                  strip=True)
 
         # Report the list of output AstroData objects to the reduction context
         rc.report_output(adoutput_list)

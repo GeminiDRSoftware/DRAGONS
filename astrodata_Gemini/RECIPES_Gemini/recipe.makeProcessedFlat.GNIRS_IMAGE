@@ -5,7 +5,7 @@
 # appended.
 
 prepare
-addDQ
+addDQ(illum_mask=False)
 addVAR(read_noise=True)
 #nonlinearityCorrect
 ADUToElectrons

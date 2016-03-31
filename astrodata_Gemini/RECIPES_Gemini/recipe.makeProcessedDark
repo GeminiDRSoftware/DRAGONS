@@ -4,7 +4,7 @@
 # equal to the name of the first input dark image with "_dark.fits" appended.
 
 prepare
-addDQ
+addDQ(illum_mask=False)
 addVAR(read_noise=True)
 #nonlinearityCorrect
 ADUToElectrons
