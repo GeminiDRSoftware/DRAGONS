@@ -1082,9 +1082,15 @@ class QAPrimitives(GENERALPrimitives):
                     else:
                         mean_ellip = None
                         std_ellip = None
+                    
+                    # Warn if the IQ measurement is taken from a single source    
                     if len(src)==1:
                         log.warning("Only one source found. IQ numbers may "
                                     "not be accurate.")
+                        single_warn = "\n    " + \
+                        "WARNING: single source IQ measurement, no error available".rjust(dlen)
+                    else:
+                        single_warn = ""                    
 
                     # Warn if high ellipticity
                     if is_image and mean_ellip>0.1:
@@ -1219,7 +1225,7 @@ class QAPrimitives(GENERALPrimitives):
                 log.stdinfo(ind + iqStr)
                 if is_ao and strehl:
                     log.stdinfo(ind + strehlStr)
-                log.stdinfo(ind + reqStr + ell_warn + iq_warn)
+                log.stdinfo(ind + reqStr + ell_warn + iq_warn + single_warn)
                 log.stdinfo(ind + "-"*dlen)
                 log.stdinfo("")
 
@@ -1229,6 +1235,8 @@ class QAPrimitives(GENERALPrimitives):
                     comment.append("IQ requirement not met")
                 if ell_warn:
                     comment.append("High ellipticity")
+                if single_warn:
+                    comment.append("Single source IQ measurement, no error available")
                 if len(src)!=0:
                     mean_fwhm = float(mean_fwhm)
                     std_fwhm = float(std_fwhm)
