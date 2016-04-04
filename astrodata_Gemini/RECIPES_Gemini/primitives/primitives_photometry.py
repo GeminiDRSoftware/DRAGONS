@@ -601,7 +601,7 @@ def _add_K_color_term(filter_name, refcat, indx):
 
     jk_color_term = {'C1': -0.003, 'dC1': 0.007, 'C2': -0.026, 'dC2': 0.011,
                      'sub': refcat.data['Jmag'][indx] 
-                          - refcat.data['Hmag'][indx], 
+                          - refcat.data['Kmag'][indx], 
                      'dmag': ((refcat.data['Jmag_err'][indx])**2 
                            + (refcat.data['Kmag_err'][indx])**2)**0.5 }
 
