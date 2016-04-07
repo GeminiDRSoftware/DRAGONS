@@ -250,6 +250,7 @@ class PhotometryPrimitives(GENERALPrimitives):
             max_sources = rc["max_sources"]
             centroid_function = rc["centroid_function"]
             method = rc["method"]
+            set_saturation = rc["set_saturation"]
 
             # Check source detection method
             if method not in ["sextractor","daofind"]:
@@ -271,7 +272,8 @@ class PhotometryPrimitives(GENERALPrimitives):
                     method="daofind"
                 else:
                     try:
-                        ad = _sextractor(ad,seeing_est,sxdict=self.sx_default_dict)
+                        ad = _sextractor(ad,seeing_est,sxdict=self.sx_default_dict,
+                                         set_saturation=set_saturation)
                     except Errors.ScienceError:
                         log.warning("SExtractor failed. "\
                                     "Setting method=daofind")
@@ -1153,7 +1155,7 @@ def _average_each_cluster( xyArray, pixApart=10.0 ):
     return newXYArray
 
 
-def _sextractor(ad=None, seeing_estimate=None, sxdict=None):
+def _sextractor(ad=None, seeing_estimate=None, sxdict=None, set_saturation=False):
 
     # Get the log
     log = logutils.get_logger(__name__)
@@ -1220,6 +1222,19 @@ def _sextractor(ad=None, seeing_estimate=None, sxdict=None):
         outtmpfn = "%sSCI%dtab.fits" % (basename, extver)
         objtmpfn  ="%sSCI%dimg.fits" % (basename, extver)
 
+        # Should the saturation level be dynamically set? Setting the 
+        # saturation level according to the image (necessary for coadded 
+        # NIRI images). If the keyword BUNIT is not present, assume the 
+        # image is in ADU. Note that this saturation level assumes that any 
+        # stacked images are averaged rather than added, and at some point 
+        # this will need to be addressed (probably in the descriptor).
+        if set_saturation:
+            if sciext.get_key_value('BUNIT') == 'electron':
+                satur_level = ad.saturation_level().as_pytype() * \
+                    ad.gain().as_pytype()
+            else:
+                satur_level = ad.saturation_level().as_pytype()
+
         # if no seeing estimate provided, run sextractor once with
         # default, then re-run to get proper stellar classification
         if seeing_estimate is None:
@@ -1241,21 +1256,8 @@ def _sextractor(ad=None, seeing_estimate=None, sxdict=None):
                       "-CHECKIMAGE_TYPE","OBJECTS",
                       ]
 
-            # The saturation level is only set dynamically for NIRI at the 
-            # moment. The correct saturation level should be implemented and 
-            # tested for GMOS as well (see Trac ticket #756)
-            if "NIRI" in ad.type():
-                # Setting the saturation level according to the image (this is
-                # necessary for coadded NIRI images). If the keyword BUNIT is 
-                # not present, assume the image is in ADU. Note that this 
-                # saturation level assumes that any stacked images are 
-                # averaged rather than added, and at some point this will need
-                # to be addressed (probably in the descriptor).
-                if sciext.get_key_value('BUNIT') == 'electron':
-                    satur_level = ad.saturation_level().as_pytype() * \
-                        ad.gain().as_pytype()
-                else:
-                    satur_level = ad.saturation_level().as_pytype()
+            # Setting the saturation level dynamically is required
+            if set_saturation:
                 extend_line = ("-SATUR_LEVEL,", str(satur_level))
                 sx_cmd.extend(extend_line)
                 

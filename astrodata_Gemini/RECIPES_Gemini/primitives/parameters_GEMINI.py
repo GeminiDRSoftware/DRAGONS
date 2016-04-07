@@ -386,6 +386,13 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    "set_saturation":{
+        "default"       : False,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
     },
  "display":{ 
     "extname":{

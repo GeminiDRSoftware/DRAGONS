@@ -128,4 +128,13 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "detectSources":{
+    "set_saturation":{
+        "default"       : True,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
 }

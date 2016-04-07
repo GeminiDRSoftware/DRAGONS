@@ -1,6 +1,16 @@
 # This parameter file contains the parameters related to the primitives located
 # in the primitives_GMOS_IMAGE.py file, in alphabetical order.
-{"makeFringe":{
+{
+ "detectSources":{
+    "set_saturation":{
+        "default"       : True,
+        "type"          : "bool",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
+ "makeFringe":{
     "subtract_median_image":{
         "default"       : None,
         "type"          : "bool",
