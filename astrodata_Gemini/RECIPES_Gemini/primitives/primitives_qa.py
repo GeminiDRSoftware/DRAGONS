@@ -521,12 +521,28 @@ class QAPrimitives(GENERALPrimitives):
             # To pass to fitsstore report function
             info_dict = {}
 
+            # Need to get the nominal atmospheric extinction
+            nom_at_ext = ad.nominal_atmospheric_extinction().as_pytype()
+
+            # Need to correct the mags for the exposure time
+            et = ad.exposure_time().as_pytype()
+
+            # If it's a funky nod-and-shuffle imaging acquistion,
+            # then need to scale exposure time
+            if "GMOS_NODANDSHUFFLE" in ad.types:
+                log.warning("Imaging Nod-And-Shuffle. Photometry may be dubious")
+                # AFAIK the number of nod_cycles isn't actually relevant -
+                # there's always 2 nod positions, thus the exposure
+                # time for any given star is half the total
+                et /= 2.0
+                
             for objcat in objcats:
                 extver = objcat.extver()
                 mags = objcat.data["MAG_AUTO"]
                 mag_errs = objcat.data["MAGERR_AUTO"]
                 flags = objcat.data["FLAGS"]
                 iflags = objcat.data["IMAFLAGS_ISO"]
+                niflags = objcat.data["NIMAFLAGS_ISO"]
                 isoarea = objcat.data["ISOAREA_IMAGE"]
                 ids = objcat.data["NUMBER"]
                 if np.all(mags==-999):
@@ -534,22 +550,8 @@ class QAPrimitives(GENERALPrimitives):
                                 (ad.filename,extver))
                     continue
 
-                # Need to correct the mags for the exposure time
-                et = ad.exposure_time()
-
-                # If it's a funky nod-and-shuffle imaging acquistion,
-                # then need to scale exposure time
-                if "GMOS_NODANDSHUFFLE" in ad.types:
-                    log.warning("Imaging Nod-And-Shuffle. Photometry may be dubious")
-                    # AFAIK the number of nod_cycles isn't actually relevant -
-                    # there's always 2 nod positions, thus the exposure
-                    # time for any given star is half the total
-                    et /= 2.0
                 magcor = 2.5*math.log10(et)
                 mags = np.where(mags==-999,mags,mags+magcor)
-
-                # Need to get the nominal atmospheric extinction
-                nom_at_ext = ad.nominal_atmospheric_extinction()
 
                 refmags = objcat.data["REF_MAG"]
                 refmag_errs = objcat.data["REF_MAG_ERR"]
@@ -565,25 +567,19 @@ class QAPrimitives(GENERALPrimitives):
                 # Is this mathematically correct? These are logarithmic
                 # values... (PH)
                 # It'll do for now as an estimate at least
-                zperrs = np.sqrt((refmag_errs * refmag_errs) + (mag_errs * mag_errs))
+                zperrs = np.sqrt((refmag_errs * refmag_errs) +
+                                 (mag_errs * mag_errs))
  
                 # OK, trim out bad values
-                zps = np.where(isoarea >= 30, zps, None)
-                zps = np.where((zps > -500), zps, None)
-                zps = np.where((flags == 0), zps, None)
-                zps = np.where((mags < 90), zps, None)
-                zperrs = np.where(isoarea >= 30, zperrs, None)
-                zperrs = np.where((zps > -500), zperrs, None)
-                zperrs = np.where((flags == 0), zperrs, None)
-                ids = np.where(isoarea >= 30, ids, None)
-                ids = np.where((zps > -500), ids, None)
-                ids = np.where((flags == 0), ids, None)
-                if not np.all(iflags==-999):
-                    # All DQ flags are -999 if sextractor was run without
-                    # a DQ plane; don't use them in this case
-                    zps = np.where((iflags == 0), zps, None)
-                    zperrs = np.where((iflags == 0), zperrs, None)
-                    ids = np.where((iflags == 0), ids, None)
+                ok = np.logical_and.reduce((isoarea>=30, zps>-500,
+                                           flags==0, mags<90))
+                if not np.all(iflags == -999):
+                    ok2 = np.logical_or(iflags==0,
+                            np.logical_and(iflags==1, niflags<0.02*isoarea))
+                    ok = np.logical_and(ok, ok2)
+                zps = np.where(ok, zps, None)
+                zperrs = np.where(ok, zperrs, None)
+                ids = np.where(ok, ids, None)
 
                 # Trim out where zeropoint error > err_threshold
                 if len(filter(lambda z: z is not None, zps)) <= 5:
