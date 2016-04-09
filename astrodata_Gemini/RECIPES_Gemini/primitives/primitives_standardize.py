@@ -10,6 +10,8 @@ __version__      = '$Revision$'[11:-2]
 __version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
 import os
+import os.path
+import shutil
 import numpy as np
 
 from astrodata import AstroData
@@ -368,6 +370,7 @@ class StandardizePrimitives(GENERALPrimitives):
                 # to find an appropriate one. Get the dictionary containing the
                 # list of MDFs for all instruments and modes.
                 all_mdf_dict = MDFDict.mdf_dict
+                mdf_locations = MDFDict.mdf_locations
                 
                 # The MDFs are keyed by the instrument and the MASKNAME. Get
                 # the instrument and the MASKNAME values using the appropriate
@@ -398,12 +401,22 @@ class StandardizePrimitives(GENERALPrimitives):
                     else:
                         mdf = str(mask_name)
                    
-                    # Check if the MDF exists in the current working directory
-                    if not os.path.exists(mdf):
-                        log.warning("The MDF %s was not found in the current "
-                                    "working directory, so no MDF will be "
+                    # Check if the MDF exists in any of the defined directories.
+                    # The current direction is included in the list and will take
+                    # precedence.
+                    mdf_found = False
+                    for location in mdf_locations:
+                        fullname = os.path.join(os.path.sep, location, mdf)
+                        if os.path.exists(fullname):
+                            mdf_found = True
+                            if location != '.':
+                                shutil.copy(fullname, '.')
+                            
+                    if not mdf_found:
+                        log.warning("The MDF %s was not found in any of the "
+                                    "search directories, so no MDF will be "
                                     "added" % mdf)
-                    
+                        
                         # Append the input AstroData object to the list of output
                         # AstroData objects without further processing
                         adoutput_list.append(ad)

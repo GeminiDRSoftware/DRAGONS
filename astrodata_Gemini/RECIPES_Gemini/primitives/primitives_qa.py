@@ -1083,8 +1083,15 @@ class QAPrimitives(GENERALPrimitives):
                         ell_warn = ""
                 else:
                 # Mean of clipped FWHM and ellipticity
-                    mean_fwhm = src["fwhm_arcsec"].mean()
-                    std_fwhm = src["fwhm_arcsec"].std()
+                    # Use weights if they exist
+                    if "weight" in src.dtype.names:
+                        mean_fwhm = np.average(src["fwhm_arcsec"],
+                                                  weights=src["weight"])
+                        std_fwhm = np.sqrt(np.average((src["fwhm_arcsec"] -
+                                    mean_fwhm)**2, weights=src["weight"]))
+                    else:
+                        mean_fwhm = src["fwhm_arcsec"].mean()
+                        std_fwhm = src["fwhm_arcsec"].std()
                     if is_image:
                         mean_ellip = src["ellipticity"].mean()
                         std_ellip = src["ellipticity"].std()
@@ -1165,8 +1172,8 @@ class QAPrimitives(GENERALPrimitives):
                                  ).ljust(llen) + ("%.3f %s %.3f" % (
                                 mean_ellip, pm, std_ellip)).rjust(rlen)
                     else:
-                        srcStr = "Spectrum centered at row %d used to measure " \
-                                 "IQ." % p.mean(src["y"])                             
+                        srcStr = "IQ measured from spectra centered at rows " \
+                                 + str(np.unique(src["y"]))
                 if corr_iq is not None:
                     if corr_iq_std is not None:
                         csStr = ("Zenith-corrected FWHM (AM %.2f):" % airmass
@@ -1306,8 +1313,7 @@ class QAPrimitives(GENERALPrimitives):
                             overlays_exist = True
                         else:
                             data_shape=ad[key].data.shape
-                            iqmask = _iq_overlay([{"x":data_shape[1]/2,
-                                               "y":np.mean(src["y"])}],data_shape)
+                            iqmask = _iq_overlay(src,data_shape)
                             iq_overlays.append(iqmask)
                             overlays_exist = True
 

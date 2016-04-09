@@ -1,4 +1,5 @@
 GMOS_KeyDict = {
+    "key_acqusition_slits":"ACQSLITS",
     "key_ampinteg":"AMPINTEG",
     "key_ampname":"AMPNAME",
     "key_array_section":"CCDSEC",
@@ -20,4 +21,6 @@ GMOS_KeyDict = {
     "key_overscan_section":"BIASSEC",
     "key_ra": "RA",
     "key_wavelength_reference_pixel":"CRPIX1",
+    "key_a_nod_count":"ANODCNT",
+    "key_b_nod_count":"BNODCNT",
     }

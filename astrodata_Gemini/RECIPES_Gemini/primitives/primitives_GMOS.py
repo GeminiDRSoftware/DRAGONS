@@ -955,6 +955,10 @@ class GMOSPrimitives(GEMINIPrimitives):
                     adoutput = _tile_objcat(adinput=ad, adoutput=adoutput, 
                                             mapping_dict=mapping_dict, 
                                             sx_dict=self.sx_default_dict)[0]
+                    
+                # Attach MDF if it exists
+                if ad["MDF"] is not None:
+                    adoutput.append(ad["MDF"])
 
                 # Refresh AstroData types in output file (original ones
                 # were lost when new AD was created)
@@ -1019,6 +1023,7 @@ class GMOSPrimitives(GEMINIPrimitives):
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
+            ad.refresh_types()
 
             # Change the filename
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 

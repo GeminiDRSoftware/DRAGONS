@@ -44,6 +44,15 @@
         "uiLevel"       : "UIBASIC",
         },
     },
+ "findAcquisitionSlits":{
+    "suffix":{
+        "default"       : "_acqSlitsAdded",
+        "type"          : "str",
+        "recipeOverride": "true",
+        "userOverride"  : "true",
+        "uiLevel"       : "UIBASIC",
+        },
+    },
  "makeFlat":{
     "suffix":{
         "default"       : "_flat",
@@ -79,5 +88,14 @@
         "userOverride"  : True,
         "uiLevel"       : "UIBASIC",
         },
+    },
+  "skyCorrectNodShuffle":{
+    "suffix":{
+        "default"       : "_skyCorrected",
+        "type"          : "str",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },      
     },
 }

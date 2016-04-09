@@ -871,27 +871,56 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         if "GMOS_NODANDSHUFFLE" in dataset.types:
             
             # Determine the number of nod and shuffle cycles keyword from the
-            # global keyword dictionary
-            keyword = self.get_descriptor_key("key_nod_count")
+            # global keyword dictionary, for positions A and B
+            keyword1 = self.get_descriptor_key("key_a_nod_count")
+            keyword2 = self.get_descriptor_key("key_b_nod_count")
             
             # Get the value of the number of nod and shuffle cycles keyword
-            # from the header of the PHU
-            nod_count = dataset.phu_get_key_value(keyword)
-            
-            if nod_count is None:
+            # from the header of the PHU, for positions A and N
+            a_nod_count = dataset.phu_get_key_value(keyword1)
+            b_nod_count = dataset.phu_get_key_value(keyword2)
+
+            if a_nod_count is None or b_nod_count is None:
                 # The phu_get_key_value() function returns None if a value
                 # cannot be found and stores the exception info. Re-raise the
                 # exception. It will be dealt with by the CalculatorInterface.
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
             
-            # Return the nod count integer
-            ret_nod_count = int(nod_count)
+            # Return the nod count integers as a tuple
+            ret_nod_count = (int(a_nod_count),int(b_nod_count))
         else:
             raise Errors.DescriptorTypeError()
         
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_nod_count, name="nod_count", ad=dataset)
+        
+        return ret_dv
+    
+    def nod_offsets(self, dataset, **args):
+        # Get the offsets (in arcsec) from the default telescope position
+        # For the observations in beams A and B
+        if "GMOS_NODANDSHUFFLE" in dataset.types:
+            # These are the modern keywords
+            ayoff = dataset.phu_get_key_value("NODAYOFF")
+            byoff = dataset.phu_get_key_value("NODBYOFF")
+            
+            # But earlier, it was assumed that only B would be offset
+            if ayoff is None:
+                ayoff = 0.0
+                byoff = dataset.phu_get_key_value("NODYOFF")
+
+            if byoff is None:
+                if hasattr(dataset, "exception_info"):
+                    raise dataset.exception_info
+
+            # Return a tuple
+            ret_nod_offsets = (ayoff,byoff)
+        else:
+            raise Errors.DescriptorTypeError()
+        
+        # Instantiate the return DescriptorValue (DV) object
+        ret_dv = DescriptorValue(ret_nod_pixels, name="nod_offsets", ad=dataset)
         
         return ret_dv
     

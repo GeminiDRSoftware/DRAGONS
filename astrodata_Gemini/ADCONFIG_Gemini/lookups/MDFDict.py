@@ -1,3 +1,5 @@
+import os.path
+
 mdf_dict = {
     # Dictionary key is the instrument and the value of the MASKNAME keyword
     # Dictionary value is the lookup path of the MDF for that instrument with
@@ -42,3 +44,18 @@ mdf_dict = {
     "GMOS-N_NS2.0arcsec": "Gemini/GMOS/MDF/NS2.0arcsec.fits",
     "GMOS-S_NS2.0arcsec": "Gemini/GMOS/MDF/NS2.0arcsec.fits",
     }
+
+# Where to look for the MOS MDFs
+# KL: Obviously having an internal path is the release software is
+#     far from ideal.  Also, using the /net version of the path
+#     is not great but it seems that /gemsoft does not have the
+#     "masks" directory.   Eventually a better solution needs
+#     to be implemented.  FYI, mdf_locations is used in addMDF.
+#     Possible solution: have autoredux/redux figure out the path
+#     and store it in the rc when reduce is called.
+mdf_locations = ['.', 
+                 os.path.join(os.path.sep, 
+                              'net', 'mko-nfs', 'sci', 'dataflow', 'masks'),
+                 os.path.join(os.path.sep,
+                              'net', 'cpostonfs-nv1', 'dataflow', 'masks')]
+
