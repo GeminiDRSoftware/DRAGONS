@@ -550,7 +550,8 @@ def clipped_mean(data):
     clipped_data = data
     clip = 0
     while (num>0.5*num_total):
-        clipped_data = data[(data<mean+sigma) & (data>mean-3*sigma)]
+        # CJS: edited this as upper limit was mean+1*sigma => bias
+        clipped_data = data[(data<mean+3*sigma) & (data>mean-3*sigma)]
         num = len(clipped_data)
 
         if num>0:

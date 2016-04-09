@@ -25,6 +25,9 @@ from importlib import import_module
 
 from ..library import astrotools as at
 
+from astropy.modeling import models, fitting
+from astropy import stats
+
 from astrodata import AstroData
 from astrodata import __version__ as ad_version
 from astrodata.utils import Errors
@@ -34,6 +37,8 @@ from astrodata.utils.gemconstants import SCI, VAR, DQ
 from astrodata.interface.slices import pixel_exts
 from astrodata.interface.Descriptors import DescriptorValue
 from astrodata.utils.Errors import DescriptorValueTypeError
+
+#import matplotlib.pyplot as plt
 
 # ------------------------------------------------------------------------------
 def add_objcat(adinput=None, extver=1, replace=False, columns=None, sxdict=None):
@@ -59,6 +64,7 @@ def add_objcat(adinput=None, extver=1, replace=False, columns=None, sxdict=None)
     :type columns: dictionary of Pyfits Column objects with column names
                    as keys
     """
+    
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = logutils.get_logger(__name__)
@@ -1095,8 +1101,8 @@ def convert_to_cal_header(adinput=None, caltype=None, keyword_comments=None):
     :param caltype: type of calibration.  Accepted values are 'fringe',
                     'sky', or 'flat'
     :type caltype: string
-
     """
+
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = logutils.get_logger(__name__)
@@ -1359,19 +1365,19 @@ def fit_continuum(ad):
     :param ad: input image
     :type ad: AstroData instance
     """
-
-    import scipy.optimize
+    log = logutils.get_logger(__name__)
+    import warnings
 
     good_source = {}
     
     # Get the pixel scale
     pixel_scale = ad.pixel_scale().as_pytype()
     
-    # Set full aperture to 5 arcsec
-    ybox = int(2.5 / pixel_scale)
+    # Set full aperture to 4 arcsec
+    ybox = int(2.0 / pixel_scale)
 
-    # Average 8 unbinned columns together
-    xbox = 4 / int(ad.detector_x_bin())
+    # Average 512 unbinned columns together
+    xbox = 256 / int(ad.detector_x_bin())
 
     # Average 16 unbinned background rows together
     bgbox = 8 / int(ad.detector_x_bin())
@@ -1387,97 +1393,182 @@ def fit_continuum(ad):
 
     for sciext in ad[SCI]:
         extver = sciext.extver()
+        data = sciext.data
 
         if ad[DQ,extver] is not None:
             dqdata = ad[DQ,extver].data
         else:
             dqdata = None
 
-        data = sciext.data
+        if ad[VAR,extver] is not None:
+            vardata = ad[VAR,extver].data
+        else:
+            vardata = None
 
         ####here - dispersion axis
-        sumdata = np.sum(np.where(dqdata==0, data, 0), axis=1)
-        center = np.argmax(sumdata)
+        # Taking the 95th percentile should remove CRs
+        signal = np.percentile(np.where(dqdata==0, data, 0), 95, axis=1)
+        acq_star_positions = ad.phu_get_key_value("ACQSLITS")
+        if acq_star_positions is None:
+            if 'MOS' in ad.types:
+                log.warning("%s is MOS but has no acquisition slits. "
+                            "Not trying to find spectra." % ad.filename)
+                if ad['MDF'] is None:
+                    log.warning("No MDF is attached. Did addMDF find one?\n") 
+                continue
 
-        #print 'ctr', center
-        #print 'sum ctr',sumdata[center]
-
-        if center+ybox+bgbox>data.shape[0]:
-            #print 'too high'
-            continue
-        if center-ybox-bgbox<0:
-            #print 'too low'
-            continue
-
-        bg_mean = np.mean([data[center - ybox - bgbox:center-ybox],
-                           data[center + ybox:center + ybox + bgbox]], dtype=np.float64)
-
-        ctr_mean = np.mean(data[center], dtype=np.float64)
-        ctr_std = np.std(data[center])
-
-        #print 'mean ctr',ctr_mean,ctr_std
-        #print 'mean bg',bg_mean
-
-        if ctr_mean < s2n_bg * bg_mean:
-            #print 'too faint'
-            continue
-        if ctr_mean < s2n_self * ctr_std:
-            #print 'too noisy'
-            continue
+                continue
+            else:
+                shuffle = int(ad.nod_pixels() / ad.detector_y_bin())
+                centers = [shuffle + np.argmax(signal[shuffle:shuffle*2])]
+                half_widths = [ybox]
+        else:
+            try:
+                centers = []
+                half_widths = []
+                for x in acq_star_positions.split():
+                    c,w = x.split(':')
+                    # The -1 here because of python's 0-count
+                    centers.append(int(c)-1)
+                    half_widths.append(int(0.5*int(w)))
+            except ValueError:
+                log.warning("Image %s has unparseable ACQSLITS keyword"
+                            % ad.filename)
+                centers = [np.argmax(signal)]
+                half_widths = [ybox]
         
         fwhm_list = []
         y_list = []
         x_list = []
-        for i in range(xbox, data.shape[1]-xbox, xbox):
-
-            dqcol = dqdata[center-ybox:center+ybox,i-xbox:i+xbox]
-            if np.any(dqcol):
+        weight_list = []
+                
+        for center,hwidth in zip(centers,half_widths):
+            if center+hwidth>data.shape[0]:
+                #print 'too high'
                 continue
-
-            col = data[center-ybox:center+ybox,i-xbox:i+xbox]
-            col = np.mean(col,axis=1, dtype=np.float64)
-            maxflux = col[ybox]
-
-            bg = np.mean([data[center-ybox-bgbox:center-ybox,i-xbox:i+xbox],
-                          data[center+ybox:center+ybox+bgbox,i-xbox:i+xbox]], 
-                         dtype=np.float64)
-
-            pars = (bg, maxflux, ybox, init_width)
-            fit_obj = at.GaussFit(col)
-            # least squares fit of model to data
-            try:
-                # for scipy versions < 0.9
-                new_pars, success = scipy.optimize.leastsq(fit_obj.calc_diff, pars,
-                                                           maxfev=100, 
-                                                           warning=False)
-            except:
-                # for scipy versions >= 0.9
-                import warnings
-                warnings.simplefilter("ignore")
-                new_pars, success = scipy.optimize.leastsq(fit_obj.calc_diff, pars,
-                                                           maxfev=100)
-            if success>3:
+            if center-hwidth<0:
+                #print 'too low'
                 continue
-            else:
-                width = new_pars[3]
-                fwhm = abs(2*np.sqrt(2*np.log(2))*width)
-                fwhm_list.append(fwhm)
-                y_list.append(center - ybox + new_pars[2])
-                x_list.append(i)
+            
+            # Don't think it needs to do an overall check for each object
+            #bg_mean = np.mean([data[center - ybox - bgbox:center-ybox],
+            #                   data[center + ybox:center + ybox + bgbox]], dtype=np.float64)
+            #ctr_mean = np.mean(data[center,dqdata[center]==0], dtype=np.float64)
+            #ctr_std = np.std(data[center,dqdata[center]==0])
+    
+            #print 'mean ctr',ctr_mean,ctr_std
+            #print 'mean bg',bg_mean
+    
+            #if ctr_mean < s2n_bg * bg_mean:
+            #    print 'too faint'
+            #    continue
+            #if ctr_mean < s2n_self * ctr_std:
+            #    print 'too noisy'
+            #    continue
+            
+            for i in range(xbox, data.shape[1]-xbox, xbox):
+                databox = data[center-hwidth-1:center+hwidth,i-xbox:i+xbox]
+                if dqdata is None:
+                    dqbox = np.zeros_like(databox)
+                else:
+                    dqbox = dqdata[center-hwidth-1:center+hwidth,i-xbox:i+xbox]
+                if vardata is None:
+                    varbox = databox # Any better ideas?
+                else:
+                    varbox = vardata[center-hwidth-1:center+hwidth,i-xbox:i+xbox]
 
+                # Collapse in dispersion direction, using good pixels only
+                dqcol = np.sum(dqbox==0, axis=1)
+                if np.any(dqcol==0):
+                    continue
+                col = np.sum(databox, axis=1) / dqcol
+                maxflux = np.max(abs(col))
+                
+                # Crude SNR test; is target bright enough in this wavelength range?
+                if np.percentile(col,90)*xbox < np.mean(databox[dqbox==0]) \
+                            + 10*np.sqrt(np.median(varbox)):
+                    continue
+
+                # Check that the spectrum looks like a continuum source.
+                # This is needed to avoid cases where another slit is shuffled onto
+                # the acquisition slit, resulting in an edge that the code tries
+                # to fit with a Gaussian. That's not good, but if source is very
+                # bright and dominates spectrum, then it doesn't matter.
+                # All non-N&S data should pass this step, which checks whether 80%
+                # of the spectrum has SNR>2
+                spectrum = databox[np.argmax(col),:]
+                if np.percentile(spectrum,20) < 2*np.sqrt(np.median(varbox)):
+                    continue
+                
+                if 'GMOS_NODANDSHUFFLE' in ad.types:
+                    # N&S; background should be close to zero
+                    bg = models.Const1D(0.)
+                    # Fix background=0 if slit is in region where sky-subtraction will occur 
+                    if center > ad.nod_pixels()/ad.detector_y_bin():
+                            bg.amplitude.fixed = True
+                else:
+                    # Not N&S; background estimated from image
+                    bg = models.Const1D(
+                            amplitude=np.median([data[center-ybox-bgbox:center-ybox],
+                            data[center+ybox:center+ybox+bgbox,i-xbox:i+xbox]], 
+                            dtype=np.float64))
+                g_init = models.Gaussian1D(amplitude=maxflux, mean=np.argmax(col), 
+                            stddev=init_width) + models.Gaussian1D(amplitude=-maxflux,
+                                mean=np.argmin(col), stddev=init_width) + bg
+                # Set one profile to be +ve, one -ve, and widths equal
+                g_init.amplitude_0.min = 0.
+                g_init.amplitude_1.max = 0.
+                g_init.stddev_1.tied = lambda f: f.stddev_0
+                fit_g = fitting.LevMarLSQFitter()
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    g = fit_g(g_init, np.arange(len(col)), col)
+                
+                #print g
+                #x = np.arange(len(col))
+                #plt.plot(x, col)
+                #plt.plot(x, g(x))
+                #plt.show()
+                if fit_g.fit_info['ierr']<5:
+                    # This is kind of ugly and empirical; philosophy is that peak should
+                    # be away from the edge and should be similar to the maximum
+                    if (g.amplitude_0>0.5*maxflux and
+                        g.mean_0>1 and g.mean_0<len(col)-2):
+                        fwhm = abs(2*np.sqrt(2*np.log(2))*g.stddev_0)
+                        fwhm_list.append(fwhm)
+                        y_list.append(center)
+                        x_list.append(i)
+                        # Add a "weight" (multiply by 1. to convert to float
+                        # If only one spectrum, all weights will be basically the same
+                        if g.mean_1 > g.mean_0:
+                            weight_list.append(1.*max(g.mean_0,
+                                                      2*hwidth-g.mean_1))
+                        else:
+                            weight_list.append(1.*max(g.mean_1,
+                                                      2*hwidth-g.mean_0))
+
+
+        # Now do something with the list of measurements
         fwhm_pix = np.array(fwhm_list)
         fwhm_arcsec = pixel_scale * fwhm_pix
-        rec = np.rec.fromarrays([x_list,y_list,fwhm_pix,fwhm_arcsec],
-                                names=["x","y","fwhm","fwhm_arcsec"])
+        
+        rec = np.rec.fromarrays([x_list,y_list,fwhm_pix,
+                                 fwhm_arcsec,weight_list],
+                    names=["x","y","fwhm","fwhm_arcsec","weight"])
+        #plt.hist(rec["fwhm_arcsec"], 10)
+        #plt.show()
+        #print rec
 
-        # Clip outliers in FWHM - single 1-sigma clip if more than 3 sources.
+        # Clip outliers in FWHM
         num_total = len(rec)
         if num_total>=3:
             data = rec["fwhm_arcsec"]
-            mean = data.mean()
-            sigma = data.std()
-            rec = rec[(data<mean+sigma) & (data>mean-sigma)]
+            #mean = data.mean()
+            #sigma = data.std()
+            mean, sigma = at.clipped_mean(data)
+            rec = rec[(data<mean+2*sigma) & (data>mean-2*sigma)]
         # Store data
+        
         good_source[(SCI,extver)] = rec
     return good_source
 
@@ -1714,7 +1805,6 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
                     if the timestamp_keywords.py module cannot be found, the
                     comment 'UT time stamp for <keyword>' will instead be used.
     :type comment: string
-
     """
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
@@ -1873,7 +1963,6 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
     corresponding SCI extension.
     This is intended for use in removing overscan sections, or other
     unused parts of the data array.
-
     """
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
@@ -2398,8 +2487,8 @@ def group_exposures(adinputs, pkg, frac_FOV=1.0):
 
     :returns: One group of exposures per identified nod position.
     :rtype: tuple of ExposureGroup instances
-
     """
+
     # In principle divisive clustering algorithms have the best chance of
     # robust separation because of their top-down view of the problem.
     # However, an agglomerative algorithm is probably more practical to

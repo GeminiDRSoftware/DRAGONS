@@ -134,7 +134,7 @@ class MosaicAD(Mosaic):
         """
 
         # Instantiate the log
-        logutils.config(mode='debug', console_lvl='stdinfo',file_name='mosaic.log') 
+        # logutils.config(mode='debug', console_lvl='stdinfo',file_name='mosaic.log') 
         self.log = logutils.get_logger(__name__)
 
         self.log.debug("******* Debug.STARTING MosaicAD **********")
