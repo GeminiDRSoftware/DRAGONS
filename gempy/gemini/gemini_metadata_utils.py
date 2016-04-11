@@ -233,8 +233,15 @@ def get_key_value_dict(adinput=None, keyword=None, dict_key_extver=False):
             dv = DescriptorValue(keyword_value_dict)
             
             # Create a new dictionary where the key of the dictionary is an
-            # EXTVER integer
-            extver_dict = dv.collapse_by_extver()
+            # EXTVER integer. If the value is a float, hand a precision to 
+            # this function to ensure that the values have not been truncated 
+            # in the last significant figure (as can happen in pyfits and 
+            # astropy.io), making these not match when they do refer to the 
+            # same value
+            if type(keyword_value_dict.values()[0]) is float:
+                extver_dict = dv.collapse_by_extver(precision=10)
+            else:
+                extver_dict = dv.collapse_by_extver()
             
             if not dv.validate_collapse_by_extver(extver_dict):
                 # The validate_collapse_by_extver function returns False if the

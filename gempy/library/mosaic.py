@@ -358,10 +358,15 @@ class Mosaic(object):
 
         # This is the entire mosaic area.
         # Number of pixels in x and in y.
-        #
-        mosaic_nx = blocksize_x*nblocksx + max_xgap*(nblocksx-1)
-        mosaic_ny = blocksize_y*nblocksy + max_ygap*(nblocksy-1)
-
+        
+        md = self.mosaic_data                       # MosaicData object
+        self.block_mosaic_coord = md.block_mosaic_coord
+        max_x = 0
+        for coords in self.block_mosaic_coord.values():
+            max_x = max(max_x, coords[0], coords[1])
+        mosaic_nx = max_x + max_xgap*(nblocksx-1)
+        mosaic_ny = max(v[3] for k, v in self.block_mosaic_coord.items()) + max_ygap*(nblocksy-1)
+        
         # Form a dictionary of blocks from the data_list.
         # The keys are tuples (column,row)
         #
@@ -386,9 +391,6 @@ class Mosaic(object):
 
         # ------- Paste each block (after transforming if tile=False)
         #         into the output mosaic array considering the gaps.
-
-        md = self.mosaic_data                       # MosaicData object
-        self.block_mosaic_coord = md.block_mosaic_coord
 
         # Initialize coordinates of the box to contain
         # all the blocks.
@@ -1128,4 +1130,70 @@ class MosaicGeometry(object):
             geo_tab['spline_order'] = self.spline_order
 
         return geo_tab
+
+
+# The following 2 functions were added by James, to help with the co-ordinate
+# bookeeping for GSAOI. I believe they are more general than the mosaicking
+# functionality itself but there's no point building in unnecessary limitations
+# and perhaps they'll be useful if we generalize the code to N-D later.
+
+def reset_origins(ranges, per_block=False):
+    """
+    Given a sequence of (n-dimensional) co-ordinate range sequences
+    (eg. ((x1a, x2a, y1a, x2a), (x1b, x2b, y1b, y2b)) ), shift their origins
+    to 0. If per_block is False (default), a common origin will be preserved,
+    such that the lowest x1 & y1 (etc.) values over all the sequences are 0;
+    otherwise, each sequence will be adjusted to have its individual x1 & y1
+    (etc.) equal to 0.
+    """
+    # This is a bit more general than needed for GSAOI, with a view to
+    # moving it somewhere more generic later for other mosaicking stuff.
+
+    # Require that the dimensionality of the input sequences is consistent:
+    lens = set(len(coord_set) for coord_set in ranges)
+    if ranges and len(lens) != 1:
+        raise ValueError('input range sequences differ in length/'\
+                         'dimensionality')
+
+    # Rearrange the co-ordinate range sequences into (start, end) pairs
+    # in order to iterate over their dimensions more easily:
+    in_pairs = tuple(zip(*[iter(coord_set)]*2) for coord_set in ranges)
+
+    # Derive the offset to apply to each co-ordinate of each sequence:
+    if per_block:
+        adj = (tuple(dim[0] for dim in coord_set for lim in (0,1)) \
+               for coord_set in in_pairs)
+    else:
+        # First invert the nested ordering of pairs (by dimension and then
+        # original sequence, rather than vice versa):
+        by_dim = zip(*[iter(coord_set) for coord_set in in_pairs])
+        adj = ([min(pair[0] for pair in dim) for dim in by_dim]*2 \
+               for coord_set in ranges)
+
+    # Return the input sequence with the adjustments subtracted:
+    return tuple(tuple(c-a for c, a in zip(coord_set, adj_set)) \
+                 for coord_set, adj_set in zip(ranges, adj))
+
+def combine_limits(ranges, to_FITS=False):
+    """
+    Given a sequence of (n-dimensional) co-ordinate range sequences
+    (eg. ((x1a, x2a, y1a, x2a), (x1b, x2b, y1b, y2b)) ), reduce them to
+    a single tuple spanning the combined range of the data.
+    If to_FITS (default False) is True, also convert from an exclusive,
+    zero-based Python range to an inclusive, 1-based FITS/IRAF range by
+    adding 1 to each lower limit.
+    """
+    # Offset each lower limit to convert ranges to FITS conv. if requested:
+    offset = 1 if to_FITS else 0
+
+    # Split each set of limits into a set of lower & higher limits for each
+    # axis, invert the nesting (by dimension first then co-ordinate set) &
+    # find the min/max of the low/high limits, respectively, for each axis:
+    llims = tuple(min(axis)+offset for axis in \
+                  zip(*[coord_set[::2] for coord_set in ranges]))
+    hlims = tuple(max(axis) for axis in \
+                  zip(*[coord_set[1::2] for coord_set in ranges]))
+
+    # Recombine the limits into a single tuple:
+    return tuple(val for axis in zip(llims, hlims) for val in axis)
 

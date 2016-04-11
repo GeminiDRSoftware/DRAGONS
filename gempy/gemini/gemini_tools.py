@@ -814,115 +814,47 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                     
                     # Clip all relevant extensions
                     for ext in ext_to_clip:
-                        
-                        # Pull out specified region
-                        clipped = ext.data[region[0]:region[1],
-                                           region[2]:region[3]]
-                        
-                        # Stack with overscan region if needed
-                        if aux_trimmed and not science_trimmed:
-                            
-                            # Pad DQ planes with zeros to match
-                            # science shape
-                            # Note: this only allows an overscan
-                            # region at one edge of the data array.
-                            # If there ends up being more
-                            # than one for some instrument, this code
-                            # will have to be revised.
-                            if aux_type == "bpm":
-                                if science_offsets[0] > 0:
-                                    # Left-side overscan
-                                    overscan = np.zeros((science_shape[0],
-                                                         science_offsets[0]),
-                                                        dtype=np.int16)
-                                    ext.data = np.hstack([overscan,clipped])
-                                elif science_offsets[1] > 0:
-                                    # Right-side overscan
-                                    overscan = np.zeros((science_shape[0],
-                                                         science_offsets[1]),
-                                                        dtype=np.int16)
-                                    ext.data = np.hstack([clipped,overscan])
-                                elif science_offsets[2] > 0:
-                                    # Bottom-side overscan
-                                    overscan = np.zeros((science_offsets[2],
-                                                         science_shape[1]),
-                                                        dtype=np.int16)
-                                    ext.data = np.vstack([clipped,overscan])
-                                elif science_offsets[3] > 0:
-                                    # Top-side overscan
-                                    overscan = np.zeros((science_offsets[3],
-                                                         science_shape[1]),
-                                                        dtype=np.int16)
-                                    ext.data = np.vstack([overscan,clipped])
-                            else:
-                                # Science decision: trimmed calibrations
-                                # can't be meaningfully matched to untrimmed
-                                # science data
+
+                        # Pull out specified data region:
+                        if science_trimmed or aux_trimmed:
+                            clipped = ext.data[region[0]:region[1],
+                                               region[2]:region[3]]
+
+                        # Where no overscan is needed, just use the data region:
+                        if science_trimmed:
+                            ext.data = clipped
+
+                        # Pad trimmed aux arrays with zeros to match untrimmed
+                        # science data:
+                        elif aux_trimmed:
+
+                            # Science decision: trimmed calibrations can't be
+                            # meaningfully matched to untrimmed science data
+                            if aux_type != 'bpm':
                                 raise Errors.ScienceError(
                                     "Auxiliary data %s is trimmed, but "
                                     "science data %s is untrimmed." %
-                                    (auxext.filename,sciext.filename))
-                        
-                        elif not science_trimmed:
-                            
-                            # Pick out overscan region corresponding
-                            # to data section from auxiliary data
-                            if aux_offsets[0] > 0:
-                                if aux_offsets[0] != science_offsets[0]:
-                                    raise Errors.ScienceError(
-                                        "Overscan regions do not match in "
-                                        "%s, %s" % 
-                                        (auxext.filename,sciext.filename))
-                                
-                                # Left-side overscan: height is full ylength,
-                                # width comes from 0 -> offset
-                                overscan = ext.data[region[0]:region[1],
-                                                    0:aux_offsets[0]]
-                                ext.data = np.hstack([overscan,clipped])
-                            
-                            elif aux_offsets[1] > 0:
-                                if aux_offsets[1] != science_offsets[1]:
-                                    raise Errors.ScienceError(
-                                        "Overscan regions do not match in "
-                                        "%s, %s" % 
-                                        (auxext.filename,sciext.filename))
-                                
-                                # Right-side overscan: height is full ylength,
-                                # width comes from xlength-offset -> xlength
-                                overscan = ext.data[region[0]:region[1],
-                                    aux_shape[1] - aux_offsets[1]:aux_shape[1]]
-                                ext.data = np.hstack([clipped,overscan])
-                            
-                            elif aux_offsets[2] > 0: 
-                                if aux_offsets[2]!=science_offsets[2]:
-                                    raise Errors.ScienceError(
-                                        "Overscan regions do not match in "
-                                        "%s, %s" % 
-                                        (auxext.filename,sciext.filename))
-                                
-                                # Bottom-side overscan: width is full xlength,
-                                # height comes from 0 -> offset
-                                overscan = ext.data[0:aux_offsets[2],
-                                                    region[2]:region[3]]
-                                ext.data = np.vstack([clipped,overscan])
-                            
-                            elif aux_offsets[3] > 0:
-                                if aux_offsets[3] != science_offsets[3]:
-                                    raise Errors.ScienceError(
-                                        "Overscan regions do not match in "
-                                        "%s, %s" % 
-                                        (auxext.filename,sciext.filename))
-                                
-                                # Top-side overscan: width is full xlength,
-                                # height comes from ylength-offset -> ylength
-                                overscan = ext.data[
-                                    aux_shape[0] - aux_offsets[3]:aux_shape[0],
-                                    region[2]:region[3]]
-                                ext.data = np.vstack([overscan,clipped])
-                        
-                        else:
-                            # No overscan needed, just use the clipped region
-                            ext.data = clipped
+                                    (auxext.filename, sciext.filename))
+
+                            # Use duplicate iterators over the reversed
+                            # science_offsets list to unpack its values in
+                            # pairs and reverse them:
+                            padding = tuple((bef, aft) for aft, bef in \
+                                            zip(*[reversed(science_offsets)]*2))
+
+                            # Replace the array with one that's padded with the
+                            # appropriate number of zeros at each edge:
+                            ext.data = np.pad(clipped, padding, 'constant',
+                                              constant_values=0)
+
+                        # If nothing is trimmed, just use the unmodified data
+                        # after checking that the regions match (a condition
+                        # preserved from r5564 without revisiting its logic):
+                        elif not all(off1 == off2 for off1, off2 in \
+                                     zip(aux_offsets, science_offsets)):
+                            raise Errors.ScienceError(
+                                "Overscan regions do not match in %s, %s" % \
+                                (auxext.filename, sciext.filename))
 
                         # Convert the dtype if requested
                         if return_dtype is not None:
@@ -967,6 +899,269 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                                            ad.filename, SCI, sciext.extver()))
             
             new_aux.refresh_types()
+            log.stdinfo("Clipping {} to match science data.".
+                        format(os.path.basename(new_aux.filename)))
+            aux_output_list.append(new_aux)
+        
+        return aux_output_list
+    
+    except:
+        # Log the message from the exception
+        log.critical(repr(sys.exc_info()[1]))
+        raise
+
+def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None, 
+                        return_dtype=None, keyword_comments=None):
+    """
+    This function clips auxiliary data like calibration files or BPMs
+    to the size of the data section in the science. It will pad auxiliary
+    data if required to match un-overscan-trimmed data, but otherwise
+    requires that the auxiliary data contain the science data.
+    
+    """
+    # Instantiate the log. This needs to be done outside of the try block,
+    # since the log object is used in the except block 
+    log = logutils.get_logger(__name__)
+
+    # The validate_input function ensures that the input is not None and
+    # returns a list containing one or more inputs
+    adinput_list = validate_input(input=adinput)
+    aux_list = validate_input(input=aux)
+    
+    # Create a dictionary that has the AstroData objects specified by adinput
+    # as the key and the AstroData objects specified by aux as the value
+    aux_dict = make_dict(key_list=adinput_list, value_list=aux_list)
+    
+    # Initialize the list of output AstroData objects
+    aux_output_list = []
+    
+    try:
+        # Check aux_type parameter for valid value
+        if aux_type is None:
+            raise Errors.InputError("The aux_type parameter must not be None")
+        
+        # If dealing with BPMs, relevant extensions are DQ; otherwise use SCI
+        aux_type = aux_type.lower()
+        if aux_type == "bpm":
+            extname = DQ
+        else:
+            extname = SCI
+        
+        # Loop over each input AstroData object in the input list
+        for ad in adinput_list:
+            science_detector_section_dv = ad.detector_section()
+            science_data_section_dv = ad.data_section()
+            science_array_section_dv = ad.array_section()
+            
+            # Get the associated auxiliary file
+            this_aux = aux_dict[ad]
+            
+            # Make a new blank auxiliary file for appending to
+            new_aux = AstroData()
+            new_aux.filename = this_aux.filename
+            new_aux.phu = this_aux.phu
+                       
+            # Get the associated keyword for the detector section, data
+            # section and array section from the DescriptorValue (DV) object
+            detector_section_keyword = science_detector_section_dv.keyword
+            data_section_keyword     = science_data_section_dv.keyword
+            array_section_keyword    = science_array_section_dv.keyword
+
+            aux_data_section_dv     = this_aux[extname].data_section()
+            aux_array_section_dv    = this_aux[extname].array_section()
+
+            for sciext in ad[SCI]:
+                # Retrieve the extension number for this extension
+                science_extver = sciext.extver()
+                science_frameid = sciext.get_key_value("FRAMEID")
+                
+                science_data_section = (
+                  science_data_section_dv.get_value(extver=science_extver))
+                science_array_section = (
+                  science_array_section_dv.get_value(extver=science_extver))
+                
+                # Check whether science data has been overscan-trimmed
+                science_shape = sciext.data.shape
+                if (science_shape[1] == science_data_section[1] and
+                    science_shape[0] == science_data_section[3] and
+                    science_data_section[0] == 0 and
+                    science_data_section[2] == 0):
+                    
+                    science_trimmed = True
+                    science_offsets = [0,0,0,0]
+                else:
+                    science_trimmed = False
+                    # Offsets give overscan regions on either side of data:
+                    # [left offset, right offset, bottom offset, top offset]
+                    science_offsets = [
+                      science_data_section[0],
+                      science_shape[1] - science_data_section[1],
+                      science_data_section[2],
+                      science_shape[0] - science_data_section[3]]
+                
+                found = False
+                for auxext in this_aux[extname]:
+                    # Retrieve the extension number for this extension
+                    aux_extver = auxext.extver()
+                    aux_frameid = auxext.get_key_value("FRAMEID")
+                    aux_shape = auxext.data.shape
+                    
+                    if (aux_frameid == science_frameid and
+                        aux_shape[0] >= science_shape[0] and
+                        aux_shape[1] >= science_shape[1]):
+                    
+                        # Auxiliary data is big enough as has right FRAMEID
+                        found = True
+                    else:
+                        continue
+                    
+                    aux_data_section = (
+                      aux_data_section_dv.get_value(extver=aux_extver))
+                    aux_array_section = (
+                      aux_array_section_dv.get_value(extver=aux_extver))
+
+                    # Check whether auxiliary data has been overscan-trimmed
+                    if (aux_shape[1] == aux_data_section[1] and 
+                        aux_shape[0] == aux_data_section[3] and
+                        aux_data_section[0] == 0 and
+                        aux_data_section[2] == 0):
+                        
+                        aux_trimmed = True
+                        aux_offsets = [0,0,0,0]
+                    else:
+                        aux_trimmed = False
+                        
+                        # Offsets give overscan regions on either side of data:
+                        # [left offset, right offset, bottom offset, top
+                        # offset]
+                        aux_offsets = [aux_data_section[0],
+                                       aux_shape[1] - aux_data_section[1],
+                                       aux_data_section[2],
+                                       aux_shape[0] - aux_data_section[3]]
+                    
+                    # Define data extraction region corresponding to science
+                    # data section (not including overscan)
+                    x_translation = (
+                      science_array_section[0] - science_data_section[0] -
+                      aux_array_section[0] + aux_data_section[0])
+                    y_translation = (
+                      science_array_section[2] - science_data_section[2] -
+                      aux_array_section[2] + aux_data_section[2])
+                    region = [science_data_section[2] + y_translation,
+                              science_data_section[3] + y_translation,
+                              science_data_section[0] + x_translation,
+                              science_data_section[1] + x_translation]
+                    
+                    # Deepcopy auxiliary SCI plane
+                    # and auxiliary VAR/DQ planes if they exist
+                    # (in the non-BPM case)
+                    # This must be done here so that the same
+                    # auxiliary extension can be used for a
+                    # different science extension; without the
+                    # deepcopy, the original auxiliary extension
+                    # gets clipped
+                    ext_to_clip = [deepcopy(auxext)]
+                    if aux_type != "bpm":
+                        varext = this_aux[VAR,aux_extver]
+                        if varext is not None:
+                            ext_to_clip.append(deepcopy(varext))
+                            
+                        dqext = this_aux[DQ,aux_extver]
+                        if dqext is not None:
+                            ext_to_clip.append(deepcopy(dqext))
+                    
+                    # Clip all relevant extensions
+                    for ext in ext_to_clip:
+
+                        # Pull out specified data region:
+                        if science_trimmed or aux_trimmed:
+                            clipped = ext.data[region[0]:region[1],
+                                               region[2]:region[3]]
+
+                        # Where no overscan is needed, just use the data region:
+                        if science_trimmed:
+                            ext.data = clipped
+
+                        # Pad trimmed aux arrays with zeros to match untrimmed
+                        # science data:
+                        # CJS: left over from standard clip_auxiliary_data()
+                        # even though not used by GSAOI
+                        elif aux_trimmed:
+
+                            # Science decision: trimmed calibrations can't be
+                            # meaningfully matched to untrimmed science data
+                            if aux_type != 'bpm':
+                                raise Errors.ScienceError(
+                                    "Auxiliary data %s is trimmed, but "
+                                    "science data %s is untrimmed." %
+                                    (auxext.filename, sciext.filename))
+
+                            # Use duplicate iterators over the reversed
+                            # science_offsets list to unpack its values in
+                            # pairs and reverse them:
+                            padding = tuple((bef, aft) for aft, bef in \
+                                            zip(*[reversed(science_offsets)]*2))
+
+                            # Replace the array with one that's padded with the
+                            # appropriate number of zeros at each edge:
+                            # CJS: pad with ones if it's a BPM
+                            ext.data = np.pad(clipped, padding, 'constant',
+                                    constant_values=1 if aux_type=="bpm" else 0)
+
+                        # If nothing is trimmed, just use the unmodified data
+                        # after checking that the regions match (a condition
+                        # preserved from r5564 without revisiting its logic):
+                        elif not all(off1 == off2 for off1, off2 in \
+                                     zip(aux_offsets, science_offsets)):
+                            raise Errors.ScienceError(
+                                "Overscan regions do not match in %s, %s" % \
+                                (auxext.filename, sciext.filename))
+
+                        # Convert the dtype if requested
+                        if return_dtype is not None:
+                            new_data = ext.data.astype(return_dtype)
+                            ext.data = new_data
+                            del new_data
+                            
+                        # Set the section keywords as appropriate
+                        data_section_value = sciext.get_key_value(
+                          data_section_keyword)
+                        if data_section_value is not None:
+                            ext.set_key_value(
+                              data_section_keyword,
+                              sciext.header[data_section_keyword],
+                              keyword_comments[data_section_keyword])
+                        
+                        detector_section_value = sciext.get_key_value(
+                          detector_section_keyword)
+                        if detector_section_value is not None:
+                            ext.set_key_value(
+                              detector_section_keyword,
+                              sciext.header[detector_section_keyword],
+                              keyword_comments[detector_section_keyword])
+                        
+                        array_section_value = sciext.get_key_value(
+                          array_section_keyword)
+                        if array_section_value is not None:
+                            ext.set_key_value(
+                              array_section_keyword,
+                              sciext.header[array_section_keyword],
+                              keyword_comments[array_section_keyword])
+                        
+                        # Rename the auxext to the science extver
+                        ext.rename_ext(name=ext.extname(),ver=science_extver)
+                        new_aux.append(ext)
+                
+                if not found:
+                    raise Errors.ScienceError(
+                      "No auxiliary data in %s matches the detector section "
+                      "%s in %s[%s,%d]" % (this_aux.filename,
+                        science_detector_section_dv.get_value(science_extver),
+                                           ad.filename, SCI, sciext.extver()))
+            
+            new_aux.refresh_types()
+            log.stdinfo("Clipping {} to match science data.".
+                        format(os.path.basename(new_aux.filename)))
             aux_output_list.append(new_aux)
         
         return aux_output_list
@@ -1022,6 +1217,8 @@ def clip_sources(ad):
         semiminor_axis = objcat.data.field("B_IMAGE")
         background = objcat.data.field("BACKGROUND")
 
+        # CJS: This should all be tidied up with a
+        # good = np.logical_and.reduce() statement
         # Source is good if fwhm is defined
         fwflag = np.where(fwhm_pix==-999,1,0)
 
@@ -1029,7 +1226,10 @@ def clip_sources(ad):
         eflag = np.where((ellip>0.5)|(ellip==-999),1,0)
 
         # Source is good if probability of being a star >0.9
-        sflag = np.where(class_star<0.9,1,0)
+        # Except for AO data, where CLASS_STAR is often <0.01
+        is_ao = ad.is_ao().as_pytype()
+        stellarity_limit = 0.0 if is_ao else 0.9
+        sflag = np.where(class_star<stellarity_limit,1,0)
 
         # Source is good if semi-minor axis is greater than 1.1 pixels
         # (less indicates a cosmic ray)
@@ -1045,20 +1245,24 @@ def clip_sources(ad):
 
         # Source is good if signal to noise ratio > 50
         if not np.all(fluxerr==-999):
-            snflag = np.where(flux < 50*fluxerr, 1, 0)
+            snlimit = 25 if is_ao else 50
+            snflag = np.where(flux < snlimit*fluxerr, 1, 0)
             flags |= snflag
 
-        # Source is good if not flagged in DQ plane
-        # Ignore criterion if all undefined (-999)
-        if not np.all(dqflag==-999):
-            is_odd=np.mod(dqflag, 2)
-            modified_dqflag=np.where(np.logical_not(is_odd), 0, dqflag)
-            flags |= modified_dqflag
+        # Allow up to 2% BPM/non-linear bad pixels but no saturated pixels
+        max_bad_pix = np.where(dqflag & 4, 0, 0.02*area)
 
         # Ignore source that hae too many flagged pixels in them
         if not np.all(ndqflag==-999):
-            toobadflags = np.where(ndqflag > 4, 1, 0)
+            toobadflags = np.where(ndqflag > max_bad_pix, 1, 0)
             flags |= toobadflags
+            
+        # Source should also have similar FWHM measurements from
+        # SExtractor and _profile_sources. Difference can be due
+        # to low S/N per pixel
+        flags |= (np.fabs(isofwhm_pix/1.08-fwhm_pix)>0.2*isofwhm_pix)
+        
+        flags |= np.where(ee50d_pix<fwhm_pix, 1, 0)
 
         # Use flags=0 to find good data
         good = (flags==0)

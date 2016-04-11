@@ -6,6 +6,7 @@ import math
 import numpy as np
 import scipy.optimize as opt
 import pandas as pd
+#import matplotlib.pyplot as plt
 
 import warnings
 
@@ -344,7 +345,7 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
 
     # turn to numpy arrays
     xx, sx, yy, sy = map(np.asarray,(xx,sx,yy,sy))
-        
+    
     def getg(xx, sx, yy, sy, deltax=2.5, deltay=2.5):
         """ Return object(xx) and reference(sx) indices of
         common positions.
@@ -352,6 +353,7 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
         g:    Indices of the object position common to
         r:    indices of the reference position
         """
+        
         dax=[]; day=[]; g=[]; r=[]
         for k in range(len(sx)):
             gindx,= np.where((abs(xx-sx[k])<deltax) & 
@@ -360,9 +362,17 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
                 dx = xx[i] - sx[k] 
                 dy = yy[i] - sy[k] 
 
+                # Try taking all possible matches and using for the 
+                # clumping algorithm
+                #print dx
+                #dax.append(dx)
+                #day.append(dy)
+                #g.append(i)
+                #r.append(k)
+
                 # if there are multiple matches, keep only the
                 # closest one
-                if i in g or k in r:
+                if (i in g or k in r) and deltax>50:
                     if i in g:
                         first_ind = g.index(i)
                     else:
@@ -383,9 +393,10 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
                     day.append(dy)
                     g.append(i)
                     r.append(k)
-                            
-        dax,day = map(np.asarray, (dax,day))
         
+        dax,day = map(np.asarray, (dax,day))
+#        for i in range(len(dax)):
+#            print dax[i], day[i]
         #DEBUG # For debugging or improvement purpose, save the match offsets
         #DEBUG # to disk.  Uncomment if necessary.
         #DEBUG from datetime import datetime
@@ -407,21 +418,21 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
         # to be completely wrong.  Even in those cases, there is generally
         # an obviously clump of good matches around the correct x, y offset
         
-        if len(dax) > 10 and len(day) > 10:
+        if len(dax) > 5:
             # Get an histogram of dax and day offsets to locate the clump.
             # The clump approximate position will be where the tallest histogram
             # bar is located.
-            df = pd.DataFrame({'dx' : dax, 'dy' : day})
-            counts, divisions = np.histogram(df['dx'], bins=10)
-            xbinsize = abs(divisions[0] - divisions[1])
-            counts, divisions = np.histogram(df['dy'], bins=10)
-            ybinsize = abs(divisions[0] - divisions[1])
+            #df = pd.DataFrame({'dx' : dax, 'dy' : day})
+            #counts, divisions = np.histogram(df['dx'], bins=10)
+            #xbinsize = abs(divisions[0] - divisions[1])
+            #counts, divisions = np.histogram(df['dy'], bins=10)
+            #ybinsize = abs(divisions[0] - divisions[1])
             
-            apprx_xoffset = df['dx'].value_counts(bins=10).idxmax() + \
-                            (xbinsize / 2.0)
-            apprx_yoffset = df['dy'].value_counts(bins=10).idxmax() + \
-                            (ybinsize / 2.0)
-            stdx, stdy = (df['dx'].std(), df['dy'].std())
+            #apprx_xoffset = df['dx'].value_counts(bins=10).idxmax() + \
+            #                (xbinsize / 2.0)
+            #apprx_yoffset = df['dy'].value_counts(bins=10).idxmax() + \
+            #                (ybinsize / 2.0)
+            #stdx, stdy = (df['dx'].std(), df['dy'].std())
             
             # For crowded field with good matches, the histogram might have
             # most sources in one bin, which might be wide.  To increase
@@ -429,43 +440,74 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
             # Otherwise, all the data is used.
             # threshold: fraction of matches in the top bin.
             # thr_binsize: size of the bin, we do this only if the bin is large.
-            threshold = 0.7
-            thr_binsize = 10
-            if df['dx'].value_counts(bins=10).max() / float(len(df['dx'])) \
-                  >= threshold:
-                if xbinsize >= thr_binsize:
-                    dfsub =  df[(df['dx'] > apprx_xoffset - 2*thr_binsize) & \
-                                (df['dx'] < apprx_xoffset + 2*thr_binsize)]
-                    counts, divisions = np.histogram(dfsub['dx'], bins=10)
-                    subbinsize = abs(divisions[0] - divisions[1])
-                    apprx_xoffset = dfsub['dx'].value_counts(bins=10).idxmax() + \
-                                    (subbinsize / 2.0)
-                    stdx = dfsub['dx'].std()
-            if df['dy'].value_counts(bins=10).max() / float(len(df['dy'])) \
-                  >= threshold:
-                if ybinsize >= thr_binsize:
-                    dfsub =  df[(df['dy'] > apprx_xoffset - 2*thr_binsize) & \
-                                (df['dy'] < apprx_xoffset + 2*thr_binsize)]
-                    counts, divisions = np.histogram(dfsub['dy'], bins=10)
-                    subbinsize = abs(divisions[0] - divisions[1])
-                    apprx_yoffset = dfsub['dy'].value_counts(bins=10).idxmax() + \
-                                    (subbinsize / 2.0)
-                    stdy = dfsub['dy'].std()
+            #threshold = 0.7
+            #thr_binsize = 10
+            #if df['dx'].value_counts(bins=10).max() / float(len(df['dx'])) \
+            #      >= threshold:
+            #    if xbinsize >= thr_binsize:
+            #        dfsub =  df[(df['dx'] > apprx_xoffset - 2*thr_binsize) & \
+            #                    (df['dx'] < apprx_xoffset + 2*thr_binsize)]
+            #        counts, divisions = np.histogram(dfsub['dx'], bins=10)
+            #        subbinsize = abs(divisions[0] - divisions[1])
+            #        apprx_xoffset = dfsub['dx'].value_counts(bins=10).idxmax() + \
+            #                        (subbinsize / 2.0)
+            #        stdx = dfsub['dx'].std()
+            #if df['dy'].value_counts(bins=10).max() / float(len(df['dy'])) \
+            #      >= threshold:
+            #    if ybinsize >= thr_binsize:
+            #        dfsub =  df[(df['dy'] > apprx_xoffset - 2*thr_binsize) & \
+            #                    (df['dy'] < apprx_xoffset + 2*thr_binsize)]
+            #        counts, divisions = np.histogram(dfsub['dy'], bins=10)
+            #        subbinsize = abs(divisions[0] - divisions[1])
+            #        apprx_yoffset = dfsub['dy'].value_counts(bins=10).idxmax() + \
+            #                        (subbinsize / 2.0)
+            #        stdy = dfsub['dy'].std()
+            
+            # CJS: Try something else; for each possible offset from the match list
+            # see how many matches have similar offsets
+            num_matches = np.zeros_like(dax, dtype=int)
+            threshold = 0.2*len(xx)
+            ftol = 0.0
+            while (np.max(num_matches) < threshold and ftol < 0.5):
+                ftol += 0.05
+                for i in range(len(dax)):
+                    num_matches[i] = len(np.where((abs(dax-dax[i])<ftol*deltax) & 
+                                                   (abs(day-day[i])<ftol*deltay))[0])
+#            print dax[np.argmax(num_matches)], day[np.argmax(num_matches)]
+            if ftol < 0.5:
+                clump_indices, = np.where((abs(dax-dax[np.argmax(num_matches)])<ftol*deltax) &
+                                          (abs(day-day[np.argmax(num_matches)])<ftol*deltay))
+                xoffset = np.median(dax[clump_indices])
+                yoffset = np.median(day[clump_indices])
+                stdx = np.std(dax[clump_indices])
+                stdy = np.std(day[clump_indices])
+                #plt.scatter(dax, day, marker='+')
+                #plt.plot(xoffset, yoffset, 'ro')
+                #plt.show()
+            else:
+                # We didn't find a clump before our search area got too large
+                xoffset = np.median(dax)
+                yoffset = np.median(day)
+                stdx = np.std(dax)
+                stdy = np.std(day)
 
             # Get the center of that clump, the actually x, y offsets.
             # Focus on the area around the clump.  Use the standard deviation
             # to set a box around the clump on which stats will be derived.
             # We already know now that anything outside that box is a bad match.
             # Median appears to work better than mean for this.  
-            llimitx, ulimitx = (apprx_xoffset - stdx, apprx_xoffset + stdx)
-            llimity, ulimity = (apprx_yoffset - stdy, apprx_yoffset + stdy)
+            #llimitx, ulimitx = (apprx_xoffset - stdx, apprx_xoffset + stdx)
+            #llimity, ulimity = (apprx_yoffset - stdy, apprx_yoffset + stdy)
+#            print "llimitx, ulimitx = ", llimitx, ulimitx
+#            print "llimity, ulimity = ", llimity, ulimity
             
-            xoffset = df[(df['dx'] > llimitx) & (df['dx'] < ulimitx)]['dx'].median()
-            yoffset = df[(df['dy'] > llimity) & (df['dy'] < ulimity)]['dy'].median()
-            stdx = df[(df['dx'] > llimitx) & (df['dx'] < ulimitx)]['dx'].std()
-            stdy = df[(df['dy'] > llimity) & (df['dy'] < ulimity)]['dy'].std()
+            #xoffset = df[(df['dx'] > llimitx) & (df['dx'] < ulimitx)]['dx'].median()
+            #yoffset = df[(df['dy'] > llimity) & (df['dy'] < ulimity)]['dy'].median()
+            #stdx = df[(df['dx'] > llimitx) & (df['dx'] < ulimitx)]['dx'].std()
+            #stdy = df[(df['dy'] > llimity) & (df['dy'] < ulimity)]['dy'].std()
         elif len(dax) > 1 and len(day) > 1:
             # Too few source for clump-finding.  Use the old technique.
+            #print "2-10 sources only; taking median"
             xoffset = np.median(dax)
             yoffset = np.median(day)
             stdx = np.std(dax)
@@ -480,6 +522,8 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
             yoffset = float('nan')
             stdx = float('nan')
             stdy = float('nan')
+#        print "xoffset = ", xoffset
+#        print "yoffset = ", yoffset
         
         return np.asarray(g), np.asarray(r), xoffset, yoffset ,stdx, stdy
         
@@ -517,7 +561,7 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
         
     # Now shift reference position by adding the median of the
     # differences. The standards are now closer to the object positions.
-    sx = sx + mx   
+    sx = sx + mx
     sy = sy + my
 
     # Select only those that are closer than delta or default(6.5) pixels.
@@ -532,10 +576,14 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
 
     if g.size == 0:
         indxy,indr=[],[]
+#        print "indxy, indr = empty"
     else:
         indxy = ig[g]
         indr = r
-        
+        # Add 1 to debug display to match directly with catalogs
+#        print "indxy = ", indxy+1
+#        print "indr = ", indr+1
+    
     return indxy, indr
 
 def clipped_mean(data):
