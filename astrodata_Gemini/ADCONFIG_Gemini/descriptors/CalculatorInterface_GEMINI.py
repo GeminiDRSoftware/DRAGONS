@@ -2175,6 +2175,67 @@ class CalculatorInterface(object):
         except:
             raise
 
+    def is_coadds_summed(self, format=None, **args):
+        """
+        Return True if the pixel data have been summed with multiple
+        coadds, rather than averaged
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: boolean as default (i.e., format=None)
+        :return: True if the observation sums the pixel data across coadds        
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_is_coadds_summed"
+            keyword = None
+            if key in keydict:
+                keyword = keydict[key]
+
+            if not hasattr(self.descriptor_calculator, "is_coadds_summed"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for 'is_coadds_summed'")
+                    raise Errors.DescriptorInfrastructureError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.is_coadds_summed(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+
+            
+            ret = DescriptorValue( retval,
+                                   format = format,
+                                   name = "is_coadds_summed",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = bool )
+            return ret
+
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                ret = DescriptorValue( None,
+                                       format = format,
+                                       name = "is_coadds_summed",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = None )
+                return ret
+        except:
+            raise
+
     def local_time(self, format=None, **args):
         """
         Return the local_time value
@@ -2666,6 +2727,68 @@ class CalculatorInterface(object):
                 ret = DescriptorValue( None,
                                        format = format,
                                        name = "non_linear_level",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = None )
+                return ret
+        except:
+            raise
+
+    def nonlinearity_coeffs(self, format=None, **args):
+        """
+        Return a list of coefficients for non-linearity correction
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: list of floats as default
+        :return: coefficients for calculating the nonlinearity
+                 in the sense that correction = c0 + c1*D + c2*D^2
+                 where D is the data value
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_nonlinearity_coeffs"
+            keyword = None
+            if key in keydict:
+                keyword = keydict[key]
+
+            if not hasattr(self.descriptor_calculator, "nonlinearity_coeffs"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for 'nonlinearity_coeffs'")
+                    raise Errors.DescriptorInfrastructureError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.nonlinearity_coeffs(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+
+            
+            ret = DescriptorValue( retval,
+                                   format = format,
+                                   name = "nonlinearity_coeffs",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = list )
+            return ret
+
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                ret = DescriptorValue( None,
+                                       format = format,
+                                       name = "nonlinearity_coeffs",
                                        keyword = keyword,
                                        ad = self,
                                        pytype = None )

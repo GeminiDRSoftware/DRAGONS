@@ -20,6 +20,7 @@ from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
 
 from primitives_GENERAL import GENERALPrimitives
+from pifgemini import mask as pifmask
 
 # Define the earliest acceptable SExtractor version, currently: 2.8.6
 SEXTRACTOR_VERSION = [2,8,6]
@@ -82,7 +83,6 @@ class PhotometryPrimitives(GENERALPrimitives):
 
         # Instantiate the log
         log = logutils.get_logger(__name__)
-
 
         # Log the standard "starting primitive" debug message
         log.debug(gt.log_message("primitive", "addReferenceCatalog", "starting"))
@@ -207,6 +207,10 @@ class PhotometryPrimitives(GENERALPrimitives):
                      ends up playing a factor in determining the size of the
                      kernel put through the gaussian convolve.
         :type fwhm: float
+        
+        :param mask: Whether to apply the DQ plane as a mask before detecting
+                     the sources.
+        :type sigma: bool
         """
  
         # Instantiate the log
@@ -222,6 +226,19 @@ class PhotometryPrimitives(GENERALPrimitives):
         # Define the keyword to be used for the time stamp for this primitive
         timestamp_key = self.timestamp_keys["detectSources"]
 
+        # Get the necessary parameters from the RC
+        sigma = rc["sigma"]
+        threshold = rc["threshold"]
+        fwhm = rc["fwhm"]
+        max_sources = rc["max_sources"]
+        centroid_function = rc["centroid_function"]
+        method = rc["method"]
+        mask = rc["mask"]
+        # Check source detection method
+        if method not in ["sextractor","daofind"]:
+            raise Errors.InputError("Source detection method "+
+                                    method+" is unsupported.")
+                
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
 
@@ -243,23 +260,19 @@ class PhotometryPrimitives(GENERALPrimitives):
 #                                sciext.data[i][j] = float('NaN')
                                 sciext.data[i][j] = 0.0
                                 
-            # Get the necessary parameters from the RC
-            sigma = rc["sigma"]
-            threshold = rc["threshold"]
-            fwhm = rc["fwhm"]
-            max_sources = rc["max_sources"]
-            centroid_function = rc["centroid_function"]
-            method = rc["method"]
-            set_saturation = rc["set_saturation"]
-
-            # Check source detection method
-            if method not in ["sextractor","daofind"]:
-                raise Errors.InputError("Source detection method "+
-                                        method+" is unsupported.")
-
             # Get a seeing estimate from the header, if available
             seeing_est = ad.phu_get_key_value("MEANFWHM")
             
+            # If masking is required, make a deepcopy of the astrodata 
+            # instance and perform the masking to create the image from
+            # which to do the source detection. 
+            if mask:
+                ad_for_source = deepcopy(ad)
+                ad_for_source = pifmask.apply_dq_plane(ad_for_source)
+            else:
+                ad_for_source = ad
+
+                
             if method=="sextractor":
                 # Check sextractor version, go to daofind if task not
                 # found or wrong version
@@ -281,15 +294,15 @@ class PhotometryPrimitives(GENERALPrimitives):
                 
             if method=="daofind":
                 try:
-                    pixscale = ad.pixel_scale()
+                    pixscale = ad_for_source.pixel_scale()
                 except:
                     pixscale = None
                 if pixscale is None:
                     log.warning("%s does not have a pixel scale, " \
-                                "cannot fit sources" % ad.filename)
+                                "cannot fit sources" % ad_for_source.filename)
                     continue
 
-                for sciext in ad["SCI"]:
+                for sciext in ad_for_source["SCI"]:
                 
                     extver = sciext.extver()
                 
@@ -305,11 +318,11 @@ class PhotometryPrimitives(GENERALPrimitives):
                     nobj = len(obj_list)
                     if nobj==0:
                         log.stdinfo("No sources found in %s['SCI',%d]" %
-                                    (ad.filename,extver))
+                                    (ad_for_source.filename,extver))
                         continue
                     else:
                         log.stdinfo("Found %d sources in %s['SCI',%d]" %
-                                    (nobj,ad.filename,extver))
+                                    (nobj,ad_for_source.filename,extver))
 
                     # Separate pixel coordinates into x, y lists
                     obj_x,obj_y = [np.asarray(obj_list)[:,k] for k in [0,1]]
@@ -332,15 +345,18 @@ class PhotometryPrimitives(GENERALPrimitives):
 
                 
                     # Add OBJCAT
-                    ad = gt.add_objcat(adinput=ad, extver=extver, replace=True,
-                            columns=columns, sxdict=self.sx_default_dict)[0]
+                    ad_for_source = gt.add_objcat(adinput=ad_for_source, 
+                                                  extver=extver, 
+                                                  replace=True, 
+                                                  columns=columns,
+                                                  sxdict=self.sx_default_dict)[0]
             
-                # Do some simple photometry on all
-                # extensions to get fwhm, ellipticity
+                # Do some simple photometry on all extensions to get fwhm, 
+                # ellipticity
                 log.stdinfo("Fitting sources for simple photometry")
 
                 # Divide the max_sources by the number of extensions
-                max_sources = int(max_sources/ad.count_exts("SCI"))
+                max_sources = int(max_sources/ad_for_source.count_exts("SCI"))
 
                 if seeing_est is None:
                     # Run the fit once to get a rough seeing estimate 
@@ -349,11 +365,12 @@ class PhotometryPrimitives(GENERALPrimitives):
                     else:
                         tmp_max=max_sources
                     junk,seeing_est = _fit_sources(
-                        ad,ext=1,max_sources=tmp_max,threshold=threshold,
+                        ad_for_source,ext=1,max_sources=tmp_max, 
+                        threshold=threshold, 
                         centroid_function=centroid_function,
                         seeing_estimate=None)
-                ad,seeing_est = _fit_sources(
-                    ad,max_sources=max_sources,threshold=threshold,
+                ad_for_source,seeing_est = _fit_sources(
+                    ad_for_source,max_sources=max_sources,threshold=threshold,
                     centroid_function=centroid_function,
                     seeing_estimate=seeing_est)
 
@@ -362,8 +379,28 @@ class PhotometryPrimitives(GENERALPrimitives):
             # a more IRAF-like FWHM number
             # This will fill in a couple more columns in the OBJCAT
             # (PROFILE_FWHM, PROFILE_EE50)
-            ad = _profile_sources(ad)
+            ad_for_source = _profile_sources(ad_for_source)
             
+            # After running the source extraction code, if masking was 
+            # done it is necessary to retrieve the original data and copy 
+            # the OBJCAT and OBJMASK extensions to the original data
+            if mask:
+                for sciext in ad["SCI"]:
+                    ext = sciext.extver()
+                    if ad["OBJCAT", ext]:
+                        ad.remove(("OBJCAT", ext))
+                    if ad["OBJMASK", ext]:
+                        ad.remove(("OBJMASK", ext))
+                    try:                        
+                        catcopy = deepcopy(ad_for_source["OBJCAT", ext])
+                        ad.append(catcopy)          
+                        maskcopy = deepcopy(ad_for_source["OBJMASK", ext])
+                        ad.append(maskcopy)                                    
+                    except:
+                        log.stdinfo("No OBJCAT and OBJMASK extensions "
+                                    "available for %s, source detection has " 
+                                    "failed" % (ad.filename))
+
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
@@ -485,7 +522,7 @@ def _match_objcat_refcat(adinput=None):
             if filter_name in ['u', 'g', 'r', 'i', 'z', 'j', 'h']:
                 magcolname = filter_name+'mag'
                 magerrcolname = filter_name+'mag_err'
-            elif filter_name in ['k', 'k(prime)', 'k(short)', 'ks']:
+            elif filter_name in ['k', 'k(prime)', 'k(short)', 'ks', 'kshort', 'kprime']:
                 magcolname = 'kmag'
                 magerrcolname = 'kmag_err'
             else:
@@ -505,9 +542,14 @@ def _match_objcat_refcat(adinput=None):
     
                     # Check that a refcat exists for this objcat extver
                     refcat = ad['REFCAT',extver]
-                    if(not(refcat)):
+                    if not refcat:
                         log.warning("Missing [REFCAT,%d] in %s - Cannot match objcat against missing refcat" % (extver,ad.filename))
                     else:
+                        # We need to throw out some of the sources for a very 
+                        # crowded field (EJD)
+                        #if len(objcat.data['NUMBER']) > 200:
+                        #    flux_limit = sorted(objcat.data['FLUX_MAX'])[-200]
+                        
                         #KL  Elegant solution can only be implemented in 
                         #KL  somewhat elegant code.  This piece of crap
                         #KL  algorithm using indices won't allow an
@@ -521,12 +563,27 @@ def _match_objcat_refcat(adinput=None):
                         # pixels, keeping only the best sources
                         #xx = list(compress(objcat.data['X_IMAGE'], keep_mask))
                         #yy = list(compress(objcat.data['Y_IMAGE'], keep_mask))
-                        
-                        
+                                               
                         #KL  Implementing an ugly culling instead. To preserve indices...
-                        xx = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, objcat.data['X_IMAGE'], -999)
-                        yy = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, objcat.data['Y_IMAGE'], -999)
                         
+                        # EJD
+                        #    xx = np.where(np.logical_and(objcat.data['ISOAREA_IMAGE'] >= 20,
+                        #                  objcat.data['FLUX_MAX'] >= flux_limit), 
+                        #                  objcat.data['X_IMAGE'], -999)
+                        #    yy = np.where(np.logical_and(objcat.data['ISOAREA_IMAGE'] >= 20,
+                        #                  objcat.data['FLUX_MAX'] >= flux_limit), 
+                        #                  objcat.data['Y_IMAGE'], -999)
+                        # else:
+                        #    xx = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, 
+                        #                  objcat.data['X_IMAGE'], -999)
+                        #    yy = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, 
+                        #                  objcat.data['Y_IMAGE'], -999)
+                        xx = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, 
+                                      objcat.data['X_IMAGE'], -999)
+                        yy = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, 
+                                      objcat.data['Y_IMAGE'], -999)
+#                        print "xx = ", xx                             
+#                        print "yy = ", yy                             
                         #xx = objcat.data['X_IMAGE']
                         #yy = objcat.data['Y_IMAGE']
                         
@@ -537,15 +594,39 @@ def _match_objcat_refcat(adinput=None):
                         sdec = refcat.data['DEJ2000']
                         wcsobj = pywcs.WCS(ad["SCI",extver].header)
                         sx, sy = wcsobj.wcs_sky2pix(sra,sdec,1)
-    
-                        # FIXME - need to address the wraparound problem here
-                        # if we straddle ra = 360.00 = 0.00
-
+                        
+#                        initial = 3.0/ad.pixel_scale() # 10 arcseconds in pixels
+#                        final = 0.2/ad.pixel_scale() # 0.5 arcseconds in pixels
                         initial = 10.0/ad.pixel_scale() # 10 arcseconds in pixels
                         final = 0.5/ad.pixel_scale() # 0.5 arcseconds in pixels
 
-                        (oi, ri) = at.match_cxy(xx,sx,yy,sy, firstPass=initial, delta=final, log=log)
-                            
+                        # Here's CJS at work.
+                        # First: estimate number of reference sources in field
+                        # Do better using actual size of illuminated field
+                        num_ref_sources = np.sum(np.all((sx>-initial,
+                                                         sx<ad['SCI',extver].get_key_value("NAXIS1")+initial,
+                                                         sy>-initial,sy<ad['SCI',1].get_key_value("NAXIS2")),
+                                                        axis=0))
+                        # How many objects do we want to try to match
+                        if len(objcat.data) > 2*num_ref_sources:
+                            keep_num = max(int(1.5*num_ref_sources),min(10,len(objcat.data)))
+                        else:
+                            keep_num = len(objcat.data)
+                        # Now sort the object catalogue -- MUST NOT alter order
+                        sorted_indices = np.argsort(objcat.data['MAG_AUTO'])[:keep_num]
+                        #print "--------------------------------------------------"
+                        #print num_ref_sources, keep_num
+                        #for x3,y3 in zip(xx[sorted_indices],yy[sorted_indices]):
+                        #    print x3,y3
+    
+                        # FIXME - need to address the wraparound problem here
+                        # if we straddle ra = 360.00 = 0.00
+                        
+                        (oi, ri) = at.match_cxy(xx[sorted_indices],sx,yy[sorted_indices],sy,
+                                                firstPass=initial, delta=final, log=log)
+#                        print "initial = ", initial
+#                        print "final = ", final
+                        
                         #KL: But there might be only one source in the field of view with
                         #KL: a good reference!  Think small near-IR fields. I'm turning this
                         #KL: this rejection off.
@@ -553,24 +634,33 @@ def _match_objcat_refcat(adinput=None):
                         #if len(oi)<2:
                         #    oi = []
 
-                        log.stdinfo("Matched %d objects in ['OBJCAT',%d] against ['REFCAT',%d]" % (len(oi), extver, extver))
+                        log.stdinfo("Matched %d objects in ['OBJCAT',%d] against ['REFCAT',%d]"
+                                    % (len(oi), extver, extver))
                                      
                         # Loop through the reference list updating the refid in the objcat
                         # and the refmag, if we can                            
                         for i in range(len(oi)):
-                            objcat.data['REF_NUMBER'][oi[i]] = refcat.data['Id'][ri[i]]
+                            real_index = sorted_indices[oi[i]]
+                            objcat.data['REF_NUMBER'][real_index] = refcat.data['Id'][ri[i]]
+                            # CJS: I'm not 100% sure about assigning the wcs.sky2pix
+                            # values here, in case the WCS is poor
+                            tempra = refcat.data['RAJ2000'][ri[i]]
+                            tempdec = refcat.data['DEJ2000'][ri[i]]
+                            tempx, tempy = wcsobj.wcs_sky2pix(tempra,tempdec,1)
+#                            objcat.data['REF_X'][real_index] = tempx
+#                            objcat.data['REF_Y'][real_index] = tempy
 
                             if magcolname in refcat.data.names:
-                                if filter_name not in ['k','k(prime)']:
-                                    objcat.data['REF_MAG'][oi[i]] = refcat.data[magcolname][ri[i]]
-                                    objcat.data['REF_MAG_ERR'][oi[i]] = refcat.data[magerrcolname][ri[i]]
+                                if filter_name not in ['k','k(prime)', 'kprime']:
+                                    objcat.data['REF_MAG'][real_index] = refcat.data[magcolname][ri[i]]
+                                    objcat.data['REF_MAG_ERR'][real_index] = refcat.data[magerrcolname][ri[i]]
 
                                 #if K or K(prime) -- use color terms 
-                                elif filter_name in ['k','k(prime)']: 
+                                elif filter_name in ['k','k(prime)', 'kprime']: 
                                     k_ref_mag, k_ref_mag_err = _add_K_color_term(filter_name, refcat, ri[i]) 
 
-                                    objcat.data['REF_MAG'][oi[i]] = k_ref_mag
-                                    objcat.data['REF_MAG_ERR'][oi[i]] = k_ref_mag_err
+                                    objcat.data['REF_MAG'][real_index] = k_ref_mag
+                                    objcat.data['REF_MAG_ERR'][real_index] = k_ref_mag_err
 
                                     comment = ": REF_MAG corrected from K_2mass " + \
                                               "to %s_MKO" %(filter_name.upper())
@@ -622,7 +712,7 @@ def _add_K_color_term(filter_name, refcat, indx):
     # associate the filter and terms,  return if an unkown filter is encountered
     if filter_name == 'k':
         term_list = ['JK','HK']
-    elif filter_name == 'k(prime)':
+    elif filter_name in ['k(prime)', 'kprime']:
         term_list = ['Kp']
         term = 'Kp'
     else:
@@ -1239,6 +1329,7 @@ def _sextractor(ad=None, seeing_estimate=None, sxdict=None, set_saturation=False
         # default, then re-run to get proper stellar classification
         if seeing_estimate is None:
             iter = [0,1]
+            #seeing_estimate = 0.15
         else:
             iter = [0]
                         
@@ -1267,10 +1358,11 @@ def _sextractor(ad=None, seeing_estimate=None, sxdict=None, set_saturation=False
                 sx_cmd.extend(extend_line)
             # Otherwise, if the observation is AO, then set a static low 
             # starting value
-            elif ad.phu_get_key_value('AOFOLD') == "IN":
-                # ao_seeing_est = ad.pixel_scale().as_pytype() * 3.0
-                # extend_line = ("-SEEING_FWHM", str(ao_seeing_est))                
-                extend_line = ("-SEEING_FWHM", "0.4")
+            elif ad.is_ao().as_pytype():
+                #ao_seeing_est = ad.pixel_scale().as_pytype() * 3.0
+                #extend_line = ("-SEEING_FWHM", str(ao_seeing_est))                
+                seeing_estimate = 0.15
+                extend_line = ("-SEEING_FWHM", str(seeing_estimate))
                 sx_cmd.extend(extend_line)       
                
             log.fullinfo("Calling SExtractor on [SCI,%d] with "\
@@ -1327,18 +1419,27 @@ def _sextractor(ad=None, seeing_estimate=None, sxdict=None, set_saturation=False
             else:
                 dqflag = np.zeros_like(sxflag)
             aflag = np.where(tdata["ISOAREA_IMAGE"]<20,1,0)
+            tflag = np.where(tdata["B_IMAGE"]<1.1,1,0)
             eflag = np.where(tdata["ELLIPTICITY"]>0.5,1,0)
-            sflag = np.where(tdata["CLASS_STAR"]<0.9,1,0)
+            sflag = np.where(tdata["CLASS_STAR"]<0.8,1,0)
             snflag = np.where(tdata["FLUX_AUTO"] < 
-                              50*tdata["FLUXERR_AUTO"], 1, 0)
+                              25*tdata["FLUXERR_AUTO"], 1, 0)
 
             # Bitwise-or all the flags
-            flags = sxflag | dqflag | aflag | eflag | sflag | snflag
+            flags = sxflag | dqflag | aflag | eflag | sflag | snflag | tflag
+            #log.fullinfo ("Aflags  are "+str(aflag))
+            #log.fullinfo ("Eflags  are "+str(eflag))
+            #log.fullinfo ("Sflags  are "+str(sflag))
+            #log.fullinfo ("SNflags are "+str(snflag))
+            #log.fullinfo ("SXflags are "+str(sxflag))
+            #log.fullinfo ("DQflags are "+str(dqflag))
+
             flagged_fwhm = fwhm[flags==0]
 
             # Throw out FWHM values of zero which means SExtractor has 
             # not found a FWHM for these objects
             good_fwhm = flagged_fwhm[flagged_fwhm!=0]
+            #log.fullinfo ("I've got %d sources" % len(good_fwhm))
             if len(good_fwhm)>3:
                 # Clip outliers in FWHM - single 1-sigma clip if 
                 # more than 3 sources.
@@ -1375,8 +1476,9 @@ def _sextractor(ad=None, seeing_estimate=None, sxdict=None, set_saturation=False
                         (nobj,ad.filename,extver))
 
             # Add OBJCAT
-            ad = gt.add_objcat(adinput=ad, extver=extver, replace=True, 
-                               columns=columns, sxdict=sxdict)[0]
+            ad = gt.add_objcat(adinput=ad, extver=extver, 
+                               replace=True, columns=columns,
+                               sxdict=sxdict)[0]
 
             # Read in object mask
             # >>>> *** WARNING:: The FITS  file  objtmpfn does not
@@ -1484,10 +1586,11 @@ def _profile_sources(ad):
         cattotalflux = objcat.data.field("FLUX_AUTO")
         catmaxflux = objcat.data.field("FLUX_MAX")
         data = sciext.data
-        stamp_size = 10
+        stamp_size = max(10,int(0.5/sciext.pixel_scale()))
 
         fwhm_list = []
         e50d_list = []
+        newmax_list = []
         for i in range(0,len(objcat.data)):
             xc = catx[i]
             yc = caty[i]
@@ -1504,7 +1607,15 @@ def _profile_sources(ad):
                 int(yc)+sz>=data.shape[0] or int(xc)+sz>=data.shape[1]):
                 fwhm_list.append(-999)
                 e50d_list.append(-999)
+                newmax_list.append(mf)
                 continue
+
+            # Estimate new FLUX_MAX from pixels around peak
+            mf = np.max(data[int(yc)-2:int(yc)+3,int(xc)-2:int(xc)+3]) - bg
+            # Bright sources in IR images can "volcano", so revert to
+            # catalog value if these pixels are negative
+            if mf < 0:
+                mf = catmaxflux[i]
 
             # Get image stamp around center point
             stamp=data[int(yc)-sz:int(yc)+sz,int(xc)-sz:int(xc)+sz]
@@ -1577,11 +1688,11 @@ def _profile_sources(ad):
                 e50d_list.append(e50r*2.0)
             else:
                 e50d_list.append(-999)
+            newmax_list.append(mf)
 
-        fwhm_array = np.array(fwhm_list)
-        e50d_array = np.array(e50d_list)
-        objcat.data.field("PROFILE_FWHM")[:] = fwhm_array
-        objcat.data.field("PROFILE_EE50")[:] = e50d_array
+        objcat.data.field("PROFILE_FWHM")[:] = np.array(fwhm_list)
+        objcat.data.field("PROFILE_EE50")[:] = np.array(e50d_list)
+        objcat.data.field("FLUX_MAX")[:] = np.array(newmax_list)
 
         #print "  mean FWHM %.2f" % np.mean(fwhm_array[fwhm_array!=-999], dtype=np.float64)
         #print "  mean E50D %.2f" % np.mean(e50d_array[e50d_array!=-999], dtype=np.float64)

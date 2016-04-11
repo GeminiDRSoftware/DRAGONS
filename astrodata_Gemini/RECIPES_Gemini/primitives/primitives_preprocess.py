@@ -530,8 +530,14 @@ class PreprocessPrimitives(GENERALPrimitives):
                 # of the science data
                 # For a GMOS example, this allows a full frame flat to
                 # be used for a CCD2-only science frame. 
-                flat = gt.clip_auxiliary_data(adinput=ad,aux=flat,aux_type="cal",
-                                              keyword_comments=self.keyword_comments)[0]
+                if 'GSAOI' in ad.types:
+                    flat = gt.clip_auxiliary_data_GSAOI(adinput=ad, 
+                                    aux=flat, aux_type="cal",
+                                    keyword_comments=self.keyword_comments)[0]
+                else:
+                    flat = gt.clip_auxiliary_data(adinput=ad, 
+                                    aux=flat, aux_type="cal", 
+                                    keyword_comments=self.keyword_comments)[0]
 
                 # Check again, but allow it to fail if they still don't match
                 gt.check_inputs_match(ad1=ad, ad2=flat)
@@ -568,15 +574,10 @@ class PreprocessPrimitives(GENERALPrimitives):
      
     def nonlinearityCorrect(self, rc):
         """
-        Run on raw or nprepared Gemini NIRI data, this script calculates and
-        applies a per-pixel linearity correction based on the counts in the
-        pixel, the exposure time, the read mode, the bias level and the ROI.
-        Pixels over the maximum correctable value are set to BADVAL unless
-        given the force flag. Note that you may use glob expansion in infile,
-        however, any pattern matching characters (*,?) must be either quoted
-        or escaped with a backslash. Do we need a badval parameter that defines
-        a value to assign to uncorrectable pixels, or do we want to just add
-        those pixels to the DQ plane with a specific value?
+        Apply a generic non-linearity correction to data.
+        At present (based on GSAOI implementation) this assumes/requires that
+        the correction is polynomial. The ad.non_linear_coeffs() descriptor
+        should return the coefficients in ascending order of power
         """
         # Instantiate the log
         log = logutils.get_logger(__name__)
@@ -591,24 +592,6 @@ class PreprocessPrimitives(GENERALPrimitives):
         # Initialize the list of output AstroData objects
         adoutput_list = []
         
-        # Define a lookup dictionary for necessary values
-        # This should be moved to the lookups area
-        lincorlookup = {
-            # In the following form for NIRI data:
-            #("read_mode", naxis2, "well_depth_setting"):
-            #    (maximum counts, exposure time correction, gamma, eta)
-            ("Low Background", 1024, "Shallow"):
-                (12000, 1.2662732, 7.3877618e-06, 1.940645271e-10),
-            ("Medium Background", 1024, "Shallow"):
-                (12000, 0.09442515154, 3.428783846e-06, 4.808353308e-10),
-            ("Medium Background", 256, "Shallow"):
-                (12000, 0.01029262589, 6.815415667e-06, 2.125210479e-10),
-            ("High Background", 1024, "Shallow"):
-                (12000, 0.009697324059, 3.040036696e-06, 4.640788333e-10),
-            ("High Background", 1024, "Deep"):
-                (21000, 0.007680816203, 3.581914163e-06, 1.820403678e-10),
-            }
-
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
@@ -622,101 +605,31 @@ class PreprocessPrimitives(GENERALPrimitives):
                 # AstroData objects without further processing
                 adoutput_list.append(ad)
                 continue
+            
+            if ad['VAR'] is not None:
+                log.warning("%s has a VAR extension, which will be rendered "
+                            "meaningless by nonlinearityCorrect"
+                            % (ad.filename))
 
-            # Get the appropriate information using the descriptors
-            coadds = ad.coadds().as_pytype()
-            read_mode = ad.read_mode().as_pytype()
-            total_exposure_time = ad.exposure_time()
-            well_depth_setting = ad.well_depth_setting().as_pytype()
-            if coadds is None or read_mode is None or \
-                total_exposure_time is None or well_depth_setting is None:
-                # The descriptor functions return None if a value cannot be
-                # found and stores the exception info. Re-raise the
-                # exception.
-                if hasattr(ad, "exception_info"):
-                    raise ad.exception_info
+            # Get the coefficients from the lookup table
+            nonlin_coeffs = ad.nonlinearity_coeffs()
             
-            # Check the raw exposure time (i.e., per coadd). First, convert
-            # the total exposure time returned by the descriptor back to
-            # the raw exposure time
-            exposure_time = total_exposure_time / coadds
-            if exposure_time > 600.:
-                log.critical("The raw exposure time is outside the " \
-                             "range used to derive correction.")
-                raise Errors.InvalidValueError()
-            
-            # Check the read mode and well depth setting values
-            if read_mode == "Invalid" or well_depth_setting == "Invalid":
-                raise Errors.CalcError()
-            
-            # Print the descriptor values
-            log.fullinfo("The number of coadds = %s" % coadds)
-            log.fullinfo("The read mode = %s" % read_mode)
-            log.fullinfo("The total exposure time = %s" % total_exposure_time)
-            log.fullinfo("The well depth = %s" % well_depth_setting)
-            
-            # Loop over each science extension in each input AstroData object
+            # It's impossible to do this cleverly with a string of ad.mult()s
+            # so use numpy. That's OK because if there's already a VAR here
+            # something's gone wrong, so only SCI will has to be altered
+            log.status("Applying nonlinearity correction to %s "
+                       % (ad.filename))
             for ext in ad[SCI]:
-                
-                # Get the size of the raw pixel data
-                naxis2 = ext.get_key_value("NAXIS2")
-                
-                # Get the raw pixel data
-                raw_pixel_data = ext.data
-                
-                # Divide the raw pixel data by the number of coadds
-                if coadds > 1:
-                    raw_pixel_data = raw_pixel_data / coadds
-                
-                # Determine the mean of the raw pixel data
-                raw_mean_value = np.mean(raw_pixel_data, dtype=np.float64)
-                log.fullinfo("The mean value of the raw pixel data in " \
-                             "%s is %.8f" % (ext.filename, raw_mean_value))
-                
-                # Create the key used to access the coefficients that are
-                # used to correct for non-linearity
-                key = (read_mode, naxis2, well_depth_setting)
-                
-                # Get the coefficients from the lookup table
-                if lincorlookup[key]:
-                    maximum_counts, coeff1, coeff2, coeff3 = \
-                        lincorlookup[key]
-                else:
-                    raise Errors.TableKeyError()
-                log.fullinfo("Coefficients used = %.12f, %.9e, %.9e" \
-                             % (coeff1, coeff2, coeff3))
-                
-                # Create a new array that contains the corrected pixel data
-                corrected_pixel_data = raw_pixel_data + \
-                    coeff2 * raw_pixel_data**2 + coeff3 * raw_pixel_data**3
-                
-                # nirlin replaces pixels greater than maximum_counts with 0
-                # Set the pixels to 0 if they have a value greater than the
-                # maximum counts
-                #log.fullinfo("Setting pixels to zero if above %f" % \
-                #    maximum_counts)
-                #corrected_pixel_data[corrected_pixel_data > \
-                # maximum_counts] = 0
-                # Should probably add the above to the DQ plane
-                
-                # Multiply the corrected pixel data by the number of coadds
-                if coadds > 1:
-                    corrected_pixel_data = corrected_pixel_data * coadds
-                
-                # Write the corrected pixel data to the output object
-                ext.data = corrected_pixel_data
-                
-                # Determine the mean of the corrected pixel data
-                corrected_mean_value = np.mean(ext.data, dtype=np.float64)
-                log.fullinfo("The mean value of the corrected pixel data in " \
-                             "%s is %.8f" \
-                             % (ext.filename, corrected_mean_value))
-            
-            # Correct the exposure time by adding coeff1
-            total_exposure_time = total_exposure_time + coeff1
-            log.fullinfo("The corrected total exposure time = %f" \
-                         % total_exposure_time)
-            
+                extver = ext.extver()
+                coeffs = nonlin_coeffs.get_value(extver=extver)
+                log.status("   nonlinearity correction for [%s,%d] is %s" %
+                           (SCI, extver, coeffs))
+                pixel_data = np.zeros_like(ext.data)
+                for n in range(len(coeffs),0,-1):
+                    pixel_data += coeffs[n-1]
+                    pixel_data *= ext.data
+                ext.data = pixel_data
+
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
 
@@ -779,8 +692,8 @@ class PreprocessPrimitives(GENERALPrimitives):
 
                 # Mark the unilumminated pixels with a bit '64' in the DQ plane.
                 # make sure the 64 is an int16 64 else it will promote the DQ plane to int64
-                unilum = np.where(
-                        (sci_data>upper) | (sci_data<lower), np.int16(64), np.int16(0))
+                unilum = np.where(((sci_data>upper) | (sci_data<lower)) &
+                                   (dq_data | 1==0), np.int16(64), np.int16(0))
 
                 dq_data = np.bitwise_or(dq_data,unilum)
 
@@ -849,16 +762,24 @@ class PreprocessPrimitives(GENERALPrimitives):
             
             # Loop over each science extension in each input AstroData object
             for ext in ad[SCI]:
+                extver = ext.extver()
                 
-                # Normalise the input AstroData object. Calculate the mean
+                # Normalise the input AstroData object. Calculate the median
                 # value of the science extension
-                mean = np.mean(ext.data, dtype=np.float64)
-                # Divide the science extension by the mean value of the science
-                # extension
-                log.fullinfo("Normalizing %s[%s,%d] by dividing by the mean " \
+                if ad[DQ,extver] is not None:
+                    median = np.median(ext.data[np.where(ad[DQ,extver].data == 0)]
+                                       ).astype(np.float64)
+                else:
+                    median = np.median(ext.data).astype(np.float64)
+                # Divide the science extension by the median value of the science
+                # extension, and the VAR (if it exists) by the square of this
+                log.fullinfo("Normalizing %s[%s,%d] by dividing by the median "
                              "= %f" % (ad.filename, ext.extname(),
-                                       ext.extver(), mean))
-                ext = ext.div(mean)
+                                       extver, median))
+                ext.data /= median
+                # Take care of the VAR as well!
+                if ad[VAR,extver] is not None:
+                    ad[VAR,extver].data /= median*median
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)

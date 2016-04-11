@@ -139,9 +139,14 @@ class StandardizePrimitives(GENERALPrimitives):
             if bpm_ad is not None:
                 # Clip the BPM data to match the size of the input AstroData
                 # object science and pad with overscan region, if necessary
-                final_bpm = gt.clip_auxiliary_data(adinput=ad, aux=bpm_ad, aux_type="bpm",
-                                                return_dtype=dq_dtype,
-                                                keyword_comments=self.keyword_comments)[0]
+                if 'GSAOI' in ad.types:
+                    final_bpm = gt.clip_auxiliary_data_GSAOI(adinput=ad, aux=bpm_ad,
+                                                   aux_type="bpm", return_dtype=dq_dtype,
+                                                   keyword_comments=self.keyword_comments)[0]
+                else:
+                    final_bpm = gt.clip_auxiliary_data(adinput=ad, aux=bpm_ad,
+                                                   aux_type="bpm", return_dtype=dq_dtype,
+                                                   keyword_comments=self.keyword_comments)[0]
 
             # Get the non-linear level and the saturation level using the
             # appropriate descriptors - Individual values get checked in the
@@ -537,7 +542,10 @@ class StandardizePrimitives(GENERALPrimitives):
         if not read_noise and not poisson_noise:
             log.warning("Cannot add a variance extension since no variance "
                         "component has been selected")
-        
+            rc.report_output(rc.get_inputs_as_astrodata())
+            yield rc
+            return            
+
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
             
@@ -622,7 +630,6 @@ class StandardizePrimitives(GENERALPrimitives):
         
         Currently, there are no input parameters associated with 
         this primitive.
-
         """
         # Initialize
         log  = logutils.get_logger(__name__)
@@ -776,8 +783,7 @@ class StandardizePrimitives(GENERALPrimitives):
         for ext in adinput[SCI]:
             extver = ext.extver()
             bunit  = ext.get_key_value("BUNIT")
-
-            if bunit == "adu":
+            if bunit.upper() == "ADU":
                 # Get the gain value using the appropriate descriptor. The gain
                 # is only used if the units are in ADU. Raise if gain is None
                 gain = gain_dv.get_value(extver=extver)
@@ -828,7 +834,9 @@ class StandardizePrimitives(GENERALPrimitives):
             if add_poisson_noise:
                 # Determine the variance value to use when calculating the
                 # poisson noise component of the variance
-                poisson_noise_var_value = ext.data
+                poisson_noise_var_value = (
+                    ext.data if ext.is_coadds_summed().as_pytype()
+                    else ext.data/ext.coadds().as_pytype())
                 if units == "ADU":
                     poisson_noise_var_value = ext.data / gain
                 
@@ -906,10 +914,10 @@ class StandardizePrimitives(GENERALPrimitives):
                           keyword_comments=self.keyword_comments)
         
         # These should probably be done using descriptors (?)
-        keywords_from_sci = ["AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC",
-                             "CCDSIZE", "CCDSUM", "CD1_1", "CD1_2", "CD2_1",
-                             "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1", "CRVAL2",
-                             "CTYPE1", "CTYPE2", "DATASEC", "DETSEC",
+        keywords_from_sci = ["AMPNAME", "ARRAYID", "BIASSEC", "CCDNAME", 
+                             "CCDSEC", "CCDSIZE", "CCDSUM", "CD1_1", "CD1_2", 
+                             "CD2_1", "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1", 
+                             "CRVAL2", "CTYPE1", "CTYPE2", "DATASEC", "DETSEC",
                              "EXPTIME", "GAIN","GAINSET", "NONLINEA",
                              "RDNOISE", "SATLEVEL", "LOWROW", "LOWCOL",
                              "HIROW", "HICOL"] 
@@ -934,10 +942,10 @@ class StandardizePrimitives(GENERALPrimitives):
                           keyword_comments=self.keyword_comments)
         
         # These should probably be done using descriptors (?)
-        keywords_from_sci = ["AMPNAME", "BIASSEC", "CCDNAME", "CCDSEC",
-                             "CCDSIZE", "CCDSUM", "CD1_1", "CD1_2", "CD2_1",
-                             "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1", "CRVAL2",
-                             "CTYPE1", "CTYPE2", "DATASEC", "DETSEC",
+        keywords_from_sci = ["AMPNAME", "ARRAYID", "BIASSEC", "CCDNAME", 
+                             "CCDSEC", "CCDSIZE", "CCDSUM", "CD1_1", "CD1_2", 
+                             "CD2_1", "CD2_2", "CRPIX1", "CRPIX2", "CRVAL1", 
+                             "CRVAL2", "CTYPE1", "CTYPE2", "DATASEC", "DETSEC",
                              "EXPTIME", "GAIN", "GAINSET", "NONLINEA",
                              "RDNOISE", "SATLEVEL", "LOWROW", "LOWCOL",
                              "HIROW", "HICOL"]

@@ -465,12 +465,12 @@ class RegisterPrimitives(GENERALPrimitives):
                     dec_median_degs = np.median(delta_dec)
                     ra_median = ra_median_degs * 3600.0
                     dec_median = dec_median_degs * 3600.0
-
+                    
                     log.fullinfo("Astrometric Offset between [OBJCAT, %d] and [REFCAT, %d] is:" % (extver, extver))
                     log.fullinfo("RA_mean +- RA_sigma: %.2f +- %.2f arcsec" % (ra_mean, ra_sigma))
                     log.fullinfo("Dec_mean +- Dec_sigma: %.2f +- %.2f arcsec" % (dec_mean, dec_sigma))
                     log.fullinfo("Median Offset is: %.2f, %.2f arcsec" % (ra_median, dec_median))
-
+                    
                     # Store it in the fitsstore info_dict
                     info_dict[("SCI",extver)] = {"dra":ra_mean,
                                                  "dra_std":ra_sigma,
@@ -811,6 +811,7 @@ def _correlate_sources_offsets(ad1, ad2, delta=None, firstPass=10, min_sources=1
                     "".format(xdiff, ydiff, pa1 - pa2))
     else:
         theta = math.radians(pa1 - pa2)
+    
         # Fetch the center of the frame
         inst = ad1.instrument()
         instlow = ad1.instrument().as_pytype().lower()

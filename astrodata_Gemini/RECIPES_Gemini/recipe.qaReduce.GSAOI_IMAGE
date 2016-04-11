@@ -1,6 +1,7 @@
-# Initial work in progress GSAOI recipe
+# GSAOI_IMAGE recipe
 prepare
 addDQ
+nonlinearityCorrect
 ADUToElectrons
 addVAR(read_noise=True, poisson_noise=True)
 flatCorrect
@@ -12,10 +13,6 @@ addToList(purpose=forSky)
 getList(purpose=forSky)
 makeSky
 skyCorrect
-detectSources
-measureIQ(display=True)
-measureCCAndAstrometry
-alignAndStack
 detectSources
 measureIQ(display=True)
 measureCCAndAstrometry

@@ -705,9 +705,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                                     chip_gap.astype(np.float32))
                             if dqext is not None:
                                 # For the DQ plane, set the gap value
-                                # to 1 (bad pixel)
+                                # to 16 (no data)
                                 dq_data_list.append(
-                                    chip_gap.astype(np.int16)+1)
+                                    chip_gap.astype(np.int16)+16)
                             if maskext is not None:
                                 mask_data_list.append(
                                     chip_gap.astype(np.int16))

@@ -31,6 +31,8 @@
 # mask
 "addObjectMaskToDQ"                : {"module": "mask",
                                       "pep8name": "add_object_mask_to_dq",},
+"applyDQPlane"                     : {"module": "mask",
+                                      "pep8name": "apply_dq_plane"},
 
 # photometry
 "addReferenceCatalog"              : {"module": "photometry"},

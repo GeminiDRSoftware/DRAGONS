@@ -40,6 +40,7 @@ GEMINI_KeyDict = {
     "key_focal_plane_mask":"FPMASK",
     "key_gain":"GAIN",
     "key_gain_setting":"GAINSET",
+    "key_gems":"GWFS1CFG",
     "key_grating":"GRATING",
     "key_group_id":"GROUPID",
     "key_local_time":"LT",

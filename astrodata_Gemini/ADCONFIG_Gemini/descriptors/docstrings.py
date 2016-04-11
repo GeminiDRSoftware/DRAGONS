@@ -617,6 +617,20 @@ class docstrings:
         """
         pass
     
+    def is_coadds_summed(self):
+        """
+        Return True if the pixel data have been summed with multiple
+        coadds, rather than averaged
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: boolean as default (i.e., format=None)
+        :return: True if the observation sums the pixel data across coadds        
+        """
+        pass
+    
     def local_time(self):
         """
         Return the local_time value
@@ -722,6 +736,21 @@ class docstrings:
         :rtype: float as default (i.e., format=None)
         :rtype: dictionary containing one or more float(s) (format=as_dict)
         :return: the nominal photometric zeropoint of the observation
+        """
+        pass
+    
+    def nonlinearity_coeffs(self):
+        """
+        Return a list of coefficients for non-linearity correction
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param format: the return format
+        :type format: string
+        :rtype: list of floats as default
+        :return: coefficients for calculating the nonlinearity
+                 in the sense that correction = c0 + c1*D + c2*D^2
+                 where D is the data value
         """
         pass
     

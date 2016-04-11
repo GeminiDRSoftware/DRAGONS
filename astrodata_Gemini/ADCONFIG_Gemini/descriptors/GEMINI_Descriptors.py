@@ -86,14 +86,14 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
                 # http://www.ctio.noao.edu/~atokovin/tutorial/part1/turb.html )
 
                 # Seeing at 0.5 micron
-                seeing_ref = (206265. * 0.98 * 0.5e-6) / (r_zero_val * 0.01)
+                ao_seeing = (206265. * 0.98 * 0.5e-6) / (r_zero_val * 0.01)
                 # Adjusting to wavelength of observation
-                keyword = self.get_descriptor_key("key_wavelength")
-                wavelength = dataset.phu_get_key_value(keyword)
-                if wavelength:
-                    ao_seeing = seeing_ref * (wavelength/5000.)**(-0.2)
-                else:
-                    raise Errors.ExistError()
+                #keyword = self.get_descriptor_key("key_wavelength")
+                #wavelength = dataset.phu_get_key_value(keyword)
+                #if wavelength:
+                #    ao_seeing = seeing_ref * (wavelength/5000.)**(-0.2)
+                #else:
+                #    raise Errors.ExistError()
             else:
                 raise Errors.ExistError()
             
@@ -699,7 +699,13 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         else:
             raise Errors.ExistError()
            
-        return is_ao
+        return DescriptorValue(is_ao, name="is_ao", ad=dataset)
+    
+    def is_coadds_summed(self, dataset, **args):
+        # Returns True for observations where the pixel data represent the
+        # sum over the total exposure time, which is the default
+        # Instruments can override this
+        return DescriptorValue(True, name="is_coadds_summed", ad=dataset)
 
     def local_time(self, dataset, **args):
         # Determine the local time keyword from the global keyword dictionary
@@ -1435,6 +1441,7 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         keyword2 = self.get_descriptor_key("key_oiwfs")
         keyword3 = self.get_descriptor_key("key_pwfs1")
         keyword4 = self.get_descriptor_key("key_pwfs2")
+        keyword5 = self.get_descriptor_key("key_gems")
         
         # Get the values of the AOWFS, OIWFS, PWFS1 and PWFS2 probe states
         # keywords from the header of the PHU
@@ -1442,7 +1449,8 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         oiwfs = dataset.phu_get_key_value(keyword2)
         pwfs1 = dataset.phu_get_key_value(keyword3)
         pwfs2 = dataset.phu_get_key_value(keyword4)
-        
+        gems = dataset.phu_get_key_value(keyword5)
+
         if aowfs is None or oiwfs is None or pwfs1 is None or pwfs2 is None:
             # The phu_get_key_value() function returns None if a value cannot
             # be found and stores the exception info. Re-raise the exception.
@@ -1460,7 +1468,9 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
             wavefront_sensors.append("PWFS1")
         if pwfs2 == "guiding":
             wavefront_sensors.append("PWFS2")
-        
+        if gems is not None:
+            wavefront_sensors.append("GEMS")
+            
         if len(wavefront_sensors) == 0:
             # If no probes are guiding, raise an exception
             raise Errors.CalcError()
@@ -1598,3 +1608,70 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # specific descriptor files. For all other Gemini data, raise an
         # exception if this descriptor is called.
         raise Errors.ExistError()
+
+    def _get_wcs_pixel_scale(self, dataset):
+        # This code was adapted from the F2 pixel_scale() descriptor, to allow
+        # re-use by GSAOI. It gets the pixel scale from the CD matrix. The
+        # fallback calls to _get_pixel_scale_from_header (which gets PIXSCALE)
+        # have been moved from here, as it may or may not be appropriate for
+        # the instrument.
+
+        # Since this function accesses keywords in the headers of the pixel
+        # data extensions, construct a dictionary where the key is an 
+        # (EXTNAME, EXTVER) tuple:
+        ret_val = {}
+
+        # Determine the WCS matrix elements keywords from the global keyword
+        # dictionary:
+        key_cd11 = self.get_descriptor_key("key_cd11")
+        key_cd12 = self.get_descriptor_key("key_cd12")
+        key_cd21 = self.get_descriptor_key("key_cd21")
+        key_cd22 = self.get_descriptor_key("key_cd22")
+        
+        # Get the value of the WCS matrix elements keywords from the header
+        # of each pixel data extension as a dictionary where the key is a
+        # ("*", EXTVER) tuple:
+        cd_dict = gmu.get_key_value_dict(
+            adinput=dataset, keyword=[key_cd11, key_cd12, key_cd21, key_cd22])
+
+        if None not in cd_dict.itervalues():  # else return None implicitly
+
+            for ext_name_ver in cd_dict[key_cd11]:
+
+                cd11 = cd_dict[key_cd11][ext_name_ver]
+                cd12 = cd_dict[key_cd12][ext_name_ver]
+                cd21 = cd_dict[key_cd21][ext_name_ver]
+                cd22 = cd_dict[key_cd22][ext_name_ver]
+
+                if None in [cd11, cd12, cd21, cd22]:
+                    pixel_scale = None
+                else:
+                    # Calculate the pixel scale using the WCS matrix elements:
+                    pixel_scale = 3600 * (
+                      math.sqrt(math.pow(cd11, 2) + math.pow(cd12, 2)) +
+                      math.sqrt(math.pow(cd21, 2) + math.pow(cd22, 2))) / 2
+
+                # Vale defaults to None if above result is None or zero:
+                pixel_scale = None if not pixel_scale else pixel_scale
+                
+                # Update the dictionary with the pixel scale value:
+                ret_val[ext_name_ver] = pixel_scale
+        
+            return ret_val
+    
+    def _get_pixel_scale_from_header(self, dataset):
+        # Determine the pixel scale keyword from the global keyword dictionary
+        keyword = self.get_descriptor_key("key_pixel_scale")
+        
+        # Get the value of the pixel scale keyword from the header of the PHU
+        ret_pixel_scale = dataset.phu_get_key_value(keyword)
+        
+        if ret_pixel_scale is None:
+            # The phu_get_key_value() function returns None if a value cannot
+            # be found and stores the exception info. Re-raise the exception.
+            # It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
+        return ret_pixel_scale
+

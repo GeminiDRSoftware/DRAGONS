@@ -43,7 +43,7 @@ SATUR_KEY        SATURATE       # keyword for saturation level (in ADUs)
  
 MAG_ZEROPOINT    0.0            # magnitude zero-point
 MAG_GAMMA        4.0            # gamma of emulsion (for photographic scans)
-GAIN             0.0            # detector gain in e-/ADU
+GAIN             1.0            # detector gain in e-/ADU
 GAIN_KEY         GAIN           # keyword for detector gain in e-/ADU
 PIXEL_SCALE      0              # size of pixel in arcsec (0=use FITS WCS info)
  

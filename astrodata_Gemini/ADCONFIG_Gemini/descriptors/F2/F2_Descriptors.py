@@ -478,106 +478,35 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
     
     def pixel_scale(self, dataset, **args):
         # First try to calculate the pixel scale using the values of the WCS
-        # matrix elements keywords
-        #
-        # Since this descriptor function accesses keywords in the headers of
-        # the pixel data extensions, always construct a dictionary where the
-        # key of the dictionary is an (EXTNAME, EXTVER) tuple.
-        ret_pixel_scale_dict = {}
-        
-        # Determine the WCS matrix elements keywords from the global keyword
-        # dictionary
-        keyword1 = self.get_descriptor_key("key_cd11")
-        keyword2 = self.get_descriptor_key("key_cd12")
-        keyword3 = self.get_descriptor_key("key_cd21")
-        keyword4 = self.get_descriptor_key("key_cd22")
-        
-        # Get the value of the WCS matrix elements keywords from the header of
-        # each pixel data extension as a dictionary where the key of the
-        # dictionary is an ("*", EXTVER) tuple
-        cd_dict = gmu.get_key_value_dict(
-            adinput=dataset, keyword=[keyword1, keyword2, keyword3, keyword4])
-        
-        cd11_dict = cd_dict[keyword1]
-        cd12_dict = cd_dict[keyword2]
-        cd21_dict = cd_dict[keyword3]
-        cd22_dict = cd_dict[keyword4]
-        
-        if cd11_dict is None:
-            # Get the pixel scale value using the value of the pixel scale
-            # keyword in the PHU
-            pixel_scale = self._get_pixel_scale_from_header(dataset=dataset)
-            
-            # Loop over the pixel data extensions in the dataset
-            pixel_scale_dict = {}
-            for ext in dataset[pixel_exts]:
-                # Update the dictionary with the pixel_scale value
-                pixel_scale_dict.update(
-                    {(ext.extname(), ext.extver()): pixel_scale})
-            
-            # Instantiate the DescriptorValue (DV) object
-            dv = DescriptorValue(pixel_scale_dict)
-            
-            # Create a new dictionary where the key of the dictionary is an
-            # EXTVER integer
-            extver_dict = dv.collapse_by_extver()
-            
-            if not dv.validate_collapse_by_extver(extver_dict):
+        # matrix element keywords:
+        ret_dict = self._get_wcs_pixel_scale(dataset)
+
+        # Use the header pixel scale as a fallback unless a value could be
+        # derived from the WCS for all the data extensions (this could be
+        # factored out a bit further still, into another support method).
+        if ret_dict is None or None in ret_dict.itervalues():
+
+            # Look up the header value:
+            pixel_scale = self._get_pixel_scale_from_header(dataset)
+
+            # Expand to a dictionary with the value repeated for each ext:
+            ret_dict = {(ext.extname(), ext.extver()) : pixel_scale \
+                        for ext in dataset[pixel_exts]}
+
+            # This is adapted from the previous F2 implementation. Its job
+            # seems to be to complain if different extensions with the same
+            # EXTVER have inconsistent values. Here it has also been co-opted
+            # to convert the return dict to ('*', extver) format, like the WCS
+            # pixel scale above (was that really the original intention?).
+            dv = DescriptorValue(ret_dict)
+            ret_dict = dv.collapse_by_extver()
+            if not dv.validate_collapse_by_extver(ret_dict):
                 # The validate_collapse_by_extver function returns False if the
                 # values in the dictionary with the same EXTVER are not equal
                 raise Errors.CollapseError()
-            
-            ret_pixel_scale_dict = pixel_scale_dict
-        
-        else:
-            for ext_name_ver, cd11 in cd11_dict.iteritems():
-                cd12 = None
-                if cd12_dict is not None:
-                    cd12 = cd12_dict[ext_name_ver]
-                cd21 = None
-                if cd21_dict is not None:
-                    cd21 = cd21_dict[ext_name_ver]
-                cd22 = None
-                if cd22_dict is not None:
-                    cd22 = cd22_dict[ext_name_ver]
-                
-                pixel_scale = None
-                if not None in [cd11, cd12, cd21, cd22]:
-                    # Calculate the pixel scale using the WCS matrix elements
-                    pixel_scale = 3600 * (
-                      math.sqrt(math.pow(cd11, 2) + math.pow(cd12, 2)) +
-                      math.sqrt(math.pow(cd21, 2) + math.pow(cd22, 2))) / 2
-                
-                if pixel_scale is None or pixel_scale == 0.0:
-                    # Get the pixel scale value using the value of the pixel
-                    # scale keyword
-                    pixel_scale = self._get_pixel_scale_from_header(
-                        dataset=dataset)
-                
-                # Update the dictionary with the pixel scale value
-                ret_pixel_scale_dict.update({ext_name_ver: pixel_scale})
-        
-        # Instantiate the return DescriptorValue (DV) object using the newly
-        # created dictionary
-        ret_dv = DescriptorValue(ret_pixel_scale_dict, name="pixel_scale",
-                                 ad=dataset)
-        return ret_dv
-    
-    def _get_pixel_scale_from_header(self, dataset):
-        # Determine the pixel scale keyword from the global keyword dictionary
-        keyword = self.get_descriptor_key("key_pixel_scale")
-        
-        # Get the value of the pixel scale keyword from the header of the PHU
-        ret_pixel_scale = dataset.phu_get_key_value(keyword)
-        
-        if ret_pixel_scale is None:
-            # The phu_get_key_value() function returns None if a value cannot
-            # be found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, "exception_info"):
-                raise dataset.exception_info
-        
-        return ret_pixel_scale
+
+        # Not sure whether this could be consolidated in the second case above:
+        return DescriptorValue(ret_dict, name="pixel_scale", ad=dataset)
     
     def read_mode(self, dataset, **args):
         # Determine the number of non-destructive read pairs (lnrs) keyword
