@@ -3,7 +3,7 @@
 {
  "detectSources":{
     "set_saturation":{
-        "default"       : True,
+        "default"       : False,
         "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,
