@@ -1323,10 +1323,10 @@ def _sextractor(ad=None, seeing_estimate=None, sxdict=None, set_saturation=False
         # this will need to be addressed (probably in the descriptor).
         if set_saturation:
             if sciext.get_key_value('BUNIT') == 'electron':
-                satur_level = ad.saturation_level().as_pytype() * \
-                    ad.gain().as_pytype()
+                satur_level = sciext.saturation_level().as_pytype() * \
+                    sciext.gain().as_pytype()
             else:
-                satur_level = ad.saturation_level().as_pytype()
+                satur_level = sciext.saturation_level().as_pytype()
 
         # if no seeing estimate provided, run sextractor once with
         # default, then re-run to get proper stellar classification
