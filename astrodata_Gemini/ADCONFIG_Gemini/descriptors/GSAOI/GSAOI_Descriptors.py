@@ -4,21 +4,21 @@ from GSAOI_Keywords import GSAOI_KeyDict
 from GEMINI_Descriptors import GEMINI_DescriptorCalc
 from astrodata.interface.Descriptors import DescriptorValue
 from astrodata.utils import Errors
-from astrodata.utils import Lookups
 
 from gempy.gemini import gemini_metadata_utils as gmu
+
 import GemCalcUtil
+
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GSAOI import GSAOIArrayDict
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GSAOI import Nominal_Zeropoints
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GSAOI import GSAOIFilterWavelength
 
 class GSAOI_DescriptorCalc(GEMINI_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
     # associated with this descriptor class
     _update_stdkey_dict = GSAOI_KeyDict
 
-    GSAOIArrayDict = None
-
     def __init__(self):
-        self.GSAOIArrayDict = Lookups.get_lookup_table(
-            "Gemini/GSAOI/GSAOIArrayDict", "GSAOIArrayDict")
         GEMINI_DescriptorCalc.__init__(self)
 
     def array_name(self, dataset, **args):
@@ -222,8 +222,7 @@ class GSAOI_DescriptorCalc(GEMINI_DescriptorCalc):
         # key of the dictionary is an (EXTNAME, EXTVER) tuple
         ret_nominal_photometric_zeropoint = {}
         
-        table = Lookups.get_lookup_table("Gemini/GSAOI/Nominal_Zeropoints",
-                                         "nominal_zeropoints")
+        table = Nominal_Zeropoints.nominal_zeropoints
         
         # Get the values of the gain, detector name and filter name using the
         # appropriate descriptors. Use as_pytype() to return the values as the
@@ -394,8 +393,7 @@ class GSAOI_DescriptorCalc(GEMINI_DescriptorCalc):
         
         if "IMAGE" in dataset.types:
             # If imaging, associate the filter name with a central wavelength
-            filter_table = Lookups.get_lookup_table(
-                "Gemini/GSAOI/GSAOIFilterWavelength", "filter_wavelength")
+            filter_table = GSAOIFilterWavelength.filter_wavelength
             filter = str(dataset.filter_name(pretty=True))
 #            print "filter = ", filter
 #            print "filter_table = ", filter_table
@@ -516,9 +514,9 @@ class GSAOI_DescriptorCalc(GEMINI_DescriptorCalc):
 
             lookup_key = (read_speed_setting, array_name)
 
-            if lookup_key in self.GSAOIArrayDict:
+            if lookup_key in GSAOIArrayDict.GSAOIArrayDict:
 
-                val = self.GSAOIArrayDict[lookup_key][table_index]
+                val = GSAOIArrayDict.GSAOIArrayDict[lookup_key][table_index]
 
                 # Attempt to convert to a specified data type if requested:
                 if as_type:
