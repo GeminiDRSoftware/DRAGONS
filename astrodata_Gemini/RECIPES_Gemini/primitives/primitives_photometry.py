@@ -233,7 +233,9 @@ class PhotometryPrimitives(GENERALPrimitives):
         max_sources = rc["max_sources"]
         centroid_function = rc["centroid_function"]
         method = rc["method"]
+        set_saturation = rc["set_saturation"]
         mask = rc["mask"]
+        
         # Check source detection method
         if method not in ["sextractor","daofind"]:
             raise Errors.InputError("Source detection method "+
@@ -285,8 +287,9 @@ class PhotometryPrimitives(GENERALPrimitives):
                     method="daofind"
                 else:
                     try:
-                        ad = _sextractor(ad,seeing_est,sxdict=self.sx_default_dict,
-                                         set_saturation=set_saturation)
+                        ad_for_source = _sextractor(ad_for_source, seeing_est,
+                                                sxdict=self.sx_default_dict,
+                                                set_saturation=set_saturation)
                     except Errors.ScienceError:
                         log.warning("SExtractor failed. "\
                                     "Setting method=daofind")
