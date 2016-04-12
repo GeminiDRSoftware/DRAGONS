@@ -1078,6 +1078,7 @@ class QAPrimitives(GENERALPrimitives):
                         continue
                     else:
                         ell_warn = ""
+                        single_warn = ""
                 else:
                 # Mean of clipped FWHM and ellipticity
                     # Use weights if they exist
@@ -1246,7 +1247,8 @@ class QAPrimitives(GENERALPrimitives):
                 log.stdinfo(ind + fnStr)
                 if len(src)!=0:
                     log.stdinfo(ind + srcStr)
-                    log.stdinfo(ind + "-"*dlen)
+                log.stdinfo(ind + "-"*dlen)
+                if len(src) != 0:
                     log.stdinfo(ind + fmStr)
                     if is_image:
                         log.stdinfo(ind + emStr)
