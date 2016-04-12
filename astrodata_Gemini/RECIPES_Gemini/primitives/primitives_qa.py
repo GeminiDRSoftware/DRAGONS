@@ -1252,7 +1252,7 @@ class QAPrimitives(GENERALPrimitives):
                     log.stdinfo(ind + fmStr)
                     if is_image:
                         log.stdinfo(ind + emStr)
-                        if is_ao and strehl is not None:
+                        if is_ao:
                             log.stdinfo(ind + strehlStr)
                 log.stdinfo(ind + csStr)
                 log.stdinfo(ind + iqStr)
