@@ -1225,11 +1225,13 @@ def clip_sources(ad):
         # Source is good if ellipticity defined and <0.5
         eflag = np.where((ellip>0.5)|(ellip==-999),1,0)
 
-        # Source is good if probability of being a star >0.9
-        # Except for AO data, where CLASS_STAR is often <0.01
+        # Stellarity test
         is_ao = ad.is_ao().as_pytype()
-        stellarity_limit = 0.0 if is_ao else 0.9
-        sflag = np.where(class_star<stellarity_limit,1,0)
+        if is_ao:
+            sflag = np.where(np.fabs(isofwhm_pix/1.08-fwhm_pix) >
+                             0.2*isofwhm_pix,1,0)
+        else:
+            sflag = np.where(class_star<0.9,1,0)
 
         # Source is good if semi-minor axis is greater than 1.1 pixels
         # (less indicates a cosmic ray)
@@ -1257,11 +1259,6 @@ def clip_sources(ad):
             toobadflags = np.where(ndqflag > max_bad_pix, 1, 0)
             flags |= toobadflags
             
-        # Source should also have similar FWHM measurements from
-        # SExtractor and _profile_sources. Difference can be due
-        # to low S/N per pixel
-        flags |= (np.fabs(isofwhm_pix/1.08-fwhm_pix)>0.2*isofwhm_pix)
-        
         flags |= np.where(ee50d_pix<fwhm_pix, 1, 0)
 
         # Use flags=0 to find good data
