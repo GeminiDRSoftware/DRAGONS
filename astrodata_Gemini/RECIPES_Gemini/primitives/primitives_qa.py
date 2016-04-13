@@ -575,8 +575,10 @@ class QAPrimitives(GENERALPrimitives):
                                  (mag_errs * mag_errs))
  
                 # Requirements for an object to be used
-                ok = np.logical_and.reduce((isoarea>=30, zps>-500,
-                                           flags==0, mags<90))
+                # NaNs in zps get converted to zero here to avoid an error
+                # but will be eliminated at the end
+                ok = np.logical_and.reduce((isoarea>=30,
+                        np.nan_to_num(zps)>-500, flags==0, mags<90))
                 if not np.all(iflags == -999):
                     # Keep objects if pristine or <2% bad/non-linear pixels
                     ok2 = np.logical_or(iflags==0,
@@ -585,10 +587,11 @@ class QAPrimitives(GENERALPrimitives):
                 # Get rid of NaNs
                 ok = np.logical_and(ok, np.logical_not(
                             np.logical_or(np.isnan(zperrs), np.isnan(zps))))
-                # Trim out where zeropoint error > err_threshold
                 zps = zps[ok]
                 zperrs = zperrs[ok]
                 ids = ids[ok]
+
+                # Trim out where zeropoint error > err_threshold
                 if len(filter(lambda z: z is not None, zps)) <= 5:
                     # 5 sources or less.  Beggars are not choosers.
                     # Raise the threshold a bit
