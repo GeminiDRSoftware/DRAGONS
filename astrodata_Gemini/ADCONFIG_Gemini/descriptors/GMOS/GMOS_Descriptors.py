@@ -40,34 +40,25 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         
         # Determine the name of the detector amplifier keyword (ampname) from
         # the global keyword dictionary 
-        keyword = self.get_descriptor_key("key_ampname")
-        
-        # Get the value of the name of the detector amplifier keyword from the
-        # header of each pixel data extension as a dictionary where the key of
-        # the dictionary is an ("*", EXTVER) tuple
-        ampname_dict = gmu.get_key_value_dict(adinput=dataset, keyword=keyword)
-        
-        if ampname_dict is None:
-            # The get_key_value_dict() function returns None if a value cannot
-            # be found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
-            if hasattr(dataset, "exception_info"):
-                raise dataset.exception_info
-        
-        # Get the pretty (1-based indexing) readout area of the CCD using the
-        # appropriate descriptor
-        detector_section_dv = dataset.detector_section(pretty=True)
-        
-        if detector_section_dv.is_none():
+        ampname_dv = dataset.array_name()
+        if ampname_dv.is_none():
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
             # dealt with by the CalculatorInterface. 
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
+        # Get the pretty (1-based indexing) readout area of the CCD using the
+        # appropriate descriptor
+        detector_section_dv = dataset.detector_section(pretty=True)
+        if detector_section_dv.is_none():
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        
         # Use as_dict() to return the detector section value as a dictionary
         # where the key of the dictionary is an ("*", EXTVER) tuple 
         detector_section_dict = detector_section_dv.as_dict()
+        ampname_dict = ampname_dv.as_dict()
         
         for ext_name_ver, ampname in ampname_dict.iteritems():
             detector_section = detector_section_dict[ext_name_ver]
@@ -101,23 +92,15 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # dictionary is an ("*", EXTVER) tuple
         array_name_dict = gmu.get_key_value_dict(adinput=dataset,
                                                  keyword=keyword)
+        
         if array_name_dict is None:
-            # It is possible that the data have been mosaiced, which means that
-            # the name of the array keyword no longer exists in the pixel data
-            # extensions. Instead, determine the value of the detector name
-            # using the appropriate descriptor
-            detector_name_dv = dataset.detector_name()
+            # The get_key_value_dict() function returns None if a value
+            # cannot be found and stores the exception info. Re-raise the
+            # exception. It will be dealt with by the CalculatorInterface.
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
             
-            if detector_name_dv.is_none():
-                # The descriptor functions return None if a value cannot be
-                # found and stores the exception info. Re-raise the exception.
-                # It will be dealt with by the CalculatorInterface. 
-                if hasattr(dataset, "exception_info"):
-                    raise dataset.exception_info
-            
-            ret_array_name = detector_name_dv
-        else:
-            ret_array_name = array_name_dict
+        ret_array_name = array_name_dict
         
         # Instantiate the return DescriptorValue (DV) object using the newly
         # created dictionary
@@ -613,23 +596,17 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             change_2015_ut = datetime(2015, 8, 26, 0, 0)
             change_2006_ut = datetime(2006, 8, 31, 0, 0)
             
-            # Determine the name of the detector amplifier keyword (ampname)
-            # from the global keyword dictionary 
-            keyword = self.get_descriptor_key("key_ampname")
-            
-            # Get the value of the name of the detector amplifier keyword from
-            # the header of each pixel data extension as a dictionary where the
-            # key of the dictionary is an ("*", EXTVER) tuple
-            ampname_dict = gmu.get_key_value_dict(adinput=dataset,
-                                                  keyword=keyword)
-            if ampname_dict is None:
-                # The get_key_value_dict() function returns None if a value
-                # cannot be found and stores the exception info. Re-raise the
-                # exception. It will be dealt with by the CalculatorInterface.
+            ampname_dv = dataset.array_name()
+            if ampname_dv.is_none():
+                # The descriptor functions return None if a value cannot be found
+                # and stores the exception info. Re-raise the exception. It will be
+                # dealt with by the CalculatorInterface. 
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
             
-            for ext_name_ver, ampname in ampname_dict.iteritems():
+            for extver in ampname_dv.ext_vers():
+                ext_name_ver = ('*', extver)
+                ampname = ampname_dv.get_value(extver)
                 gain_setting = gain_setting_dict[ext_name_ver]
                 
                 if ampname is None or gain_setting is None:
@@ -1255,23 +1232,18 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
             change_2015_ut = datetime(2015, 8, 26, 0, 0)
             change_2006_ut = datetime(2006, 8, 31, 0, 0)
-            # Determine the name of the detector amplifier keyword (ampname)
-            # from the global keyword dictionary 
-            keyword = self.get_descriptor_key("key_ampname")
-            
-            # Get the value of the name of the detector amplifier keyword from
-            # the header of each pixel data extension as a dictionary where the
-            # key of the dictionary is an ("*", EXTVER) tuple
-            ampname_dict = gmu.get_key_value_dict(adinput=dataset,
-                                                  keyword=keyword)
-            if ampname_dict is None:
-                # The get_key_value_dict() function returns None if a value
-                # cannot be found and stores the exception info. Re-raise the
-                # exception. It will be dealt with by the CalculatorInterface.
+
+            ampname_dv = dataset.array_name()
+            if ampname_dv.is_none():
+                # The descriptor functions return None if a value cannot be found
+                # and stores the exception info. Re-raise the exception. It will be
+                # dealt with by the CalculatorInterface. 
                 if hasattr(dataset, "exception_info"):
                     raise dataset.exception_info
             
-            for ext_name_ver, ampname in ampname_dict.iteritems():
+            for extver in ampname_dv.ext_vers():
+                ext_name_ver = ('*', extver)
+                ampname = ampname_dv.get_value(extver)
                 gain_setting = gain_setting_dict[ext_name_ver]
                 
                 if ampname is None or gain_setting is None:
@@ -1357,15 +1329,14 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # extension as a dictionary, where the key of the dictionary is an
         # ("*", EXTVER) tuple
         keyword_dict = gmu.get_key_value_dict(
-            adinput=dataset, keyword=[keyword3, keyword4, "BUNIT"],
+            adinput=dataset, keyword=[keyword4, "BUNIT"],
             dict_key_extver=True)
         
-        ampname_dict = keyword_dict[keyword3]
-        
-        if ampname_dict is None:
-            # The get_key_value_dict() function returns None if a value cannot
-            # be found and stores the exception info. Re-raise the exception.
-            # It will be dealt with by the CalculatorInterface.
+        ampname_dv = dataset.array_name()
+        if ampname_dv.is_none():
+            # The descriptor functions return None if a value cannot be found
+            # and stores the exception info. Re-raise the exception. It will be
+            # dealt with by the CalculatorInterface. 
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
@@ -1392,8 +1363,10 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # saturation level will be equal to the controller digitization limit.
         bin_factor = detector_x_bin_dv * detector_y_bin_dv
 
-        for extver, ampname in ampname_dict.iteritems():
-            gain = gain_dv.get_value(extver=extver)
+        for extver in ampname_dv.ext_vers():
+            ext_name_ver = ('*', extver)
+            ampname = ampname_dv.get_value(extver)
+            gain = gain_dv.get_value(extver)
             
             # Determine whether it is required to calculate the bias level
             # (bias level calculations can take some time)

@@ -6,7 +6,7 @@ GMOS_KeyDict = {
     "key_camera":"INSTRUME",
     "key_ccdsum":"CCDSUM",
     "key_central_wavelength":"GRWLEN",
-    "key_array_name":"CCDNAME",
+    "key_array_name":"AMPNAME",
     "key_dec": "DEC",
     "key_detector_name":"DETID",
     "key_detector_type":"DETTYPE",
