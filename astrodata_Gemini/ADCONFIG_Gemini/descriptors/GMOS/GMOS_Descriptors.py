@@ -961,15 +961,16 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         ret_nominal_photometric_zeropoint_dict = {}
         
         # Get the lookup table containing the nominal zeropoints
+        # These are keyed by CCD name, not array (=amplifier) name
         table = Nominal_Zeropoints.nominal_zeropoints
         
-        # Get the values of the gain, detector name and filter name using the
+        # Get the values of the gain, CCD name and filter name using the
         # appropriate descriptors.
         gain_dv = dataset.gain()
-        array_name_dv = dataset.array_name()
+        ccd_name_dict = gmu.get_key_value_dict(adinput=dataset, keyword="CCDNAME")
         filter_name_dv = dataset.filter_name(pretty=True)
-        
-        if (gain_dv.is_none() or array_name_dv.is_none() or
+
+        if (gain_dv.is_none() or len(ccd_name_dict)==0 or
             filter_name_dv.is_none()):
             # The descriptor functions return None if a value cannot be found
             # and stores the exception info. Re-raise the exception. It will be
@@ -990,11 +991,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             ext_name_ver = ("*", extver)
             
             # Obtain the values from the three DVs for the current extver
-            array_name = array_name_dv.get_value(extver)
+            ccd_name = ccd_name_dict[ext_name_ver]
             gain = gain_dv.get_value(extver)
             filter_name = filter_name_dv.get_value(extver)
 
-            if array_name is None:
+            if ccd_name is None:
                 nominal_photometric_zeropoint = None
             else:
                 # Determine whether data are in ADU or electrons
@@ -1008,7 +1009,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                 if bunit == "adu":
                     gain_factor = 2.5 * math.log10(gain)
 
-                nominal_zeropoint_key = (array_name, filter_name)
+                nominal_zeropoint_key = (ccd_name, filter_name)
                 
                 if nominal_zeropoint_key in table:
                     nominal_photometric_zeropoint = (

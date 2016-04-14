@@ -150,12 +150,12 @@ class GMOSPrimitives(GEMINIPrimitives):
 
                 ext.set_key_value("DETSEC",new_detsec,
                                   comment=self.keyword_comments["DETSEC"])
-
                 ext.set_key_value("CCDSEC",new_detsec,
                                   comment=self.keyword_comments["CCDSEC"])
-
                 ext.set_key_value("DATASEC",new_datasec,
                                   comment=self.keyword_comments["DATASEC"])
+                ext.set_key_value("CCDNAME",ext.detector_name().as_pytype(),
+                                  comment=self.keyword_comments["CCDNAME"])
             if ad_out["VAR"] is not None:
                 for ext in ad_out["VAR"]:
                     if bunit is not None:
@@ -170,6 +170,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                                       comment=self.keyword_comments["CCDSEC"])
                     ext.set_key_value("DATASEC",new_datasec,
                                       comment=self.keyword_comments["DATASEC"])
+                    ext.set_key_value("CCDNAME",ext.detector_name().as_pytype(),
+                                      comment=self.keyword_comments["CCDNAME"])
 
             # Change type of DQ plane back to int16 (gmosaic sets float32)
             # , restore DETSEC, DATASEC, CCDSEC, and replace any -1 values with 1 
@@ -187,6 +189,8 @@ class GMOSPrimitives(GEMINIPrimitives):
                                       comment=self.keyword_comments["CCDSEC"])
                     ext.set_key_value("DATASEC",new_datasec,
                                       comment=self.keyword_comments["DATASEC"])
+                    ext.set_key_value("CCDNAME",ext.detector_name().as_pytype(),
+                                      comment=self.keyword_comments["CCDNAME"])
 
             gt.mark_history(adinput=ad_out, primname=self.myself(), keyword=timestamp_key)
             adoutput_list.append(ad_out)
@@ -899,8 +903,9 @@ class GMOSPrimitives(GEMINIPrimitives):
                     extname = ext.extname()
                     extver = ext.extver()
 
-                    # Remove CCDNAME
-                    del ext.header['CCDNAME']
+                    # Update CCDNAME
+                    ext.set_key_value("CCDNAME",ext.detector_name().as_pytype(),
+                                comment=self.keyword_comments["CCDNAME"])
 
                     # Update AMPNAME
                     if extname=="SCI" or extname=="VAR":

@@ -5,6 +5,7 @@ keyword_comments = {
     "BIASIM": "Bias image used",
     "BPMNAME": "Name of BPM used to identify bad pixels",
     "BUNIT": "Physical units of the array values",
+    "CCDNAME": "CCD chip name(s)",
     "CCDSEC": "CCD section(s)",
     "CTYPE1": "Coordinate name represented by axis 1",
     "CTYPE2": "Coordinate name represented by axis 2",
