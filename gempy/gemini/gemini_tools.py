@@ -1817,7 +1817,7 @@ def fitsstore_report(ad, rc, metric, info_dict, calurl_dict):
         except:
             qametric["datalabel"] = None
         try:
-            qametric["detector"] = sciext.detector_name().as_pytype()
+            qametric["detector"] = sciext.array_name().as_pytype()
         except:
             qametric["detector"] = None
 
