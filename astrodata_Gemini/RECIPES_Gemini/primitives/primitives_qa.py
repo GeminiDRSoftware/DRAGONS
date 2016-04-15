@@ -1038,7 +1038,7 @@ class QAPrimitives(GENERALPrimitives):
                                 "calculation")
 
                 ao_insts = {'GSAOI_IMAGE', 'NIRI_IMAGE', 'GNIRS_IMAGE'}
-                if (typ in ao_insts for typ in ad.types):
+                if any(typ in ao_insts for typ in ad.types):
                     if len(good_source) > 0:
                         #strehl, strehl_std = _lucas_strehl(ad, good_source)
                         strehl, strehl_std = _strehl(ad, good_source)
