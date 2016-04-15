@@ -506,6 +506,8 @@ def _match_objcat_refcat(adinput=None):
     :type adinput: AstroData objects, either a single instance or a list
     """
 
+    import matplotlib.pyplot as plt
+
     # Instantiate the log. This needs to be done outside of the try block,
     # since the log object is used in the except block 
     log = logutils.get_logger(__name__)
@@ -513,6 +515,8 @@ def _match_objcat_refcat(adinput=None):
     # The validate_input function ensures that the input is not None and
     # returns a list containing one or more inputs
     adinput_list = gt.validate_input(input=adinput)
+
+    debug = False
 
     # Initialize the list of output AstroData objects
     adoutput_list = []
@@ -540,6 +544,19 @@ def _match_objcat_refcat(adinput=None):
                 # Loop through the objcat extensions
                 if ad['OBJCAT'] is None:
                     raise Errors.InputError("Missing OBJCAT in %s" % (ad.filename))
+                # Plotting for debugging purposes
+                if debug:
+                    num_ext = len(ad['OBJCAT'])
+                    if 'GSAOI' in ad.types:
+                        plotcols = 2
+                        plotrows = 2
+                    else:
+                        plotcols = num_ext
+                        plotrows = 1
+                    fig, axarr = plt.subplots(plotrows, plotcols, sharex=True, sharey=True, figsize=(10,10), squeeze=False)
+                    axarr[0,0].set_xlim(0,ad['SCI',1].data.shape[0])
+                    axarr[0,0].set_ylim(0,ad['SCI',1].data.shape[1])
+
                 for objcat in ad['OBJCAT']:
                     extver = objcat.extver()
     
@@ -548,47 +565,10 @@ def _match_objcat_refcat(adinput=None):
                     if not refcat:
                         log.warning("Missing [REFCAT,%d] in %s - Cannot match objcat against missing refcat" % (extver,ad.filename))
                     else:
-                        # We need to throw out some of the sources for a very 
-                        # crowded field (EJD)
-                        #if len(objcat.data['NUMBER']) > 200:
-                        #    flux_limit = sorted(objcat.data['FLUX_MAX'])[-200]
-                        
-                        #KL  Elegant solution can only be implemented in 
-                        #KL  somewhat elegant code.  This piece of crap
-                        #KL  algorithm using indices won't allow an
-                        #KL  elegant solution for the culling.
-                        
-                        # Create a mask to cull bogus or very faint sources, and keep
-                        # only the best sources.
-                        #keep_mask = np.where(objcat.data['ISOAREA_IMAGE'] >= 30, 1, 0)
-                        
-                        # Get the x and y position lists from both catalogs in
-                        # pixels, keeping only the best sources
-                        #xx = list(compress(objcat.data['X_IMAGE'], keep_mask))
-                        #yy = list(compress(objcat.data['Y_IMAGE'], keep_mask))
-                                               
-                        #KL  Implementing an ugly culling instead. To preserve indices...
-                        
-                        # EJD
-                        #    xx = np.where(np.logical_and(objcat.data['ISOAREA_IMAGE'] >= 20,
-                        #                  objcat.data['FLUX_MAX'] >= flux_limit), 
-                        #                  objcat.data['X_IMAGE'], -999)
-                        #    yy = np.where(np.logical_and(objcat.data['ISOAREA_IMAGE'] >= 20,
-                        #                  objcat.data['FLUX_MAX'] >= flux_limit), 
-                        #                  objcat.data['Y_IMAGE'], -999)
-                        # else:
-                        #    xx = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, 
-                        #                  objcat.data['X_IMAGE'], -999)
-                        #    yy = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, 
-                        #                  objcat.data['Y_IMAGE'], -999)
                         xx = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, 
                                       objcat.data['X_IMAGE'], -999)
                         yy = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, 
                                       objcat.data['Y_IMAGE'], -999)
-#                        print "xx = ", xx                             
-#                        print "yy = ", yy                             
-                        #xx = objcat.data['X_IMAGE']
-                        #yy = objcat.data['Y_IMAGE']
                         
                         # The coordinates of the reference sources are 
                         # corrected to pixel positions using the WCS of the 
@@ -597,38 +577,35 @@ def _match_objcat_refcat(adinput=None):
                         sdec = refcat.data['DEJ2000']
                         wcsobj = pywcs.WCS(ad["SCI",extver].header)
                         sx, sy = wcsobj.wcs_sky2pix(sra,sdec,1)
+                        sx_orig = np.copy(sx)
+                        sy_orig = np.copy(sy)
                         
-#                        initial = 3.0/ad.pixel_scale() # 10 arcseconds in pixels
-#                        final = 0.2/ad.pixel_scale() # 0.5 arcseconds in pixels
-                        initial = 10.0/ad.pixel_scale() # 10 arcseconds in pixels
-                        final = 0.5/ad.pixel_scale() # 0.5 arcseconds in pixels
+                        initial = 10.0/ad.pixel_scale() # Search box size
+                        final = 1.0/ad.pixel_scale() # Matching radius
 
                         # Here's CJS at work.
                         # First: estimate number of reference sources in field
                         # Do better using actual size of illuminated field
                         num_ref_sources = np.sum(np.all((sx>-initial,
-                                                         sx<ad['SCI',extver].get_key_value("NAXIS1")+initial,
-                                                         sy>-initial,sy<ad['SCI',1].get_key_value("NAXIS2")),
-                                                        axis=0))
+                            sx<ad['SCI',extver].data.shape[1]+initial,
+                            sy>-initial,
+                            sy<ad['SCI',extver].data.shape[0]+initial),
+                            axis=0))
                         # How many objects do we want to try to match
                         if len(objcat.data) > 2*num_ref_sources:
-                            keep_num = max(int(1.5*num_ref_sources),min(10,len(objcat.data)))
+                            keep_num = max(int(1.5*num_ref_sources),
+                                           min(10,len(objcat.data)))
                         else:
                             keep_num = len(objcat.data)
                         # Now sort the object catalogue -- MUST NOT alter order
                         sorted_indices = np.argsort(objcat.data['MAG_AUTO'])[:keep_num]
-                        #print "--------------------------------------------------"
-                        #print num_ref_sources, keep_num
-                        #for x3,y3 in zip(xx[sorted_indices],yy[sorted_indices]):
-                        #    print x3,y3
     
                         # FIXME - need to address the wraparound problem here
                         # if we straddle ra = 360.00 = 0.00
+                        # CJS: is this a problem? Everything's in pixels so it should be OK
                         
                         (oi, ri) = at.match_cxy(xx[sorted_indices],sx,yy[sorted_indices],sy,
                                                 firstPass=initial, delta=final, log=log)
-#                        print "initial = ", initial
-#                        print "final = ", final
                         
                         #KL: But there might be only one source in the field of view with
                         #KL: a good reference!  Think small near-IR fields. I'm turning this
@@ -674,6 +651,31 @@ def _match_objcat_refcat(adinput=None):
                                     except KeyError:
                                         if k_ref_mag != refcat.data['kmag'][ri[i]]:
                                             objcat.header.add_comment(comment)
+                        if debug:
+                            # Show the fit
+                            if 'GSAOI' in ad.types:
+                                plotpos = ((4-extver) // 2, (extver % 3) % 2)
+                            else:
+                                plotpos = (0,extver-1)
+                            dx = np.median(xx[sorted_indices[oi]] - sx[ri])
+                            dy = np.median(yy[sorted_indices[oi]] - sy[ri])
+                            # bright OBJCAT sources
+                            axarr[plotpos].scatter(xx[sorted_indices], yy[sorted_indices], s=50, c='w')
+                            # all REFCAT sources, original positions
+                            axarr[plotpos].scatter(sx_orig, sy_orig, s=30, c='k', marker='+')
+                            # all REFCAT sources shifted
+                            axarr[plotpos].scatter(sx+dx, sy+dy, s=30, c='r', marker='+')
+                            # matched REFCAT sources shifted
+                            axarr[plotpos].scatter(sx[ri]+dx, sy[ri]+dy, s=30, c='r', marker='s')
+                            for i in range(len(sx)):
+                                if i in ri:
+                                    axarr[plotpos].plot([sx_orig[i],sx[i]+dx],[sy_orig[i],sy[i]+dy], 'r')
+                                else:
+                                    axarr[plotpos].plot([sx_orig[i],sx[i]+dx],[sy_orig[i],sy[i]+dy], 'k--')
+
+            if debug:
+                plt.show()
+            
             adoutput_list.append(ad)
 
         return adoutput_list
@@ -1391,9 +1393,6 @@ def _sextractor(ad=None, seeing_estimate=None, sxdict=None, set_saturation=False
                             (ad.filename,extver))
                 break
 
-            #tdata = hdulist[1].data
-            #tcols = hdulist[1].columns
-
             # If sextractor returned no data, don't bother with the
             # next iteration
             if len(hdulist) <= 1:
@@ -1472,6 +1471,9 @@ def _sextractor(ad=None, seeing_estimate=None, sxdict=None, set_saturation=False
             columns = {}
             for col in tcols:
                 columns[col.name] = col
+                # Cull things <20 pixels in area or <1.1 pixels wide
+                columns[col.name].array = \
+                    columns[col.name].array[aflag+tflag==0]
             result[dict_key] = columns
 
             nobj = len(columns["NUMBER"].array)
@@ -1988,5 +1990,3 @@ def _fit_sources(ad, ext=None, max_sources=50, threshold=5.0,
                 seeing_estimate = new_fwhm
 
     return ad, seeing_estimate
-
-
