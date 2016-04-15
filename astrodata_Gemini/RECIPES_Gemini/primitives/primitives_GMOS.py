@@ -899,12 +899,13 @@ class GMOSPrimitives(GEMINIPrimitives):
                     "NSCIEXT",num_ccd,comment=self.keyword_comments["NSCIEXT"])
                 adoutput.phu_set_key_value(
                     "NEXTEND",nextend,comment=self.keyword_comments["NEXTEND"])
+                ccd_name = ad.detector_name().as_pytype()
                 for ext in adoutput:
                     extname = ext.extname()
                     extver = ext.extver()
 
                     # Update CCDNAME
-                    ext.set_key_value("CCDNAME",ext.detector_name().as_pytype(),
+                    ext.set_key_value("CCDNAME", ccd_name,
                                 comment=self.keyword_comments["CCDNAME"])
 
                     # Update AMPNAME
