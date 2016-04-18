@@ -703,7 +703,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
                   science_array_section[3] / science_detector_y_bin]
                 
                 # Check whether science data has been overscan-trimmed
-                science_shape = sciext.data.shape
+                science_shape = sciext.data.shape[-2:]
                 if (science_shape[1] == science_data_section[1] and
                     science_shape[0] == science_data_section[3] and
                     science_data_section[0] == 0 and
