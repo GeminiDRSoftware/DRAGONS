@@ -243,21 +243,6 @@ class PhotometryPrimitives(GENERALPrimitives):
                 
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
-
-            # CJS: Let's set this region to unilliminated in the DQ plane.
-            # We absolutely need to do something better here long-term.
-            # The F2 FOV is not constant, so this is a bit crappy.
-            # Masking data outside the F2 FOV with 0.0. This should probably 
-            # go somewhere else. EJD
-            if "F2" in ad.instrument().as_pytype():
-                for dqext in ad["DQ"]:
-                    datasec = ad.data_section().as_pytype()
-                    central_i = (datasec[1] - datasec[0]) / 2.0
-                    central_j = (datasec[3] - datasec[2]) / 2.0
-                    radius = 0.98*(central_i + central_j) / 2.0
-                    ygrid,xgrid = np.mgrid[datasec[2]:datasec[3],datasec[0]:datasec[1]]
-                    rsq = (xgrid-central_i)**2 + (ygrid-central_j)**2
-                    dqext.data[rsq>radius*radius] |= np.int16(64)
                                 
             # Get a seeing estimate from the header, if available
             seeing_est = ad.phu_get_key_value("MEANFWHM")
