@@ -122,10 +122,10 @@ class QAPrimitives(GENERALPrimitives):
                 req_bg = None
 
             # Loop over SCI extensions
-            all_bg = None
-            all_std = None
-            all_bg_am = None
-            all_std_am = None
+            all_bg = []
+            all_std = []
+            all_bg_am = []
+            all_std_am = []
             bunit = None
             info_dict = {}
             for sciext in ad["SCI"]:
@@ -212,7 +212,7 @@ class QAPrimitives(GENERALPrimitives):
 
                     sci_bg = np.median(scidata)
                     sci_std = np.std(scidata)
-
+                    
                 log.fullinfo("Raw BG level = %f" % sci_bg)
 
                 # Subtract bias level from BG number
@@ -283,22 +283,12 @@ class QAPrimitives(GENERALPrimitives):
                     bg_am = None
                     std_am = None
 
-                # Keep a running average value
-                if all_bg is None:
-                    all_bg = sci_bg
-                    all_std = sci_std
-                    if bg_am is not None:
-                        all_bg_am = bg_am
-                        all_std_am = std_am
-                else:
-                    all_bg = np.mean([all_bg,sci_bg])
-                    all_std = np.sqrt(all_std**2+sci_std**2)
-                    if (bg_am is not None) and (all_bg_am is not None):
-                        all_bg_am = np.mean([all_bg_am,bg_am])
-                        all_std_am = np.sqrt(all_std_am**2+std_am**2)
-                    elif bg_am is not None:
-                        all_bg_am = bg_am
-                        all_std_am = std_am
+                # Keep the individual values
+                all_bg.append(sci_bg)
+                all_std.append(sci_std)
+                if bg_am is not None:
+                    all_bg_am.append(bg_am)
+                    all_std_am.append(std_am)
             
                 bg_num = None
                 bg_str = "(BG band could not be determined)"
@@ -308,7 +298,7 @@ class QAPrimitives(GENERALPrimitives):
                     if separate_ext:
                         use_bg = bg_am
                     else:
-                        use_bg = all_bg_am
+                        use_bg = np.mean(all_bg_am)
                     bg_str = "BG band:".ljust(llen)
                     if bg_band_limits is not None:
                         bg20 = bg_band_limits[20]
@@ -373,6 +363,24 @@ class QAPrimitives(GENERALPrimitives):
                     else:
                         bg_comment = []
                     info_dict[("SCI",extver)]["comment"] = bg_comment
+
+            # Collapse extension-by-extension numbers
+            if len(all_bg)>0:
+                if len(all_bg)>1:
+                    all_std = np.std(all_bg)
+                else:
+                    all_std = all_std[0]
+                all_bg = np.mean(all_bg)
+            else:
+                all_bg = None
+            if len(all_bg_am)>0:
+                if len(all_bg_am)>1:
+                    all_std_am = np.std(all_bg_am)
+                else:
+                    all_std_am = all_std_am[0]
+                all_bg_am = np.mean(all_bg_am)
+            else:
+                all_bg_am = None
 
             # Write mean background to PHU if averaging all together
             # (or if there's only one science extension)
