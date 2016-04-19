@@ -244,23 +244,20 @@ class PhotometryPrimitives(GENERALPrimitives):
         # Loop over each input AstroData object in the input list
         for ad in rc.get_inputs_as_astrodata():
 
+            # CJS: Let's set this region to unilliminated in the DQ plane.
+            # We absolutely need to do something better here long-term.
+            # The F2 FOV is not constant, so this is a bit crappy.
             # Masking data outside the F2 FOV with 0.0. This should probably 
             # go somewhere else. EJD
             if "F2" in ad.instrument().as_pytype():
-                for sciext in ad["SCI"]:
+                for dqext in ad["DQ"]:
                     datasec = ad.data_section().as_pytype()
                     central_i = (datasec[1] - datasec[0]) / 2.0
                     central_j = (datasec[3] - datasec[2]) / 2.0
-                    radius = (central_i + central_j) / 2.0
-#                    print "datasec = ", datasec
-#                    print "central_i = ", central_i
-#                    print "central_j = ", central_j
-#                    print "radius = ", radius
-                    for i in range(len(sciext.data)):
-                        for j in range(len(sciext.data[i])):
-                            if (i - central_i)**2 + (j - central_j)**2 >= radius**2:
-#                                sciext.data[i][j] = float('NaN')
-                                sciext.data[i][j] = 0.0
+                    radius = 0.98*(central_i + central_j) / 2.0
+                    ygrid,xgrid = np.mgrid[datasec[2]:datasec[3],datasec[0]:datasec[1]]
+                    rsq = (xgrid-central_i)**2 + (ygrid-central_j)**2
+                    dqext.data[rsq>radius*radius] |= np.int16(64)
                                 
             # Get a seeing estimate from the header, if available
             seeing_est = ad.phu_get_key_value("MEANFWHM")
@@ -598,7 +595,10 @@ def _match_objcat_refcat(adinput=None):
                         else:
                             keep_num = len(objcat.data)
                         # Now sort the object catalogue -- MUST NOT alter order
-                        sorted_indices = np.argsort(objcat.data['MAG_AUTO'])[:keep_num]
+                        sorted_indices = np.argsort(np.where(
+                                objcat.data['NIMAFLAGS_ISO']>
+                                0.5*objcat.data['ISOAREA_IMAGE'],
+                                999,objcat.data['MAG_AUTO']))[:keep_num]
     
                         # FIXME - need to address the wraparound problem here
                         # if we straddle ra = 360.00 = 0.00
@@ -618,7 +618,7 @@ def _match_objcat_refcat(adinput=None):
                                     % (len(oi), extver, extver))
                                      
                         # Loop through the reference list updating the refid in the objcat
-                        # and the refmag, if we can                            
+                        # and the refmag, if we can
                         for i in range(len(oi)):
                             real_index = sorted_indices[oi[i]]
                             objcat.data['REF_NUMBER'][real_index] = refcat.data['Id'][ri[i]]
@@ -651,6 +651,7 @@ def _match_objcat_refcat(adinput=None):
                                     except KeyError:
                                         if k_ref_mag != refcat.data['kmag'][ri[i]]:
                                             objcat.header.add_comment(comment)
+
                         if debug:
                             # Show the fit
                             if 'GSAOI' in ad.types:
@@ -1418,12 +1419,15 @@ def _sextractor(ad=None, seeing_estimate=None, sxdict=None, set_saturation=False
             # for seeing estimate
             if dqext is not None:
                 dqflag = tdata["IMAFLAGS_ISO"]
+                dqpix = tdata["NIMAFLAGS_ISO"]
             else:
                 dqflag = np.zeros_like(sxflag)
+                dqpix = dqflag
             aflag = np.where(tdata["ISOAREA_IMAGE"]<20,1,0)
             tflag = np.where(tdata["B_IMAGE"]<1.1,1,0)
             eflag = np.where(tdata["ELLIPTICITY"]>0.5,1,0)
             sflag = np.where(tdata["CLASS_STAR"]<0.8,1,0)
+            iflag = np.where(dqpix>=0.9*tdata["ISOAREA_IMAGE"],1,0)
             snflag = np.where(tdata["FLUX_AUTO"] < 
                               25*tdata["FLUXERR_AUTO"], 1, 0)
 
@@ -1473,7 +1477,7 @@ def _sextractor(ad=None, seeing_estimate=None, sxdict=None, set_saturation=False
                 columns[col.name] = col
                 # Cull things <20 pixels in area or <1.1 pixels wide
                 columns[col.name].array = \
-                    columns[col.name].array[aflag+tflag==0]
+                    columns[col.name].array[aflag+tflag+iflag==0]
             result[dict_key] = columns
 
             nobj = len(columns["NUMBER"].array)
