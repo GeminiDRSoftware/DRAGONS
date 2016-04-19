@@ -577,8 +577,8 @@ class QAPrimitives(GENERALPrimitives):
                 # Requirements for an object to be used
                 # NaNs in zps get converted to zero here to avoid an error
                 # but will be eliminated at the end
-                ok = np.logical_and.reduce((isoarea>=30,
-                        np.nan_to_num(zps)>-500, flags==0, mags<90))
+                ok = np.logical_and.reduce((np.nan_to_num(zps)>-500,
+                                            flags==0, mags<90))
                 if not np.all(iflags == -999):
                     # Keep objects if pristine or <2% bad/non-linear pixels
                     ok2 = np.logical_or(iflags==0,
