@@ -121,113 +121,43 @@ class QAPrimitives(GENERALPrimitives):
             else:
                 req_bg = None
 
-            # Loop over SCI extensions
-            all_bg = []
-            all_std = []
+            # Our preferred method is to get BG values from the OBJCAT
+            bg_data = gt.measure_bg_from_objcat(ad)
             all_bg_am = []
             all_std_am = []
             bunit = None
             info_dict = {}
             for sciext in ad["SCI"]:
                 extver = sciext.extver()
-                objcat = ad["OBJCAT",extver]
 
                 bunit = sciext.get_key_value("BUNIT")
                 if bunit is None:
                     bunit = "adu"
 
-                # Set nsamples=None as default, meaning median will be taken.
-                # If background from sources in the catalog will be used,
-                # this will be overwritten with the number of sources used
-                nsamples = None
-
-                if objcat is None:
-                    log.fullinfo("No OBJCAT found for %s[SCI,%d], taking "\
-                                 "median of data instead." % 
-                                 (ad.filename,extver))
-                    bg = None
-
-                else:
-                    bg = objcat.data["BACKGROUND"]
-                    if len(bg)==0 or np.all(bg==-999):
-                        log.fullinfo("No background values in %s[OBJCAT,%d], "\
-                                     "taking median of data instead." %
-                                     (ad.filename,extver))
-                        bg = None
-                    else:
-                        flags = objcat.data["FLAGS"]
-                        dqflag = objcat.data["IMAFLAGS_ISO"]
-                        if not np.all(dqflag==-999):
-                            myflags = flags | dqflag
-                        else:
-                            myflags = flags
-                        good_bg = bg[myflags==0]
-
-                        if len(good_bg)<3:
-                            log.fullinfo("No good background values in "\
-                                         "%s[OBJCAT,%d], "\
-                                         "taking median of data instead." %
+                if bg_data[extver-1][0] is None:
+                    log.fullinfo("No good background values in "
+                        "%s[OBJCAT,%d], taking median of data instead." %
                                          (ad.filename,extver))
-                            bg = None
-                        else:
+                    bg, bg_std = gt.measure_bg_from_image(ad, extver)
+                    bg_data[extver-1] = (bg, bg_std, None)
 
-                            # sigma-clip
-                            mean = np.mean(good_bg)
-                            sigma = np.std(good_bg)
-                            good_bg = good_bg[((good_bg < mean+sigma) & 
-                                               (good_bg > mean-sigma))]
-                            
-
-                            if len(good_bg)<3:
-                                log.fullinfo("No good background values in "\
-                                             "%s[OBJCAT,%d], "\
-                                             "taking median of data instead." %
-                                             (ad.filename,extver))
-                                bg = None
-                            else:
-                                sci_bg = np.mean(good_bg)
-                                sci_std = np.std(good_bg)
-                                nsamples = len(good_bg)
-
-                if bg is None:
-                    scidata = sciext.data
-
-                    dqext = ad["DQ",extver]
-                    if dqext is not None:
-                        scidata = scidata[dqext.data==0]
-
-                    if len(scidata)<2:
-                        log.warning("No good values in %s[SCI,%d]" % 
-                                    (ad.filename,extver))
-                        continue
-                    
-                    # Roughly mask sources
-                    median = np.median(scidata)
-                    sigma = np.std(scidata)
-                    scidata = scidata[scidata<median+sigma]
-
-                    # disregard 0 (masked) values from median
-                    # F2 non-illuminated values are masked as 0
-                    scidata = scidata[scidata != 0]
-
-                    sci_bg = np.median(scidata)
-                    sci_std = np.std(scidata)
-                    
+                sci_bg, sci_std, nsamples = bg_data[extver-1]                    
                 log.fullinfo("Raw BG level = %f" % sci_bg)
 
                 # Subtract bias level from BG number
                 if bias_level is not None:
                     sci_bg -= bias_level[sciext.extver()]
                     log.fullinfo("Bias-subtracted BG level = %f" % sci_bg)
+                    bg_data[extver-1] = (sci_bg, sci_std, nsamples)
 
                 # Write sky background to science header
                 sciext.set_key_value(
                     "SKYLEVEL", sci_bg, comment="%s [%s]" % 
                     (self.keyword_comments["SKYLEVEL"],bunit))
 
-                # Get nominal zeropoint
-                npz = sciext.nominal_photometric_zeropoint()
-                if npz._val is not None:
+                # Get zeropoint (it's in ADU or electrons according to sciext)
+                npz = sciext.nominal_photometric_zeropoint().as_pytype()
+                if npz is not None:
                     # Make sure we have a number in electrons
                     if bunit == "adu":
                         gain = float(sciext.gain())
@@ -284,8 +214,6 @@ class QAPrimitives(GENERALPrimitives):
                     std_am = None
 
                 # Keep the individual values
-                all_bg.append(sci_bg)
-                all_std.append(sci_std)
                 if bg_am is not None:
                     all_bg_am.append(bg_am)
                     all_std_am.append(std_am)
@@ -365,14 +293,16 @@ class QAPrimitives(GENERALPrimitives):
                     info_dict[("SCI",extver)]["comment"] = bg_comment
 
             # Collapse extension-by-extension numbers
-            if len(all_bg)>0:
-                if len(all_bg)>1:
+            if len(bg_data)>0:
+                all_bg = [x[0] for x in bg_data if x[0] is not None]
+                if len(bg_data)>1:
                     all_std = np.std(all_bg)
                 else:
-                    all_std = all_std[0]
+                    all_std = bg_data[0][1]
                 all_bg = np.mean(all_bg)
             else:
                 all_bg = None
+            # all_bg_am is None-free
             if len(all_bg_am)>0:
                 if len(all_bg_am)>1:
                     all_std_am = np.std(all_bg_am)
