@@ -293,7 +293,7 @@ class QAPrimitives(GENERALPrimitives):
                     info_dict[("SCI",extver)]["comment"] = bg_comment
 
             # Collapse extension-by-extension numbers
-            if len(bg_dict)>0:
+            if not bg_dict:
                 all_bg = [v[0] for v in bg_dict.itervalues() if v[0] is not None]
                 if len(bg_dict)>1:
                     all_std = np.std(all_bg)
@@ -303,7 +303,7 @@ class QAPrimitives(GENERALPrimitives):
             else:
                 all_bg = None
             # all_bg_am is None-free
-            if len(all_bg_am)>0:
+            if not all_bg_am:
                 if len(all_bg_am)>1:
                     all_std_am = np.std(all_bg_am)
                 else:

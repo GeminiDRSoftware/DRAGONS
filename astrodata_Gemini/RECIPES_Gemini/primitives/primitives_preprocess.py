@@ -326,7 +326,7 @@ class PreprocessPrimitives(GENERALPrimitives):
         # Get the number of science extensions in each file
         next = np.array([ad.count_exts(SCI) for ad in adinput])
 
-        # Check whether we are scaling to zero or to 1st image
+        # Check whether we are offsetting to zero or to 1st image
         remove_zero_level = rc["remove_zero_level"]
 
         # Initialize reference BG
@@ -347,53 +347,22 @@ class PreprocessPrimitives(GENERALPrimitives):
             raise Errors.InputError("Number of science extensions in input "\
                                     "images do not match")
         else:
-
-            # Check if the images have been sky subtracted. If so, 
-            # check whether detectSources has been run more recently. 
-            # If not, it must be run to ensure that measureBG is working 
-            # on the most recent catalog. 
-            # NOTE: This check should really be replaced with a call to
-            # a new general background calculating primitive that simply
-            # takes the median of the background with the stars masked
-            # (the recentness of the catalog shouldn't matter too much 
-            # for this).
-            rerun_ds = False
-            for ad in adinput:
-                subsky = ad.phu_get_key_value('SUBSKY')
-                if subsky is not None:
-                    detecsrc = ad.phu_get_key_value('DETECSRC')
-                    if detecsrc is not None:
-                        if subsky > detecsrc:
-                            rerun_ds = True
-                            break
-                    else:
-                        rerun_ds = True
-                        break
-            if rerun_ds:
-                log.fullinfo("This data has been sky subtracted, so the " \
-                             "background level will be re-measured") 
-                rc.run("detectSources")
-                rc.run("measureBG(separate_ext=True,remove_bias=False)")
-            else:
-                # Check whether measureBG needs to be run
-                bg_list = [sciext.get_key_value("SKYLEVEL") \
-                           for ad in adinput for sciext in ad[SCI]]
-                if None in bg_list:
-                    log.fullinfo("SKYLEVEL not found, measuring background")
-                    if rc["logLevel"]=="stdinfo":
-                        log.changeLevels(logLevel="status")
-                        rc.run("measureBG(separate_ext=True,remove_bias=False)")
-                        log.changeLevels(logLevel=rc["logLevel"])
-                    else:
-                        rc.run("measureBG(separate_ext=True,remove_bias=False)")
-
             # Loop over input files
+            ref_bg_dict = {}
             for ad in adinput:
-                ref_bg_dict = {}
-                diff_dict = {}
+                # Calculate the background value from the pixels in the SCI extn
+                bg_dict = gt.measure_bg_from_image(ad, value_only=True)
+                # If this is the first (reference) image, set the reference bg levels
+                if not ref_bg_dict:
+                    if remove_zero_level:
+                        for extver in bg_dict:
+                            ref_bg_dict[extver] = 0
+                    else:
+                        ref_bg_dict = bg_dict.copy()
+                #diff_dict = {}
                 for sciext in ad[SCI]:
                     # Get background value from header
-                    bg = sciext.get_key_value("SKYLEVEL")
+                    bg = bg_dict[sciext.extver()]
                     if bg is None:
                         if "qa" in rc.context:
                             log.warning(
@@ -409,29 +378,14 @@ class PreprocessPrimitives(GENERALPrimitives):
                     
                     log.fullinfo("Background level is %.0f for %s" %
                                  (bg, ad.filename))
-                    if ref_bg is None:
-                        if remove_zero_level:
-                            log.fullinfo("Subtracting %.0f to remove " \
-                                         "zero level from reference image" %
-                                         bg)
-                            sciext.sub(bg)
-                            ref_bg_dict[(sciext.extname(),sciext.extver())]=0
-                        else:
-                            ref_bg_dict[(sciext.extname(),sciext.extver())]=bg
-                    else:
-                        ref = ref_bg[(sciext.extname(),sciext.extver())]
-                        difference = ref - bg
-                        log.fullinfo("Adding %.0f to match reference " \
-                                     "background level %.0f" % 
-                                     (difference,ref))
-                        sciext.add(difference)
-                        sciext.set_key_value(
-                            "SKYLEVEL",bg+difference,     
+                    
+                    ref = ref_bg_dict[sciext.extver()]
+                    difference = ref - bg
+                    log.fullinfo("Adding %.0f to match reference background " 
+                                     "level %.0f" % (difference,ref))
+                    sciext.add(difference)
+                    sciext.set_key_value("SKYLEVEL", ref,     
                        comment=self.keyword_comments["SKYLEVEL"])
-
-                # Store background level of first image
-                if ref_bg is None and ref_bg_dict:
-                    ref_bg = ref_bg_dict
 
                 # Add time stamps, change the filename, and
                 # append to output list
