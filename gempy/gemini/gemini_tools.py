@@ -2049,12 +2049,13 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
                        extname="PHU")
     return
 
-def measure_bg_from_objcat(ad, min_ok=5):
+def measure_bg_from_objcat(ad, min_ok=5, value_only=False):
     """
-    Return a list of triples of background values, and their std deviations
-    derived from the OBJCATs in ad, plus the number of objects used.
+    Return a dictionary, keyed by extver, of triples of background values,
+    and their std deviations derived from the OBJCATs in ad, plus the number
+    of objects used.
     If there are too few good BG measurements, then None is returned.
-    If the input has SCI extensions, then the output lists contain one tuple
+    If the input has SCI extensions, then the output dict contains one tuple
     per SCI extension, even if no OBJCAT is associated with that extension
     
     :param ad: an AstroData instance (NOT a list)
@@ -2062,19 +2063,20 @@ def measure_bg_from_objcat(ad, min_ok=5):
     :param min_ok: minimum number of good values (after sigma_clipping)
                    or else None is returned
     :type min_ok: float
+    :param value_only: return only the values, not stddevs or nsamples?
+    :type value_only: bool
     """
 
     if ad['SCI'] is not None:
         # If there are SCI extensions, use the associated OBJCATs
-        input_list = [ad['OBJCAT',extver]
-                      for extver in range(1,ad['SCI'].count_exts()+1)]
+        input_list = [ad['OBJCAT',ext.extver()] for ext in ad['SCI']]
     else:
         # Otherwise, use all the OBJCATs.
         # This is not the same, because a SCI extension might not have
         # an associated OBJCAT, but we want to return values for all SCIs
         input_list = [ext for ext in ad['OBJCAT']]
 
-    output_list = []
+    output_dict = {}
     for objcat in input_list:
         bg = None
         bg_std = None
@@ -2096,35 +2098,38 @@ def measure_bg_from_objcat(ad, min_ok=5):
                         bg = np.mean(clipped_data)
                         bg_std = np.std(clipped_data)
                         nsamples = np.sum(~clipped_data.mask)
-        output_list.append((bg, bg_std, nsamples))
+        if value_only:
+            output_dict[objcat.extver()] = bg
+        else:
+            output_dict[objcat.extver()] = (bg, bg_std, nsamples)
 
-    return output_list
+    return output_dict
 
-def measure_bg_from_image(ad, use_extver=None):
+def measure_bg_from_image(ad, use_extver=None, value_only=False):
     """
     Return background value, and its std deviation
     as measured directly from pixels in the SCI image.
     DQ and OBJMASK planes are used (if they exist)
     If extver is set, return a double for that extension,
-    otherwise return a list of doubles.
+    otherwise return a dictionary of doubles, keyed by extver.
     
     :param ad: an AstroData instance (NOT a list)
     :type ad: AstroData
     :param extver: extension number to use
     :type min_ok: int (or None)
+    :param value_only: return only the values, not stddevs?
+    :type value_only: bool
     """
     
     if use_extver is None:
-        input_list = [ad['SCI',extver]
-                      for extver in range(1,ad['SCI'].count_exts()+1)]
+        input_list = [ext for ext in ad['SCI']]
     else:
         input_list = [ad['SCI',use_extver]]
     
-    output_list = []
+    output_dict = {}
     for sciext in input_list:
         # This could happen if extver is invalid
         if sciext is None:
-            output_list.append((None,None))
             continue
 
         extver = sciext.extver()
@@ -2140,11 +2145,14 @@ def measure_bg_from_image(ad, use_extver=None):
         clipped_data = stats.sigma_clip(bg_data, 3.0)
         bg = np.median(clipped_data.data[~clipped_data.mask])
         bg_std = np.std(clipped_data)
-        output_list.append((bg, bg_std))
+        if value_only:
+            output_dict[extver] = bg
+        else:
+            output_dict[extver] = (bg, bg_std)
 
     if use_extver is None:
         # This could be a list of one tuple if 
-        return output_list
+        return output_dict
     else:
         return bg, bg_std
 
