@@ -2134,10 +2134,13 @@ def measure_bg_from_image(ad, use_extver=None, value_only=False):
 
         extver = sciext.extver()
         # Use DQ and OBJMASK to mask data
-        if ad['DQ',extver] is not None:
-            flags = ad['DQ',extver].data
-            #if ad['OBJMASK',extver] is not None:
-            #    flags |= ad['OBJMASK',extver].data
+        dqext = ad['DQ',extver]
+        if dqext is not None:
+            flags = dqext.data
+            maskext = ad['OBJMASK',extver]
+            if maskext is not None:
+                if maskext.data.shape == flags.shape:
+                    flags |= maskext.data
             bg_data = sciext.data[flags==0]
         else:
             bg_data = sciext.data
