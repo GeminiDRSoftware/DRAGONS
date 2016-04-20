@@ -2049,6 +2049,105 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
                        extname="PHU")
     return
 
+def measure_bg_from_objcat(ad, min_ok=5):
+    """
+    Return a list of triples of background values, and their std deviations
+    derived from the OBJCATs in ad, plus the number of objects used.
+    If there are too few good BG measurements, then None is returned.
+    If the input has SCI extensions, then the output lists contain one tuple
+    per SCI extension, even if no OBJCAT is associated with that extension
+    
+    :param ad: an AstroData instance (NOT a list)
+    :type ad: AstroData
+    :param min_ok: minimum number of good values (after sigma_clipping)
+                   or else None is returned
+    :type min_ok: float
+    """
+
+    if ad['SCI'] is not None:
+        # If there are SCI extensions, use the associated OBJCATs
+        input_list = [ad['OBJCAT',extver]
+                      for extver in range(1,ad['SCI'].count_exts()+1)]
+    else:
+        # Otherwise, use all the OBJCATs.
+        # This is not the same, because a SCI extension might not have
+        # an associated OBJCAT, but we want to return values for all SCIs
+        input_list = [ext for ext in ad['OBJCAT']]
+
+    output_list = []
+    for objcat in input_list:
+        bg = None
+        bg_std = None
+        nsamples = None
+        if objcat is not None:
+            bg_data = objcat.data['BACKGROUND']
+            # Don't use objects with dodgy flags
+            if len(bg_data)>0 and not np.all(bg_data==-999):
+                flags = objcat.data['FLAGS']
+                dqflags = objcat.data['IMAFLAGS_ISO']
+                if not np.all(dqflags==-999):
+                    # Non-linear/saturated pixels are OK
+                    flags |= (dqflags & 65529)
+                bg_data = bg_data[flags==0]
+                # Sigma-clip, and only give results if enough objects are left
+                if len(bg_data) > min_ok:
+                    clipped_data = stats.sigma_clip(bg_data, 3.0)
+                    if np.sum(~clipped_data.mask) > min_ok:
+                        bg = np.mean(clipped_data)
+                        bg_std = np.std(clipped_data)
+                        nsamples = np.sum(~clipped_data.mask)
+        output_list.append((bg, bg_std, nsamples))
+
+    return output_list
+
+def measure_bg_from_image(ad, use_extver=None):
+    """
+    Return background value, and its std deviation
+    as measured directly from pixels in the SCI image.
+    DQ and OBJMASK planes are used (if they exist)
+    If extver is set, return a double for that extension,
+    otherwise return a list of doubles.
+    
+    :param ad: an AstroData instance (NOT a list)
+    :type ad: AstroData
+    :param extver: extension number to use
+    :type min_ok: int (or None)
+    """
+    
+    if use_extver is None:
+        input_list = [ad['SCI',extver]
+                      for extver in range(1,ad['SCI'].count_exts()+1)]
+    else:
+        input_list = [ad['SCI',use_extver]]
+    
+    output_list = []
+    for sciext in input_list:
+        # This could happen if extver is invalid
+        if sciext is None:
+            output_list.append((None,None))
+            continue
+
+        extver = sciext.extver()
+        # Use DQ and OBJMASK to mask data
+        if ad['DQ',extver] is not None:
+            flags = ad['DQ',extver].data
+            if ad['OBJMASK',extver] is not None:
+                flags |= ad['OBJMASK',extver].data
+            bg_data = sciext.data[flags==0]
+        else:
+            bg_data = sciext.data
+
+        clipped_data = stats.sigma_clip(bg_data, 3.0)
+        bg = np.median(clipped_data.data[~clipped_data.mask])
+        bg_std = np.std(clipped_data)
+        output_list.append((bg, bg_std))
+
+    if use_extver is None:
+        # This could be a list of one tuple if 
+        return output_list
+    else:
+        return bg, bg_std
+
 def obsmode_add(ad):
     """Add 'OBSMODE' keyword to input phu for IRAF routines in GMOS package
 
