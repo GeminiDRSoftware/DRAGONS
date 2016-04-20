@@ -122,7 +122,7 @@ class QAPrimitives(GENERALPrimitives):
                 req_bg = None
 
             # Our preferred method is to get BG values from the OBJCAT
-            bg_data = gt.measure_bg_from_objcat(ad)
+            bg_dict = gt.measure_bg_from_objcat(ad)
             all_bg_am = []
             all_std_am = []
             bunit = None
@@ -134,21 +134,21 @@ class QAPrimitives(GENERALPrimitives):
                 if bunit is None:
                     bunit = "adu"
 
-                if bg_data[extver-1][0] is None:
+                if bg_dict[extver][0] is None:
                     log.fullinfo("No good background values in "
                         "%s[OBJCAT,%d], taking median of data instead." %
                                          (ad.filename,extver))
                     bg, bg_std = gt.measure_bg_from_image(ad, extver)
-                    bg_data[extver-1] = (bg, bg_std, None)
+                    bg_dict[extver] = (bg, bg_std, None)
 
-                sci_bg, sci_std, nsamples = bg_data[extver-1]                    
+                sci_bg, sci_std, nsamples = bg_dict[extver]                    
                 log.fullinfo("Raw BG level = %f" % sci_bg)
 
                 # Subtract bias level from BG number
                 if bias_level is not None:
                     sci_bg -= bias_level[sciext.extver()]
                     log.fullinfo("Bias-subtracted BG level = %f" % sci_bg)
-                    bg_data[extver-1] = (sci_bg, sci_std, nsamples)
+                    bg_dict[extver] = (sci_bg, sci_std, nsamples)
 
                 # Write sky background to science header
                 sciext.set_key_value(
@@ -293,12 +293,12 @@ class QAPrimitives(GENERALPrimitives):
                     info_dict[("SCI",extver)]["comment"] = bg_comment
 
             # Collapse extension-by-extension numbers
-            if len(bg_data)>0:
-                all_bg = [x[0] for x in bg_data if x[0] is not None]
-                if len(bg_data)>1:
+            if len(bg_dict)>0:
+                all_bg = [v[0] for v in bg_dict.itervalues() if v[0] is not None]
+                if len(bg_dict)>1:
                     all_std = np.std(all_bg)
                 else:
-                    all_std = bg_data[0][1]
+                    all_std = bg_dict.values()[0][1]
                 all_bg = np.mean(all_bg)
             else:
                 all_bg = None
