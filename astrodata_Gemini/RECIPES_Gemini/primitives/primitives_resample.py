@@ -215,17 +215,18 @@ class ResamplePrimitives(GENERALPrimitives):
                                  (key_name, key_value,key_comment))
             
             for ext in reference:
-                if ext.extname() not in ["SCI","VAR","DQ"]:
+                if ext.extname() not in ["SCI","VAR","DQ","OBJMASK"]:
                     continue
                 
                 ref_data = ext.data
                 
                 # Make a blank data array to transform into
-                if ext.extname()=="DQ":
-                    # pad the DQ plane with 1 instead of 0, and make the data
-                    # type int16
+                if ext.extname()=="DQ" or ext.extname()=="OBJMASK":
+                    # DQ and OBJMASK must be int16
+                    # pad the DQ plane with 1 instead of 0
                     trans_data = np.zeros(out_shape).astype(np.int16)
-                    trans_data += 1
+                    if ext.extname()=="DQ":
+                        trans_data += 1
                 else:
                     trans_data = np.zeros(out_shape).astype(np.float32)
                 
@@ -372,7 +373,7 @@ class ResamplePrimitives(GENERALPrimitives):
                 for ext in ad:
                     extname = ext.extname()
                     
-                    if extname not in ["SCI","VAR","DQ"]:
+                    if extname not in ["SCI","VAR","DQ","OBJMASK"]:
                         continue
                     
                     log.fullinfo("Transforming "+ad.filename+"["+extname+"]")
@@ -385,11 +386,12 @@ class ResamplePrimitives(GENERALPrimitives):
                         # (useful for noisy data, also lightning fast)
                         
                         # Make a blank data array to transform into
-                        if extname=="DQ":
-                            # pad the DQ plane with 1 instead of 0, and
-                            # make the data type int16
+                        if ext.extname()=="DQ" or ext.extname()=="OBJMASK":
+                            # DQ and OBJMASK must be int16
+                            # pad the DQ plane with 1 instead of 0
                             trans_data = np.zeros(out_shape).astype(np.int16)
-                            trans_data += 1
+                            if ext.extname()=="DQ":
+                                trans_data += 1
                         else:
                             trans_data = np.zeros(out_shape).astype(np.float32)
                         
