@@ -2129,11 +2129,13 @@ def measure_bg_from_image(ad, use_extver=None, value_only=False, gaussfit=False)
         input_list = [ad['SCI',use_extver]]
     
     output_dict = {}
-    bg, bg_std = None, None
     for sciext in input_list:
-        # This could happen if extver is invalid
+        # This can only happen if use_extver is invalid
         if sciext is None:
-            continue
+            if value_only:
+                return None
+            else:
+                return (None, None)
 
         extver = sciext.extver()
         # Use DQ and OBJMASK; don't create flags array if not needed
@@ -2165,7 +2167,8 @@ def measure_bg_from_image(ad, use_extver=None, value_only=False, gaussfit=False)
             # Eliminate bins with no data (e.g., if data are quantized)
             x = x[histdata>0]
             histdata = histdata[histdata>0]
-            g_init = models.Gaussian1D(amplitude=np.max(histdata), mean=bg, stddev=bg_std)
+            g_init = models.Gaussian1D(amplitude=np.max(histdata),
+                                       mean=bg, stddev=bg_std)
             fit_g = fitting.LevMarLSQFitter()
             g = fit_g(g_init, x, histdata)
             bg, bg_std = g.mean.value, g.stddev.value
@@ -2176,10 +2179,10 @@ def measure_bg_from_image(ad, use_extver=None, value_only=False, gaussfit=False)
             output_dict[extver] = (bg, bg_std)
 
     if use_extver is None:
-        # This could be a list of one tuple if 
+        # This could be a dict of one tuple if only one SCI extn 
         return output_dict
     else:
-        return bg, bg_std
+        return output_dict[use_extver]
 
 def obsmode_add(ad):
     """Add 'OBSMODE' keyword to input phu for IRAF routines in GMOS package
