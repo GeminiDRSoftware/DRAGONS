@@ -2105,7 +2105,7 @@ def measure_bg_from_objcat(ad, min_ok=5, value_only=False):
 
     return output_dict
 
-def measure_bg_from_image(ad, use_extver=None, value_only=False):
+def measure_bg_from_image(ad, use_extver=None, value_only=False, gaussfit=False):
     """
     Return background value, and its std deviation
     as measured directly from pixels in the SCI image.
@@ -2119,6 +2119,8 @@ def measure_bg_from_image(ad, use_extver=None, value_only=False):
     :type min_ok: int (or None)
     :param value_only: return only the values, not stddevs?
     :type value_only: bool
+    :param gaussfit: fit Gaussian to pixel values, instead of sigma-clipping?
+    :type gaussfit: bool
     """
     
     if use_extver is None:
@@ -2127,27 +2129,47 @@ def measure_bg_from_image(ad, use_extver=None, value_only=False):
         input_list = [ad['SCI',use_extver]]
     
     output_dict = {}
+    bg, bg_std = None, None
     for sciext in input_list:
         # This could happen if extver is invalid
         if sciext is None:
             continue
 
         extver = sciext.extver()
-        # Use DQ and OBJMASK to mask data
+        # Use DQ and OBJMASK; don't create flags array if not needed
         dqext = ad['DQ',extver]
+        maskext = ad['OBJMASK',extver]
         if dqext is not None:
             flags = dqext.data
-            maskext = ad['OBJMASK',extver]
             if maskext is not None:
                 if maskext.data.shape == flags.shape:
                     flags |= maskext.data
-            bg_data = sciext.data[flags==0]
+            bg_data = sciext.data[flags==0].flatten()
+        elif maskext is not None:
+            if maskext.data.shape == sciext.data.shape:
+                bg_data = sciext.data[maskext.data==0].flatten()
         else:
-            bg_data = sciext.data
+            bg_data = sciext.data.flatten()
 
-        clipped_data = stats.sigma_clip(bg_data, 3.0)
-        bg = np.median(clipped_data.data[~clipped_data.mask])
+        clipped_data = stats.sigma_clip(bg_data, 2.0, iters=5)
+        clipped_data = clipped_data.data[~clipped_data.mask]
+        bg = np.median(clipped_data)
         bg_std = np.std(clipped_data)
+        if gaussfit:
+            binsize = bg_std*0.1
+            # Fit from -5 to +1 sigma
+            bins = np.arange(bg-5*bg_std, bg+bg_std, binsize)
+            histdata, _ = np.histogram(bg_data, bins)
+            # bin centers
+            x = bins[:-1] + 0.5*(bins[1]-bins[0])
+            # Eliminate bins with no data (e.g., if data are quantized)
+            x = x[histdata>0]
+            histdata = histdata[histdata>0]
+            g_init = models.Gaussian1D(amplitude=np.max(histdata), mean=bg, stddev=bg_std)
+            fit_g = fitting.LevMarLSQFitter()
+            g = fit_g(g_init, x, histdata)
+            bg, bg_std = g.mean.value, g.stddev.value
+
         if value_only:
             output_dict[extver] = bg
         else:
