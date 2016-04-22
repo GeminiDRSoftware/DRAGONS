@@ -145,6 +145,12 @@ class PreprocessPrimitives(GENERALPrimitives):
         # Determine the suffix for this primitive
         suffix = rc["suffix"]
         
+        # Maximum number of sky frames to use
+        max_skies = rc["max_skies"]
+        
+        # Create a timedelta object using the value of the "time" parameter
+        seconds = datetime.timedelta(seconds=rc["time"])
+
         # This primitives requires at least one input science AstroData object
         # and at least one input sky AstroData object
         ad_science_list = rc.get_inputs_as_astrodata()
@@ -203,6 +209,9 @@ class PreprocessPrimitives(GENERALPrimitives):
                 # this science AstroData object. Initialize the list of sky
                 # AstroDataRecord objects
                 adr_sky_list = []
+                # Since there are no timestamps in these records, keep a list
+                # of time offsets in case we need to limit the number of skies
+                delta_time_list = []
                 
                 # Use the ORIGNAME of the science AstroData object as the key
                 # of the dictionary 
@@ -242,15 +251,12 @@ class PreprocessPrimitives(GENERALPrimitives):
                         # using the appropriate descriptor
                         ad_sky_datetime = ad_sky.ut_datetime()
                         
-                        # Create a timedelta object using the value of the
-                        # "time" parameter
-                        seconds = datetime.timedelta(seconds=rc["time"])
+
+                        delta_time = abs(ad_science_datetime - ad_sky_datetime)
                         
                         # Select only those sky AstroData objects observed
                         # within "time" seconds of the science AstroData object
-                        if (same_cfg and \
-                            abs(ad_science_datetime - ad_sky_datetime) \
-                            < seconds):
+                        if (same_cfg and delta_time < seconds):
                             
                             # Get the distance of the science and sky AstroData
                             # objects using the x_offset and y_offset
@@ -264,6 +270,12 @@ class PreprocessPrimitives(GENERALPrimitives):
                             # science AstroData object
                             if (delta_sky > rc["distance"]):
                                 adr_sky_list.append(RCR.AstroDataRecord(ad_sky))
+                                delta_time_list.append(delta_time)
+                                
+                    # Now cull the list of associated skies if necessary
+                    if max_skies is not None and len(adr_sky_list) > max_skies:
+                        sorted_list = sorted(zip(delta_time_list, adr_sky_list))
+                        adr_sky_list = [x[1] for x in sorted_list[:max_skies]]
                     
                     # Update the dictionary with the list of sky
                     # AstroDataRecord objects associated with this science
