@@ -43,7 +43,6 @@ class LocalManager(object):
         fsc.fits_dbname = basename(self._db_path)
         fsc.db_path = self._db_path
         fsc.fits_database = 'sqlite:///' + fsc.db_path
-        reload(fsc)
         reload(orm)
         self.session = orm.sessionfactory()
 
