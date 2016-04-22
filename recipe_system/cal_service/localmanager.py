@@ -1,12 +1,24 @@
 import os
 from os.path import abspath, basename, dirname
+import warnings
 
+from sqlalchemy.exc import SAWarning
 from gemini_calmgr import fits_storage_config as fsc
 from gemini_calmgr import gemini_metadata_utils as gmu
 from gemini_calmgr import orm
 from gemini_calmgr.cal import get_cal_object
 
 __all__ = ['LocalManager']
+
+# SQLAlchemy complains about SQLite details. We can't do anything about the
+# data types involved, because the ORM files are meant for PostgreSQL.
+# The queries work, though, so we just ignore the warnings
+warnings.filterwarnings('ignore',
+    "Dialect sqlite\+pysqlite does \*not\* support Decimal objects natively, "
+    "and SQLAlchemy must convert from floating point - rounding errors and "
+    "other issues may occur. Please consider storing Decimal numbers as "
+    "strings or integers on this platform for lossless storage\.",
+    SAWarning, r'^sqlalchemy\.sql\.sqltypes$')
 
 extra_descript = {
     'GMOS_NODANDSHUFFLE': 'nodandshuffle',
@@ -105,7 +117,7 @@ class LocalManager(object):
 
         for cal in cals:
             if cal.diskfile.present:
-                path = os.path.join(fsc.storage_root, cal.diskfile.file.path,
+                path = os.path.join(fsc.storage_root, cal.diskfile.path,
                                     cal.diskfile.file.name)
 
                 return ('file://{}'.format(path), cal.diskfile.data_md5)
