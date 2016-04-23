@@ -106,12 +106,41 @@ class LocalManager(object):
         self.session.commit()
 
     def ingest_file(self, path):
+        """Registers a file into the database
+
+        Parameters
+        ----------
+        path: string
+            Path to the file. It can be either absolute or relative
         """
-        """
-        directory = dirname(path)
+        directory = abspath(dirname(path))
         filename = basename(path)
 
         ingest.ingest_file(self.session, filename, directory)
+
+    def ingest_directory(self, path, walk=False, verbose=False):
+        """Registers into the database all FITS files under a directory
+
+        Parameters
+        ----------
+        path: string, optional
+            Path to the root directory. It can be either absolute or
+            relative
+        walk: bool, optional
+            If `False` (default), only the files in the top level of the
+            directory will be considered.
+
+            If `True`, all the subdirectories under the path will be
+            explored in search of FITS files.
+        verbose: bool, optional
+            Defaults to `False`. If `True`, a brief line will be printed
+            for every ingested file.
+        """
+
+        for root, dirs, files in os.walk(path):
+            for fname in filter(lambda l: l.endswith('.fits'), files):
+                self.ingest_file(os.path.join(root, fname), verbose=verbose)
+                print "Ingested {}/{}".format(root, fname)
 
     def calibration_search(self, rq, fullResult=False):
         """Performs a search in the database using the requested criteria.
