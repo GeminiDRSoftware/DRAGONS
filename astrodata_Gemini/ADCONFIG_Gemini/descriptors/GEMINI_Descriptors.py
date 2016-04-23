@@ -1525,33 +1525,28 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         return ret_dv
     
     def wavelength_band(self, dataset, **args):
-        # The wavelength band can only be obtained from data that has does not
-        # have an AstroData Type of IMAGE (since there is no Gemini-level
-        # lookup table to convert the filter name to a more standard band)
-        if "IMAGE" not in dataset.types:
-            ctrl_wave = dataset.central_wavelength(asMicrometers=True)
-            
-            min_diff = None
-            band = None
-            
-            for std_band, std_wave in self.std_wavelength_band.items():
-                diff = abs(std_wave - ctrl_wave)
-                if min_diff is None or diff < min_diff:
-                    min_diff = diff
-                    band = std_band
-            
-            if band is None:
-                raise Errors.CalcError()
-            else:
-                ret_wavelength_band = band
+
+        ctrl_wave = dataset.effective_wavelength(output_units="micrometers")
+
+        min_diff = None
+        band = None
+        
+        for std_band, std_wave in self.std_wavelength_band.items():
+            diff = abs(std_wave - ctrl_wave)
+            if min_diff is None or diff < min_diff:
+                min_diff = diff
+                band = std_band
+        
+        if band is None:
+            raise Errors.CalcError()
         else:
-            raise Errors.DescriptorTypeError()
+            ret_wavelength_band = band
         
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_wavelength_band, name="wavelength_band",
                                  ad=dataset)
         return ret_dv
-    
+
     def wavelength_reference_pixel(self, dataset, **args):
         # Since this descriptor function accesses keywords in the headers of
         # the pixel data extensions, always construct a dictionary where the

@@ -21,7 +21,6 @@ from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import Nominal_Zeropoints
 from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSPixelScale
 from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSReadModes
 from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSThresholdValues
-from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSFilterWavelength
 
 # ------------------------------------------------------------------------------
 class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
@@ -1445,38 +1444,6 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
                                  name="saturation_level", ad=dataset)
         return ret_dv
     
-    def wavelength_band(self, dataset, **args):
-        if "IMAGE" in dataset.types:
-            # If imaging, associate the filter name with a central wavelength
-            filter_table = GMOSFilterWavelength.filter_wavelength
-            filter = str(dataset.filter_name(pretty=True))
-            if filter in filter_table:
-                ctrl_wave = filter_table[filter]
-            else:
-                raise Errors.TableKeyError()
-        else:
-            ctrl_wave = dataset.central_wavelength(asMicrometers=True)
-        
-        min_diff = None
-        band = None
-        
-        for std_band, std_wave in self.std_wavelength_band.items():
-            diff = abs(std_wave - ctrl_wave)
-            if min_diff is None or diff < min_diff:
-                min_diff = diff
-                band = std_band
-        
-        if band is None:
-            raise Errors.CalcError()
-        
-        else:
-            ret_wavelength_band = band
-        
-        # Instantiate the return DescriptorValue (DV) object
-        ret_dv = DescriptorValue(ret_wavelength_band, name="wavelength_band",
-                                 ad=dataset)
-        return ret_dv
-
     def wcs_ra(self, dataset, **args):
         # Return the RA derived from the WCS
         # This GMOS version simply returns the reference value for each coordinate

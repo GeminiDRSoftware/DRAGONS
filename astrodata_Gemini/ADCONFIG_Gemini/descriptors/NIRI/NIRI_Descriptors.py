@@ -13,7 +13,6 @@ from GEMINI_Descriptors import GEMINI_DescriptorCalc
 from astrodata_Gemini.ADCONFIG_Gemini.lookups.NIRI import NIRISpecDict
 from astrodata_Gemini.ADCONFIG_Gemini.lookups.NIRI import NIRIFilterMap
 from astrodata_Gemini.ADCONFIG_Gemini.lookups.NIRI import Nominal_Zeropoints
-from astrodata_Gemini.ADCONFIG_Gemini.lookups.NIRI import NIRIFilterWavelength
 
 # replaces the former lookup of the FITS bintable, nsappwavepp.fits
 from astrodata_Gemini.ADCONFIG_Gemini.lookups.IR import nsappwavepp
@@ -656,37 +655,6 @@ class NIRI_DescriptorCalc(GEMINI_DescriptorCalc):
         return ret_dv
     
     niriSpecDict = None
-    
-    def wavelength_band(self, dataset, **args):
-        if "IMAGE" in dataset.types:
-            # If imaging, associate the filter name with a central wavelength
-            filter_table = NIRIFilterWavelength,filter_wavelength
-            filter = str(dataset.filter_name(pretty=True))
-            if filter in filter_table:
-                ctrl_wave = filter_table[filter]
-            else:
-                raise Errors.TableKeyError()
-        else:
-            ctrl_wave = dataset.central_wavelength(asMicrometers=True)
-        
-        min_diff = None
-        band = None
-        
-        for std_band, std_wave in self.std_wavelength_band.items():
-            diff = abs(std_wave - ctrl_wave)
-            if min_diff is None or diff < min_diff:
-                min_diff = diff
-                band = std_band
-        
-        if band is None:
-            raise Errors.CalcError()
-        else:
-            ret_wavelength_band = band
-        
-        # Instantiate the return DescriptorValue (DV) object
-        ret_dv = DescriptorValue(ret_wavelength_band, name="wavelength_band",
-                                 ad=dataset)
-        return ret_dv
     
     def well_depth_setting(self, dataset, **args):
         # Determine the VDDUC and VDETCOM detector bias voltage post exposure
