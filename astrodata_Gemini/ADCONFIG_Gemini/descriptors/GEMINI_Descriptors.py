@@ -505,6 +505,8 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         if 'IMAGE' in dataset.types:
             wavelength_dict = FilterWavelengths.filterWavelengths
             inst = dataset.instrument().as_pytype()
+            if inst in ['GMOS-N','GMOS-S']:
+                inst = 'GMOS'
             filter_name = dataset.filter_name(pretty=True).as_pytype()
             if (inst,filter_name) in wavelength_dict:
                 effective_wavelength = wavelength_dict[(inst,filter_name)]
