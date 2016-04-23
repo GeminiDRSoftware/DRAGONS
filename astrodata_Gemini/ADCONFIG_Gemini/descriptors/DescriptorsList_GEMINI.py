@@ -22,6 +22,7 @@
     DD("disperser", pytype=str),
     DD("dispersion", pytype=float),
     DD("dispersion_axis", pytype=int),
+    DD("effective_wavelength", pytype=float),
     DD("elevation", pytype=float),
     DD("exposure_time", pytype=float),
     DD("filter_name", pytype=str),

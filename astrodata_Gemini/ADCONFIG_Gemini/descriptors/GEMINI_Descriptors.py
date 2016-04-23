@@ -16,6 +16,7 @@ from GEMINI_Keywords import GEMINI_KeyDict
 
 from astrodata_Gemini.ADCONFIG_Gemini.lookups import NominalExtinction
 from astrodata_Gemini.ADCONFIG_Gemini.lookups import WavelengthBand
+from astrodata_Gemini.ADCONFIG_Gemini.lookups import FilterWavelengths
 # ------------------------------------------------------------------------------
 class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
     # Updating the global key dictionary with the local key dictionary
@@ -494,6 +495,42 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_dispersion_axis, name="dispersion_axis",
                                  ad=dataset)
+        return ret_dv
+    
+    def effective_wavelength(self, dataset, output_units=None, **args):
+        
+        if not output_units in ["micrometers","nanometers","angstroms"]:
+            output_units = "meters"
+
+        if 'IMAGE' in dataset.types:
+            wavelength_dict = FilterWavelengths.filterWavelengths
+            inst = dataset.instrument().as_pytype()
+            filter_name = dataset.filter_name(pretty=True).as_pytype()
+            if (inst,filter_name) in wavelength_dict:
+                effective_wavelength = wavelength_dict[(inst,filter_name)]
+            elif ('*',filter_name) in wavelength_dict:
+                effective_wavelength = wavelength_dict[('*',filter_name)]
+            else:
+                effective_wavelength = None
+        elif 'SPECT' in dataset.types:
+            # Revert to central_wavelength() if this is a spectrum
+            # Return in microns for consistency with filter LUT
+            effective_wavelength = dataset.central_wavelength(
+                                                asMicrometers=True)
+            
+        if effective_wavelength is None:
+            if hasattr(dataset, "exception_info"):
+                raise dataset.exception_info
+        else:
+            effective_wavelength = float(effective_wavelength)
+        
+        ret_effective_wavelength = GemCalcUtil.convert_units(
+                input_units="micrometers", input_value=effective_wavelength,
+                output_units=output_units)
+
+        ret_dv = DescriptorValue(ret_effective_wavelength,
+                                 name="effective_wavelength", ad=dataset)
+        
         return ret_dv
     
     def exposure_time(self, dataset, **args):

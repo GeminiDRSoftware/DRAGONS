@@ -1523,6 +1523,70 @@ class CalculatorInterface(object):
         except:
             raise
 
+    def effective_wavelength(self, format=None, **args):
+        """
+        Return the effective wavelength value (intended for imaging)
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param output_units: units of the returned wavelength value
+        :type output_units: string
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
+        :rtype: dictionary containing one or more float(s)
+        :return: the effective wavelength (in meters as default) of the 
+                 observation
+        """
+        try:
+            self._lazyloadCalculator()
+            keydict = self.descriptor_calculator._specifickey_dict
+            key = "key_effective_wavelength"
+            keyword = None
+            if key in keydict:
+                keyword = keydict[key]
+
+            if not hasattr(self.descriptor_calculator, "effective_wavelength"):
+                if keyword is not None:
+                    retval = self.phu_get_key_value(keyword)
+                    if retval is None:
+                        if hasattr(self, "exception_info"):
+                            raise Errors.DescriptorError(self.exception_info)
+                else:
+                    msg = ("Unable to find an appropriate descriptor "
+                           "function or a default keyword for 'effective_wavelength'")
+                    raise Errors.DescriptorInfrastructureError(msg)
+            else:
+                try:
+                    retval = self.descriptor_calculator.effective_wavelength(self, **args)
+                except Exception as e:
+                    raise Errors.DescriptorError(e)
+
+            
+            ret = DescriptorValue( retval,
+                                   format = format,
+                                   name = "effective_wavelength",
+                                   keyword = keyword,
+                                   ad = self,
+                                   pytype = float )
+            return ret
+
+        except Errors.DescriptorError:
+            if self.descriptor_calculator.throwExceptions == True:
+                raise
+            else:
+                if not hasattr(self, "exception_info"):
+                    setattr(self, "exception_info", sys.exc_info()[1])
+                ret = DescriptorValue( None,
+                                       format = format,
+                                       name = "effective_wavelength",
+                                       keyword = keyword,
+                                       ad = self,
+                                       pytype = None )
+                return ret
+        except:
+            raise
+
     def elevation(self, format=None, **args):
         """
         Return the elevation value

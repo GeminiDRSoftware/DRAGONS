@@ -435,6 +435,23 @@ class docstrings:
         """
         pass
     
+    def effective_wavelength(self):
+        """
+        Return the effective wavelength value (intended for imaging)
+        
+        :param dataset: the dataset
+        :type dataset: AstroData
+        :param output_units: units of the returned wavelength value
+        :type output_units: string
+        :param format: the return format
+        :type format: string
+        :rtype: float as default (i.e., format=None)
+        :rtype: dictionary containing one or more float(s)
+        :return: the effective wavelength (in meters as default) of the 
+                 observation
+        """
+        pass
+
     def elevation(self):
         """
         Return the elevation value

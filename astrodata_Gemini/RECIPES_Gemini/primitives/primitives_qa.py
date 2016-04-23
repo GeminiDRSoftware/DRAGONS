@@ -1662,7 +1662,7 @@ def _strehl(ad, sources):
     # Instantiate the log
     log = logutils.get_logger(__name__)
     
-    wavelength = ad.central_wavelength(asMicrometers=True) * 1.0e-6
+    wavelength = ad.effective_wavelength()
     # Leave if there's no wavelength information
     if wavelength == 0.0 or wavelength is None:
         return None, None
