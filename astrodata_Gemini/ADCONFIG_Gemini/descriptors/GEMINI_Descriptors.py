@@ -1526,16 +1526,12 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
     
     def wavelength_band(self, dataset, **args):
 
+        # Get the effective wavelength of this observation
         ctrl_wave = dataset.effective_wavelength(output_units="micrometers")
 
-        min_diff = None
-        band = None
-        
-        for std_band, std_wave in self.std_wavelength_band.items():
-            diff = abs(std_wave - ctrl_wave)
-            if min_diff is None or diff < min_diff:
-                min_diff = diff
-                band = std_band
+        # Sort dict by wavelength difference: return key of first element
+        band = sorted(self.std_wavelength_band.iteritems(),
+                       key=lambda x: abs(x[1]-ctrl_wave))[0][0]
         
         if band is None:
             raise Errors.CalcError()
