@@ -7,8 +7,9 @@ from gemini_calmgr import fits_storage_config as fsc
 from gemini_calmgr import gemini_metadata_utils as gmu
 from gemini_calmgr import orm
 from gemini_calmgr.cal import get_cal_object
+from gemini_calmgr.orm import createtables
 
-__all__ = ['LocalManager']
+__all__ = ['LocalManager, LocalManagerError']
 
 # SQLAlchemy complains about SQLite details. We can't do anything about the
 # data types involved, because the ORM files are meant for PostgreSQL.
@@ -36,6 +37,8 @@ args_for_cals = {
     'processed_flat': ('flat', {'processed': True})
 }
 
+class LocalManagerError(Exception):
+    pass
 
 class LocalManager(object):
     def __init__(self, db_path):
@@ -44,19 +47,56 @@ class LocalManager(object):
         self._reset()
 
     def _reset(self):
-        """Modifies the gemini_calmgr setup and reloads the involved config and
-        orm modules. Then it sets a new database session object for this
-        instance.
-
-        It is a bit kludgy, but Fits Storage was not designed to change
-        databases on the fly.
+        """Modifies the gemini_calmgr setup and reloads some modules that
+        are affected by the change. Then it sets a new database session object
+        for this instance.
         """
+
         fsc.storage_root = abspath(dirname(self._db_path))
         fsc.fits_dbname = basename(self._db_path)
         fsc.db_path = self._db_path
         fsc.fits_database = 'sqlite:///' + fsc.db_path
+
+        # The reloading is kludgy, but Fits Storage was not designed to change
+        # databases on the fly, and we're reusing its infrastructure.
+        #
+        # This will have to do for the time being
         reload(orm)
+        reload(createtables)
+
         self.session = orm.sessionfactory()
+
+    def init_database(self, wipe=True):
+        """Initializes a SQLite database with the tables required for the
+        calibration manager.
+
+        Parameters
+        ----------
+        wipe: bool, optional
+            If the database exists and this parameter is `True` (default
+            value), the file will be removed and recreated before
+            initializing.
+
+        Raises
+        ------
+        IOError
+            If the file exists and there a system error when trying to
+            remove it (eg. lack of permissions).
+
+        LocalManagerError
+            If the file exists and `wipe` was `False`
+        """
+
+        if os.path.exists(fsc.db_path):
+            if wipe:
+                os.remove(fsc.db_path)
+                # Shouldn't be needed, but just in case...
+                self._reset()
+            else:
+                errmsg = "{!r} exists and won't be wiped".format(fsc.db_path)
+                raise LocalManagerError(errmsg)
+
+        createtables.create_tables(self.session)
 
     def calibration_search(self, rq, fullResult=False):
         """Performs a search in the database using the requested criteria.
@@ -80,7 +120,7 @@ class LocalManager(object):
             being the URL to a calibration file, and the second its MD5 sum.
 
             When an error occurs, the first element in the tuple will be
-            ``None``, and the second a string describing the error.
+            `None`, and the second a string describing the error.
         """
         from datetime import datetime
 
