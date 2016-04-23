@@ -6,8 +6,12 @@ from sqlalchemy.exc import SAWarning
 from gemini_calmgr import fits_storage_config as fsc
 from gemini_calmgr import gemini_metadata_utils as gmu
 from gemini_calmgr import orm
+from gemini_calmgr.orm import file
+from gemini_calmgr.orm import diskfile
+from gemini_calmgr.orm import preview
 from gemini_calmgr.cal import get_cal_object
 from gemini_calmgr.orm import createtables
+from gemini_calmgr.utils import ingest
 
 __all__ = ['LocalManager, LocalManagerError']
 
@@ -62,7 +66,11 @@ class LocalManager(object):
         #
         # This will have to do for the time being
         reload(orm)
+        reload(file)
+        reload(preview)
+        reload(diskfile)
         reload(createtables)
+        reload(ingest)
 
         self.session = orm.sessionfactory()
 
@@ -90,13 +98,20 @@ class LocalManager(object):
         if os.path.exists(fsc.db_path):
             if wipe:
                 os.remove(fsc.db_path)
-                # Shouldn't be needed, but just in case...
-                self._reset()
             else:
                 errmsg = "{!r} exists and won't be wiped".format(fsc.db_path)
                 raise LocalManagerError(errmsg)
 
         createtables.create_tables(self.session)
+        self.session.commit()
+
+    def ingest_file(self, path):
+        """
+        """
+        directory = dirname(path)
+        filename = basename(path)
+
+        ingest.ingest_file(self.session, filename, directory)
 
     def calibration_search(self, rq, fullResult=False):
         """Performs a search in the database using the requested criteria.
