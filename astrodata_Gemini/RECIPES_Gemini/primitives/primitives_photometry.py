@@ -359,7 +359,6 @@ class PhotometryPrimitives(GENERALPrimitives):
                     centroid_function=centroid_function,
                     seeing_estimate=seeing_est)
 
-
             # Run some profiling code on the best sources to produce
             # a more IRAF-like FWHM number
             # This will fill in a couple more columns in the OBJCAT
@@ -1237,7 +1236,7 @@ def _average_each_cluster( xyArray, pixApart=10.0 ):
 
 
 def _sextractor(ad=None, seeing_estimate=None, sxdict=None, set_saturation=False):
-
+    
     # Get the log
     log = logutils.get_logger(__name__)
 
@@ -1251,8 +1250,8 @@ def _sextractor(ad=None, seeing_estimate=None, sxdict=None, set_saturation=False
     ad.write(tmpfn,rename=False,clobber=True)
 
     result = {}
-    for sciext in ad["SCI"]:
 
+    for sciext in ad["SCI"]:
         extver = sciext.extver()
         dict_key = ("SCI",extver)
 
@@ -1564,9 +1563,6 @@ def _test_sextractor_version():
 
 def _profile_sources(ad):
     
-    #print 'profiling'
-    #import datetime
-    #now = datetime.datetime.now()
     for sciext in ad["SCI"]:
         extver = sciext.extver()
         objcat = ad["OBJCAT",extver]
@@ -1581,6 +1577,8 @@ def _profile_sources(ad):
         catmaxflux = objcat.data.field("FLUX_MAX")
         data = sciext.data
         stamp_size = max(10,int(0.5/sciext.pixel_scale()))
+        # Make a default grid to use for distance measurements
+        dist = np.mgrid[-stamp_size:stamp_size,-stamp_size:stamp_size]+0.5
 
         fwhm_list = []
         e50d_list = []
@@ -1614,19 +1612,15 @@ def _profile_sources(ad):
             # Get image stamp around center point
             stamp=data[int(yc)-sz:int(yc)+sz,int(xc)-sz:int(xc)+sz]
 
-            # Get an array of the coordinates of the centers of all the pixels 
-            # in the stamp
-            dist = np.mgrid[int(yc)-sz:int(yc)+sz,int(xc)-sz:int(xc)+sz] + 0.5
-
-            # Subtract the center coordinates
-            dist[0] -= yc
-            dist[1] -= xc
+            # Reset grid to correct center coordinates
+            dist[0] += int(yc)-yc
+            dist[1] += int(xc)-xc
     
             # Square root of the sum of the squares of the distances
-            dist = np.sqrt(np.sum(dist**2,axis=0))
+            rdist = np.sqrt(np.sum(dist**2,axis=0))
 
             # Radius and flux arrays for the radial profile
-            rpr = dist.flatten()
+            rpr = rdist.flatten()
             rpv = stamp.flatten() - bg
     
             # Sort by the radius
@@ -1654,20 +1648,20 @@ def _profile_sources(ad):
                 possible_outer = nearest_r[nearest_f>=halfflux]
                 if possible_outer.size>0:
                     outer = np.max(possible_outer)
-                    hwhm = (inner + outer) / 2.0
+                    hwhm = 0.5 * (inner + outer)
                 else:
                     hwhm = None
             else:
                 hwhm = None
 
-            # Resort by radius
-            sort_order = np.argsort(rpr) 
-            radius = rpr[sort_order]
-            flux = rpv[sort_order]
+            # Resort by radius [CJS: Not needed!]
+            #sort_order = np.argsort(rpr) 
+            #radius = rpr[sort_order]
+            #flux = rpv[sort_order]
 
             # Find the first radius that encircles half the total flux
             sumflux = np.cumsum(flux)
-            halfflux = tf / 2.0
+            halfflux = 0.5 * tf
             first_50pflux = np.where(sumflux>=halfflux)[0]
             if first_50pflux.size>0:
                 e50r = radius[first_50pflux[0]]
@@ -1687,12 +1681,6 @@ def _profile_sources(ad):
         objcat.data.field("PROFILE_FWHM")[:] = np.array(fwhm_list)
         objcat.data.field("PROFILE_EE50")[:] = np.array(e50d_list)
         objcat.data.field("FLUX_MAX")[:] = np.array(newmax_list)
-
-        #print "  mean FWHM %.2f" % np.mean(fwhm_array[fwhm_array!=-999], dtype=np.float64)
-        #print "  mean E50D %.2f" % np.mean(e50d_array[e50d_array!=-999], dtype=np.float64)
-
-    #elap = datetime.datetime.now() - now
-    #print "time  %.2f s" % ((elap.seconds*10**6 + elap.microseconds)/10.**6)
 
     return ad
 
