@@ -2105,7 +2105,7 @@ def measure_bg_from_objcat(ad, min_ok=5, value_only=False):
 
     return output_dict
 
-def measure_bg_from_image(ad, use_extver=None, value_only=False, gaussfit=False):
+def measure_bg_from_image(ad, use_extver=None, sampling=10, value_only=False, gaussfit=True):
     """
     Return background value, and its std deviation
     as measured directly from pixels in the SCI image.
@@ -2116,7 +2116,9 @@ def measure_bg_from_image(ad, use_extver=None, value_only=False, gaussfit=False)
     :param ad: an AstroData instance (NOT a list)
     :type ad: AstroData
     :param extver: extension number to use
-    :type min_ok: int (or None)
+    :type extver: int (or None)
+    :param sampling: 1-in-n sampling factor
+    :type sampling: int
     :param value_only: return only the values, not stddevs?
     :type value_only: bool
     :param gaussfit: fit Gaussian to pixel values, instead of sigma-clipping?
@@ -2153,11 +2155,10 @@ def measure_bg_from_image(ad, use_extver=None, value_only=False, gaussfit=False)
         else:
             bg_data = sciext.data.flatten()
 
-        clipped_data = stats.sigma_clip(bg_data, 2.0, iters=5)
-        clipped_data = clipped_data.data[~clipped_data.mask]
-        bg = np.median(clipped_data)
-        bg_std = np.std(clipped_data)
+        bg_data = bg_data[::sampling]
         if gaussfit:
+            bg = np.median(bg_data)
+            bg_std = np.std(bg_data)
             binsize = bg_std*0.1
             # Fit from -5 to +1 sigma
             bins = np.arange(bg-5*bg_std, bg+bg_std, binsize)
@@ -2171,7 +2172,13 @@ def measure_bg_from_image(ad, use_extver=None, value_only=False, gaussfit=False)
                                        mean=bg, stddev=bg_std)
             fit_g = fitting.LevMarLSQFitter()
             g = fit_g(g_init, x, histdata)
-            bg, bg_std = g.mean.value, g.stddev.value
+            bg, bg_std = g.mean.value, abs(g.stddev.value)
+        else:
+            # Sigma-clipping will screw up the stats of course!
+            clipped_data = stats.sigma_clip(bg_data, 2.0, iters=2)
+            clipped_data = clipped_data.data[~clipped_data.mask]
+            bg = np.median(clipped_data)
+            bg_std = np.std(clipped_data)
 
         if value_only:
             output_dict[extver] = bg
