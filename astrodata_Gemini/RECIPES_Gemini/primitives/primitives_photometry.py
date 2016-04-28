@@ -11,13 +11,16 @@ from copy import deepcopy
 
 from astrodata import AstroData
 from astrodata.utils import Errors
-from astrodata.utils import Lookups
 from astrodata.utils import logutils
 from astrodata.utils.ConfigSpace import lookup_path
 
+from astrodata_Gemini.ADCONFIG_Gemini.lookups import ColorCorrections
+    
 from gempy.library import astrotools as at
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini.gemini_catalog_client import get_fits_table
+
+from datetime import datetime
 
 from primitives_GENERAL import GENERALPrimitives
 from pifgemini import mask as pifmask
@@ -104,7 +107,7 @@ class PhotometryPrimitives(GENERALPrimitives):
             # Fetch the reference catalog here. Really, we should fetch a separate one for each
             # extension, but it turns out that you can only actually do a cone search (ie a 
             # circular area), so there's a huge overlap between the results anyway, and in fact the separate
-            # ad[SCI]s don't report separate RA,Dec anyway, unless de decdoe the WCS directly.
+            # ad[SCI]s don't report separate RA,Dec anyway, unless we decode the WCS directly.
             # More to the point, with 6 amp mode, doing 6 queries to an external server is annoyingly slow,
             # so for now at least I'm moving it to do one query and store the same refcat for each extver.
             # PH 20111202
@@ -506,17 +509,12 @@ def _match_objcat_refcat(adinput=None):
         # Loop over each input AstroData object in the input list
         for ad in adinput_list:
             filter_name = ad.filter_name(pretty=True).as_pytype()
-            filter_name = filter_name.lower()
-            if filter_name in ['u', 'g', 'r', 'i', 'z', 'j', 'h']:
-                magcolname = filter_name+'mag'
-                magerrcolname = filter_name+'mag_err'
-            elif filter_name in ['k', 'k(prime)', 'k(short)', 'ks', 'kshort', 'kprime']:
-                magcolname = 'kmag'
-                magerrcolname = 'kmag_err'
+            colterm_dict = ColorCorrections.colorTerms
+            if filter_name in colterm_dict:
+                formulae = colterm_dict[filter_name]
             else:
                 log.warning("Filter %s is not in catalogs - will not be able to flux calibrate" % filter_name)
-                magcolname = None
-                magerrcolname = None
+                formulae = []
 
             # If there are no refcats, don't try to go through them.
             if ad['REFCAT'] is None:
@@ -534,22 +532,46 @@ def _match_objcat_refcat(adinput=None):
                     else:
                         plotcols = num_ext
                         plotrows = 1
-                    fig, axarr = plt.subplots(plotrows, plotcols, sharex=True, sharey=True, figsize=(10,10), squeeze=False)
-                    axarr[0,0].set_xlim(0,ad['SCI',1].data.shape[0])
-                    axarr[0,0].set_ylim(0,ad['SCI',1].data.shape[1])
+                    fig, axarr = plt.subplots(plotrows, plotcols, sharex=True,
+                                sharey=True, figsize=(10,10), squeeze=False)
+                    axarr[0,0].set_xlim(0,ad['SCI',1].data.shape[1])
+                    axarr[0,0].set_ylim(0,ad['SCI',1].data.shape[0])
 
+                # Try to be clever here, and work on the extension with the
+                # highest number of matches first, as this will give the
+                # most reliable offsets, which can then be used to constrain
+                # the other extensions. The problem is we don't know how many
+                # matches we'll get until we do it, and that's slow, so use
+                # OBJCAT length as a proxy.
+                objcat_lengths = {}
                 for objcat in ad['OBJCAT']:
                     extver = objcat.extver()
+                    objcat_lengths[extver] = len(objcat.data)
+                objcat_order = sorted(objcat_lengths.items(),
+                                      key=lambda x:x[1], reverse=True)
+
+                initial = 10.0/ad.pixel_scale() # Search box size
+                final = 1.0/ad.pixel_scale() # Matching radius
+                xoffsets = []
+                yoffsets = []
+
+                for extver,objcat_len in objcat_order:
+                    objcat = ad['OBJCAT', extver]
     
                     # Check that a refcat exists for this objcat extver
                     refcat = ad['REFCAT',extver]
                     if not refcat:
-                        log.warning("Missing [REFCAT,%d] in %s - Cannot match objcat against missing refcat" % (extver,ad.filename))
+                        log.warning("Missing [REFCAT,%d] in %s - "
+                                    "Cannot match objcat against missing refcat"
+                                    % (extver,ad.filename))
                     else:
-                        xx = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, 
-                                      objcat.data['X_IMAGE'], -999)
-                        yy = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, 
-                                      objcat.data['Y_IMAGE'], -999)
+                        # Not needed as objects already culled
+                        #xx = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, 
+                        #              objcat.data['X_IMAGE'], -999)
+                        #yy = np.where(objcat.data['ISOAREA_IMAGE'] >= 20, 
+                        #              objcat.data['Y_IMAGE'], -999)
+                        xx = objcat.data['X_IMAGE']
+                        yy = objcat.data['Y_IMAGE']
                         
                         # The coordinates of the reference sources are 
                         # corrected to pixel positions using the WCS of the 
@@ -560,10 +582,13 @@ def _match_objcat_refcat(adinput=None):
                         sx, sy = wcsobj.wcs_sky2pix(sra,sdec,1)
                         sx_orig = np.copy(sx)
                         sy_orig = np.copy(sy)
+                        # Reduce the search radius if we've found a match
+                        # on a previous extension
+                        if xoffsets:
+                            sx += np.mean(xoffsets)
+                            sy += np.mean(yoffsets)
+                            initial = 2.5/ad.pixel_scale()
                         
-                        initial = 10.0/ad.pixel_scale() # Search box size
-                        final = 1.0/ad.pixel_scale() # Matching radius
-
                         # Here's CJS at work.
                         # First: estimate number of reference sources in field
                         # Do better using actual size of illuminated field
@@ -572,12 +597,12 @@ def _match_objcat_refcat(adinput=None):
                             sy>-initial,
                             sy<ad['SCI',extver].data.shape[0]+initial),
                             axis=0))
-                        # How many objects do we want to try to match
-                        if len(objcat.data) > 2*num_ref_sources:
+                        # How many objects do we want to try to match?
+                        if objcat_len > 2*num_ref_sources:
                             keep_num = max(int(1.5*num_ref_sources),
-                                           min(10,len(objcat.data)))
+                                           min(10,objcat_len))
                         else:
-                            keep_num = len(objcat.data)
+                            keep_num = objcat_len
                         # Now sort the object catalogue -- MUST NOT alter order
                         sorted_indices = np.argsort(np.where(
                                 objcat.data['NIMAFLAGS_ISO']>
@@ -588,19 +613,16 @@ def _match_objcat_refcat(adinput=None):
                         # if we straddle ra = 360.00 = 0.00
                         # CJS: is this a problem? Everything's in pixels so it should be OK
                         
-                        (oi, ri) = at.match_cxy(xx[sorted_indices],sx,yy[sorted_indices],sy,
-                                                firstPass=initial, delta=final, log=log)
-                        
-                        #KL: But there might be only one source in the field of view with
-                        #KL: a good reference!  Think small near-IR fields. I'm turning this
-                        #KL: this rejection off.
-                        ## If too few matches, assume the match was bad
-                        #if len(oi)<2:
-                        #    oi = []
-
+                        (oi, ri) = at.match_cxy(xx[sorted_indices],sx,
+                                    yy[sorted_indices],sy,
+                                    firstPass=initial, delta=final, log=log)
                         log.stdinfo("Matched %d objects in ['OBJCAT',%d] against ['REFCAT',%d]"
                                     % (len(oi), extver, extver))
-                                     
+                        # If this is a "good" match, save it
+                        if len(oi) > 2:
+                            xoffsets.append(np.median(xx[sorted_indices[oi]] - sx_orig[ri]))
+                            yoffsets.append(np.median(yy[sorted_indices[oi]] - sy_orig[ri]))
+
                         # Loop through the reference list updating the refid in the objcat
                         # and the refmag, if we can
                         for i in range(len(oi)):
@@ -614,27 +636,11 @@ def _match_objcat_refcat(adinput=None):
 #                            objcat.data['REF_X'][real_index] = tempx
 #                            objcat.data['REF_Y'][real_index] = tempy
 
-                            if magcolname in refcat.data.names:
-                                if filter_name not in ['k','k(prime)', 'kprime']:
-                                    objcat.data['REF_MAG'][real_index] = refcat.data[magcolname][ri[i]]
-                                    objcat.data['REF_MAG_ERR'][real_index] = refcat.data[magerrcolname][ri[i]]
-
-                                #if K or K(prime) -- use color terms 
-                                elif filter_name in ['k','k(prime)', 'kprime']: 
-                                    k_ref_mag, k_ref_mag_err = _add_K_color_term(filter_name, refcat, ri[i]) 
-
-                                    objcat.data['REF_MAG'][real_index] = k_ref_mag
-                                    objcat.data['REF_MAG_ERR'][real_index] = k_ref_mag_err
-
-                                    comment = ": REF_MAG corrected from K_2mass " + \
-                                              "to %s_MKO" %(filter_name.upper())
-                                    try:
-                                        if comment not in objcat.header['COMMENT'] \
-                                           and k_ref_mag != refcat.data['kmag'][ri[i]]:
-                                            objcat.header.add_comment(comment)
-                                    except KeyError:
-                                        if k_ref_mag != refcat.data['kmag'][ri[i]]:
-                                            objcat.header.add_comment(comment)
+                            # Assign the magnitude
+                            if formulae:
+                                mag, mag_err = _calculate_magnitude(formulae, refcat, ri[i])
+                                objcat.data['REF_MAG'][real_index] = mag
+                                objcat.data['REF_MAG_ERR'][real_index] = mag_err
 
                         if debug:
                             # Show the fit
@@ -642,8 +648,12 @@ def _match_objcat_refcat(adinput=None):
                                 plotpos = ((4-extver) // 2, (extver % 3) % 2)
                             else:
                                 plotpos = (0,extver-1)
-                            dx = np.median(xx[sorted_indices[oi]] - sx[ri])
-                            dy = np.median(yy[sorted_indices[oi]] - sy[ri])
+                            if len(oi):
+                                dx = np.median(xx[sorted_indices[oi]] - sx[ri])
+                                dy = np.median(yy[sorted_indices[oi]] - sy[ri])
+                            else:
+                                dx = 0
+                                dy = 0
                             # bright OBJCAT sources
                             axarr[plotpos].scatter(xx[sorted_indices], yy[sorted_indices], s=50, c='w')
                             # all REFCAT sources, original positions
@@ -669,70 +679,53 @@ def _match_objcat_refcat(adinput=None):
         log.critical(repr(sys.exc_info()[1]))
         raise
 
-def _add_K_color_term(filter_name, refcat, indx):
-    """
-    K_MKO = -0.003 (+/- 0.007) - 0.026 (+/- 0.011) * (J-K)_2MASS + K_2MASS
-    K_MKO = -0.006 (+/-0.004) - 0.071 (+/-0.020) * (H-K)_2MASS + K_2MASS
-            Leggett 2008,  http://arxiv.org/pdf/astro-ph/0609461v1.pdf
+def _calculate_magnitude(formulae, refcat, indx):
+    
+    # This is a bit ugly: we want to iterate over formulae so we must
+    # nest a single formula into a list
+    if type(formulae[0]) is not list:
+        formulae = [formulae]
 
-    NIRI K = K_mko
-    NIRI K(short) = K_2mass
-    NIRI K(prime) = K_mko + 0.22 (+/- 0.003) * (H-K)_2MASS  
-            (Wainscoat and Cowie 1992AJ.103.332W)
-    """
-
-    jk_color_term = {'C1': -0.003, 'dC1': 0.007, 'C2': -0.026, 'dC2': 0.011,
-                     'sub': refcat.data['Jmag'][indx] 
-                          - refcat.data['Kmag'][indx], 
-                     'dmag': ((refcat.data['Jmag_err'][indx])**2 
-                           + (refcat.data['Kmag_err'][indx])**2)**0.5 }
-
-    hk_color_term = {'C1': -0.006, 'dC1': 0.004, 'C2': -0.071, 'dC2': 0.020,
-                     'sub': refcat.data['Hmag'][indx] 
-                          - refcat.data['Kmag'][indx], 
-                     'dmag': ((refcat.data['Hmag_err'][indx])**2 
-                           + (refcat.data['Kmag_err'][indx])**2)**0.5 }
-
-    kp_color_term = {'C1': -0.006, 'dC1': 0.007, 'C2': 0.149, 'dC2': 0.023,
-                  'sub': hk_color_term['sub'], 'dmag': hk_color_term['dmag']}
-
-    ct = {'JK': jk_color_term, 'HK': hk_color_term, 'Kp': kp_color_term}
-    k_err = {}
-
-    # associate the filter and terms,  return if an unkown filter is encountered
-    if filter_name == 'k':
-        term_list = ['JK','HK']
-    elif filter_name in ['k(prime)', 'kprime']:
-        term_list = ['Kp']
-        term = 'Kp'
+    mags = []
+    mag_errs = []
+    for formula in formulae:
+        mag = 0.0
+        mag_err_sq = 0.0
+        for term in formula:
+            # single filter
+            if type(term) is str:
+                mag += refcat.data[term+'mag'][indx]
+                mag_err_sq += refcat.data[term+'mag_err'][indx]**2
+            # constant (with uncertainty)
+            elif len(term) == 2:
+                mag += float(term[0])
+                mag_err_sq += float(term[1])**2
+            # color term (factor, uncertainty, color)
+            elif len(term) == 3:
+                filt1, filt2 = term[2].split('-')
+                col = refcat.data[filt1+'mag'][indx] - \
+                    refcat.data[filt2+'mag'][indx]
+                mag += float(term[0])*col
+                dmagsq = refcat.data[filt1+'mag_err'][indx]**2 + \
+                    refcat.data[filt2+'mag_err'][indx]**2
+                # When adding a (H-K) color term, often H is a 95% upper limit
+                # If so, we can only return an upper limit, but we need to
+                # account for the uncertainty in K-band 
+                if np.isnan(dmagsq):
+                    mag -= 1.645*np.sqrt(mag_err_sq)
+                mag_err_sq += ((term[1]/term[0])**2 + dmagsq/col**2) * \
+                    (float(term[0])*col)**2
+        # Only consider this if values are sensible
+        if not np.isnan(mag):
+            mags.append(mag)
+            mag_errs.append(np.sqrt(mag_err_sq))
+    
+    # Take the value with the smallest uncertainty (NaN = large uncertainty)
+    if mags:
+        lowest = np.argmin(np.where(np.isnan(mag_errs),999,mag_errs))
+        return mags[lowest], mag_errs[lowest]
     else:
-        return refcat.data['kmag'][indx],refcat.data['kmag_err'][indx]
-
-    for term in term_list:
-        k_err[term] = (( ct[term]['dC1']**2 
-                      + ( ((ct[term]['dC2']/ct[term]['C2'])**2 
-                      + (ct[term]['dmag']/ct[term]['sub'])**2)**0.5 
-                      * abs(ct[term]['C2']*ct[term]['sub']) )**2 
-                      + (refcat.data['kmag_err'][indx])**2 )**0.5)
-
-    # if k_mko,  use the color term with lowest error filtering out one NaN
-    if filter_name == 'k':
-        if k_err['JK'] <= k_err['HK']:
-            term = 'JK'
-        else:
-            term = 'HK'
-
-    # check that NaN is not returned in color term
-    if np.isnan(ct[term]['sub']):
-        k_correct = refcat.data['kmag'][indx]
-        k_cor_err = refcat.data['kmag_err'][indx]
-    else:
-        k_correct = (ct[term]['C1'] + ct[term]['C2'] * ct[term]['sub'] 
-                    + refcat.data['kmag'][indx])
-        k_cor_err = k_err[term]
-
-    return k_correct, k_cor_err
-
+        return -999, -999
 
 def _daofind(sciext=None, sigma=None, threshold=2.5, fwhm=5.5, 
              sharplim=[0.2,1.0], roundlim=[-1.0,1.0], window=None,
@@ -1467,6 +1460,8 @@ def _sextractor(ad=None, seeing_estimate=None, sxdict=None, set_saturation=False
             nobj = len(columns["NUMBER"].array)
             log.stdinfo("Found %d sources in %s[SCI,%d]" %
                         (nobj,ad.filename,extver))
+            # Reset NUMBER to be a consecutive list
+            columns["NUMBER"].array = np.array(range(1,nobj+1))
 
             # Add OBJCAT
             ad = gt.add_objcat(adinput=ad, extver=extver, 
