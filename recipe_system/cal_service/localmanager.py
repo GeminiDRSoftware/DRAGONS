@@ -1,5 +1,5 @@
 import os
-from os.path import abspath, basename, dirname
+from os.path import abspath, basename, dirname, isdir
 import warnings
 
 from sqlalchemy.exc import SAWarning
@@ -41,12 +41,17 @@ args_for_cals = {
     'processed_flat': ('flat', {'processed': True})
 }
 
+DEFAULT_DB_NAME = 'cal_manager.db'
+
 class LocalManagerError(Exception):
     pass
 
 class LocalManager(object):
     def __init__(self, db_path):
-        self._db_path = db_path
+        if isdir(db_path):
+            self._db_path = os.path.join(db_path, DEFAULT_DB_NAME)
+        else:
+            self._db_path = db_path
         self.session = None
         self._reset()
 
