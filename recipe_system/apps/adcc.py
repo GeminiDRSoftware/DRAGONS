@@ -112,7 +112,7 @@ def main(args):
     racefile = ".adcc/adccinfo.py"
     # caller lock file name
 
-    globalConf.load(STANDARD_REDUCTION_CONF)
+    globalConf.load(STANDARD_REDUCTION_CONF, env_override=True)
     clfn = args.adccsrn
     adccdir = getPersistDir()
     if os.path.exists(racefile):

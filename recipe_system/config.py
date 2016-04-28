@@ -91,7 +91,7 @@ class ConfigObject(object):
         """
         self._conv.update(conv)
 
-    def load(self, filenames, defaults=None):
+    def load(self, filenames, defaults=None, env_override=False):
         """Loads all or some entries from the specified section in a config file.
         The extracted values are set as environment variables, so that they are
         available at a later point to other modules or spawned processes.
@@ -108,6 +108,12 @@ class ConfigObject(object):
         defaults : dict, optional
             If some options are not found, and you want to set up a default value,
             specify them in here.
+
+        env_override : bool, optional
+            If true, after loading values from the configuration files, the
+            environment will be explored in search of options passed down by
+            the parent process. Those options will override the ones taken
+            from the config files.
         """
 
         if type(filenames) in types.StringTypes:
@@ -126,6 +132,12 @@ class ConfigObject(object):
 
             for key in cp.options(section):
                 values[key] = translate(section, key)
+
+            if env_override:
+                for key in values:
+                    env = environment_variable_name(section, key)
+                    if env in os.environ:
+                        values[key] = translate(section, os.environ[env])
 
             self.update(section, values)
 
