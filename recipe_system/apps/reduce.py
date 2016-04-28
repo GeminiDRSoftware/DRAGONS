@@ -61,6 +61,7 @@ from   signal import SIGTERM
 from astrodata import __version__ as ad_version
 from astrodata.utils import logutils
 
+from recipe_system.config import globalConf
 from recipe_system.reduction import parseUtils
 from recipe_system.reduction.coreReduce import Reduce
 # ------------------------------------------------------------------------------
@@ -111,11 +112,19 @@ if __name__ == "__main__":
     parser = parseUtils.buildParser(version_report)
     args   = parser.parse_args()
 
+    globalConf.load(config.STANDARD_REDUCTION_CONF)
+
     if args.displayflags:
         parseUtils.show_parser_options(parser, args)
         for item in ["Input fits file(s):\t%s" % inf for inf in args.files]:
             print item
         sys.exit()
+
+    if args.cal_mgr is not None:
+        globalConf.update('calibs', dict(
+                    standalone=True,
+                    database_dir=os.path.expanduser(args.cal_mgr)
+        ))
 
     # Deal with argparse structures that are different than optparse 
     args = parseUtils.normalize_args(args)
