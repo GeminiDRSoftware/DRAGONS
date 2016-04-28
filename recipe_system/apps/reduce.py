@@ -61,8 +61,8 @@ from   signal import SIGTERM
 from astrodata import __version__ as ad_version
 from astrodata.utils import logutils
 
-from recipe_system.config import globalConf
-from recipe_system import cal_service
+from recipe_system.config import globalConf, STANDARD_REDUCTION_CONF
+from recipe_system.cal_service import CONFIG_SECTION as CAL_CONFIG_SECTION
 from recipe_system.reduction import parseUtils
 from recipe_system.reduction.coreReduce import Reduce
 # ------------------------------------------------------------------------------
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     parser = parseUtils.buildParser(version_report)
     args   = parser.parse_args()
 
-    globalConf.load(config.STANDARD_REDUCTION_CONF)
+    globalConf.load(STANDARD_REDUCTION_CONF)
 
     if args.displayflags:
         parseUtils.show_parser_options(parser, args)
@@ -122,10 +122,12 @@ if __name__ == "__main__":
         sys.exit()
 
     if args.cal_mgr is not None:
-        globalConf.update(cal_service.CONFIG_SECTION, dict(
+        globalConf.update(CAL_CONFIG_SECTION, dict(
                     standalone=True,
                     database_dir=os.path.expanduser(args.cal_mgr)
         ))
+
+    globalConf.export_section(CAL_CONFIG_SECTION)
 
     # Deal with argparse structures that are different than optparse 
     args = parseUtils.normalize_args(args)

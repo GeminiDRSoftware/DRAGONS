@@ -8,6 +8,10 @@ globalConf.update_translation({
     (CONFIG_SECTION, 'standalone'): bool
 })
 
+globalConf.update_exports({
+    CONFIG_SECTION: ('standalone', 'database_dir')
+})
+
 def cal_search_factory():
     calconf = globalConf[CONFIG_SECTION]
 

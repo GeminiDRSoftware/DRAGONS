@@ -1,6 +1,7 @@
 import os
 import types
 from ConfigParser import SafeConfigParser
+from collections import defaultdict
 
 STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
 
@@ -45,10 +46,14 @@ class Converter(object):
         except KeyError:
             return self._trans.get((None, value), self._default)(section, value)
 
+def environment_variable_name(section, option):
+    return '_GEM_{}_{}'.format(section.upper(), option.upper())
+
 class ConfigObject(object):
     def __init__(self):
         self._sections = {}
         self._conv = {}
+        self._exports = defaultdict(set)
 
     def __getitem__(self, item):
         try:
@@ -67,6 +72,10 @@ class ConfigObject(object):
         prev = self._sections[section].as_dict() if section in self._sections else {}
         prev.update(values)
         self._sections[section] = Section(values)
+
+    def update_exports(self, expdict):
+        for section, opts in expdict.items():
+            self._exports[section].update(opts)
 
     def update_translation(self, conv):
         """
@@ -119,5 +128,31 @@ class ConfigObject(object):
                 values[key] = translate(section, key)
 
             self.update(section, values)
+
+    def export_section(self, section):
+        """Some options from the specified section may be published as
+        environment variables, where spawned processes can find them.
+
+        The exported variables would be the ones speficied using
+        `update_exports`.
+
+        Parameters
+        ----------
+        section : string
+            The name of the section.
+        """
+        try:
+            sect = self._sections[section]
+        except KeyError:
+            # Nothing to export...
+            return
+
+        for option in self._exports.get(section, ()):
+            try:
+                env = environment_variable_name(section, option)
+                os.environ[env] = str(getattr(sect, option))
+            except AttributeError:
+                # The option was not defined...
+                pass
 
 globalConf = ConfigObject()
