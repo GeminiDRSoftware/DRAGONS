@@ -55,6 +55,10 @@ class LocalManager(object):
         self.session = None
         self._reset()
 
+    @property
+    def path(self):
+        return self._db_path
+
     def _reset(self):
         """Modifies the gemini_calmgr setup and reloads some modules that
         are affected by the change. Then it sets a new database session object
@@ -123,7 +127,7 @@ class LocalManager(object):
 
         ingest.ingest_file(self.session, filename, directory)
 
-    def ingest_directory(self, path, walk=False, verbose=False):
+    def ingest_directory(self, path, walk=False, log=None):
         """Registers into the database all FITS files under a directory
 
         Parameters
@@ -137,15 +141,17 @@ class LocalManager(object):
 
             If `True`, all the subdirectories under the path will be
             explored in search of FITS files.
-        verbose: bool, optional
-            Defaults to `False`. If `True`, a brief line will be printed
-            for every ingested file.
+        log: function, optional
+            If provided, it must be a function that accepts a single argument,
+            a message string. This function can then process the message
+            and log it into the proper place.
         """
 
         for root, dirs, files in os.walk(path):
             for fname in filter(lambda l: l.endswith('.fits'), files):
-                self.ingest_file(os.path.join(root, fname), verbose=verbose)
-                print "Ingested {}/{}".format(root, fname)
+                self.ingest_file(os.path.join(root, fname))
+                if log:
+                    log("Ingested {}/{}".format(root, fname))
 
     def calibration_search(self, rq, fullResult=False):
         """Performs a search in the database using the requested criteria.
