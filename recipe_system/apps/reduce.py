@@ -62,6 +62,7 @@ from astrodata import __version__ as ad_version
 from astrodata.utils import logutils
 
 from recipe_system.config import globalConf
+from recipe_system import cal_service
 from recipe_system.reduction import parseUtils
 from recipe_system.reduction.coreReduce import Reduce
 # ------------------------------------------------------------------------------
@@ -121,7 +122,7 @@ if __name__ == "__main__":
         sys.exit()
 
     if args.cal_mgr is not None:
-        globalConf.update('calibs', dict(
+        globalConf.update(cal_service.CONFIG_SECTION, dict(
                     standalone=True,
                     database_dir=os.path.expanduser(args.cal_mgr)
         ))

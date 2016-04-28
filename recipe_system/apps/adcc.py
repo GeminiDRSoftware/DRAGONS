@@ -27,7 +27,8 @@ from threading import Thread
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 
 from recipe_system.adcc.servers import http_proxy
-from recipe_system.cal_service.prsproxyutil import calibration_search
+from recipe_system import cal_service
+from recipe_system.config import globalConf, STANDARD_REDUCTION_CONF
 from recipe_system.reduction.reduceInstanceManager import ReduceInstanceManager
 
 # ------------------------------------------------------------------------------
@@ -110,6 +111,8 @@ def get_version():
 def main(args):
     racefile = ".adcc/adccinfo.py"
     # caller lock file name
+
+    globalConf.load(STANDARD_REDUCTION_CONF)
     clfn = args.adccsrn
     adccdir = getPersistDir()
     if os.path.exists(racefile):
@@ -146,7 +149,8 @@ def main(args):
 
     writeADCCSR(clfn, vals=vals)
     server.register_function(get_version, "get_version")
-    server.register_function(calibration_search, "calibration_search")
+    server.register_function(cal_service.cal_search_factory(),
+                             "calibration_search")
 
     # store the port
     rim = ReduceInstanceManager(args.reduceport)
