@@ -694,28 +694,34 @@ def _calculate_magnitude(formulae, refcat, indx):
         for term in formula:
             # single filter
             if type(term) is str:
-                mag += refcat.data[term+'mag'][indx]
-                mag_err_sq += refcat.data[term+'mag_err'][indx]**2
+                if term+'mag' in refcat.data.columns.names:
+                    mag += refcat.data[term+'mag'][indx]
+                    mag_err_sq += refcat.data[term+'mag_err'][indx]**2
+                else:
+                    # Will ensure this magnitude is not used
+                    mag = np.nan
             # constant (with uncertainty)
             elif len(term) == 2:
                 mag += float(term[0])
                 mag_err_sq += float(term[1])**2
             # color term (factor, uncertainty, color)
             elif len(term) == 3:
-                filt1, filt2 = term[2].split('-')
-                col = refcat.data[filt1+'mag'][indx] - \
-                    refcat.data[filt2+'mag'][indx]
-                mag += float(term[0])*col
-                dmagsq = refcat.data[filt1+'mag_err'][indx]**2 + \
-                    refcat.data[filt2+'mag_err'][indx]**2
-                # When adding a (H-K) color term, often H is a 95% upper limit
-                # If so, we can only return an upper limit, but we need to
-                # account for the uncertainty in K-band 
-                if np.isnan(dmagsq):
-                    mag -= 1.645*np.sqrt(mag_err_sq)
-                mag_err_sq += ((term[1]/term[0])**2 + dmagsq/col**2) * \
-                    (float(term[0])*col)**2
-        # Only consider this if values are sensible
+                filters = term[2].split('-')
+                if len(filters)==2 and np.all([f+'mag' in refcat.data.columns.names for f in filters]):
+                    col = refcat.data[filters[0]+'mag'][indx] - \
+                        refcat.data[filters[1]+'mag'][indx]
+                    mag += float(term[0])*col
+                    dmagsq = refcat.data[filters[0]+'mag_err'][indx]**2 + \
+                        refcat.data[filters[1]+'mag_err'][indx]**2
+                    # When adding a (H-K) color term, often H is a 95% upper limit
+                    # If so, we can only return an upper limit, but we need to
+                    # account for the uncertainty in K-band 
+                    if np.isnan(dmagsq):
+                        mag -= 1.645*np.sqrt(mag_err_sq)
+                    mag_err_sq += ((term[1]/term[0])**2 + dmagsq/col**2) * \
+                        (float(term[0])*col)**2
+                else:
+                    mag = np.nan        # Only consider this if values are sensible
         if not np.isnan(mag):
             mags.append(mag)
             mag_errs.append(np.sqrt(mag_err_sq))
