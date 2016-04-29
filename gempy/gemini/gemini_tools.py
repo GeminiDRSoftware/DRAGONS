@@ -1875,7 +1875,6 @@ def fitsstore_report(ad, rc, metric, info_dict, calurl_dict):
     # I suspect that rc will return a boolean when reduce is called from the 
     # command line.
     if rc["upload_metrics"] == 'True' or rc["upload_metrics"] == True:
-        print qareport
         send_fitsstore_report(qareport, calurl_dict)
     return qareport
 
