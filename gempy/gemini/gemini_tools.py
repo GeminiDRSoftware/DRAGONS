@@ -1798,12 +1798,6 @@ def fitsstore_report(ad, rc, metric, info_dict, calurl_dict):
     
     qametric_list = []
 
-    if metric=="iq":
-        # Get IQ data from good sources in OBJCAT.
-        # This is done here because the fitsstore record needs
-        # more information than measureIQ accesses
-        source_data = clip_sources(ad)
-
     for sciext in ad[SCI]:
         key = ('SCI',sciext.extver())
 
@@ -1822,42 +1816,10 @@ def fitsstore_report(ad, rc, metric, info_dict, calurl_dict):
             qametric["detector"] = None
 
         if metric=="iq":
-            # Build a dictionary with IQ data
-            iq = {}
-            # Check to see if there is any data for this extension
-            if not source_data.has_key(key):
-                continue
-
-            iqdata = source_data[key]
-            primdata = info_dict[key]
-            if len(iqdata)==0 and not (primdata["is_ao"] and primdata["ao_seeing"]):
-                continue
-
-            if len(iqdata)!=0:
-            # Numbers from iqdata
-                iq["fwhm"] = float(iqdata["fwhm_arcsec"].mean())
-                iq["fwhm_std"] = float(iqdata["fwhm_arcsec"].std())
-                iq["isofwhm"] = float(iqdata["isofwhm_arcsec"].mean())
-                iq["isofwhm_std"] = float(iqdata["isofwhm_arcsec"].std())
-                iq["ee50d"] = float(iqdata["ee50d_arcsec"].mean())
-                iq["ee50d_std"] = float(iqdata["ee50d_arcsec"].std())
-                iq["elip"] = float(iqdata["ellipticity"].mean())
-                iq["elip_std"] = float(iqdata["ellipticity"].std())
-                iq["pa"] = float(iqdata["pa"].mean())
-                iq["pa_std"] = float(iqdata["pa"].std())
-                iq["nsamples"] = iqdata.size
-
-            # Values produced by the measureIQ primitive
-            iq["adaptive_optics"] = primdata["is_ao"]
-            if primdata["ao_seeing"]:
-                iq["ao_seeing"] = primdata["ao_seeing"]
-            if primdata["strehl"] and primdata != None:
-                iq["strehl"] = primdata["strehl"]
-            iq["percentile_band"] = primdata["band"]
-            iq["comment"] = primdata["comment"]
-
-            qametric["iq"] = iq
-            qametric_list.append(qametric)
+            # Check to see if there are any data for this extension
+            if info_dict.has_key(key):
+                qametric["iq"] = info_dict[key]
+                qametric_list.append(qametric)
 
         elif metric=="zp":
             # Check to see if there is any data for this extension
@@ -1912,7 +1874,8 @@ def fitsstore_report(ad, rc, metric, info_dict, calurl_dict):
     # as triggered by the url /runreduce call.
     # I suspect that rc will return a boolean when reduce is called from the 
     # command line.
-    if rc["upload_metrics"] == 'True' or rc["upload_metrics"] == True:  
+    if rc["upload_metrics"] == 'True' or rc["upload_metrics"] == True:
+        print qareport
         send_fitsstore_report(qareport, calurl_dict)
     return qareport
 
