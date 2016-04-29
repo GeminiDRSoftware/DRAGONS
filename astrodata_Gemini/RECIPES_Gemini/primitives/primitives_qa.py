@@ -1249,9 +1249,28 @@ class QAPrimitives(GENERALPrimitives):
                        "strehl": strehl,
                        "requested": req_iq.as_pytype(),
                        "comment": comment,}
-
-                info_dict[key] = qad
                 rc.report_qametric(ad, "iq", qad)
+                
+                # These exist for all data (ellip=None for spectra)
+                info_dict[key] = {"fwhm": mean_fwhm,
+                                  "fwhm_std": std_fwhm,
+                                  "elip": mean_ellip,
+                                  "elip_std": std_ellip,
+                                  "nsamples": len(src),
+                                  "adaptive_optics": is_ao,
+                                  "percentile_band": band,
+                                  "comment": comment}
+                # These only exist for images
+                if is_image and len(src)>0:
+                    info_dict[key]["isofwhm"] = float(src["isofwhm_arcsec"].mean())
+                    info_dict[key]["isofwhm_std"] = float(src["isofwhm_arcsec"].std())
+                    info_dict[key]["ee50d"] = float(src["ee50d_arcsec"].mean())
+                    info_dict[key]["ee50d_std"] = float(src["ee50d_arcsec"].std())
+                    info_dict[key]["pa"] = float(src["pa"].mean())
+                    info_dict[key]["pa_std"] = float(src["pa"].std())
+                if is_ao:
+                    info_dict[key]["ao_seeing"] = ao_seeing
+                    info_dict[key]["strehl"] = strehl
                 
                 # Store average FWHM and ellipticity, for writing
                 # to output header
