@@ -1529,9 +1529,9 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         # Get the effective wavelength of this observation
         ctrl_wave = dataset.effective_wavelength(output_units="micrometers")
 
-        # Sort dict by wavelength difference: return key of first element
-        band = sorted(self.std_wavelength_band.iteritems(),
-                       key=lambda x: abs(x[1]-ctrl_wave))[0][0]
+        # Return filter_name with closest wavelength
+        band = min(self.std_wavelength_band.iteritems(),
+                       key=lambda x: abs(x[1]-ctrl_wave))[0]
         
         if band is None:
             raise Errors.CalcError()
