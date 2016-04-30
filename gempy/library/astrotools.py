@@ -320,270 +320,168 @@ class WCSTweak:
         return diff
 
 
-def match_cxy (xx, sx, yy, sy, firstPass=50, delta=None, log=None):
+def match_cxy (xx, sx, yy, sy, firstPass=50, delta=10, log=None):
     """
     Match reference positions (sx,sy) with those of the 
     object catalog (xx,yy). 
     Select those that are within delta pixels from
     the object positions.
     
-    firstPass:  (50) First pass delta radius.
+    firstPass:  (50) First pass radius.
 
-    This matching is a 2 pass algorithm. First pass takes the
-    larger delta and adjust the reference positions by the median 
-    of the x,y offset. The second pass takes 'delta' value and 
-    look for those x,y now closer to the reference positions.
-    The units are pixels for the deltas. Positions in degrees 
-    should not be passed to this function, since at least a 
-    cos(dec) correction is required!
-
+    This matching is a 2 pass algorithm. A form of cross-correlation
 
     OUTPUT:
     - obj_index: Index array of the objects matched.
     - ref_index: Index array of the references matched.
     """
 
-    # turn to numpy arrays
+    # Turn to numpy arrays
     xx, sx, yy, sy = map(np.asarray,(xx,sx,yy,sy))
+    if len(xx) == 0:
+        return [], []
     
-    def getg(xx, sx, yy, sy, deltax=2.5, deltay=2.5):
-        """ Return object(xx) and reference(sx) indices of
-        common positions.
-        OUTPUT
-        g:    Indices of the object position common to
-        r:    indices of the reference position
-        """
+    deltax = firstPass
+    deltay = firstPass
+    sigmasq = 0.25*delta*delta
+    hw = int(firstPass+1)
+    # Make a "landscape" of Gaussian "mountains" onto which we're
+    # going to cross-correlate the REFCAT sources
+    landscape = np.zeros((int(np.max(yy)+hw),int(np.max(xx)+hw)))
+    lysize, lxsize = landscape.shape
+    xgrid, ygrid = np.mgrid[0:hw*2+1,0:hw*2+1]
+    rsq = (ygrid-hw)**2 + (xgrid-hw)**2
+    mountain = np.exp(-0.5*rsq/sigmasq)
+    for i in range(len(xx)):
+        if xx[i] > -999:
+            mx1, mx2, my1, my2 = 0, hw*2+1, 0, hw*2+1
+            lx1, lx2 = int(xx[i])-hw, int(xx[i])+hw+1
+            ly1, ly2 = int(yy[i])-hw, int(yy[i])+hw+1
+            if lx2<0 or lx1>=lxsize or ly2<0 or ly1>=lysize:
+                continue
+            if lx1 < 0:
+                mx1 -= lx1
+                lx1 = 0
+            if lx2 > lxsize:
+                mx2 -= (lx2-lxsize)
+                lx2 = lxsize
+            if ly1 < 0:
+                my1 -= ly1
+                ly1 = 0
+            if ly2 > lysize:
+                my2 -= (ly2-lysize)
+                ly2 = lysize
+            try:
+                landscape[ly1:ly2,lx1:lx2] += mountain[my1:my2,mx1:mx2]
+            except ValueError as e:
+                print yy[i], xx[i], landscape.shape
+                print ly1,ly2,lx1,lx2
+                print my1,my2,mx1,mx2
+
+    # We've got the full REFCAT, so first cull that to rough image area
+    in_image = np.all((sx>-firstPass, sx<lxsize,
+                        sy>-firstPass, sy<lysize),axis=0)
+
+    # We can only do about 2500 cross-correlations per second, so we need
+    # to limit the number we do. If the catalogs are sparse, we can just
+    # take a list of offsets from pairs of (OBJCAT,REFCAT) sources.
+    # Otherwise, we need to test on a grid or something. Which should we do?
+    # Count the number of pairs for the first method;
+    # if we exceed our limit, make a grid instead
+    grid_step = 0.25*delta
+    num_grid_tests = np.pi*(firstPass/grid_step)**2
+    dax = []
+    day = []
+    height = []
+    for sxx,syy in zip(sx[in_image],sy[in_image]):
+        gindx, = np.where((xx-sxx)**2+(yy-syy)**2<firstPass*firstPass)
+        dax.extend(xx[gindx]-sxx)
+        day.extend(yy[gindx]-syy)
+    if len(dax) > num_grid_tests:
+        # There are fewer in the grid search, so do that
+        dax=[]; day=[]
+        for dx in np.arange(-firstPass,firstPass,grid_step):
+            for dy in np.arange(-firstPass,firstPass,grid_step):
+                if dx*dx+dy*dy < firstPass*firstPass:
+                    dax.append(dx)
+                    day.append(dy)
         
-        dax=[]; day=[]; g=[]; r=[]
-        for k in range(len(sx)):
-            gindx,= np.where((abs(xx-sx[k])<deltax) & 
-                             (abs(yy-sy[k])<deltay))
-            for i in gindx:
-                dx = xx[i] - sx[k] 
-                dy = yy[i] - sy[k] 
+    # For each shift, sum the landscape pixel values at all shifted
+    # coordinates -- remember to test whether they're in the landscape
+    for dx,dy in zip(dax,day):
+        new_sx = (sx[in_image]+dx+0.5).astype(int)
+        new_sy = (sy[in_image]+dy+0.5).astype(int)
+        indices = np.all((new_sx>=0,new_sx<lxsize,
+                    new_sy>=0,new_sy<lysize),axis=0)
+        height.append(np.sum(landscape[new_sy[indices],new_sx[indices]]))
 
-                # Try taking all possible matches and using for the 
-                # clumping algorithm
-                #print dx
-                #dax.append(dx)
-                #day.append(dy)
-                #g.append(i)
-                #r.append(k)
+    # We've calculated offsets without matching objects, which is what we need
+    # This is a two-pass algorithm; first get better offsets by matching and
+    # using the median offset; then apply this correction and go again
+    # The extra iteration is most likely needed when the grid search has been
+    # performed, since the best offsets are not calculated from an actual match
+    if len(dax) > 0:
+        xoffset, yoffset = dax[np.argmax(height)], day[np.argmax(height)]
+        log.info("First pass offsets (x,y): %.2f %.2f" % (xoffset,yoffset))
+        sx += xoffset; sy += yoffset
 
-                # if there are multiple matches, keep only the
-                # closest one
-                if (i in g or k in r) and deltax>50:
-                    if i in g:
-                        first_ind = g.index(i)
+        for iter in range(2):
+            g =[]; r=[]
+            dax=[]; day=[]
+            for k in range(len(sx)):
+                gindx,= np.where((xx-sx[k])**2+(yy-sy[k])**2<delta*delta)
+                for i in gindx:
+                    dx = xx[i] - sx[k] 
+                    dy = yy[i] - sy[k] 
+
+                    # if there are multiple matches, keep only the closest
+                    if (i in g or k in r):
+                        if i in g:
+                            first_ind = g.index(i)
+                        else:
+                            first_ind = r.index(k)
+                        first_dist = dax[first_ind]**2 + day[first_ind]**2
+                        this_dist = dx**2 + dy**2
+                        if (first_dist > this_dist):
+                            del dax[first_ind]
+                            del day[first_ind]
+                            del g[first_ind]
+                            del r[first_ind]
+                            dax.append(dx)
+                            day.append(dy)
+                            g.append(i)
+                            r.append(k)
                     else:
-                        first_ind = r.index(k)
-                    first_dist = dax[first_ind]**2 + day[first_ind]**2
-                    this_dist = dx**2 + dy**2
-                    if (first_dist > this_dist):
-                        del dax[first_ind]
-                        del day[first_ind]
-                        del g[first_ind]
-                        del r[first_ind]
                         dax.append(dx)
                         day.append(dy)
                         g.append(i)
                         r.append(k)
-                else:
-                    dax.append(dx)
-                    day.append(dy)
-                    g.append(i)
-                    r.append(k)
-        
-        dax,day = map(np.asarray, (dax,day))
-#        for i in range(len(dax)):
-#            print dax[i], day[i]
-        #DEBUG # For debugging or improvement purpose, save the match offsets
-        #DEBUG # to disk.  Uncomment if necessary.
-        #DEBUG from datetime import datetime
-        #DEBUG timestr = datetime.now().time().isoformat()
-        #DEBUG fout = open('daxy-'+str(deltax)+'-'+timestr+'.dat', mode='w')
-        #DEBUG for i in range(len(dax)):
-        #DEBUG     fout.write(str(dax[i])+'\t'+str(day[i])+'\n')
-        #DEBUG fout.close()
+            dx = np.mean(dax)
+            dy = np.mean(day)
+            sx += dx
+            sy += dy
+            xoffset += dx
+            yoffset += dy
+            log.info("Tweaked offsets by: %.2f %.2f" % (dx,dy))
+        g,r,dax,day = map(np.asarray, (g,r,dax,day))
+        #for i,k,dx,dy in zip(g,r,dax,day):
+        #    print i+1,k+1,dx,dy
 
-        # KL: The clump finding code needs to be functionalize.
-        # KL: This was done in a hurry while preparing for deployment
-        # KL: It works with several type of fields, sparse and crowded
-        # KL: and several types of instruments.  It just needs to be
-        # KL: cleaned up a bit.
-        #
-        # Identify the location of the clump of good matches then do find
-        # its center.  This technique helps when the WCS is not too good
-        # and the sources are above some density causing several "matches"
-        # to be completely wrong.  Even in those cases, there is generally
-        # an obviously clump of good matches around the correct x, y offset
-        
-        if len(dax) > 5:
-            # Get an histogram of dax and day offsets to locate the clump.
-            # The clump approximate position will be where the tallest histogram
-            # bar is located.
-            #df = pd.DataFrame({'dx' : dax, 'dy' : day})
-            #counts, divisions = np.histogram(df['dx'], bins=10)
-            #xbinsize = abs(divisions[0] - divisions[1])
-            #counts, divisions = np.histogram(df['dy'], bins=10)
-            #ybinsize = abs(divisions[0] - divisions[1])
-            
-            #apprx_xoffset = df['dx'].value_counts(bins=10).idxmax() + \
-            #                (xbinsize / 2.0)
-            #apprx_yoffset = df['dy'].value_counts(bins=10).idxmax() + \
-            #                (ybinsize / 2.0)
-            #stdx, stdy = (df['dx'].std(), df['dy'].std())
-            
-            # For crowded field with good matches, the histogram might have
-            # most sources in one bin, which might be wide.  To increase
-            # precision, we catch those cases and focus on that populous bin.
-            # Otherwise, all the data is used.
-            # threshold: fraction of matches in the top bin.
-            # thr_binsize: size of the bin, we do this only if the bin is large.
-            #threshold = 0.7
-            #thr_binsize = 10
-            #if df['dx'].value_counts(bins=10).max() / float(len(df['dx'])) \
-            #      >= threshold:
-            #    if xbinsize >= thr_binsize:
-            #        dfsub =  df[(df['dx'] > apprx_xoffset - 2*thr_binsize) & \
-            #                    (df['dx'] < apprx_xoffset + 2*thr_binsize)]
-            #        counts, divisions = np.histogram(dfsub['dx'], bins=10)
-            #        subbinsize = abs(divisions[0] - divisions[1])
-            #        apprx_xoffset = dfsub['dx'].value_counts(bins=10).idxmax() + \
-            #                        (subbinsize / 2.0)
-            #        stdx = dfsub['dx'].std()
-            #if df['dy'].value_counts(bins=10).max() / float(len(df['dy'])) \
-            #      >= threshold:
-            #    if ybinsize >= thr_binsize:
-            #        dfsub =  df[(df['dy'] > apprx_xoffset - 2*thr_binsize) & \
-            #                    (df['dy'] < apprx_xoffset + 2*thr_binsize)]
-            #        counts, divisions = np.histogram(dfsub['dy'], bins=10)
-            #        subbinsize = abs(divisions[0] - divisions[1])
-            #        apprx_yoffset = dfsub['dy'].value_counts(bins=10).idxmax() + \
-            #                        (subbinsize / 2.0)
-            #        stdy = dfsub['dy'].std()
-            
-            # CJS: Try something else; for each possible offset from the match list
-            # see how many matches have similar offsets
-            num_matches = np.zeros_like(dax, dtype=int)
-            threshold = 0.2*len(xx)
-            ftol = 0.0
-            while (np.max(num_matches) < threshold and ftol < 0.5):
-                ftol += 0.05
-                for i in range(len(dax)):
-                    num_matches[i] = len(np.where((abs(dax-dax[i])<ftol*deltax) & 
-                                                   (abs(day-day[i])<ftol*deltay))[0])
-#            print dax[np.argmax(num_matches)], day[np.argmax(num_matches)]
-            if ftol < 0.5:
-                clump_indices, = np.where((abs(dax-dax[np.argmax(num_matches)])<ftol*deltax) &
-                                          (abs(day-day[np.argmax(num_matches)])<ftol*deltay))
-                xoffset = np.median(dax[clump_indices])
-                yoffset = np.median(day[clump_indices])
-                stdx = np.std(dax[clump_indices])
-                stdy = np.std(day[clump_indices])
-                #plt.scatter(dax, day, marker='+')
-                #plt.plot(xoffset, yoffset, 'ro')
-                #plt.show()
-            else:
-                # We didn't find a clump before our search area got too large
-                xoffset = np.median(dax)
-                yoffset = np.median(day)
-                stdx = np.std(dax)
-                stdy = np.std(day)
-
-            # Get the center of that clump, the actually x, y offsets.
-            # Focus on the area around the clump.  Use the standard deviation
-            # to set a box around the clump on which stats will be derived.
-            # We already know now that anything outside that box is a bad match.
-            # Median appears to work better than mean for this.  
-            #llimitx, ulimitx = (apprx_xoffset - stdx, apprx_xoffset + stdx)
-            #llimity, ulimity = (apprx_yoffset - stdy, apprx_yoffset + stdy)
-#            print "llimitx, ulimitx = ", llimitx, ulimitx
-#            print "llimity, ulimity = ", llimity, ulimity
-            
-            #xoffset = df[(df['dx'] > llimitx) & (df['dx'] < ulimitx)]['dx'].median()
-            #yoffset = df[(df['dy'] > llimity) & (df['dy'] < ulimity)]['dy'].median()
-            #stdx = df[(df['dx'] > llimitx) & (df['dx'] < ulimitx)]['dx'].std()
-            #stdy = df[(df['dy'] > llimity) & (df['dy'] < ulimity)]['dy'].std()
-        elif len(dax) > 1 and len(day) > 1:
-            # Too few source for clump-finding.  Use the old technique.
-            #print "2-10 sources only; taking median"
-            xoffset = np.median(dax)
-            yoffset = np.median(day)
-            stdx = np.std(dax)
-            stdy = np.std(day)
-        elif len(dax) == 1 and len(day) == 1:
-            xoffset = dax[0]
-            yoffset = day[0]
-            stdx = 0.0
-            stdy = 0.0
-        else:
-            xoffset = float('nan')
-            yoffset = float('nan')
-            stdx = float('nan')
-            stdy = float('nan')
-#        print "xoffset = ", xoffset
-#        print "yoffset = ", yoffset
-        
-        return np.asarray(g), np.asarray(r), xoffset, yoffset ,stdx, stdy
-        
-        # Below is the old code that was just doing the median instead
-        # of trying to find the clump of good matches.  I (KL) keep it
-        # here for now until I have confirmed that the new clump-detection
-        # technique works well on a variety of data.
-        #
-        ## When dax and/or day are empty, np.median and np.std issue a 
-        ## RuntimeWarning.  We are suppressing that warning.  NaN are 
-        ## returned when median and std are applied to an empty array.
-        #with warnings.catch_warnings():
-        #    warnings.simplefilter("ignore")
-        #    mx = np.median(dax); stdx = np.std(dax)
-        #    my = np.median(day); stdy = np.std(day)
-            
-        #return np.asarray(g),np.asarray(r),mx,my,stdx,stdy 
-
-
-    # Select only those standards with less than 10 pixels from objects.
-    # Get the median values (mx,my) of the differences and add these
-    # to the standard positions.
-
-    #NOTE: We are setting a large delta here, we would need to see
-    #      median 1st...
-
-    ig,r,mx,my,stdx,stdy = getg(xx,sx,yy,sy, deltax=firstPass,deltay=firstPass)
-    log.info('Median differences (x,y):%.2f %.2f, %.2f %.2f' % 
-             (mx,my,stdx,stdy)+"[First iteration]")
-    if len(r) == 0 or len(r) == 1:
-        if len(r) == 1:
-            log.info('Only one good source is available, so the '
-                     'cross-correlation routine will be run once only')
-        return ig,r
-        
-    # Now shift reference position by adding the median of the
-    # differences. The standards are now closer to the object positions.
-    sx = sx + mx
-    sy = sy + my
-
-    # Select only those that are closer than delta or default(6.5) pixels.
-    xxx = xx[ig]; yyy = yy[ig] 
-    deltax=delta; deltay=delta
-    if delta == None:
-        deltax=2*stdx; deltay=2*stdy
-    g,r,mx,my,stdx,stdy = getg (xxx, sx, yyy, sy, 
-                                deltax=deltax, deltay=deltay)
-    log.info('Median differences (x,y):%.2f %.2f %.2f %.2f' %
-             (mx,my,stdx,stdy)+"[Second iteration]")
-
-    if g.size == 0:
-        indxy,indr=[],[]
-#        print "indxy, indr = empty"
-    else:
-        indxy = ig[g]
+    # dax may have been >0 before but now 0 if there are no good matches
+    if len(dax) > 0:
+        indxy = g
         indr = r
+        stdx = np.std(dax)
+        stdy = np.std(day)
         # Add 1 to debug display to match directly with catalogs
-#        print "indxy = ", indxy+1
-#        print "indr = ", indr+1
-    
+        #print "indxy = ", indxy+1
+        #print "indr = ", indr+1
+        log.info('Final offset (x,y): %.2f %.2f (%.2f %.2f)' %
+             (xoffset,yoffset,stdx,stdy))
+    else:
+        indxy,indr=[],[]
+        log.info('No matched sources')
+
     return indxy, indr
 
 def clipped_mean(data):
@@ -615,7 +513,6 @@ def clipped_mean(data):
             break
 
     return mean,sigma
-
 
 
 # The following functions and classes were borrowed from STSCI's spectools
