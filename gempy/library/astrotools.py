@@ -428,7 +428,7 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=10, log=None):
         for iter in range(2):
             g =[]; r=[]
             dax=[]; day=[]
-            for k in range(len(sx)):
+            for k in [kk for kk in range(len(sx)) if in_image[kk]]:
                 gindx,= np.where((xx-sx[k])**2+(yy-sy[k])**2<delta*delta)
                 for i in gindx:
                     dx = xx[i] - sx[k] 
