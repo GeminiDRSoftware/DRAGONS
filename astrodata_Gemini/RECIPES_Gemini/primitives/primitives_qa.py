@@ -303,7 +303,7 @@ class QAPrimitives(GENERALPrimitives):
             else:
                 all_bg = None
             # all_bg_am is None-free
-            if not all_bg_am:
+            if all_bg_am:
                 if len(all_bg_am)>1:
                     all_std_am = np.std(all_bg_am)
                 else:
