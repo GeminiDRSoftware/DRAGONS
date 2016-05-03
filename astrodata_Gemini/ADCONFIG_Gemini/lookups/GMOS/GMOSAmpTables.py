@@ -231,7 +231,25 @@ gmosampsGainBefore20150826 = {
         ("slow", "low",  "BI12-34-4k-1, 4") : 1.613,
         ("slow", "high", "BI12-34-4k-1, 4") : 1.000,
         ("fast", "high", "BI12-34-4k-1, 4") : 4.588,
-        ("fast", "low",  "BI12-34-4k-1, 4") : 1.424   
+        ("fast", "low",  "BI12-34-4k-1, 4") : 1.424,   
+         #AMPS 9-12 (CCD3)
+         #Repeated entries for CCD3 without the last comma
+        ("slow", "low",  "BI12-34-4k-1 1") : 1.519,
+        ("slow", "high", "BI12-34-4k-1 1") : 1.000,
+        ("fast", "high", "BI12-34-4k-1 1") : 4.343,
+        ("fast", "low",  "BI12-34-4k-1 1") : 1.304,
+        ("slow", "low",  "BI12-34-4k-1 2") : 1.510,
+        ("slow", "high", "BI12-34-4k-1 2") : 1.000,
+        ("fast", "high", "BI12-34-4k-1 2") : 4.334,
+        ("fast", "low",  "BI12-34-4k-1 2") : 1.304,
+        ("slow", "low",  "BI12-34-4k-1 3") : 1.510,
+        ("slow", "high", "BI12-34-4k-1 3") : 1.000,
+        ("fast", "high", "BI12-34-4k-1 3") : 4.384,
+        ("fast", "low",  "BI12-34-4k-1 3") : 1.336,
+        ("slow", "low",  "BI12-34-4k-1 4") : 1.613,
+        ("slow", "high", "BI12-34-4k-1 4") : 1.000,
+        ("fast", "high", "BI12-34-4k-1 4") : 4.588,
+        ("fast", "low",  "BI12-34-4k-1 4") : 1.424   
     }
     
 gmosampsGainBefore20060831 = {
@@ -535,7 +553,25 @@ gmosampsRdnoiseBefore20150826 = {
         ("slow", "low",  "BI12-34-4k-1, 4") : 3.500,
         ("slow", "high", "BI12-34-4k-1, 4") : 0.00 ,
         ("fast", "high", "BI12-34-4k-1, 4") : 6.574,
-        ("fast", "low",  "BI12-34-4k-1, 4") : 5.446
+        ("fast", "low",  "BI12-34-4k-1, 4") : 5.446,
+        #AMPS 12-9 (CCD3)
+        #Repeated entries for CCD3 without the last comma
+        ("slow", "low",  "BI12-34-4k-1 1") : 3.460,
+        ("slow", "high", "BI12-34-4k-1 1") : 0.00 ,
+        ("fast", "high", "BI12-34-4k-1 1") : 7.460,
+        ("fast", "low",  "BI12-34-4k-1 1") : 6.556,
+        ("slow", "low",  "BI12-34-4k-1 2") : 3.350,
+        ("slow", "high", "BI12-34-4k-1 2") : 0.00 ,
+        ("fast", "high", "BI12-34-4k-1 2") : 6.522,
+        ("fast", "low",  "BI12-34-4k-1 2") : 5.401,
+        ("slow", "low",  "BI12-34-4k-1 3") : 3.250,
+        ("slow", "high", "BI12-34-4k-1 3") : 0.00 ,
+        ("fast", "high", "BI12-34-4k-1 3") : 7.383,
+        ("fast", "low",  "BI12-34-4k-1 3") : 5.907,
+        ("slow", "low",  "BI12-34-4k-1 4") : 3.500,
+        ("slow", "high", "BI12-34-4k-1 4") : 0.00 ,
+        ("fast", "high", "BI12-34-4k-1 4") : 6.574,
+        ("fast", "low",  "BI12-34-4k-1 4") : 5.446
     }
 
 gmosampsRdnoiseBefore20060831 = {
@@ -840,7 +876,25 @@ gmosampsBiasBefore20150826 = {
         ("slow", "low",  "BI12-34-4k-1, 4") : 3084.,
         ("slow", "high", "BI12-34-4k-1, 4") : 0.000,
         ("fast", "high", "BI12-34-4k-1, 4") : 1617.,
-        ("fast", "low",  "BI12-34-4k-1, 4") : 1263.
+        ("fast", "low",  "BI12-34-4k-1, 4") : 1263.,
+        #AMPS 12-9 (CCD3)
+        #Repeated entries for CCD3 without the last comma
+        ("slow", "low",  "BI12-34-4k-1 1") : 3162.,
+        ("slow", "high", "BI12-34-4k-1 1") : 0.000,
+        ("fast", "high", "BI12-34-4k-1 1") : 2467.,
+        ("fast", "low",  "BI12-34-4k-1 1") : 2745.,
+        ("slow", "low",  "BI12-34-4k-1 2") : 3113.,
+        ("slow", "high", "BI12-34-4k-1 2") : 0.000,
+        ("fast", "high", "BI12-34-4k-1 2") : 1962.,
+        ("fast", "low",  "BI12-34-4k-1 2") : 1823.,
+        ("slow", "low",  "BI12-34-4k-1 3") : 3071.,
+        ("slow", "high", "BI12-34-4k-1 3") : 0.000,
+        ("fast", "high", "BI12-34-4k-1 3") : 2142.,
+        ("fast", "low",  "BI12-34-4k-1 3") : 2201.,
+        ("slow", "low",  "BI12-34-4k-1 4") : 3084.,
+        ("slow", "high", "BI12-34-4k-1 4") : 0.000,
+        ("fast", "high", "BI12-34-4k-1 4") : 1617.,
+        ("fast", "low",  "BI12-34-4k-1 4") : 1263.
     }
 
 gmosampsBiasBefore20060831 = {
