@@ -2060,10 +2060,10 @@ def measure_bg_from_objcat(ad, min_ok=5, value_only=False):
                         bg = np.mean(clipped_data)
                         bg_std = np.std(clipped_data)
                         nsamples = np.sum(~clipped_data.mask)
-        if value_only:
-            output_dict[objcat.extver()] = bg
-        else:
-            output_dict[objcat.extver()] = (bg, bg_std, nsamples)
+            if value_only:
+                output_dict[objcat.extver()] = bg
+            else:
+                output_dict[objcat.extver()] = (bg, bg_std, nsamples)
 
     return output_dict
 
