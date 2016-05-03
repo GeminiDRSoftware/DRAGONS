@@ -18,10 +18,10 @@ globalConf.update_exports({
 })
 
 def cal_search_factory():
-    calconf = globalConf[CONFIG_SECTION]
 
     ret = prsproxyutil.calibration_search
     try:
+        calconf = globalConf[CONFIG_SECTION]
         if calconf.standalone:
             if not localmanager_available:
                 raise RuntimeError(
@@ -29,6 +29,10 @@ def cal_search_factory():
                         "are missing dependencies: {}".format(import_error))
             lm = localmanager.LocalManager(calconf.database_dir)
             ret = lm.calibration_search
+    except KeyError:
+        # This will happen if CONFIG_SECTION has not been defined in any
+        # config file
+        pass
     except AttributeError:
         # This may happen if either calconf.standalone or
         # calconf.database_dir are not defined
