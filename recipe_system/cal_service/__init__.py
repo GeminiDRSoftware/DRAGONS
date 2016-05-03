@@ -7,6 +7,7 @@ except ImportError as e:
     localmanager_available = False
     import_error = e.message
 
+# BEGIN Setting up the calibs section for config files
 CONFIG_SECTION = 'calibs'
 
 globalConf.update_translation({
@@ -16,9 +17,16 @@ globalConf.update_translation({
 globalConf.update_exports({
     CONFIG_SECTION: ('standalone', 'database_dir')
 })
+# END Setting up the calibs section for config files
 
 def cal_search_factory():
+    """
+    This function returns the proper calibration search function, depending on
+    the user settings.
 
+    Defaults to `prsproxyutil.calibration_search` if there is missing calibs
+    setup, or if the `[calibs]`.`standalone` option is turned off.
+    """
     ret = prsproxyutil.calibration_search
     try:
         calconf = globalConf[CONFIG_SECTION]

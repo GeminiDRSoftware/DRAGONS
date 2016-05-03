@@ -1,3 +1,23 @@
+#
+#                                                                  gemini_python
+#
+#                                                                  recipe_system
+#                                                                      config.py
+# ------------------------------------------------------------------------------
+# $Id$
+# ------------------------------------------------------------------------------
+__version__      = '$Revision$'[11:-2]
+__version_date__ = '$Date$'[7:-2]
+# ------------------------------------------------------------------------------
+# CONFIG SERVICE
+
+""" This module provides an interface to config files, and a globally available
+config object, to share setup information across the application.
+
+An instance of `ConfigObject`, `globalConf`, is initialized when first loading
+this module, and it should be used as the only interface to the config system.
+"""
+
 import os
 import types
 from ConfigParser import SafeConfigParser
@@ -6,13 +26,44 @@ from collections import defaultdict
 STANDARD_REDUCTION_CONF = '~/.geminidr/rsys.cfg'
 
 class Section(object):
+    """
+    An instance of `Section` describes the contents for a section of an
+    INI-style config file. Each entry in the section translates to an
+    *attribute* of the instance. Thus, a piece of config file like this::
+
+        [section]
+        attribute1 = true
+        attribute2 = /foo/bar
+
+    could be accessed like this::
+
+        >>> sect = globalConf[SECTION_NAME]
+        >>> sect.attribute1
+        'true'
+        >>> sect.attribute2
+        '/foo/bar'
+
+    The attributes are read-only. Any attempt to set a new one, or change
+    the value of an entry through instances of this class, will raise an
+    exception.
+
+    As the entries will be translated as Python attributes, this means that
+    entry names **have to** be valid Python identifier names.
+
+    There is only one reserved name: `as_dict`. This cannot be used as an
+    entry name.
+    """
     def __init__(self, values_dict):
         self._set('_contents', values_dict)
 
     def _set(self, name, value):
+        if name == 'as_dict':
+            raise RuntimeError("'as_dict' is a reserved name and cannot be "
+                               "used as a config entry.")
         self.__dict__[name] = value
 
     def as_dict(self):
+        "Returns a dictionary representation of this section"
         return self._contents.copy()
 
     def __setattr__(self, attr, value):
@@ -74,11 +125,24 @@ class ConfigObject(object):
         self._sections[section] = Section(values)
 
     def update_exports(self, expdict):
+        """Updates the internal export table that will be used to share config
+        information with process spawns.
+
+        Parameters
+        ----------
+        expdict : dict
+            Each key is the name of a section. The values of the dictionary are
+            sequences of strings, with each string in the sequence being the
+            name of a config entry in that section that will be exported, if
+            found.
+        """
         for section, opts in expdict.items():
             self._exports[section].update(opts)
 
     def update_translation(self, conv):
-        """
+        """Updates the internal mapping table for automatic translation of data
+        types when reading from config files.
+
         Parameters
         ----------
         conv : dict
