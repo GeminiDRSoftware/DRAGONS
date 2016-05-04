@@ -1,0 +1,380 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<meta http-equiv="content-type" content="text/html;" /><title>Astrodata Package Viewer</title>
+<link href="/qap/js/jquery-ui/css/ui-lightness/jquery-ui-1.8.20.custom.css" rel=
+"stylesheet">
+<style type="text/css">
+svg { position:relative; top:0; left:0;  width:100%% }
+</style>
+
+<script type="text/javascript" src="/qap/js/jquery-ui/js/jquery.js"></script>
+<script type="text/javascript" src="/qap/js/jquery-ui/js/jquery-ui.js"></script>
+<script type="text/javascript" src="/qap/d3.v3.min.js"></script>
+
+<script type="text/javascript">
+function ajaxLink(link)
+{
+    $.ajax({url:link,
+            type:"post",
+            });
+}
+
+
+function SERVEReditFile(link,lnum)
+{
+    if (typeof(lnum) == "undefined")
+    {
+        lnum = 0;
+    }
+    $.ajax({url:"/edit",
+            type:"post",
+            data: { lnum:lnum,
+                    filename: link
+                   }
+           });
+    
+}
+
+function aceditFile(link,lnum)
+{
+    if (typeof(lnum) == "undefined")
+    {
+        lnum = 0;
+    }
+    
+    var ddict = {   lnum:lnum,
+                    filename:link
+                };
+    var normal = true;
+    if (normal)
+    {
+        var acewin = window.open("/acedit?lnum="+lnum+"&filename="+encodeURI(link),
+                                "_blank",
+                                "width=600,height=600");
+        // acewin.moveTo(window.screenX, window.screenY);
+        acewin.moveTo(200,200);
+        //acewin.resizeTo(600,500);
+    }
+    
+    else
+    {
+        $.ajax({url:"/acedit",
+                type:"get",
+                data: { lnum:lnum,
+                        filename: link
+                       },
+                success:function(data)
+                {
+                    var acewin = window.open("","","width=600,height=500");
+                    // acewin.moveTo(window.screenX, window.screenY);
+                    acewin.moveTo(0,0);
+                    ac
+                    acewin.document.write(data);
+                    acewin.focus();
+                }
+               });
+     }   
+}
+
+editFile = aceditFile;
+
+function empty_pdk_focus(){
+    $($(".pdk_focus")[0]).slideUp(500, function () {
+                     $($(".pdk_focus")[0]).empty();
+                     });
+}
+                                        
+function getKeys(obj)
+{
+    var keys = []
+    for (var key in obj)
+    {
+        keys[keys.length]=key;
+    }
+    keys.sort();
+    return keys;
+}
+localClient = %(local_client)s;
+</script>                    
+
+ </head>
+                    
+<body>
+    <div>
+        <a href='http://ophiuchus.hi.gemini.edu/ADDOCS'>Astrodata 0.2 Manual:</a>
+        (
+        <a href='http://ophiuchus.hi.gemini.edu/ADDOCS/chapter_AstroDataClass.html'>AstroData Class</a>
+        )
+        (
+        <a href='http://ophiuchus.hi.gemini.edu/ADDOCS/chapter_ReductionContextClass.html'>
+            ReductionContext Class
+        </a>
+        )
+        (
+        <a href='http://ophiuchus.hi.gemini.edu/ADDOCS/developmentGuide.html'>Making a Config Package</a>
+        ) (
+        <a href='http://ophiuchus.hi.gemini.edu/ADDOCS/gen.ADMANUAL_ADConcepts.html'>Concepts</a>
+        )
+        <br/> 
+    </div>
+    %(accordian_div)s
+    %(select_options)s
+    <div>Selected: <span class="adk_selected" style="color:darkblue">nothing selected</span></div>
+    <div class="pdk_focus" >
+    </div>
+    <div style="border:solid black 1px;" id="type_tree">
+    </div>
+
+<script type="text/javascript">
+</script>
+%(types_div)s
+%(descriptors_div)s
+%(recipes_div)s
+
+<style>
+
+.node {
+  cursor: pointer;
+}
+
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node text {
+  font: 10px sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+
+</style>
+<script type="text/vnd.d3" id="typestree_json">
+%(typestree_json)s
+</script>
+ <script type="text/vnd.graphviz" id="cluster">
+digraph G {
+
+	subgraph cluster_0 {
+		style=filled;
+		color=lightgrey;
+		node [style=filled,color=white];
+		a0 -> a1 -> a2 -> a3;
+		label = "process #1";
+	}
+
+	subgraph cluster_1 {
+		node [style=filled];
+		b0 -> b1 -> b2 -> b3;
+		label = "process #2";
+		color=blue
+	}
+	start -> a0;
+	start -> b0;
+	a1 -> b3;
+	b2 -> a3;
+	a3 -> a0;
+	a3 -> end;
+	b3 -> end;
+
+	start [shape=Mdiamond];
+	end [shape=Msquare];
+}
+</script>
+
+<script>
+$("body").ready(function () 
+{
+var treeEL = $("#type_tree");
+var adkpackEL = $(".adk_packages");
+var treeELedge = treeEL.outerWidth() - treeEL.width();
+console.log("adkhtm196:"+treeELedge);
+var targetwidth = adkpackEL.parent().width() - adkpackEL.outerWidth() - (10*treeELedge);
+
+var margin = {top: 20, right: 120, bottom: 20, left: 120},
+    width = targetwidth - margin.right - margin.left,
+    height = 600 - margin.top - margin.bottom;
+
+
+    
+var i = 0,
+    duration = 750,
+    root;
+
+var tree = d3.layout.tree()
+    .size([height, width]);
+
+var diagonal = d3.svg.diagonal()
+    .projection(function(d) { return [d.y, d.x]; });
+
+var elwidth =  width + margin.right + margin.left;
+var svg = d3.select("#type_tree").append("svg")
+    .attr("width", width + margin.right + margin.left)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+treeEL.css("width", " "+elwidth+"px");
+dbg_tt = treeEL;
+
+console.log("adkhtm213:"+width, +","+elwidth);
+function sort_children(children)
+{
+    for (var n=0; n<children.length; n++)
+    {
+        var child = children[n];
+        if (child.children && child.children.length)
+        {
+            sort_children(child.children);
+        }    
+    }
+    children.sort( function (a,b)
+        {
+            if (a.name > b.name) return 1
+            if (a.name < b.name) return -1
+            return 0
+        });
+        
+}
+
+function loaddata( flare) {
+
+  sort_children(flare.children)
+  root = flare;
+  root.x0 = height / 2;
+  root.y0 = 0;
+
+  function collapse(d) {
+    if (d.children) {
+      d._children = d.children;
+      d._children.forEach(collapse);
+      d.children = null;
+    }
+  }
+
+  root.children.forEach(collapse);
+  update(root);
+};
+
+
+
+d3.select(self.frameElement).style("height", "800px");
+
+function update(source) {
+
+  // Compute the new tree layout.
+  var nodes = tree.nodes(root).reverse(),
+      links = tree.links(nodes);
+  // Normalize for fixed-depth.
+  nodes.forEach(function(d) { d.y = d.depth * 180; });
+ 
+  //nodes.children.sort(d3.ascending)
+  //console.log(nodes)
+  // Update the nodes
+  var node = svg.selectAll("g.node")
+      .data(nodes, function(d) { return d.id || (d.id = ++i); });
+
+  // Enter any new nodes at the parent's previous position.
+  var nodeEnter = node.enter().append("g")
+      .attr("class", "node")
+      .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
+      .on("click", click);
+
+  nodeEnter.append("circle")
+      .attr("r", 1e-6)
+      .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+
+  nodeEnter.append("text")
+      .attr("x", function(d) { return d.children || d._children ? -10 : 10; })
+      .attr("dy", ".35em")
+      .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
+      .text(function(d) { return d.name; })
+      .style("fill-opacity", 1e-6);
+
+  // Transition nodes to their new position.
+  var nodeUpdate = node.transition()
+      .duration(duration)
+      .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+
+  nodeUpdate.select("circle")
+      .attr("r", 4.5)
+      .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+
+  nodeUpdate.select("text")
+      .style("fill-opacity", 1);
+
+  // Transition exiting nodes to the parent's new position.
+  var nodeExit = node.exit().transition()
+      .duration(duration)
+      .attr("transform", function(d) { return "translate(" + source.y + "," + source.x + ")"; })
+      .remove();
+
+  nodeExit.select("circle")
+      .attr("r", 1e-6);
+
+  nodeExit.select("text")
+      .style("fill-opacity", 1e-6);
+
+  // Update the links
+  var link = svg.selectAll("path.link")
+      .data(links, function(d) { return d.target.id; });
+
+  // Enter any new links at the parent's previous position.
+  link.enter().insert("path", "g")
+      .attr("class", "link")
+      .attr("d", function(d) {
+        var o = {x: source.x0, y: source.y0};
+        return diagonal({source: o, target: o});
+      });
+
+  // Transition links to their new position.
+  link.transition()
+      .duration(duration)
+      .attr("d", diagonal);
+
+  // Transition exiting nodes to the parent's new position.
+  link.exit().transition()
+      .duration(duration)
+      .attr("d", function(d) {
+        var o = {x: source.x, y: source.y};
+        return diagonal({source: o, target: o});
+      })
+      .remove();
+
+  // Stash the old positions for transition.
+  nodes.forEach(function(d) {
+    d.x0 = d.x;
+    d.y0 = d.y;
+  });
+}
+
+// Toggle children on click.
+function click(d) {
+  if (d.children) {
+    d._children = d.children;
+    d.children = null;
+  } else {
+    d.children = d._children;
+    d._children = null;
+  }
+  dbg_d = d;
+  var adks = $(".adk_selected").empty().text(d.name);
+  update(d);
+  var url = "/typeinfo/"+d.name;
+  console.log("adkml370:url = ", url, loadPkgContent);
+  loadPkgContent(url, d.name)
+}
+
+
+    loaddata(%(typestree_json)s);
+});
+</script>
+
+</body>
+</html>
