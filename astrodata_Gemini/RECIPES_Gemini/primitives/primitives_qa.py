@@ -134,7 +134,7 @@ class QAPrimitives(GENERALPrimitives):
                 if bunit is None:
                     bunit = "adu"
 
-                if bg_dict[extver][0] is None:
+                if not extver in bg_dict or bg_dict[extver][0] is None:
                     log.fullinfo("No good background values in "
                         "%s[OBJCAT,%d], taking median of data instead." %
                                          (ad.filename,extver))
