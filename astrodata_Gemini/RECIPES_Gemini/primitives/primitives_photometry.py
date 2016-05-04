@@ -1614,11 +1614,12 @@ def _profile_sources(ad):
             stamp=data[int(yc)-sz:int(yc)+sz,int(xc)-sz:int(xc)+sz]
 
             # Reset grid to correct center coordinates
-            dist[0] += int(yc)-yc
-            dist[1] += int(xc)-xc
+            shift_dist = dist.copy()
+            shift_dist[0] += int(yc)-yc
+            shift_dist[1] += int(xc)-xc
     
             # Square root of the sum of the squares of the distances
-            rdist = np.sqrt(np.sum(dist**2,axis=0))
+            rdist = np.sqrt(np.sum(shift_dist**2,axis=0))
 
             # Radius and flux arrays for the radial profile
             rpr = rdist.flatten()
