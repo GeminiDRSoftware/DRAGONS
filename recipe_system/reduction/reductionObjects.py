@@ -12,6 +12,7 @@ __version_date__ = '$Date$'[7:-2]
 import re 
 import os
 import gc
+import imp
 import time
 import urllib2           # get httperror
 import traceback
@@ -401,12 +402,11 @@ class PrimitiveSet(object):
         for parmod in parlist:
             # module names of this module and parents, in order
             # load the param_dict
-            exec("import " + parmod)
-            filename = eval(parmod +".__file__")
+            file_, pathname, description = imp.find_module(parmod)
             # @@NAMING CONVENTION RELIANCE
             # make sure it's .py, not .pyc
-            filename = re.sub(".pyc", ".py", filename)
-            paramfile = re.sub("primitives_", "parameters_", filename)
+            filename = pathname.replace('.pyc', 'py')
+            paramfile = filename.replace("primitives_", "parameters_")
             # print "RO144:", paramfile
             if os.path.exists(paramfile):
                 # load and integrate
