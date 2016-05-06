@@ -144,7 +144,7 @@ class CalibrationDefinitionLibrary(object):
                 except (ExistError, KeyError, DescriptorError):
                     pass
                 else:
-                    dest_dict[desc_name] = None if dv is None else dv.for_db()
+                    desc_dict[desc_name] = None if dv is None else dv.for_db()
 
             cr.descriptors = desc_dict
             cr.types = ad.types
