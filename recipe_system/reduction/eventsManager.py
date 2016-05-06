@@ -58,31 +58,25 @@ class EventsManager:
         options = {"central_wavelength":"asMicrometers=True",
                    "filter_name":"pretty=True",}
 
-        postprocess = {"local_time" : '.strftime("%H:%M:%S.%f")',
-                       "ut_datetime": '.strftime("%Y-%m-%d %H:%M:%S.%f")',}
+        postprocess = {"local_time" : lambda x: x.strftime("%H:%M:%S.%f"),
+                       "ut_datetime": lambda x: x.strftime("%Y-%m-%d %H:%M:%S.%f"),}
 
         # Make the metadata dictionary.  Start with the items that
         # do not come from descriptors
         mtd_dict = {"raw_filename": ad.filename, "types": ad.types,}
 
-        for mtd_name, desc_name in descriptor_dict.iteritems():
-            if options.has_key(desc_name):
-                opt = options[desc_name]
-            else:
-                opt = ''
-
-            if postprocess.has_key(desc_name):
-                pp = postprocess[desc_name]
-            else:
-                pp = ''
-
+        for mtd_name, desc_name in descriptor_dict.items():
             try:
-                exec('dv = ad.%s(%s).as_pytype()%s' % (desc_name, opt, pp))
-            except:
-                dv = None
+                descriptor = getattr(ad, desc_name)
+            except AttributeError:
+                mtd_dict[mtd_name] = None
+            else:
+                # Get the postprocessing transform. If there's none, use
+                # an identity function.
+                postproc = postprocess.get(desc_name, lambda x: x)
+                dv = descriptor(options.get(desc_name, '')).as_pytype()
+                mtd_dict[mtd_name] = postproc(dv)
 
-            mtd_dict[mtd_name] = dv
-            
         # If the file is a processed stack, then add the filenames of the 
         # data that went into the stack
         if ad.phu_get_key_value('STACKFRM'):

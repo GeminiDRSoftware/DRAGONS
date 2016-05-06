@@ -25,10 +25,10 @@ class SKExcept:
     def __init__(self, msg="Exception Raised in StackKeeper", **argv):
         """This constructor takes a message to print to the user."""
         self.message = msg
-        for arg in argv.keys():
-            exec("self."+arg+"="+repr(argv[arg]))
-            
-            
+        for arg, value in argv.items():
+            setattr(self, arg, value)
+
+
     def __str__(self):
         """
         This str conversion member returns the message given by the user 
