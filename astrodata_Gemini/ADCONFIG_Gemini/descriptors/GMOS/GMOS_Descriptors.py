@@ -808,15 +808,11 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         # Form the group_id
         descriptor_dv_string_list = []
         for descriptor in id_descriptor_list:
-            # Prepare the descriptor call
+            kw = {}
             if descriptor in call_pretty_version_list:
-                end_parameter = "(pretty=True)"
-            else:
-                end_parameter = "()"
-            descriptor_call = ''.join([descriptor, end_parameter])
+                kw['pretty'] = True
 
-            # Call the descriptor
-            exec ("descriptor_dv = dataset.{0}".format(descriptor_call))
+            descriptor_dv = getattr(dataset, descriptor)(**kw)
 
             # Check for a returned descriptor value object with a None value
             if descriptor_dv.is_none():
@@ -1138,7 +1134,8 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
         read_mode_descriptors = ["gain_setting", "read_speed_setting"]
         read_mode_dvs = []
         for descriptor_name in read_mode_descriptors:
-            exec ("read_mode_dvs.append(dataset.{0}())".format(descriptor_name))
+            descriptor = getattr(dataset, descriptor_name)
+            read_mode_dvs.append(descriptor())
 
         if any(dv.is_none() for dv in read_mode_dvs):
             # The descriptor functions return None if a value cannot be found

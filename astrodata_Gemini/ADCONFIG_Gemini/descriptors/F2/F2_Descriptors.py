@@ -282,15 +282,11 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
         # Form the group_id
         descriptor_object_string_list = []
         for descriptor in id_descriptor_list:
-            # Prepare the descriptor call
+            kw = {}
             if descriptor in call_pretty_version_list:
-                end_parameter = "(pretty=True)"
-            else:
-                end_parameter = "()"
-            descriptor_call = ''.join([descriptor, end_parameter])
+                kw['pretty'] = True
 
-            # Call the descriptor
-            exec ("descriptor_object = dataset.{0}".format(descriptor_call))
+            descriptor_object = getattr(dataset, descriptor)(**kw)
 
             # Check for a returned descriptor value object with a None value
             if descriptor_object.is_none():
