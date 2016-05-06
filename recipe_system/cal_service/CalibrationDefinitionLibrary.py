@@ -138,20 +138,13 @@ class CalibrationDefinitionLibrary(object):
             # sensible value before adding it to the dictionary
             desc_dict = {}
             for desc_name in descriptor_list:
-                if options.has_key(desc_name):
-                    opt = options[desc_name]
-                else:
-                    opt = ''
+                descriptor = getattr(ad, desc_name)
                 try:
-                    exec_cmd = 'dv = ad.%s(%s)' % (desc_name, opt)
-                    exec(exec_cmd)
+                    dv = descriptor(options.get(desc_name, ''))
                 except (ExistError, KeyError, DescriptorError):
-                    continue
-
-                if dv is not None:
-                    desc_dict[desc_name] = dv.for_db()
+                    pass
                 else:
-                    desc_dict[desc_name] = None
+                    dest_dict[desc_name] = None if dv is None else dv.for_db()
 
             cr.descriptors = desc_dict
             cr.types = ad.types
