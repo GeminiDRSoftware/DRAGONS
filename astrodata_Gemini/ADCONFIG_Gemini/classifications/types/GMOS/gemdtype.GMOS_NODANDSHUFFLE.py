@@ -5,7 +5,8 @@ class GMOS_NODANDSHUFFLE(DataClassification):
     typeReqs= []
     phuReqs= {}
     parent = "GMOS_SPECT"
-    requirement = AND ([ ISCLASS("GMOS_SPECT"),
-                         PHU(NODPIX='.*') ])
+    requirement = PHU(NODPIX='.*')
+    #requirement = AND ([ ISCLASS("GMOS_SPECT"),
+    #                     PHU(NODPIX='.*') ])
 
 newtypes.append(GMOS_NODANDSHUFFLE())
