@@ -14,6 +14,8 @@ import os.path
 import shutil
 import numpy as np
 
+from scipy.ndimage import measurements
+
 from astrodata import AstroData
 from astrodata.utils import Errors
 from astrodata.utils import Lookups
@@ -234,7 +236,30 @@ class StandardizePrimitives(GENERALPrimitives):
                     saturation_array = np.where(
                         ext.data >= saturation_level, 4, 0)
                     dq_bit_arrays.append(saturation_array)
-                
+                    
+                # Readout modes of IR detectors can result in saturated pixels
+                # having values below the saturation level. Flag those.
+                # IR instruments are identified by having different non-linear
+                # and saturation levels as I can't think of a better way.
+                if non_linear_level is not None and \
+                        non_linear_level < saturation_level:
+                    # Pixels above non_linear_level are set to False, and
+                    # these should form rings around the centers of stars
+                    # suffering from this problem. The "label" task finds
+                    # connected groups of pixels
+                    hidden_saturation_array = np.zeros_like(ext.data).astype(dq_dtype)
+                    regions, nregions = measurements.label(
+                                        ext.data < non_linear_level)
+                    # In all my tests, region 1 has been the majority of the
+                    # image; however, I cannot guarantee that this is the case
+                    # and therefore we should check the size of each region
+                    for region in range(1,nregions+1):
+                        test_array = np.where(regions==region, 4, 0)
+                        # Limit of 10000 pixels for a hole is a bit arbitrary
+                        if np.sum(test_array) < 4*10000:
+                            hidden_saturation_array |= test_array
+                    dq_bit_arrays.append(hidden_saturation_array)
+
                 # BPMs have an EXTNAME equal to DQ
                 bpmname = None
                 if final_bpm is not None:
