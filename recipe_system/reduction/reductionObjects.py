@@ -51,7 +51,7 @@ class ReductionError(Exception):
 class IterationError(ReductionError):
     pass
 
-# ------------------------------------------------------------------------------    
+# ------------------------------------------------------------------------------
 class ReductionObject(object):
     context     = None
     primDic     = None          # dict of primitive sets keyed by astrodata type
@@ -78,13 +78,13 @@ class ReductionObject(object):
         if cmdclause:
             cmdclause(self, rc)
             
-    def new_primitive_set(self, primtype = None, btype = "EXTERNAL"):
+    def new_primitive_set(self, primtype=None, btype="EXTERNAL"):
         a = PrimitiveSet()
         a.btype = "RECIPE"
         a.astrotype = primtype
         return a
      
-    def parameter_prop(self, param, prop= "default"):
+    def parameter_prop(self, param, prop="default"):
         if self.curPrimType not in self.primDict:
             return None
         prims = self.primDict[self.curPrimType]
@@ -139,7 +139,7 @@ class ReductionObject(object):
             newprimset = self.recipeLib.retrieve_primitive_set(astrotype=correctPrimType)
             self.add_prim_set(newprimset, add_to_front=True)
             self.curPrimType = correctPrimType
-        self.recipeLib.check_and_bind(self, primname, context=context) 
+        self.recipeLib.check_and_bind(self, primname) 
         
         primset = self.get_prim_set(primname)
         if hasattr(primset, primname):
@@ -315,7 +315,7 @@ class ReductionObject(object):
             return
             
         if primset.astrotype is None:
-            raise ReductionError("Primitive Set astrotype is None, fatal error, corrupt configuration")
+            raise ReductionError("Primitive Set astrotype is None; corrupt configuration")
         if primset.btype == "RECIPE":
             if hasattr(primset,"param_dict") and primset.param_dict != None:
                 print repr(primset.param_dict)
@@ -341,15 +341,14 @@ class ReductionObject(object):
     def get_prim_set(self, primname):
         primset = None
         if self.curPrimType != self.primstype_order[0]:
-            print "RO355:", self.curPrimType, self.primstype_order
-            raise ReductionError("curPrimType does not equal primstype_order[0], unexpected")
+            raise ReductionError("curPrimType does not equal primstype_order[0]")
         for atype in self.primstype_order:
-            primset =  self.get_prim_set_for_type(primname, astrotype = atype)
+            primset =  self.get_prim_set_for_type(primname, astrotype=atype)
             if primset:
                 break
         return primset
 
-    def get_prim_set_for_type(self, primname, astrotype = None):
+    def get_prim_set_for_type(self, primname, astrotype=None):
         # Get all possible types the primitive could be inherited from,
         # starting from the leaf node and working up the tree
         from astrodata.interface.AstroDataType import get_classification_library
@@ -363,14 +362,13 @@ class ReductionObject(object):
         for atype in possible_types:
             # If the primitive set has not been loaded, load it
             if atype not in self.primDict.keys():
-                newprimset = self.recipeLib.retrieve_primitive_set(
-                    astrotype=atype)
+                newprimset = self.recipeLib.retrieve_primitive_set(astrotype=atype)
                 self.add_prim_set(newprimset)
 
                 # If it's still not there, raise an error
                 if atype not in self.primDict.keys():
-                    raise ReductionError("Could not add primitive set "\
-                                          "for astrotype %s" % atype)
+                    msg = "Could not add primitive set for type {}".format(atype)
+                    raise ReductionError(msg)
 
             # Get all the primitive sets for this type
             primsetary = self.primDict[atype]
@@ -499,7 +497,7 @@ def command_clause(ro, coi):
                 if usePRS:
                     try:
                         if user_cal_service:
-                            calurl = user_cal_service.get_calibration(caltype = rq.caltype)
+                            calurl = user_cal_service.get_calibration(caltype=rq.caltype)
                             #print "488: calurl", repr(calurl)
                             #if calname:
                             #    return calname
