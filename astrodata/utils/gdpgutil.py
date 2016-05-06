@@ -17,6 +17,9 @@ from ..interface.AstroDataType import get_classification_library
 
 from recipe_system.reduction.reductionContextRecords import AstroDataRecord
 #------------------------------------------------------------------------------ 
+cl = get_classification_library()
+
+#------------------------------------------------------------------------------ 
 def check_data_set(filenames):
     """Takes a list or individual AstroData, filenames, and then verifies and
     returns list of AstroData instances. Will crash if bad arguments.
@@ -153,53 +156,27 @@ def close_if_name(dataset, b_needs_closing):
     return
 
 
-def deadfunctioninherit_config(typ, index, cl=None):
-    if cl == None:
-        cl = get_classification_library()
-
-    if typ in index:
-        return {typ:index[typ]}
-    else:
-        typo = cl.get_type_obj(typ)
-        supertypos = typo.get_super_types()
-        cfgs = {}
-        for supertypo in supertypos:
-            cfg = inherit_config(supertypo.name, index, cl = cl)
-            if cfg != None:
-                cfgs.update(cfg)
-        if len(cfgs) == 0:
-            return None
-        else:
-            return cfgs
-
-
-def inherit_index(typ=None, index=None, for_child=None):
-    if not typ and not index:
-        return None
-        
+def inherit_index(typ, index, for_child=None):
     if typ in index.keys():
         return (typ, index[typ])
     else:
-        cl = get_classification_library()
-        if isinstance(typ, str):
-            typo = cl.get_type_obj(typ)
-        
+        typo = cl.get_type_obj(typ)
         if typo.parent:
-            if for_child is None:
-                for_child = typ
-            
-            return inherit_index(typo.parent, index, for_child=for_child)
+            return inherit_index(typo.parent, index, for_child=typ)
         else:
-            return None  
+            return None
+
 
 def pick_config(dataset, index, style="unique"):
     """
-    possible styles: "unique" only one leaf node can be returned, anything else
-    is seen as a conflict... "leaves" which gets all leaf node assignments ... "all"
-    means all assignments from all types that apply to the dataset.  Default style
-    is unique.
+    :parameter styles: "unique" - only one leaf node is returned
+                       "leaves" - returns all leaf node assignments
+                       "all"    - all assignments from all types that 
+                                  apply to the dataset.  
+                       Default style is unique.
+
     """
-    ad,obn = open_if_name(dataset)
+    ad, obn = open_if_name(dataset)
     cl = ad.get_classification_library()
     
     candidates = {}
