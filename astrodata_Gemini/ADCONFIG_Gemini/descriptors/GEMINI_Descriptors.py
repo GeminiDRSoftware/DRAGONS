@@ -556,21 +556,22 @@ class GEMINI_DescriptorCalc(FITS_DescriptorCalc):
         
         # If the data have been prepared, take the (total) exposure time value
         # directly from the appropriate keyword
-        if "PREPARED" in dataset.types:
-            # Get the total exposure time value from the header of the PHU
-            ret_exposure_time = float(exposure_time)
-        else:
-            # Get the number of coadds using the appropriate descriptor
-            coadds = dataset.coadds()
+        ret_exposure_time = float(exposure_time)
+
+        # Ensure that the correct exposure time is returned for unprepared data
+        # Only multiply by number of coadds if that's what's uspposed to happen        
+        if "PREPARED" not in dataset.types:
+            if dataset.is_coadds_summed().as_pytype():
+                coadds = dataset.coadds()
             
-            if coadds is None:
                 # The descriptor functions return None if a value cannot be
                 # found and stores the exception info. Re-raise the exception.
                 # It will be dealt with by the CalculatorInterface.
-                if hasattr(dataset, "exception_info"):
-                    raise dataset.exception_info
+                if coadds is None:
+                    if hasattr(dataset, "exception_info"):
+                        raise dataset.exception_info
             
-            ret_exposure_time = float(exposure_time * coadds)
+                ret_exposure_time *= float(coadds)
         
         # Instantiate the return DescriptorValue (DV) object
         ret_dv = DescriptorValue(ret_exposure_time, name="exposure_time",
