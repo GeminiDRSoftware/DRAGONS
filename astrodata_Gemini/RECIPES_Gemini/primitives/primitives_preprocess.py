@@ -572,14 +572,20 @@ class PreprocessPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
             
+            # Get the coefficients from the lookup table
+            try:
+                nonlin_coeffs = ad.nonlinearity_coeffs()
+            except Errors.DescriptorInfrastructureError as e:
+                log.warning("Unable to obtain nonlinearity coefficients for "
+                            "%s" % (ad.filename))
+                adoutput_list.append(ad)
+                continue
+            
             if ad['VAR'] is not None:
                 log.warning("%s has a VAR extension, which will be rendered "
                             "meaningless by nonlinearityCorrect"
                             % (ad.filename))
 
-            # Get the coefficients from the lookup table
-            nonlin_coeffs = ad.nonlinearity_coeffs()
-            
             # It's impossible to do this cleverly with a string of ad.mult()s
             # so use numpy. That's OK because if there's already a VAR here
             # something's gone wrong, so only SCI will has to be altered
