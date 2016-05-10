@@ -153,7 +153,10 @@ class NIRIPrimitives(GEMINIPrimitives):
                 
                 # Multiply the corrected pixel data by the number of coadds
                 if coadds > 1:
-                    corrected_pixel_data = corrected_pixel_data * coadds
+                    corrected_pixel_data *= coadds
+                    
+                # Correct for the exposure time issue by scaling the counts
+                corrected_pixel_data *= exposure_time / (exposure_time + coeff1)
                 
                 # Write the corrected pixel data to the output object
                 ext.data = corrected_pixel_data
@@ -164,9 +167,9 @@ class NIRIPrimitives(GEMINIPrimitives):
                              "%s is %.8f" \
                              % (ext.filename, corrected_mean_value))
             
-            # Correct the exposure time by adding coeff1
-            total_exposure_time = total_exposure_time + coeff1
-            log.fullinfo("The corrected total exposure time = %f" \
+            # Correct the exposure time by adding coeff1 * coadds
+            total_exposure_time = total_exposure_time + coeff1 * coadds
+            log.fullinfo("The true total exposure time = %f" \
                          % total_exposure_time)
             
             # Add the appropriate time stamps to the PHU
