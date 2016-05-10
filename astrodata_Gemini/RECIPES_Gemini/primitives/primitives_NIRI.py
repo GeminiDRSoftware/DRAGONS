@@ -108,7 +108,7 @@ class NIRIPrimitives(GEMINIPrimitives):
             log.fullinfo("The well depth = %s" % well_depth_setting)
             
             # Loop over each science extension in each input AstroData object
-            for ext in ad[SCI]:
+            for ext in ad['SCI']:
                 
                 # Get the size of the raw pixel data
                 naxis2 = ext.get_key_value("NAXIS2")
