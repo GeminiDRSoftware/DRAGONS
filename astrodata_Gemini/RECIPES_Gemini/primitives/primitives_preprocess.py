@@ -581,14 +581,8 @@ class PreprocessPrimitives(GENERALPrimitives):
                 adoutput_list.append(ad)
                 continue
             
-            if ad['VAR'] is not None:
-                log.warning("%s has a VAR extension, which will be rendered "
-                            "meaningless by nonlinearityCorrect"
-                            % (ad.filename))
-
             # It's impossible to do this cleverly with a string of ad.mult()s
-            # so use numpy. That's OK because if there's already a VAR here
-            # something's gone wrong, so only SCI will has to be altered
+            # so use regular maths
             log.status("Applying nonlinearity correction to %s "
                        % (ad.filename))
             for ext in ad[SCI]:
@@ -600,6 +594,21 @@ class PreprocessPrimitives(GENERALPrimitives):
                 for n in range(len(coeffs),0,-1):
                     pixel_data += coeffs[n-1]
                     pixel_data *= ext.data
+                # Try to do something useful with the VAR plane, if it exists
+                # Since the data are fairly pristine, VAR will simply be the
+                # Poisson noise (divided by gain if in ADU, divided by COADDS
+                # if the coadds are averaged), possibly plus read-noise**2
+                # So making an additive correction will sort this out,
+                # irrespective of whether there's read noise
+                if ad[VAR,extver] is not None:
+                    div_factor = 1
+                    bunit  = ext.get_key_value("BUNIT")
+                    if bunit.upper() == 'ADU':
+                        div_factor *= ext.gain().as_pytype()
+                    if not ext.is_coadds_summed().as_pytype():
+                        div_factor *= ext.coadds().as_pytype()
+                    ad[VAR,extver].data += (pixel_data - ext.data) / div_factor
+                # Now update the SCI extension
                 ext.data = pixel_data
 
             # Add the appropriate time stamps to the PHU
@@ -738,7 +747,7 @@ class PreprocessPrimitives(GENERALPrimitives):
                 
                 # Normalise the input AstroData object. Calculate the median
                 # value of the science extension
-                if ad[DQ,extver] is not None:
+                if ad[DQ,extver]:
                     median = np.median(ext.data[np.where(ad[DQ,extver].data == 0)]
                                        ).astype(np.float64)
                 else:

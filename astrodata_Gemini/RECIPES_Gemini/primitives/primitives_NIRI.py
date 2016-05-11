@@ -109,6 +109,7 @@ class NIRIPrimitives(GEMINIPrimitives):
             
             # Loop over each science extension in each input AstroData object
             for ext in ad['SCI']:
+                extver = ext.extver()
                 
                 # Get the size of the raw pixel data
                 naxis2 = ext.get_key_value("NAXIS2")
@@ -155,11 +156,17 @@ class NIRIPrimitives(GEMINIPrimitives):
                 if coadds > 1:
                     corrected_pixel_data *= coadds
                     
-                # Correct for the exposure time issue by scaling the counts
-                corrected_pixel_data *= exposure_time / (exposure_time + coeff1)
-                
+                # Correct VAR plane; additive correction means this works
+                # even if read noise has been added
+                if ad['VAR',extver]:
+                    ad['VAR',extver].data += (corrected_pixel_data -
+                                raw_pixel_data) / ext.gain().as_pytype()
+                    
                 # Write the corrected pixel data to the output object
                 ext.data = corrected_pixel_data
+
+                # Correct for the exposure time issue by scaling the counts
+                ad.mult(exposure_time / (exposure_time + coeff1))
                 
                 # Determine the mean of the corrected pixel data
                 corrected_mean_value = np.mean(ext.data, dtype=np.float64)
