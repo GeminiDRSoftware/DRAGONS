@@ -3,6 +3,7 @@ prepare
 addDQ
 ADUToElectrons
 addVAR(read_noise=True, poisson_noise=True)
+nonlinearityCorrect
 darkCorrect
 flatCorrect
 detectSources
