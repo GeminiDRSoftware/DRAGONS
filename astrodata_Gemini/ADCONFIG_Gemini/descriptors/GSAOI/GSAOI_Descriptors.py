@@ -340,7 +340,7 @@ class GSAOI_DescriptorCalc(GEMINI_DescriptorCalc):
                 raise dataset.exception_info
         
         for key in ret_dict:
-            ret_dict[key] = round(ret_dict[key] * math.sqrt(coadds), 2)
+            ret_dict[key] = round(ret_dict[key] / math.sqrt(coadds), 2)
             
         return DescriptorValue(ret_dict, name="read_noise", ad=dataset)
 
