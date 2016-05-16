@@ -210,8 +210,9 @@ class F2_DescriptorCalc(GEMINI_DescriptorCalc):
             if hasattr(dataset, "exception_info"):
                 raise dataset.exception_info
         
+        # Divide by number of reads, since F2 adds these
         if lnrs in getattr(self, "f2ArrayDict"):
-            gain = self.f2ArrayDict[lnrs][1]
+            gain = self.f2ArrayDict[lnrs][1] / lnrs
         else:
             raise Errors.TableKeyError()
         
