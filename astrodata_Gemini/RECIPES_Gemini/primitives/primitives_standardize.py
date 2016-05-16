@@ -239,6 +239,8 @@ class StandardizePrimitives(GENERALPrimitives):
                     
                 # Readout modes of IR detectors can result in saturated pixels
                 # having values below the saturation level. Flag those.
+                # This won't work well if the background level is in the
+                # non-linear regime, but that's bad observing practice
                 # IR instruments are identified by having different non-linear
                 # and saturation levels as I can't think of a better way.
                 if non_linear_level is not None and \
@@ -247,17 +249,22 @@ class StandardizePrimitives(GENERALPrimitives):
                     # these should form rings around the centers of stars
                     # suffering from this problem. The "label" task finds
                     # connected groups of pixels
-                    hidden_saturation_array = np.zeros_like(ext.data).astype(dq_dtype)
                     regions, nregions = measurements.label(
                                         ext.data < non_linear_level)
                     # In all my tests, region 1 has been the majority of the
                     # image; however, I cannot guarantee that this is the case
                     # and therefore we should check the size of each region
-                    for region in range(1,nregions+1):
-                        test_array = np.where(regions==region, 4, 0)
+                    region_sizes = measurements.labeled_comprehension(ext.data,
+                                regions, np.arange(1, nregions+1), len, int, 0)
+                    # First, assume all regions are saturated, and then remove
+                    # any very large ones. This is much quicker than
+                    # progressively adding each region to the DQ mask
+                    hidden_saturation_array = np.where(regions > 0,
+                                                    4, 0).astype(dq_dtype)
+                    for region in range(1, nregions+1):
                         # Limit of 10000 pixels for a hole is a bit arbitrary
-                        if np.sum(test_array) < 4*10000:
-                            hidden_saturation_array |= test_array
+                        if region_sizes[region-1] > 10000:
+                            hidden_saturation_array[regions==region] = 0
                     dq_bit_arrays.append(hidden_saturation_array)
 
                 # BPMs have an EXTNAME equal to DQ
