@@ -143,11 +143,11 @@ class ReductionObject(object):
         self.recipeLib.check_and_bind(self, primname) 
         
         primset = self.get_prim_set(primname)
-        if hasattr(primset, primname):
-            prim = eval("primset.%s" % primname)
-        else:
+        try:
+            prim = getattr(primset, primname)
+        except AttributeError:
             msg = "There is no recipe or primitive named \"%s\" in  %s" % \
-                (primname, str(repr(self)))
+                (primname, repr(self))
             self.curPrimName = prevprimname
             raise ReductionError(msg)
         
