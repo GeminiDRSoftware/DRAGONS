@@ -72,11 +72,13 @@ class F2Primitives(GEMINIPrimitives):
             gt.update_key_from_descriptor(
                 adinput=ad, descriptor="read_noise()", extname="SCI",
                 keyword_comments=self.keyword_comments)
+            del ad.phu.header['RDNOISE']
             
             # Gain (new keyword, should it be written?)
             gt.update_key_from_descriptor(
                 adinput=ad, descriptor="gain()", extname="SCI",
                 keyword_comments=self.keyword_comments)
+            del ad.phu.header['GAIN']
             
             # Non linear level
             gt.update_key_from_descriptor(
