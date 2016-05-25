@@ -464,347 +464,345 @@ class QAPrimitives(GENERALPrimitives):
 
             # Need to get the nominal atmospheric extinction AS PYTYPE!
             nom_at_ext = ad.nominal_atmospheric_extinction().as_pytype()
+            if nom_at_ext is None:
+                log.warning("Cannot get atmospheric extinction. Assuming zero.")
+                nom_at_ext = 0.0
 
-            if nom_at_ext is not None:
-                # Need to correct the mags for the exposure time
-                et = ad.exposure_time().as_pytype()
+            # Need to correct the mags for the exposure time
+            et = ad.exposure_time().as_pytype()
 
-                # If it's a funky nod-and-shuffle imaging acquistion,
-                # then need to scale exposure time
-                if "GMOS_NODANDSHUFFLE" in ad.types:
-                    log.warning("Imaging Nod-And-Shuffle. Photometry may be dubious")
-                    # AFAIK the number of nod_cycles isn't actually relevant -
-                    # there's always 2 nod positions, thus the exposure
-                    # time for any given star is half the total
-                    et /= 2.0
+            # If it's a funky nod-and-shuffle imaging acquistion,
+            # then need to scale exposure time
+            if "GMOS_NODANDSHUFFLE" in ad.types:
+                log.warning("Imaging Nod-And-Shuffle. Photometry may be dubious")
+                # AFAIK the number of nod_cycles isn't actually relevant -
+                # there's always 2 nod positions, thus the exposure
+                # time for any given star is half the total
+                et /= 2.0
                 
-                for objcat in objcats:
-                    extver = objcat.extver()
-                    mags = objcat.data["MAG_AUTO"]
-                    mag_errs = objcat.data["MAGERR_AUTO"]
-                    flags = objcat.data["FLAGS"]
-                    iflags = objcat.data["IMAFLAGS_ISO"]
-                    niflags = objcat.data["NIMAFLAGS_ISO"]
-                    isoarea = objcat.data["ISOAREA_IMAGE"]
-                    ids = objcat.data["REF_NUMBER"]
-                    if np.all(mags==-999):
-                        log.warning("No magnitudes found in %s[OBJCAT,%d]"%
-                                    (ad.filename,extver))
-                        continue
-
-                    magcor = 2.5*math.log10(et)
-                    mags = np.where(mags==-999,mags,mags+magcor)
-
-                    refmags = objcat.data["REF_MAG"]
-                    refmag_errs = objcat.data["REF_MAG_ERR"]
-                    if np.all(refmags==-999):
-                        log.warning("No reference magnitudes found in %s[OBJCAT,%d]"%
-                                    (ad.filename,extver))
-                        continue
-
-                    zps_type = type(refmags[0]) 
-
-                    # Calculate zeropoints for each object
-                    zps = refmags - mags - nom_at_ext
-
-                    # Is this mathematically correct? These are logarithmic
-                    # values... (PH)
-                    # It'll do for now as an estimate at least
-                    zperrs = np.sqrt((refmag_errs * refmag_errs) +
-                                     (mag_errs * mag_errs))
- 
-                    # Requirements for an object to be used
-                    # NaNs in zps get converted to zero here to avoid an error
-                    # but will be eliminated at the end
-                    ok = np.logical_and.reduce((np.nan_to_num(zps)>-500,
-                                                flags==0, mags<90))
-                    if not np.all(iflags == -999):
-                        # Keep objects if pristine or <2% bad/non-linear pixels
-                        ok2 = np.logical_or(iflags==0,
-                            np.logical_and((iflags & 4)==0, niflags<0.02*isoarea))
-                        ok = np.logical_and(ok, ok2)
-                    # Get rid of NaNs
-                    ok = np.logical_and(ok, np.logical_not(
-                            np.logical_or(np.isnan(zperrs), np.isnan(zps))))
-                    zps = zps[ok]
-                    zperrs = zperrs[ok]
-                    ids = ids[ok]
-
-                    # Trim out where zeropoint error > err_threshold
-                    if len(filter(lambda z: z is not None, zps)) <= 5:
-                        # 5 sources or less.  Beggars are not choosers.
-                        # Raise the threshold a bit
-                        ok = zperrs<0.2
-                    else:
-                        # Use the default threshold
-                        ok = zperrs<0.1
-                    zps = zps[ok]
-                    zperrs = zperrs[ok]
-                    ids = ids[ok]
-
-                    # OK, at this point, zps and zperrs are arrays of all
-                    # the zeropoints and their errors from this OBJCAT
-                    if len(zps)==0:
-                        log.warning("No good reference sources found in %s[OBJCAT,%d]"%
+            for objcat in objcats:
+                extver = objcat.extver()
+                mags = objcat.data["MAG_AUTO"]
+                mag_errs = objcat.data["MAGERR_AUTO"]
+                flags = objcat.data["FLAGS"]
+                iflags = objcat.data["IMAFLAGS_ISO"]
+                niflags = objcat.data["NIMAFLAGS_ISO"]
+                isoarea = objcat.data["ISOAREA_IMAGE"]
+                ids = objcat.data["REF_NUMBER"]
+                if np.all(mags==-999):
+                    log.warning("No magnitudes found in %s[OBJCAT,%d]"%
                                 (ad.filename,extver))
-                        continue
-                    elif len(zps)>2:
-                        # 1-sigma clip
-                        m = zps.mean()
-                        s = zps.std()
-                        clip = (zps>m-s)&(zps<m+s)
-                        zps = zps[clip]
-                        zperrs = zperrs[clip]
+                    continue
 
-                    # If there is only one good source from which to 
-                    # measure the ZP, no weighting is applied
-                    if len(zps) == 1:
-                        zp = float(zps[0])
-                        zpe = float(zperrs[0])
-                    else:
-                        # Because these are magnitude (log) values, we weight
-                        # directly from the 1/variance, not signal / variance
-                        weights = 1.0 / (zperrs * zperrs)
-                        wzps = zps * weights
-                        zp = wzps.sum() / weights.sum()
-                        d = zps - zp
-                        d = d*d * weights
-                        zpv = d.sum() / weights.sum()
-                        zpe = math.sqrt(zpv)
+                magcor = 2.5*math.log10(et)
+                mags = np.where(mags==-999,mags,mags+magcor)
 
-                    # Now, in addition, we have the weighted mean zeropoint
-                    # and its error, from this OBJCAT in zp and zpe
-                    nominal_zeropoint = (
-                        ad["SCI", extver].nominal_photometric_zeropoint())
-                    if nominal_zeropoint.is_none():
-                        log.warning("No nominal photometric zeropoint "\
+                refmags = objcat.data["REF_MAG"]
+                refmag_errs = objcat.data["REF_MAG_ERR"]
+                if np.all(refmags==-999):
+                    log.warning("No reference magnitudes found in %s[OBJCAT,%d]"%
+                                (ad.filename,extver))
+                    continue
+
+                zps_type = type(refmags[0]) 
+
+                # Calculate zeropoints for each object
+                zps = refmags - mags - nom_at_ext
+
+                # Is this mathematically correct? These are logarithmic
+                # values... (PH)
+                # It'll do for now as an estimate at least
+                zperrs = np.sqrt((refmag_errs * refmag_errs) +
+                                 (mag_errs * mag_errs))
+ 
+                # Requirements for an object to be used
+                # NaNs in zps get converted to zero here to avoid an error
+                # but will be eliminated at the end
+                ok = np.logical_and.reduce((np.nan_to_num(zps)>-500,
+                                            flags==0, mags<90))
+                if not np.all(iflags == -999):
+                    # Keep objects if pristine or <2% bad/non-linear pixels
+                    ok2 = np.logical_or(iflags==0,
+                        np.logical_and((iflags & 4)==0, niflags<0.02*isoarea))
+                    ok = np.logical_and(ok, ok2)
+                # Get rid of NaNs
+                ok = np.logical_and(ok, np.logical_not(
+                            np.logical_or(np.isnan(zperrs), np.isnan(zps))))
+                zps = zps[ok]
+                zperrs = zperrs[ok]
+                ids = ids[ok]
+
+                # Trim out where zeropoint error > err_threshold
+                if len(filter(lambda z: z is not None, zps)) <= 5:
+                    # 5 sources or less.  Beggars are not choosers.
+                    # Raise the threshold a bit
+                    ok = zperrs<0.2
+                else:
+                    # Use the default threshold
+                    ok = zperrs<0.1
+                zps = zps[ok]
+                zperrs = zperrs[ok]
+                ids = ids[ok]
+
+                # OK, at this point, zps and zperrs are arrays of all
+                # the zeropoints and their errors from this OBJCAT
+                if len(zps)==0:
+                    log.warning("No good reference sources found in %s[OBJCAT,%d]"%
+                                (ad.filename,extver))
+                    continue
+                elif len(zps)>2:
+                    # 1-sigma clip
+                    m = zps.mean()
+                    s = zps.std()
+                    clip = (zps>m-s)&(zps<m+s)
+                    zps = zps[clip]
+                    zperrs = zperrs[clip]
+
+                # If there is only one good source from which to 
+                # measure the ZP, no weighting is applied
+                if len(zps) == 1:
+                    zp = float(zps[0])
+                    zpe = float(zperrs[0])
+                else:
+                    # Because these are magnitude (log) values, we weight
+                    # directly from the 1/variance, not signal / variance
+                    weights = 1.0 / (zperrs * zperrs)
+
+                    wzps = zps * weights
+                    zp = wzps.sum() / weights.sum()
+                    d = zps - zp
+                    d = d*d * weights
+                    zpv = d.sum() / weights.sum()
+                    zpe = math.sqrt(zpv)
+
+                # Now, in addition, we have the weighted mean zeropoint
+                # and its error, from this OBJCAT in zp and zpe
+                nominal_zeropoint = (
+                  ad["SCI", extver].nominal_photometric_zeropoint())
+                if nominal_zeropoint.is_none():
+                    log.warning("No nominal photometric zeropoint "\
                                 "available for %s[SCI,%d], filter %s" %
                                 (ad.filename,extver,
                                  ad.filter_name(pretty=True)))
-                        continue
+                    continue
 
-                    cloud = nominal_zeropoint - zp
-                    clouds = nominal_zeropoint - zps
-                    for i in clouds:
-                        all_cloud.append(i)
-                    for i in zperrs:
-                        all_clouderr.append(i)
-                    detzp_means.append(zp)
-                    detzp_clouds.append(cloud)
-                    detzp_sigmas.append(zpe)
-                    total_sources += len(zps)
+                cloud = nominal_zeropoint - zp
+                clouds = nominal_zeropoint - zps
+                for i in clouds:
+                    all_cloud.append(i)
+                for i in zperrs:
+                    all_clouderr.append(i)
+                detzp_means.append(zp)
+                detzp_clouds.append(cloud)
+                detzp_sigmas.append(zpe)
+                total_sources += len(zps)
                 
-                    # Write the zeropoint to the SCI extension header
-                    ad["SCI", extver].set_key_value(
-                        "MEANZP", zp, comment=self.keyword_comments["MEANZP"])
+                # Write the zeropoint to the SCI extension header
+                ad["SCI", extver].set_key_value(
+                    "MEANZP", zp, comment=self.keyword_comments["MEANZP"])
 
-                    ind = " " * rc["logindent"]
-                    log.fullinfo("\n"+ind+"Filename: %s [\"OBJCAT\", %d]" % 
+                ind = " " * rc["logindent"]
+                log.fullinfo("\n"+ind+"Filename: %s [\"OBJCAT\", %d]" % 
                             (ad.filename, extver))
-                    log.fullinfo(ind+"%d sources used to measure zeropoint" % 
+                log.fullinfo(ind+"%d sources used to measure zeropoint" % 
                              len(zps))
-                    log.fullinfo(ind+"-"*dlen)
-                    log.fullinfo(ind+
+                log.fullinfo(ind+"-"*dlen)
+                log.fullinfo(ind+
                              ("Zeropoint measurement (%s band):" % 
                               ad.filter_name(pretty=True)).ljust(llen) +
                              ("%.2f +/- %.2f" % (zp, zpe)).rjust(rlen))
-                    log.fullinfo(ind+
+                log.fullinfo(ind+
                              ("Nominal zeropoint:").ljust(llen) +
                              ("%.2f" % nominal_zeropoint).rjust(rlen))
-                    log.fullinfo(ind+
+                log.fullinfo(ind+
                              "Estimated cloud extinction:".ljust(llen) +
                              ("%.2f +/- %.2f magnitudes" % 
                              (cloud, zpe)).rjust(rlen))
 
-                    # Store the number in the QA dictionary to report to the RC
-                    # Ensure these are regular floats for JSON (thanks to PH)
-                    zp = float(zp)
-                    zpe = float(zpe)
-                    cloud = float(cloud)
-                    if not qad.has_key("zeropoint"):
-                        qad["zeropoint"] = {}
-                    ampname = ad["SCI", extver].get_key_value("AMPNAME")
-                    if ampname:
-                        qad["zeropoint"][ampname] = {"value":zp,"error":zpe}
-                    else:
-                        # If no ampname available, just use amp{extver}
-                        # (ie. amp1, amp2...)
-                        qad["zeropoint"]["amp%d" % extver] = {"value":zp,
+                # Store the number in the QA dictionary to report to the RC
+                # Ensure these are regular floats for JSON (thanks to PH)
+                zp = float(zp)
+                zpe = float(zpe)
+                cloud = float(cloud)
+                if not qad.has_key("zeropoint"):
+                    qad["zeropoint"] = {}
+                ampname = ad["SCI", extver].get_key_value("AMPNAME")
+                if ampname:
+                    qad["zeropoint"][ampname] = {"value":zp,"error":zpe}
+                else:
+                    # If no ampname available, just use amp{extver}
+                    # (ie. amp1, amp2...)
+                    qad["zeropoint"]["amp%d" % extver] = {"value":zp,
                                                           "error":zpe}
 
-                    # Compose a dictionary in the format the fitsstore record wants
-                    # Note that mag should actually be uncorrected, and I'm not
-                    # sure that zpe is the right error to report here. It is a
-                    # little difficult to separate out the right information
-                    # as this primitive is currently organized
-                    info_dict[("SCI",extver)] = {"mag":zp,
-                                                 "mag_std":zpe,
-                                                 "cloud":cloud,
-                                                 "cloud_std":zpe,
-                                                 "nsamples":len(zps),}
+                # Compose a dictionary in the format the fitsstore record wants
+                # Note that mag should actually be uncorrected, and I'm not
+                # sure that zpe is the right error to report here. It is a
+                # little difficult to separate out the right information
+                # as this primitive is currently organized
+                info_dict[("SCI",extver)] = {"mag":zp,
+                                             "mag_std":zpe,
+                                             "cloud":cloud,
+                                             "cloud_std":zpe,
+                                             "nsamples":len(zps),}
             
-                if(len(detzp_means)):
-                    for i in range(len(detzp_means)):
-                        if i==0:
-                            zp_str = ("%.2f +/- %.2f" % 
+            if(len(detzp_means)):
+                for i in range(len(detzp_means)):
+                    if i==0:
+                        zp_str = ("%.2f +/- %.2f" % 
                                  (detzp_means[i], detzp_sigmas[i])).rjust(rlen)
-                        else:
-                            zp_str += "\n    "
-                            zp_str += ("%.2f +/- %.2f" % 
+                    else:
+                        zp_str += "\n    "
+                        zp_str += ("%.2f +/- %.2f" % 
                                  (detzp_means[i], detzp_sigmas[i])).rjust(dlen)
 
-                    # It does not make sense to take the standard deviation
-                    # of a single value
-                    if len(all_cloud) == 1:
-                        cloud = float(all_cloud[0])
-                        clouderr = zpe
-                    else:
-                        cloud = np.mean(all_cloud)
-                        clouderr = np.std(all_cloud)
+                # It does not make sense to take the standard deviation
+                # of a single value
+                if len(all_cloud) == 1:
+                    cloud = float(all_cloud[0])
+                    clouderr = zpe
+                else:
+                    cloud = np.mean(all_cloud)
+                    clouderr = np.std(all_cloud)
 
-                    # Calculate which CC band we're in. 
-                    # OK, the philosophy here is to do a hypothesis test for
-                    # each CC band. It's mathematically difficult to do a
-                    # hypothesis test against an arbitrary range of values,
-                    # So we will do one-sided tests, then walk up the scale
-                    # to determine the CC band.
-                    # To avoid having t(n-1) distributions, we assume n is large.
-                    # We assume that the population sigma is the sample
-                    # sigma+0.05mag
-                    pop_sigma = 0.10
-                    # We do a hypothesis test as follows:
-                    # Null hypothesis, H0: the sample is drawn from a population
-                    # with cloud extinction = CC_band_value
-                    # Alternate hypothesis, H1: the sample is drawn from a
-                    # population with cloud extinction > CC_band_value
-                    # if mean and sigma and n are those of the sample, and mu
-                    # is the population mean,
-                    # we use the test statistic = (mean - mu)/(sigma/sqrt(n))
-                    # Which is distributed as N(0,1) in the case of "large" n.
-                    # So the one-tailed critical value at the 5% level is 1.645
-                    # We create a dictionary: 
-                    #{ CCband: [mean, mu, sigma, n, 
-                    #           value of the test statistic, H0 is acceptable]]
-                    # Evaluate the test statistic for each CC band boundary,
-                    # with one sided tests in both directions
-                    cc_canbe={50: True, 70: True, 80: True, 100: True}
-                    H0_MSG1 = "95%% confidence test indicates worse than CC%s " \
+                # Calculate which CC band we're in. 
+                # OK, the philosophy here is to do a hypothesis test for
+                # each CC band. It's mathematically difficult to do a
+                # hypothesis test against an arbitrary range of values,
+                # So we will do one-sided tests, then walk up the scale
+                # to determine the CC band.
+                # To avoid having t(n-1) distributions, we assume n is large.
+                # We assume that the population sigma is the sample
+                # sigma+0.05mag
+                pop_sigma = 0.10
+                # We do a hypothesis test as follows:
+                # Null hypothesis, H0: the sample is drawn from a population
+                # with cloud extinction = CC_band_value
+                # Alternate hypothesis, H1: the sample is drawn from a
+                # population with cloud extinction > CC_band_value
+                # if mean and sigma and n are those of the sample, and mu
+                # is the population mean,
+                # we use the test statistic = (mean - mu)/(sigma/sqrt(n))
+                # Which is distributed as N(0,1) in the case of "large" n.
+                # So the one-tailed critical value at the 5% level is 1.645
+                # We create a dictionary: 
+                #{ CCband: [mean, mu, sigma, n, 
+                #           value of the test statistic, H0 is acceptable]]
+                # Evaluate the test statistic for each CC band boundary,
+                # with one sided tests in both directions
+                cc_canbe={50: True, 70: True, 80: True, 100: True}
+                H0_MSG1 = "95%% confidence test indicates worse than CC%s " \
                           "(normalized test statistic %.3f > 1.645)"
-                    H0_MSG2 = "95%% confidence test indicates CC%d or better " \
+                H0_MSG2 = "95%% confidence test indicates CC%d or better " \
                           "(normalised test statistic %.3f < -1.645)"
-                    H0_MSG3 = "95%% confidence test indicates borderline CC%d or one band worse " \
+                H0_MSG3 = "95%% confidence test indicates borderline CC%d or one band worse " \
                           "(normalised test statistic -1.645 < %.3f < 1.645)"
-                    for cc in [50, 70, 80]:
-                        ce = ccConstraints[str(cc)]
-                        ts =(cloud-ce) / ((clouderr+pop_sigma)/(math.sqrt(len(all_cloud))))
-                        if(ts>1.645):
-                            #H0 fails - cc is worse than the worst end of this cc band
-                            log.fullinfo(H0_MSG1 % (cc, ts))
-                            for c in cc_canbe.keys():
-                                if(c <= cc):
-                                    cc_canbe[c]=False
-                        if(ts<-1.645):
-                            #H0 fails - cc is better than the worst end of the CC band
-                            log.fullinfo(H0_MSG2 % (cc, ts))
-                            for c in cc_canbe.keys():
-                                if(c > cc):
-                                    cc_canbe[c]=False
+                for cc in [50, 70, 80]:
+                  ce = ccConstraints[str(cc)]
+                  ts =(cloud-ce) / ((clouderr+pop_sigma)/(math.sqrt(len(all_cloud))))
+                  if(ts>1.645):
+                      #H0 fails - cc is worse than the worst end of this cc band
+                      log.fullinfo(H0_MSG1 % (cc, ts))
+                      for c in cc_canbe.keys():
+                          if(c <= cc):
+                              cc_canbe[c]=False
+                  if(ts<-1.645):
+                      #H0 fails - cc is better than the worst end of the CC band
+                      log.fullinfo(H0_MSG2 % (cc, ts))
+                      for c in cc_canbe.keys():
+                          if(c > cc):
+                              cc_canbe[c]=False
 
-                        if((ts<1.645) and (ts>-1.645)):
-                            #H0 passes - it's consistent with the boundary
-                            log.fullinfo(H0_MSG3 % (cc, ts))
+                  if((ts<1.645) and (ts>-1.645)):
+                      #H0 passes - it's consistent with the boundary
+                      log.fullinfo(H0_MSG3 % (cc, ts))
 
-                    # For QA dictionary
-                    qad["band"] = []
-                    qad["comment"] = []
+                # For QA dictionary
+                qad["band"] = []
+                qad["comment"] = []
 
-                    ccband =[]
-                    l = cc_canbe.keys()
-                    l.sort()
-                    for c in l:
-                        if(cc_canbe[c]):
-                            qad["band"].append(c)
-                            if(c==100):
-                                c="Any"
-                            ccband.append("CC%s" % c)
-                            # print "CC%d : %s" % (c, cc_canbe[c])
-                    ccband = ", ".join(ccband)
+                ccband =[]
+                l = cc_canbe.keys()
+                l.sort()
+                for c in l:
+                    if(cc_canbe[c]):
+                        qad["band"].append(c)
+                        if(c==100):
+                            c="Any"
+                        ccband.append("CC%s" % c)
+                        # print "CC%d : %s" % (c, cc_canbe[c])
+                ccband = ", ".join(ccband)
 
-                    # Get requested CC band
-                    cc_warn = None
-                    req_cc = ad.requested_cc().as_pytype()
-                    qad["requested"] = req_cc
+                # Get requested CC band
+                cc_warn = None
+                req_cc = ad.requested_cc().as_pytype()
+                qad["requested"] = req_cc
 
-                    if req_cc is not None:
-                        # Just do that one hypothesis test here
-                        # Can't test for CCany, always applies
-                        if(req_cc != 100):
-                            try:
-                                ce = ccConstraints[str(req_cc)]
-                                ts = (cloud-ce) / ((clouderr+pop_sigma)/(math.sqrt(len(all_cloud))))
-                                if(ts>1.645):
-                                    #H0 fails - cc is worse than the worst end of this cc band
-                                    cc_warn = "WARNING: CC requirement not met at the 95% confidence level"
-                                    qad["comment"].append(cc_warn)
-                            except KeyError:
-                                log.warning("Requested CC value of '%s-percentile' NOT VALID" % \
+                if req_cc is not None:
+                    # Just do that one hypothesis test here
+                    # Can't test for CCany, always applies
+                    if(req_cc != 100):
+                        try:
+                            ce = ccConstraints[str(req_cc)]
+                            ts = (cloud-ce) / ((clouderr+pop_sigma)/(math.sqrt(len(all_cloud))))
+                            if(ts>1.645):
+                                #H0 fails - cc is worse than the worst end of this cc band
+                                cc_warn = "WARNING: CC requirement not met at the 95% confidence level"
+                                qad["comment"].append(cc_warn)
+                        except KeyError:
+                            log.warning("Requested CC value of '%s-percentile' NOT VALID" % \
                                         req_cc)
-                                qad['comment'].append("Requested CC: '%s-percentile' NOT VALID" % \
+                            qad['comment'].append("Requested CC: '%s-percentile' NOT VALID" % \
                                                   req_cc)
 
-                        if req_cc==100:
-                            req_cc = "CCAny"
-                        else:
-                            req_cc = "CC%d" % req_cc
+                    if req_cc==100:
+                        req_cc = "CCAny"
+                    else:
+                        req_cc = "CC%d" % req_cc
                 
-                    ind = " " * rc["logindent"]
-                    log.stdinfo("\n"+ind+"Filename: %s" % ad.filename)
-                    log.stdinfo(ind+"%d sources used to measure zeropoint" % 
+                ind = " " * rc["logindent"]
+                log.stdinfo("\n"+ind+"Filename: %s" % ad.filename)
+                log.stdinfo(ind+"%d sources used to measure zeropoint" % 
                              total_sources)
-                    log.stdinfo(ind+"-"*dlen)
-                    log.stdinfo(ind+
+                log.stdinfo(ind+"-"*dlen)
+                log.stdinfo(ind+
                             ("Zeropoints by detector (%s band):"%
                              ad.filter_name(pretty=True)).ljust(llen)+
                             zp_str)
-                    log.stdinfo(ind+
+                log.stdinfo(ind+
                              "Estimated cloud extinction:".ljust(llen) +
                             ("%.2f +/- %.2f magnitudes" % 
                              (cloud, clouderr)).rjust(rlen))
-                    log.stdinfo(ind + "CC bands consistent with this:".ljust(llen) + 
+                log.stdinfo(ind + "CC bands consistent with this:".ljust(llen) + 
                             ccband.rjust(rlen))
-                    if req_cc is not None:
-                        log.stdinfo(ind+
+                if req_cc is not None:
+                    log.stdinfo(ind+
                                 "Requested CC band:".ljust(llen)+
                                 req_cc.rjust(rlen))
-                    else:
-                        log.stdinfo(ind+"(Requested CC could not be determined)")
-                    if cc_warn is not None:
-                        log.stdinfo(ind+cc_warn)
-                    log.stdinfo(ind+"-"*dlen)
+                else:
+                    log.stdinfo(ind+"(Requested CC could not be determined)")
+                if cc_warn is not None:
+                    log.stdinfo(ind+cc_warn)
+                log.stdinfo(ind+"-"*dlen)
 
-                    # Report measurement to the adcc
-                    qad["extinction"] = float(cloud)
-                    qad["extinction_error"] = float(clouderr)
-                    rc.report_qametric(ad, "cc", qad)
+                # Report measurement to the adcc
+                qad["extinction"] = float(cloud)
+                qad["extinction_error"] = float(clouderr)
+                rc.report_qametric(ad, "cc", qad)
 
-                    # Add band and comment to the info_dict
-                    for key in info_dict:
-                        info_dict[key]["percentile_band"] = qad["band"]
-                        info_dict[key]["comment"] = qad["comment"]
+                # Add band and comment to the info_dict
+                for key in info_dict:
+                    info_dict[key]["percentile_band"] = qad["band"]
+                    info_dict[key]["comment"] = qad["comment"]
 
-                    # Also report to fitsstore
-                    fitsdict = gt.fitsstore_report(ad, rc, "zp", info_dict, 
+                # Also report to fitsstore
+                fitsdict = gt.fitsstore_report(ad, rc, "zp", info_dict, 
                                                self.calurl_dict)
 
-                else:
-                    ind = " " * rc["logindent"]
-                    log.stdinfo(ind+"Filename: %s" % ad.filename)
-                    log.stdinfo(ind+"Could not measure zeropoint "
-                                "- no catalog sources associated")
-                    
             else:
-                log.stdinfo("No atmospheric extinction "
-                            "available for %s" % ad.filename)
+                ind = " " * rc["logindent"]
+                log.stdinfo(ind+"Filename: %s" % ad.filename)
+                log.stdinfo(ind+"Could not measure zeropoint - no catalog sources associated")
 
             # Add the appropriate time stamps to the PHU
             gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
