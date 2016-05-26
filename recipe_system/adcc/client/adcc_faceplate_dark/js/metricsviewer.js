@@ -1233,7 +1233,7 @@ MetricsViewer.prototype = {
         if (incoming_metric[datalabel]==undefined) {
             incoming_metric[datalabel] = "No datalabel";
         }
-        record["iq"]["comment"] = ["This observation may have missing metrics, please report this problem to SUSD"]
+
         }
 
 
