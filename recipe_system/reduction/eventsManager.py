@@ -55,8 +55,8 @@ class EventsManager:
                            "object"    : "object",
                            "wfs"       : "wavefront_sensor",}
 
-        options = {"central_wavelength":"asMicrometers=True",
-                   "filter_name":"pretty=True",}
+        options = {"central_wavelength":dict(asMicrometers=True),
+                   "filter_name":dict(pretty=True),}
 
         postprocess = {"local_time" : lambda x: x.strftime("%H:%M:%S.%f"),
                        "ut_datetime": lambda x: x.strftime("%Y-%m-%d %H:%M:%S.%f"),}
@@ -74,7 +74,7 @@ class EventsManager:
                 # Get the postprocessing transform. If there's none, use
                 # an identity function.
                 postproc = postprocess.get(desc_name, lambda x: x)
-                dv = descriptor(options.get(desc_name, '')).as_pytype()
+                dv = descriptor(**options.get(desc_name, {})).as_pytype()
                 mtd_dict[mtd_name] = postproc(dv)
 
         # If the file is a processed stack, then add the filenames of the 
