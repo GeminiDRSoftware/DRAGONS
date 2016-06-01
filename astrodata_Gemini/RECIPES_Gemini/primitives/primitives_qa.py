@@ -824,8 +824,9 @@ class QAPrimitives(GENERALPrimitives):
     def measureIQ(self, rc):
         """
         This primitive is for use with sextractor-style source-detection.
-        FWHM are already in OBJCAT; this function does the clipping and
-        reporting only.
+        FWHM (from _profile_sources()) and CLASS_STAR (from SExtractor)
+        are already in OBJCAT; this function does the clipping and reporting
+        only. Measured FWHM is converted to zenith using airmass^(-0.6).
         """
         
         # Instantiate the log
