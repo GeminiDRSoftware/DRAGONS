@@ -2106,11 +2106,13 @@ def measure_bg_from_image(ad, use_extver=None, sampling=10, value_only=False, ga
         dqext = ad['DQ',extver]
         maskext = ad['OBJMASK',extver]
         if dqext is not None:
-            flags = dqext.data
             if maskext is not None:
-                if maskext.data.shape == flags.shape:
-                    flags |= maskext.data
-            bg_data = sciext.data[flags==0].flatten()
+                if maskext.data.shape == dqext.data.shape:
+                    bg_data = sciext.data[dqext.data | maskext.data==0].flatten()
+                else:
+                    bg_data = sciext.data[dqext.data==0].flatten()
+            else:
+                bg_data = sciext.data[dqext.data==0].flatten()
         elif maskext is not None:
             if maskext.data.shape == sciext.data.shape:
                 bg_data = sciext.data[maskext.data==0].flatten()
