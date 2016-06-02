@@ -343,7 +343,12 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=10, log=None):
     
     deltax = firstPass
     deltay = firstPass
-    sigmasq = 0.25*delta*delta
+    # current_delta is an estimate of final fit quality if delta=None
+    if delta is None:
+        current_delta = 0.2*firstPass
+    else:
+        current_delta = delta
+    sigmasq = 0.25*current_delta**2
     hw = int(firstPass+1)
     # Make a "landscape" of Gaussian "mountains" onto which we're
     # going to cross-correlate the REFCAT sources
@@ -388,7 +393,7 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=10, log=None):
     # Otherwise, we need to test on a grid or something. Which should we do?
     # Count the number of pairs for the first method;
     # if we exceed our limit, make a grid instead
-    grid_step = 0.25*delta
+    grid_step = 0.25*current_delta
     num_grid_tests = np.pi*(firstPass/grid_step)**2
     dax = []
     day = []
@@ -429,7 +434,7 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=10, log=None):
             g =[]; r=[]
             dax=[]; day=[]
             for k in [kk for kk in range(len(sx)) if in_image[kk]]:
-                gindx,= np.where((xx-sx[k])**2+(yy-sy[k])**2<delta*delta)
+                gindx,= np.where((xx-sx[k])**2+(yy-sy[k])**2<current_delta**2)
                 for i in gindx:
                     dx = xx[i] - sx[k] 
                     dy = yy[i] - sy[k] 
@@ -463,6 +468,11 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=10, log=None):
             xoffset += dx
             yoffset += dy
             log.info("Tweaked offsets by: %.2f %.2f" % (dx,dy))
+            # Use scatter in points to determine quality of fit for final pass
+            if delta is None and iter==0:
+                current_delta = 2*np.sqrt(np.std(dax-dx)*np.std(dax-dy))
+                log.info("Using %.3f pixels as final matching "
+                         "radius" % current_delta)
         g,r,dax,day = map(np.asarray, (g,r,dax,day))
         #for i,k,dx,dy in zip(g,r,dax,day):
         #    print i+1,k+1,dx,dy
