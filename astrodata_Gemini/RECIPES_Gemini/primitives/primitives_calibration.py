@@ -1,4 +1,5 @@
 import os
+import re
 
 from astrodata import AstroData
 from astrodata.utils import Errors
@@ -335,6 +336,10 @@ class CalibrationPrimitives(GENERALPrimitives):
             # then report the new file to the reduction context
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
                                               strip=True)
+
+            # Update DATALAB
+            # The self.keyword_comments is required because "stupid".
+            _update_datalab(ad, rc['suffix'], self.keyword_comments)            
             
             # Adding a PROCARC time stamp to the PHU
             gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCARC")
@@ -362,6 +367,10 @@ class CalibrationPrimitives(GENERALPrimitives):
             # then report the new file to the reduction context
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
                                               strip=True)
+            
+            # Update DATALAB
+            # The self.keyword_comments is required because "stupid".
+            _update_datalab(ad, rc['suffix'], self.keyword_comments)            
             
             # Adding a PROCBIAS time stamp to the PHU
             gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCBIAS")
@@ -415,6 +424,10 @@ class CalibrationPrimitives(GENERALPrimitives):
             # then report the new file to the reduction context
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
                                               strip=True)
+
+            # Update DATALAB
+            # The self.keyword_comments is required because "stupid".
+            _update_datalab(ad, rc['suffix'], self.keyword_comments)            
             
             # Adding a PROCDARK time stamp to the PHU
             gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCDARK")
@@ -442,6 +455,10 @@ class CalibrationPrimitives(GENERALPrimitives):
             # then report the new file to the reduction context
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"],
                                               strip=True)
+
+            # Update DATALAB
+            # The self.keyword_comments is required because "stupid".
+            _update_datalab(ad, rc['suffix'], self.keyword_comments)            
             
             # Adding a PROCFLAT time stamp to the PHU
             gt.mark_history(adinput=ad, primname=self.myself(), keyword="PROCFLAT")
@@ -516,11 +533,9 @@ class CalibrationPrimitives(GENERALPrimitives):
         for ad in rc.get_inputs_as_astrodata():
             if('GCAL_IR_ON' in ad.types):
                 log.stdinfo("%s is a lamp-on flat" % ad.data_label())
-                #rc.run("addToList(purpose=lampOn)")
                 lampon_list.append(ad)
             elif('GCAL_IR_OFF' in ad.types):
                 log.stdinfo("%s is a lamp-off flat" % ad.data_label())
-                #rc.run("addToList(purpose=lampOff)")
                 lampoff_list.append(ad)
             elif('Domeflat OFF' in ad.phu_get_key_value('OBJECT')):
                 log.stdinfo("%s is a lamp-off domeflat" % ad.data_label())
@@ -746,5 +761,18 @@ class CalibrationPrimitives(GENERALPrimitives):
 
         yield rc
 
+##################
 
+def _update_datalab(ad, suffix, keyword_comments_lut):
+    # Update the DATALAB. It should end with 'suffix'.  DATALAB will 
+    # likely already have '_stack' suffix that needs to be replaced.
+    searchsuffix = re.compile(r'(?<=[A-Za-z0-9\-])\_([a-z]+)')
+    datalab = ad.phu_get_key_value("DATALAB")
+    new_datalab = re.sub(searchsuffix, suffix, datalab)
+    if new_datalab == datalab:
+        new_datalab += suffix
+    gt.update_key(adinput=ad, keyword="DATALAB", value=new_datalab,
+                  comment=None, extname="PHU", 
+                  keyword_comments=keyword_comments_lut)
 
+    return
