@@ -134,15 +134,16 @@ class FitsLoader(DataProvider):
 
         self._header = []
         self._data = []
+        seen_refcat = False
         for unit in hdulist:
             header = unit.header
             extname = header.get('EXTNAME')
             if extname in self.SKIP_HEADERS:
                 continue
             elif extname == 'SCI':
-                obj = NDData(unit.data, meta={'hdu': header})
                 self._header.append(header)
                 ver = header.get('EXTVER')
+                obj = NDData(unit.data, meta={'hdu': header, 'ver': ver})
                 dq, var = search_for_unit('DQ', ver), search_for_unit('VAR', ver)
                 if dq:
                     obj.mask = dq
@@ -151,9 +152,13 @@ class FitsLoader(DataProvider):
                     # obj.uncertainty = VarUncertainty(unit.data)
                     pass
             elif isinstance(unit, fits.ImageHDU):
-                obj = NDData(unit.data, meta={'hdu': header})
+                obj = NDData(unit.data, meta={'hdu': header, 'ver': header.get('EXTVER')})
             elif isinstance(unit, fits.BinTableHDU):
-                obj = Table(unit.data, meta=header)
+                # REFCAT is the same, no matter how many copies. Have only one of them.
+                is_refcat = extname != 'REFCAT'
+                if not is_refcat or not seen_refcat:
+                    obj = Table(unit.data, meta={'hdu': header, 'ver': header.get('EXTVER')})
+                    seen_refcat = is_refcat
             elif isinstance(unit, fits.PrimaryHDU):
                 self._header.append(header)
                 continue
