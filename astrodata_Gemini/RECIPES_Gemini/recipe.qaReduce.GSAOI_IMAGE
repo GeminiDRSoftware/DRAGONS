@@ -10,7 +10,7 @@ measureIQ(display=True)
 measureBG
 measureCCAndAstrometry
 addToList(purpose=forSky)
-getList(purpose=forSky)
+getList(purpose=forSky, max_frames=8)
 makeSky
 skyCorrect
 detectSources

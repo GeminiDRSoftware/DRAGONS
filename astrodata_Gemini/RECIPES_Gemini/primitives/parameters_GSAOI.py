@@ -204,5 +204,13 @@
         "uiLevel"       : "UIBASIC",
         },
     },
-
+"getList":{
+    "max_frames":{
+        "default"       : None,
+        "type"          : "int",
+        "recipeOverride": True,
+        "userOverride"  : True,
+        "uiLevel"       : "UIBASIC",
+        },
+    },
 }

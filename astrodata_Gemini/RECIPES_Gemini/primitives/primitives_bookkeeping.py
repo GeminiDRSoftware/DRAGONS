@@ -112,9 +112,10 @@ class BookkeepingPrimitives(GENERALPrimitives):
         
         # Get purpose of list
         sidset = set()
-        purpose=rc["purpose"]
+        purpose = rc["purpose"]
         if purpose is None:
             purpose = ""
+        max_frames = rc["max_frames"]
         
         # Get ID for all inputs
         for inp in rc.inputs:
@@ -124,6 +125,9 @@ class BookkeepingPrimitives(GENERALPrimitives):
         for sid in sidset:
             stacklist = rc.get_list(sid) #.filelist
             log.stdinfo("List for stack id %s(...):" % sid[0:35])
+            # Limit length of stacklist
+            if len(stacklist)>max_frames and max_frames is not None:
+                stacklist = sorted(stacklist)[-max_frames:]
             for f in stacklist:
                 rc.report_output(f, stream=rc["to_stream"])
                 log.stdinfo("   %s" % os.path.basename(f))

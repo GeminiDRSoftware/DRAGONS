@@ -8,6 +8,7 @@ localAstroTypeRecipeIndex = {
     "GMOS_DARK"       : ["makeProcessedDark"],
     "GMOS_BIAS"       : ["makeProcessedBias"],
     "GMOS_IMAGE"      : ["qaReduce"],
+    "GMOS_IMAGE_TWILIGHT" : ["makeProcessedFlat"],
     "GMOS_IMAGE_FLAT" : ["makeProcessedFlat"],
     "GMOS_LS_FLAT"    : ["makeProcessedFlat"],
     "GMOS_LS_ARC"     : ["makeProcessedArc"],

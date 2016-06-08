@@ -7,7 +7,7 @@
  # False as default for data with an AstroData Type of IMAGE. 
  "detectSources":{
     "mask":{
-        "default"       : True,
+        "default"       : False,
         "type"          : "bool",
         "recipeOverride": True,
         "userOverride"  : True,

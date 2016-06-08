@@ -23,7 +23,8 @@ import glob
 from distutils.core import setup
 
 svndir = re.compile('.svn')
-fitsfile = re.compile('.fits')
+fitsfile = re.compile('.fits$')
+dotpy = re.compile('.py$')
 
 PACKAGENAME = 'astrodata_Gemini'
 VERSION = '0.1.0'
@@ -75,9 +76,12 @@ PACKAGE_DATA[PACKAGENAME].extend(glob.glob(os.path.join(RECIPENAME,'tests','reci
 
 for root, dirs, files in os.walk(os.path.join(CONFIGNAME,'lookups')):
     # picking up the FITS files (BPMs and MDFs)
-    # all other LUT should be .py files and picked up above.
     if not svndir.search(root) and len(files) > 0:
         files = [f for f in files if fitsfile.search(f)]
+        PACKAGE_DATA[PACKAGENAME].extend( map((lambda f: os.path.join(root, f)), files) )
+for root, dirs, files in os.walk(os.path.join(CONFIGNAME,'lookups','source_detection')):
+    if not svndir.search(root) and len(files) > 0:
+        files = [f for f in files if not dotpy.search(f)]
         PACKAGE_DATA[PACKAGENAME].extend( map((lambda f: os.path.join(root, f)), files) )
 for root, dirs, files in os.walk(os.path.join(CONFIGNAME,'descriptors')):
     if not svndir.search(root) and len(files) > 0:
