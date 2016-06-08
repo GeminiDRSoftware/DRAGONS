@@ -1166,7 +1166,7 @@ MetricsViewer.prototype = {
                 // AO seeing corrected is iq-zenith
                 if (record["iq"]["is_ao"]) {
                     record["iq"]["zenith_str"] =
-                        record["iq"]["zenith"].toFixed(2) + " (AOtest)";
+                        record["iq"]["zenith"].toFixed(2) + " (AO)";
                 } else {
                     record["iq"]["zenith_str"] =
                         record["iq"]["zenith"].toFixed(2);
