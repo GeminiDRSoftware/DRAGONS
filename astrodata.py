@@ -75,6 +75,31 @@ class DataProvider(object):
 
 class FitsLoader(DataProvider):
     SKIP_HEADERS = ('DQ', 'VAR')
+
+    class KeywordManipulator(object):
+        def __init__(self, header):
+            self.__dict__["_header"] = header
+
+        def get(self, key, default=None):
+            return self._header.get(key, default)
+
+        def comment(self, key):
+            return self._header.comments[key]
+
+        def set_comment(self, key, comment):
+            if key not in self:
+                raise AttributeError("Keyword {!r} not available")
+            setattr(self, key, (self.get(key), comment))
+
+        def __contains__(self, key):
+            return key in self._header
+
+        def __getattr__(self, key):
+            return self.get(key)
+
+        def __setattr__(self, key, value):
+            self._header[key] = value
+
     @staticmethod
     def fromPath(path):
         fits_loader = FitsLoader()
@@ -148,3 +173,20 @@ class FitsLoader(DataProvider):
             self._reset_members(fits.open(self.path))
 
         return self._data
+
+    @property
+    def phu(self):
+        return self.header[0]
+
+    @property
+    def manipulator(self):
+        return FitsLoader.KeywordManipulator(self.phu)
+
+class AstroData(object):
+    def __init__(self, provider):
+        self._dataprov = provider
+        self._kwmanip = provider.manipulator
+
+    @property
+    def keyword(self):
+        return self._kwmanip
