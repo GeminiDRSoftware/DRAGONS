@@ -95,7 +95,7 @@ class FitsLoader(DataProvider):
             return key in self._header
 
         def __getattr__(self, key):
-            return self.get(key)
+            return self._header[key]
 
         def __setattr__(self, key, value):
             self._header[key] = value
@@ -187,6 +187,21 @@ class FitsLoader(DataProvider):
     def manipulator(self):
         return FitsLoader.KeywordManipulator(self.phu)
 
+class KeywordCallableWrapper(object):
+    def __init__(self, keyword):
+        self.kw = keyword
+
+    def __call__(self, adobj):
+        return getattr(adobj.keyword, self.kw)
+
+def descriptor_keyword_mapping(**kw):
+    def decorator(cls):
+        for descriptor, keyword in kw.items():
+            setattr(cls, descriptor, property(KeywordCallableWrapper(keyword)))
+        return cls
+    return decorator
+
+@descriptor_keyword_mapping(instrument = 'INSTRUME')
 class AstroData(object):
     def __init__(self, provider):
         self._dataprov = provider
