@@ -8,5 +8,5 @@ The 'old_config' contains the astrodata_Gemini package as it stands on 08-06-201
 was added for reference to type sets and definitions, recipe definitions, and primitive
 sets and their parameters.
 
--- kra 06-08-2016
+-- kra 08-06-2016
 
