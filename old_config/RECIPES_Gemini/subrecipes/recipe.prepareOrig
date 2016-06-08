@@ -1,0 +1,11 @@
+# This recipe performs the standardization and validation needed to convert the
+# raw input images into prepared images, to ensure that they are ready for 
+# further processing. The output prepared images are written to disk using 
+# writeOutputs and have names equal to their original names with 
+# "_prepared.fits" appended.
+
+validateData
+standardizeStructure
+standardizeHeaders
+#validateWCS
+markAsPrepared
