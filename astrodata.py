@@ -23,7 +23,7 @@ class AstroDataFactory(object):
             raise AstroDataError("Class '{}' contains no '_matches_data' method".format(cls.__name__))
         self._registry.add(cls)
 
-    def _getAstroData(self, hdulist, path=None):
+    def _getAstroData(self, data_provider):
         """
         Searches the internal registry for an AstroData derivative matching
         the metadata in the HDUList that we're passed.
@@ -31,7 +31,7 @@ class AstroDataFactory(object):
         Returns an instantiated object, or raises AstroDataError if it was
         not possible to find a match.
         """
-        candidates = [x for x in self._registry if x._matches_data(hdulist)]
+        candidates = [x for x in self._registry if x._matches_data(data_provider)]
 
         # For every candidate in the list, remove the ones that are base classes
         # for other candidates. That way we keep only the more specific ones.
@@ -46,7 +46,7 @@ class AstroDataFactory(object):
         elif not final_candidates:
             raise AstroDataError("No class matches this dataset")
 
-        return final_candidates[0].fromHduList(path, hdulist)
+        return final_candidates[0](data_provider)
 
     def getAstroData(self, source):
         """
@@ -59,10 +59,10 @@ class AstroDataFactory(object):
 
         # NOTE: This is not Python3 ready, but don't worry about it now...
         if isinstance(source, StringTypes):
-            return self._getAstroData(fits.open(source), path=source)
+            return self._getAstroData(FitsLoader.fromPath(source))
         else:
             # NOTE: This should be tested against the appropriate class.
-            return self._getAstroData(source)
+            return self._getAstroData(FitsLoader.fromHduList(source))
 
 class DataProvider(object):
     @abstractproperty
@@ -201,7 +201,6 @@ def descriptor_keyword_mapping(**kw):
         return cls
     return decorator
 
-@descriptor_keyword_mapping(instrument = 'INSTRUME')
 class AstroData(object):
     def __init__(self, provider):
         self._dataprov = provider
@@ -210,3 +209,20 @@ class AstroData(object):
     @property
     def keyword(self):
         return self._kwmanip
+
+@descriptor_keyword_mapping(
+        instrument = 'INSTRUME',
+        object = 'OBJECT',
+        telescope = 'TELESCOP',
+        ut_date = 'DATE-OBS'
+        )
+class AstroDataFits(AstroData):
+    @staticmethod
+    def _matches_data(dataprov):
+        # This one is trivial. As long as we get a FITS file...
+        return True
+
+factory = AstroDataFactory()
+# Let's make sure that there's at least one class that matches the data
+# (if we're dealing with a FITS file)
+factory.addClass(AstroDataFits)
