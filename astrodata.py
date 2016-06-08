@@ -74,19 +74,22 @@ class DataProvider(object):
         pass
 
 class FitsLoader(DataProvider):
-    @classmethod
-    def fromPath(self, path):
+    SKIP_HEADERS = ('DQ', 'VAR')
+    @staticmethod
+    def fromPath(path):
         fits_loader = FitsLoader()
         hdulist = fits.open(path, memmap=True, do_not_scale_image_data=True)
         fits_loader.path = path
-        fits_loader._header = [x.header for x in hdulist]
+        fits_loader._header = [x.header for x in hdulist
+                                        if x.header.get('EXTNAME') not in FitsLoader.SKIP_HEADERS]
 
         return fits_loader
 
-    @classmethod
-    def fromHduList(self, hdulist, path=None):
+    @staticmethod
+    def fromHduList(hdulist, path=None):
         fits_loader = FitsLoader()
-        fits_loader._reset_members(fits.open(path))
+        fits_loader.path = path
+        fits_loader._reset_members(hdulist)
 
         return fits_loader
 
@@ -109,7 +112,7 @@ class FitsLoader(DataProvider):
         for unit in hdulist:
             header = unit.header
             extname = header.get('EXTNAME')
-            if extname in ('DQ', 'VAR'):
+            if extname in self.SKIP_HEADERS:
                 continue
             elif extname == 'SCI':
                 obj = NDData(unit.data, meta={'hdu': header})
