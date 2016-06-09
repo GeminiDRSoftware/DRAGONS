@@ -73,32 +73,47 @@ class DataProvider(object):
     def data(self):
         pass
 
+class FitsKeywordManipulator(object):
+    def __init__(self, headers):
+        self.__dict__["_headers"] = headers
+
+    def _select_header(self, ext):
+        if ext is None:
+            return self._headers[0]
+        else:
+            return self._headers[ext]
+
+    def get(self, key, default=None, ext=None):
+        return self._select_header(ext).get(key, default)
+
+    def comment(self, key, ext=None):
+        return self._select_header(ext).comments[key]
+
+    def set_comment(self, key, comment, ext=None):
+        h = self._select_header(ext)
+        if key not in h:
+            raise AttributeError("Keyword {!r} not available".format(key))
+        h[key] = (h[key], comment)
+
+    def get_all(self, key):
+        found = []
+        for n, h in enumerate(self._headers):
+            if key in h:
+                found.append((('*', n), h[key]))
+
+        if found:
+            return dict(found)
+        else:
+            raise KeyError("Keyword {!r} not available".format(key))
+
+    def __getattr__(self, key):
+        return self._headers[0][key]
+
+    def __setattr__(self, key, value):
+        self._headers[0][key] = value
+
 class FitsLoader(DataProvider):
     SKIP_HEADERS = ('DQ', 'VAR')
-
-    class KeywordManipulator(object):
-        def __init__(self, header):
-            self.__dict__["_header"] = header
-
-        def get(self, key, default=None):
-            return self._header.get(key, default)
-
-        def comment(self, key):
-            return self._header.comments[key]
-
-        def set_comment(self, key, comment):
-            if key not in self:
-                raise AttributeError("Keyword {!r} not available")
-            setattr(self, key, (self.get(key), comment))
-
-        def __contains__(self, key):
-            return key in self._header
-
-        def __getattr__(self, key):
-            return self._header[key]
-
-        def __setattr__(self, key, value):
-            self._header[key] = value
 
     @staticmethod
     def fromPath(path):
@@ -185,7 +200,7 @@ class FitsLoader(DataProvider):
 
     @property
     def manipulator(self):
-        return FitsLoader.KeywordManipulator(self.phu)
+        return FitsKeywordManipulator(self.header)
 
 class KeywordCallableWrapper(object):
     def __init__(self, keyword):
