@@ -112,9 +112,18 @@ class FitsKeywordManipulator(object):
     def __setattr__(self, key, value):
         self._headers[0][key] = value
 
-class FitsLoader(DataProvider):
-    SKIP_HEADERS = ('DQ', 'VAR')
+class RawFitsProvider(DataProvider):
+    # TODO: Implement
+    def __init__(self):
+        self._header = None
+        self._nddata = None
+        self.path = None
 
+class ProcessedFitsProvider
+    # TODO: Implement
+    pass
+
+class FitsLoader(DataProvider):
     @staticmethod
     def fromPath(path):
         fits_loader = FitsLoader()
@@ -135,7 +144,8 @@ class FitsLoader(DataProvider):
 
     def __init__(self):
         self._header = None
-        self._data = None
+        self._nddata = None
+        self._tables = None
         self.path = None
 
     def _reset_members(self, hdulist):
@@ -148,7 +158,9 @@ class FitsLoader(DataProvider):
             return None
 
         self._header = []
-        self._data = []
+        self._nddata = []
+        self._tables = []
+
         seen_refcat = False
         for unit in hdulist:
             header = unit.header
@@ -166,8 +178,10 @@ class FitsLoader(DataProvider):
                     # TODO: set the uncertainty.
                     # obj.uncertainty = VarUncertainty(unit.data)
                     pass
+                self._nddata.append(obj)
             elif isinstance(unit, fits.ImageHDU):
                 obj = NDData(unit.data, meta={'hdu': header, 'ver': header.get('EXTVER')})
+                self._nddata.append(obj)
             elif isinstance(unit, fits.BinTableHDU):
                 # REFCAT is the same, no matter how many copies. Have only one of them.
                 is_refcat = extname != 'REFCAT'
@@ -180,8 +194,6 @@ class FitsLoader(DataProvider):
             else:
                 print type(unit)
                 raise Exception("I don't really know what to do here...")
-
-            self._data.append(obj)
 
     @property
     def header(self):
@@ -224,6 +236,9 @@ class AstroData(object):
     @property
     def keyword(self):
         return self._kwmanip
+
+    def __getitem__(self, slicing):
+        return self.__class__(self._dataprov[slicing])
 
 @descriptor_keyword_mapping(
         instrument = 'INSTRUME',
