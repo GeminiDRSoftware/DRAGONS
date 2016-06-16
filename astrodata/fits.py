@@ -9,43 +9,74 @@ from astropy.nddata import NDData
 from astropy.table import Table
 
 class FitsKeywordManipulator(object):
-    def __init__(self, headers):
-        self.__dict__["_headers"] = headers
+    def __init__(self, headers, on_extensions=False):
+        self.__dict__.update({
+            "_headers": headers,
+            "_on_ext": on_extensions
+        })
 
-    def _select_header(self, ext):
-        if ext is None:
-            return self._headers[0]
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError as err:
+            try:
+                vals = err.values
+                for n in err.missing_at:
+                    vals[n] = default
+                return vals
+            except AttributeError:
+                return default
+
+    def get_comment(self, key):
+        if self._on_ext:
+            return [header.comments[key] for header in self._headers]
         else:
-            return self._headers[ext]
+            return self._headers[0].comments[key]
 
-    def get(self, key, default=None, ext=None):
-        return self._select_header(ext).get(key, default)
+    def set_comment(self, key, comment):
+        def _inner_set_comment(header):
+            try:
+                header[key] = (header[key], comment)
+            except KeyError:
+                raise KeyError("Keyword {!r} not available".format(key))
 
-    def comment(self, key, ext=None):
-        return self._select_header(ext).comments[key]
-
-    def set_comment(self, key, comment, ext=None):
-        h = self._select_header(ext)
-        if key not in h:
-            raise AttributeError("Keyword {!r} not available".format(key))
-        h[key] = (h[key], comment)
-
-    def get_all(self, key):
-        found = []
-        for n, h in enumerate(self._headers):
-            if key in h:
-                found.append((('*', n), h[key]))
-
-        if found:
-            return dict(found)
+        if self._on_ext:
+            for n, header in enumerate(self._headers):
+                try:
+                    _inner_set_comment(header)
+                except KeyError as err:
+                    err.message = err.message + " at header {}".format(n)
+                    raise
         else:
-            raise KeyError("Keyword {!r} not available".format(key))
+            _inner_set_comment(self._headers[0])
 
     def __getattr__(self, key):
-        return self._headers[0][key]
+        if self._on_ext:
+            raised = False
+            missing_at = []
+            ret = []
+            for n, header in enumerate(self._headers):
+                try:
+                    ret.append(header[key])
+                except KeyError:
+                    missing_at.append(n)
+                    ret.append(None)
+                    raised = True
+            if raised:
+                error = KeyError("The keyword couldn't be found at headers: {}".format(tuple(missing_at)))
+                error.missing_at = missing_at
+                error.values = ret
+                raise error
+            return ret
+        else:
+            return self._headers[0][key]
 
     def __setattr__(self, key, value):
-        self._headers[0][key] = value
+        if self._on_ext:
+            for header in self._headers:
+                header[key] = value
+        else:
+            self._headers[0][key] = value
 
 class TableManipulator(object):
     def __init__(self, tables):
@@ -126,8 +157,19 @@ class FitsProvider(DataProvider):
         return self.header[0]
 
     @property
-    def manipulator(self):
-        return FitsKeywordManipulator(self.header)
+    def phu_manipulator(self):
+        return FitsKeywordManipulator(self.header[:1])
+
+    def ext_manipulator(self, extname):
+        if extname is None:
+            headers = self.header[1:]
+        else:
+            headers = [h for h in self.header[1:] if h.get('EXTNAME') == extname]
+
+        if len(headers) == 0:
+            raise KeyError("No extensions with name {!r}".format(extname))
+
+        return FitsKeywordManipulator(headers, on_extensions=True)
 
 class RawFitsProvider(FitsProvider):
     def _set_headers(self, hdulist):
@@ -141,6 +183,9 @@ class RawFitsProvider(FitsProvider):
                 obj = NDData(unit.data, meta={'hdu': unit.header})
                 self._nddata.append(obj)
 
+    def table_names(self):
+        return ()
+
 class ProcessedFitsProvider(FitsProvider):
     SKIP_HEADERS = set(('DQ', 'VAR', 'OBJMASK'))
 
@@ -151,6 +196,13 @@ class ProcessedFitsProvider(FitsProvider):
     @property
     def table(self):
         return TableManipulator(self._tables)
+
+    def table_names(self):
+        if not self._tables:
+            # Force the loading of data
+            # TODO: This should be done in a better way...
+            self.nddata
+        return self._tables.keys()
 
     def _slice(self, indices):
         scopy = super(ProcessedFitsProvider, self)._slice(indices)
@@ -260,3 +312,13 @@ class AstroDataFits(AstroData):
     def _matches_data(dataprov):
         # This one is trivial. As long as we get a FITS file...
         return True
+
+    def tables(self):
+        return self._dataprov.table_names()
+
+    @property
+    def phu(self):
+        return self._dataprov.phu_manipulator
+
+    def ext(self, extname=None):
+        return self._dataprov.ext_manipulator(extname)
