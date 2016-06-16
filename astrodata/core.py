@@ -1,4 +1,4 @@
-from abc import abstractproperty
+from abc import abstractmethod, abstractproperty
 from types import StringTypes
 
 class AstroDataError(Exception):
@@ -11,6 +11,10 @@ class DataProvider(object):
 
     @abstractproperty
     def data(self):
+        pass
+
+    @abstractmethod
+    def __getitem__(self, slice):
         pass
 
 class KeywordCallableWrapper(object):
@@ -35,6 +39,14 @@ class AstroData(object):
     @property
     def keyword(self):
         return self._kwmanip
+
+    @property
+    def nddata(self):
+        return self._dataprov.nddata
+
+    @property
+    def table(self):
+        return self._dataprov.table
 
     def __getitem__(self, slicing):
         return self.__class__(self._dataprov[slicing])
