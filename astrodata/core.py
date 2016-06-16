@@ -34,11 +34,6 @@ def descriptor_keyword_mapping(**kw):
 class AstroData(object):
     def __init__(self, provider):
         self._dataprov = provider
-        self._kwmanip = provider.manipulator
-
-    @property
-    def keyword(self):
-        return self._kwmanip
 
     @property
     def nddata(self):
