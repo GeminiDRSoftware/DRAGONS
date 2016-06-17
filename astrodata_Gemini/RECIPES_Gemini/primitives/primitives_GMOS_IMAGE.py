@@ -424,7 +424,7 @@ class GMOS_IMAGEPrimitives(GMOSPrimitives):
 
             # Find the mode and standard deviation
             hist,edges = np.histogram(stat_region,
-                                      bins=np.max(sci_data)/0.1)
+                                      bins=int(np.max(sci_data)/0.1))
             mode = edges[np.argmax(hist)]
             std = np.std(stat_region)
             
