@@ -22,6 +22,7 @@ import sys
 from recipe_system.config import globalConf, STANDARD_REDUCTION_CONF
 from recipe_system.cal_service import CONFIG_SECTION as CAL_CONFIG_SECTION
 from recipe_system.cal_service.localmanager import LocalManager, LocalManagerError
+from recipe_system.cal_service.localmanager import ERROR_CANT_WIPE, ERROR_CANT_CREATE
 
 def buildArgumentParser():
     parser = ArgumentParser(description="Calibration Database Management Tool")
@@ -56,14 +57,17 @@ def buildArgumentParser():
 
 def usage(parser, message=None, stream=sys.stderr):
     if message is not None:
-        print >> stream, "\x1b[1m{0}\x1b[0m".format(message)
-        print >> stream
+        log(message, stream, bold=True, add_newlines=1)
 
     parser.print_help(file=stream)
 
-def log(message, stream):
+def log(message, stream, bold=False, add_newlines=0):
     if stream is not None:
+        if bold:
+            message = "\x1b[1m{0}\x1b[0m".format(message)
         print >> stream, message
+        if add_newlines > 0:
+            print >> stream, '\n' * add_newlines,
 
 class Dispatcher(object):
     def __init__(self, parser, manager, log):
@@ -108,10 +112,13 @@ class Dispatcher(object):
             self._log("Initializing {}...".format(self._mgr.path))
             self._mgr.init_database(wipe=args.wipe)
         except LocalManagerError as e:
-            self.usage(message="Can't initialize an existing database. If "
-                       "you're sure about this, either\nremove the file "
-                       "first, or pass the -w option to confirm that you "
-                       "want\nto wipe the contents.")
+            if e.error_type == ERROR_CANT_WIPE:
+                self.usage(message="Can't initialize an existing database. If "
+                           "you're sure about this, either\nremove the file "
+                           "first, or pass the -w option to confirm that you "
+                           "want\nto wipe the contents.")
+            elif e.error_type == ERROR_CANT_CREATE:
+                log(e.message, sys.stderr, bold=True)
             return -1
 
         return 0

@@ -2,7 +2,7 @@ import os
 from os.path import abspath, basename, dirname, isdir
 import warnings
 
-from sqlalchemy.exc import SAWarning
+from sqlalchemy.exc import SAWarning, OperationalError
 from gemini_calmgr import fits_storage_config as fsc
 from gemini_calmgr import gemini_metadata_utils as gmu
 from gemini_calmgr import orm
@@ -43,8 +43,13 @@ args_for_cals = {
 
 DEFAULT_DB_NAME = 'cal_manager.db'
 
+ERROR_CANT_WIPE = 0
+ERROR_CANT_CREATE = 1
+
 class LocalManagerError(Exception):
-    pass
+    def __init__(self, error_type, *args, **kw):
+        super(LocalManagerError, self).__init__(*args, **kw)
+        self.error_type = error_type
 
 class LocalManager(object):
     def __init__(self, db_path):
@@ -109,10 +114,14 @@ class LocalManager(object):
                 os.remove(fsc.db_path)
             else:
                 errmsg = "{!r} exists and won't be wiped".format(fsc.db_path)
-                raise LocalManagerError(errmsg)
+                raise LocalManagerError(ERROR_CANT_WIPE, errmsg)
 
-        createtables.create_tables(self.session)
-        self.session.commit()
+        try:
+            createtables.create_tables(self.session)
+            self.session.commit()
+        except OperationalError:
+            message = "There was an error when trying to create the database. Please, check your path and permissions."
+            raise LocalManagerError(ERROR_CANT_CREATE, message)
 
     def ingest_file(self, path):
         """Registers a file into the database
