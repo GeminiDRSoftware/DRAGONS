@@ -178,6 +178,11 @@ class ProcessedFitsProvider(FitsProvider):
     def __init__(self):
         super(ProcessedFitsProvider, self).__init__()
         self._tables = None
+        self._exposed = []
+
+    @property
+    def exposed(self):
+        return set(self._exposed)
 
     def ext_manipulator(self, extname):
         if extname is not None:
@@ -212,7 +217,7 @@ class ProcessedFitsProvider(FitsProvider):
             return [x for x in hdulist
                       if x.header.get('EXTVER') == ver and x.header['EXTNAME'] != 'SCI']
 
-        def add_meta_unit(nd, meta):
+        def process_meta_unit(nd, meta, add=True):
             eheader = meta.header
             name = eheader.get('EXTNAME')
             data = meta.data
@@ -229,8 +234,11 @@ class ProcessedFitsProvider(FitsProvider):
                     meta_obj = NDData(data, meta={'hdu': eheader})
                 else:
                     raise ValueError("Unknown extension type: {!r}".format(name))
-                setattr(nd, name, meta_obj)
-                nd.meta['other'].append(name)
+                if add:
+                    setattr(nd, name, meta_obj)
+                    nd.meta['other'].append(name)
+                else:
+                    return meta_obj
 
         self._nddata = []
         sci_units = [x for x in hdulist[1:] if x.header['EXTNAME'] == 'SCI']
@@ -244,13 +252,16 @@ class ProcessedFitsProvider(FitsProvider):
 
             for extra_unit in search_for_associated(ver):
                 seen.add(extra_unit)
-                add_meta_unit(nd, extra_unit)
+                process_meta_unit(nd, extra_unit)
 
         for other in self._hdulist:
             if other in seen:
                 continue
-            for nd in self._nddata:
-                add_meta_unit(nd, other)
+            name = other.header['EXTNAME']
+            if other.header.get('EXTVER', -1) >= 0:
+                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
+            setattr(self, name, process_meta_unit(None, other, add=False))
+            self._exposed.append(name)
 
 class FitsLoader(FitsProvider):
     @staticmethod
