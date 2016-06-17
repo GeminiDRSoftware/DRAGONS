@@ -2,13 +2,13 @@ README for GEMINI/GMOS primitive classes.
 
 The hierarchy of the GEMINI/GMOS primitive classes:
 
-    	            PrimtivesCORE(object)       -- pkg GEMINI
+    	            PrimitivesCORE(object)       -- pkg GEMINI
                               |
-	        PrimtivesGemini(PrimtivesCORE)  -- pkg GEMINI
+	        PrimitivesGemini(PrimitivesCORE)  -- pkg GEMINI
                               |
-	        PrimtivesGMOS(PrimtivesGemini)
+	        PrimitivesGMOS(PrimitivesGemini)
                   |                          |
-    PrimtivesIMAGE(PrimtivesGMOS)  PrimtivesSPECT(PrimtivesGMOS)
+    PrimitivesIMAGE(PrimitivesGMOS)  PrimitivesSPECT(PrimitivesGMOS)
 
 
 Usage of this test recipe in the prototype system.

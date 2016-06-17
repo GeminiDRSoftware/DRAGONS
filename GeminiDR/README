@@ -41,13 +41,13 @@ primitive classes, which exhibit tight parallel structure:
 
 
 
-                 GEMINI/GMOS Primtives classes
+                 GEMINI/GMOS Primitives classes
                  -----------------------------
 
-    	            PrimtivesCORE(object)         -- pkg GEMINI
+    	            PrimitivesCORE(object)         -- pkg GEMINI
                               |
-	        PrimtivesGemini(PrimtivesCORE)    -- pkg GEMINI
+	        PrimitivesGemini(PrimitivesCORE)    -- pkg GEMINI
                               |
-	        PrimtivesGMOS(PrimtivesCGemini)   -- pkg GMOS
+	        PrimitivesGMOS(PrimitivesCGemini)   -- pkg GMOS
                   |                          |
-    PrimtivesIMAGE(PrimtivesGMOS)  PrimtivesSPECT(PrimtivesGMOS)
+    PrimitivesIMAGE(PrimtivesGMOS)  PrimitivesSPECT(PrimtivesGMOS)

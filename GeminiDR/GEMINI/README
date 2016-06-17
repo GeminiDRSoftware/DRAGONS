@@ -14,10 +14,10 @@ The hierarchy of the GEMINI/GMOS parameter classes is as follows:
 
 The hierarchy of the GEMINI/GMOS Primtives classes is as follows:
 
-    	            PrimtivesCORE(object)       -- pkg GEMINI
+    	            PrimitivesCORE(object)       -- pkg GEMINI
                               |
-	        PrimtivesGemini(ParametersCORE) -- pkg GEMINI
+	        PrimitivesGemini(PrimitivesCORE) -- pkg GEMINI
                               |
-	        PrimtivesGMOS(ParametersPrimtivesCGemini)
+	        PrimitivesGMOS(PrimitivesCGemini)
                   |                          |
-    PrimtivesIMAGE(ParametersPrimtivesGMOS)  PrimtivesSPECT(PrimtivesGMOS)
+    PrimtivesIMAGE(PrimitivesGMOS)  PrimitivesSPECT(PrimtivesGMOS)
