@@ -1,0 +1,12 @@
+README for GEMINI/GMOS primitive classes.
+
+The hierarchy of the GEMINI/GMOS primitive classes:
+
+    	            PrimtivesCORE(object)       -- pkg GEMINI
+                              |
+	        PrimtivesGemini(PrimtivesCORE)  -- pkg GEMINI
+                              |
+	        PrimtivesGMOS(PrimtivesGemini)
+                  |                          |
+    PrimtivesIMAGE(PrimtivesGMOS)  PrimtivesSPECT(PrimtivesGMOS)
+

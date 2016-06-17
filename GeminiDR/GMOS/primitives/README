@@ -1,0 +1,11 @@
+README for GMOS Primtives sets.
+
+The hierarchy of the GEMINI/GMOS Primtives classes is as follows:
+
+    	            PrimtivesCORE(object)       -- pkg GEMINI
+                              |
+	        PrimtivesGemini(PrimtivesCORE) -- pkg GEMINI
+                              |
+	        PrimtivesGMOS(PrimtivesCGemini)
+                  |                          |
+    PrimtivesIMAGE(PrimtivesGMOS)  PrimtivesSPECT(PrimtivesGMOS)

@@ -1,0 +1,12 @@
+README for GMOS parameter sets.
+
+The hierarchy of the GEMINI/GMOS parameter classes is as follows:
+
+    	            ParametersCORE(object)       -- pkg GEMINI
+                              |
+	        ParametersGemini(ParametersCORE) -- pkg GEMINI
+                              |
+	        ParametersGMOS(ParametersGemini)
+                  |                          |
+    ParametersIMAGE(ParametersGMOS)  ParametersSPECT(ParametersGMOS)
+

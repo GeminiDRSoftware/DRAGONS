@@ -1,0 +1,24 @@
+README for GMOS parameter/primitive sets.
+
+The hierarchy of the GEMINI/GMOS parameter classes is as follows:
+
+    	            ParametersCORE(object)       -- pkg GEMINI
+                              |
+	        ParametersGemini(ParametersCORE) -- pkg GEMINI
+                              |
+	        ParametersGMOS(ParametersGemini)
+                  |                          |
+    ParametersIMAGE(ParametersGMOS)  ParametersSPECT(ParametersGMOS)
+
+
+README for GMOS Primtives sets.
+
+The hierarchy of the GEMINI/GMOS Primtives classes is as follows:
+
+    	            PrimtivesCORE(object)       -- pkg GEMINI
+                              |
+	        PrimtivesGemini(PrimtivesCORE) -- pkg GEMINI
+                              |
+	        PrimtivesGMOS(PrimtivesCGemini)
+                  |                          |
+    PrimtivesIMAGE(PrimtivesGMOS)  PrimtivesSPECT(PrimtivesGMOS)
