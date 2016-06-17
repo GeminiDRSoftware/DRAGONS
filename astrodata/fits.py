@@ -1,12 +1,26 @@
 from types import StringTypes
 from abc import abstractmethod
 from collections import defaultdict
+from functools import partial
 
 from .core import *
 
 from astropy.io import fits
 from astropy.nddata import NDData
 from astropy.table import Table
+
+class KeywordCallableWrapper(object):
+    def __init__(self, keyword, on_ext=None):
+        self.kw = keyword
+        self.on_ext = on_ext
+
+    def __call__(self, adobj):
+        def wrapper():
+            if self.on_ext is None:
+                return getattr(adobj.phu, self.kw)
+            else:
+                return getattr(adobj.ext(self.on_ext if self.on_ext != "*" else None), self.kw)
+        return wrapper
 
 class FitsKeywordManipulator(object):
     def __init__(self, headers, on_extensions=False):
@@ -17,7 +31,7 @@ class FitsKeywordManipulator(object):
 
     def get(self, key, default=None):
         try:
-            return self[key]
+            return getattr(self, key)
         except KeyError as err:
             try:
                 vals = err.values
@@ -161,15 +175,7 @@ class FitsProvider(DataProvider):
         return FitsKeywordManipulator(self.header[:1])
 
     def ext_manipulator(self, extname):
-        if extname is None:
-            headers = self.header[1:]
-        else:
-            headers = [h for h in self.header[1:] if h.get('EXTNAME') == extname]
-
-        if len(headers) == 0:
-            raise KeyError("No extensions with name {!r}".format(extname))
-
-        return FitsKeywordManipulator(headers, on_extensions=True)
+        return FitsKeywordManipulator(self.header[1:], on_extensions=True)
 
 class RawFitsProvider(FitsProvider):
     def _set_headers(self, hdulist):
@@ -203,6 +209,17 @@ class ProcessedFitsProvider(FitsProvider):
             # TODO: This should be done in a better way...
             self.nddata
         return self._tables.keys()
+
+    def ext_manipulator(self, extname):
+        if extname is not None:
+            headers = [h for h in self.header[1:] if h.get('EXTNAME') == extname]
+
+            if len(headers) == 0:
+                raise KeyError("No extensions with name {!r}".format(extname))
+
+            return FitsKeywordManipulator(headers, on_extensions=True)
+        else:
+            return super(ProcessedFitsProvider, self).ext_manipulator(None)
 
     def _slice(self, indices):
         scopy = super(ProcessedFitsProvider, self)._slice(indices)
@@ -301,11 +318,11 @@ class FitsLoader(FitsProvider):
 
         return provider
 
-@descriptor_keyword_mapping(
-        instrument = 'INSTRUME',
-        object = 'OBJECT',
-        telescope = 'TELESCOP',
-        ut_date = 'DATE-OBS'
+@simple_descriptor_mapping(
+        instrument = KeywordCallableWrapper('INSTRUME'),
+        object = KeywordCallableWrapper('OBJECT'),
+        telescope = KeywordCallableWrapper('TELESCOP'),
+        ut_date = KeywordCallableWrapper('DATE-OBS')
         )
 class AstroDataFits(AstroData):
     @staticmethod

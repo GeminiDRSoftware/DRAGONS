@@ -1,7 +1,9 @@
-__all__ = ['AstroData', 'AstroDataError', 'factory']
+__all__ = ['AstroData', 'AstroDataError', 'factory', 'keyword']
 
 from .core import *
-from .fits import AstroDataFits, FitsLoader
+from .fits import AstroDataFits, FitsLoader, KeywordCallableWrapper
+
+keyword = KeywordCallableWrapper
 
 class AstroDataFactory(object):
     def __init__(self):
@@ -61,3 +63,5 @@ factory = AstroDataFactory()
 # Let's make sure that there's at least one class that matches the data
 # (if we're dealing with a FITS file)
 factory.addClass(AstroDataFits)
+
+open = factory.getAstroData

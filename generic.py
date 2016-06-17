@@ -1,5 +1,5 @@
 # from gempy.gemini import gemini_metadata_utils as gmu
-from astrodata import AstroDataFits, descriptor_keyword_mapping
+from astrodata import factory, AstroDataFits, simple_descriptor_mapping, keyword
 import re
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
@@ -48,92 +48,91 @@ def sectionStrToIntList(section):
     # Return the list in the form [x1 - 1, x2, y1 - 1, y2]
     return [x1, x2, y1, y2]
 
-gemini_direct_keywords = {
-    "ao_fold":  "AOFOLD",
-    "ao_seeing":  "AOSEEING",
-    "aowfs": "AOWFS_ST",
-    "array_name": "ARRAYNAM",
-    "azimuth": "AZIMUTH",
-    "bias_image": "BIASIM",
-    "bunit": "BUNIT",
-    "cd11": "CD1_1",
-    "cd12": "CD1_2",
-    "cd21": "CD2_1",
-    "cd22": "CD2_2",
-    "dark_image": "DARKIM",
-    "data_label": "DATALAB",
-    "dec": "DEC",
-    "decker": "DECKER",
-    "detector_name": "DETNAME",
-    "detector_roi_setting": "DROISET",
-    "detector_rois_requested": "DROIREQ",
-    "detector_section": "DETSEC",
-    "detector_x_bin": "XCCDBIN",
-    "detector_y_bin": "YCCDBIN",
-    "disperser": "DISPERSR",
-    "dispersion": "WDELTA",
-    "dispersion_axis": "DISPAXIS",
-    "elevation": "ELEVATIO",
-    "exposure_time": "EXPTIME",
-    "filter_name": "FILTNAME",
-    "focal_plane_mask": "FPMASK",
-    "gain": "GAIN",
-    "gain_setting": "GAINSET",
-    "gems": "GWFS1CFG",
-    "grating": "GRATING",
-    "group_id": "GROUPID",
-    "local_time": "LT",
-    "lyot_stop": "LYOTSTOP",
-    "mdf_row_id": "MDFROW",
-    "naxis1": "NAXIS1",
-    "naxis2": "NAXIS2",
-    "nod_count": "NODCOUNT",
-    "nod_pixels": "NODPIX",
-    "nominal_atmospheric_extinction": "NOMATMOS",
-    "nominal_photometric_zeropoint": "NOMPHOTZ",
-    "non_linear_level": "NONLINEA",
-    "observation_class": "OBSCLASS",
-    "observation_epoch": "OBSEPOCH",
-    "observation_id": "OBSID",
-    "observation_type": "OBSTYPE",
-    "oiwfs": "OIWFS_ST",
-    "overscan_section": "OVERSSEC",
-    "pixel_scale": "PIXSCALE",
-    "prism": "PRISM",
-    "program_id": "GEMPRGID",
-    "pupil_mask": "PUPILMSK",
-    "pwfs1": "PWFS1_ST",
-    "pwfs2": "PWFS2_ST",
-    "qa_state": "QASTATE",
-    "r_zero_val":  "RZEROVAL",
-    "ra": "RA",
-    "raw_bg": "RAWBG",
-    "raw_cc": "RAWCC",
-    "raw_iq": "RAWIQ",
-    "raw_wv": "RAWWV",
-    "raw_gemini_qa": "RAWGEMQA",
-    "raw_pi_requirements_met": "RAWPIREQ",
-    "read_mode": "READMODE",
-    "read_noise": "RDNOISE",
-    "read_speed_setting": "RDSPDSET",
-    "requested_bg": "REQBG",
-    "requested_cc": "REQCC",
-    "requested_iq": "REQIQ",
-    "requested_wv": "REQWV",
-    "saturation_level": "SATLEVEL",
-    "slit": "SLIT",
-    "ut_datetime": "DATETIME",
-    "ut_time": "UT",
-    "wavefront_sensor": "WFS",
-    "wavelength":  "WAVELENG",
-    "wavelength_band": "WAVEBAND",
-    "wavelength_reference_pixel": "WREFPIX",
-    "well_depth_setting": "WELDEPTH",
-    "x_offset": "XOFFSET",
-    "y_offset": "YOFFSET",
-}
+gemini_direct_keywords = dict(
+    ao_fold = keyword("AOFOLD"),
+    aowfs = keyword("AOWFS_ST"),
+    array_name = keyword("ARRAYNAM"),
+    azimuth = keyword("AZIMUTH"),
+    bias_image = keyword("BIASIM"),
+    bunit = keyword("BUNIT"),
+    cd11 = keyword("CD1_1"),
+    cd12 = keyword("CD1_2"),
+    cd21 = keyword("CD2_1"),
+    cd22 = keyword("CD2_2"),
+    dark_image = keyword("DARKIM"),
+    data_label = keyword("DATALAB"),
+    dec = keyword("DEC"),
+    decker = keyword("DECKER"),
+    detector_name = keyword("DETNAME"),
+    detector_roi_setting = keyword("DROISET"),
+    detector_rois_requested = keyword("DROIREQ"),
+    detector_section = keyword("DETSEC"),
+    detector_x_bin = keyword("XCCDBIN"),
+    detector_y_bin = keyword("YCCDBIN"),
+    disperser = keyword("DISPERSR"),
+    dispersion = keyword("WDELTA"),
+    dispersion_axis = keyword("DISPAXIS"),
+    elevation = keyword("ELEVATIO"),
+    exposure_time = keyword("EXPTIME"),
+    filter_name = keyword("FILTNAME"),
+    focal_plane_mask = keyword("FPMASK"),
+    gain = keyword("GAIN"),
+    gain_setting = keyword("GAINSET"),
+    gems = keyword("GWFS1CFG"),
+    grating = keyword("GRATING"),
+    group_id = keyword("GROUPID"),
+    local_time = keyword("LT"),
+    lyot_stop = keyword("LYOTSTOP"),
+    mdf_row_id = keyword("MDFROW"),
+    naxis1 = keyword("NAXIS1"),
+    naxis2 = keyword("NAXIS2"),
+    nod_count = keyword("NODCOUNT"),
+    nod_pixels = keyword("NODPIX"),
+    nominal_atmospheric_extinction = keyword("NOMATMOS"),
+    nominal_photometric_zeropoint = keyword("NOMPHOTZ"),
+    non_linear_level = keyword("NONLINEA"),
+    observation_class = keyword("OBSCLASS"),
+    observation_epoch = keyword("OBSEPOCH"),
+    observation_id = keyword("OBSID"),
+    observation_type = keyword("OBSTYPE"),
+    oiwfs = keyword("OIWFS_ST"),
+    overscan_section = keyword("OVERSSEC"),
+    pixel_scale = keyword("PIXSCALE"),
+    prism = keyword("PRISM"),
+    program_id = keyword("GEMPRGID"),
+    pupil_mask = keyword("PUPILMSK"),
+    pwfs1 = keyword("PWFS1_ST"),
+    pwfs2 = keyword("PWFS2_ST"),
+    qa_state = keyword("QASTATE"),
+    r_zero_val = keyword("RZEROVAL"),
+    ra = keyword("RA"),
+    raw_bg = keyword("RAWBG"),
+    raw_cc = keyword("RAWCC"),
+    raw_iq = keyword("RAWIQ"),
+    raw_wv = keyword("RAWWV"),
+    raw_gemini_qa = keyword("RAWGEMQA"),
+    raw_pi_requirements_met = keyword("RAWPIREQ"),
+    read_mode = keyword("READMODE"),
+    read_noise = keyword("RDNOISE"),
+    read_speed_setting = keyword("RDSPDSET"),
+    requested_bg = keyword("REQBG"),
+    requested_cc = keyword("REQCC"),
+    requested_iq = keyword("REQIQ"),
+    requested_wv = keyword("REQWV"),
+    saturation_level = keyword("SATLEVEL"),
+    slit = keyword("SLIT"),
+    ut_datetime = keyword("DATETIME"),
+    ut_time = keyword("UT"),
+    wavefront_sensor = keyword("WFS"),
+    wavelength = keyword("WAVELENG"),
+    wavelength_band = keyword("WAVEBAND"),
+    wavelength_reference_pixel = keyword("WREFPIX"),
+    well_depth_setting = keyword("WELDEPTH"),
+    x_offset = keyword("XOFFSET"),
+    y_offset = keyword("YOFFSET"),
+)
 
-@descriptor_keyword_mapping(**gemini_direct_keywords)
+@simple_descriptor_mapping(**gemini_direct_keywords)
 class AstroDataGemini(AstroDataFits):
     @staticmethod
     def _matches_data(data_provider):
@@ -142,7 +141,7 @@ class AstroDataGemini(AstroDataFits):
         return obs in ('GEMINI-NORTH', 'GEMINI-SOUTH')
 
     def airmass(self):
-        am = self.keyword.AIRMASS
+        am = self.phu.AIRMASS
 
         if am < 1:
             raise ValueError("Can't have less than 1 airmass!")
@@ -151,17 +150,17 @@ class AstroDataGemini(AstroDataFits):
 
     def ao_seeing(self):
         try:
-            return self.ao_seeing
+            return self.phu.AOSEEING
         except KeyError:
             try:
-                # If the r_zero_val keyword (Fried's parameter) is present, 
+                # If r_zero_val (Fried's parameter) is present, 
                 # a seeing estimate can be calculated (NOTE: Jo Thomas-Osip 
                 # is providing a reference for this calculation. Until then, 
                 # EJD checked using 
                 # http://www.ctio.noao.edu/~atokovin/tutorial/part1/turb.html )
 
                 # Seeing at 0.5 micron
-                rzv = self.r_zero_val
+                rzv = self.r_zero_val()
                 return (206265. * 0.98 * 0.5e-6) / (rzv * 0.01)
             except KeyError:
                 raise AttributeError("There is no information about AO seeing")
@@ -169,42 +168,40 @@ class AstroDataGemini(AstroDataFits):
     def array_section(self, pretty=False):
         try:
             value_filter = (str if pretty else sectionStrToIntList)
-            return dict(
-                    (ext, (None if raw is None else value_filter(raw)))
-                    for ext, raw in self.keyword.get_all('ARRAYSEC').items()
-                   )
+            return [(None if raw is None else value_filter(raw))
+                    for raw in self.ext().ARRAYSEC]
         except KeyError:
             raise AttributeError("No array_section information")
 
     def camera(self, stripID=False, pretty=False):
-        camera = self.keyword.CAMERA
+        camera = self.phu.CAMERA
         if stripID or pretty:
             camera = removeComponentID(camera)
 
         return camera
 
     def cass_rotator_pa(self):
-        val = float(self.keyword.CRPA)
+        val = float(self.phu.CRPA)
         if val < -360 or val > 360:
             raise ValueError("Invalid CRPA value: {}".format(val))
         return val
 
     def central_wavelength(self):
-        val = self.keyword.CWAVE
+        val = self.phu.CWAVE
         if val < 0:
             raise ValueError("Invalid CWAVE value: {}".format(val))
 
         return val
 
     def coadds(self):
-        return int(self.keyword.get('COADDS', 1))
+        return int(self.phu.get('COADDS', 1))
 
     def data_section(self, pretty=False):
         try:
             value_filter = (str if pretty else sectionStrToIntList)
-            return dict(
-                    (ext, (None if raw is None else value_filter(raw)))
-                    for ext, raw in self.keyword.get_all('DATASEC').items()
-                   )
+            return [(None if raw is None else value_filter(raw))
+                    for raw in self.ext().DATASEC]
         except KeyError:
             raise AttributeError("No data_section information")
+
+factory.addClass(AstroDataGemini)

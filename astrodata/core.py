@@ -17,17 +17,10 @@ class DataProvider(object):
     def __getitem__(self, slice):
         pass
 
-class KeywordCallableWrapper(object):
-    def __init__(self, keyword):
-        self.kw = keyword
-
-    def __call__(self, adobj):
-        return getattr(adobj.keyword, self.kw)
-
-def descriptor_keyword_mapping(**kw):
+def simple_descriptor_mapping(**kw):
     def decorator(cls):
-        for descriptor, keyword in kw.items():
-            setattr(cls, descriptor, property(KeywordCallableWrapper(keyword)))
+        for descriptor, descriptor_def in kw.items():
+            setattr(cls, descriptor, property(descriptor_def))
         return cls
     return decorator
 
