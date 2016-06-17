@@ -92,21 +92,6 @@ class FitsKeywordManipulator(object):
         else:
             self._headers[0][key] = value
 
-class TableManipulator(object):
-    def __init__(self, tables):
-        self.__dict__["_tables"] = tables
-
-    def __getattr__(self, name):
-        try:
-            return self._tables[name]
-        except KeyError:
-            AttributeError("No such table: {!r}".format(name))
-
-    def __setattr__(self, name, value):
-        if name in self._tables:
-            raise ValueError("Table {!r} has a value. Can't assign a new one".format(name))
-        self._tables[name] = value
-
 class FitsProvider(DataProvider):
     def __init__(self):
         self._sliced = False
@@ -189,26 +174,10 @@ class RawFitsProvider(FitsProvider):
                 obj = NDData(unit.data, meta={'hdu': unit.header})
                 self._nddata.append(obj)
 
-    def table_names(self):
-        return ()
-
 class ProcessedFitsProvider(FitsProvider):
-    SKIP_HEADERS = set(('DQ', 'VAR', 'OBJMASK'))
-
     def __init__(self):
         super(ProcessedFitsProvider, self).__init__()
         self._tables = None
-
-    @property
-    def table(self):
-        return TableManipulator(self._tables)
-
-    def table_names(self):
-        if not self._tables:
-            # Force the loading of data
-            # TODO: This should be done in a better way...
-            self.nddata
-        return self._tables.keys()
 
     def ext_manipulator(self, extname):
         if extname is not None:
@@ -233,56 +202,55 @@ class ProcessedFitsProvider(FitsProvider):
         return scopy
 
     def _set_headers(self, hdulist):
-        self._header = [x.header for x in hdulist
-                                 if x.header.get('EXTNAME') not in self.SKIP_HEADERS]
+        self._header = [hdulist[0].header] + [x.header for x in hdulist if x.header.get('SCI')]
 
     def _reset_members(self, hdulist):
         self._hdulist = hdulist
-        def search_for_unit(name, ver):
-            units = [x for x in hdulist
-                       if x.header.get('EXTVER') == ver and x.header['EXTNAME'] == name]
-            if units:
-                return units[0]
+        seen = set([hdulist[0]])
 
-            return None
+        def search_for_associated(ver):
+            return [x for x in hdulist
+                      if x.header.get('EXTVER') == ver and x.header['EXTNAME'] != 'SCI']
+
+        def add_meta_unit(nd, meta):
+            eheader = meta.header
+            name = eheader.get('EXTNAME')
+            data = meta.data
+            if name == 'DQ':
+                nd.mask = data
+            elif name == 'VAR':
+                # TODO: set the uncertainty.
+                # obj.uncertainty = VarUncertainty(data)
+                pass
+            else:
+                if isinstance(meta, fits.BinTableHDU):
+                    meta_obj = Table(data, meta={'hdu': eheader})
+                elif isinstance(meta, fits.ImageHDU):
+                    meta_obj = NDData(data, meta={'hdu': eheader})
+                else:
+                    raise ValueError("Unknown extension type: {!r}".format(name))
+                setattr(nd, name, meta_obj)
+                nd.meta['other'].append(name)
 
         self._nddata = []
-        self._tables = defaultdict(list)
+        sci_units = [x for x in hdulist[1:] if x.header['EXTNAME'] == 'SCI']
 
-        seen_refcat = False
-        for unit in hdulist:
+        for unit in sci_units:
+            seen.add(unit)
             header = unit.header
-            if isinstance(unit, fits.PrimaryHDU):
-                continue
+            ver = header['EXTVER']
+            nd = NDData(unit.data, meta={'hdu': header, 'ver': ver, 'other': []})
+            self._nddata.append(nd)
 
-            extname = header['EXTNAME']
-            if extname in self.SKIP_HEADERS:
+            for extra_unit in search_for_associated(ver):
+                seen.add(extra_unit)
+                add_meta_unit(nd, extra_unit)
+
+        for other in self._hdulist:
+            if other in seen:
                 continue
-            elif extname == 'SCI':
-                self._header.append(header)
-                ver = header.get('EXTVER')
-                obj = NDData(unit.data, meta={'hdu': header, 'ver': ver})
-                dq = search_for_unit('DQ', ver)
-                if dq:
-                    obj.mask = dq
-                var = search_for_unit('VAR', ver)
-                if var:
-                    # TODO: set the uncertainty.
-                    # obj.uncertainty = VarUncertainty(unit.data)
-                    pass
-                objm = search_for_unit('OBJMASK', ver)
-                if objm:
-                    obj.meta.update({'objmask': objm})
-                self._nddata.append(obj)
-            elif isinstance(unit, fits.BinTableHDU):
-                # REFCAT is the same, no matter how many copies. Have only one of them.
-                obj = Table(unit.data, meta={'hdu': header, 'ver': header.get('EXTVER')})
-                if extname in ('REFCAT', 'MDF'):
-                    self._tables[extname] = obj
-                else:
-                    self._tables[extname].append(obj)
-            else:
-                raise Exception("I don't know what to do with extensions of type {}...".format(type(unit)))
+            for nd in self._nddata:
+                add_meta_unit(nd, other)
 
 class FitsLoader(FitsProvider):
     @staticmethod
@@ -329,9 +297,6 @@ class AstroDataFits(AstroData):
     def _matches_data(dataprov):
         # This one is trivial. As long as we get a FITS file...
         return True
-
-    def tables(self):
-        return self._dataprov.table_names()
 
     @property
     def phu(self):
