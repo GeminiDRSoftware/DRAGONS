@@ -123,7 +123,7 @@ if __name__ == '__main__':
     globalConf.load(STANDARD_REDUCTION_CONF)
 
     if args.db_path is not None:
-        globalConf.update_section(CAL_CONFIG_SECTION, dict(
+        globalConf.update(CAL_CONFIG_SECTION, dict(
             standalone=True,
             database_dir=args.db_path
         ))
