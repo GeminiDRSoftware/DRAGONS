@@ -2202,10 +2202,14 @@ def obsmode_del(ad):
        :type ad: AstroData instance
     """
     if 'GMOS' in ad.types:
-        del ad.phu.header['OBSMODE']
-        del ad.phu.header['GPREPARE']
-        del ad.phu.header['GBIAS']
-        del ad.phu.header['GSREDUCE']
+        if 'OBSMODE' in ad.phu.header.keys():
+            del ad.phu.header['OBSMODE']
+        if 'GPREPARE' in ad.phu.header.keys():
+            del ad.phu.header['GPREPARE']
+        if 'GBIAS' in ad.phu.header.keys():
+            del ad.phu.header['GBIAS']
+        if 'GSREDUCE' in ad.phu.header.keys():
+            del ad.phu.header['GSREDUCE']
     return ad
     
 
