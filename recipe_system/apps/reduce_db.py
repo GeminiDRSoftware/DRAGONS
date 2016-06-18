@@ -38,13 +38,15 @@ def buildArgumentParser():
                        "explored recursively. Otherwise, only the first "
                        "level will be searched for FITS files.")
 
+    p_list = sub.add_parser('list', help="List calib files in the current database.")
+
     p_wipe = sub.add_parser('init', help="Create and initialize a new "
                             "database.")
     p_wipe.add_argument('-w', '--wipe', dest='wipe', action='store_true',
                         help="Force the initialization of an already "
                         "existing database.")
 
-    for sp in (p_add, p_wipe):
+    for sp in (p_add, p_wipe, p_list):
         sp.add_argument('-d', '--database', dest='db_path',
                         help="Path to the directory where the database file "
                         "can be found. Optional if the path is defined in a "
@@ -122,6 +124,10 @@ class Dispatcher(object):
             return -1
 
         return 0
+
+    def _action_list(self, args):
+        for file_data in self._mgr.list_files():
+            print "{:30} {}".format(file_data.name, file_data.path)
 
 if __name__ == '__main__':
     argp, subp = buildArgumentParser()

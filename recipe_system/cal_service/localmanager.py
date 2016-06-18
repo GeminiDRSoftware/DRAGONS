@@ -1,6 +1,7 @@
 import os
 from os.path import abspath, basename, dirname, isdir
 import warnings
+from collections import namedtuple
 
 from sqlalchemy.exc import SAWarning, OperationalError
 from gemini_calmgr import fits_storage_config as fsc
@@ -45,6 +46,8 @@ DEFAULT_DB_NAME = 'cal_manager.db'
 
 ERROR_CANT_WIPE = 0
 ERROR_CANT_CREATE = 1
+
+FileData = namedtuple('FileData', 'name path')
 
 class LocalManagerError(Exception):
     def __init__(self, error_type, *args, **kw):
@@ -247,3 +250,10 @@ class LocalManager(object):
         #@@TODO: test only 
         # print "@ppu165: ", repr(calurlel.data)
         # return (calurl, calurlmd5)
+
+    def list_files(self):
+        File, DiskFile = file.File, diskfile.DiskFile
+
+        query = self.session.query(File.name, DiskFile.path).join(DiskFile)
+        for res in query.order_by(File.name):
+            yield FileData(res[0], res[1])
