@@ -28,23 +28,9 @@ class PrimitivesGMOS(PrimitivesGemini):
         This primitive is prototype demo.
 
         """
-        log = logutils.get_logger(__name__)
-        pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
-        logutils.update_indent(3)
-        log.status("-" * len(pmsg))
-        log.status(pmsg)
-        log.status("-" * len(pmsg))
-        log.stdinfo("Parameters:\n{}".format(self.parameters.mosaicDetectors))
-        sfx = self.parameters.mosaicDetectors["suffix"]
-        for ad in self.adinputs:
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-            log.stdinfo(ad.filename)
-
-        log.stdinfo("{} needs to know the array gaps".format(self.myself()))
-        log.stdinfo("{}".format(MOSArrayGaps.gmosArrayGaps))
-        logutils.update_indent(0)
+        self._primitive_exec(self.myself(), self.parameters.mosaicDetectors, indent=3)
         return
-
+ 
     def overscanCorrect(self, adinputs=None, stream='main', **params):
         """
         This primitive is prototype demo.

@@ -42,17 +42,8 @@ class PrimitivesGemini(Standardize, Preprocess, Bookkeeping, Calibration,
         Demo prototype.
 
         """
-        log = logutils.get_logger(__name__)
-        pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
-        logutils.update_indent(3)
-        log.status("-" * len(pmsg))
-        log.status(pmsg)
-        log.status("-" * len(pmsg))
-        log.stdinfo("Parameters:\n{}".format(self.parameters.markAsPrepared))
-        sfx = self.parameters.markAsPrepared["suffix"]
-        for ad in self.adinputs:
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-            log.stdinfo(ad.filename)
-        logutils.update_indent(0)
+        self._primitive_exec(self.myself(),
+                             self.parameters.standardizeGeminiHeaders,
+                             indent=3)
 
         return

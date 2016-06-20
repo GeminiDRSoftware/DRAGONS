@@ -2,6 +2,9 @@
 
 from inspect import stack
 
+from astrodata.utils import logutils
+from gempy.gemini import gemini_tools as gt
+
 # new system imports - 10-06-2016 kra
 from GEMINI.lookups import calurl_dict
 from GEMINI.lookups import keyword_comments
@@ -36,3 +39,27 @@ class PrimitivesCORE(object):
                 self.parameters[key] = val
 
         return
+
+    def _primitive_exec(self, pname, parset=None, indent=0):
+        """ 
+        Reporting and logging for all.
+
+        """
+        dex = 3
+        pindent = dex + indent
+        log = logutils.get_logger(__name__)
+        pmsg = "{}:{}".format("PRIMITIVE:", pname)
+        logutils.update_indent(pindent)
+        log.status("-" * len(pmsg))
+        log.status(pmsg)
+        log.status("-" * len(pmsg))
+        log.stdinfo("Parameters:\n{}".format(parset))
+        if parset:
+            sfx = parset.get("suffix")
+        for ad in self.adinputs:
+            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            log.stdinfo(ad.filename)
+
+        logutils.update_indent(pindent - indent)
+        return
+ 

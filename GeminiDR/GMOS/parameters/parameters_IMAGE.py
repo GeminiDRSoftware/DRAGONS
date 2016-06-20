@@ -34,7 +34,7 @@ class ParametersIMAGE(ParametersGMOS):
     }
     stackFlats ={
         "suffix"            : "_stack",
-        "mask"              : True
+        "mask"              : True,
         "operation"         : "median",
         "reject_method"     : "minmax"
     }
