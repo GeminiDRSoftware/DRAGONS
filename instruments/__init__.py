@@ -2,3 +2,4 @@
 # registering that may be needed
 
 from . import generic
+from . import nifs
