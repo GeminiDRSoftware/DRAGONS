@@ -96,6 +96,12 @@ class FitsKeywordManipulator(object):
         else:
             self._headers[0][key] = value
 
+    def __contains__(self, key):
+        if self._on_ext:
+            return tuple(key in h for h in self._headers)
+        else:
+            return key in self._headers[0]
+
 class FitsProvider(DataProvider):
     def __init__(self):
         self._sliced = False
