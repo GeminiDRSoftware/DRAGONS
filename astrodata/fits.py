@@ -9,15 +9,23 @@ from astropy.io import fits
 from astropy.nddata import NDData
 from astropy.table import Table
 
+NO_DEFAULT = object()
+
 class KeywordCallableWrapper(object):
-    def __init__(self, keyword, on_ext=None):
+    def __init__(self, keyword, default=NO_DEFAULT, on_ext=None):
         self.kw = keyword
         self.on_ext = on_ext
+        self.default = default
 
     def __call__(self, adobj):
         def wrapper():
             if self.on_ext is None:
-                return getattr(adobj.phu, self.kw)
+                try:
+                    return getattr(adobj.phu, self.kw)
+                except KeyError:
+                    if self.default is NO_DEFAULT:
+                        raise
+                    return self.default
             else:
                 return getattr(adobj.ext(self.on_ext if self.on_ext != "*" else None), self.kw)
         return wrapper
