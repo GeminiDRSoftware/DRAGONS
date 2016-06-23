@@ -12,22 +12,18 @@ from astropy.table import Table
 NO_DEFAULT = object()
 
 class KeywordCallableWrapper(object):
-    def __init__(self, keyword, default=NO_DEFAULT, on_ext=None):
+    def __init__(self, keyword, default=NO_DEFAULT, on_ext=False):
         self.kw = keyword
         self.on_ext = on_ext
         self.default = default
 
     def __call__(self, adobj):
         def wrapper():
-            if self.on_ext is None:
-                try:
-                    return getattr(adobj.phu, self.kw)
-                except KeyError:
-                    if self.default is NO_DEFAULT:
-                        raise
-                    return self.default
+            manip = adobj.phu if not self.on_ext else adobj.ext
+            if self.default is NO_DEFAULT:
+                return getattr(manip, self.kw)
             else:
-                return getattr(adobj.ext(self.on_ext if self.on_ext != "*" else None), self.kw)
+                return manip.get(self.kw, self.default)
         return wrapper
 
 class FitsKeywordManipulator(object):
@@ -167,7 +163,8 @@ class FitsProvider(DataProvider):
     def phu_manipulator(self):
         return FitsKeywordManipulator(self.header[:1])
 
-    def ext_manipulator(self, extname):
+    @property
+    def ext_manipulator(self):
         return FitsKeywordManipulator(self.header[1:], on_extensions=True)
 
 class RawFitsProvider(FitsProvider):
@@ -191,17 +188,6 @@ class ProcessedFitsProvider(FitsProvider):
     @property
     def exposed(self):
         return set(self._exposed)
-
-    def ext_manipulator(self, extname):
-        if extname is not None:
-            headers = [h for h in self.header[1:] if h.get('EXTNAME') == extname]
-
-            if len(headers) == 0:
-                raise KeyError("No extensions with name {!r}".format(extname))
-
-            return FitsKeywordManipulator(headers, on_extensions=True)
-        else:
-            return super(ProcessedFitsProvider, self).ext_manipulator(None)
 
     def _slice(self, indices):
         scopy = super(ProcessedFitsProvider, self)._slice(indices)
@@ -321,5 +307,6 @@ class AstroDataFits(AstroData):
     def phu(self):
         return self._dataprov.phu_manipulator
 
-    def ext(self, extname=None):
-        return self._dataprov.ext_manipulator(extname)
+    @property
+    def ext(self):
+        return self._dataprov.ext_manipulator
