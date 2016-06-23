@@ -41,12 +41,12 @@ class FitsKeywordManipulator(object):
         try:
             return getattr(self, key)
         except KeyError as err:
-            try:
+            if _on_ext:
                 vals = err.values
                 for n in err.missing_at:
                     vals[n] = default
                 return vals
-            except AttributeError:
+            else:
                 return default
 
     def get_comment(self, key):
