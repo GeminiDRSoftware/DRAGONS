@@ -363,28 +363,28 @@ class AstroDataGemini(AstroDataFits):
             raise ValueError("Invalid value for {}: {!r}".format(descriptor, raw_value))
 
     def raw_bg(self):
-        return _raw_to_percentile('raw_bg', self.phu.RAWBG)
+        return self._raw_to_percentile('raw_bg', self.phu.RAWBG)
 
     def raw_cc(self):
-        return _raw_to_percentile('raw_cc', self.phu.RAWCC)
+        return self._raw_to_percentile('raw_cc', self.phu.RAWCC)
 
     def raw_iq(self):
-        return _raw_to_percentile('raw_iq', self.phu.RAWIQ)
+        return self._raw_to_percentile('raw_iq', self.phu.RAWIQ)
 
     def raw_wv(self):
-        return _raw_to_percentile('raw_wv', self.phu.RAWWV)
+        return self._raw_to_percentile('raw_wv', self.phu.RAWWV)
 
     def requested_bg(self):
-        return _requested_to_percentile('raw_bg', self.phu.REQBG)
+        return self._raw_to_percentile('raw_bg', self.phu.REQBG)
 
     def requested_cc(self):
-        return _requested_to_percentile('raw_cc', self.phu.REQCC)
+        return self._raw_to_percentile('raw_cc', self.phu.REQCC)
 
     def requested_iq(self):
-        return _requested_to_percentile('raw_iq', self.phu.REQIQ)
+        return self._raw_to_percentile('raw_iq', self.phu.REQIQ)
 
     def requested_wv(self):
-        return _requested_to_percentile('raw_wv', self.phu.REQWV)
+        return self._raw_to_percentile('raw_wv', self.phu.REQWV)
 
     def target_ra(self, offset=False, pm=True, icrs=False):
         ra = self.ra()
