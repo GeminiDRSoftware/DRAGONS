@@ -1,21 +1,8 @@
 # Prototype demo
-import os
-import time
-import shutil
-
-from datetime import datetime
-
-from astrodata.utils import Errors
 from astrodata.utils import logutils
-
 from gempy.gemini import gemini_tools as gt
 
-from recipe_system.reduction import IDFactory
-
 from primitives_CORE import PrimitivesCORE
-
-# log.stdinfo("PRIMITVE {} BEGIN".format(self.myself()))
-# log.stdinfo("PRIMITVE {} END".format(self.myself()))
 
 # ------------------------------------------------------------------------------
 class Bookkeeping(PrimitivesCORE):
@@ -42,12 +29,11 @@ class Bookkeeping(PrimitivesCORE):
         logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.addToList
-        sfx = p_pars["suffix"]
+        sfx = ''
         log.status("-" * len(pmsg))
         log.status(pmsg)
         log.status("-" * len(pmsg))
 
-        timestamp_key = self.timestamp_keys[self.myself()]
         if adinputs:
             self.adinputs = adinputs
 
@@ -57,8 +43,6 @@ class Bookkeeping(PrimitivesCORE):
         for ad in self.adinputs:
             log.stdinfo(ad.filename)
 
-        # Add the appropriate time stamps to the PHU
-        gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
         for ad in self.adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
@@ -81,12 +65,11 @@ class Bookkeeping(PrimitivesCORE):
         logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.getList
-        sfx = p_pars["suffix"]
+        sfx = ''
         log.status("-" * len(pmsg))
         log.status(pmsg)
         log.status("-" * len(pmsg))
 
-        timestamp_key = self.timestamp_keys[self.myself()]
         if adinputs:
             self.adinputs = adinputs
 
@@ -96,8 +79,6 @@ class Bookkeeping(PrimitivesCORE):
         for ad in self.adinputs:
             log.stdinfo(ad.filename)
 
-        # Add the appropriate time stamps to the PHU
-        gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
         for ad in self.adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
@@ -119,12 +100,11 @@ class Bookkeeping(PrimitivesCORE):
         logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.showList
-        sfx = p_pars["suffix"]
+        sfx = ''
         log.status("-" * len(pmsg))
         log.status(pmsg)
         log.status("-" * len(pmsg))
 
-        timestamp_key = self.timestamp_keys[self.myself()]
         if adinputs:
             self.adinputs = adinputs
 
@@ -134,8 +114,33 @@ class Bookkeeping(PrimitivesCORE):
         for ad in self.adinputs:
             log.stdinfo(ad.filename)
 
-        # Add the appropriate time stamps to the PHU
-        gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
+        for ad in self.adinputs:
+            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+            log.stdinfo(ad.filename)
+
+        logutils.update_indent(0)
+        return
+
+    def showInputs(self, adinputs=None, stream='main', **params):
+        """
+          This primitive is prototype demo.
+
+        """
+        log = logutils.get_logger(__name__)
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        logutils.update_indent(3)
+        pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
+        sfx = ''
+        log.status("-" * len(pmsg))
+        log.status(pmsg)
+        log.status("-" * len(pmsg))
+
+        if adinputs:
+            self.adinputs = adinputs
+
+        for ad in self.adinputs:
+            log.stdinfo(ad.filename)
+
         for ad in self.adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
@@ -187,7 +192,6 @@ class Bookkeeping(PrimitivesCORE):
         log.status(pmsg)
         log.status("-" * len(pmsg))
 
-        timestamp_key = self.timestamp_keys[self.myself()]
         if adinputs:
             self.adinputs = adinputs
 
@@ -197,8 +201,6 @@ class Bookkeeping(PrimitivesCORE):
         for ad in self.adinputs:
             log.stdinfo(ad.filename)
 
-        # Add the appropriate time stamps to the PHU
-        gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
         for ad in self.adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)

@@ -1,13 +1,5 @@
-import os
-import re
-
-from astrodata import AstroData
-from astrodata.utils import Errors
 from astrodata.utils import logutils
 from gempy.gemini import gemini_tools as gt
-
-from recipe_system.reduction import IDFactory
-from recipe_system.cal_service.prsproxyutil import upload_calibration
 
 from primitives_CORE import PrimitivesCORE
 

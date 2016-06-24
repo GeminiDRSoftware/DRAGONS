@@ -1,17 +1,3 @@
-import os
-import numpy as np
-from copy import deepcopy
-
-import pifgemini.gmos_image as gmi
-
-from astrodata import AstroData
-from astrodata.utils import Errors
-from astrodata.utils import Lookups
-from astrodata.utils import logutils
-from astrodata.utils.gemutil import pyrafLoader
-
-from gempy.gemini import gemini_tools as gt
-
 from primitives_GMOS import PrimitivesGMOS
 from GMOS.parameters.parameters_IMAGE import ParametersIMAGE
 
@@ -32,16 +18,26 @@ class PrimitivesIMAGE(PrimitivesGMOS):
         """
         This primitive is prototype demo.
 
-        """        
-        self._primitive_exec(self.myself(), indent=3)
+        """
+        try:
+            parset = getattr(self.parameters, self.myself())
+        except AttributeError:
+            parset = None
+        self._primitive_exec(self.myself(), parset=parset, indent=3)
         return
-    
+
     def makeFringe(self, adinputs=None, stream='main', **params):
         """
         This primitive is prototype demo.
 
-        """        
-        self._primitive_exec(self.myself(), self.parameters.makeFringe, indent=3)
+        """
+        try:
+            parset = getattr(self.parameters, self.myself())
+        except AttributeError:
+            parset = None
+        self._primitive_exec(self.myself(), parset=parset, indent=3)
+        self.makeFringeFrame()
+        self.storeProcessedFringe()
         return
 
     def makeFringeFrame(self, adinputs=None, stream='main', **params):
@@ -49,7 +45,11 @@ class PrimitivesIMAGE(PrimitivesGMOS):
         This primitive is prototype demo.
 
         """        
-        self._primitive_exec(self.myself(), self.parameters.makeFringeFrame, indent=3)
+        try:
+            parset = getattr(self.parameters, self.myself())
+        except AttributeError:
+            parset = None
+        self._primitive_exec(self.myself(), parset=parset, indent=3)
         return
 
     def normalizeFlat(self, adinputs=None, stream='main', **params):
@@ -63,7 +63,11 @@ class PrimitivesIMAGE(PrimitivesGMOS):
         This primitive is prototype demo.
 
         """        
-        self._primitive_exec(self.myself(), self.parameters.normalizeFlat, indent=3)
+        try:
+            parset = getattr(self.parameters, self.myself())
+        except AttributeError:
+            parset = None
+        self._primitive_exec(self.myself(), parset=parset, indent=3)
         return
     
     def scaleByIntensity(self, adinputs=None, stream='main', **params):
@@ -75,7 +79,11 @@ class PrimitivesIMAGE(PrimitivesGMOS):
         This primitive is prototype demo.
 
         """        
-        self._primitive_exec(self.myself(), self.parameters.scaleByIntensity, indent=3)
+        try:
+            parset = getattr(self.parameters, self.myself())
+        except AttributeError:
+            parset = None
+        self._primitive_exec(self.myself(), parset=parset, indent=3)
         return
 
     def scaleFringeToScience(self, adinputs=None, stream='main', **params):
@@ -107,7 +115,11 @@ class PrimitivesIMAGE(PrimitivesGMOS):
         This primitive is prototype demo.
 
         """        
-        self._primitive_exec(self.myself(), self.parameters.scaleFringeToScience, indent=3)
+        try:
+            parset = getattr(self.parameters, self.myself())
+        except AttributeError:
+            parset = None
+        self._primitive_exec(self.myself(), parset=parset, indent=3)
         return
         
     
@@ -119,7 +131,11 @@ class PrimitivesIMAGE(PrimitivesGMOS):
         This primitive is prototype demo.
 
         """        
-        self._primitive_exec(self.myself(), self.parameters.stackFlats, indent=3)
+        try:
+            parset = getattr(self.parameters, self.myself())
+        except AttributeError:
+            parset = None
+        self._primitive_exec(self.myself(), parset=parset, indent=3)
         return
 
     def subtractFringe(self, adinputs=None, stream='main', **params):
@@ -127,6 +143,9 @@ class PrimitivesIMAGE(PrimitivesGMOS):
         This primitive is prototype demo.
 
         """        
-        self._primitive_exec(self.myself(), self.parameters.subtractFringe, indent=3)
+        try:
+            parset = getattr(self.parameters, self.myself())
+        except AttributeError:
+            parset = None
+        self._primitive_exec(self.myself(), parset=parset, indent=3)
         return
-    

@@ -1,22 +1,8 @@
-import os
-import math
-import datetime
-import numpy as np
-
-from copy import deepcopy
-
-from astrodata import AstroData
-from astrodata.utils import Errors
 from astrodata.utils import logutils
-from astrodata.utils.gemconstants import SCI, VAR, DQ
-
-from gempy.gemini import gemini_tools as gt
-
-from recipe_system.reduction import reductionContextRecords as RCR
+from gempy.gemini    import gemini_tools as gt
 
 from primitives_CORE import PrimitivesCORE
-# ------------------------------------------------------------------------------
-# pkgname =  __file__.split('astrodata_')[1].split('/')[0]
+
 # ------------------------------------------------------------------------------
 class Preprocess(PrimitivesCORE):
     """
@@ -53,17 +39,17 @@ class Preprocess(PrimitivesCORE):
             gain = ad.gain()
             log.status("Converting %s from ADU to electrons by multiplying by "
                        "the gain" % (ad.filename))
-            for ext in ad[SCI]:
+            for ext in ad["SCI"]:
                 extver = ext.extver()
                 log.stdinfo("  gain for [%s,%d] = %s" %
-                            (SCI, extver, gain.get_value(extver=extver)))
+                            ("SCI", extver, gain.get_value(extver=extver)))
 
             ad = ad.mult(gain)
             gt.update_key(adinput=ad, keyword="BUNIT", value="electron", comment=None,
-                          extname=SCI, keyword_comments=self.keyword_comments)
-            if ad[VAR]:
+                          extname="SCI", keyword_comments=self.keyword_comments)
+            if ad["VAR"]:
                 gt.update_key(adinput=ad, keyword="BUNIT", value="electron*electron",
-                              comment=None, extname=VAR, 
+                              comment=None, extname="VAR", 
                               keyword_comments=self.keyword_comments)
             
             gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
@@ -136,6 +122,18 @@ class Preprocess(PrimitivesCORE):
 
         logutils.update_indent(0)
         return
+
+    def flatCorrect(self):
+        """
+        This primitive is prototype demo. 
+        Emulates subrecipe biasCorrect.
+
+        """
+        self._primitive_exec(self.myself(), indent=3)
+        self.getProcessedBias()
+        self.divideByFlat()
+        return
+
 
     def divideByFlat(self, adinputs=None, stream='main', **params):
         """

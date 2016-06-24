@@ -1,11 +1,9 @@
 from astrodata.utils import logutils
 from astrodata.utils import Errors
 
-from gempy.adlibrary.mosaicAD import MosaicAD
-from gempy.gemini.gemMosaicFunction import gemini_mosaic_function
-
 from GEMINI.primitives.primitivesGEMINI import PrimitivesGemini
 
+# ------------------------------------------------------------------------------
 class PrimitivesImage(PrimitivesGemini):
     """
     This is the class containing all of the primitives for the GEMINI level of

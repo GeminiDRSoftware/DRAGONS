@@ -4,9 +4,6 @@
 from parameters_GMOS import ParametersGMOS
 
 class ParametersIMAGE(ParametersGMOS):
-    detectSources= {
-        "set_saturation"    : False,
-    }
     makeFringe = {
         "subtract_median_image" : False,
     }

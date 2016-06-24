@@ -1,9 +1,3 @@
-# ------------------------------------------------------------------------------
-# $Id$
-# ------------------------------------------------------------------------------
-__version__      = '$Revision $'[11:-2]
-__version_date__ = '$Date $'[7:-2]
-# ------------------------------------------------------------------------------
 from astrodata.utils import logutils
 from gempy.gemini import gemini_tools as gt
 
@@ -11,7 +5,6 @@ from GEMINI.lookups import BPMDict
 from GEMINI.lookups import MDFDict
 
 from .primitives_CORE import PrimitivesCORE
-# ------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
 class Standardize(PrimitivesCORE):

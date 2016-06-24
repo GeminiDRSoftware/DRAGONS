@@ -1,6 +1,7 @@
 from astrodata.utils import logutils
 from primitives_CORE import PrimitivesCORE
 
+# ------------------------------------------------------------------------------
 class Display(PrimitivesCORE):
     """
     This is the class containing all of the display primitives

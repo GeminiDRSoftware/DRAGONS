@@ -134,7 +134,7 @@ class ParametersGemini(ParametersCORE):
     }
     measureCC = {
         "suffix"            : "_ccMeasured",
-    },
+    }
     measureCCAndAstrometry = {
         "suffix"            : "_ccAndAstrometryMeasured",
         "correct_wcs"       : False,
@@ -212,7 +212,7 @@ class ParametersGemini(ParametersCORE):
     }
     storeProcessedDark = {
         "suffix"            : "_dark",
-    }, 
+    } 
     storeProcessedFlat = {
         "suffix"            : "_flat",
     }
