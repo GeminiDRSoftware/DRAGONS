@@ -2,7 +2,8 @@ import re
 import datetime
 import dateutil
 
-from astrodata import factory, AstroDataFits, simple_descriptor_mapping, keyword
+from astrodata import AstroDataFits, astro_data_tag
+from astrodata import factory, simple_descriptor_mapping, keyword
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
@@ -206,6 +207,64 @@ class AstroDataGemini(AstroDataFits):
         obs = data_provider.header[0].get('OBSERVAT').upper()
         # This covers variants like 'Gemini-North', 'Gemini North', etc.
         return obs in ('GEMINI-NORTH', 'GEMINI-SOUTH')
+
+    @astro_data_tag
+    def _tag_acquisition(self):
+        if self.phu.OBSCLASS in ('acq', 'acqCal'):
+            return (set(['ACQUISITION']), ())
+
+    @astro_data_tag
+    def _tag_az(self):
+        if self.phu.FRAME == 'AZEL_TOPO':
+            try:
+                if self.phu.get('ELEVATIO', 0) >= 90:
+                    return (set(['AZEL_TARGET', 'AT_ZENITH']), ())
+            except ValueError:
+                pass
+            return (set(['AZEL_TARGET']), ())
+
+    @astro_data_tag
+    def _tag_fringe(self):
+        if self.phu.GIFRINGE is not None:
+            return (set(['CAL', 'FRINGE']), ())
+
+    @astro_data_tag
+    def _tag_gcal(self):
+        if self.phu.GCALLAMP == 'IRHigh':
+            shut = self.phu.GCALSHUT
+            if shut == 'OPEN':
+                return (set(['GCAL_IR_ON']), ())
+            elif shut == 'CLOSED':
+                return (set(['GCAL_IR_OFF']), ())
+
+    @astro_data_tag
+    def _tag_site(self):
+        site = self.phu.get('OBSERVAT', '').upper()
+
+        if site == 'GEMINI-NORTH':
+            return (set(['GEMINI_NORTH']), ())
+        elif site == 'GEMINI-SOUTH':
+            return (set(['GEMINI_SOUTH']), ())
+
+    @astro_data_tag
+    def _tag_nodandchop(self):
+        if self.phu.DATATYPE == "marked-nodandchop":
+            return (set(['NODCHOP']), ())
+
+    @astro_data_tag
+    def _tag_sidereal(self):
+        frames = set([self.phu.get('TRKFRAME'), self.phu.get('FRAME')])
+        valid_frames = set(['FK5', 'APPT'])
+
+        # Check if the intersection of both sets is non-empty...
+        if frames & valid_frames:
+            try:
+                dectrack, ratrack = float(self.phu.DECTRACK), float(self.phu.RATRACK)
+                if dectrack == 0 and ratrack == 0:
+                    return (set(['SIDEREAL']), ())
+            except (ValueError, TypeError, KeyError):
+                pass
+            return (set(['NON_SIDEREAL']), ())
 
     def _some_section(self, descriptor_name, keyword, pretty):
         try:

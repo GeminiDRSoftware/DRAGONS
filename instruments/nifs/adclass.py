@@ -3,7 +3,7 @@ import datetime
 import dateutil
 import re
 
-from astrodata import simple_descriptor_mapping, keyword
+from astrodata import astro_data_tag, simple_descriptor_mapping, keyword
 from ..generic import AstroDataGemini
 from .lookups import constants_by_bias, config_dict, lnrs_mode_map
 
@@ -23,6 +23,22 @@ class AstroDataNifs(AstroDataGemini):
     @staticmethod
     def _matches_data(data_provider):
         return data_provider.phu.get('INSTRUME').upper() == 'NIFS'
+
+    @astro_data_tag
+    def _tag_image(self):
+        if self.phu.FLIP == 'In':
+            return (set(['IMAGE']), ())
+
+    @astro_data_tag
+    def _tag_ronchi(self):
+        req = self.phu.OBSTYPE, self.phu.APERTURE
+        if req == ('FLAT', 'Ronchi_Screen_G5615'):
+            return (set(['RONCHI']), ())
+
+    @astro_data_tag
+    def _tag_spect(self):
+        if self.phu.FLIP == 'Out':
+            return (set(['SPECT']), ())
 
     def disperser(self, stripID=False, pretty=False):
         disp = str(self.phu.GRATING)

@@ -1,4 +1,4 @@
-__all__ = ['AstroData', 'AstroDataError', 'factory', 'keyword']
+__all__ = ['AstroData', 'AstroDataError', 'astro_data_tag', 'factory', 'keyword']
 
 from .core import *
 from .fits import AstroDataFits, FitsLoader, KeywordCallableWrapper

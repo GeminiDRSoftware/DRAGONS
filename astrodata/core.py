@@ -1,5 +1,26 @@
 from abc import abstractmethod, abstractproperty
+from functools import wraps
+import inspect
 from types import StringTypes
+
+def astro_data_tag(fn):
+    @wraps(fn)
+    def wrapper(self):
+        try:
+            ret = fn(self)
+            if ret is not None:
+                if not isinstance(ret, tuple):
+                    raise TypeError("Tag function {} didn't return a tuple".format(self._meth.__name__))
+
+                return tuple((s if isinstance(s, set) else set()) for s in ret)
+        except KeyError:
+            pass
+
+        # Return empty sets for the "doesn't apply" case
+        return (set(), set())
+
+    wrapper.tag_method = True
+    return wrapper
 
 class AstroDataError(Exception):
     pass
@@ -31,6 +52,28 @@ def simple_descriptor_mapping(**kw):
 class AstroData(object):
     def __init__(self, provider):
         self._dataprov = provider
+
+    def __process_tags(self):
+        results = []
+        for mname, method in inspect.getmembers(self, lambda x: hasattr(x, 'tag_method')):
+            plus, minus = method()
+            if plus or minus:
+                results.append((plus, minus))
+
+        # Sort by the length of substractions...
+        results = sorted(results, key=lambda x: len(x[1]), reverse=True)
+
+        tags = set()
+        removals = set()
+        for plus, minus in results:
+            if (plus - removals) == plus:
+                tags.update(plus)
+                removals.update(minus)
+
+        return tags
+
+    def tags(self):
+        return self.__process_tags()
 
     @property
     def nddata(self):
