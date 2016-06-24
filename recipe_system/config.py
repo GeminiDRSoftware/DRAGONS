@@ -80,22 +80,22 @@ class Section(object):
 
 class Converter(object):
     def __init__(self, conv_dict, cp):
-        self._trans = {}
-        self._default = cp.get
+        self._trans = dict(conv_dict)
+        self._cp_default = cp.get
+        self._type_to_cp = {
+            int: cp.getint,
+            float: cp.getfloat,
+            bool: cp.getboolean
+        }
 
-        for pair, type_ in conv_dict.items():
-            if type_ == int:
-                self._trans[pair] = cp.getint
-            elif type_ == float:
-                self._trans[pair] = cp.getfloat
-            elif type_ == bool:
-                self._trans[pair] = cp.getboolean
-
-    def __call__(self, section, value):
+    def from_config_file(self, section, key):
         try:
-            return self._trans[(section, value)](section, value)
+            return self._type_to_cp[(section, key)](section, key)
         except KeyError:
-            return self._trans.get((None, value), self._default)(section, value)
+            return self._type_to_cp.get((None, key), self._cp_default)(section, key)
+
+    def from_raw(self, section, key, value):
+        return self._trans.get(key, str)(value)
 
 def environment_variable_name(section, option):
     return '_GEM_{}_{}'.format(section.upper(), option.upper())
@@ -195,13 +195,13 @@ class ConfigObject(object):
                 values.update(defaults)
 
             for key in cp.options(section):
-                values[key] = translate(section, key)
+                values[key] = translate.from_config_file(section, key)
 
             if env_override:
                 for key in values:
                     env = environment_variable_name(section, key)
                     if env in os.environ:
-                        values[key] = translate(section, os.environ[env])
+                        values[key] = translate.from_raw(section, key, os.environ[env])
 
             self.update(section, values)
 
