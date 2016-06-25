@@ -1,7 +1,4 @@
 import math
-import datetime
-import dateutil
-import re
 
 from astrodata import astro_data_tag, simple_descriptor_mapping, keyword
 from ..generic import AstroDataGemini
