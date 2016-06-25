@@ -33,11 +33,18 @@ class FitsKeywordManipulator(object):
             "_on_ext": on_extensions
         })
 
+    @property
+    def keywords(self):
+        if self._on_ext:
+            return [set(h.keys()) for h in self._headers]
+        else:
+            return set(self._headers[0].keys())
+
     def get(self, key, default=None):
         try:
             return getattr(self, key)
         except KeyError as err:
-            if _on_ext:
+            if self._on_ext:
                 vals = err.values
                 for n in err.missing_at:
                     vals[n] = default
@@ -171,6 +178,8 @@ class FitsProvider(DataProvider):
 
     @property
     def ext_manipulator(self):
+        if len(self.header) < 2:
+            return None
         return FitsKeywordManipulator(self.header[1:], on_extensions=True)
 
 class RawFitsProvider(FitsProvider):
