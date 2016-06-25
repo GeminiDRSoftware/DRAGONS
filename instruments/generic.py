@@ -75,12 +75,12 @@ class AstroDataGemini(AstroDataFits):
         return obs in ('GEMINI-NORTH', 'GEMINI-SOUTH')
 
     @astro_data_tag
-    def _tag_acquisition(self):
+    def _type_acquisition(self):
         if self.phu.OBSCLASS in ('acq', 'acqCal'):
             return (set(['ACQUISITION']), ())
 
     @astro_data_tag
-    def _tag_az(self):
+    def _type_az(self):
         if self.phu.FRAME == 'AZEL_TOPO':
             try:
                 if self.phu.get('ELEVATIO', 0) >= 90:
@@ -90,12 +90,12 @@ class AstroDataGemini(AstroDataFits):
             return (set(['AZEL_TARGET']), ())
 
     @astro_data_tag
-    def _tag_fringe(self):
+    def _type_fringe(self):
         if self.phu.GIFRINGE is not None:
             return (set(['CAL', 'FRINGE']), ())
 
     @astro_data_tag
-    def _tag_gcal(self):
+    def _type_gcal(self):
         if self.phu.GCALLAMP == 'IRHigh':
             shut = self.phu.GCALSHUT
             if shut == 'OPEN':
@@ -104,7 +104,7 @@ class AstroDataGemini(AstroDataFits):
                 return (set(['GCAL_IR_OFF']), ())
 
     @astro_data_tag
-    def _tag_site(self):
+    def _type_site(self):
         site = self.phu.get('OBSERVAT', '').upper()
 
         if site == 'GEMINI-NORTH':
@@ -113,12 +113,12 @@ class AstroDataGemini(AstroDataFits):
             return (set(['GEMINI_SOUTH']), ())
 
     @astro_data_tag
-    def _tag_nodandchop(self):
+    def _type_nodandchop(self):
         if self.phu.DATATYPE == "marked-nodandchop":
             return (set(['NODCHOP']), ())
 
     @astro_data_tag
-    def _tag_sidereal(self):
+    def _type_sidereal(self):
         frames = set([self.phu.get('TRKFRAME'), self.phu.get('FRAME')])
         valid_frames = set(['FK5', 'APPT'])
 
@@ -131,6 +131,53 @@ class AstroDataGemini(AstroDataFits):
             except (ValueError, TypeError, KeyError):
                 pass
             return (set(['NON_SIDEREAL']), ())
+
+    @astro_data_tag
+    def _status_raw(self):
+        if 'GEM-TLM' not in self.phu:
+            return (set(['RAW']), ())
+
+    @astro_data_tag
+    def _status_prepared(self):
+        if any(('PREPAR' in kw) for kw in self.phu.keywords):
+            return (set(['PREPARED']), ())
+        else:
+            return (set(['UNPREPARED']), ())
+
+    @astro_data_tag
+    def _status_overscan(self):
+        found = []
+        for pattern, tag in (('TRIMOVER', 'OVERSCAN_TRIMMED'), ('SUBOVER', 'OVERSCAN_SUBTRACTED')):
+            if any((pattern in kw) for kw in self.phu.keywords):
+                found.append(tag)
+        if found:
+            return (set(found), ())
+
+    @astro_data_tag
+    def _status_processed_cals(self):
+        pairs = (
+            ('PROCARC', 'PROCESSED_ARC'),
+            ('GBIAS', 'PROCESSED_BIAS'),
+            ('PROCBIAS', 'PROCESSED_BIAS'),
+            ('PROCDARK', 'PROCESSED_DARK'),
+            ('GIFLAT', 'PROCESSED_FLAT'),
+            ('PROCFLAT', 'PROCESSED_FLAT'),
+            ('GIFINGE', 'PROCESSED_FRINGE'),
+            ('PROCFRNG', 'PROCESSED_FRINGE'),
+        )
+
+        for pattern, tag in pairs:
+            if any((pattern in kw) for kw in self.phu.keywords):
+                return (set([tag]), ())
+
+    @astro_data_tag
+    def _status_processed_science(self):
+        for pattern in ('GMOSAIC', 'PREPAR'):
+            if not any((pattern in kw) for kw in self.phu.keywords):
+                return
+
+        if self.phu.OBSTYPE == 'OBJECT':
+            return (set(['PROCESSED_SCIENCE']), ())
 
     def _some_section(self, descriptor_name, keyword, pretty):
         try:
