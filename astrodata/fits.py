@@ -261,7 +261,7 @@ class ProcessedFitsProvider(FitsProvider):
 
             for extra_unit in search_for_associated(ver):
                 seen.add(extra_unit)
-                process_meta_unit(nd, extra_unit)
+                process_meta_unit(nd, extra_unit, add=True)
 
         for other in self._hdulist:
             if other in seen:
