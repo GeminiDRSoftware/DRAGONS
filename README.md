@@ -1,20 +1,19 @@
-AstroData Reborn
-================
+# AstroData Reborn
 
 This project is a prototype to test the ideas drafted in the design document
-for AstroData's new incarnation. What follows is a short tutorial on using
+for AstroData's new incarnation. What follows is a brief tutorial on using
 `AstroData` objects. Read to the end if you want a more detailed explanation
 on what's going on.
 
-Using the package
------------------
+## Using the package
 
 There are two main packages:
 
  - `astrodata`, with core functionality, mostly independent of Geminy stuff
  - `instruments`, with all Gemini related classes
 
-In short: you need to import both.
+In short: you need to import both (see the "Details" at the end for a more
+verbose explanation).
 
     >>> import astrodata
     >>> import instruments
@@ -24,8 +23,7 @@ using a factory function:
 
     >>> ad = astrodata.open("/path/to/my/file.fits")
 
-Descriptors and keywords
-~~~~~~~~~~~~~~~~~~~~~~~~
+### Descriptors and keywords
 
 To get a descriptor value, simply call it as a method:
 
@@ -71,8 +69,7 @@ One can also get/set the comment for a keyword:
     'Number of non-destructive read pairs'
     >>> ad.phu.set_comment('LNRS', 'Something else')
 
-Data and tables
-~~~~~~~~~~~~~~~
+### Data and tables
 
 To access the data, we use the `nddata` property:
 
@@ -108,8 +105,7 @@ Note that REFCATs have EXTVER matching an SCI but, at the moment, all REFCATs in
 identical copies. Thus, we expose them as a property of the AstroData object, instead of
 associating them to their respective SCI `NDData`s.
 
-Details: why do you need to import both `astrodata` and `instruments`??
------------------------------------------------------------------------
+## Details: why do you need to import both `astrodata` and `instruments`??
 
 Regarding the `AstroData` hierarchy, the `astrodata` package defines just a
 couple of very generic ones classes: `AstroData` itself (which is abstract),
