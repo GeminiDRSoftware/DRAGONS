@@ -6,7 +6,7 @@ from functools import partial
 from .core import *
 
 from astropy.io import fits
-from astropy.nddata import NDData
+from astropy.nddata import NDDataRef
 from astropy.table import Table
 
 NO_DEFAULT = object()
@@ -191,7 +191,7 @@ class RawFitsProvider(FitsProvider):
         self._nddata = []
         for unit in hdulist:
             if isinstance(unit, fits.ImageHDU):
-                obj = NDData(unit.data, meta={'hdu': unit.header})
+                obj = NDDataRef(unit.data, meta={'hdu': unit.header})
                 self._nddata.append(obj)
 
 class ProcessedFitsProvider(FitsProvider):
@@ -240,7 +240,7 @@ class ProcessedFitsProvider(FitsProvider):
                 if isinstance(meta, fits.BinTableHDU):
                     meta_obj = Table(data, meta={'hdu': eheader})
                 elif isinstance(meta, fits.ImageHDU):
-                    meta_obj = NDData(data, meta={'hdu': eheader})
+                    meta_obj = NDDataRef(data, meta={'hdu': eheader})
                 else:
                     raise ValueError("Unknown extension type: {!r}".format(name))
                 if add:
@@ -256,7 +256,7 @@ class ProcessedFitsProvider(FitsProvider):
             seen.add(unit)
             header = unit.header
             ver = header['EXTVER']
-            nd = NDData(unit.data, meta={'hdu': header, 'ver': ver, 'other': []})
+            nd = NDDataRef(unit.data, meta={'hdu': header, 'ver': ver, 'other': []})
             self._nddata.append(nd)
 
             for extra_unit in search_for_associated(ver):
