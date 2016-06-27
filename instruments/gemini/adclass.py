@@ -8,7 +8,7 @@ from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
-from .gmu import *
+from ..gmu import *
 
 gemini_direct_keywords = dict(
     ao_fold = keyword("AOFOLD"),
@@ -492,6 +492,3 @@ class AstroDataGemini(AstroDataFits):
 
     ra = wcs_ra
     dec = wcs_dec
-
-
-factory.addClass(AstroDataGemini)

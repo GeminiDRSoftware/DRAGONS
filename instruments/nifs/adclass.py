@@ -1,7 +1,7 @@
 import math
 
 from astrodata import astro_data_tag, simple_descriptor_mapping, keyword
-from ..generic import AstroDataGemini
+from ..gemini import AstroDataGemini
 from .lookups import constants_by_bias, config_dict, lnrs_mode_map
 
 # NOTE: Temporary functions for test. gempy imports astrodata and

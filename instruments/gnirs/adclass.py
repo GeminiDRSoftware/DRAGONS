@@ -1,7 +1,7 @@
 import math
 
 from astrodata import astro_data_tag, simple_descriptor_mapping, keyword
-from ..generic import AstroDataGemini
+from ..gemini import AstroDataGemini
 from .lookups import detector_properties, nominal_zeropoints, config_dict, read_modes
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
