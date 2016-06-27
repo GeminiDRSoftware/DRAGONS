@@ -25,6 +25,39 @@ class AstroDataGnirs(AstroDataGemini):
     def _matches_data(data_provider):
         return data_provider.phu.get('INSTRUME').upper() == 'GNIRS'
 
+    @astro_data_tag
+    def _type_dark(self):
+        if self.phu.OBSTYPE == 'DARK':
+            return (set(['DARK', 'CAL']), set(['IMAGE', 'SPECT']))
+
+    @astro_data_tag
+    def _type_image(self):
+        # NOTE: Prevented by DARK
+        if self.phu.ACQMIR == 'In':
+            tags = set(['IMAGE'])
+            if self.phu.get('OBSTYPE') == 'FLAT':
+                tags.add('FLAT')
+                tags.add('CAL')
+            return (tags, ())
+
+    @astro_data_tag
+    def _type_spect(self):
+        # NOTE: Prevented by DARK
+        if self.phu.ACQMIR == 'Out':
+            tags = set(['SPECT'])
+            slit = self.phu.get('SLIT', '')
+            if 'arcsec' in slit:
+                tags.add('LS')
+            elif slit == 'IFU':
+                tags.add('IFU')
+            return (tags, ())
+
+    @astro_data_tag
+    def _type_pinhole(self):
+        if self.phu.OBSTYPE == 'FLAT':
+            if self.phu.SLIT in ('LgPinholes_G5530', 'SmPinholes_G5530'):
+                return (set(['PINHOLE', 'CAL']), ())
+
     def data_section(self, pretty=False):
         hirows = self.hirow()
         lowrows = self.lowrow()
