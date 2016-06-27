@@ -3,3 +3,4 @@
 
 from . import generic
 from . import nifs
+from . import gnirs
