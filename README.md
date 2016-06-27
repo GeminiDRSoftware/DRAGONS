@@ -101,13 +101,12 @@ Every `NDData` object has a `meta` attribute which is a dictionary of
     `nddata.OBJCAT`, ...), where:
     - If it's an IMAGE, the new attribute will be an `NDData`, itself;
     - If it's a TABLE, then the new attribute will be an instance of `astropy.table.Table`
-    Note that REFCAT are exceptions to this, because even if there may be one for
-    each SCI extension, currently they are identical copies.
-
 
 Finally, if there's an MDF extension, it will be an attribute of the main AstroData
-object (`ad.MDF`). The same is true for REFCAT extensions (only one copy will be returned,
-though)
+object (`ad.MDF`). The same is true for REFCAT extensions (only one copy will be returned).
+Note that REFCATs have EXTVER matching an SCI but, at the moment, all REFCATs in a file are
+identical copies. Thus, we expose them as a property of the AstroData object, instead of
+associating them to their respective SCI `NDData`s.
 
 Details: why do you need to import both `astrodata` and `instruments`??
 -----------------------------------------------------------------------
