@@ -6,7 +6,11 @@ from functools import partial
 from .core import *
 
 from astropy.io import fits
-from astropy.nddata import NDDataRef
+# NDDataRef is still not in the stable astropy, but this should be the one
+# we use in the future...
+# VarUncertainty was pulled in from @csimpson's BardData code
+from mynddata.nddata_withmixins import NDDataRef
+from mynddata.nduncertainty import VarUncertainty
 from astropy.table import Table
 
 NO_DEFAULT = object()
@@ -233,9 +237,9 @@ class ProcessedFitsProvider(FitsProvider):
             if name == 'DQ':
                 nd.mask = data
             elif name == 'VAR':
-                # TODO: set the uncertainty.
-                # obj.uncertainty = VarUncertainty(data)
-                pass
+                var_un = VarUncertainty(data)
+                var_un.parent_nddata = obj
+                obj.uncertainty = var_un
             else:
                 if isinstance(meta, fits.BinTableHDU):
                     meta_obj = Table(data, meta={'hdu': eheader})
