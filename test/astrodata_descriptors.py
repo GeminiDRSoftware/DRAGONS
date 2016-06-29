@@ -102,4 +102,8 @@ class FixtureIterator(object):
 
 @pytest.mark.parametrize("ad,descriptor,value", FixtureIterator(fixture_data))
 def test_descriptor(ad,descriptor,value):
-    assert descriptor() == value
+    if value is None:
+        with pytest.raises(Exception):
+            descriptor()
+    else:
+        assert descriptor() == value
