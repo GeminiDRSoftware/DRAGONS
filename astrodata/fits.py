@@ -109,7 +109,7 @@ class FitsKeywordManipulator(object):
 
     def __contains__(self, key):
         if self._on_ext:
-            return tuple(key in h for h in self._headers)
+            return any(tuple(key in h for h in self._headers))
         else:
             return key in self._headers[0]
 
