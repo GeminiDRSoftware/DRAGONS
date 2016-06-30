@@ -12,8 +12,8 @@ class FixtureIterator(object):
         for key in sorted(self._data.keys()):
             (instr, filename) = key
             ad = astrodata.open('data/{}/{}'.format(instr, filename))
-            yield ad, set(self._data[key])
+            yield filename, ad, set(self._data[key])
 
-@pytest.mark.parametrize("ad,tag_set", FixtureIterator(tags_fixture_data))
-def test_descriptor(ad, tag_set):
+@pytest.mark.parametrize("fn,ad,tag_set", FixtureIterator(tags_fixture_data))
+def test_descriptor(fn, ad, tag_set):
     assert ad.tags() == tag_set
