@@ -35,7 +35,7 @@ class AstroDataNifs(AstroDataGemini):
     @astro_data_tag
     def _tag_spect(self):
         if self.phu.FLIP == 'Out':
-            return (set(['SPECT']), ())
+            return (set(['SPECT', 'IFU']), ())
 
     def disperser(self, stripID=False, pretty=False):
         disp = str(self.phu.GRATING)
