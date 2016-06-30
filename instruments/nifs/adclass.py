@@ -14,7 +14,7 @@ from ..gmu import *
     central_wavelength = keyword("GRATWAVE"),
     focal_plane_mask = keyword("APERTURE"),
     lnrs = keyword("LNRS"),
-    observation_epoch = keyword("EPOCH")
+    observation_epoch = keyword("EPOCH", coerce_with=str)
 )
 class AstroDataNifs(AstroDataGemini):
     @staticmethod

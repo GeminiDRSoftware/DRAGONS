@@ -184,8 +184,11 @@ class AstroDataGemini(AstroDataFits):
     def _some_section(self, descriptor_name, keyword, pretty):
         try:
             value_filter = (str if pretty else sectionStrToIntList)
-            return [(None if raw is None else value_filter(raw))
+            ret = [(None if raw is None else value_filter(raw))
                     for raw in getattr(self.ext, keyword)]
+            if len(ret) == 1:
+                return ret[0]
+            return ret
         except KeyError:
             raise AttributeError("No {} information".format(descriptor_name))
 
