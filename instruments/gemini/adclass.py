@@ -1,6 +1,8 @@
 import re
 import datetime
-import dateutil
+import dateutil.parser
+
+import pywcs
 
 from astrodata import AstroDataFits, astro_data_tag
 from astrodata import factory, simple_descriptor_mapping, keyword
@@ -41,7 +43,7 @@ gemini_direct_keywords = dict(
     nominal_photometric_zeropoint = keyword("NOMPHOTZ"),
     non_linear_level = keyword("NONLINEA"),
     observation_class = keyword("OBSCLASS"),
-    observation_epoch = keyword("OBSEPOCH"),
+    observation_epoch = keyword("OBSEPOCH", coerce_with=str),
     observation_id = keyword("OBSID"),
     observation_type = keyword("OBSTYPE"),
     overscan_section = keyword("OVERSSEC"),
@@ -256,27 +258,74 @@ class AstroDataGemini(AstroDataFits):
 
     def dispersion_axis(self):
         # Keyword: DISPAXIS
-        raise NotImplementedError("dispersion_axis needs types/tags...")
+        tags = self.tags()
+        if 'IMAGE' in tags or 'PREPARED' not in tags:
+            raise ValueError("This descriptor doesn't work on RAW or IMAGE files")
+
+        # TODO: We may need to sort out Nones here...
+        return [int(dispaxis) for dispaxis in self.ext.DISPAXIS]
 
     def effective_wavelength(self):
-        raise NotImplementedError("effective_wavelength needs types/tags...")
+        # TODO: We need to return the appropriate output units
+        tags = self.tags()
+        if 'IMAGE' in tags:
+            inst = self.instrument()
+            filter_name = self.filter_name(pretty=True)
+            for inst in (self.instrument(), '*'):
+                try:
+                    return filter_wavelengths[inst, filter_name]
+                except KeyError:
+                    pass
+            raise KeyError("Can't find the wavelenght for this filter in the look-up table")
+        elif 'SPECT' in tags:
+            return self.central_wavelength()
 
     def exposure_time(self):
-        # Keyword: exposure_time = keyword("EXPTIME"),
-        raise NotImplementedError("effective_wavelength needs types/tags...")
+        exposure_time = self.phu.EXPTIME
+        if exposure_time < 0:
+            raise ValueError("Invalid exposure time: {}".format(exposure_time))
 
-    def filter_name(self, **kw):
-        raise NotImplementedError("filter_name seems to be reimplemented by every instrument. Needs further investigation.")
+        if 'PREPARED' in self.tags() and self.is_coadds_summed():
+            return exposure_time * self.coadds()
+        else:
+            return exposure_time
+
+    def filter_name(self, stripID=False, pretty=False):
+        f1 = self.phu.FILTER1
+        f2 = self.phu.FILTER2
+
+        if stripID or pretty:
+            f1 = removeComponentID(f1)
+            f2 = removeComponentID(f2)
+
+        if pretty:
+            filter_comps = []
+            for fn in (f1, f2):
+                if "open" not in fn.lower() and "Clear" not in fn:
+                    filter_comps.append(fn)
+            if not filter_comps:
+                filter_comps.append("open")
+            cals = (("Block", "blank"), ("Dark", "blank"), ("DK", "dark"))
+            for cal, fn in cals:
+                if cal in f1 or cal in f2:
+                    filter_comps.append(fn)
+        else:
+            filter_comps = [f1, f2]
+
+        return "&".join(filter_comps[:2])
 
     def focal_plane_mask(self, stripID=False, pretty=False):
         self._may_remove_component('FPMASK', stripID, pretty)
 
     def gcal_lamp(self):
-        lamps, shut = self.phu.GCALLAMP, self.phu.GCALSHUT
-        if (shut.upper() == 'CLOSED' and lamps.upper() in ('IRHIGH', 'IRLOW')) or lamps.upper() in ('', 'NO VALUE'):
-            return 'Off'
+        try:
+            lamps, shut = self.phu.GCALLAMP, self.phu.GCALSHUT
+            if (shut.upper() == 'CLOSED' and lamps.upper() in ('IRHIGH', 'IRLOW')) or lamps.upper() in ('', 'NO VALUE'):
+                return 'Off'
 
-        return lamps
+            return lamps
+        except KeyError:
+            return 'None'
 
     def group_id(self):
         return self.observation_id()
@@ -303,7 +352,7 @@ class AstroDataGemini(AstroDataFits):
 
     def nominal_atmospheric_extinction(self):
         nom_ext_idx = (self.telescope(), self.filter_name(pretty=True))
-        coeff = nominal_exctinction.get(nom_ext_idx, 0.0)
+        coeff = nominal_extinction.get(nom_ext_idx, 0.0)
 
         return coeff * (self.airmass() - 1.0)
 
@@ -333,6 +382,7 @@ class AstroDataGemini(AstroDataFits):
         val = parse_percentile(raw_value)
         if val is None:
             raise ValueError("Invalid value for {}: {!r}".format(descriptor, raw_value))
+        return val
 
     def raw_bg(self):
         return self._raw_to_percentile('raw_bg', self.phu.RAWBG)
@@ -485,10 +535,10 @@ class AstroDataGemini(AstroDataFits):
         return band
 
     def wcs_ra(self):
-        raise NotImplementedError("wcs_ra needs types/tags...")
+        raise NotImplementedError("wcs_dec needs types/tags, and direct access to header...")
 
     def wcs_dec(self):
-        raise NotImplementedError("wcs_dec needs types/tags...")
+        raise NotImplementedError("wcs_dec needs types/tags, and direct access to header...")
 
     ra = wcs_ra
     dec = wcs_dec

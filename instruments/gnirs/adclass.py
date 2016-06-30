@@ -66,12 +66,15 @@ class AstroDataGnirs(AstroDataGemini):
 
         data_sections = []
         # NOTE: Rows are X and cols are Y? These Romans are crazy
-        for hir, hic, lowr, lowc in zip(hirows, hicols, lowrows, locols):
+        for hir, hic, lowr, lowc in zip(hirows, hicols, lowrows, lowcols):
             if pretty:
                 item = "[{:d}:{:d},{:d}:{:d}]".format(lowr+1, hir+1, lowc+1, hic+1)
             else:
-                item = (lowr, hir+1, lowc, hic+1)
+                item = [lowr, hir+1, lowc, hic+1]
             data_sections.append(item)
+
+        if len(data_sections) == 1:
+            return data_sections[0]
 
         return data_sections
 
@@ -116,7 +119,7 @@ class AstroDataGnirs(AstroDataGemini):
     def grating(self, stripID=False, pretty=False):
         grating = self.phu.GRATING
 
-        match = re.match("([\d/m]+)([A-Z]*)_G(\d+)", grating)
+        match = re.match("([\d/m]+)[A-Z]*(_G)(\d+)", grating)
         try:
             ret_grating = "{}{}{}".format(*match.groups())
         except AttributeError:
@@ -208,7 +211,7 @@ class AstroDataGnirs(AstroDataGemini):
         # NOTE: The original descriptor has no provisions for not matching
         #       the RE... which will produce an exception down the road.
         #       Let's do it here (it will be an AttributeError, though)
-        ret_prism = match.group(2)
+        ret_prism = match.group(1)
 
         if stripID or pretty:
             ret_prism = removeComponentID(ret_prism)
@@ -283,9 +286,9 @@ class AstroDataGnirs(AstroDataGemini):
     def well_depth_setting(self):
         biasvolt = self.bias()
 
-        if abs(0.3 - biasvolt) < 0.1:
+        if abs(0.3 - abs(biasvolt)) < 0.1:
             return "Shallow"
-        elif abs(0.6 - biasvolt) < 0.1:
+        elif abs(0.6 - abs(biasvolt)) < 0.1:
             return "Deep"
         else:
             return "Invalid"
