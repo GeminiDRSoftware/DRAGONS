@@ -45,7 +45,8 @@ class DataProvider(object):
 def simple_descriptor_mapping(**kw):
     def decorator(cls):
         for descriptor, descriptor_def in kw.items():
-            setattr(cls, descriptor, property(descriptor_def))
+            if not hasattr(cls, descriptor):
+                setattr(cls, descriptor, property(descriptor_def))
         return cls
     return decorator
 
