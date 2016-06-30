@@ -16,18 +16,20 @@ from astropy.table import Table
 NO_DEFAULT = object()
 
 class KeywordCallableWrapper(object):
-    def __init__(self, keyword, default=NO_DEFAULT, on_ext=False):
+    def __init__(self, keyword, default=NO_DEFAULT, on_ext=False, coerce_with=None):
         self.kw = keyword
         self.on_ext = on_ext
         self.default = default
+        self.coercion_fn = coerce_with if coerce_with is not None else (lambda x: x)
 
     def __call__(self, adobj):
         def wrapper():
             manip = adobj.phu if not self.on_ext else adobj.ext
             if self.default is NO_DEFAULT:
-                return getattr(manip, self.kw)
+                ret = getattr(manip, self.kw)
             else:
-                return manip.get(self.kw, self.default)
+                ret = manip.get(self.kw, self.default)
+            return self.coercion_fn(ret)
         return wrapper
 
 class FitsKeywordManipulator(object):
