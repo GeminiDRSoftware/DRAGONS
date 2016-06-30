@@ -98,12 +98,13 @@ class FixtureIterator(object):
         for (instr, filename) in sorted(self._data.keys()):
             ad = astrodata.open('data/{}/{}'.format(instr, filename))
             for desc, value in self._data[(instr, filename)]:
-                yield ad, getattr(ad, desc), value
+                yield ad, desc, value
 
 @pytest.mark.parametrize("ad,descriptor,value", FixtureIterator(fixture_data))
 def test_descriptor(ad,descriptor,value):
+    method = getattr(ad, descriptor)
     if value is None:
         with pytest.raises(Exception):
-            descriptor()
+            method()
     else:
-        assert descriptor() == value
+        assert method() == value
