@@ -46,7 +46,7 @@ class ReduceNH(object):
     parameters: <instance>, optional ArgumentParser.parse_args() instance
     return:     <instance>, Reduce instance
 
-    The class provides one (1) public method, runr(), the only call needed to
+    The class provides one (1) public method, runnh(), the only call needed to
     run reduce on the supplied argument set.
     """
     def __init__(self, sys_args=None):
