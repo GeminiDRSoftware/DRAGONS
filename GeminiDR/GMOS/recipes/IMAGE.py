@@ -20,15 +20,24 @@ Usage:
 """
 
 # Test recipe demo working with the new package structure. 
-# 'p' is an instance of a usuable GeminiDR package. 
-#  Currently, only one package is available for demonstration purposes:
-#     GMOS.
+# 'p' is an instance of a usuable GeminiDR package primitive set.
+# E.g.,
+#
+#     from GMOS.primitives import primitives_IMAGE
+#     p = primitives_IMAGE.PrimitivesIMAGE()
 
-# The demo primitives merely display values available to them, 
-# such as file inputs, parameters. Some, like ADUToElectrons,
-# do perform their full task here in this demonstration package.
+# The prototype primitives merely display values available to them, such as 
+# file inputs, parameters. Some, like ADUToElectrons, do perform their full 
+# task here in this demonstration package.
 # 17-06-2016 kra
 
+# This default recipe function may be adjusted to call other recipe library 
+# functions as the default operating recipe (i.e. when a recipe is not specified 
+# by a caller, either as a `reduce` command line option (-r) or set as an attribute 
+# on a ReduceNH instance.
+#
+# This default recipe shall call one (1) and only one other recipe function
+# in this library.
 def default(p):
     qaReduce(p)
     return

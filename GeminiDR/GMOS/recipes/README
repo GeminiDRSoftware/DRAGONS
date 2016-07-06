@@ -11,37 +11,41 @@ The hierarchy of the GEMINI/GMOS primitive classes:
     PrimitivesIMAGE(PrimitivesGMOS)  PrimitivesSPECT(PrimitivesGMOS)
 
 
-Usage of this test recipe in the prototype system.
+================================================================================
+Usage of this recipe library in the context of the prototype (New Hope) 
+recipe system.
 
-  The mamagement of imports and the AstroData instance 'ad' will fall under the 
-  purview of the Recipe [ Manager/Mapper/Interpreter ] layer that will exist
-  between the 'reduce' command line interface and the primitive sets.
+  In a pipeline context, the mamagement of imports and the AstroData 
+  instance 'ad' falls under the purview of the reduce_alpha.py module and the 
+  RecipeMapper class layer, which mediates the 'reduce' command line interface 
+  and the primitive sets.
 
   However, because the new package structure provides direct programmatic access
-  to the primitives, this test recipe is callable by any user.
+  to primitives and parameter sets, the recipes herein are directly callable.
 
-  Users should set their PYTHONPATH to encapsulate the GeminiDR package, as in
+  Callers should set $PYTHONPATH to access the GeminiDR package, as in
 
   export PYTHONPATH=${PYTHONPATH}:/path/to/GeminiDR
 
   Dependencies: AstroData.
 
-  E.g., in the python interpreter, one can import and use this recipe directly
+  E.g., in the python interpreter, one can import and use a recipe directly
   
-  >>> from GMOS.primitives.primitives_GMOS import PrimitivesGMOS
+  >>> from GMOS.primitives.primitives_GMOS import PrimitivesIMAGE
   >>> from astrodata import AstroData
   >>> ad = AstroData('S20150929S0151.fits')
-  >>> gmos = PrimitivesGMOS(ad)
-  >>> from GMOS.recipes.recipe_gmos import test_recipe_gmos
-  >>> test_recipe_gmos(gmos)
+  >>> gmos_primitives = PrimitivesIMAGE(ad)
+  >>> from GMOS.recipes.IMAGE import qaReduce
+  >>> qaReduce(gmos_primitives)
 
-  This is a canned recipe, as most recipes will be. Users should see output in
-  the following form (a user's filenames ). Recall, this is a prototype demonstrating
-  proof of concept. Most primitives are pass throughs that simply show input datasets,
-  and output file names appended with a 'suffix' specified by parameter defaults.
-  Each primitives display the parameters available to it.
-  The primitive ADUToElectrons is fully functional however and does perform its
-  nominal task.
+  This recipe is skeletonized version of the currently defined recipe of the same
+  name in the legacy QAP. Users should see output in the form below.
+
+  Recall, this is a prototype demonstrating proof of concept. Most primitives are 
+  pass throughs that simply show input datasets, and output file names appended 
+  with a 'suffix' specified by parameter defaults. Each primitives display the 
+  parameters available to it. The primitive ADUToElectrons is fully functional, 
+  however, and does perform its nominal task.
 
          ------------------
          PRIMITIVE::prepare

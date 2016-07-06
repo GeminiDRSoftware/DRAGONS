@@ -1,6 +1,8 @@
 import os
 from importlib import import_module
 
+from astrodata.utils.Errors import RecipeNotFoundError
+
 # ------------------------------------------------------------------------------
 GMOS_INSTR    = ['GMOS-S', 'GMOS-N']
 canonicals    = ['IMAGE', 'SPECT', 'NODANDSHUFFLE']
@@ -8,8 +10,23 @@ recipedir     = 'recipes'
 primitives_in = "primitives"
 mod_prefix    = "primitives_"
 class_prefix  = "Primitives"
-# ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
+def dotpath(*args):
+    """
+    Build an import path from args.
+
+    """
+    ppath = ''
+    for pkg in args:
+        if ppath:
+            ppath += '.'+pkg
+        else:
+            ppath += pkg
+    ppath.rstrip('.')
+    return ppath
+
+# ------------------------------------------------------------------------------
 class RecipeMapper(object):
     """
     build importable paths to a primitive set and a recipe.
@@ -23,13 +40,34 @@ class RecipeMapper(object):
 
     """
     def __init__(self, ad, recipename='default', context='QA', uparms=None):
-        self.adinputs = [ad]
+        """
+        :parameter ads: list of AstroData objects.
+        :type ads: <list>
+
+        :parameter recipename: The recipe to use for processing. Passed by
+                               user with -r or set by caller. 
+                               If None, 'default' recipe.
+        :type recipename: <str>
+
+        :parameter context: The context. This defines which recipe set to use,
+                            Default is 'QA'.
+        :type context: <str>
+
+        :parameter uparms: A set of user parameters passed via command line
+                           or other caller.
+        :type uparms: <list> list of (parameter, value) tuples. Each may have a 
+                             specified primitive.
+                             E.g., [('foo','bar'), ('tileArrays:par1','val1')]
+
+        """
+        self.adinput = ad
         self.tags = ad.type()
         self.recipename = recipename
         self.context = context
         self.canonical = None
         self.pkg = None
         self.recipelib = None
+        self.userparams = uparms 
         self._set_pkg()
         self._set_canonical()
 
@@ -44,14 +82,20 @@ class RecipeMapper(object):
         return
 
     def get_recipe_actual(self):
-        return getattr(self.recipelib, self.recipename)
+        try:
+            recipe = getattr(self.recipelib, self.recipename)
+        except AttributeError:
+            emsg = "Recipe {} not found.".format(self.recipename)
+            raise RecipeNotFoundError(emsg)
+
+        return recipe
 
     def get_applicable_primitives(self):
         path = self._set_primitive_path()
         primitive_mod = import_module(path)
         primitiveclass = class_prefix + self.canonical
         primitive_actual = getattr(primitive_mod, primitiveclass)
-        return primitive_actual(self.adinputs)
+        return primitive_actual([self.adinput])
 
     def _set_primitive_path(self):
         primitive_mod = mod_prefix + self.canonical
@@ -64,10 +108,10 @@ class RecipeMapper(object):
         the instrument descriptor on the ad.
 
         """
-        if ad.instrument().as_pytype() in GMOS_INSTR:
+        if self.adinput.instrument().as_pytype() in GMOS_INSTR:
             self.pkg = "GMOS"
         else:
-            self.pkg = ad.instrument().as_pytype()
+            self.pkg = self.adinput.instrument().as_pytype()
         return
 
     def _set_canonical(self):
@@ -77,18 +121,3 @@ class RecipeMapper(object):
             self.canonical = "SPECT"
         # elif ...
         return
-    
-
-def dotpath(*args):
-    """
-    Build an import path from args.
-
-    """
-    ppath = ''
-    for pkg in args:
-        if ppath:
-            ppath += '.'+pkg
-        else:
-            ppath += pkg
-    ppath.rstrip('.')
-    return ppath
