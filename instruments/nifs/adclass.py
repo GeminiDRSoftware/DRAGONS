@@ -22,6 +22,10 @@ class AstroDataNifs(AstroDataGemini):
         return data_provider.phu.get('INSTRUME').upper() == 'NIFS'
 
     @astro_data_tag
+    def _tag_instrument(self):
+        return (set(['NIFS']), ())
+
+    @astro_data_tag
     def _tag_image(self):
         if self.phu.FLIP == 'In':
             return (set(['IMAGE']), ())

@@ -26,6 +26,10 @@ class AstroDataGnirs(AstroDataGemini):
         return data_provider.phu.get('INSTRUME').upper() == 'GNIRS'
 
     @astro_data_tag
+    def _tag_instrument(self):
+        return (set(['GNIRS']), ())
+
+    @astro_data_tag
     def _type_dark(self):
         if self.phu.OBSTYPE == 'DARK':
             return (set(['DARK', 'CAL']), set(['IMAGE', 'SPECT']))
