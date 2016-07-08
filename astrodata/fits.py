@@ -240,8 +240,8 @@ class ProcessedFitsProvider(FitsProvider):
                 nd.mask = data
             elif name == 'VAR':
                 var_un = VarUncertainty(data)
-                var_un.parent_nddata = obj
-                obj.uncertainty = var_un
+                var_un.parent_nddata = nd
+                nd.uncertainty = var_un
             else:
                 if isinstance(meta, fits.BinTableHDU):
                     meta_obj = Table(data, meta={'hdu': eheader})
