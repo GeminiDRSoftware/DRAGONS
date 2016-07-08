@@ -7,3 +7,4 @@ from . import gmos
 from . import gnirs
 from . import gpi
 from . import nifs
+from . import niri
