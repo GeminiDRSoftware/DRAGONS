@@ -9,8 +9,10 @@ from .reduceActions import UnitaryArgumentAction
 
 # ------------------------------------------------------------------------------
 class ReduceHelpFormatter(HelpFormatter):
-    """ReduceHelpFormatter class overrides default help formatting on customized
+    """
+    ReduceHelpFormatter class overrides default help formatting on customized
     reduce actions.
+
     """
     def _format_args(self, action, default_metavar):
         get_metavar = self._metavar_formatter(action, default_metavar)
@@ -36,6 +38,7 @@ class ReduceArgumentParser(ArgumentParser):
     """
     Converts an argument line from a user param file into an actual argument,
     yields to the calling parser.
+
     """
     def convert_arg_line_to_args(self, arg_line):
         if not arg_line.startswith("#"):
@@ -51,8 +54,9 @@ def buildParser(version):
     parser = ReduceArgumentParser(description="_"*29 + " Gemini Observatory " + 
                                   "_"*28 + "\n" + "_"*20 + 
                                   " Recipe Processing Management System " + 
-                                  "_"*20 + "\n" + "_"*25 + " gemini_python Release " +
-                                  version + "_"*25, prog="reduce",
+                                  "_"*20 + "\n" + "_"*25 + 
+                                  " gemini_python Release " + version + "_"*25, 
+                                  prog="reduce", 
                                   formatter_class=ReduceHelpFormatter,
                                   fromfile_prefix_chars='@')
 
@@ -191,9 +195,6 @@ def set_btypes(userparams):
         'False' --> False
 
     :parameters userparams: user parameters (if any) passed on the command line.
-                            E.g., ['par1=val1', 'par2=val2']
-                            Each may have a specified primitive like,
-                            ['par1=val1', 'tileArrays:par2=val2']
     :type userparms: <list>
 
     :returns: A tuple of same parameters with converted None and boolean types.
@@ -222,8 +223,12 @@ def normalize_args(args):
     """
     Convert argparse argument lists to single string values.
 
-    parameters: <Namespace>, argparse Namespace object
-    return:     <Namespace>, with converted types.
+    :parameter args: argparse Namespace object or equivalent
+    :type args: <Namespace>
+
+    :return:  Same with converted types.
+    :rtype: <Namespace>
+
     """
 
     if isinstance(args.recipename, list):

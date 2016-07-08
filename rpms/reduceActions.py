@@ -1,13 +1,12 @@
 #
-#                                                                  gemini_python
-#
-#                                                        recipe_system.reduction
+#                                                                  recipeSystem2
+#                                                                           rpms
 #                                                               reduceActions.py
 # ------------------------------------------------------------------------------
-# $Id: reduceActions.py 5142 2015-02-17 21:39:45Z kanderson $
+# $Id$
 # ------------------------------------------------------------------------------
-__version__      = '$Revision: 5142 $'[11:-2]  # Changed by swapper, 22 May 2014
-__version_date__ = '$Date: 2015-02-17 18:39:45 -0300 (Tue, 17 Feb 2015) $'[7:-3]
+__version__      = '$Revision$'[11:-2]
+__version_date__ = '$Date$'[7:-3]
 # ------------------------------------------------------------------------------
 """This module provides a number "action" classes, subclassed from the
 argparse.Action class. These classes only override the __call__() method. This 

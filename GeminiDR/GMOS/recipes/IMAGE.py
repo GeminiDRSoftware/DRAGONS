@@ -31,16 +31,11 @@ Usage:
 # task here in this demonstration package.
 # 17-06-2016 kra
 
-# This default recipe function may be adjusted to call other recipe library 
-# functions as the default operating recipe (i.e. when a recipe is not specified 
+# The 'default' recipe is simply an alias for one recipe and can be changed to point
+# to any other recipe herein.
+# This defines the default operating recipe (i.e. when a recipe is not specified 
 # by a caller, either as a `reduce` command line option (-r) or set as an attribute 
 # on a ReduceNH instance.
-#
-# This default recipe shall call one (1) and only one other recipe function
-# in this library.
-def default(p):
-    qaReduce(p)
-    return
 
 def qaReduce(p):
     p.prepare()
@@ -65,6 +60,7 @@ def qaReduce(p):
     p.addToList(purpose='forStack')
     return
 
+default = qaReduce
 
 def qaStack(p):
     p.getList(purpose='forStack')
@@ -82,7 +78,7 @@ def qaStack(p):
 def qaReduceAndStack(p):
     p.prepare()
     p.addDQ()
-    addVAR(read_noise=True)
+    p.addVAR(read_noise=True)
     p.detectSources()
     p.measureIQ(display=True)
     p.measureBG()

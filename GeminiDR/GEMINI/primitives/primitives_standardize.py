@@ -29,24 +29,19 @@ class Standardize(PrimitivesCORE):
         log.status("-" * len(pmsg))
         timestamp_key = self.timestamp_keys["addDQ"]
         sfx = self.parameters.addDQ["suffix"]
-        if adinputs:
-            self.adinputs = adinputs
-
+        log.stdinfo("timestamp keyword: {}".format(timestamp_key))
         log.stdinfo("Parameters available on {}".format(self.myself()))
         log.stdinfo(str(self.parameters.addDQ))
         log.stdinfo("working on ...")
         for ad in self.adinputs:
             log.stdinfo(ad.filename)
 
-        # Add the appropriate time stamps to the PHU
-        gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
         for ad in self.adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
         logutils.update_indent(0)
         return
-
 
     def addMDF(self, adinputs=None, stream='main', **params):
         log = logutils.get_logger(__name__)
@@ -63,7 +58,6 @@ class Standardize(PrimitivesCORE):
         logutils.update_indent(0)
         return
 
-
     def addVAR(self, adinputs=None, stream='main', **params):
         log = logutils.get_logger(__name__)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
@@ -72,6 +66,12 @@ class Standardize(PrimitivesCORE):
         log.status(pmsg)
         log.status("-" * len(pmsg))
         sfx = self.parameters.addVAR["suffix"]
+        log.stdinfo("Parameters available on {}".format(self.myself()))
+        log.stdinfo(str(self.parameters.addVAR))
+        log.stdinfo("working on ...")
+        for ad in self.adinputs:
+            log.stdinfo(ad.filename)
+
         for ad in self.adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)

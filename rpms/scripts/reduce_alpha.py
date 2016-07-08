@@ -31,25 +31,35 @@ from astrodata.utils import Errors
 from astrodata.utils import logutils
 
 from rpms.recipeMapper import RecipeMapper
-from rpms.reduce_utils import set_btypes
+
 from rpms.reduce_utils import buildParser
 from rpms.reduce_utils import normalize_args
+from rpms.reduce_utils import set_btypes
 from rpms.reduce_utils import show_parser_options
+
 # ------------------------------------------------------------------------------
 class ReduceNH(object):
     """
-    The Reduce class encapsulates the core processing to be done by reduce.
-    The constructor may receive one (1) parameter, which will be an instance
-    of a parse_args call on a reduce-defined ArgumentParser object. As with
-    all constructors, an instance of this class is returned.
-
-    parameters: <instance>, optional ArgumentParser.parse_args() instance
-    return:     <instance>, Reduce instance
+    The ReduceNH class encapsulates the core processing to be done by reduce.
+    __init__ may receive one (1) parameter, nominally, an argparse Namespace 
+    instance. However, this object type is not required, but only that any 
+    passed object *must* present an equivalent interface to that of an
+    <argparse.Namespace> instance.
 
     The class provides one (1) public method, runnh(), the only call needed to
     run reduce on the supplied argument set.
+
     """
     def __init__(self, sys_args=None):
+        """
+        :parameter sys_args: optional argparse.Namespace instance
+        :type sys_args: <Nameapace> 
+
+        :return: ReduceNH instance
+        :rtype: <ReduceNH>
+
+        """
+
         if sys_args:
             args = sys_args
         elif self._confirm_args():
@@ -64,6 +74,15 @@ class ReduceNH(object):
         self.urecipe = args.recipename if args.recipename else 'default'
 
     def runnh(self):
+        """
+        Map and run the requested or defaulted recipe.
+
+        :parameters: <void>
+
+        :returns: exit code 
+        :rtype: <int>
+
+        """
         xstat = 0
         try:
             ffiles = self._check_files(self.files)
@@ -103,8 +122,11 @@ class ReduceNH(object):
         """
         Sanity check on submitted files.
         
-        parameters ffiles: list of passed FITS files.
-        return:     <list>, list of 'good' input fits datasets.
+        :parameter ffiles: list of passed FITS files.
+        :type ffiles: <list>
+
+        :return: list of 'good' input fits datasets.
+        :rtype: <list>
 
         """
         try:
@@ -182,6 +204,7 @@ class ReduceNH(object):
         objects are not equal, reduce is not calling this class.
 
         :parameters: <void>
+
         :returns: Value of whether 'reduce' or some other executable is
                   instantiating this class.
         :rtype: <bool>
@@ -205,7 +228,7 @@ class ReduceNH(object):
 
     def _logheader(self, recipe):
         if self.urecipe == 'default':
-            r_actual = self._recipe_actual(recipe) + " ({})".format(self.urecipe)
+            r_actual = recipe.__name__
         else:
             r_actual = self.urecipe
 
@@ -215,17 +238,48 @@ class ReduceNH(object):
         log.status("="*80)
         return
 
-    def _recipe_actual(self, recipe):
-        rname = inspect.getsourcelines(recipe)[0][1].strip().split('(')[0]
-        return rname
-
 # ------------------------------------------------------------------------------
 def main(args):
     """
-    See the module docstring on how to call main.
+    'main' is called with a Namespace 'args' parameter, or an object that 
+    presents an equivalent interface.
+    
+    Eg.,
+    
+    Get "args' from the defined reduce parser:
+    
+    >>> args = buildParser(version).parse_args()
+    >>> import reduce_alpha
+    >>> reduce_alpha.main(args)
+    
+    In the above example, 'args' is
 
-    parameters: <inst>, 'args' object
-    return:     <int>,   exit code
+    -- argparse Namespace instance
+    
+    Use of the reduce_utils function buildParser will get the caller a fully defined 
+    reduce Namespace instance, values for which can be then be adjusted as desired.
+    
+    Eg.,
+    
+    buildParser:
+    -----------
+    >>> args = buildParser(version).parse_args()
+    >>> args.logfile
+    'reduce.log'
+    >>> args.files
+    []
+    >>> args.files.append('some_fits_file.fits')
+    
+    Once 'args' attributes have been appropriately set, the caller then simply 
+    calls main():
+    
+    >>> reduce_alpha.main(args)
+
+    :parameter args: argparse Namespace object
+    :type args: <Namespace>
+
+    :return: exit code
+    :rtype:  <int>
 
     """
     global log

@@ -1,9 +1,0 @@
-getList(purpose=forStack)
-correctWCSToReferenceFrame
-alignToReferenceFrame
-correctBackgroundToReferenceImage
-stackFrames
-detectSources
-measureIQ(display=True)
-measureBG
-measureCCAndAstrometry(correct_wcs=True)
