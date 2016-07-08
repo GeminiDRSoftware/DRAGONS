@@ -12,11 +12,9 @@ class AstroDataGpi(AstroDataGemini):
         return (set(['GPI']), ())
 
     @astro_data_tag
-    def _tag_pol(self):
-        if self.phu.get('DISPERSR', '').startswith('DISP_WOLLASTON'):
+    def _tag_disperser(self):
+        disp = self.phu.get('DISPERSR', '')
+        if disp.startswith('DISP_WOLLASTON'):
             return (set(['POL']), ())
-
-    @astro_data_tag
-    def _tag_spect(self):
-        if self.phu.get('DISPERSR', '').startswith('DISP_PRISM'):
+        elif disp.startswith('DISP_PRISM'):
             return (set(['SPECT', 'IFU']), ())
