@@ -6,5 +6,6 @@ from . import gemini
 from . import gmos
 from . import gnirs
 from . import gpi
+from . import michelle
 from . import nifs
 from . import niri
