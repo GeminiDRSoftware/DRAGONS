@@ -2,6 +2,8 @@
 # registering that may be needed
 
 from . import gemini
-from . import nifs
-from . import gnirs
+
 from . import gmos
+from . import gnirs
+from . import gpi
+from . import nifs

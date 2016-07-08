@@ -273,8 +273,9 @@ class ProcessedFitsProvider(FitsProvider):
             if other in seen:
                 continue
             name = other.header['EXTNAME']
-            if other.header.get('EXTVER', -1) >= 0:
-                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
+# NOTE: This happens with GPI. Let's leave it for later...
+#            if other.header.get('EXTVER', -1) >= 0:
+#                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
             setattr(self, name, process_meta_unit(None, other, add=False))
             self._exposed.append(name)
 
