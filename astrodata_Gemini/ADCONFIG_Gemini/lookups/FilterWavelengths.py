@@ -39,7 +39,7 @@ filterWavelengths = {
 ('GNIRS',	'J_(order_5)')	: 1.2700,
 ('NIRI',	'Pa(beta)')	: 1.2820,
 ('GSAOI',	'PaB')		: 1.2820,
-('F2'		'JH')		: 1.3900,
+('F2',  	'JH')		: 1.3900,
 ('NIRI',	'H-con(157)')	: 1.5700,
 ('GSAOI',	'Hcont')	: 1.5700,
 ('NIRI',	'CH4(short)')	: 1.5800,
