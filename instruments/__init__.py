@@ -10,5 +10,6 @@ from . import gnirs
 from . import gpi
 from . import gsaoi
 from . import michelle
+from . import nici
 from . import nifs
 from . import niri
