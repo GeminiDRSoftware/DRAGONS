@@ -8,6 +8,7 @@ from . import f2
 from . import gmos
 from . import gnirs
 from . import gpi
+from . import gsaoi
 from . import michelle
 from . import nifs
 from . import niri
