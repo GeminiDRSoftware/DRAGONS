@@ -98,7 +98,7 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_tag
     def _type_gcal(self):
-        if self.phu.GCALLAMP == 'IRHigh':
+        if self.phu.GCALLAMP == 'IRhigh':
             shut = self.phu.GCALSHUT
             if shut == 'OPEN':
                 return (set(['GCAL_IR_ON']), ())
