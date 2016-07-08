@@ -35,7 +35,6 @@ def get_config_file():
     Examines env var $GEMINIDR.
 
     """
-    # if get() returns None, then pkg.cfg should be in '.'
     config_path = os.environ.get('GEMINIDR')
     default_cfg = 'pkg.cfg'
     config_file = os.path.join(config_path, default_cfg)
