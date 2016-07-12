@@ -14,9 +14,7 @@ class AstroDataNici(AstroDataGemini):
     @astro_data_tag
     def _tag_dark(self):
         if self.phu.get('OBSTYPE') == 'DARK':
-            return (set(['DARK_CURRENT', 'DARK', 'CAL']), ())
-        if self.phu.get('OBSTYPE') == 'FLAT' and self.phu.get('GCALSHUT') == 'CLOSED':
-            return (set(['DARK_OLD', 'DARK', 'CAL']), ())
+            return (set(['DARK', 'CAL']), ())
 
     @astro_data_tag
     def _tag_flat(self):
