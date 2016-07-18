@@ -40,20 +40,20 @@ directly, too, by using the following syntax:
 
     >>> ad.phu.TELESCOP
     'Gemini-North'
-    >>> ad.ext.EXTVER
+    >>> ad.hdr.EXTVER
     [1, 2, 3, 4]
     # Set a keyword
     >>> ad.phu.SOMEKEYW = value
     >>> 'FOOBAR' in ad.phu
     True
-    >>> 'BAR' in ad.ext
+    >>> 'BAR' in ad.hdr
     (True, False, True)
 
 NB: For the time being, when dealing with non-raw files, *only* SCI extensions
 will be considered by this high-level interface.
 
 Retrieving the value of a non-existing keyword will raise a `KeyError`. If this
-happens with `.ext`, the exception will contain an additional `missing_at`
+happens with `.hdr`, the exception will contain an additional `missing_at`
 member that lists the indices for the extensions that missed the keyword.
 If you want a value no matter what, yo can use `.get`, like you'd do on a
 dictionary:

@@ -24,7 +24,7 @@ class KeywordCallableWrapper(object):
 
     def __call__(self, adobj):
         def wrapper():
-            manip = adobj.phu if not self.on_ext else adobj.ext
+            manip = adobj.phu if not self.on_ext else adobj.hdr
             if self.default is NO_DEFAULT:
                 ret = getattr(manip, self.kw)
             else:
@@ -334,5 +334,5 @@ class AstroDataFits(AstroData):
         return self._dataprov.phu_manipulator
 
     @property
-    def ext(self):
+    def hdr(self):
         return self._dataprov.ext_manipulator

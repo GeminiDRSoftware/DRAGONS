@@ -185,7 +185,7 @@ class AstroDataGemini(AstroDataFits):
         try:
             value_filter = (str if pretty else sectionStrToIntList)
             ret = [(None if raw is None else value_filter(raw))
-                    for raw in getattr(self.ext, keyword)]
+                    for raw in getattr(self.hdr, keyword)]
             if len(ret) == 1:
                 return ret[0]
             return ret
@@ -266,7 +266,7 @@ class AstroDataGemini(AstroDataFits):
             raise ValueError("This descriptor doesn't work on RAW or IMAGE files")
 
         # TODO: We may need to sort out Nones here...
-        return [int(dispaxis) for dispaxis in self.ext.DISPAXIS]
+        return [int(dispaxis) for dispaxis in self.hdr.DISPAXIS]
 
     def effective_wavelength(self):
         # TODO: We need to return the appropriate output units
