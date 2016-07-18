@@ -46,6 +46,10 @@ class FitsKeywordManipulator(object):
         else:
             return set(self._headers[0].keys())
 
+    def print_header(self):
+        # TODO: This is only working for PHU now. Need to prepare it for extensions...
+        print(repr(self._headers[0]))
+
     def get(self, key, default=None):
         try:
             return getattr(self, key)
