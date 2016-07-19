@@ -47,9 +47,12 @@ directly, too, by using the following syntax:
     >>> 'FOOBAR' in ad.phu
     True
     >>> 'BAR' in ad.hdr
-    (True, False, True)
+    False
 
-NB: For the time being, when dealing with non-raw files, *only* SCI extensions
+NB: Note that the `in` returns always just *one* boolean value. This is a
+departure from our usual "return a list of values when dealing with the extension
+headers" behavior, but that's how Python works...
+NB2: For the time being, when dealing with non-raw files, *only* SCI extensions
 will be considered by this high-level interface.
 
 Retrieving the value of a non-existing keyword will raise a `KeyError`. If this
