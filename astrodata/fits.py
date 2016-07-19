@@ -231,7 +231,7 @@ class ProcessedFitsProvider(FitsProvider):
         return scopy
 
     def _set_headers(self, hdulist):
-        self._header = [hdulist[0].header] + [x.header for x in hdulist if x.header.get('SCI')]
+        self._header = [hdulist[0].header] + [x.header for x in hdulist if x.header.get('EXTNAME') == 'SCI']
 
     def _reset_members(self, hdulist):
         self._hdulist = hdulist
