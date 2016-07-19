@@ -23,13 +23,16 @@ Currently, the policy defines an order of parameter precedence:
     parameter files. These will be overridden by recipe parameters and then 
     user parameters when applicable.
 
-This policy is implemented in the decorator functions,
+This policy is implemented in the decorator function,
 
     parameter_override 
-    override_pars
 
-where 'parameterOverride' is the class decorator and should be the only one
-decorating a primitive class.
+This is the primitive decorator and should be the only one decorating a 
+primitive class.
+
+This decorator is fully enhanced by the make_class_wrapper decorator, which
+maps the parameter_override decorator function to all public methods on 
+the decorated class.
 
     E.g., 
 
@@ -39,9 +42,6 @@ decorating a primitive class.
         class PrimitivesIMAGE(PrimitivesGMOS):
             def __init__(self, adinputs, uparms={}):
             [ … ]
-
-
-
 
 """
 from functools import wraps
