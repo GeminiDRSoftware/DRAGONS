@@ -173,13 +173,16 @@ class FitsProvider(DataProvider):
     def header(self):
         return self._header
 
-    @property
-    def nddata(self):
+    def _lazy_populate_object(self):
         if self._nddata is None:
             if self.path:
                 self._reset_members(fits.open(self.path))
             else:
                 self._reset_members(self._hdulist)
+
+    @property
+    def nddata(self):
+        self._lazy_populate_object()
 
         return self._nddata
 
@@ -217,6 +220,7 @@ class ProcessedFitsProvider(FitsProvider):
 
     @property
     def exposed(self):
+        self._lazy_populate_object()
         return set(self._exposed)
 
     def _slice(self, indices):
