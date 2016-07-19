@@ -26,7 +26,6 @@ class Bookkeeping(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.addToList
         sfx = ''
@@ -47,7 +46,6 @@ class Bookkeeping(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
 
@@ -62,7 +60,6 @@ class Bookkeeping(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.getList
         sfx = ''
@@ -83,7 +80,6 @@ class Bookkeeping(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
 
@@ -97,7 +93,6 @@ class Bookkeeping(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.showList
         sfx = ''
@@ -118,7 +113,6 @@ class Bookkeeping(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
     def showInputs(self, adinputs=None, stream='main', **params):
@@ -128,7 +122,6 @@ class Bookkeeping(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         sfx = ''
         log.status("-" * len(pmsg))
@@ -145,7 +138,6 @@ class Bookkeeping(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
     def writeOutputs(self, adinputs=None, stream='main', **params):
@@ -184,7 +176,6 @@ class Bookkeeping(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.writeOutputs
         sfx = p_pars["suffix"]
@@ -205,5 +196,4 @@ class Bookkeeping(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return

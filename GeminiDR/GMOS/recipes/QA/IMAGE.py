@@ -31,11 +31,20 @@ Usage:
 # task here in this demonstration package.
 # 17-06-2016 kra
 
-# The 'default' recipe is simply an alias for one recipe and can be changed to point
-# to any other recipe herein.
-# This defines the default operating recipe (i.e. when a recipe is not specified 
-# by a caller, either as a `reduce` command line option (-r) or set as an attribute 
-# on a ReduceNH instance.
+# The 'default' recipe is simply an alias for one recipe and can be changed 
+# to point to any other recipe herein.
+#
+# This defines the default operating recipe (i.e. when a recipe is not 
+# specified by a caller, either as a `reduce` command line option (-r) or 
+# set as an attribute on a ReduceNH instance.
+
+def fringeTest(p):
+    p.fringeCorrect()
+    #p.makeFringe()
+    p.makeFringeFrame()
+    p.storeProcessedFringe()
+    p.storeCalibration()
+    return
 
 def qaReduce(p):
     p.prepare()

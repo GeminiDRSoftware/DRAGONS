@@ -60,7 +60,6 @@ class Photometry(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.addReferenceCatalog
         sfx = p_pars["suffix"]
@@ -84,7 +83,6 @@ class Photometry(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
     def detectSources(self, adinputs=None, stream='main', **params):
@@ -123,7 +121,6 @@ class Photometry(PrimitivesCORE):
 
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.detectSources
         sfx = p_pars["suffix"]
@@ -152,7 +149,6 @@ class Photometry(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
 
@@ -160,7 +156,6 @@ class Photometry(PrimitivesCORE):
 
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.measureCCAndAstrometry
         sfx = p_pars["suffix"]
@@ -184,5 +179,4 @@ class Photometry(PrimitivesCORE):
         self.addReferenceCatalog()
         self.measureCC()
         self.determineAstrometricSolution()
-        logutils.update_indent(0)
         return

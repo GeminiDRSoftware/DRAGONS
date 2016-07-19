@@ -1,29 +1,59 @@
 from primitives_GMOS import PrimitivesGMOS
 from GMOS.parameters.parameters_IMAGE import ParametersIMAGE
 
+from pkg_utilities.decorators import parameter_override
 # ------------------------------------------------------------------------------
+@parameter_override
 class PrimitivesIMAGE(PrimitivesGMOS):
     """
-    This is the class containing all of the primitives for the GMOS_IMAGE
-    level of the type hierarchy tree. It inherits all the primitives from the
+    This primitive class provides all primitives for GMOS IMAGE datasets, as 
+    indicated by a dataset's tag set. It inherits all primitives from the
     level above, 'GMOSPrimitives'.
     """
     tag = ("GMOS", "IMAGE")
     
-    def __init__(self, adinputs):
-        super(PrimitivesIMAGE, self).__init__(adinputs)
+    def __init__(self, adinputs, uparms={}):
+        """
+        Receive a list of astrodata objects and a dictionary of user-supplied 
+        parameters. Typically, adinputs is of length 1, a single dataset.
+
+        The 'uparms' dictionary will be checked by each primitive method when
+        called to determine whether the user parameter(s) apply, either
+        generally, or if the caller has specified the primitive explicitly.
+
+        E.g.,
+
+        uparms = {'par1': 'val1', 'makeFringeFrame:reject_method': 'jilt'}
+
+        Non-explicit parameters are checked against a primitive's own 
+        parameter set and determine if the user parameter overrides apply.
+
+        :parameter adinputs: list of AstroData instances
+        :type adinputs: <list>, [ad1, ... ]
+
+        :parameter uparms: User supplied parameters, usually via a 'reduce'
+                           command line option, -p
+        :type uparms: <dict>, a dictionary of key:val pairs.
+
+        """
+        super(PrimitivesGMOS, self).__init__(adinputs)
         self.parameters = ParametersIMAGE
+        self.primitive_parset = None
+        self.user_params = uparms
+        if self.user_params:
+            print "PrimitivesIMAGE recieved user parameters:"
+            print str(self.user_params)
+        else:
+            print "No user parameters specified."
+
 
     def fringeCorrect(self, adinputs=None, stream='main', **params):
         """
         This primitive is prototype demo.
 
         """
-        try:
-            parset = getattr(self.parameters, self.myself())
-        except AttributeError:
-            parset = None
-        self._primitive_exec(self.myself(), parset=parset, indent=3)
+        self._primitive_exec(self.myself(), parset=self.primitive_parset, indent=3)
+        self.getProcessedFringe()
         return
 
     def makeFringe(self, adinputs=None, stream='main', **params):
@@ -31,11 +61,7 @@ class PrimitivesIMAGE(PrimitivesGMOS):
         This primitive is prototype demo.
 
         """
-        try:
-            parset = getattr(self.parameters, self.myself())
-        except AttributeError:
-            parset = None
-        self._primitive_exec(self.myself(), parset=parset, indent=3)
+        self._primitive_exec(self.myself(), parset=self.primitive_parset, indent=3)
         self.makeFringeFrame()
         self.storeProcessedFringe()
         return
@@ -44,12 +70,8 @@ class PrimitivesIMAGE(PrimitivesGMOS):
         """
         This primitive is prototype demo.
 
-        """        
-        try:
-            parset = getattr(self.parameters, self.myself())
-        except AttributeError:
-            parset = None
-        self._primitive_exec(self.myself(), parset=parset, indent=3)
+        """
+        self._primitive_exec(self.myself(), parset=self.primitive_parset, indent=3)
         return
 
     def normalizeFlat(self, adinputs=None, stream='main', **params):
@@ -63,11 +85,7 @@ class PrimitivesIMAGE(PrimitivesGMOS):
         This primitive is prototype demo.
 
         """        
-        try:
-            parset = getattr(self.parameters, self.myself())
-        except AttributeError:
-            parset = None
-        self._primitive_exec(self.myself(), parset=parset, indent=3)
+        self._primitive_exec(self.myself(), parset=self.primitive_parset, indent=3)
         return
     
     def scaleByIntensity(self, adinputs=None, stream='main', **params):
@@ -79,11 +97,7 @@ class PrimitivesIMAGE(PrimitivesGMOS):
         This primitive is prototype demo.
 
         """        
-        try:
-            parset = getattr(self.parameters, self.myself())
-        except AttributeError:
-            parset = None
-        self._primitive_exec(self.myself(), parset=parset, indent=3)
+        self._primitive_exec(self.myself(), parset=self.primitive_parset, indent=3)
         return
 
     def scaleFringeToScience(self, adinputs=None, stream='main', **params):
@@ -114,12 +128,8 @@ class PrimitivesIMAGE(PrimitivesGMOS):
 
         This primitive is prototype demo.
 
-        """        
-        try:
-            parset = getattr(self.parameters, self.myself())
-        except AttributeError:
-            parset = None
-        self._primitive_exec(self.myself(), parset=parset, indent=3)
+        """
+        self._primitive_exec(self.myself(), parset=self.primitive_parset, indent=3)
         return
         
     
@@ -131,21 +141,13 @@ class PrimitivesIMAGE(PrimitivesGMOS):
         This primitive is prototype demo.
 
         """        
-        try:
-            parset = getattr(self.parameters, self.myself())
-        except AttributeError:
-            parset = None
-        self._primitive_exec(self.myself(), parset=parset, indent=3)
+        self._primitive_exec(self.myself(), parset=self.primitive_parset, indent=3)
         return
 
     def subtractFringe(self, adinputs=None, stream='main', **params):
         """
         This primitive is prototype demo.
 
-        """        
-        try:
-            parset = getattr(self.parameters, self.myself())
-        except AttributeError:
-            parset = None
-        self._primitive_exec(self.myself(), parset=parset, indent=3)
+        """
+        self._primitive_exec(self.myself(), parset=self.primitive_parset, indent=3)
         return

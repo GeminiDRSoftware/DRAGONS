@@ -32,10 +32,10 @@ from astrodata.utils import logutils
 
 from rpms.recipeMapper import RecipeMapper
 
-from rpms.reduce_utils import buildParser
-from rpms.reduce_utils import normalize_args
-from rpms.reduce_utils import set_btypes
-from rpms.reduce_utils import show_parser_options
+from rpms.utils.reduce_utils import buildParser
+from rpms.utils.reduce_utils import normalize_args
+from rpms.utils.reduce_utils import set_btypes
+from rpms.utils.reduce_utils import show_parser_options
 
 # ------------------------------------------------------------------------------
 class ReduceNH(object):
@@ -100,20 +100,19 @@ class ReduceNH(object):
             log.error(str(err))
             return xstat
 
-        for ad in self.adinputs:
-            rm = RecipeMapper(ad, recipename=self.urecipe, 
+        rm = RecipeMapper(self.adinputs, recipename=self.urecipe, 
                               context=self.context, uparms=self.uparms)
-            rm.set_recipe_library()
-            try:
-                recipe = rm.get_recipe_actual()
-            except Errors.RecipeNotFoundError, err:
-                xstat = signal.SIGIO
-                log.error(str(err))
-                return xstat
+        rm.set_recipe_library()
+        try:
+            recipe = rm.get_applicable_recipe()
+        except Errors.RecipeNotFoundError, err:
+            xstat = signal.SIGIO
+            log.error(str(err))
+            return xstat
 
-            p = rm.get_applicable_primitives()
-            self._logheader(recipe)
-            recipe(p)
+        p = rm.get_applicable_primitives()
+        self._logheader(recipe)
+        recipe(p)
 
         return xstat
 

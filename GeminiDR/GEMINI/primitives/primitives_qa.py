@@ -33,7 +33,6 @@ class QA(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.measureBG
         sfx = p_pars["suffix"]
@@ -59,7 +58,6 @@ class QA(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
     def measureCC(self, adinputs=None, stream='main', **params):
@@ -97,7 +95,6 @@ class QA(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.measureCC
         sfx = p_pars["suffix"]
@@ -123,7 +120,6 @@ class QA(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
     def measureIQ(self, adinputs=None, stream='main', **params):
@@ -136,7 +132,6 @@ class QA(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.measureIQ
         sfx = p_pars["suffix"]
@@ -144,7 +139,7 @@ class QA(PrimitivesCORE):
         log.status(pmsg)
         log.status("-" * len(pmsg))
 
-        log.stdinfo("IQConstraints: \n{}".format(IQConstraints))
+        log.stdinfo("IQConstraints: \n{}".format(IQConstraints.iqConstraints))
 
         timestamp_key = self.timestamp_keys[self.myself()]
         if adinputs:
@@ -162,5 +157,4 @@ class QA(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return

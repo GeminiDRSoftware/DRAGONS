@@ -17,7 +17,6 @@ class Display(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
-        logutils.update_indent(3)
         log.status("-" * len(pmsg))
         log.status(pmsg)
         log.status("-" * len(pmsg))
@@ -27,5 +26,4 @@ class Display(PrimitivesCORE):
         log.stdinfo("Parameters available on {}".format(self.myself()))
         log.stdinfo(str(self.parameters.display))
 
-        logutils.update_indent(0)
         return

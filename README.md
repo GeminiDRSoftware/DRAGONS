@@ -7,7 +7,7 @@ prototyping the new concepts for both the recipe system and the package structur
 as described in the document, The AstroData Package: A New Structure.
 
 For explicit details on the demostration and use of these systems, see those
-package REDME files.
+package README files.
 
 -- kra, 08-06-2016
 

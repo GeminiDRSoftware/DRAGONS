@@ -23,7 +23,6 @@ class Standardize(PrimitivesCORE):
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
-        logutils.update_indent(3)
         log.status("-" * len(pmsg))
         log.status(pmsg)
         log.status("-" * len(pmsg))
@@ -40,13 +39,11 @@ class Standardize(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
     def addMDF(self, adinputs=None, stream='main', **params):
         log = logutils.get_logger(__name__)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
-        logutils.update_indent(3)
         log.status("-" * len(pmsg))
         log.status(pmsg)
         log.status("-" * len(pmsg))
@@ -55,13 +52,11 @@ class Standardize(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
     def addVAR(self, adinputs=None, stream='main', **params):
         log = logutils.get_logger(__name__)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
-        logutils.update_indent(3)
         log.status("-" * len(pmsg))
         log.status(pmsg)
         log.status("-" * len(pmsg))
@@ -76,7 +71,6 @@ class Standardize(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
     
     def markAsPrepared(self, adinputs=None, stream='main', **params):
@@ -86,7 +80,6 @@ class Standardize(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
-        logutils.update_indent(3)
         log.status("-" * len(pmsg))
         log.status(pmsg)
         log.status("-" * len(pmsg))
@@ -96,7 +89,6 @@ class Standardize(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
     
     def prepare(self):
@@ -111,7 +103,6 @@ class Standardize(PrimitivesCORE):
         """
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         log = logutils.get_logger(__name__)
-        logutils.update_indent(3)
         log.status("-" * len(pmsg))
         log.status(pmsg)
         log.status("-" * len(pmsg))
@@ -120,5 +111,4 @@ class Standardize(PrimitivesCORE):
         self.standardizeGeminiHeaders()
         self.standardizeInstrumentHeaders()
         self.markAsPrepared()
-        logutils.update_indent(0)
         return

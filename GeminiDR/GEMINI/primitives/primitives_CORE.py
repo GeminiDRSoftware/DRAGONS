@@ -51,7 +51,6 @@ class PrimitivesCORE(object):
         log = logutils.get_logger(__name__)
         pmsg = "{}:{}".format("PRIMITIVE:", pname)
         sfx = ''
-        logutils.update_indent(pindent)
         log.status("-" * len(pmsg))
         log.status(pmsg)
         log.status("-" * len(pmsg))
@@ -66,5 +65,4 @@ class PrimitivesCORE(object):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(pindent - indent)
         return

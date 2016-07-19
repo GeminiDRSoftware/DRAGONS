@@ -22,7 +22,6 @@ class Preprocess(PrimitivesCORE):
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
-        logutils.update_indent(3)
         log.status("-" * len(pmsg))
         log.status(pmsg)
         log.status("-" * len(pmsg))
@@ -56,7 +55,6 @@ class Preprocess(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
     
     def associateSky(self, adinputs=None, stream='main', **params):
@@ -96,7 +94,6 @@ class Preprocess(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.correctBackgroundToReferenceImage
         sfx = p_pars["suffix"]
@@ -120,7 +117,6 @@ class Preprocess(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
     def flatCorrect(self):
@@ -144,7 +140,6 @@ class Preprocess(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.divideByFlat
         sfx = p_pars["suffix"]
@@ -168,7 +163,6 @@ class Preprocess(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
      
     def nonlinearityCorrect(self, adinputs=None, stream='main', **params):
@@ -180,7 +174,6 @@ class Preprocess(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.nonlinearityCorrect
         sfx = p_pars["suffix"]
@@ -204,7 +197,6 @@ class Preprocess(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
     def normalizeFlat(self, adinputs=None, stream='main', **params):
@@ -214,7 +206,6 @@ class Preprocess(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.normalizeFlat
         sfx = p_pars["suffix"]
@@ -238,7 +229,6 @@ class Preprocess(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
     def separateSky(self, adinputs=None, stream='main', **params):
@@ -283,7 +273,6 @@ class Preprocess(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.separateSky
         sfx = p_pars["suffix"]
@@ -307,7 +296,6 @@ class Preprocess(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
     
     def subtractDark(self, adinputs=None, stream='main', **params):
@@ -320,7 +308,6 @@ class Preprocess(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.subtractDark
         sfx = p_pars["suffix"]
@@ -344,7 +331,6 @@ class Preprocess(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
     def subtractSky(self, adinputs=None, stream='main', **params):
@@ -369,7 +355,6 @@ class Preprocess(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.subtractSky
         sfx = p_pars["suffix"]
@@ -393,7 +378,6 @@ class Preprocess(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
     def subtractSkyBackground(self, adinputs=None, stream='main', **params):
@@ -403,7 +387,6 @@ class Preprocess(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.subtractSkyBackground
         sfx = p_pars["suffix"]
@@ -427,5 +410,4 @@ class Preprocess(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return

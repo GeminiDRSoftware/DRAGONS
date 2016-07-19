@@ -27,7 +27,6 @@ class Stack(PrimitivesCORE):
         
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.addToList
         sfx = ''
@@ -56,7 +55,6 @@ class Stack(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
 
         return
         
@@ -88,7 +86,6 @@ class Stack(PrimitivesCORE):
         """
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.stackFrames
         sfx = p_pars["suffix"]
@@ -120,14 +117,12 @@ class Stack(PrimitivesCORE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             log.stdinfo(ad.filename)
 
-        logutils.update_indent(0)
         return
 
     
     def stackSkyFrames(self, adinputs=None, stream='main', **params):
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
-        logutils.update_indent(3)
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
         p_pars = self.parameters.stackSkyFrames
         sfx = p_pars["suffix"]
@@ -166,5 +161,4 @@ class Stack(PrimitivesCORE):
             log.stdinfo(ad.filename)
 
         self.showInputs(stream='forSkyCorrection')
-        logutils.update_indent(0)
         return
