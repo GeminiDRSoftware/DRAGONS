@@ -206,7 +206,7 @@ class RawFitsProvider(FitsProvider):
         self._nddata = []
         for unit in hdulist:
             if isinstance(unit, fits.ImageHDU):
-                obj = NDDataRef(unit.data, meta={'hdu': unit.header})
+                obj = NDDataRef(unit.data, meta={'hdu': unit.header, 'ver': -1})
                 self._nddata.append(obj)
 
 class ProcessedFitsProvider(FitsProvider):
