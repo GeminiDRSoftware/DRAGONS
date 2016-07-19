@@ -46,7 +46,7 @@ class FitsKeywordManipulator(object):
         else:
             return set(self._headers[0].keys())
 
-    def print(self):
+    def show(self):
         # TODO: This is only working for PHU now. Need to prepare it for extensions...
         if self._on_ext:
             for n, header in enumerate(self._headers):
