@@ -239,9 +239,11 @@ class ProcessedFitsProvider(FitsProvider):
         self._tables = {}
         seen = set([hdulist[0]])
 
+        skip_names = set(['SCI', 'REFCAT', 'MDF'])
+
         def search_for_associated(ver):
             return [x for x in hdulist
-                      if x.header.get('EXTVER') == ver and x.header['EXTNAME'] not in ('SCI', 'REFCAT')]
+                      if x.header.get('EXTVER') == ver and x.header['EXTNAME'] not in skip_names]
 
         def process_meta_unit(nd, meta, add=True):
             eheader = meta.header
