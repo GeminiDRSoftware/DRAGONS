@@ -222,11 +222,12 @@ class ProcessedFitsProvider(FitsProvider):
     def _slice(self, indices):
         scopy = super(ProcessedFitsProvider, self)._slice(indices)
         scopy._tables = {}
-        for name, content in self._tables.items():
-            if name in ('MDF', 'REFCAT'):
-                scopy._tables[name] = self.content
-            else:
-                scopy._tables[name] = [lst[n] for n in indices]
+        if self._tables is not None:
+            for name, content in self._tables.items():
+                if name in ('MDF', 'REFCAT'):
+                    scopy._tables[name] = self.content
+                else:
+                    scopy._tables[name] = [lst[n] for n in indices]
 
         return scopy
 
@@ -235,11 +236,12 @@ class ProcessedFitsProvider(FitsProvider):
 
     def _reset_members(self, hdulist):
         self._hdulist = hdulist
+        self._tables = {}
         seen = set([hdulist[0]])
 
         def search_for_associated(ver):
             return [x for x in hdulist
-                      if x.header.get('EXTVER') == ver and x.header['EXTNAME'] != 'SCI']
+                      if x.header.get('EXTVER') == ver and x.header['EXTNAME'] not in ('SCI', 'REFCAT')]
 
         def process_meta_unit(nd, meta, add=True):
             eheader = meta.header
@@ -254,6 +256,10 @@ class ProcessedFitsProvider(FitsProvider):
             else:
                 if isinstance(meta, fits.BinTableHDU):
                     meta_obj = Table(data, meta={'hdu': eheader})
+                    if name in self._tables and add is True:
+                        self._tables[name].append(meta_obj)
+                    else:
+                        self._tables[name] = [meta_obj]
                 elif isinstance(meta, fits.ImageHDU):
                     meta_obj = NDDataRef(data, meta={'hdu': eheader})
                 else:
@@ -282,9 +288,13 @@ class ProcessedFitsProvider(FitsProvider):
             if other in seen:
                 continue
             name = other.header['EXTNAME']
+            if name in self._tables:
+                continue
 # NOTE: This happens with GPI. Let's leave it for later...
 #            if other.header.get('EXTVER', -1) >= 0:
 #                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
+            if isinstance(other, fits.BinTableHDU):
+                self._tables[name] = other
             setattr(self, name, process_meta_unit(None, other, add=False))
             self._exposed.append(name)
 
