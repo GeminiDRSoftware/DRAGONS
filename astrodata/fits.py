@@ -198,6 +198,9 @@ class FitsProvider(DataProvider):
 
         return self._slice(indices)
 
+    def __len__(self):
+        return len(self.nddata)
+
     @abstractmethod
     def _set_headers(self, hdulist):
         pass

@@ -38,6 +38,10 @@ class DataProvider(object):
     def __getitem__(self, slice):
         pass
 
+    @abstractmethod
+    def __len__(self):
+        pass
+
     @property
     def exposed(self):
         return ()
@@ -95,6 +99,9 @@ class AstroData(object):
 
     def __contains__(self, attribute):
         return attribute in self._dataprov.exposed
+
+    def __len__(self):
+        return len(self._dataprov)
 
     @abstractmethod
     def info(self):
