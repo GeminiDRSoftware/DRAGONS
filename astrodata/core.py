@@ -93,6 +93,9 @@ class AstroData(object):
             clsname = self.__class__.__name__
             raise AttributeError("{!r} object has no attribute {!r}".format(clsname, attribute))
 
+    def __contains__(self, attribute):
+        return attribute in self._dataprov.exposed
+
     @abstractmethod
     def info(self):
         pass
