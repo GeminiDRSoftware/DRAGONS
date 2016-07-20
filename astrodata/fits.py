@@ -132,6 +132,43 @@ class FitsProvider(DataProvider):
         self._hdulist = None
         self.path = None
 
+    def info(self, tags):
+        print("Filename: {}".format(self.path if self.path else "Unknown"))
+        # NOTE: Right now we only support readonly, so it's fixed
+        print("Mode: readonly")
+
+        tags = sorted(tags, reverse=True)
+        tag_line = "Tags: "
+        while tags:
+            new_tag = tags.pop() + ' '
+            if len(tag_line + new_tag) > 80:
+                print(tag_line)
+                tag_line = "    " + new_tag
+            else:
+                tag_line = tag_line + new_tag
+        print(tag_line)
+
+        # Let's try to be generic. Could it be that some file contains only tables?
+        if len(self.nddata) > 0:
+            main_fmt = "{:6} {:24} {:16} {:14} {}"
+            other_fmt = "          .{:20} {:16} {:14} {}"
+            print("\nPixels Extensions")
+            print(main_fmt.format("Ver", "Content", "Type", "Dimensions", "Format"))
+            for pi in self._pixel_info():
+                main_obj = pi['main']
+                print(main_fmt.format(pi['ver'], main_obj['content'], main_obj['type'],
+                                                 main_obj['dim'], main_obj['data_type']))
+                for other in pi['other']:
+                    print(other_fmt.format(other['attr'], other['type'], other['dim'],
+                                           other['data_type']))
+
+        additional_ext = list(self._other_info())
+        if additional_ext:
+            print("\nOther Extensions")
+            print("               Type        Dimensions")
+            for (attr, type_, dim) in additional_ext:
+                print(".{:13} {:11} {}".format(attr, type_, dim))
+
     def _slice(self, indices):
         if not self._sliced and not self._hdulist:
             # Force the loading of data, we may need it later
@@ -212,11 +249,74 @@ class RawFitsProvider(FitsProvider):
                 obj = NDDataRef(unit.data, meta={'hdu': unit.header, 'ver': -1})
                 self._nddata.append(obj)
 
+    def _pixel_info(self):
+        for obj in self.nddata:
+            yield dict(
+                ver = '[NA]',
+                main = dict(
+                    content = 'raw',
+                    type = type(obj).__name__,
+                    dim = '({})'.format(', '.join(str(s) for s in obj.data.shape)),
+                    data_type = obj.data.dtype.name
+                ),
+                other = ()
+            )
+
+    def _other_info(self):
+        return ()
+
 class ProcessedFitsProvider(FitsProvider):
     def __init__(self):
         super(ProcessedFitsProvider, self).__init__()
         self._tables = None
         self._exposed = []
+
+    def _pixel_info(self):
+        for obj in self.nddata:
+            header = obj.meta['hdu']
+            other_objects = []
+            for name in ['uncertainty', 'mask'] + sorted(obj.meta['other']):
+                other = getattr(obj, name)
+                if other is not None:
+                    if isinstance(other, Table):
+                        other_objects.append(dict(
+                            attr=name, type='Table',
+                            dim=(len(other), len(other.columns)),
+                            data_type='n/a'
+                        ))
+                    else:
+                        if hasattr(other, 'dtype'):
+                            dt = other.dtype.name
+                        elif hasattr(other, 'data'):
+                            dt = other.data.dtype.name
+                        elif hasattr(other, 'array'):
+                            dt = other.array.dtype.name
+                        else:
+                            dt = 'unknown'
+                        other_objects.append(dict(
+                            attr=name, type=type(other).__name__,
+                            dim='', data_type = dt
+                        ))
+
+            yield dict(
+                    ver = '[{:2}]'.format(header.get('EXTVER', -1)),
+                    main = dict(
+                        content = 'science',
+                        type = type(obj).__name__,
+                        dim = '({})'.format(', '.join(str(s) for s in obj.data.shape)),
+                        data_type = obj.data.dtype.name
+                    ),
+                    other = other_objects
+            )
+
+    def _other_info(self):
+        # TODO: This covers tables, only. Study other cases before implementing a more general solution
+        if self._tables:
+            for name, table in sorted(self._tables.items()):
+                if type(table) is list:
+                    # This is not a free floating table
+                    continue
+                yield (name, 'Table', (len(table), len(table.columns)))
 
     @property
     def exposed(self):
@@ -228,10 +328,10 @@ class ProcessedFitsProvider(FitsProvider):
         scopy._tables = {}
         if self._tables is not None:
             for name, content in self._tables.items():
-                if name in ('MDF', 'REFCAT'):
-                    scopy._tables[name] = self.content
+                if type(content) is list:
+                    scopy._tables[name] = [self.content[n] for n in indices]
                 else:
-                    scopy._tables[name] = [lst[n] for n in indices]
+                    scopy._tables[name] = self.content
 
         return scopy
 
@@ -262,10 +362,11 @@ class ProcessedFitsProvider(FitsProvider):
             else:
                 if isinstance(meta, fits.BinTableHDU):
                     meta_obj = Table(data, meta={'hdu': eheader})
-                    if name in self._tables and add is True:
-                        self._tables[name].append(meta_obj)
-                    else:
-                        self._tables[name] = [meta_obj]
+                    if add is True:
+                        if name in self._tables:
+                            self._tables[name].append(meta_obj)
+                        else:
+                            self._tables[name] = [meta_obj]
                 elif isinstance(meta, fits.ImageHDU):
                     meta_obj = NDDataRef(data, meta={'hdu': eheader})
                 else:
@@ -300,7 +401,7 @@ class ProcessedFitsProvider(FitsProvider):
 #            if other.header.get('EXTVER', -1) >= 0:
 #                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
             if isinstance(other, fits.BinTableHDU):
-                self._tables[name] = other
+                self._tables[name] = Table(other.data, meta={'hdu': other.header})
             setattr(self, name, process_meta_unit(None, other, add=False))
             self._exposed.append(name)
 
@@ -357,3 +458,6 @@ class AstroDataFits(AstroData):
     @property
     def hdr(self):
         return self._dataprov.ext_manipulator
+
+    def info(self):
+        self._dataprov.info(self.tags())

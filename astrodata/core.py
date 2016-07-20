@@ -92,3 +92,7 @@ class AstroData(object):
         else:
             clsname = self.__class__.__name__
             raise AttributeError("{!r} object has no attribute {!r}".format(clsname, attribute))
+
+    @abstractmethod
+    def info(self):
+        pass
