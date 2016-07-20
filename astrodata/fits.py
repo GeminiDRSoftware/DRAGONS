@@ -463,4 +463,4 @@ class AstroDataFits(AstroData):
         return self._dataprov.ext_manipulator
 
     def info(self):
-        self._dataprov.info(self.tags())
+        self._dataprov.info(self.tags)

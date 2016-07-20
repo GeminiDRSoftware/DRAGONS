@@ -261,7 +261,7 @@ class AstroDataGemini(AstroDataFits):
 
     def dispersion_axis(self):
         # Keyword: DISPAXIS
-        tags = self.tags()
+        tags = self.tags
         if 'IMAGE' in tags or 'PREPARED' not in tags:
             raise ValueError("This descriptor doesn't work on RAW or IMAGE files")
 
@@ -270,7 +270,7 @@ class AstroDataGemini(AstroDataFits):
 
     def effective_wavelength(self):
         # TODO: We need to return the appropriate output units
-        tags = self.tags()
+        tags = self.tags
         if 'IMAGE' in tags:
             inst = self.instrument()
             filter_name = self.filter_name(pretty=True)
@@ -288,7 +288,7 @@ class AstroDataGemini(AstroDataFits):
         if exposure_time < 0:
             raise ValueError("Invalid exposure time: {}".format(exposure_time))
 
-        if 'PREPARED' in self.tags() and self.is_coadds_summed():
+        if 'PREPARED' in self.tags and self.is_coadds_summed():
             return exposure_time * self.coadds()
         else:
             return exposure_time

@@ -16,4 +16,4 @@ class FixtureIterator(object):
 
 @pytest.mark.parametrize("fn,ad,tag_set", FixtureIterator(tags_fixture_data))
 def test_descriptor(fn, ad, tag_set):
-    assert ad.tags() == tag_set
+    assert ad.tags == tag_set

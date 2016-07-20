@@ -56,26 +56,35 @@ def simple_descriptor_mapping(**kw):
 class AstroData(object):
     def __init__(self, provider):
         self._dataprov = provider
+        self._processing_tags = False
 
     def __process_tags(self):
-        results = []
-        for mname, method in inspect.getmembers(self, lambda x: hasattr(x, 'tag_method')):
-            plus, minus = method()
-            if plus or minus:
-                results.append((plus, minus))
+        # This prevents infinite recursion
+        if self._processing_tags:
+            return set()
+        self._processing_tags = True
+        try:
+            results = []
+            for mname, method in inspect.getmembers(self, lambda x: hasattr(x, 'tag_method')):
+                plus, minus = method()
+                if plus or minus:
+                    results.append((plus, minus))
 
-        # Sort by the length of substractions...
-        results = sorted(results, key=lambda x: len(x[1]), reverse=True)
+            # Sort by the length of substractions...
+            results = sorted(results, key=lambda x: len(x[1]), reverse=True)
 
-        tags = set()
-        removals = set()
-        for plus, minus in results:
-            if (plus - removals) == plus:
-                tags.update(plus)
-                removals.update(minus)
+            tags = set()
+            removals = set()
+            for plus, minus in results:
+                if (plus - removals) == plus:
+                    tags.update(plus)
+                    removals.update(minus)
+        finally:
+            self._processin_tags = False
 
         return tags
 
+    @property
     def tags(self):
         return self.__process_tags()
 

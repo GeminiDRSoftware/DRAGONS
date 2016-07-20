@@ -140,7 +140,7 @@ class AstroDataGnirs(AstroDataGemini):
         # filter_name included. For science data the pretty version of the
         # observation_id, filter_name and the camera are also included.
 
-        tags = self.tags()
+        tags = self.tags
         if 'DARK' in tags:
             desc_list = 'read_mode', 'exposure_time', 'coadds'
         else:
@@ -187,7 +187,7 @@ class AstroDataGnirs(AstroDataGemini):
     def pixel_scale(self):
         camera = self.camera()
 
-        if self.tags() & set(['IMAGE', 'DARK']):
+        if self.tags & set(['IMAGE', 'DARK']):
             # Imaging or darks
             match = re.match("^(Short|Long)(Red|Blue)_G\d+$", camera)
             try:
