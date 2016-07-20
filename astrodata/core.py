@@ -55,6 +55,8 @@ def simple_descriptor_mapping(**kw):
 
 class AstroData(object):
     def __init__(self, provider):
+        if not isinstance(provider, DataProvider):
+            raise ValueError("AstroData is initialized with a DataProvider object. You may want to use ad.open('...') instead")
         self._dataprov = provider
         self._processing_tags = False
 
