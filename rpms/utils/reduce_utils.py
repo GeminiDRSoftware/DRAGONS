@@ -54,8 +54,8 @@ def buildParser(version):
     parser = ReduceArgumentParser(description="_"*29 + " Gemini Observatory " + 
                                   "_"*28 + "\n" + "_"*20 + 
                                   " Recipe Processing Management System " + 
-                                  "_"*20 + "\n" + "_"*25 + 
-                                  " gemini_python Release " + version + "_"*25, 
+                                  "_"*20 + "\n" + "_"*18 + 
+                                  " recipeSystewm2 Release" + version + "_"*18, 
                                   prog="reduce", 
                                   formatter_class=ReduceHelpFormatter,
                                   fromfile_prefix_chars='@')

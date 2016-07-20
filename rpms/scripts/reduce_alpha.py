@@ -13,7 +13,7 @@ __version_date__ = '$Date$'[7:-3]
 # interface with the RecipeMapper class. 
 
 # ------------------------------------------------------------------------------
-_version = '2.0 (new_hope_alpha)'
+_version = ' alpha (new_hope) '
 # ------------------------------------------------------------------------------
 """
 Prototype reduce (New Hope).
