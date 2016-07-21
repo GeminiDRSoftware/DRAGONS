@@ -177,10 +177,10 @@ class FitsProvider(DataProvider):
             main_fmt = "{:6} {:24} {:16} {:14} {}"
             other_fmt = "          .{:20} {:16} {:14} {}"
             print("\nPixels Extensions")
-            print(main_fmt.format("Ver", "Content", "Type", "Dimensions", "Format"))
+            print(main_fmt.format("Index", "Content", "Type", "Dimensions", "Format"))
             for pi in self._pixel_info():
                 main_obj = pi['main']
-                print(main_fmt.format(pi['ver'], main_obj['content'], main_obj['type'],
+                print(main_fmt.format(pi['idx'], main_obj['content'], main_obj['type'],
                                                  main_obj['dim'], main_obj['data_type']))
                 for other in pi['other']:
                     print(other_fmt.format(other['attr'], other['type'], other['dim'],
@@ -277,9 +277,9 @@ class RawFitsProvider(FitsProvider):
                 self._nddata.append(obj)
 
     def _pixel_info(self):
-        for obj in self.nddata:
+        for idx, obj in enumerate(self.nddata):
             yield dict(
-                ver = '[NA]',
+                idx = '[{:2}]'.format(idx),
                 main = dict(
                     content = 'raw',
                     type = type(obj).__name__,
@@ -299,7 +299,7 @@ class ProcessedFitsProvider(FitsProvider):
         self._exposed = []
 
     def _pixel_info(self):
-        for obj in self.nddata:
+        for idx, obj in enumerate(self.nddata):
             header = obj.meta['hdu']
             other_objects = []
             for name in ['uncertainty', 'mask'] + sorted(obj.meta['other']):
@@ -326,7 +326,7 @@ class ProcessedFitsProvider(FitsProvider):
                         ))
 
             yield dict(
-                    ver = '[{:2}]'.format(header.get('EXTVER', -1)),
+                    idx = '[{:2}]'.format(idx),
                     main = dict(
                         content = 'science',
                         type = type(obj).__name__,

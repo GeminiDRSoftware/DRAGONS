@@ -99,7 +99,7 @@ class AstroData(object):
                     tags.update(plus)
                     removals.update(minus)
         finally:
-            self._processin_tags = False
+            self._processing_tags = False
 
         return tags
 
