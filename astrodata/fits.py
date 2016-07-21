@@ -132,6 +132,30 @@ class FitsProvider(DataProvider):
         self._hdulist = None
         self.path = None
 
+    def __iadd__(self, operand):
+        for n in range(len(self._nddata)):
+            nddata = self._nddata[n]
+            self._nddata[n] = self._nddata[n].add(operand, handle_meta='first_found')
+        return self
+
+    def __isub__(self, operand):
+        for n in range(len(self._nddata)):
+            nddata = self._nddata[n]
+            self._nddata[n] = self._nddata[n].subtract(operand, handle_meta='first_found')
+        return self
+
+    def __imul__(self, operand):
+        for n in range(len(self._nddata)):
+            nddata = self._nddata[n]
+            self._nddata[n] = self._nddata[n].multiply(operand, handle_meta='first_found')
+        return self
+
+    def __idiv__(self, operand):
+        for n in range(len(self._nddata)):
+            nddata = self._nddata[n]
+            self._nddata[n] = self._nddata[n].divide(operand, handle_meta='first_found')
+        return self
+
     def info(self, tags):
         print("Filename: {}".format(self.path if self.path else "Unknown"))
         # NOTE: Right now we only support readonly, so it's fixed

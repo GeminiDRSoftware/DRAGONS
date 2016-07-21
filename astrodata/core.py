@@ -1,4 +1,4 @@
-from abc import abstractmethod, abstractproperty
+from abc import ABCMeta, abstractmethod, abstractproperty
 from functools import wraps
 import inspect
 from types import StringTypes
@@ -26,13 +26,14 @@ class AstroDataError(Exception):
     pass
 
 class DataProvider(object):
+    __metaclass__ = ABCMeta
     @abstractproperty
     def header(self):
         pass
 
-    @abstractproperty
-    def data(self):
-        pass
+#    @abstractproperty
+#    def data(self):
+#        pass
 
     @abstractmethod
     def __getitem__(self, slice):
@@ -40,6 +41,22 @@ class DataProvider(object):
 
     @abstractmethod
     def __len__(self):
+        pass
+
+    @abstractmethod
+    def __iadd__(self, oper):
+        pass
+
+    @abstractmethod
+    def __isub__(self, oper):
+        pass
+
+    @abstractmethod
+    def __imul__(self, oper):
+        pass
+
+    @abstractmethod
+    def __idiv__(self, oper):
         pass
 
     @property
@@ -117,3 +134,19 @@ class AstroData(object):
     @abstractmethod
     def info(self):
         pass
+
+    def __iadd__(self, oper):
+        self._dataprov += oper
+        return self
+
+    def __isub__(self, oper):
+        self._dataprov -= oper
+        return self
+
+    def __imul__(self, oper):
+        self._dataprov *= oper
+        return self
+
+    def __idiv__(self, oper):
+        self._dataprov /= oper
+        return self
