@@ -5,6 +5,13 @@ for AstroData's new incarnation. What follows is a brief tutorial on using
 `AstroData` objects. Read to the end if you want a more detailed explanation
 on what's going on.
 
+## Requirements
+
+The minimum supported Python is 2.7. Full compatibility with Python 3 is
+expected before the first official release.
+
+The software requires AstroPy >= 1.2
+
 ## Using the package
 
 There are two main packages:

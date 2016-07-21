@@ -9,7 +9,7 @@ from astropy.io import fits
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
 # VarUncertainty was pulled in from @csimpson's BardData code
-from mynddata.nddata_withmixins import NDDataRef
+from astropy.nddata import NDDataRef
 from mynddata.nduncertainty import VarUncertainty
 from astropy.table import Table
 
