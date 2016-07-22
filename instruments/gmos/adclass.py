@@ -108,4 +108,4 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_tag
     def _tag_nodandshuffle(self):
         if 'NODPIX' in self.phu:
-            return (set(['SPECT', 'NODANDSHUFFLE']), ())
+            return (set(['NODANDSHUFFLE']), ())
