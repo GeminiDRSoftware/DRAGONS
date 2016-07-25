@@ -4,6 +4,7 @@ from utils.errors import RecipeNotFound
 from utils.mapper_utils  import dictify
 from utils.mapper_utils  import dotpath
 from utils.mapper_utils  import configure_pkg
+from utils.mapper_utils  import retrieve_primitive_set
 
 # ------------------------------------------------------------------------------
 GMOS_INSTR    = ['GMOS-S', 'GMOS-N']
@@ -46,7 +47,7 @@ class RecipeMapper(object):
         self.adinit = adinputs[0]
         self.context = context
         self.tags = set(self.adinit.type())
-        self.pkg = self.adinit.instrument().as_pytype()
+        self.pkg = self._set_pkg()
         self.pkg_conf = configure_pkg()
         self.recipelib = None
         self.recipename = recipename
@@ -65,3 +66,6 @@ class RecipeMapper(object):
 
         return recipe
 
+    def _set_pkg(self):
+        raw_inst = self.adinit.instrument().as_pytype()
+        return 'GMOS' if raw_inst in GMOS_INSTR else raw_inst

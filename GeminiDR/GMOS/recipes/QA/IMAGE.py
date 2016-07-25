@@ -37,6 +37,7 @@ Usage:
 # This defines the default operating recipe (i.e. when a recipe is not 
 # specified by a caller, either as a `reduce` command line option (-r) or 
 # set as an attribute on a ReduceNH instance.
+recipe_tags = set(['GMOS', 'IMAGE'])
 
 def fringeTest(p):
     p.fringeCorrect()
