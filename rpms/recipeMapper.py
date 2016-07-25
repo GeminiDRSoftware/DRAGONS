@@ -1,7 +1,6 @@
 from importlib import import_module
 
-from astrodata.utils.Errors import RecipeNotFoundError
-
+from utils.errors import RecipeNotFound
 from utils.mapper_utils  import dictify
 from utils.mapper_utils  import dotpath
 from utils.mapper_utils  import configure_pkg
@@ -45,20 +44,16 @@ class RecipeMapper(object):
         """
         self.adinputs = adinputs
         self.adinit = adinputs[0]
-        self.tags = self.adinit.type()
-        self.recipename = recipename
         self.context = context
-        self.canonical = None
-        self.pkg = None
+        self.tags = set(self.adinit.type())
+        self.pkg = self.adinit.instrument().as_pytype()
         self.pkg_conf = configure_pkg()
         self.recipelib = None
+        self.recipename = recipename
         self.userparams = dictify(uparms)
 
     def get_applicable_primitives(self):
-        path = self._set_primitive_path()
-        primitive_mod = import_module(path)
-        primitiveclass = self.pkg_conf.class_prefix + self.canonical
-        primitive_actual = getattr(primitive_mod, primitiveclass)
+        matching_tags, primitive_actual = retrieve_primitive_set(self.tags, self.pkg)
         return primitive_actual(self.adinputs, uparms=self.userparams)
 
     def get_applicable_recipe(self):
@@ -70,44 +65,3 @@ class RecipeMapper(object):
 
         return recipe
 
-    def set_recipe_library(self):
-        """
-        Calls to set the package and canonical dataset type. 
-
-        Sets the recipelib attribute for the canonical dataset type, 
-        such as IMAGE, SPECT, etc.. In this prototype, the recipelib is an 
-        actual function library comprising the defined recipe functions.
-
-        """
-        self._set_pkg()
-        self._set_canonical()
-        recipedir = self.pkg_conf.recipe_path
-        self.recipelib = import_module(dotpath(self.pkg, recipedir, 
-                                               self.context, self.canonical))
-        return
-
-# ------------------------------- prive ----------------------------------------
-    def _set_primitive_path(self):
-        primitive_mod = self.pkg_conf.primitive_prefix + self.canonical
-        ppath = dotpath(self.pkg, self.pkg_conf.primitive_path, primitive_mod)
-        return ppath
-
-    def _set_pkg(self):
-        """
-        Determines the instrument package. Right now, this just uses
-        the instrument descriptor on the ad.
-
-        """
-        if self.adinit.instrument().as_pytype() in GMOS_INSTR:
-            self.pkg = "GMOS"
-        else:
-            self.pkg = self.adinit.instrument().as_pytype()
-        return
-
-    def _set_canonical(self):
-        if "IMAGE" in self.tags:
-            self.canonical = "IMAGE"
-        elif "SPECT" in self.tags:
-            self.canonical = "SPECT"
-        # elif ...
-        return

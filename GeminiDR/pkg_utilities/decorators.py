@@ -105,7 +105,6 @@ def parameter_override(fn):
             parset.update(kwargs)
             new_parset = userpar_override(pname, parset, pobj.user_params)
             pobj.primitive_parset = new_parset
-            log.stdinfo("{}".format(kwargs))
         except AttributeError:
             pass
 

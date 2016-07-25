@@ -1,13 +1,7 @@
 #!/usr/bin/env python
 #
-#                                                                  gemini_python
 #
 #                                                                reduce_alpha.py
-# ------------------------------------------------------------------------------
-# $Id$
-# ------------------------------------------------------------------------------
-__version__      = '$Rev$'[6:-1]
-__version_date__ = '$Date$'[7:-3]
 # ------------------------------------------------------------------------------
 # reduce_alpha.py -- The new hope reduce prototype. Demonstrates command line
 # interface with the RecipeMapper class. 
@@ -25,13 +19,16 @@ import sys
 import inspect
 import signal
 
+#import astrodata
+#import instruments
+#from astrodata.core import AstroDataError
 from astrodata import AstroData
-
-from astrodata.utils import Errors
-from astrodata.utils import logutils
 
 from rpms.recipeMapper import RecipeMapper
 
+from rpms.utils import logutils
+from rpms.utils.errors import RecipeNotFound
+from rpms.utils.errors import AstroDataError
 from rpms.utils.reduce_utils import buildParser
 from rpms.utils.reduce_utils import normalize_args
 from rpms.utils.reduce_utils import set_btypes
@@ -105,7 +102,7 @@ class ReduceNH(object):
         rm.set_recipe_library()
         try:
             recipe = rm.get_applicable_recipe()
-        except Errors.RecipeNotFoundError, err:
+        except RecipeNotFoundError, err:
             xstat = signal.SIGIO
             log.error(str(err))
             return xstat
@@ -175,9 +172,9 @@ class ReduceNH(object):
         for inp in inputs:
             try:
                 ad = AstroData(inp)
-                ad.filename = os.path.basename(ad.filename)
+                ad.filename = os.path.basename(inp)
                 ad.mode = "readonly"
-            except Errors.AstroDataError, err:
+            except AstroDataError, err:
                 log.warning("Can't Load Dataset: %s" % inp)
                 log.warning(err)
                 continue
@@ -295,8 +292,7 @@ def main(args):
     except AssertionError:
         pass
 
-
-    log.stdinfo("\t\t\t--- reduce, v%s ---" % _version)
+    log.stdinfo("\t\t\t--- reduce, v{} ---".format(_version))
     r_reduce = ReduceNH(args)
     estat = r_reduce.runnh()
     if estat != 0:
