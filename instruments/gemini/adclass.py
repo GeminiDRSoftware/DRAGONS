@@ -201,6 +201,10 @@ class AstroDataGemini(AstroDataFits):
             return removeComponentID(val)
         return val
 
+    @property
+    def instrument_name(self):
+        return self.instrument().upper()
+
     def airmass(self):
         am = self.phu.AIRMASS
 

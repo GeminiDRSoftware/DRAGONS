@@ -110,3 +110,7 @@ class AstroDataGmos(AstroDataGemini):
     def _tag_nodandshuffle(self):
         if 'NODPIX' in self.phu:
             return (set(['NODANDSHUFFLE']), ())
+
+    @property
+    def instrument_name(self):
+        return 'GMOS'
