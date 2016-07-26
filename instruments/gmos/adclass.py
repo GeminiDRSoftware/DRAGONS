@@ -41,8 +41,9 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_tag
     def _tag_twilight(self):
         if self.phu.get('OBJECT').upper() == 'TWILIGHT':
-            rej = set(['FLAT']) if self.phu.get('GRATING') != 'MIRROR' else set()
-            return (set(['TWILIGHT', 'CAL']), rej)
+            # Twilight flats are of OBSTYPE == OBJECT, meaning that the generic
+            # FLAT tag won't be triggered. Add it explicitly
+            return (set(['TWILIGHT', 'CAL', 'FLAT']), ())
 
     def _tag_is_spect(self):
         pairs = (

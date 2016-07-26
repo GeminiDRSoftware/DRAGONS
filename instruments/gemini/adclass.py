@@ -77,6 +77,10 @@ class AstroDataGemini(AstroDataFits):
         return obs in ('GEMINI-NORTH', 'GEMINI-SOUTH')
 
     @astro_data_tag
+    def _type_observatory(self):
+        return (set(['GEMINI']), ())
+
+    @astro_data_tag
     def _type_acquisition(self):
         if self.phu.OBSCLASS in ('acq', 'acqCal'):
             return (set(['ACQUISITION']), ())
@@ -96,23 +100,31 @@ class AstroDataGemini(AstroDataFits):
         if self.phu.GIFRINGE is not None:
             return (set(['CAL', 'FRINGE']), ())
 
+    # GCALFLAT and the LAMPON/LAMPOFF are kept separated because the
+    # PROCESSED status will cancel the tags for lamp status, but the
+    # GCALFLAT is still needed
     @astro_data_tag
-    def _type_gcal(self):
+    def _type_gcalflat(self):
+        if self.phu.GCALLAMP == 'IRhigh':
+            return (set(['GCALFLAT']), ())
+
+    @astro_data_tag
+    def _type_gcal_lamp(self):
         if self.phu.GCALLAMP == 'IRhigh':
             shut = self.phu.GCALSHUT
             if shut == 'OPEN':
-                return (set(['GCAL_IR_ON']), ())
+                return (set(['GCAL_IR_ON', 'LAMPON']), ())
             elif shut == 'CLOSED':
-                return (set(['GCAL_IR_OFF']), ())
+                return (set(['GCAL_IR_OFF', 'LAMPOFF']), ())
 
     @astro_data_tag
     def _type_site(self):
         site = self.phu.get('OBSERVAT', '').upper()
 
         if site == 'GEMINI-NORTH':
-            return (set(['GEMINI_NORTH']), ())
+            return (set(['NORTH']), ())
         elif site == 'GEMINI-SOUTH':
-            return (set(['GEMINI_SOUTH']), ())
+            return (set(['SOUTH']), ())
 
     @astro_data_tag
     def _type_nodandchop(self):
@@ -157,20 +169,11 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_tag
     def _status_processed_cals(self):
-        pairs = (
-            ('PROCARC', 'PROCESSED_ARC'),
-            ('GBIAS', 'PROCESSED_BIAS'),
-            ('PROCBIAS', 'PROCESSED_BIAS'),
-            ('PROCDARK', 'PROCESSED_DARK'),
-            ('GIFLAT', 'PROCESSED_FLAT'),
-            ('PROCFLAT', 'PROCESSED_FLAT'),
-            ('GIFINGE', 'PROCESSED_FRINGE'),
-            ('PROCFRNG', 'PROCESSED_FRINGE'),
-        )
+        kwords = set(['PROCARC', 'GBIAS', 'PROCBIAS', 'PROCDARK',
+                      'GIFLAG', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG'])
 
-        for pattern, tag in pairs:
-            if any((pattern in kw) for kw in self.phu.keywords):
-                return (set([tag]), ())
+        if set(self.phu.keywords) & kwords:
+            return (set(['PROCESSED']), set(['LAMPON', 'LAMPOF', 'GCAL_IR_ON', 'GCAL_IR_OFF']))
 
     @astro_data_tag
     def _status_processed_science(self):

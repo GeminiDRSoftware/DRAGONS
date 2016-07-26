@@ -27,3 +27,14 @@ class AstroDataGsaoi(AstroDataGemini):
             tags.extend(['TWILIGHT', 'FLAT', 'CAL'])
 
         return (set(tags), ())
+
+    # Kept separate from _tag_image, because some conditions defined
+    # at a higher level conflict with this
+    @astro_data_tag
+    def _type_gcal_lamp(self):
+        obj = self.phu.get('OBJECT', '').upper()
+        if obj == 'DOMEFLAT':
+            return (set(['LAMPON']), ())
+        elif obj == 'DOMEFLAT OFF':
+            return (set(['LAMPOFF']), ())
+
