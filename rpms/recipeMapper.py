@@ -15,11 +15,21 @@ class RecipeMapper(object):
     Build importable paths to a primitive set and a recipe.
     Import them, run.
 
-    Some pseudo code because not sure what the final AstroData types
-    will be. Let's go with 
+    Primitives are algorithmically selected based on an dataset's tags and
+    a primitive class's 'tagset' attribute.
+    (See utils.mapper_utils.retrieve_primitive_set())
 
-    GMOS --> AstroDataGMOS 
-    etc.
+    Retrieve the appropriate primitive class for a dataset, using all
+    defined defaults:
+
+    >>> ad = astrodata.open(<fitsfile>)
+    >>> adinputs = [ad]
+    >>> rm = RecipeMapper(adinputs)
+    >>> primitive_set = rm.get_applicable_primitives()
+    >>> primitive_set.__module__
+    'primitives_IMAGE'
+    >>> primitive_set.__class__
+    <class 'primitives_IMAGE.PrimitivesIMAGE'>
 
     """
     def __init__(self, adinputs, recipename='default', context='QA', uparms=None):
