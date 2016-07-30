@@ -1,4 +1,4 @@
-from astrodata import astro_data_tag
+from astrodata import astro_data_tag, TagSet
 from ..gemini import AstroDataGemini
 import re
 
@@ -9,7 +9,7 @@ class AstroDataF2(AstroDataGemini):
 
     @astro_data_tag
     def _tag_instrument(self):
-        return (set(['F2']), ())
+        return TagSet(['F2'])
 
     @astro_data_tag
     def _tag_dark(self):
@@ -26,7 +26,7 @@ class AstroDataF2(AstroDataGemini):
     @astro_data_tag
     def _tag_image(self):
         if self.phu.get('GRISM') == 'Open':
-            return (set(['IMAGE']), ())
+            return TagSet(['IMAGE'])
 
     def _tag_is_spect(self):
         grism = self.phu.get('GRISM', '')
@@ -46,7 +46,7 @@ class AstroDataF2(AstroDataGemini):
         decker = self.phu.get('DECKER') == 'Long_slit' or self.phu.get('DCKERPOS') == 'Long_slit'
 
         if decker or re.match(".?pix-slit", self.phu.get('MOSPOS', '')):
-            return (set(['LS', 'SPECT']), ())
+            return TagSet(['LS', 'SPECT'])
 
     @astro_data_tag
     def _tag_is_mos(self):
@@ -56,28 +56,28 @@ class AstroDataF2(AstroDataGemini):
         decker = self.phu.get('DECKER') == 'mos' or self.phu.get('DCKERPOS') == 'mos'
 
         if decker or re.match("mos.?", self.phu.get('MOSPOS', '')):
-            return (set(['MOS', 'SPECT']), ())
+            return TagSet(['MOS', 'SPECT'])
 
     @astro_data_tag
     def _tag_arc(self):
         if self.phu.get('OBSTYPE') == 'ARC':
-            return (set(['ARC', 'CAL']), ())
+            return TagSet(['ARC', 'CAL'])
 
     @astro_data_tag
     def _tag_flat(self):
         if self.phu.get('OBSTYPE') == 'FLAT':
-            return (set(['FLAT', 'CAL']), ())
+            return TagSet(['FLAT', 'CAL'])
 
     @astro_data_tag
     def _tag_twilight(self):
         if self.phu.get('OBJECT').upper() == 'TWILIGHT':
             rej = set(['FLAT']) if self.phu.get('GRISM') != 'Open' else set()
-            return (set(['TWILIGHT', 'CAL']), rej)
+            return TagSet(['TWILIGHT', 'CAL'], blocks=rej)
 
     @astro_data_tag
     def _tag_disperser(self):
         disp = self.phu.get('DISPERSR', '')
         if disp.startswith('DISP_WOLLASTON'):
-            return (set(['POL']), ())
+            return TagSet(['POL'])
         elif disp.startswith('DISP_PRISM'):
-            return (set(['SPECT', 'IFU']), ())
+            return TagSet(['SPECT', 'IFU'])

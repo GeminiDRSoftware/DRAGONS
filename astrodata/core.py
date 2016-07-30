@@ -2,6 +2,14 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from functools import wraps
 import inspect
 from types import StringTypes
+from collections import namedtuple
+
+class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks')):
+    def __new__(cls, add=None, remove=None, blocked_by=None, blocks=None):
+        return super(TagSet, cls).__new__(cls, add or set(),
+                                               remove or set(),
+                                               blocked_by or set(),
+                                               blocks or set())
 
 def astro_data_tag(fn):
     @wraps(fn)
@@ -9,15 +17,15 @@ def astro_data_tag(fn):
         try:
             ret = fn(self)
             if ret is not None:
-                if not isinstance(ret, tuple):
-                    raise TypeError("Tag function {} didn't return a tuple".format(self._meth.__name__))
+                if not isinstance(ret, TagSet):
+                    raise TypeError("Tag function {} didn't return a TagSet".format(self._meth.__name__))
 
-                return tuple((s if isinstance(s, set) else set()) for s in ret)
+                return TagSet(*tuple(set(s) for s in ret))
         except KeyError:
             pass
 
-        # Return empty sets for the "doesn't apply" case
-        return (set(), set())
+        # Return empty TagSet for the "doesn't apply" case
+        return TagSet()
 
     wrapper.tag_method = True
     return wrapper
@@ -78,30 +86,41 @@ class AstroData(object):
         self._processing_tags = False
 
     def __process_tags(self):
-        # This prevents infinite recursion
-        if self._processing_tags:
-            return set()
-        self._processing_tags = True
         try:
-            results = []
-            for mname, method in inspect.getmembers(self, lambda x: hasattr(x, 'tag_method')):
-                plus, minus = method()
-                if plus or minus:
-                    results.append((plus, minus))
+            # This prevents infinite recursion
+            if self._processing_tags:
+                return set()
+            self._processing_tags = True
+            try:
+                results = []
+                for mname, method in inspect.getmembers(self, lambda x: hasattr(x, 'tag_method')):
+                    ts = method()
+                    plus, minus, blocked_by, blocks = ts
+                    if plus or minus or blocks:
+                        results.append(ts)
 
-            # Sort by the length of substractions...
-            results = sorted(results, key=lambda x: len(x[1]), reverse=True)
+                # Sort by the length of substractions... those that substract from others go first
+                results = sorted(results, key=lambda x: len(x.remove) + len(x.blocks), reverse=True)
+                # Sort by length of blocked_by... those that are never disabled go first
+                results = sorted(results, key=lambda x: len(x.blocked_by))
 
-            tags = set()
-            removals = set()
-            for plus, minus in results:
-                if (plus - removals) == plus:
-                    tags.update(plus)
-                    removals.update(minus)
-        finally:
-            self._processing_tags = False
+                tags = set()
+                removals = set()
+                blocked = set()
+                for plus, minus, blocked_by, blocks in results:
+                    allowed = (len(tags & blocked_by) + len(plus & blocked)) == 0
+                    if allowed:
+                        # This set is not being blocked by others...
+                        removals.update(minus)
+                        tags.update(plus - removals)
+                        blocked.update(blocks)
+            finally:
+                self._processing_tags = False
 
-        return tags
+            return tags
+        except AttributeError:
+
+            return set()
 
     @property
     def tags(self):

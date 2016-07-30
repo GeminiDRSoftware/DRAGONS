@@ -4,7 +4,7 @@ import dateutil.parser
 
 import pywcs
 
-from astrodata import AstroDataFits, astro_data_tag
+from astrodata import AstroDataFits, astro_data_tag, TagSet
 from astrodata import factory, simple_descriptor_mapping, keyword
 from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
 
@@ -78,27 +78,27 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_tag
     def _type_observatory(self):
-        return (set(['GEMINI']), ())
+        return TagSet(['GEMINI'])
 
     @astro_data_tag
     def _type_acquisition(self):
         if self.phu.OBSCLASS in ('acq', 'acqCal'):
-            return (set(['ACQUISITION']), ())
+            return TagSet(['ACQUISITION'])
 
     @astro_data_tag
     def _type_az(self):
         if self.phu.FRAME == 'AZEL_TOPO':
             try:
                 if self.phu.get('ELEVATIO', 0) >= 90:
-                    return (set(['AZEL_TARGET', 'AT_ZENITH']), ())
+                    return TagSet(['AZEL_TARGET', 'AT_ZENITH'])
             except ValueError:
                 pass
-            return (set(['AZEL_TARGET']), ())
+            return TagSet(['AZEL_TARGET'])
 
     @astro_data_tag
     def _type_fringe(self):
         if self.phu.GIFRINGE is not None:
-            return (set(['CAL', 'FRINGE']), ())
+            return TagSet(['CAL', 'FRINGE'])
 
     # GCALFLAT and the LAMPON/LAMPOFF are kept separated because the
     # PROCESSED status will cancel the tags for lamp status, but the
@@ -106,30 +106,30 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_tag
     def _type_gcalflat(self):
         if self.phu.GCALLAMP == 'IRhigh':
-            return (set(['GCALFLAT']), ())
+            return TagSet(['GCALFLAT'])
 
     @astro_data_tag
     def _type_gcal_lamp(self):
         if self.phu.GCALLAMP == 'IRhigh':
             shut = self.phu.GCALSHUT
             if shut == 'OPEN':
-                return (set(['GCAL_IR_ON', 'LAMPON']), ())
+                return TagSet(['GCAL_IR_ON', 'LAMPON'], blocked_by=['PROCESSED'])
             elif shut == 'CLOSED':
-                return (set(['GCAL_IR_OFF', 'LAMPOFF']), ())
+                return TagSet(['GCAL_IR_OFF', 'LAMPOFF'], blocked_by=['PROCESSED'])
 
     @astro_data_tag
     def _type_site(self):
         site = self.phu.get('OBSERVAT', '').upper()
 
         if site == 'GEMINI-NORTH':
-            return (set(['NORTH']), ())
+            return TagSet(['NORTH'])
         elif site == 'GEMINI-SOUTH':
-            return (set(['SOUTH']), ())
+            return TagSet(['SOUTH'])
 
     @astro_data_tag
     def _type_nodandchop(self):
         if self.phu.DATATYPE == "marked-nodandchop":
-            return (set(['NODCHOP']), ())
+            return TagSet(['NODCHOP'])
 
     @astro_data_tag
     def _type_sidereal(self):
@@ -141,22 +141,22 @@ class AstroDataGemini(AstroDataFits):
             try:
                 dectrack, ratrack = float(self.phu.DECTRACK), float(self.phu.RATRACK)
                 if dectrack == 0 and ratrack == 0:
-                    return (set(['SIDEREAL']), ())
+                    return TagSet(['SIDEREAL'])
             except (ValueError, TypeError, KeyError):
                 pass
-            return (set(['NON_SIDEREAL']), ())
+            return TagSet(['NON_SIDEREAL'])
 
     @astro_data_tag
     def _status_raw(self):
         if 'GEM-TLM' not in self.phu:
-            return (set(['RAW']), ())
+            return TagSet(['RAW'])
 
     @astro_data_tag
     def _status_prepared(self):
         if any(('PREPAR' in kw) for kw in self.phu.keywords):
-            return (set(['PREPARED']), ())
+            return TagSet(['PREPARED'])
         else:
-            return (set(['UNPREPARED']), ())
+            return TagSet(['UNPREPARED'])
 
     @astro_data_tag
     def _status_overscan(self):
@@ -165,7 +165,7 @@ class AstroDataGemini(AstroDataFits):
             if any((pattern in kw) for kw in self.phu.keywords):
                 found.append(tag)
         if found:
-            return (set(found), ())
+            return TagSet(found)
 
     @astro_data_tag
     def _status_processed_cals(self):
@@ -173,7 +173,7 @@ class AstroDataGemini(AstroDataFits):
                       'GIFLAG', 'PROCFLAT', 'GIFRINGE', 'PROCFRNG'])
 
         if set(self.phu.keywords) & kwords:
-            return (set(['PROCESSED']), set(['LAMPON', 'LAMPOF', 'GCAL_IR_ON', 'GCAL_IR_OFF']))
+            return TagSet(['PROCESSED'])
 
     @astro_data_tag
     def _status_processed_science(self):
@@ -182,7 +182,7 @@ class AstroDataGemini(AstroDataFits):
                 return
 
         if self.phu.OBSTYPE == 'OBJECT':
-            return (set(['PROCESSED_SCIENCE']), ())
+            return TagSet(['PROCESSED_SCIENCE'])
 
     def _some_section(self, descriptor_name, keyword, pretty):
         try:

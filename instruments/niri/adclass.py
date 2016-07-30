@@ -1,4 +1,4 @@
-from astrodata import astro_data_tag
+from astrodata import astro_data_tag, TagSet
 from ..gemini import AstroDataGemini
 import re
 
@@ -9,12 +9,12 @@ class AstroDataNiri(AstroDataGemini):
 
     @astro_data_tag
     def _tag_instrument(self):
-        return (set(['NIRI']), ())
+        return TagSet(['NIRI'])
 
     @astro_data_tag
     def _tag_dark(self):
         if self.phu.get('OBSTYPE') == 'DARK':
-            return (set(['DARK', 'CAL']), set(['SPECT', 'IMAGE']))
+            return TagSet(['DARK', 'CAL'], blocks=['SPECT', 'IMAGE'])
 
     @astro_data_tag
     def _tag_image(self):
@@ -25,9 +25,9 @@ class AstroDataNiri(AstroDataGemini):
             if self.phu.get('OBJECT', '').upper() == 'TWILIGHT':
                 tags.extend(['CAL', 'FLAT', 'TWILIGHT'])
 
-            return (set(tags), ())
+            return TagSet(tags)
 
     @astro_data_tag
     def _tag_spect(self):
         if 'grism' in self.phu.get('FILTER3', ''):
-            return (set(['SPECT', 'LS']), ())
+            return TagSet(['SPECT', 'LS'])

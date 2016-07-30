@@ -1,4 +1,4 @@
-from astrodata import astro_data_tag
+from astrodata import astro_data_tag, TagSet
 from ..gemini import AstroDataGemini
 import re
 
@@ -9,12 +9,12 @@ class AstroDataGsaoi(AstroDataGemini):
 
     @astro_data_tag
     def _tag_instrument(self):
-        return (set(['GSAOI']), ())
+        return TagSet(['GSAOI'])
 
     @astro_data_tag
     def _tag_dark(self):
         if self.phu.get('OBSTYPE') == 'DARK':
-            return (set(['DARK', 'CAL']), ())
+            return TagSet(['DARK', 'CAL'])
 
     @astro_data_tag
     def _tag_image(self):
@@ -26,7 +26,7 @@ class AstroDataGsaoi(AstroDataGemini):
         elif 'TWILIGHT' in self.phu.get('OBJECT', '').upper():
             tags.extend(['TWILIGHT', 'FLAT', 'CAL'])
 
-        return (set(tags), ())
+        return TagSet(tags)
 
     # Kept separate from _tag_image, because some conditions defined
     # at a higher level conflict with this
@@ -34,7 +34,7 @@ class AstroDataGsaoi(AstroDataGemini):
     def _type_gcal_lamp(self):
         obj = self.phu.get('OBJECT', '').upper()
         if obj == 'DOMEFLAT':
-            return (set(['LAMPON']), ())
+            return TagSet(['LAMPON'])
         elif obj == 'DOMEFLAT OFF':
-            return (set(['LAMPOFF']), ())
+            return TagSet(['LAMPOFF'])
 

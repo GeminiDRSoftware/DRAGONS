@@ -1,4 +1,4 @@
-from astrodata import astro_data_tag
+from astrodata import astro_data_tag, TagSet
 from ..gemini import AstroDataGemini
 import re
 
@@ -10,22 +10,22 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_tag
     def _tag_instrument(self):
         # tags = ['GMOS', self.instrument().upper().replace('-', '_')]
-        return (set(['GMOS']), ())
+        return TagSet(['GMOS'])
 
     @astro_data_tag
     def _tag_dark(self):
         if self.phu.get('OBSTYPE') == 'DARK':
-            return (set(['DARK']), ())
+            return TagSet(['DARK'])
 
     @astro_data_tag
     def _tag_arc(self):
         if self.phu.get('OBSTYPE') == 'ARC':
-            return (set(['ARC', 'CAL']), ())
+            return TagSet(['ARC', 'CAL'])
 
     @astro_data_tag
     def _tag_bias(self):
         if self.phu.get('OBSTYPE') == 'BIAS':
-            return (set(['BIAS', 'CAL']), set(['IMAGE', 'SPECT']))
+            return TagSet(['BIAS', 'CAL'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
     def _tag_flat(self):
@@ -36,14 +36,14 @@ class AstroDataGmos(AstroDataGemini):
                 if any(('Hartmann' in f) for f in (f1, f2)):
                     return
 
-            return (set(['FLAT', 'CAL']), ())
+            return TagSet(['FLAT', 'CAL'])
 
     @astro_data_tag
     def _tag_twilight(self):
         if self.phu.get('OBJECT').upper() == 'TWILIGHT':
             # Twilight flats are of OBSTYPE == OBJECT, meaning that the generic
             # FLAT tag won't be triggered. Add it explicitly
-            return (set(['TWILIGHT', 'CAL', 'FLAT']), ())
+            return TagSet(['TWILIGHT', 'CAL', 'FLAT'])
 
     def _tag_is_spect(self):
         pairs = (
@@ -63,15 +63,15 @@ class AstroDataGmos(AstroDataGemini):
             return
 
         mapping = {
-            'IFU-B': 'BLUE',
-            'IFU-B-NS': 'BLUE',
-            'b': 'BLUE',
-            'IFU-R': 'RED',
-            'IFU-R-NS': 'RED',
-            'r': 'RED',
-            'IFU-2': 'TWO',
-            'IFU-2-NS': 'TWO',
-            's': 'TWO'
+            'IFU-B': 'ONESLIT_BLUE',
+            'IFU-B-NS': 'ONESLIT_BLUE',
+            'b': 'ONESLIT_BLUE',
+            'IFU-R': 'ONESLIT_RED',
+            'IFU-R-NS': 'ONESLIT_RED',
+            'r': 'ONESLIT_RED',
+            'IFU-2': 'TWOSLIT',
+            'IFU-2-NS': 'TWOSLIT',
+            's': 'TWOSLIT'
         }
 
         names = set(key for key in mapping.keys() if key.startswith('IFU'))
@@ -81,12 +81,12 @@ class AstroDataGmos(AstroDataGemini):
             if mskn not in names:
                 mskn = re.match('g.ifu_slit(.)_mdf', mskn).groups()[0]
 
-            return (set(['SPECT', 'IFU', mapping[mskn]]), ())
+            return TagSet(['SPECT', 'IFU', mapping[mskn]])
 
     @astro_data_tag
     def _tag_image(self):
         if self.phu.get('GRATING') == 'MIRROR':
-            return (set(['IMAGE']), ())
+            return TagSet(['IMAGE'])
 
     @astro_data_tag
     def _tag_ls(self):
@@ -94,7 +94,7 @@ class AstroDataGmos(AstroDataGemini):
             return
 
         if self.phu.get('MASKTYP') == 1 and self.phu.get('MASKNAME', '').endswith('arcsec'):
-            return (set(['SPECT', 'LS']), ())
+            return TagSet(['SPECT', 'LS'])
 
     @astro_data_tag
     def _tag_mos(self):
@@ -104,12 +104,12 @@ class AstroDataGmos(AstroDataGemini):
         mskt = self.phu.get('MASKTYP')
         mskn = self.phu.get('MASKNAME', '')
         if mskt == 1 and not (mskn.startswith('IFU') or mskn.startswith('focus') or mskn.endswith('arcsec')):
-            return (set(['SPECT', 'MOS']), ())
+            return TagSet(['SPECT', 'MOS'])
 
     @astro_data_tag
     def _tag_nodandshuffle(self):
         if 'NODPIX' in self.phu:
-            return (set(['NODANDSHUFFLE']), ())
+            return TagSet(['NODANDSHUFFLE'])
 
     @property
     def instrument_name(self):

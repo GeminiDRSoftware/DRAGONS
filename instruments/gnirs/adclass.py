@@ -1,6 +1,6 @@
 import math
 
-from astrodata import astro_data_tag, simple_descriptor_mapping, keyword
+from astrodata import astro_data_tag, simple_descriptor_mapping, keyword, TagSet
 from ..gemini import AstroDataGemini
 from .lookups import detector_properties, nominal_zeropoints, config_dict, read_modes
 
@@ -27,12 +27,12 @@ class AstroDataGnirs(AstroDataGemini):
 
     @astro_data_tag
     def _tag_instrument(self):
-        return (set(['GNIRS']), ())
+        return TagSet(['GNIRS'])
 
     @astro_data_tag
     def _type_dark(self):
         if self.phu.OBSTYPE == 'DARK':
-            return (set(['DARK', 'CAL']), set(['IMAGE', 'SPECT']))
+            return TagSet(['DARK', 'CAL'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
     def _type_image(self):
@@ -40,9 +40,8 @@ class AstroDataGnirs(AstroDataGemini):
         if self.phu.ACQMIR == 'In':
             tags = set(['IMAGE'])
             if self.phu.get('OBSTYPE') == 'FLAT':
-                tags.add('FLAT')
-                tags.add('CAL')
-            return (tags, ())
+                tags.update(['FLAT', 'CAL'])
+            return TagSet(tags)
 
     @astro_data_tag
     def _type_spect(self):
@@ -54,13 +53,13 @@ class AstroDataGnirs(AstroDataGemini):
                 tags.add('LS')
             elif slit == 'IFU':
                 tags.add('IFU')
-            return (tags, ())
+            return TagSet(tags)
 
     @astro_data_tag
     def _type_pinhole(self):
         if self.phu.OBSTYPE == 'FLAT':
             if self.phu.SLIT in ('LgPinholes_G5530', 'SmPinholes_G5530'):
-                return (set(['PINHOLE', 'CAL']), ())
+                return TagSet(['PINHOLE', 'CAL'])
 
     def data_section(self, pretty=False):
         hirows = self.hirow()
