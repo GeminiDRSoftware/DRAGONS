@@ -17,10 +17,11 @@ class VarUncertainty(NDUncertainty):
     """
 
     support_correlated = False
+    uncertainty_type = 'var'
 
     def __init__(self, array=None, copy=True):
+        self._parent_nddata = None
         self._unit = None
-        self.uncertainty_type = 'var'
         if array is None:
             self.array = None
         elif isinstance(array, VarUncertainty):
@@ -65,20 +66,20 @@ class VarUncertainty(NDUncertainty):
                                      "parent data shape")
         self._array = value
 
-    def propagate_add(self, other_nddata, result_data):
+    def _propagate_add(self, other_uncert, result_data, correlation):
 
-        if not isinstance(other_nddata.uncertainty, VarUncertainty):
+        if not isinstance(other_uncert, VarUncertainty):
             raise IncompatibleUncertaintiesException
 
         if self.array is None:
             raise ValueError("standard deviation values are not set")
 
-        if other_nddata.uncertainty.array is None:
+        if other_uncer.array is None:
             raise ValueError("standard deviation values are not set "
                              "in other_nddata")
 
         result_uncertainty = VarUncertainty()
-        result_uncertainty.array = self.array + other_nddata.uncertainty.array
+        result_uncertainty.array = self.array + other_uncer.array
 
         return result_uncertainty
 
@@ -86,51 +87,51 @@ class VarUncertainty(NDUncertainty):
         new_array = self.array[item]
         return self.__class__(new_array, copy=False)
 
-    def propagate_subtract(self, other_nddata, result_data):
+    def _propagate_subtract(self, other_uncert, result_data, correlation):
 
-        if not isinstance(other_nddata.uncertainty, VarUncertainty):
+        if not isinstance(other_uncert, VarUncertainty):
             raise IncompatibleUncertaintiesException
 
         if self.array is None:
             raise ValueError("standard deviation values are not set")
 
-        if other_nddata.uncertainty.array is None:
+        if other_uncer.array is None:
             raise ValueError("standard deviation values are not set "
                              "in other_nddata")
 
         result_uncertainty = VarUncertainty()
-        result_uncertainty.array = self.array + other_nddata.uncertainty.array
+        result_uncertainty.array = self.array + other_uncer.array
 
         return result_uncertainty
 
-    def propagate_multiply(self, other_nddata, result_data):
+    def _propagate_multiply(self, other_uncert, result_data, correlation):
 
-        if not isinstance(other_nddata.uncertainty, VarUncertainty):
+        if not isinstance(other_uncert, VarUncertainty):
             raise IncompatibleUncertaintiesException
 
         if self.array is None:
             raise ValueError("standard deviation values are not set")
 
-        if other_nddata.uncertainty.array is None:
+        if other_uncert.array is None:
             raise ValueError("standard deviation values are not set in "
                              "other_nddata")
 
         result_uncertainty = VarUncertainty()
-        AdBsq = self.parent_nddata.data*2*other_nddata.uncertainty.array
+        AdBsq = self.parent_nddata.data*2*other_uncert.array
         BdAsq = self.array*other_nddata.data**2
         result_uncertainty.array = AdBsq + BdAsq
 
         return result_uncertainty
 
-    def propagate_divide(self, other_nddata, result_data):
+    def _propagate_divide(self, other_uncert, result_data, correlation):
 
-        if not isinstance(other_nddata.uncertainty, VarUncertainty):
+        if not isinstance(other_uncert, VarUncertainty):
             raise IncompatibleUncertaintiesException
 
         if self.array is None:
             raise ValueError("standard deviation values are not set")
 
-        if other_nddata.uncertainty.array is None:
+        if other_uncert.array is None:
             raise ValueError("standard deviation values are not set "
                              "in other_nddata")
 
