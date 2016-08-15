@@ -35,31 +35,41 @@ class AstroDataGnirs(AstroDataGemini):
             return TagSet(['DARK', 'CAL'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
+    def _type_arc(self):
+        if self.phu.OBSTYPE == 'ARC':
+            return TagSet(['ARC', 'CAL'])
+
+    @astro_data_tag
     def _type_image(self):
-        # NOTE: Prevented by DARK
         if self.phu.ACQMIR == 'In':
-            tags = set(['IMAGE'])
-            if self.phu.get('OBSTYPE') == 'FLAT':
-                tags.update(['FLAT', 'CAL'])
-            return TagSet(tags)
+            return TagSet(['IMAGE'])
+
+#    @astro_data_tag
+#    def _type_mask(self):
+#        if 'Acq' not in self.phu.get('SLIT', ''):
+#            return TagSet(['MASK'])
+
+    @astro_data_tag
+    def _type_crossdispersed(self):
+        if 'XD' in self.phu.get('DECKER', ''):
+            return TagSet(['XD'])
 
     @astro_data_tag
     def _type_spect(self):
-        # NOTE: Prevented by DARK
         if self.phu.ACQMIR == 'Out':
             tags = set(['SPECT'])
             slit = self.phu.get('SLIT', '')
-            if 'arcsec' in slit:
-                tags.add('LS')
-            elif slit == 'IFU':
+            if slit == 'IFU':
                 tags.add('IFU')
             return TagSet(tags)
 
     @astro_data_tag
-    def _type_pinhole(self):
+    def _type_flats(self):
         if self.phu.OBSTYPE == 'FLAT':
-            if self.phu.SLIT in ('LgPinholes_G5530', 'SmPinholes_G5530'):
+            if 'Pinholes' in self.phu.SLIT:
                 return TagSet(['PINHOLE', 'CAL'])
+            else:
+                return TagSet(['FLAT', 'CAL'])
 
     def data_section(self, pretty=False):
         hirows = self.hirow()

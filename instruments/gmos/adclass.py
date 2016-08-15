@@ -15,7 +15,7 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_tag
     def _tag_dark(self):
         if self.phu.get('OBSTYPE') == 'DARK':
-            return TagSet(['DARK'])
+            return TagSet(['DARK'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
     def _tag_arc(self):
@@ -36,7 +36,7 @@ class AstroDataGmos(AstroDataGemini):
                 if any(('Hartmann' in f) for f in (f1, f2)):
                     return
 
-            return TagSet(['FLAT', 'CAL'])
+            return TagSet(['GCALFLAT', 'FLAT', 'CAL'])
 
     @astro_data_tag
     def _tag_twilight(self):
@@ -70,7 +70,7 @@ class AstroDataGmos(AstroDataGemini):
             'IFU-R-NS': 'ONESLIT_RED',
             'r': 'ONESLIT_RED',
             'IFU-2': 'TWOSLIT',
-            'IFU-2-NS': 'TWOSLIT',
+            'IFU-NS-2': 'TWOSLIT',
             's': 'TWOSLIT'
         }
 
@@ -82,6 +82,12 @@ class AstroDataGmos(AstroDataGemini):
                 mskn = re.match('g.ifu_slit(.)_mdf', mskn).groups()[0]
 
             return TagSet(['SPECT', 'IFU', mapping[mskn]])
+
+    @astro_data_tag
+    def _tag_mask(self):
+        spg = self.phu.get
+        if spg('GRATING') == 'MIRROR' and spg('MASKTYP') != 0:
+            return TagSet(['MASK'])
 
     @astro_data_tag
     def _tag_image(self):

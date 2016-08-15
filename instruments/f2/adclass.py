@@ -21,7 +21,7 @@ class AstroDataF2(AstroDataGemini):
                 break
 
         if dkflt or ot == 'DARK':
-            return (set(['DARK', 'CAL']), set(['IMAGE', 'SPECT']))
+            return TagSet(['DARK', 'CAL'], blocks=['IMAGE', 'SPECT'])
 
     @astro_data_tag
     def _tag_image(self):

@@ -17,11 +17,19 @@ class AstroDataNiri(AstroDataGemini):
             return TagSet(['DARK', 'CAL'], blocks=['SPECT', 'IMAGE'])
 
     @astro_data_tag
+    def _tag_arc(self):
+        if self.phu.get('OBSTYPE') == 'ARC':
+            return TagSet(['ARC'])
+
+    @astro_data_tag
+    def _tag_flat(self):
+        if self.phu.get('OBSTYPE') == 'FLAT':
+            return TagSet(['CAL', 'FLAT'])
+
+    @astro_data_tag
     def _tag_image(self):
         if 'grism' not in self.phu.get('FILTER3', ''):
             tags = ['IMAGE']
-            if self.phu.get('OBSTYPE') == 'FLAT':
-                tags.extend(['CAL', 'FLAT'])
             if self.phu.get('OBJECT', '').upper() == 'TWILIGHT':
                 tags.extend(['CAL', 'FLAT', 'TWILIGHT'])
 

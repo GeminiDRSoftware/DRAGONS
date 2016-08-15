@@ -26,15 +26,25 @@ class AstroDataNifs(AstroDataGemini):
         return TagSet(['NIFS'])
 
     @astro_data_tag
+    def _tag_dark(self):
+        if self.phu.OBSTYPE == 'DARK':
+            return TagSet(['DARK', 'CAL'], blocks=['IMAGE', 'SPECT'])
+
+    @astro_data_tag
     def _tag_image(self):
         if self.phu.FLIP == 'In':
             return TagSet(['IMAGE'])
 
     @astro_data_tag
+    def _tag_arc(self):
+        if self.phu.OBSTYPE == 'ARC':
+            return TagSet(['ARC', 'CAL'])
+
+    @astro_data_tag
     def _tag_ronchi(self):
         req = self.phu.OBSTYPE, self.phu.APERTURE
         if req == ('FLAT', 'Ronchi_Screen_G5615'):
-            return TagSet(['RONCHI'])
+            return TagSet(['RONCHI', 'CAL'])
 
     @astro_data_tag
     def _tag_spect(self):

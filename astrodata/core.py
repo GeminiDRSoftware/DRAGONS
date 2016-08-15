@@ -18,7 +18,7 @@ def astro_data_tag(fn):
             ret = fn(self)
             if ret is not None:
                 if not isinstance(ret, TagSet):
-                    raise TypeError("Tag function {} didn't return a TagSet".format(self._meth.__name__))
+                    raise TypeError("Tag function {} didn't return a TagSet".format(fn.__name__))
 
                 return TagSet(*tuple(set(s) for s in ret))
         except KeyError:
@@ -118,8 +118,7 @@ class AstroData(object):
                 self._processing_tags = False
 
             return tags
-        except AttributeError:
-
+        except AttributeError as e:
             return set()
 
     @property
