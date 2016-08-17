@@ -124,6 +124,14 @@ class FitsKeywordManipulator(object):
         else:
             return key in self._headers[0]
 
+def force_load(fn):
+    def wrapper(self, *args, **kw):
+        if not self._sliced and not self._hdulist:
+            # Force the loading of data, we may need it later
+            self.nddata
+        return fn(self, *args, **kw)
+    return wrapper
+
 class FitsProvider(DataProvider):
     def __init__(self):
         self._sliced = False
@@ -193,10 +201,11 @@ class FitsProvider(DataProvider):
             for (attr, type_, dim) in additional_ext:
                 print(".{:13} {:11} {}".format(attr, type_, dim))
 
+    @force_load
     def _slice(self, indices):
-        if not self._sliced and not self._hdulist:
-            # Force the loading of data, we may need it later
-            self.nddata
+        # if not self._sliced and not self._hdulist:
+        #     # Force the loading of data, we may need it later
+        #     self.nddata
         scopy = self.__class__()
         scopy._sliced = True
         scopy.path = self.path
@@ -207,6 +216,7 @@ class FitsProvider(DataProvider):
 
         return scopy
 
+    @force_load
     def __getitem__(self, slc):
         nitems = len(self._header) - 1 # The Primary HDU does not count
         if isinstance(slc, slice):
@@ -221,6 +231,20 @@ class FitsProvider(DataProvider):
             raise IndexError("Index out of range")
 
         return self._slice(indices)
+
+    @force_load
+    def __delitem__(self, idx):
+        if self._sliced:
+            raise TypeError("Can't remove items from a sliced object")
+
+        nitems = len(self._header) - 1 # The Primary HDU does not count
+        if idx >= nitems or idx < (-nitems):
+            raise IndexError("Index out of range")
+
+        del self._header[idx + 1]
+        del self._nddata[idx]
+        if self._hdulist:
+            del self._hdulist[idx + 1]
 
     def __len__(self):
         return len(self.nddata)

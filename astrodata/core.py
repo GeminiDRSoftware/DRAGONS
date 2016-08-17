@@ -135,6 +135,9 @@ class AstroData(object):
     def __getitem__(self, slicing):
         return self.__class__(self._dataprov[slicing])
 
+    def __delitem__(self, idx):
+        del self._dataprov[idx]
+
     def __getattr__(self, attribute):
         if attribute in self._dataprov.exposed:
             return getattr(self._dataprov, attribute)
