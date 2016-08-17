@@ -118,6 +118,23 @@ class FitsKeywordManipulator(object):
         else:
             self._headers[0][key] = value
 
+    def __delattr__(self, key):
+        if self._on_ext:
+            deleted = 0
+            for header in self._headers:
+                try:
+                    del header[key]
+                    deleted = deleted + 1
+                except KeyError:
+                    pass
+            if not deleted:
+                raise AttributeError("'{}' is not on any of the extensions".format(key))
+        else:
+            try:
+                del self._headers[0][key]
+            except KeyError:
+                raise AttributeError("'{}' is not on the PHU".format(key))
+
     def __contains__(self, key):
         if self._on_ext:
             return any(tuple(key in h for h in self._headers))
