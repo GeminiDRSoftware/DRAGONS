@@ -5,7 +5,7 @@ import re
 class AstroDataGmos(AstroDataGemini):
     @staticmethod
     def _matches_data(data_provider):
-        return data_provider.phu.get('INSTRUME').upper() in ('GMOS-N', 'GMOS-S')
+        return data_provider.phu.get('INSTRUME', '').upper() in ('GMOS-N', 'GMOS-S')
 
     @astro_data_tag
     def _tag_instrument(self):

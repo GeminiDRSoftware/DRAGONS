@@ -5,7 +5,7 @@ import re
 class AstroDataF2(AstroDataGemini):
     @staticmethod
     def _matches_data(data_provider):
-        return data_provider.phu.get('INSTRUME').upper() in ('F2', 'FLAM')
+        return data_provider.phu.get('INSTRUME', '').upper() in ('F2', 'FLAM')
 
     @astro_data_tag
     def _tag_instrument(self):

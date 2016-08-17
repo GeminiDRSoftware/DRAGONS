@@ -5,7 +5,7 @@ import re
 class AstroDataGsaoi(AstroDataGemini):
     @staticmethod
     def _matches_data(data_provider):
-        return data_provider.phu.get('INSTRUME').upper() == 'GSAOI'
+        return data_provider.phu.get('INSTRUME', '').upper() == 'GSAOI'
 
     @astro_data_tag
     def _tag_instrument(self):

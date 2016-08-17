@@ -5,7 +5,7 @@ import re
 class AstroDataNici(AstroDataGemini):
     @staticmethod
     def _matches_data(data_provider):
-        return data_provider.phu.get('INSTRUME').upper() == 'NICI'
+        return data_provider.phu.get('INSTRUME', '').upper() == 'NICI'
 
     @astro_data_tag
     def _tag_instrument(self):
