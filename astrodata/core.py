@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 from functools import wraps
 import inspect
-from types import StringTypes
 from collections import namedtuple
 
 class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks')):
