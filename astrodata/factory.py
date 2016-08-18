@@ -57,7 +57,7 @@ class AstroDataFactory(object):
             # NOTE: This should be tested against the appropriate class.
             return self._getAstroData(FitsLoader.from_hdulist(source))
 
-    def createFromScratch(self, phu=None, extensions=None):
+    def createFromScratch(self, phu, extensions=None):
         """
         Creates an AstroData object from a collection of objects.
         """
