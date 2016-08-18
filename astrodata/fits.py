@@ -161,7 +161,7 @@ class FitsProvider(DataProvider):
         # If we get here, it means that the attribute hasn't been exposed. Probably
         # an alias. Test...
         for nd in self._nddata:
-            if nd.meta.get('alias') == attribute:
+            if nd.meta.get('name') == attribute:
                 return nd
 
         raise AttributeError("{} not found in this object".format(attribute))
@@ -316,7 +316,7 @@ class FitsProvider(DataProvider):
 
     @force_load
     def set_name(self, ext, name):
-        self._nddata[ext].meta['alias'] = name
+        self._nddata[ext].meta['name'] = name
 
 class RawFitsProvider(FitsProvider):
     def _set_headers(self, hdulist):
