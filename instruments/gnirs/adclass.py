@@ -44,23 +44,25 @@ class AstroDataGnirs(AstroDataGemini):
         if self.phu.ACQMIR == 'In':
             return TagSet(['IMAGE'])
 
-#    @astro_data_tag
-#    def _type_mask(self):
-#        if 'Acq' not in self.phu.get('SLIT', ''):
-#            return TagSet(['MASK'])
-
     @astro_data_tag
-    def _type_crossdispersed(self):
-        if 'XD' in self.phu.get('DECKER', ''):
-            return TagSet(['XD'])
+    def _type_mask(self):
+        if 'Acq' not in self.phu.get('SLIT', ''):
+            return TagSet(['MASK'], if_present=['ACQUISITION'])
 
     @astro_data_tag
     def _type_spect(self):
         if self.phu.ACQMIR == 'Out':
             tags = set(['SPECT'])
-            slit = self.phu.get('SLIT', '')
+            slit = self.phu.get('SLIT', '').lower()
+            grat = self.phu.get('GRATING', '')
+            prism = self.phu.get('PRISM', '')
             if slit == 'IFU':
                 tags.add('IFU')
+            elif ('arcsec' in slit or 'pin' in slit) and 'mm' in grat:
+                if 'MIR' in prism:
+                    tags.add('LS')
+                elif 'XD' in prism:
+                    tags.add('XD')
             return TagSet(tags)
 
     @astro_data_tag

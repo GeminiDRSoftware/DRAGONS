@@ -106,7 +106,7 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_tag
     def _type_gcalflat(self):
         if self.phu.GCALLAMP == 'IRhigh':
-            return TagSet(['GCALFLAT'])
+            return TagSet(['GCALFLAT', 'FLAT', 'CAL'])
 
     @astro_data_tag
     def _type_gcal_lamp(self):

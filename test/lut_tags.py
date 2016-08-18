@@ -98,7 +98,7 @@ fixture_data = {
     ('NIRI', 'N20100620S0126.fits') : ['GEMINI', 'NORTH', 'NIRI', 'LS', 'ARC', 'SPECT', 'RAW', 'SIDEREAL', 'UNPREPARED'],
        # Arc is not defined for NIRI in the old system.  (How can that be?)
     ('NIRI', 'N20120505S0564.fits') : ['AZEL_TARGET', 'CAL', 'GCAL_IR_OFF', 'LAMPOFF', 'FLAT', 'GCALFLAT', 'GEMINI', 'NORTH', 'LS', 'NIRI', 'SPECT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
-    ('NIRI', 'N20120505S0552.fits') : ['AZEL_TARGET', 'CAL', 'GCAL_IR_ON', 'LAMPOFF', 'FLAT', 'GCALFLAT', 'GEMINI', 'NORTH', 'LS', 'NIRI', 'SPECT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
+    ('NIRI', 'N20120505S0552.fits') : ['AZEL_TARGET', 'CAL', 'GCAL_IR_ON', 'LAMPON', 'FLAT', 'GCALFLAT', 'GEMINI', 'NORTH', 'LS', 'NIRI', 'SPECT', 'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
 
 # GNIRS Data
 #   GNIRS Darks
@@ -107,13 +107,12 @@ fixture_data = {
 
 #   GNIRS Imaging
     ('GNIRS', 'N20120117S0019.fits') : ['GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'RAW', 'SIDEREAL', 'UNPREPARED'],
-    ('GNIRS', 'N20140717S0232.fits') : ['ACQUISITION', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'RAW', 'SIDEREAL', 'UNPREPARED'],
+    ('GNIRS', 'N20140717S0232.fits') : ['ACQUISITION', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'RAW', 'SIDEREAL', 'UNPREPARED', 'MASK'],
     ('GNIRS', 'N20120117S0041.fits') : ['CAL', 'GCAL_IR_ON', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'FLAT', 'GCALFLAT', 'RAW', 'SIDEREAL', 'UNPREPARED', 'LAMPON'],
     ('GNIRS', 'N20120117S0042.fits') : ['CAL', 'GCAL_IR_OFF', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'FLAT', 'GCALFLAT', 'RAW', 'SIDEREAL', 'UNPREPARED', 'LAMPOFF'],
     ('GNIRS', 'N20131222S0070_flat.fits') : ['CAL', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'FLAT', 'GCALFLAT', 'PREPARED', 'PROCESSED', 'SIDEREAL'],
  
 #   GNIRS Longslit
-    ('GNIRS', 'N20110826S0155.fits') : ['GEMINI', 'NORTH', 'GNIRS', 'LS', 'SPECT', 'RAW', 'SIDEREAL', 'UNPREPARED'],
     ('GNIRS', 'N20160720S0096.fits') : ['CAL', 'GCAL_IR_ON', 'LAMPON', 'FLAT', 'GCALFLAT', 'GEMINI', 'NORTH', 'LS', 'GNIRS', 'SPECT', 'SIDEREAL', 'RAW', 'UNPREPARED'],
        # Apparently GNIRS has no lamp off for spectroscopy.
     ('GNIRS', 'N20130814S0231.fits') : ['CAL', 'GEMINI', 'NORTH', 'GNIRS', 'LS', 'ARC', 'SPECT', 'RAW', 'SIDEREAL', 'UNPREPARED'],
@@ -122,6 +121,7 @@ fixture_data = {
     ('GNIRS', 'N20160624S0264.fits') : ['ACQUISITION', 'GEMINI', 'NORTH', 'GNIRS', 'IMAGE', 'RAW', 'SIDEREAL', 'UNPREPARED'],
 
 #    GNIRS Cross-dispersed
+#    ('GNIRS', 'N20110826S0155.fits') : ['GEMINI', 'NORTH', 'GNIRS', 'XD', 'SPECT', 'RAW', 'SIDEREAL', 'UNPREPARED'],
     ('GNIRS', 'N20160726S0252.fits') : ['GEMINI', 'NORTH', 'GNIRS', 'XD', 'SPECT', 'RAW', 'SIDEREAL', 'UNPREPARED'],
        # XD tag: DECKER contains 'XD'
     ('GNIRS', 'N20160726S0260.fits') : ['CAL', 'GEMINI', 'NORTH', 'GNIRS', 'XD', 'SPECT', 'RAW', 'SIDEREAL', 'UNPREPARED', 'FLAT', 'GCALFLAT', 'LAMPON', 'GCAL_IR_ON'],
@@ -195,7 +195,8 @@ fixture_data = {
     ('GSAOI', 'S20150110S0142.fits') : ['GEMINI', 'SOUTH', 'GSAOI', 'IMAGE', 'RAW', 'SIDEREAL', 'UNPREPARED'],
     ('GSAOI', 'S20150105S0206.fits') : ['AZEL_TARGET', 'CAL', 'GEMINI', 'SOUTH', 'GSAOI', 'IMAGE', 'FLAT', 'DOMEFLAT', 'LAMPOFF', 'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
     ('GSAOI', 'S20150105S0167.fits') : ['AZEL_TARGET', 'CAL', 'GEMINI', 'SOUTH', 'GSAOI', 'IMAGE', 'FLAT', 'DOMEFLAT', 'LAMPON', 'NON_SIDEREAL', 'RAW', 'UNPREPARED'],
-    ('GSAOI', 'S20130524S0081_flat.fits') : ['CAL', 'GEMINI', 'SOUTH', 'GSAOI', 'IMAGE', 'FLAT', 'DOMEFLAT', 'NON_SIDEREAL', 'PREPARED', 'PROCESSED'],
+    ('GSAOI', 'S20130524S0081_flat.fits') : ['CAL', 'GEMINI', 'SOUTH', 'GSAOI', 'IMAGE', 'FLAT', 'DOMEFLAT', 'NON_SIDEREAL', 'PREPARED', 'PROCESSED', 'LAMPON'],
+       # This is a processed image, so we don't care about LAMPON, but it's harmless, and easier to just keep it there
 
 #    ('bhros', 'S20070131S0030.fits') : ['BHROS', 'SIDEREAL', 'GEMINI_SOUTH', 'SPECT', 'UNPREPARED', 'RAW'],
 #    ('bhros', 'S20070131S0152.fits') : ['AT_ZENITH', 'BHROS', 'AZEL_TARGET', 'NON_SIDEREAL', 'GEMINI_SOUTH', 'SPECT', 'UNPREPARED', 'RAW'],
