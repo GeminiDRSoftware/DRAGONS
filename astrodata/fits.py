@@ -143,9 +143,8 @@ class FitsKeywordManipulator(object):
 
 def force_load(fn):
     def wrapper(self, *args, **kw):
-        if not self._sliced and not self._hdulist:
-            # Force the loading of data, we may need it later
-            self.nddata
+        # Force the loading of data, we may need it later
+        self._lazy_populate_object()
         return fn(self, *args, **kw)
     return wrapper
 
@@ -156,6 +155,16 @@ class FitsProvider(DataProvider):
         self._nddata = None
         self._hdulist = None
         self.path = None
+
+    @force_load
+    def __getattr__(self, attribute):
+        # If we get here, it means that the attribute hasn't been exposed. Probably
+        # an alias. Test...
+        for nd in self._nddata:
+            if nd.meta.get('alias') == attribute:
+                return nd
+
+        raise AttributeError("{} not found in this object".format(attribute))
 
     def __iadd__(self, operand):
         for n in range(len(self._nddata)):
@@ -333,6 +342,9 @@ class RawFitsProvider(FitsProvider):
     def _other_info(self):
         return ()
 
+    def append(self, ext):
+        raise NotImplementedError("Needs to be implemented")
+
 class ProcessedFitsProvider(FitsProvider):
     def __init__(self):
         super(ProcessedFitsProvider, self).__init__()
@@ -465,6 +477,7 @@ class ProcessedFitsProvider(FitsProvider):
             name = other.header['EXTNAME']
             if name in self._tables:
                 continue
+# TODO: Fix it
 # NOTE: This happens with GPI. Let's leave it for later...
 #            if other.header.get('EXTVER', -1) >= 0:
 #                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
@@ -472,6 +485,9 @@ class ProcessedFitsProvider(FitsProvider):
                 self._tables[name] = Table(other.data, meta={'hdu': other.header})
             setattr(self, name, process_meta_unit(None, other, add=False))
             self._exposed.append(name)
+
+    def append(self, ext):
+        raise NotImplementedError("Needs to be implemented")
 
 class FitsLoader(FitsProvider):
     @staticmethod

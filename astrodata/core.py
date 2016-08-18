@@ -44,6 +44,10 @@ class DataProvider(object):
 #        pass
 
     @abstractmethod
+    def append(self, ext):
+        pass
+
+    @abstractmethod
     def __getitem__(self, slice):
         pass
 
@@ -147,9 +151,9 @@ class AstroData(object):
         del self._dataprov[idx]
 
     def __getattr__(self, attribute):
-        if attribute in self._dataprov.exposed:
+        try:
             return getattr(self._dataprov, attribute)
-        else:
+        except AttributeError:
             clsname = self.__class__.__name__
             raise AttributeError("{!r} object has no attribute {!r}".format(clsname, attribute))
 
@@ -178,3 +182,6 @@ class AstroData(object):
     def __idiv__(self, oper):
         self._dataprov /= oper
         return self
+
+    def append(self, extension):
+        self._dataprov.append(extension)
