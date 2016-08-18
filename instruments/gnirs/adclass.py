@@ -69,7 +69,7 @@ class AstroDataGnirs(AstroDataGemini):
     def _type_flats(self):
         if self.phu.OBSTYPE == 'FLAT':
             if 'Pinholes' in self.phu.SLIT:
-                return TagSet(['PINHOLE', 'CAL'])
+                return TagSet(['PINHOLE', 'CAL'], remove=['GCALFLAT'])
             else:
                 return TagSet(['FLAT', 'CAL'])
 
