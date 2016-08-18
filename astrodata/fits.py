@@ -314,6 +314,10 @@ class FitsProvider(DataProvider):
             return None
         return FitsKeywordManipulator(self.header[1:], on_extensions=True)
 
+    @force_load
+    def set_name(self, ext, name):
+        self._nddata[ext].meta['alias'] = name
+
 class RawFitsProvider(FitsProvider):
     def _set_headers(self, hdulist):
         self._header = [x.header for x in hdulist]
