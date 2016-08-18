@@ -3,12 +3,13 @@ from functools import wraps
 import inspect
 from collections import namedtuple
 
-class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks')):
-    def __new__(cls, add=None, remove=None, blocked_by=None, blocks=None):
+class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
+    def __new__(cls, add=None, remove=None, blocked_by=None, blocks=None, if_present=None):
         return super(TagSet, cls).__new__(cls, add or set(),
                                                remove or set(),
                                                blocked_by or set(),
-                                               blocks or set())
+                                               blocks or set(),
+                                               if_present or set())
 
 def astro_data_tag(fn):
     @wraps(fn)
@@ -94,7 +95,7 @@ class AstroData(object):
                 results = []
                 for mname, method in inspect.getmembers(self, lambda x: hasattr(x, 'tag_method')):
                     ts = method()
-                    plus, minus, blocked_by, blocks = ts
+                    plus, minus, blocked_by, blocks, if_present = ts
                     if plus or minus or blocks:
                         results.append(ts)
 
@@ -102,11 +103,18 @@ class AstroData(object):
                 results = sorted(results, key=lambda x: len(x.remove) + len(x.blocks), reverse=True)
                 # Sort by length of blocked_by... those that are never disabled go first
                 results = sorted(results, key=lambda x: len(x.blocked_by))
+                # Sort by length of if_present... those that need other tags to be present go last
+                results = sorted(results, key=lambda x: len(x.if_present))
 
                 tags = set()
                 removals = set()
                 blocked = set()
-                for plus, minus, blocked_by, blocks in results:
+                for plus, minus, blocked_by, blocks, is_present in results:
+                    if is_present:
+                        # If this TagSet requires other tags to be present, make sure that all of
+                        # them are. Otherwise, skip...
+                        if len(tags & is_present) != len(is_present):
+                            continue
                     allowed = (len(tags & blocked_by) + len(plus & blocked)) == 0
                     if allowed:
                         # This set is not being blocked by others...
