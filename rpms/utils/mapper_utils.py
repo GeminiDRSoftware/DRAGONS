@@ -37,6 +37,14 @@ def _generate_pkg_modules(pkg):
         else:
             yield (pkg_importer.path, pkgname)
 
+def _generate_recipe_modules(pkg, context):
+    pkg_importer = pkgutil.ImpImporter(pkg)
+    for pkgname, ispkg in pkg_importer.iter_modules():
+        if ispkg and pkgname =='recipes':
+            yield (pkg_importer.path, pkgname, ispkg)
+        else:
+            continue
+
 def _get_tagged_classes(pkgname):
     loaded_pkg = _package_loader(pkgname)
     for pkgpath, pkg in _generate_pkg_modules(loaded_pkg.__path__[0]):
@@ -49,6 +57,22 @@ def _get_tagged_classes(pkgname):
             atr = getattr(mod, atrname)
             if isclass(atr) and hasattr(atr, 'tagset'):
                 yield atr
+
+def _get_tagged_recipes(pkgname, context):
+    loaded_pkg = _package_loader(pkgname)
+    print loaded_pkg
+    for pkgpath, pkg in _generate_recipe_modules(loaded_pkg.__path__[0], context):
+        yield pkgpath, pkg
+        # fd, path, descr = imp.find_module(pkg, [pkgpath])
+        # mod = imp.load_module(pkg, fd, path, descr)
+        # for atrname in dir(mod):
+        #     if atrname.startswith('_'):        # no prive, no magic
+        #         continue
+                
+        #     atr = getattr(mod, atrname)
+        #     if isclass(atr) and hasattr(atr, 'recipe_tags'):
+        #         yield atr
+
 
 def retrieve_primitive_set(adtags, pkgname):
     """
@@ -71,6 +95,33 @@ def retrieve_primitive_set(adtags, pkgname):
         isection = adtags.intersection(pclass.tagset)
         matched_set = (isection, pclass) if isection > matched_set[0] else matched_set
     return matched_set
+
+def retrieve_recipe(adtags, pkgname, context):
+    """
+    Caller passes a set of AstroData tags, the instrument package name and a
+    recipe "context". Currently, this is defined only as either "QA" or "SQ".
+
+    :parameter adtags: set of AstroData tags on an 'ad' instance.
+    :type adtags:      <type 'set'>
+                       E.g., set(['GMOS', 'SIDEREAL', 'SPECT', 'GMOS_S', 'GEMINI'])
+
+    :parameter pkgname: An instrument package under GeminiDR.
+    :type pkgname:     <str>, E.g., "GMOS"
+
+    :parameter context: the context for recipe selection. 
+    :type context:      <str> 
+
+    :returns: tuple including the best tag set match and the primitive class
+              that provided the match.
+    :rtype: <tuple>, (set, class)
+
+    """
+    matched_set = (set([]), None)
+    for recipelib in _get_tagged_recipes(pkgname, context):
+        isection = adtags.intersection(recipelib.tagset)
+        matched_set = (isection, recipelib) if isection > matched_set[0] else matched_set
+    return matched_set
+
 
 # ------------------------------------------------------------------------------
 def configure_pkg():
