@@ -289,10 +289,11 @@ class FitsProvider(DataProvider):
 
     def _lazy_populate_object(self):
         if self._nddata is None:
-            if self.path:
-                self._reset_members(fits.open(self.path))
-            else:
-                self._reset_members(self._hdulist)
+            hdulist = fits.open(self.path) if self.path else self._hdulist
+            # We need to replace the headers, to make sure that we don't end
+            # up with different objects in self._headers and elsewhere
+            self._set_headers(hdulist)
+            self._reset_members(hdulist)
 
     @property
     def nddata(self):
