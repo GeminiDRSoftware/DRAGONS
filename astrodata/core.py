@@ -11,6 +11,14 @@ class TagSet(namedtuple('TagSet', 'add remove blocked_by blocks if_present')):
                                                blocks or set(),
                                                if_present or set())
 
+def astro_data_descriptor(fn):
+    fn.descriptor_method = True
+    return fn
+
+def descriptor_list(ad):
+    members = inspect.getmembers(ad, lambda x: hasattr(x, 'descriptor_method'))
+    return tuple(mname for (mname, method) in members)
+
 def astro_data_tag(fn):
     @wraps(fn)
     def wrapper(self):

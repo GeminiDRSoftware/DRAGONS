@@ -1,4 +1,7 @@
-__all__ = ['AstroData', 'AstroDataError', 'astro_data_tag', 'TagSet', 'keyword', 'open', 'create']
+__all__ = ['AstroData', 'AstroDataError', 'TagSet',
+           'astro_data_descriptor', 'astro_data_tag', 'keyword',
+           'descriptor_list',
+           'open', 'create']
 
 from .core import *
 from .mynddata.nduncertainty import VarUncertainty

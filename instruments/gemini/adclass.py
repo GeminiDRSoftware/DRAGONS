@@ -4,7 +4,7 @@ import dateutil.parser
 
 import pywcs
 
-from astrodata import AstroDataFits, astro_data_tag, TagSet
+from astrodata import AstroDataFits, astro_data_tag, astro_data_descriptor, TagSet
 from astrodata import factory, simple_descriptor_mapping, keyword
 from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
 
@@ -205,6 +205,7 @@ class AstroDataGemini(AstroDataFits):
     def instrument_name(self):
         return self.instrument().upper()
 
+    @astro_data_descriptor
     def airmass(self):
         am = self.phu.AIRMASS
 
@@ -213,6 +214,7 @@ class AstroDataGemini(AstroDataFits):
 
         return float(am)
 
+    @astro_data_descriptor
     def ao_seeing(self):
         try:
             return self.phu.AOSEEING
@@ -230,12 +232,15 @@ class AstroDataGemini(AstroDataFits):
             except KeyError:
                 raise AttributeError("There is no information about AO seeing")
 
+    @astro_data_descriptor
     def array_section(self, pretty=False):
         return self._some_section('array_section', 'ARRAYSEC', pretty)
 
+    @astro_data_descriptor
     def camera(self, stripID=False, pretty=False):
         return self._may_remove_component('CAMERA', stripID, pretty)
 
+    @astro_data_descriptor
     def cass_rotator_pa(self):
         val = float(self.phu.CRPA)
         if val < -360 or val > 360:
@@ -243,6 +248,7 @@ class AstroDataGemini(AstroDataFits):
         return val
 
     # TODO: Allow for unit conversion
+    @astro_data_descriptor
     def central_wavelength(self):
         val = self.raw_central_wavelength()
         if val < 0:
@@ -251,21 +257,27 @@ class AstroDataGemini(AstroDataFits):
         # We assume that raw_central_wavelength returns micrometers.
         return val / 1e-6
 
+    @astro_data_descriptor
     def coadds(self):
         return int(self.phu.get('COADDS', 1))
 
+    @astro_data_descriptor
     def data_section(self, pretty=False):
         return self._some_section('data_section', 'DATASEC', pretty)
 
+    @astro_data_descriptor
     def decker(self, stripID=False, pretty=False):
         return self._may_remove_component('DECKER', stripID, pretty)
 
+    @astro_data_descriptor
     def detector_section(self, pretty=False):
         return self._some_section('detector_section', 'DETSEC', pretty)
 
+    @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
         return self._may_remove_component('DISPERSR', stripID, pretty)
 
+    @astro_data_descriptor
     def dispersion_axis(self):
         # Keyword: DISPAXIS
         tags = self.tags
@@ -275,6 +287,7 @@ class AstroDataGemini(AstroDataFits):
         # TODO: We may need to sort out Nones here...
         return [int(dispaxis) for dispaxis in self.hdr.DISPAXIS]
 
+    @astro_data_descriptor
     def effective_wavelength(self):
         # TODO: We need to return the appropriate output units
         tags = self.tags
@@ -290,6 +303,7 @@ class AstroDataGemini(AstroDataFits):
         elif 'SPECT' in tags:
             return self.central_wavelength()
 
+    @astro_data_descriptor
     def exposure_time(self):
         exposure_time = self.phu.EXPTIME
         if exposure_time < 0:
@@ -300,6 +314,7 @@ class AstroDataGemini(AstroDataFits):
         else:
             return exposure_time
 
+    @astro_data_descriptor
     def filter_name(self, stripID=False, pretty=False):
         f1 = self.phu.FILTER1
         f2 = self.phu.FILTER2
@@ -324,9 +339,11 @@ class AstroDataGemini(AstroDataFits):
 
         return "&".join(filter_comps[:2])
 
+    @astro_data_descriptor
     def focal_plane_mask(self, stripID=False, pretty=False):
         self._may_remove_component('FPMASK', stripID, pretty)
 
+    @astro_data_descriptor
     def gcal_lamp(self):
         try:
             lamps, shut = self.phu.GCALLAMP, self.phu.GCALSHUT
@@ -337,18 +354,22 @@ class AstroDataGemini(AstroDataFits):
         except KeyError:
             return 'None'
 
+    @astro_data_descriptor
     def group_id(self):
         return self.observation_id()
 
+    @astro_data_descriptor
     def is_ao(self):
         try:
             return self.ao_fold() == 'IN'
         except KeyError:
             return False
 
+    @astro_data_descriptor
     def is_coadds_summed(self):
         return True
 
+    @astro_data_descriptor
     def local_time(self):
         local_time = self.phu.LT
         if re.match("^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$", local_time):
@@ -356,16 +377,19 @@ class AstroDataGemini(AstroDataFits):
         else:
             raise ValueError("Invalid local_time: {!r}".format(local_time))
 
+    @astro_data_descriptor
     def mdf_row_id(self):
         # Keyword: MDFROW
         raise NotImplementedError("mdf_row_id needs types/tags...")
 
+    @astro_data_descriptor
     def nominal_atmospheric_extinction(self):
         nom_ext_idx = (self.telescope(), self.filter_name(pretty=True))
         coeff = nominal_extinction.get(nom_ext_idx, 0.0)
 
         return coeff * (self.airmass() - 1.0)
 
+    @astro_data_descriptor
     def qa_state(self):
         rawpireq = self.raw_pi_requirements_met()
         rawgemqa = self.raw_gemini_qa()
@@ -388,36 +412,46 @@ class AstroDataGemini(AstroDataFits):
 
         return ret_qa_state
 
+    @astro_data_descriptor
     def _raw_to_percentile(self, descriptor, raw_value):
         val = parse_percentile(raw_value)
         if val is None:
             raise ValueError("Invalid value for {}: {!r}".format(descriptor, raw_value))
         return val
 
+    @astro_data_descriptor
     def raw_bg(self):
         return self._raw_to_percentile('raw_bg', self.phu.RAWBG)
 
+    @astro_data_descriptor
     def raw_cc(self):
         return self._raw_to_percentile('raw_cc', self.phu.RAWCC)
 
+    @astro_data_descriptor
     def raw_iq(self):
         return self._raw_to_percentile('raw_iq', self.phu.RAWIQ)
 
+    @astro_data_descriptor
     def raw_wv(self):
         return self._raw_to_percentile('raw_wv', self.phu.RAWWV)
 
+    @astro_data_descriptor
     def requested_bg(self):
         return self._raw_to_percentile('raw_bg', self.phu.REQBG)
 
+    @astro_data_descriptor
     def requested_cc(self):
         return self._raw_to_percentile('raw_cc', self.phu.REQCC)
 
+    @astro_data_descriptor
     def requested_iq(self):
         return self._raw_to_percentile('raw_iq', self.phu.REQIQ)
 
+    @astro_data_descriptor
     def requested_wv(self):
         return self._raw_to_percentile('raw_wv', self.phu.REQWV)
 
+    @astro_data_descriptor
     def target_ra(self, offset=False, pm=True, icrs=False):
         ra = self.ra()
         raoffset = self.phu.get('RAOFFSET', 0)
@@ -460,6 +494,7 @@ class AstroDataGemini(AstroDataFits):
 
         return ra
 
+    @astro_data_descriptor
     def target_dec(self, offset=False, pm=True, icrs=False):
         dec = self.dec()
         decoffset = self.phu.get('DECOFFSE', 0)
@@ -499,21 +534,25 @@ class AstroDataGemini(AstroDataFits):
 
         return dec
 
+    @astro_data_descriptor
     def ut_date(self):
         try:
             return self.ut_datetime(strict=True, dateonly=True).date()
         except AttributeError:
             raise LookupError("Can't find information to return a proper date")
 
+    @astro_data_descriptor
     def ut_datetime(self, strict=False, dateonly=False, timeonly=False):
         raise NotImplementedError("Getting ut_datetime is stupidly complicated. Will be implemented later")
 
+    @astro_data_descriptor
     def ut_time(self):
         try:
             return self.ut_datetime(strict=True, timeonly=True).time()
         except AttributeError:
             raise LookupError("Can't find information to return a proper time")
 
+    @astro_data_descriptor
     def wavefront_sensor(self):
         candidates = (
             ('AOWFS', self.phu.get("AOWFS_ST")),
@@ -530,6 +569,7 @@ class AstroDataGemini(AstroDataFits):
 
         return '&'.join(sorted(wavefront_sensors))
 
+    @astro_data_descriptor
     def wavelength_band(self):
         # TODO: Make sure we get this in micrometers...
         ctrl_wave = self.effective_wavelength()
@@ -544,9 +584,11 @@ class AstroDataGemini(AstroDataFits):
 
         return band
 
+    @astro_data_descriptor
     def wcs_ra(self):
         raise NotImplementedError("wcs_dec needs types/tags, and direct access to header...")
 
+    @astro_data_descriptor
     def wcs_dec(self):
         raise NotImplementedError("wcs_dec needs types/tags, and direct access to header...")
 
