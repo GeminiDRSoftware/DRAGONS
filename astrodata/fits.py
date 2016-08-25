@@ -235,7 +235,6 @@ class FitsProvider(DataProvider):
         scopy = self.__class__()
         scopy._sliced = True
         scopy.path = self.path
-        scopy._hdulist = [self._hdulist[0]] + [self._hdulist[n+1] for n in indices]
         scopy._header = [self._header[0]] + [self._header[n+1] for n in indices]
         if self._nddata:
             scopy._nddata = [self._nddata[n] for n in indices]
@@ -269,8 +268,6 @@ class FitsProvider(DataProvider):
 
         del self._header[idx + 1]
         del self._nddata[idx]
-        if self._hdulist:
-            del self._hdulist[idx + 1]
 
     def __len__(self):
         return len(self.nddata)
@@ -294,6 +291,7 @@ class FitsProvider(DataProvider):
             # up with different objects in self._headers and elsewhere
             self._set_headers(hdulist)
             self._reset_members(hdulist)
+            self._hdulist = None
 
     @property
     def nddata(self):
@@ -324,7 +322,6 @@ class RawFitsProvider(FitsProvider):
         self._header = [x.header for x in hdulist]
 
     def _reset_members(self, hdulist):
-        self._hdulist = hdulist
         self._nddata = []
         for unit in hdulist:
             if isinstance(unit, fits.ImageHDU):
@@ -424,7 +421,6 @@ class ProcessedFitsProvider(FitsProvider):
         self._header = [hdulist[0].header] + [x.header for x in hdulist if x.header.get('EXTNAME') == 'SCI']
 
     def _reset_members(self, hdulist):
-        self._hdulist = hdulist
         self._tables = {}
         seen = set([hdulist[0]])
 
@@ -476,7 +472,7 @@ class ProcessedFitsProvider(FitsProvider):
                 seen.add(extra_unit)
                 process_meta_unit(nd, extra_unit, add=True)
 
-        for other in self._hdulist:
+        for other in hdulist:
             if other in seen:
                 continue
             name = other.header['EXTNAME']
