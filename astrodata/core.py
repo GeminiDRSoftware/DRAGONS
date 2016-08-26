@@ -212,5 +212,10 @@ class AstroData(object):
         self._dataprov /= oper
         return self
 
+    add = __iadd__
+    subtract = __isub__
+    multiply = __imul__
+    divide = __idiv__
+
     def append(self, extension):
         self._dataprov.append(extension)
