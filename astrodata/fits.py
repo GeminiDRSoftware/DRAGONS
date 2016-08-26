@@ -8,10 +8,10 @@ from .core import *
 from astropy.io import fits
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
-# VarUncertainty was pulled in from @csimpson's BardData code
 from astropy.nddata import NDDataRef
-from mynddata.nduncertainty import VarUncertainty
+from astropy.nddata import StdDevUncertainty
 from astropy.table import Table
+import numpy as np
 
 NO_DEFAULT = object()
 
@@ -437,9 +437,9 @@ class ProcessedFitsProvider(FitsProvider):
             if name == 'DQ':
                 nd.mask = data
             elif name == 'VAR':
-                var_un = VarUncertainty(data)
-                var_un.parent_nddata = nd
-                nd.uncertainty = var_un
+                std_un = StdDevUncertainty(np.sqrt(data))
+                std_un.parent_nddata = nd
+                nd.uncertainty = std_un
             else:
                 if isinstance(meta, fits.BinTableHDU):
                     meta_obj = Table(data, meta={'hdu': eheader})

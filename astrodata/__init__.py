@@ -4,7 +4,6 @@ __all__ = ['AstroData', 'AstroDataError', 'TagSet',
            'open', 'create']
 
 from .core import *
-from .mynddata.nduncertainty import VarUncertainty
 from .fits import AstroDataFits, KeywordCallableWrapper
 
 from .factory import AstroDataFactory
