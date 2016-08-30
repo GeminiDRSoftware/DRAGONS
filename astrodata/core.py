@@ -84,6 +84,14 @@ class DataProvider(object):
     def exposed(self):
         return ()
 
+    @abstractproperty
+    def data(self):
+        pass
+
+    @abstractproperty
+    def uncertainty(self):
+        pass
+
 def simple_descriptor_mapping(**kw):
     def decorator(cls):
         for descriptor, descriptor_def in kw.items():
@@ -148,6 +156,18 @@ class AstroData(object):
     @property
     def nddata(self):
         return self._dataprov.nddata
+
+    @property
+    def data(self):
+        return self._dataprov.data
+
+    @property
+    def uncertainty(self):
+        return self._dataprov.uncertainty
+
+    @uncertainty.setter
+    def uncertainty(self, value):
+        self._dataprov.uncertainty = value
 
     @property
     def table(self):

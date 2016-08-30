@@ -323,6 +323,31 @@ class FitsProvider(DataProvider):
     def to_hdulist(self):
         pass
 
+    @property
+    @force_load
+    def data(self):
+        if self._sliced and len(self._nddata) == 1:
+            return self._nddata[0].data
+        else:
+            return [nd.data for nd in self._nddata]
+
+    @property
+    @force_load
+    def uncertainty(self):
+        if self._sliced and len(self._nddata) == 1:
+            return self._nddata[0].uncertainty
+        else:
+            return [nd.uncertainty for nd in self._nddata]
+
+    @uncertainty.setter
+    @force_load
+    def uncertainty(self, value):
+        if not self._sliced:
+            raise ValueError("Trying to assign uncertainty to a non-sliced AstroData object")
+        elif len(self._nddata) != 1:
+            raise ValueError("The uncertainty needs to be assigned to a single object")
+        self._nddata[0].uncertainty = value
+
 class RawFitsProvider(FitsProvider):
     def _set_headers(self, hdulist):
         self._header = [x.header for x in hdulist]
