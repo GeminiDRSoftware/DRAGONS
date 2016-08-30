@@ -1,10 +1,10 @@
 __all__ = ['AstroData', 'AstroDataError', 'TagSet',
            'astro_data_descriptor', 'astro_data_tag', 'keyword',
            'descriptor_list',
-           'open', 'create']
+           'open', 'create', 'write']
 
 from .core import *
-from .fits import AstroDataFits, KeywordCallableWrapper
+from .fits import AstroDataFits, KeywordCallableWrapper, write
 
 from .factory import AstroDataFactory
 

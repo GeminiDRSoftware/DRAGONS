@@ -2,10 +2,12 @@ from types import StringTypes
 from abc import abstractmethod
 from collections import defaultdict
 from functools import partial
+from abc import abstractmethod
 
 from .core import *
 
 from astropy.io import fits
+from astropy.io.fits import HDUList, PrimaryHDU, ImageHDU, Header, DELAYED
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
 from astropy.nddata import NDDataRef
@@ -317,6 +319,10 @@ class FitsProvider(DataProvider):
     def set_name(self, ext, name):
         self._nddata[ext].meta['name'] = name
 
+    @abstractmethod
+    def to_hdulist(self):
+        pass
+
 class RawFitsProvider(FitsProvider):
     def _set_headers(self, hdulist):
         self._header = [x.header for x in hdulist]
@@ -346,6 +352,18 @@ class RawFitsProvider(FitsProvider):
 
     def append(self, ext):
         raise NotImplementedError("Needs to be implemented")
+
+    @force_load
+    def to_hdulist(self):
+        hlst = HDUList()
+        hlst.append(PrimaryHDU(header=self._header[0], data=DELAYED))
+
+        for ext in self._nddata:
+            i = ImageHDU(header=ext.meta['hdu'], data=DELAYED)
+            i.data = ext.data
+            hlst.append(i)
+
+        return hlst
 
 class ProcessedFitsProvider(FitsProvider):
     def __init__(self):
@@ -490,6 +508,18 @@ class ProcessedFitsProvider(FitsProvider):
     def append(self, ext):
         raise NotImplementedError("Needs to be implemented")
 
+    @force_load
+    def to_hdulist(self):
+        hlst = []
+        hlst.append(PrimaryHDU(header=self._header[0], data=DELAYED))
+
+        for ext in self._nddata:
+            i = ImageHDU(data=DELAYED, header=ext.meta['hdu'])
+            i.data = ext.data
+            hlst.append(i)
+
+        return HDUList(hlst)
+
 class FitsLoader(FitsProvider):
     @staticmethod
     def is_prepared(hdulist):
@@ -546,3 +576,6 @@ class AstroDataFits(AstroData):
 
     def info(self):
         self._dataprov.info(self.tags)
+
+def write(filename, ad_object, clobber=False):
+    ad_object._dataprov.to_hdulist().writeto(filename, clobber=clobber)
