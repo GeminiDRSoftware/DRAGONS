@@ -1,7 +1,7 @@
 from types import StringTypes
 
 from .fits import FitsLoader
-from astropy.io.fits import HDUList, PrimaryHDU, ImageHDU, Header
+from astropy.io.fits import HDUList, PrimaryHDU, ImageHDU, Header, DELAYED
 
 class AstroDataFactory(object):
     def __init__(self):
@@ -64,12 +64,14 @@ class AstroDataFactory(object):
 
         lst = HDUList()
         if phu is not None:
-            if isinstance(phu, (dict, list, tuple, Header)):
+            if isinstance(phu, PrimaryHDU):
+                lst.append(phu)
+            elif isinstance(phu, Header):
+                lst.append(PrimaryHDU(header=phu, data=DELAYED))
+            elif isinstance(phu, (dict, list, tuple)):
                 p = PrimaryHDU()
                 p.header.update(phu)
                 lst.append(p)
-            elif isinstance(phu, PrimaryHDU):
-                lst.append(phu)
             else:
                 raise ValueError("phu must be a PrimaryHDU or a valid header object")
 
