@@ -10,7 +10,7 @@ from astropy.io import fits
 from astropy.io.fits import HDUList, PrimaryHDU, ImageHDU, Header, DELAYED
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
-from astropy.nddata import NDDataRef
+from astropy.nddata import NDDataRef as NDDataObject
 from astropy.nddata import StdDevUncertainty
 from astropy.table import Table
 import numpy as np
@@ -168,34 +168,33 @@ class FitsProvider(DataProvider):
 
         raise AttributeError("{} not found in this object".format(attribute))
 
-    def __iadd__(self, operand):
+    def __oper(self, operator, operand):
+        # TODO: Test the operand to make sure it is compatible
+        # TODO: Extract the relevant information from the operand, in order to
+        #       support different types
         for n in range(len(self._nddata)):
-            nddata = self._nddata[n]
-            self._nddata[n] = self._nddata[n].add(operand, handle_meta='first_found')
+            self._nddata[n] = operator(self._nddata[n], operand)
+
+    def __iadd__(self, operand):
+        self.__oper(partial(NDDataObject.add, handle_meta='first_found'), operand)
         return self
 
     def __isub__(self, operand):
-        for n in range(len(self._nddata)):
-            nddata = self._nddata[n]
-            self._nddata[n] = self._nddata[n].subtract(operand, handle_meta='first_found')
+        self.__oper(partial(NDDataObject.subtract, handle_meta='first_found'), operand)
         return self
 
     def __imul__(self, operand):
-        for n in range(len(self._nddata)):
-            nddata = self._nddata[n]
-            self._nddata[n] = self._nddata[n].multiply(operand, handle_meta='first_found')
+        self.__oper(partial(NDDataObject.multiply, handle_meta='first_found'), operand)
         return self
 
     def __idiv__(self, operand):
-        for n in range(len(self._nddata)):
-            nddata = self._nddata[n]
-            self._nddata[n] = self._nddata[n].divide(operand, handle_meta='first_found')
+        self.__oper(partial(NDDataObject.divide, handle_meta='first_found'), operand)
         return self
 
     def info(self, tags):
         print("Filename: {}".format(self.path if self.path else "Unknown"))
-        # NOTE: Right now we only support readonly, so it's fixed
-        print("Mode: readonly")
+        # This is fixed. We don't support opening for update
+        # print("Mode: readonly")
 
         tags = sorted(tags, reverse=True)
         tag_line = "Tags: "
@@ -361,7 +360,7 @@ class RawFitsProvider(FitsProvider):
         self._nddata = []
         for unit in hdulist:
             if isinstance(unit, fits.ImageHDU):
-                obj = NDDataRef(unit.data, meta={'hdu': unit.header, 'ver': -1})
+                obj = NDDataObject(unit.data, meta={'hdu': unit.header, 'ver': -1})
                 self._nddata.append(obj)
 
     def _pixel_info(self):
@@ -497,7 +496,7 @@ class ProcessedFitsProvider(FitsProvider):
                         else:
                             self._tables[name] = [meta_obj]
                 elif isinstance(meta, fits.ImageHDU):
-                    meta_obj = NDDataRef(data, meta={'hdu': eheader})
+                    meta_obj = NDDataObject(data, meta={'hdu': eheader})
                 else:
                     raise ValueError("Unknown extension type: {!r}".format(name))
                 if add:
@@ -512,8 +511,8 @@ class ProcessedFitsProvider(FitsProvider):
         for unit in sci_units:
             seen.add(unit)
             header = unit.header
-            ver = header['EXTVER']
-            nd = NDDataRef(unit.data, meta={'hdu': header, 'ver': ver, 'other': []})
+            ver = header.get('EXTVER', -1)
+            nd = NDDataObject(unit.data, meta={'hdu': header, 'ver': ver, 'other': []})
             self._nddata.append(nd)
 
             for extra_unit in search_for_associated(ver):
