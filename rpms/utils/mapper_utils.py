@@ -100,8 +100,11 @@ def retrieve_recipe(adtags, pkgname, rname, context):
     """
     matched_set = (set([]), None)
     for rlib in _get_tagged_recipes(pkgname, context):
-        isection = adtags.intersection(rlib.recipe_tags)
-        matched_set = (isection, rlib) if isection > matched_set[0] else matched_set
+        if adtags.issuperset(rlib.recipe_tags):
+            isect = rlib.recipe_tags
+            matched_set = (isect, rlib) if isect > matched_set[0] else matched_set
+        else:
+            continue
 
     isection, rlib = matched_set
     if hasattr(rlib, 'recipe_tags'):
