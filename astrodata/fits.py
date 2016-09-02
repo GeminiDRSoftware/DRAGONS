@@ -287,7 +287,10 @@ class FitsProvider(DataProvider):
 
     def _lazy_populate_object(self):
         if self._nddata is None:
-            hdulist = fits.open(self.path) if self.path else self._hdulist
+            if self.path:
+                hdulist = FitsLoader._prepare_hdulist(fits.open(self.path))
+            else:
+                hdulist = self._hdulist
             # We need to replace the headers, to make sure that we don't end
             # up with different objects in self._headers and elsewhere
             self._set_headers(hdulist)
@@ -348,51 +351,13 @@ class FitsProvider(DataProvider):
         self._nddata[0].uncertainty = value
 
     @force_load
+    def table(self, value):
+        return {}
+
+    @force_load
     def crop(self, x1, y1, x2, y2):
         for nd in self._nddata:
             nd.data = nd.data[y1:y2+1, x1:x2+1]
-
-class RawFitsProvider(FitsProvider):
-    def _set_headers(self, hdulist):
-        self._header = [x.header for x in hdulist]
-
-    def _reset_members(self, hdulist):
-        self._nddata = []
-        for unit in hdulist:
-            if isinstance(unit, fits.ImageHDU):
-                obj = NDDataObject(unit.data, meta={'hdu': unit.header, 'ver': -1})
-                self._nddata.append(obj)
-
-    def _pixel_info(self):
-        for idx, obj in enumerate(self.nddata):
-            yield dict(
-                idx = '[{:2}]'.format(idx),
-                main = dict(
-                    content = 'raw',
-                    type = type(obj).__name__,
-                    dim = '({})'.format(', '.join(str(s) for s in obj.data.shape)),
-                    data_type = obj.data.dtype.name
-                ),
-                other = ()
-            )
-
-    def _other_info(self):
-        return ()
-
-    def append(self, ext):
-        raise NotImplementedError("Needs to be implemented")
-
-    @force_load
-    def to_hdulist(self):
-        hlst = HDUList()
-        hlst.append(PrimaryHDU(header=self._header[0], data=DELAYED))
-
-        for ext in self._nddata:
-            i = ImageHDU(header=ext.meta['hdu'], data=DELAYED)
-            i.data = ext.data
-            hlst.append(i)
-
-        return hlst
 
 class ProcessedFitsProvider(FitsProvider):
     def __init__(self):
@@ -465,7 +430,8 @@ class ProcessedFitsProvider(FitsProvider):
         return scopy
 
     def _set_headers(self, hdulist):
-        self._header = [hdulist[0].header] + [x.header for x in hdulist if x.header.get('EXTNAME') == 'SCI']
+        self._header = [hdulist[0].header] + [x.header for x in hdulist[1:] if
+                                                (x.header.get('EXTNAME') in ('SCI', None))]
 
     def _reset_members(self, hdulist):
         self._tables = {}
@@ -539,15 +505,20 @@ class ProcessedFitsProvider(FitsProvider):
 
     @force_load
     def to_hdulist(self):
-        hlst = []
+        hlst = HDUList()
         hlst.append(PrimaryHDU(header=self._header[0], data=DELAYED))
 
         for ext in self._nddata:
+            # TODO: Extend this to cover all cases
             i = ImageHDU(data=DELAYED, header=ext.meta['hdu'])
             i.data = ext.data
             hlst.append(i)
 
-        return HDUList(hlst)
+        return hlst
+
+    @force_load
+    def table(self):
+        return self._tables.copy()
 
     @force_load
     def crop(self, x1, y1, x2, y2):
@@ -561,25 +532,82 @@ class ProcessedFitsProvider(FitsProvider):
 
 class FitsLoader(FitsProvider):
     @staticmethod
-    def is_prepared(hdulist):
-        # Gemini raw HDUs have no EXTNAME
-        return all(h.header.get('EXTNAME') is not None for h in hdulist[1:])
-
-    @staticmethod
     def provider_for_hdulist(hdulist):
         """
         Returns an instance of the appropriate DataProvider class,
         according to the HDUList object
         """
-        cls = ProcessedFitsProvider if FitsLoader.is_prepared(hdulist) else RawFitsProvider
-        return cls()
+
+        return ProcessedFitsProvider()
+
+    @staticmethod
+    def _prepare_hdulist(hdulist):
+        new_list = []
+        highest_ver = 0
+        recognized = set()
+        for unit in hdulist:
+            if unit.header.get('EXTVER') not in (-1, None):
+                highest_ver = max(highest_ver, unit.header['EXTVER'])
+            elif not isinstance(unit, PrimaryHDU):
+                continue
+
+            new_list.append(unit)
+            recognized.add(unit)
+
+        for unit in hdulist:
+            if unit in recognized:
+                continue
+            elif isinstance(unit, ImageHDU):
+                highest_ver += 1
+                unit.header['EXTNAME'] = 'SCI'
+                unit.header['EXTVER'] = highest_ver
+
+            new_list.append(unit)
+            recognized.add(unit)
+
+        def comp(a, b):
+            ha, hb = a.header, b.header
+            hav, hbv = ha.get('EXTVER'), hb.get('EXTVER')
+            # A PrimaryHDU is always sorted first
+            if isinstance(a, PrimaryHDU):
+                return -1
+            elif isinstance(b, PrimaryHDU):
+                return 1
+            elif hav not in (-1, None):
+                # If both headers have EXTVER, compare based on EXTVER.
+                # Else, b is a not a pixel image, push it to the end
+                if hbv not in (-1, None):
+                    ret = cmp(ha['EXTVER'], hb['EXTVER'])
+                    # Break ties depending on EXTNAME. SCI goes first
+                    if ret == 0:
+                        if hav == 'SCI':
+                            return -1
+                        elif hbv == 'SCI':
+                            return 1
+                        else:
+                            return 0
+                    else:
+                        return ret
+                else:
+                    return -1
+            elif hbv not in (-1, None):
+                # If b is the only one with EXTVER, push a to the end
+                return 1
+            else:
+                # If none of them are PrimaryHDU, nor have an EXTVER
+                # we don't care about the order
+                return 0
+
+        return HDUList(sorted(new_list, cmp=comp)) 
 
     @staticmethod
     def from_path(path):
         hdulist = fits.open(path, memmap=True, do_not_scale_image_data=True)
+        hdulist = FitsLoader._prepare_hdulist(hdulist)
         provider = FitsLoader.provider_for_hdulist(hdulist)
         provider.path = path
         provider._set_headers(hdulist)
+        # Note: we don't call _reset_members, to allow for lazy loading...
 
         return provider
 
