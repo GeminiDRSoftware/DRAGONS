@@ -566,8 +566,8 @@ class FitsLoader(FitsProvider):
                 continue
             elif isinstance(unit, ImageHDU):
                 highest_ver += 1
-                unit.header['EXTNAME'] = 'SCI'
-                unit.header['EXTVER'] = highest_ver
+                unit.header['EXTNAME'] = ('SCI', 'Added by AstroData')
+                unit.header['EXTVER'] = (highest_ver, 'Added by AstroData')
 
             new_list.append(unit)
             recognized.add(unit)
