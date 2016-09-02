@@ -2,6 +2,7 @@
 from astrodata.utils import logutils
 from gempy.gemini import gemini_tools as gt
 
+from .parameters_mask import ParametersMask
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
@@ -12,6 +13,10 @@ class Mask(PrimitivesCORE):
     the primitives from the level above, 'GENERALPrimitives'.
     """
     tagset = set(["GEMINI"])
+
+    def __init__(self, adinputs):
+        super(Mask, self).__init__(adinputs)
+        self.parameters = ParametersMask
 
     def addObjectMaskToDQ(self, rc):
         """

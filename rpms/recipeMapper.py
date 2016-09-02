@@ -1,21 +1,15 @@
-from importlib import import_module
 
-from utils.errors import RecipeNotFound
-from utils.mapper_utils  import dictify
-from utils.mapper_utils  import dotpath
-from utils.mapper_utils  import configure_pkg
-from utils.mapper_utils  import retrieve_primitive_set
-from utils.mapper_utils  import retrieve_recipe
+from utils.errors       import RecipeNotFound
+
+from utils.mapper_utils import dictify
+from utils.mapper_utils import retrieve_primitive_set
+from utils.mapper_utils import retrieve_recipe
 
 # ------------------------------------------------------------------------------
 GMOS_INSTR    = ['GMOS-S', 'GMOS-N']
-canonicals    = ['IMAGE', 'SPECT', 'NODANDSHUFFLE']
 # ------------------------------------------------------------------------------
 class RecipeMapper(object):
     """
-    Build importable paths to a primitive set and a recipe.
-    Import them, run.
-
     Primitives are algorithmically selected based on an dataset's tags and
     a primitive class's 'tagset' attribute.
     (See utils.mapper_utils.retrieve_primitive_set())
@@ -59,8 +53,6 @@ class RecipeMapper(object):
         self.context = context
         self.tags = set(self.adinit.type())
         self.pkg = self._set_pkg()
-        self.pkg_conf = configure_pkg()
-        self.recipelib = None
         self.recipename = recipename
         self.userparams = dictify(uparms)
 
@@ -69,7 +61,7 @@ class RecipeMapper(object):
         return primitive_actual(self.adinputs, uparms=self.userparams)
 
     def get_applicable_recipe(self):
-        recipelib = retrieve_recipe(self.tags, self.pkg, self.context)
+        recipefn = retrieve_recipe(self.tags, self.pkg, self.recipename, self.context)
 
         # try:
         #     recipe = getattr(self.recipelib, self.recipename)
@@ -77,7 +69,7 @@ class RecipeMapper(object):
         #     emsg = "Recipe {} not found.".format(self.recipename)
         #     raise RecipeNotFoundError(emsg)
 
-        return recipelib
+        return recipefn
 
     def _set_pkg(self):
         raw_inst = self.adinit.instrument().as_pytype()

@@ -7,8 +7,10 @@ from astrodata.utils import logutils
 from gempy.library import astrotools as at
 from gempy.gemini import gemini_tools as gt
 
+from .parameters_resample import ParametersResample
 from .primitives_CORE import PrimitivesCORE
 
+# ------------------------------------------------------------------------------
 class Resample(PrimitivesCORE):
     """
     This is the class containing all of the primitives for the GEMINI level of
@@ -18,10 +20,9 @@ class Resample(PrimitivesCORE):
     """
     tagset = set(["GEMINI"])
     
-    def init(self, rc):
-        PrimitivesCORE.init(self, rc)
-        return rc
-    init.pt_hide = True
+    def __init__(self, adinputs):
+        super(Resample, self).__init__(adinputs)
+        self.parameters = ParametersResample
     
     def alignToReferenceFrame(self, adinputs=None, stream='main', **params):
         """

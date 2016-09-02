@@ -4,6 +4,7 @@ from gempy.gemini import gemini_tools as gt
 from .lookups import BPMDict
 from .lookups import MDFDict
 
+from .parameters_standardize import ParametersStandardize
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
@@ -14,6 +15,11 @@ class Standardize(PrimitivesCORE):
 
     """
     tagset = set(["GEMINI"])
+
+    def __init__(self, adinputs):
+        super(Standardize, self).__init__(adinputs)
+        self.parameters = ParametersStandardize
+
 
     def addDQ(self, adinputs=None, stream='main', **params):
         """

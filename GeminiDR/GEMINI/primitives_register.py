@@ -11,12 +11,9 @@ from astrodata.utils import logutils
 from gempy.library import astrotools as at
 from gempy.gemini import gemini_tools as gt
 
-from .lookups import keyword_comments
-
+from .parameters_register import ParametersRegister
 from .primitives_CORE import PrimitivesCORE
 
-# ------------------------------------------------------------------------------
-keyword_comments = keyword_comments.keyword_comments
 # ------------------------------------------------------------------------------
 class Register(PrimitivesCORE):
     """
@@ -26,6 +23,10 @@ class Register(PrimitivesCORE):
 
     """
     tagset = set(["GEMINI"])
+
+    def __init__(self, adinputs):
+        super(Register, self).__init__(adinputs)
+        self.parameters = ParametersRegister
     
     def correctWCSToReferenceFrame(self, adinputs=None, stream='main', **params):
         """

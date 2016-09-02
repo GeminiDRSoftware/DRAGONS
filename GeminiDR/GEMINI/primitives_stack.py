@@ -1,6 +1,8 @@
+# Prototype demo
 from astrodata.utils import logutils
 from gempy.gemini import gemini_tools as gt
 
+from .parameters_stack import ParametersStack
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
@@ -12,6 +14,10 @@ class Stack(PrimitivesCORE):
 
     """
     tagset = set(["GEMINI"])
+
+    def __init__(self, adinputs):
+        super(Stack, self).__init__(adinputs)
+        self.parameters = ParametersStack
     
     def alignAndStack(self, adinputs=None, stream='main', **params):
         """

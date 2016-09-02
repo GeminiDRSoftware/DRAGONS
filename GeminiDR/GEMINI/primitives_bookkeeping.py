@@ -2,7 +2,8 @@
 from astrodata.utils import logutils
 from gempy.gemini import gemini_tools as gt
 
-from primitives_CORE import PrimitivesCORE
+from .parameters_bookkeeping import ParametersBookkeeping
+from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
 class Bookkeeping(PrimitivesCORE):
@@ -12,6 +13,10 @@ class Bookkeeping(PrimitivesCORE):
     the primitives from the level above, 'COREPrimitives'.
     """
     tagset = set(["GEMINI"])
+
+    def __init__(self, adinputs):
+        super(Bookkeeping, self).__init__(adinputs)
+        self.parameters = ParametersBookkeeping
 
     def addToList(self, adinputs=None, stream='main', **params):
         """

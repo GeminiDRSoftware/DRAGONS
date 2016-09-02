@@ -36,7 +36,7 @@ class PrimitivesIMAGE(PrimitivesGMOS):
         :type uparms: <dict>, a dictionary of key:val pairs.
 
         """
-        super(PrimitivesGMOS, self).__init__(adinputs)
+        super(self.__class__, self).__init__(adinputs)
         self.parameters = ParametersIMAGE
         self.primitive_parset = None
         self.user_params = uparms

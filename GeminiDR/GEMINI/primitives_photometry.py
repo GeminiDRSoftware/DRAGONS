@@ -3,6 +3,7 @@ from gempy.gemini import gemini_tools as gt
 
 from GEMINI.lookups import ColorCorrections
 
+from .parameters_photometry import ParametersPhotometry
 from .primitives_CORE import PrimitivesCORE
 
 # Define the earliest acceptable SExtractor version, currently: 2.8.6
@@ -15,6 +16,11 @@ class Photometry(PrimitivesCORE):
     primitives from the level above, 'GENERALPrimitives'.
     """
     tagset = set(["GEMINI"])
+
+    def __init__(self, adinputs):
+        super(Photometry, self).__init__(adinputs)
+        self.parameters = ParametersPhotometry
+
     
     def addReferenceCatalog(self, adinputs=None, stream='main', **params):
         """

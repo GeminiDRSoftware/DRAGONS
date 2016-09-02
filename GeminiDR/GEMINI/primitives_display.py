@@ -1,5 +1,6 @@
 from astrodata.utils import logutils
 
+from .parameters_display import ParametersDisplay
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
@@ -10,6 +11,10 @@ class Display(PrimitivesCORE):
     all the primitives from the level above, 'GENERALPrimitives'.
     """
     tagset = set(["GEMINI"])
+
+    def __init__(self, adinputs):
+        super(Display, self).__init__(adinputs)
+        self.parameters = ParametersDisplay
     
     def display(self, adinputs=None, stream='main', **params):
         """

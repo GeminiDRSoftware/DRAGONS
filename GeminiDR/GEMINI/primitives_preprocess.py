@@ -1,6 +1,7 @@
 from astrodata.utils import logutils
 from gempy.gemini    import gemini_tools as gt
 
+from .parameters_preprocess import ParametersPreprocess
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
@@ -11,6 +12,10 @@ class Preprocess(PrimitivesCORE):
     the primitives from the level above, 'GENERALPrimitives'.
     """
     tagset = set(["GEMINI"])
+
+    def __init__(self, adinputs):
+        super(Preprocess, self).__init__(adinputs)
+        self.parameters = ParametersPreprocess
 
     def ADUToElectrons(self, adinputs=None, stream='main', **params):
         """
@@ -388,8 +393,13 @@ class Preprocess(PrimitivesCORE):
         log = logutils.get_logger(__name__)
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         pmsg = "{}:{}".format("PRIMITIVE:", self.myself())
-        p_pars = self.parameters.subtractSkyBackground
-        sfx = p_pars["suffix"]
+        try:
+            p_pars = self.parameters.subtractSkyBackground
+            sfx = p_pars["suffix"]
+        except AttributeError:
+            p_pars = None
+            sfx = None
+
         log.status("-" * len(pmsg))
         log.status(pmsg)
         log.status("-" * len(pmsg))

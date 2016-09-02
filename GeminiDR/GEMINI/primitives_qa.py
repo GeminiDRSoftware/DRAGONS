@@ -7,6 +7,7 @@ from .lookups import BGConstraints
 from .lookups import CCConstraints
 from .lookups import IQConstraints
 
+from .parameters_qa import ParametersQA
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
@@ -17,6 +18,10 @@ class QA(PrimitivesCORE):
     above, 'GENERALPrimitives'.
     """
     tagset = set(["GEMINI"])
+
+    def __init__(self, adinputs):
+        super(QA, self).__init__(adinputs)
+        self.parameters = ParametersQA
 
     def measureBG(self, adinputs=None, stream='main', **params):
         """

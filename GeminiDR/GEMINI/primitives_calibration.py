@@ -1,11 +1,16 @@
 from astrodata.utils import logutils
 from gempy.gemini import gemini_tools as gt
 
+from .parameters_calibration import ParametersCalibration
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
 class Calibration(PrimitivesCORE):
     tagset = set(["GEMINI"])
+
+    def __init__(self, adinputs):
+        super(Calibration, self).__init__(adinputs)
+        self.parameters = ParametersCalibration
 
     def failCalibration(self, adinputs=None, stream='main', **params):
         # Mark a given calibration "fail" and upload it 

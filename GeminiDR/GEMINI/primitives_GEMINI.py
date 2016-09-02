@@ -6,10 +6,10 @@ from .primitives_mask        import Mask
 from .primitives_preprocess  import Preprocess
 from .primitives_photometry  import Photometry
 from .primitives_qa          import QA
-from .primitives_stack       import Stack
-from .primitives_standardize import Standardize
 from .primitives_register    import Register
 from .primitives_resample    import Resample
+from .primitives_stack       import Stack
+from .primitives_standardize import Standardize
 
 from .parameters_GEMINI import ParametersGemini
 
@@ -20,6 +20,7 @@ class PrimitivesGemini(Bookkeeping, Calibration, Display, Mask, Preprocess,
     This is the class containing all of the primitives for the GEMINI level of
     the type hierarchy tree. It inherits all the primitives from the level
     above, 'GENERALPrimitives'.
+
     """
     tagset = set(["GEMINI"])
 
@@ -28,6 +29,42 @@ class PrimitivesGemini(Bookkeeping, Calibration, Display, Mask, Preprocess,
         self.parameters = ParametersGemini
     
     def standardizeGeminiHeaders(self, adinputs=None, stream='main', **params):
+        """
+        Demo prototype.
+
+        """
+        try:
+            parset = getattr(self.parameters, self.myself())
+        except AttributeError:
+            parset = None
+        self._primitive_exec(self.myself(), parset=parset, indent=3)
+        return
+
+    def mosaicADdetectors(self, adinputs=None, stream='main', **params):
+        """
+        Demo prototype.
+
+        """
+        try:
+            parset = getattr(self.parameters, self.myself())
+        except AttributeError:
+            parset = None
+        self._primitive_exec(self.myself(), parset=parset, indent=3)
+        return
+
+    def standardizeGeminiHeaders(self, adinputs=None, stream='main', **params):
+        """
+        Demo prototype.
+
+        """
+        try:
+            parset = getattr(self.parameters, self.myself())
+        except AttributeError:
+            parset = None
+        self._primitive_exec(self.myself(), parset=parset, indent=3)
+        return
+
+    def traceFootprints(self, adinputs=None, stream='main', **params):
         """
         Demo prototype.
 
