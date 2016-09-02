@@ -49,7 +49,6 @@ class FitsKeywordManipulator(object):
             return set(self._headers[0].keys())
 
     def show(self):
-        # TODO: This is only working for PHU now. Need to prepare it for extensions...
         if self._on_ext:
             for n, header in enumerate(self._headers):
                 print("==== Header #{} ====".format(n))
@@ -169,11 +168,17 @@ class FitsProvider(DataProvider):
         raise AttributeError("{} not found in this object".format(attribute))
 
     def __oper(self, operator, operand):
-        # TODO: Test the operand to make sure it is compatible
-        # TODO: Extract the relevant information from the operand, in order to
-        #       support different types
-        for n in range(len(self._nddata)):
-            self._nddata[n] = operator(self._nddata[n], operand)
+        if isinstance(operand, AstroData):
+            if len(operand) != len(self):
+                raise ValueError("Operands are not the same size")
+            for n in range(len(self)):
+                self._nddata[n] = operator(self._nddata[n], operand.nddata[n])
+            ltab, rtab = set(self._tables), set(operand.table)
+            for tab in (rtab - ltab):
+                self._tables[tab] = operand.table[tab]
+        else:
+            for n in range(len(self)):
+                self._nddata[n] = operator(self._nddata[n], operand)
 
     def __iadd__(self, operand):
         self.__oper(partial(NDDataObject.add, handle_meta='first_found'), operand)
