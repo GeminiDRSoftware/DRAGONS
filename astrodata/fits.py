@@ -156,6 +156,7 @@ class FitsProvider(DataProvider):
         self._nddata = None
         self._hdulist = None
         self.path = None
+        self._tables = None
 
     @force_load
     def __getattr__(self, attribute):
@@ -244,6 +245,7 @@ class FitsProvider(DataProvider):
         scopy._header = [self._header[0]] + [self._header[n+1] for n in indices]
         if self._nddata:
             scopy._nddata = [self._nddata[n] for n in indices]
+        scopy._tables = self._tables
 
         return scopy
 
