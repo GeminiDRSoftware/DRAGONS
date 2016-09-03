@@ -523,15 +523,23 @@ class FitsProvider(DataProvider):
             raise ValueError("The uncertainty needs to be assigned to a single object")
         self._nddata[0].uncertainty = value
 
+    def _crop_nd(self, nd, x1, y1, x2, y2):
+        nd.data = nd.data[y1:y2+1, x1:x2+1]
+        if nd.uncertainty:
+            nd.uncertainty = nd.uncertainty[y1:y2+1, x1:x2+1]
+        if nd.mask:
+            nd.mask = nd.mask[y1:y2+1, x1:x2+1]
+
     @force_load
     def crop(self, x1, y1, x2, y2):
         # TODO: Consider cropping of objects in the meta section
         for nd in self._nddata:
-            nd.data = nd.data[y1:y2+1, x1:x2+1]
-            if nd.uncertainty:
-                nd.uncertainty = nd.uncertainty[y1:y2+1, x1:x2+1]
-            if nd.mask:
-                nd.mask = nd.mask[y1:y2+1, x1:x2+1]
+            dim = nd.data.shape
+            self._crop_nd(nd, x1, y1, x2, y2)
+            for o in nd.meta['other']:
+                if isinstance(o, NDData):
+                    if o.shape == dim:
+                        self._crop_nd(o)
 
     def append(self, ext):
         if isinstance(ext, (Table, fits.BinTableHDU)):
