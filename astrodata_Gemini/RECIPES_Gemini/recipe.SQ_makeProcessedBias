@@ -3,4 +3,5 @@ addDQ
 addVAR(read_noise=True)
 overscanCorrect
 stackFrames
+makeIRAFCompatible
 storeProcessedBias

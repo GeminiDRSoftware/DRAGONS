@@ -25,6 +25,7 @@ from astrodata.utils.ConfigSpace  import lookup_path
 from astrodata.utils.gemconstants import SCI, VAR, DQ
 
 from gempy.gemini import gemini_tools as gt
+from gempy.gemini import irafcompat
 
 from astrodata_Gemini.ADCONFIG_Gemini.lookups import BPMDict
 from astrodata_Gemini.ADCONFIG_Gemini.lookups import MDFDict
@@ -667,10 +668,13 @@ class StandardizePrimitives(GENERALPrimitives):
         log  = logutils.get_logger(__name__)
         log.debug(gt.log_message('primitive', 'prepare', 'starting'))
         timestamp_key = self.timestamp_keys['prepare']
-        
+                
         # Call the primitive that do the checks and the changes.
         rc.run('validateData')
-        rc.run('standardizeStructure')
+        if 'attach_mdf' in rc:
+            rc.run('standardizeStructure(attach_mdf=%s)' % str(rc['attach_mdf']))
+        else:
+            rc.run('standardizeStructure')
         rc.run('standardizeHeaders')
         #rc.run('validateWCS')
         rc.run('markAsPrepared')
@@ -703,6 +707,26 @@ class StandardizePrimitives(GENERALPrimitives):
         
         yield rc    
     
+    def makeIRAFCompatible(self, rc):
+        """
+        Add keywords to make the pipeline-processed file compatible
+        with the tasks in the Gemini IRAF package.
+        """
+        log = logutils.get_logger(__name__)
+        log.debug(gt.log_message('primitive', 'makeIRAFCompatible',
+                                 'starting'))
+        timestamp_key = self.timestamp_keys['makeIRAFCompatible']
+        
+        adoutput_list = []
+        for ad in rc.get_inputs_as_astrodata():
+            irafcompat.pipeline2iraf(ad)
+            adoutput_list.append(ad)
+            gt.mark_history(adinput=ad, primname=self.myself(), 
+                            keyword=timestamp_key)
+
+        rc.report_output(adoutput_list)
+    
+        yield rc
     
     ##########################################################################
     # Below are the helper functions for the primitives in this module       #

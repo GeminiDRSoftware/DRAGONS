@@ -1,11 +1,11 @@
 prepare
 addDQ
 addVAR(read_noise=True)
-display
 overscanCorrect
 biasCorrect
 ADUToElectrons
 addVAR(poisson_noise=True)
 stackFlats
 normalizeFlat
+makeIRAFCompatible
 storeProcessedFlat

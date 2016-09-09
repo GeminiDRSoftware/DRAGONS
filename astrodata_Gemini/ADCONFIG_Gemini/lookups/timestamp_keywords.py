@@ -30,6 +30,7 @@ timestamp_keys = {
     "findAcquisitionSlits": "FINDACQS",
     "makeFlat": "MAKEFLAT",
     "makeFringeFrame": "FRINGE",
+    "makeIRAFCompatible": "IRAFCOMP",
     "measureBG": "MEASREBG",
     "measureIQ": "MEASREIQ",
     "measureCC": "MEASRECC",
