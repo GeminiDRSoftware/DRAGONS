@@ -1,0 +1,4 @@
+# This recipe calls a selection primitive, since K-band F2 flats only have 
+# lamp-off frames, and so need to be treated differently.
+
+selectFlatRecipe

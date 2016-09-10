@@ -1,0 +1,1 @@
+../../../usermanuals/GSAOI_UsersManual/primitives_pages/primitive2.rst
