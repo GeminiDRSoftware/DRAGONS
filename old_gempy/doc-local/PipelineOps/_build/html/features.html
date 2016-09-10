@@ -1,0 +1,240 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Features and Capabilities Currently Available &mdash; QA Pipeline Operation August 2012 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     'August 2012',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="QA Pipeline Operation August 2012 documentation" href="index.html" />
+    <link rel="next" title="How to operate the Gemini Quality Assurance Pipeline" href="operate.html" />
+    <link rel="prev" title="What is this manual about?" href="intro.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="operate.html" title="How to operate the Gemini Quality Assurance Pipeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="What is this manual about?"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">QA Pipeline Operation August 2012 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="features-and-capabilities-currently-available">
+<span id="features"></span><h1>Features and Capabilities Currently Available<a class="headerlink" href="#features-and-capabilities-currently-available" title="Permalink to this headline">¶</a></h1>
+<p>The list available features and capabilities will continuously grow with each
+iterative deployment.  Here we describe the features and capabilities as of
+September 2013.</p>
+<div class="section" id="core-qap-infrastructure">
+<h2>Core QAP Infrastructure<a class="headerlink" href="#core-qap-infrastructure" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><strong>Recipe System</strong></dt>
+<dd>This is the core of the automation.</dd>
+<dt><strong>Calibration Service</strong></dt>
+<dd>This is served by FitsStorage.  The Recipe System makes calibration requests to FitsStorage.</dd>
+<dt><strong>Automatic Polling</strong></dt>
+<dd>The system can poll the DHS directory for new dataset and automatically launch a reduction.</dd>
+<dt><strong>Nighttime QA Metrics Reporting</strong></dt>
+<dd>QA Metrics are being reported in a GUI.  The GUI also provides plots of metrics through the night.</dd>
+<dt><strong>QA Metrics Database</strong></dt>
+<dd>QA Metrics are stored in FitsStorage for permanent records.  Staff are able to access the database at any time.</dd>
+</dl>
+</div>
+<div class="section" id="supported-instrument-and-mode">
+<h2>Supported Instrument and Mode<a class="headerlink" href="#supported-instrument-and-mode" title="Permalink to this headline">¶</a></h2>
+<p><strong>GMOS Imaging</strong></p>
+<blockquote>
+<div><ul>
+<li><p class="first">Processing of <strong>acquisition</strong> images</p>
+</li>
+<li><p class="first">Processing of <strong>science</strong> observations</p>
+</li>
+<li><p class="first">Processing of <strong>biases</strong>, to create processed biases</p>
+</li>
+<li><p class="first">Processing of imaging <strong>flats</strong>, to create processed flats</p>
+</li>
+<li><p class="first">Processing of science observations, to create processed <strong>fringe frames</strong></p>
+</li>
+<li><p class="first">Variance and DQ planes propagation</p>
+</li>
+<li><p class="first">Display of current image and stacked image, if available (ds9)</p>
+</li>
+<li><dl class="first docutils">
+<dt>Calibration request supported:</dt>
+<dd><ul class="first last simple">
+<li>Retrieval of processed bias matching overscan and trim status</li>
+<li>Retrieval of processed imaging flats</li>
+<li>Retrieval of processed fringe frame</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Data reduction steps supported:</dt>
+<dd><ul class="first last simple">
+<li>Overscan correction</li>
+<li>Trim overscan section</li>
+<li>Bias correction</li>
+<li>Flat correction</li>
+<li>Fringe correction</li>
+<li>Detection of point sources</li>
+<li>Registration and alignment of images from same observation</li>
+<li>Stacking of images from same observation</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>CCDs support</dt>
+<dd><ul class="first last simple">
+<li>Current (Aug 2012) EEV CCDs and E2V CCDs</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">Note that stacking has been removed from the standard recipe for the time
+being.  The CL task used to stack is too slow.  Stacking will be re-enable
+once a more performant Python or C/C++ version is available.  (No plans yet.)</p>
+</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="supported-metrics-measurements">
+<h2>Supported Metrics Measurements<a class="headerlink" href="#supported-metrics-measurements" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt><strong>Automatic measurement of image quality metrics to determine IQ band</strong></dt>
+<dd><p class="first">This includes <strong>seeing</strong> and <strong>PSF ellipticity</strong>.</p>
+<p>Available for:</p>
+<ul class="last simple">
+<li>GMOS Imaging</li>
+</ul>
+</dd>
+<dt><strong>Automatic astrometry</strong></dt>
+<dd><p class="first">This is available for:</p>
+<ul class="last simple">
+<li>GMOS Imaging</li>
+</ul>
+</dd>
+<dt><strong>Automatic measurement of cloud cover conditions to determine the CC band</strong></dt>
+<dd><p class="first">This includes <strong>zero-points</strong> and <strong>extinction</strong></p>
+<p>This is available for:</p>
+<ul class="last simple">
+<li>GMOS Imaging</li>
+</ul>
+</dd>
+<dt><strong>Automatic measurement of sky background to determine the BG band</strong></dt>
+<dd><p class="first">This is available for:</p>
+<ul class="last simple">
+<li>GMOS Imaging</li>
+</ul>
+</dd>
+<dt><strong>Automatic storage of QA Metrics to database</strong></dt>
+<dd><p class="first">This is available for:</p>
+<ul class="last simple">
+<li>GMOS Imaging</li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="notable-features-not-included-yet">
+<h2>Notable features NOT INCLUDED yet<a class="headerlink" href="#notable-features-not-included-yet" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>GMOS Hamamatsu CCDs</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Features and Capabilities Currently Available</a><ul>
+<li><a class="reference internal" href="#core-qap-infrastructure">Core QAP Infrastructure</a></li>
+<li><a class="reference internal" href="#supported-instrument-and-mode">Supported Instrument and Mode</a></li>
+<li><a class="reference internal" href="#supported-metrics-measurements">Supported Metrics Measurements</a></li>
+<li><a class="reference internal" href="#notable-features-not-included-yet">Notable features NOT INCLUDED yet</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="intro.html"
+                        title="previous chapter">What is this manual about?</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="operate.html"
+                        title="next chapter">How to operate the Gemini Quality Assurance Pipeline</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/features.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="operate.html" title="How to operate the Gemini Quality Assurance Pipeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="What is this manual about?"
+             >previous</a> |</li>
+        <li><a href="index.html">QA Pipeline Operation August 2012 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Kathleen Labrie.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
