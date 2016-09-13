@@ -1,4 +1,0 @@
-\select@language {english}
-\contentsline {chapter}{\numberline {1}Document1}{1}{chapter.1}
-\contentsline {chapter}{Appendices}{}{section*.3}
-\contentsline {chapter}{\numberline {A}About Something}{3}{appendix.A}
