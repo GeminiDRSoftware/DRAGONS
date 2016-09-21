@@ -55,7 +55,7 @@ def buildParser(version):
                                   "_"*28 + "\n" + "_"*20 + 
                                   " Recipe Processing Management System " + 
                                   "_"*20 + "\n" + "_"*18 + 
-                                  " recipeSystewm2 Release" + version + "_"*18, 
+                                  " recipeSystem2 Release" + version + "_"*18, 
                                   prog="reduce", 
                                   formatter_class=ReduceHelpFormatter,
                                   fromfile_prefix_chars='@')
@@ -73,8 +73,8 @@ def buildParser(version):
 
     parser.add_argument("--context", dest="context", default=None,
                         nargs="*", action=UnitaryArgumentAction,
-                        help="Use <context> for primitives sensitive to "
-                        "context. Eg., --context QA")
+                        help="Use <context> for recipe selection and "
+                        " primitives sensitive to context. Eg., --context QA")
 
     parser.add_argument("--logmode", dest="logmode", default="standard",
                         nargs="*", action=UnitaryArgumentAction,
@@ -93,19 +93,35 @@ def buildParser(version):
 
     parser.add_argument("-p", "--param", dest="userparam", default=None,
                         nargs="*", action=ParameterAction,
-                        help="Set a parameter from the command line. The form  "
-                        "'-p par=val' sets parameter in the reduction context "
-                        "such that all primitives will 'see' it.  The form: "
-                        "'-p ASTROTYPE:primitivename:par=val', sets the "
-                        "parameter such that it applies only when the current "
-                        "reduction type (type of current reference image) "
-                        "is 'ASTROTYPE' and the primitive is 'primitivename'. "
-                        "Separate par/val pairs by whitespace: "
+                        help="Set a parameter from the command line. The form "
+                        "'-p par=val' sets a parameter such that all primitives "
+                        "with that defined parameter will 'see' it.  The form: "
+                        "'-p primitivename:par=val', sets the parameter only "
+                        "for 'primitivename'. Separate par/val pairs by "
+                        "whitespace: "
                         "(eg. '-p par1=val1 par2=val2')")
 
     parser.add_argument("-r", "--recipe", dest="recipename", default=None,
                         nargs="*", action=UnitaryArgumentAction,
-                        help="specify which recipe to run by name")
+                        help="Specify a recipe by name. Users can request "
+                        "non-default system recipe functions by their simple "
+                        "names, e.g., -r qaStack, OR may specify their own "
+                        "recipe file and recipe function. A user defined "
+                        "recipe function must be 'dotted' with the recipe file."
+                        " E.g., "
+                        " '-r /path/to/recipes/recipefile.recipe_function' "
+                        "For a recipe file in the current working directory "
+                        "(cwd), only the file name is needed, as in, "
+                        "'-r recipefile.recipe_function' "
+                        "The fact that the recipe function is dotted with the "
+                        "recipe file name implies that multiple user defined "
+                        "recipe functions can be defined in a single file." )
+
+    parser.add_argument("--user_cal", dest='user_cal', default=None,
+                        nargs="*", action=UnitaryArgumentAction,
+                        help="Specify user supplied calibrations for "
+                        "calibration types. "
+                        "Eg., --user_cal processed_arc:gsTest_arc.fits")
 
     parser.add_argument("--suffix", dest='suffix', default=None,
                         nargs="*", action=UnitaryArgumentAction,

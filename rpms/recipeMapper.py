@@ -1,7 +1,7 @@
 
-from utils.errors       import RecipeNotFound
-
+from utils.errors import RecipeNotFound
 from utils.mapper_utils import dictify
+from utils.mapper_utils import find_user_recipe
 from utils.mapper_utils import retrieve_primitive_set
 from utils.mapper_utils import retrieve_recipe
 
@@ -10,8 +10,8 @@ GMOS_INSTR    = ['GMOS-S', 'GMOS-N']
 # ------------------------------------------------------------------------------
 class RecipeMapper(object):
     """
-    Primitives are algorithmically selected based on an dataset's tags and
-    a primitive class's 'tagset' attribute.
+    Recipes and primitives are algorithmically selected based on an dataset's 
+    tags. 
     (See utils.mapper_utils.retrieve_primitive_set())
 
     Retrieve the appropriate primitive class for a dataset, using all
@@ -25,6 +25,8 @@ class RecipeMapper(object):
     'primitives_IMAGE'
     >>> primitive_set.__class__
     <class 'primitives_IMAGE.PrimitivesIMAGE'>
+
+    
 
     """
     def __init__(self, adinputs, recipename='default', context='QA', uparms=None):
@@ -57,17 +59,17 @@ class RecipeMapper(object):
         self.userparams = dictify(uparms)
 
     def get_applicable_primitives(self):
-        matching_tags, primitive_actual = retrieve_primitive_set(self.tags, self.pkg)
+        tag_match, primitive_actual = retrieve_primitive_set(self.tags, self.pkg)
         return primitive_actual(self.adinputs, uparms=self.userparams)
 
     def get_applicable_recipe(self):
-        recipefn = retrieve_recipe(self.tags, self.pkg, self.recipename, self.context)
+        recipefn = find_user_recipe(self.recipename)
+        if recipefn is None:
+            tag_match, recipefn = retrieve_recipe(self.tags, self.pkg, 
+                                                     self.recipename, self.context)
 
-        # try:
-        #     recipe = getattr(self.recipelib, self.recipename)
-        # except AttributeError:
-        #     emsg = "Recipe {} not found.".format(self.recipename)
-        #     raise RecipeNotFoundError(emsg)
+        if recipefn is None:
+            raise RecipeNotFound("Recipe '{}' not found.".format(self.recipename))
 
         return recipefn
 

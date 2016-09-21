@@ -99,10 +99,10 @@ class ReduceNH(object):
 
         rm = RecipeMapper(self.adinputs, recipename=self.urecipe, 
                               context=self.context, uparms=self.uparms)
-        rm.set_recipe_library()
+
         try:
             recipe = rm.get_applicable_recipe()
-        except RecipeNotFoundError, err:
+        except RecipeNotFound as err:
             xstat = signal.SIGIO
             log.error(str(err))
             return xstat

@@ -3,3 +3,6 @@ class RecipeNotFound(Exception):
 
 class AstroDataError(Exception):
       pass
+
+class StackError(IOError):
+      pass

@@ -25,7 +25,9 @@ from packageConfig import PackageConfig
 #
 # and supporting generators to introsepctively find primitive classes and recipe
 # libraries.
-
+# ------------------------------------------------------------------------------
+RECIPEMARKER = 'recipes'
+# ------------------------------------------------------------------------------
 def _package_loader(pkgname):
     pfile, pkgpath, descr = imp.find_module(pkgname)
     loaded_pkg = imp.load_module(pkgname, pfile, pkgpath, descr)
@@ -33,7 +35,7 @@ def _package_loader(pkgname):
     return loaded_pkg
 
 # ------------------------------------------------------------------------------
-# Recipe hunt cascade
+# Recipe search cascade
 
 def _generate_context_libs(pkg):
     pkg_importer = pkgutil.ImpImporter(pkg)
@@ -55,7 +57,7 @@ def _generate_context_pkg(pkg, context):
     for mod, ispkg in _generate_context_libs(loaded_pkg.__path__[0]):
         yield mod, ispkg
 
-def _generate_recipe_modules(pkg, context, recipedir='recipes'):
+def _generate_recipe_modules(pkg, context, recipedir=RECIPEMARKER):
     pkg_importer = pkgutil.ImpImporter(pkg)
     for pkgname, ispkg in pkg_importer.iter_modules():
         if ispkg and pkgname == recipedir:
@@ -100,15 +102,20 @@ def retrieve_recipe(adtags, pkgname, rname, context):
     """
     matched_set = (set([]), None)
     for rlib in _get_tagged_recipes(pkgname, context):
-        if adtags.issuperset(rlib.recipe_tags):
-            isect = rlib.recipe_tags
-            matched_set = (isect, rlib) if isect > matched_set[0] else matched_set
+        if hasattr(rlib, 'recipe_tags'):
+            if adtags.issuperset(rlib.recipe_tags):
+                isect = rlib.recipe_tags
+                matched_set = (isect, rlib) if isect > matched_set[0] else matched_set
+            else:
+                continue
         else:
             continue
 
     isection, rlib = matched_set
-    if hasattr(rlib, 'recipe_tags'):
+    try:
         recipe_actual = getattr(rlib, rname)
+    except AttributeError:
+        recipe_actual = None
     return isection, recipe_actual
 
 
@@ -210,9 +217,48 @@ def dotpath(*args):
     """
     ppath = ''
     for pkg in args:
-        if ppath:
-            ppath += os.extsep + pkg
-        else:
-            ppath += pkg
+        ppath += os.extsep + pkg if ppath else pkg
     ppath.rstrip(os.extsep)
     return ppath
+
+def find_user_recipe(dashr):
+    """
+    Function recieves the value of the reduce [-r, --recipe] flag, if passed.
+    This will be a path to a recipe file and a dotted recipe name, which
+    exists as a function in the recipe file. A properly specified user
+    recipe shall contain one, and only one, dot operator.
+
+    If the recipefile.recipename cannot be found on the path, whether 
+    specified or implied (as cwd), then None is returned.
+
+    The string value of dashr will look like,
+
+    -r '/path/to/users/recipes/recipefile.recipe_function'
+
+    -r 'recipefile.recipe_function' -- recipe file in cwd.
+
+    A recipe name with no dot operator implies a recipe name in the system 
+    recipe library.
+    
+    :parameter dashr: a path to a recipe file dotted with a recipe function name.
+    :type dashr: <str>
+
+    :returns: imported recipe function OR None
+    :rtype:   <type 'function'> or  None
+
+    """
+    rpath = os.path.abspath(os.path.expanduser(dashr))
+    addsyspath, recipe = os.path.split(rpath)
+    try:
+        modname, rname = recipe.split('.')
+    except ValueError:
+        return None
+
+    sys.path.append(addsyspath)
+    rmod = import_module(modname)
+    try:
+        recipefn = getattr(rmod, rname)
+    except AttributeError:
+        recipefn = None
+    
+    return recipefn
