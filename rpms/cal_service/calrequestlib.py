@@ -1,9 +1,16 @@
 #
-#                                                         calibrationRequests.py
+#                                                               calrequestlib.py
 # ------------------------------------------------------------------------------
 import os
-from datetime  import datetime
-from urllib2 import HTTPError
+from datetime import datetime
+
+# Handle 2.x and 3.x. Module urlparse is urllib.parse in 3.x
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
+
+from urllib2  import HTTPError
 
 from astrodata import AstroData
 
@@ -72,7 +79,7 @@ def get_cal_requests(inputs, caltype):
     @type caltype:  <str>
     
     @return: Returns a list of CalibrationRequest instances, one for
-    each passed 'ad' instance in 'inputs'.
+             each passed 'ad' instance in 'inputs'.
     @rtype:  <list>
 
     """        
@@ -87,12 +94,8 @@ def get_cal_requests(inputs, caltype):
         desc_dict = {}
         for desc_name in descriptor_list:
             descriptor = getattr(ad, desc_name)
-            try:
-                dv = descriptor(options.get(desc_name, ''))
-            except KeyError:
-                pass
-            else:
-                desc_dict[desc_name] = None if dv.is_none() else dv.for_db()
+            dv = descriptor(options.get(desc_name, ''))
+            desc_dict[desc_name] = None if dv.is_none() else dv.for_db()
 
         rq.descriptors = desc_dict
         rqEvents.append(rq)
@@ -132,8 +135,9 @@ def process_cal_requests(cal_requests):
             continue
 
         log.info("found calibration (url): " + calurl)
-        if calurl.startswith("file://"):
-            calfile = calurl[7:]
+        components = urlparse(calurl)
+        if components.scheme == 'file':
+            calfile = components.path
             calurl = calfile
         else:
             calfile = None

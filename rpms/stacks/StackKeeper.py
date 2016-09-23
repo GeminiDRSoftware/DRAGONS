@@ -7,7 +7,7 @@ import pickle
 from copy import copy
 from threading import RLock
 
-# This crap needs to be dealth with thorooughly. Esp. the "Records" classes
+# This crap needs to be dealt with thorooughly, esp. the "Records" classes
 # and usage. These classes (reductionContextRecords) purpose is not clear
 # in the context of NH. 
 # The xmlrpc proxy is dispatched and needs to be purged if, in fact, the methods
