@@ -1,0 +1,7 @@
+.. _test:
+
+****
+Test
+****
+
+:ref:`<reduce>`

@@ -1,0 +1,1220 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. Pixel Data &mdash; AstroData Users Manual X1.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/todo-styles.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'X1.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="AstroData Users Manual X1.0.1 documentation" href="index.html" />
+    <link rel="next" title="6. Table Data" href="tables.html" />
+    <link rel="prev" title="4. FITS Headers" href="headers.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="tables.html" title="6. Table Data"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="headers.html" title="4. FITS Headers"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="pixel-data">
+<span id="data"></span><h1>5. Pixel Data<a class="headerlink" href="#pixel-data" title="Permalink to this headline">¶</a></h1>
+<p><strong>Try it yourself</strong></p>
+<p>If you wish to follow along and try the commands yourself, download
+the data package, go to the <tt class="docutils literal"><span class="pre">playground</span></tt> directory and copy over
+the necessary files.</p>
+<div class="highlight-python"><div class="highlight"><pre>cd &lt;path&gt;/gemini_python_datapkg-X1/playground
+cp ../data_for_ad_user_manual/N20110313S0188.fits .
+cp ../data_for_ad_user_manual/gmosifu_cube.fits .
+cp ../data_for_ad_user_manual/estgsS20080220S0078.fits .
+</pre></div>
+</div>
+<p>Then launch the Python shell:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">python</span>
+</pre></div>
+</div>
+<div class="section" id="operate-on-the-pixel-data">
+<h2>5.1. Operate on the Pixel Data<a class="headerlink" href="#operate-on-the-pixel-data" title="Permalink to this headline">¶</a></h2>
+<p>The pixel data are stored in a numpy <tt class="docutils literal"><span class="pre">ndarray</span></tt>.  Therefore anything
+that can be done with numpy on a <tt class="docutils literal"><span class="pre">ndarray</span></tt> can be done on the pixel
+data stored in the AstroData object.  Examples include arithmetic,
+statistics, display, plotting, etc.  Please refer to numpy documentation
+for details on what it offers.  In this chapter, we will present some typical
+examples.</p>
+<p>But first, here is how to acess the data array stored in an AstroData
+object.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+
+<span class="n">the_data</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+<span class="c"># Loop through the extensions.</span>
+<span class="k">for</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">]:</span>
+   <span class="n">the_data</span> <span class="o">=</span> <span class="n">extension</span><span class="o">.</span><span class="n">data</span>
+   <span class="k">print</span> <span class="n">the_data</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+<p>An extension&#8217;s <tt class="docutils literal"><span class="pre">data</span></tt> attribute returns a numpy <tt class="docutils literal"><span class="pre">ndarray</span></tt>.  An extension
+must be specified by name (Line 5) or position ID, or extracted from the
+main AstroData object (Line 8).  Also, remember that PHUs do not have any
+pixel data, so none of what is discussed in this chapter applies to the PHU.</p>
+<p>The AstroData pixel data can be manipulated like any other <tt class="docutils literal"><span class="pre">ndarray</span></tt>.  For
+example, on Line 10, we calculate the sum of the pixel values with the
+<tt class="docutils literal"><span class="pre">ndarray</span></tt> <tt class="docutils literal"><span class="pre">sum()</span></tt> method.</p>
+</div>
+<div class="section" id="arithmetic-on-astrodata-objects">
+<h2>5.2. Arithmetic on AstroData Objects<a class="headerlink" href="#arithmetic-on-astrodata-objects" title="Permalink to this headline">¶</a></h2>
+<p>AstroData supports basic arithmetic directly:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="64%" />
+<col width="36%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>addition</td>
+<td>.add()</td>
+</tr>
+<tr class="row-even"><td>subtraction</td>
+<td>.sub()</td>
+</tr>
+<tr class="row-odd"><td>multiplication</td>
+<td>.mult()</td>
+</tr>
+<tr class="row-even"><td>division</td>
+<td>.div()</td>
+</tr>
+</tbody>
+</table>
+<p>The big advantage of using the AstroData
+implementation of those operator is that if the AstroData object has variance
+and data quality planes, those will be calculated and propagated to the
+output appropriately.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+
+<span class="c"># addition</span>
+<span class="c">#   ad = ad + 5.</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mf">5.</span><span class="p">)</span>
+
+<span class="c"># subtraction</span>
+<span class="c">#   ad = ad - 5.</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="mf">5.</span><span class="p">)</span>
+
+<span class="c"># multiplication.  Using descriptor as operand.</span>
+<span class="c">#   ad = ad * gain</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">mult</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">gain</span><span class="p">())</span>
+
+<span class="c"># division. Using descriptor as operand.</span>
+<span class="c">#   ad = ad / gain</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">gain</span><span class="p">())</span>
+</pre></div>
+</td></tr></table></div>
+<p>When using AstroData arithmetic, all the science frames (<tt class="docutils literal"><span class="pre">EXTNAME='SCI'</span></tt>)
+are operated on.  The modifications are <strong>done in-place</strong>, the AstroData
+object is modified.</p>
+<p>The AstroData arithmetic methods can be stringed together.  Note that because
+the calculations are done &#8220;in-place&#8221;, <strong>operator precedence cannot be
+respected</strong>. For example,</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ad</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">mult</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+
+<span class="c"># means:  ad = ((ad + 5) * 10) - 5</span>
+<span class="c"># not: ad = ad + (5 * 10) - 5</span>
+</pre></div>
+</div>
+<p>The AstroData data arithmetic method modify the data &#8220;in-place&#8221;.  This means
+that the data values are modified and the original values are no more.  If
+you need to keep the original values unmodified, for example, you will need
+them later, use <tt class="docutils literal"><span class="pre">deepcopy</span></tt> to make a separate copy on which you can work.</p>
+<p>Let us say that we want to calculate <tt class="docutils literal"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">x*10</span> <span class="pre">+</span> <span class="pre">x</span></tt> where <tt class="docutils literal"><span class="pre">x</span></tt> is the
+pixel values.  We must use <tt class="docutils literal"><span class="pre">deepcopy</span></tt> here since after <tt class="docutils literal"><span class="pre">ad.mult(10)</span></tt> the
+values in <tt class="docutils literal"><span class="pre">ad</span></tt> will have been modified and cannot be used for the <tt class="docutils literal"><span class="pre">+</span> <span class="pre">x</span></tt>
+part of the equation.</p>
+<p>Let us follow a pixel through the math.</p>
+<p>The WRONG way to calculate <tt class="docutils literal"><span class="pre">x*10</span> <span class="pre">+</span> <span class="pre">x</span></tt>:</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+
+<span class="n">value_before</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="n">expected_value_after</span> <span class="o">=</span> <span class="n">value_before</span><span class="o">*</span><span class="mi">10</span> <span class="o">+</span> <span class="n">value_before</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">mult</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+<span class="n">bad_value_after</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+
+<span class="k">print</span> <span class="n">expected_value_after</span><span class="p">,</span> <span class="n">bad_value_after</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="c"># The result of the arithmetic above is y = (x*10) + (x*10)</span>
+</pre></div>
+</td></tr></table></div>
+<p>The CORRECT way to calculate <tt class="docutils literal"><span class="pre">x*10</span> <span class="pre">+</span> <span class="pre">x</span></tt>:</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+<span class="n">adcopy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+
+<span class="n">value_before</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="n">expected_value_after</span> <span class="o">=</span> <span class="n">value_before</span><span class="o">*</span><span class="mi">10</span> <span class="o">+</span> <span class="n">value_before</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">adcopy</span><span class="o">.</span><span class="n">mult</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+
+<span class="n">good_value_after</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">expected_value_after</span><span class="p">,</span> <span class="n">good_value_after</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">adcopy</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+<p>As one can see, for complex equation, using the AstroData arithmetic method
+can get fairly confusing.  Operator overload would solve this situation but
+it has not been implemented yet mostly due to a lack of resources.  Therefore,
+we recommend the use numpy for really complex equation since operator overload
+is implemented in numpy and the operator precedence is respected.  The
+downside is that if you need the variance plane propagated correctly, you will
+have to do the math yourself.</p>
+<p>Here is the <tt class="docutils literal"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">x*10</span> <span class="pre">+</span> <span class="pre">x</span></tt> operation again, but this time numpy is used on
+the <tt class="docutils literal"><span class="pre">ndarray</span></tt> returned by <tt class="docutils literal"><span class="pre">.data</span></tt>.  Like before, we follow a pixel through
+the math.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+
+<span class="n">value_before</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="n">expected_value_after</span> <span class="o">=</span> <span class="n">value_before</span><span class="o">*</span><span class="mi">10</span> <span class="o">+</span> <span class="n">value_before</span>
+
+<span class="k">for</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">]:</span>
+    <span class="n">data_array</span> <span class="o">=</span> <span class="n">extension</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">data_array</span> <span class="o">=</span> <span class="n">data_array</span><span class="o">*</span><span class="mi">10</span> <span class="o">+</span> <span class="n">data_array</span>
+    <span class="n">extension</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data_array</span>
+
+<span class="n">value_after</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">expected_value_after</span><span class="p">,</span> <span class="n">value_after</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<div class="section" id="variance">
+<h2>5.3. Variance<a class="headerlink" href="#variance" title="Permalink to this headline">¶</a></h2>
+<p>The AstroData arithmetic methods can propagate the variance planes, if any are
+present.  The variance extensions must be named <tt class="docutils literal"><span class="pre">VAR</span></tt> to be recognized as
+such.</p>
+<p>The initial variance from read noise and poisson noise normally needs to be
+calculated by the programmer; the raw data normally contains only science
+extensions.</p>
+<div class="section" id="adding-variance-extensions">
+<h3>5.3.1. Adding variance extensions<a class="headerlink" href="#adding-variance-extensions" title="Permalink to this headline">¶</a></h3>
+<p>For the sake of simplicity, only the poisson noise is considered in this
+example.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">]:</span>
+   <span class="n">variance</span> <span class="o">=</span> <span class="n">extension</span><span class="o">.</span><span class="n">data</span> <span class="o">/</span> <span class="n">extension</span><span class="o">.</span><span class="n">gain</span><span class="p">()</span><span class="o">.</span><span class="n">as_pytype</span><span class="p">()</span>
+   <span class="n">variance_header</span> <span class="o">=</span> <span class="n">extension</span><span class="o">.</span><span class="n">header</span>
+   <span class="n">variance_extension</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">variance</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">variance_header</span><span class="p">)</span>
+   <span class="n">variance_extension</span><span class="o">.</span><span class="n">rename_ext</span><span class="p">(</span><span class="s">&#39;VAR&#39;</span><span class="p">)</span>
+   <span class="n">ad</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">variance_extension</span><span class="p">)</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<span class="c"># Let&#39;s save a copy of this dataset.</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;N188_with_var.fits&#39;</span><span class="p">)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+<p>On Line 6, the loop through all the science extension is launched.  The
+Poisson noise will be calculated for each science extension and stored in a
+new extension named &#8216;VAR&#8217;.  The extension version informs on the association
+between the &#8216;SCI&#8217; and the &#8216;VAR&#8217; extensions, eg. [&#8216;VAR&#8217;, 1] is the variance
+for [&#8216;SCI&#8217;, 1].</p>
+<p>For each science extension, the variance is calculated from the pixel data
+and the gain obtained from the Descriptor <tt class="docutils literal"><span class="pre">.gain</span></tt> (Line 7).  Note the use
+of <tt class="docutils literal"><span class="pre">as_pytype()</span></tt> on the Descriptor.  Since <tt class="docutils literal"><span class="pre">extension.data</span></tt> is a
+<tt class="docutils literal"><span class="pre">ndarray</span></tt> not a standard Python type, the DescriptorValue does not know
+how it is expected to behave, requiring the use of <tt class="docutils literal"><span class="pre">as_pytype()</span></tt> which
+converts the DescriptorValue to a Python float.</p>
+<p>On Line 8, we simply copy the header for the science extension and use that
+as the header for the new variance extension (Line 9).</p>
+<p>The new variance extension is renamed to &#8216;VAR&#8217; on Line 10 &#8211; it was &#8216;SCI&#8217; since
+we copied the header &#8211; and append the extension to the AstroData object
+(Line 11).</p>
+<p>Finally, we write that AstroData object to a new MEF on disk.  We will use
+that MEF in the next examples.</p>
+<p>For reference, the AstroData object before the variance planes are added looks
+like this:</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17</pre></div></td><td class="code"><div class="highlight"><pre>Filename: N20110313S0188.fits
+    Type: AstroData
+    Mode: readonly
+
+AD No.    Name          Type      MEF No.  Cards    Dimensions   Format
+        hdulist       HDUList
+        phu           PrimaryHDU    0       179
+        phu.header    Header
+[0]     (&#39;SCI&#39;, 1)    ImageHDU      1        37    (2304, 1056)  float32
+           .header    Header
+           .data      ndarray
+[1]     (&#39;SCI&#39;, 2)    ImageHDU      2        37    (2304, 1056)  float32
+           .header    Header
+           .data      ndarray
+[2]     (&#39;SCI&#39;, 3)    ImageHDU      3        37    (2304, 1056)  float32
+           .header    Header
+           .data      ndarray
+</pre></div>
+</td></tr></table></div>
+<p>After the variance planes are added, the structure looks like this:</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26</pre></div></td><td class="code"><div class="highlight"><pre>Filename: N20110313S0188.fits
+    Type: AstroData
+    Mode: readonly
+
+AD No.    Name          Type      MEF No.  Cards    Dimensions   Format
+        hdulist       HDUList
+        phu           PrimaryHDU    0       179
+        phu.header    Header
+[0]     (&#39;SCI&#39;, 1)    ImageHDU      1        37    (2304, 1056)  float32
+           .header    Header
+           .data      ndarray
+[1]     (&#39;SCI&#39;, 2)    ImageHDU      2        37    (2304, 1056)  float32
+           .header    Header
+           .data      ndarray
+[2]     (&#39;SCI&#39;, 3)    ImageHDU      3        37    (2304, 1056)  float32
+           .header    Header
+           .data      ndarray
+[3]     (&#39;VAR&#39;, 1)    ImageHDU      4        37    (2304, 1056)  float32
+           .header    Header
+           .data      ndarray
+[4]     (&#39;VAR&#39;, 2)    ImageHDU      5        37    (2304, 1056)  float32
+           .header    Header
+           .data      ndarray
+[5]     (&#39;VAR&#39;, 3)    ImageHDU      6        37    (2304, 1056)  float32
+           .header    Header
+           .data      ndarray
+</pre></div>
+</td></tr></table></div>
+</div>
+<div class="section" id="automatic-variance-propagation">
+<h3>5.3.2. Automatic variance propagation<a class="headerlink" href="#automatic-variance-propagation" title="Permalink to this headline">¶</a></h3>
+<p>As mentioned before, if the AstroData arithmetic methods are used, the
+variance will be propagated automatically.  A simple <tt class="docutils literal"><span class="pre">ad.mult()</span></tt> suffices
+to multiply the science pixels and calculate the resulting variance, for all
+extensions.</p>
+<p>Let us follow a science pixel and a variance pixel through the AstroData
+arithmetic.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20</pre></div></td><td class="code"><div class="highlight"><pre><span class="c">#     output = x * x</span>
+<span class="c"># var_output = var * x^2 + var * x^2</span>
+
+<span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">Astrodata</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N188_with_var.fits&#39;</span><span class="p">)</span>
+
+<span class="n">value_before</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="n">variance_before</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;VAR&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="n">expected_value_after</span> <span class="o">=</span> <span class="n">value_before</span> <span class="o">+</span> <span class="n">value_before</span>
+<span class="n">expected_variance_after</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">variance_before</span> <span class="o">*</span> <span class="n">value_before</span> <span class="o">*</span> <span class="n">value_before</span><span class="p">)</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">mult</span><span class="p">(</span><span class="n">ad</span><span class="p">)</span>
+
+<span class="n">value_after</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="n">variance_after</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;VAR&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">50</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">expected_value_after</span><span class="p">,</span> <span class="n">value_after</span>
+<span class="k">print</span> <span class="n">expected_variance_after</span><span class="p">,</span> <span class="n">variance_after</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+<p>So all it took to multiply the science extensions by themselves and propagate
+the variance accordingly was <tt class="docutils literal"><span class="pre">ad.mult(ad)</span></tt> (Line 13).</p>
+</div>
+<div class="section" id="manual-propagation-with-numpy">
+<h3>5.3.3. Manual propagation with numpy<a class="headerlink" href="#manual-propagation-with-numpy" title="Permalink to this headline">¶</a></h3>
+<p>To do the same thing as <tt class="docutils literal"><span class="pre">ad.mult(ad)</span></tt>, but by operating directly on the
+numpy arrays of each extension:</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N188_with_var.fits&#39;</span><span class="p">)</span>
+
+<span class="c"># This loop is the equivalent of ``ad.mult(ad)``</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">ad</span><span class="o">.</span><span class="n">count_exts</span><span class="p">(</span><span class="s">&#39;SCI&#39;</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;VAR&#39;</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">d</span><span class="o">*</span><span class="n">d</span>
+    <span class="n">variance</span> <span class="o">=</span> <span class="n">v</span> <span class="o">*</span> <span class="n">d</span><span class="o">*</span><span class="n">d</span> <span class="o">+</span> <span class="n">v</span> <span class="o">*</span> <span class="n">d</span><span class="o">*</span><span class="n">d</span>
+    <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+    <span class="n">ad</span><span class="p">[</span><span class="s">&#39;VAR&#39;</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">variance</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+</div>
+<div class="section" id="display">
+<h2>5.4. Display<a class="headerlink" href="#display" title="Permalink to this headline">¶</a></h2>
+<p>Displaying <tt class="docutils literal"><span class="pre">ndarray</span></tt> arrays from Python is straighforward with the
+<tt class="docutils literal"><span class="pre">numdisplay</span></tt> module.  The module also has a function to read the position
+the cursor, which can be useful when developing an interactive tool.</p>
+<p>The <tt class="docutils literal"><span class="pre">numdisplay</span></tt> module is a module of the <tt class="docutils literal"><span class="pre">stsci.tools</span></tt> package
+distributed in Ureka.</p>
+<div class="section" id="displaying">
+<h3>5.4.1. Displaying<a class="headerlink" href="#displaying" title="Permalink to this headline">¶</a></h3>
+<p>To display the pixel data of an AstroData extension, the
+<tt class="docutils literal"><span class="pre">numdisplay.display</span></tt> function is used. A display tool, like DS9 or ximtool,
+must also be running.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">from</span> <span class="nn">stsci.numdisplay</span> <span class="kn">import</span> <span class="n">display</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+
+<span class="n">display</span><span class="p">(</span><span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+<span class="c"># To scale &quot;a la IRAF&quot;</span>
+<span class="n">display</span><span class="p">(</span><span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">zscale</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c"># To set the minimum and maximum values to display</span>
+<span class="n">display</span><span class="p">(</span><span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">z1</span><span class="o">=</span><span class="mi">700</span><span class="p">,</span> <span class="n">z2</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+</pre></div>
+</td></tr></table></div>
+<p><tt class="docutils literal"><span class="pre">numdisplay.display</span></tt> accepts various arguments. See <tt class="docutils literal"><span class="pre">help(display)</span></tt> to
+get more information.  The examples on Line 6, 9, and 12, are probably the
+most common, especially for users coming from IRAF.</p>
+</div>
+<div class="section" id="retrieving-cursor-position">
+<h3>5.4.2. Retrieving cursor position<a class="headerlink" href="#retrieving-cursor-position" title="Permalink to this headline">¶</a></h3>
+<p>The function <tt class="docutils literal"><span class="pre">numdisplay.readcursor</span></tt> can be used to retrieve cursor position.
+Note that it will <strong>not</strong> respond to mouse clicks, <strong>only</strong> keyboard entries
+are acknowledged.</p>
+<p>When invoked, <tt class="docutils literal"><span class="pre">readcursor()</span></tt> will stop the flow of the program and wait for
+the user to put the cursor on top of the image and type a key.  A <strong>string</strong>
+with four space-separated values are going to be returned: the x and y
+coordinates, a frame reference number, and the value of the key the user hit.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15</pre></div></td><td class="code"><div class="highlight"><pre><span class="c"># here we assume that the previous example has just been run.</span>
+
+<span class="kn">from</span> <span class="nn">stsci.numdisplay</span> <span class="kn">import</span> <span class="n">readcursor</span>
+
+<span class="c"># User instructions: Put cursor on image, type a key.</span>
+<span class="n">cursor_coo</span> <span class="o">=</span> <span class="n">readcursor</span><span class="p">()</span>
+<span class="k">print</span> <span class="n">cursor_coo</span>
+
+<span class="c"># To extract only the x,y coordinates:</span>
+<span class="p">(</span><span class="n">xcoo</span><span class="p">,</span> <span class="n">ycoo</span><span class="p">)</span> <span class="o">=</span> <span class="n">cursor_coo</span><span class="o">.</span><span class="n">split</span><span class="p">()[:</span><span class="mi">2</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">xcoo</span><span class="p">,</span> <span class="n">ycoo</span>
+
+<span class="c"># If you are also interested in the keystoke:</span>
+<span class="p">(</span><span class="n">xcoo</span><span class="p">,</span> <span class="n">ycoo</span><span class="p">,</span> <span class="n">junk</span><span class="p">,</span> <span class="n">keystroke</span><span class="p">)</span> <span class="o">=</span> <span class="n">cursor_coo</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+<span class="k">print</span> <span class="s">&#39;You pressed this key: &quot;</span><span class="si">%s</span><span class="s">&quot;&#39;</span> <span class="o">%</span> <span class="n">keystroke</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+</div>
+<div class="section" id="useful-tools-from-the-numpy-and-scipy-modules">
+<h2>5.5. Useful tools from the Numpy and SciPy Modules<a class="headerlink" href="#useful-tools-from-the-numpy-and-scipy-modules" title="Permalink to this headline">¶</a></h2>
+<p>Like the Display section, this section is not really specific to AstroData,
+but is rather an introduction to numpy and scipy, and to using those modules
+on <tt class="docutils literal"><span class="pre">ndarray</span></tt> objects.  Since AstroData pixel data is stored in that format,
+it is believe important to show a few examples to steer new users in the
+right direction.</p>
+<p>The <tt class="docutils literal"><span class="pre">numpy</span></tt> and <tt class="docutils literal"><span class="pre">scipy</span></tt> modules offer a multitude of functions and tools.
+They both have their own documentation.  Here we simply highlighting a few
+functions that could be used for common things an astronomer might want to do.
+The idea is to get the reader started in her exploration of <tt class="docutils literal"><span class="pre">numpy</span></tt> and
+<tt class="docutils literal"><span class="pre">scipy</span></tt>.</p>
+<div class="section" id="ndarray">
+<h3>5.5.1. ndarray<a class="headerlink" href="#ndarray" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+<span class="c"># Shape of array, (NAXIS2, NAXIS1)</span>
+<span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+
+<span class="c"># Value of pixel with IRAF coordinates (100, 50)</span>
+<span class="n">data</span><span class="p">[</span><span class="mi">49</span><span class="p">,</span><span class="mi">99</span><span class="p">]</span>
+
+<span class="c"># Data type</span>
+<span class="n">data</span><span class="o">.</span><span class="n">dtype</span>
+</pre></div>
+</td></tr></table></div>
+<p>The two most important thing to remember for users coming from the IRAF world
+are that the array has the y-axis in the first index, the x-axis in the second
+(Line 8, 11), and that the array indices are zero-indexed, not one-indexed
+(Line 11).</p>
+<p>Sometimes it is useful to know the type of the values stored in the array,
+eg. integer, float, double-precision, etc., this information is obtained with
+<tt class="docutils literal"><span class="pre">dtype</span></tt> (Line 14).</p>
+</div>
+<div class="section" id="simple-numpy-statistics">
+<h3>5.5.2. Simple numpy statistics<a class="headerlink" href="#simple-numpy-statistics" title="Permalink to this headline">¶</a></h3>
+<p>A lot of functions and methods are available in numpy to probe the array, too
+many to cover here, but here are a couple examples.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">data</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note how <tt class="docutils literal"><span class="pre">mean()</span></tt> is called differently from the other two.  <tt class="docutils literal"><span class="pre">mean()</span></tt> is
+a <tt class="docutils literal"><span class="pre">ndarray</span></tt> method, the others are numpy functions.  The implementation
+details are clearly well beyond the scope of this manual, but when looking
+for the tool you need, keep in mind that there are two sets of functions to
+look into.  Duplications like <tt class="docutils literal"><span class="pre">.mean()</span></tt> and <tt class="docutils literal"><span class="pre">np.average()</span></tt> can happen,
+but they are not the norm.  The readers are strongly encouraged to refer to the
+numpy documentation to find the tool they need.</p>
+</div>
+<div class="section" id="clipped-statistics">
+<h3>5.5.3. Clipped statistics<a class="headerlink" href="#clipped-statistics" title="Permalink to this headline">¶</a></h3>
+<p>It is common in astronomy to apply clipping to the statistics, a clipped
+average, for example.</p>
+<p>The numpy <tt class="docutils literal"><span class="pre">ma</span></tt> module can be used to create masks of the values to reject.</p>
+<p>In the example below, we calculate a clipped mean with rejection at
++/- 3 times the standard deviation.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5
+6</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy.ma</span> <span class="kn">as</span> <span class="nn">ma</span>
+
+<span class="n">stddev</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+<span class="n">mean</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+<span class="n">clipped_mean</span> <span class="o">=</span> <span class="n">ma</span><span class="o">.</span><span class="n">masked_outside</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mean</span><span class="o">-</span><span class="mi">3</span><span class="o">*</span><span class="n">stddev</span><span class="p">,</span> <span class="n">mean</span><span class="o">+</span><span class="mi">3</span><span class="o">*</span><span class="n">stddev</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+<p>On Line 6, <tt class="docutils literal"><span class="pre">ma.masked_outside</span></tt> identify all values falling outside the
+allowed range, and creates a <tt class="docutils literal"><span class="pre">MaskedArray</span></tt> which is a combination of the
+data array and a True/False mask, with True identifying the values to reject.
+The really convenient thing is that the method <tt class="docutils literal"><span class="pre">mean</span></tt> will take this
+information and calculate the average ignoring all values tagged for rejection.</p>
+<p>WARNING: The <tt class="docutils literal"><span class="pre">numpy.clip</span></tt> function is not the equivalent of the mask
+solution.  As explain in the <tt class="docutils literal"><span class="pre">numpy.clip</span></tt> documentation, the function
+<em>replaces</em> the extreme values with the minimum and maximum, it <em>does not
+reject</em> the extreme values.</p>
+</div>
+<div class="section" id="filters-with-scipy">
+<h3>5.5.4. Filters with scipy<a class="headerlink" href="#filters-with-scipy" title="Permalink to this headline">¶</a></h3>
+<p>Another common operation is the filtering of an image, for example convolving
+with a gaussian filter.  The scipy module <tt class="docutils literal"><span class="pre">ndimage.filters</span></tt> offers several
+such functions for image processing.  See the scipy documentation for more
+details.</p>
+<p>The example below applies a gaussian filter to a pixel array.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">scipy.ndimage.filters</span> <span class="kn">as</span> <span class="nn">filters</span>
+<span class="kn">from</span> <span class="nn">stsci.numdisplay</span> <span class="kn">import</span> <span class="n">display</span>
+
+<span class="n">convolved_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="n">sigma</span> <span class="o">=</span> <span class="mf">10.</span>
+<span class="n">filters</span><span class="o">.</span><span class="n">gaussian_filter</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="n">convolved_data</span><span class="p">)</span>
+
+<span class="c"># visually compare the convolve image with the original.</span>
+<span class="n">display</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">zscale</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">convolved_data</span><span class="p">,</span> <span class="n">zscale</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c"># To put the convolved data back in the AstroData object</span>
+<span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">convolved_data</span>
+</pre></div>
+</td></tr></table></div>
+<p>On Line 4, a numpy array of the same size and shape as the input data is
+created and filled with zeros.  This receives the output convolved image
+produced by the function <tt class="docutils literal"><span class="pre">gaussian_filter</span></tt> (Line 6).</p>
+<p>On Line 13, the input data is replaced with the convolved data.  Remember
+that one will need to use <tt class="docutils literal"><span class="pre">write</span></tt> to make that change effective on disk.</p>
+</div>
+<div class="section" id="many-other-tools">
+<h3>5.5.5. Many other tools<a class="headerlink" href="#many-other-tools" title="Permalink to this headline">¶</a></h3>
+<p>The world of <tt class="docutils literal"><span class="pre">numpy</span></tt>, <tt class="docutils literal"><span class="pre">scipy</span></tt>, and the new <tt class="docutils literal"><span class="pre">astropy</span></tt> is rich and vast.
+The reader should refer to those packages&#8217; documentation to learn more.</p>
+</div>
+</div>
+<div class="section" id="using-the-astrodata-data-quality-plane">
+<h2>5.6. Using the AstroData Data Quality Plane<a class="headerlink" href="#using-the-astrodata-data-quality-plane" title="Permalink to this headline">¶</a></h2>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Write examples that use the DQ plane.  Eg. transform DQ plane in a numpy
+mask and do statistics.</p>
+</div>
+</div>
+<div class="section" id="manipulate-data-sections">
+<h2>5.7. Manipulate Data Sections<a class="headerlink" href="#manipulate-data-sections" title="Permalink to this headline">¶</a></h2>
+<p>Sections of the data array can be accessed and processed.  It is important to
+note here that when indexing a numpy array, the left most number refers to the
+highest dimension&#8217;s axis (eg. in IRAF sections are in (x,y) format, in Python
+they are in (y,x) format). Also important is to remember that the numpy arrays
+are 0-indexed, not 1-indexed like in Fortran or IRAF.  For example, in a 2-D
+numpy array, the pixel position (x,y) = (50,75) would be accessed as
+data[74,49].</p>
+<div class="section" id="basic-statistics-on-section">
+<h3>5.7.1. Basic statistics on section<a class="headerlink" href="#basic-statistics-on-section" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+<span class="c"># Get statistics for a 25x25 pixel-wide box centered on pixel 50,75.</span>
+<span class="n">mean</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">62</span><span class="p">:</span><span class="mi">87</span><span class="p">,</span><span class="mi">37</span><span class="p">:</span><span class="mi">62</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">median</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">62</span><span class="p">:</span><span class="mi">87</span><span class="p">,</span><span class="mi">37</span><span class="p">:</span><span class="mi">62</span><span class="p">])</span>
+<span class="n">stddev</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">62</span><span class="p">:</span><span class="mi">87</span><span class="p">,</span><span class="mi">37</span><span class="p">:</span><span class="mi">62</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+<span class="n">minimum</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">62</span><span class="p">:</span><span class="mi">87</span><span class="p">,</span><span class="mi">37</span><span class="p">:</span><span class="mi">62</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+<span class="n">maximum</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">62</span><span class="p">:</span><span class="mi">87</span><span class="p">,</span><span class="mi">37</span><span class="p">:</span><span class="mi">62</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+<span class="k">print</span> <span class="s">&quot;Mean    Median Stddev  Min    Max</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> \
+   <span class="n">mean</span><span class="p">,</span> <span class="n">median</span><span class="p">,</span> <span class="n">stddev</span><span class="p">,</span> <span class="n">minimum</span><span class="p">,</span> <span class="n">maximum</span>
+</pre></div>
+</td></tr></table></div>
+<p>There is one odd thing that the reader should notice.  On Line 9, <tt class="docutils literal"><span class="pre">median</span></tt>
+is not being called like the others.  This is because there is no <tt class="docutils literal"><span class="pre">median</span></tt>
+method associated with a <tt class="docutils literal"><span class="pre">ndarray</span></tt>.  But there is a numpy function, so that
+is what is used.</p>
+</div>
+<div class="section" id="example-overscan-subtraction">
+<h3>5.7.2. Example - Overscan subtraction<a class="headerlink" href="#example-overscan-subtraction" title="Permalink to this headline">¶</a></h3>
+<p>Several concepts from previous chapters are used in this example.
+The Descriptors are used to retrieve overscan section and data section
+information from the headers.  Numpy statistics is done on the pixel data
+sections.  AstroData arithmetics is used to subtract the overscan level.
+Finally, the overscan section is trimmed off and the AstroData is written to
+a new file.</p>
+<p>To make the example more complete, we use the file created in the Variance
+section.  We will propagate the variance and trim the variance planes too.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N188_with_var.fits&#39;</span><span class="p">)</span>
+
+<span class="c"># Get EXTVER-keyed dictionary for the overscan section and the data</span>
+<span class="c"># section.</span>
+<span class="n">oversec_dict</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">overscan_section</span><span class="p">()</span><span class="o">.</span><span class="n">collapse_by_extver</span><span class="p">()</span>
+<span class="n">datasec_dict</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">data_section</span><span class="p">()</span><span class="o">.</span><span class="n">collapse_by_extver</span><span class="p">()</span>
+
+<span class="c"># Loop through the science extensions.</span>
+<span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">]:</span>
+   <span class="c">#</span>
+   <span class="n">extver</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">extver</span><span class="p">()</span>
+   <span class="c">#</span>
+   <span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">)</span> <span class="o">=</span> <span class="n">oversec_dict</span><span class="p">[</span><span class="n">extver</span><span class="p">]</span>
+   <span class="p">(</span><span class="n">dx1</span><span class="p">,</span> <span class="n">dx2</span><span class="p">,</span> <span class="n">dy1</span><span class="p">,</span> <span class="n">dy2</span><span class="p">)</span> <span class="o">=</span> <span class="n">datasec_dict</span><span class="p">[</span><span class="n">extver</span><span class="p">]</span>
+   <span class="c">#</span>
+   <span class="c"># Measure the overscan level</span>
+   <span class="n">mean_overscan</span> <span class="o">=</span> <span class="n">ext</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">y1</span><span class="p">:</span><span class="n">y2</span><span class="p">,</span><span class="n">x1</span><span class="p">:</span><span class="n">x2</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+   <span class="c">#</span>
+   <span class="c"># Append variance and subtract overscan. Variance is propagated.</span>
+   <span class="n">ext</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ad</span><span class="p">[</span><span class="s">&#39;VAR&#39;</span><span class="p">,</span><span class="n">extver</span><span class="p">])</span>
+   <span class="n">ext</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">mean_overscan</span><span class="p">)</span>
+   <span class="c">#</span>
+   <span class="c"># Trim the data to remove the overscan section and keep only</span>
+   <span class="c"># the data section.</span>
+   <span class="n">ext</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="n">extver</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">ext</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="n">extver</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">dy1</span><span class="p">:</span><span class="n">dy2</span><span class="p">,</span><span class="n">dx1</span><span class="p">:</span><span class="n">dx2</span><span class="p">]</span>
+   <span class="n">ext</span><span class="p">[</span><span class="s">&#39;VAR&#39;</span><span class="p">,</span><span class="n">extver</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">ext</span><span class="p">[</span><span class="s">&#39;VAR&#39;</span><span class="p">,</span><span class="n">extver</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">dy1</span><span class="p">:</span><span class="n">dy2</span><span class="p">,</span><span class="n">dx1</span><span class="p">:</span><span class="n">dx2</span><span class="p">]</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;N188_overscanTrimmed.fits&#39;</span><span class="p">)</span>
+</pre></div>
+</td></tr></table></div>
+<p>The dataset loaded in Line 3 has three &#8216;SCI&#8217; extensions and three &#8216;VAR&#8217;
+extensions.</p>
+<p>On Lines 7 and 8, the descriptors <tt class="docutils literal"><span class="pre">overscan_section</span></tt> and <tt class="docutils literal"><span class="pre">data_section</span></tt>
+are used to retrieve the region information relating to the location
+of the overscan section and data section in each extension.  The return
+values for each extension is a list of four zero-indexed indices identifying
+the x and y axes lower and upper range for the section.</p>
+<p>Since the overscan and data sections are the same for a given extension
+version regardless of the extension name (ie. &#8216;SCI&#8217; and &#8216;VAR&#8217; have
+identical size and structure), the section information is keyed by extension
+version only with the help of the <tt class="docutils literal"><span class="pre">collapse_by_extver()</span></tt> method (Line 7
+and 8).</p>
+<p>The content of oversec_dict is</p>
+<div class="highlight-python"><div class="highlight"><pre>1: [0, 32, 0, 2304], 2: [0, 32, 0, 2304], 3: [1024, 1056, 0, 2304]}
+</pre></div>
+</div>
+<p>The overscan section and the data section could have been obtained in the
+loop for each extension.  It is however more efficient to retrieve the
+descriptor information once than three times in the loop, when it is
+possible to do so.</p>
+<p>Moving on to the loop starting on Line 11.  For convenience, the extension
+version of the current extension is stored in a variable on Line 13.  It
+will be used to access the section dictionaries from Line 7 and 8, and to
+associate a variance extension to the current extension.</p>
+<p>The boundaries of the overscan section and of the data section for the
+current extension are assigned to convenient variables on Lines 15 and 16.
+The values are zero-indexed to match the <tt class="docutils literal"><span class="pre">ndarray</span></tt>.</p>
+<p>The overscan is here simply calculated as the average within the overscan
+section (Line 19).</p>
+<p>To simplying our lifes, we want to be using the automatic variance propagation
+offered by the AstroData arithmetic utility.  The extension obtained from the
+<tt class="docutils literal"><span class="pre">in</span></tt> on Line 11 is an AstroData object with only the &#8216;SCI&#8217; extension.  No
+variance propagation will occur if there are no &#8216;VAR&#8217; extension in that
+AstroData object.  Therefore, on Line 22, we append the &#8216;VAR&#8217; extension of the
+same version as the &#8216;SCI&#8217; extension.  When the subtraction is done on Line 23,
+the operation affects both the &#8216;SCI&#8217; extension and the newly appended &#8216;VAR&#8217;
+extension.</p>
+<p>Now that the overscan level has been subtracted, that section needs to be
+trimmed off.  Only the data section is kept.  This is done on Lines 27 and 28.
+Note that after the &#8216;VAR&#8217; extension is appended, there are two extensions in
+the AstroData object, and in order to work with them, they must now be
+specified.  Contrast that with the calls on Lines 13 and 19; then there were
+still only one extension, the &#8216;SCI&#8217; extension, and selection was implicit.</p>
+<p>A final but important reminder.  All of the work was done on the extensions
+extracted from the original AstroData object, <tt class="docutils literal"><span class="pre">ad</span></tt>.  Since the extensions
+are not true copies but rather references to the original source, all the
+modifications to <tt class="docutils literal"><span class="pre">ext</span></tt> are in reality modifications to <tt class="docutils literal"><span class="pre">ad</span></tt>.  So, now, all
+we have to do is write the modified <tt class="docutils literal"><span class="pre">ad</span></tt> to disk with another name (Line 31).</p>
+</div>
+</div>
+<div class="section" id="data-cubes">
+<h2>5.8. Data Cubes<a class="headerlink" href="#data-cubes" title="Permalink to this headline">¶</a></h2>
+<p>Reduced Integral Field Unit (IFU) data is commonly stored in a cube, a
+three-dimensional array.  The <tt class="docutils literal"><span class="pre">data</span></tt> component of an AstroData object can
+be such a cube, and can be manipulated and explored with numpy, plotted with
+matplotlib (the next section shows a few more matplotlib examples.)</p>
+<p>In the MEF file, the x and y axes are in the first and second dimension, and
+the third dimension is for the wavelength axis. In the <tt class="docutils literal"><span class="pre">ndarray</span></tt>, that order
+is reversed.  The dimensions of the <tt class="docutils literal"><span class="pre">ndarray</span></tt> are (wavelength, y, x).</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">stsci.numdisplay</span> <span class="kn">import</span> <span class="n">display</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+<span class="n">adcube</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;gmosifu_cube.fits&#39;</span><span class="p">)</span>
+<span class="n">adcube</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<span class="c"># The shape of the cube, (wavelength, y, x).</span>
+<span class="n">adcube</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+
+<span class="c"># Sum along the wavelength axis to create a &quot;white light&quot; image.</span>
+<span class="n">sum_image</span> <span class="o">=</span> <span class="n">adcube</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">sum_image</span><span class="p">,</span> <span class="n">zscale</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c"># Plot a 1-D spectrum from pixel position (7,30)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">adcube</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span><span class="mi">29</span><span class="p">,</span><span class="mi">6</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c"># Plot the same thing but with wavelength along the x axis of the plot.</span>
+<span class="n">crval3</span> <span class="o">=</span> <span class="n">adcube</span><span class="o">.</span><span class="n">get_key_value</span><span class="p">(</span><span class="s">&#39;CRVAL3&#39;</span><span class="p">)</span>
+<span class="n">cdelt3</span> <span class="o">=</span> <span class="n">adcube</span><span class="o">.</span><span class="n">get_key_value</span><span class="p">(</span><span class="s">&#39;CDELT3&#39;</span><span class="p">)</span>
+<span class="n">spec_pixel_length</span> <span class="o">=</span> <span class="n">adcube</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span><span class="mi">29</span><span class="p">,</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
+<span class="n">wavelength</span> <span class="o">=</span> <span class="n">crval3</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">spec_pixel_length</span><span class="p">)</span><span class="o">*</span><span class="n">cdelt3</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">wavelength</span><span class="p">,</span> <span class="n">adcube</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span><span class="mi">29</span><span class="p">,</span><span class="mi">6</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+<p>On Line 13, the cube is &#8220;collapsed&#8221; in the wavelength dimension to produce a
+&#8220;white light&#8221; 2-D image.</p>
+<p>On Line 17, a vector through the cube at pixel position (7,30) is retrieved
+and plotted with matplotlib.  The pixel values are plotted against the
+zero-indexed pixel position along the wavelength axis.  The <tt class="docutils literal"><span class="pre">show()</span></tt>
+statement (Line 18) might or might not be needed depending on your
+<tt class="docutils literal"><span class="pre">interactive</span></tt> setting in the <tt class="docutils literal"><span class="pre">matplotlibrc</span></tt> file.</p>
+<p>To plot the spectrum with physical units on the plot&#8217;s x-axis one needs the
+WCS information from the header (Lines 21 to 24).  The statement <tt class="docutils literal"><span class="pre">plt.clf()</span></tt>
+simply clears the figure.</p>
+<p>People familiar with astropy might prefer to use the <tt class="docutils literal"><span class="pre">wcs</span></tt> module to
+convert pixels to wavelenths (Lines 21 to 24).</p>
+</div>
+<div class="section" id="plot-data">
+<h2>5.9. Plot Data<a class="headerlink" href="#plot-data" title="Permalink to this headline">¶</a></h2>
+<p>In Python, the main tool to create plots is <tt class="docutils literal"><span class="pre">matplotlib</span></tt>.  We have used it
+in the previous section on data cubes.  Here we do not aimed at covering all
+of <tt class="docutils literal"><span class="pre">matplotlib</span></tt>; the reader should refer to that package&#8217;s documentation.
+Rather we will give a few examples that might be of use for quick inspection
+of the data.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="kn">import</span> <span class="n">LogNorm</span>
+
+<span class="n">adimg</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20110313S0188.fits&#39;</span><span class="p">)</span>
+<span class="n">adspec</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;estgsS20080220S0078.fits&#39;</span><span class="p">)</span>
+
+<span class="c"># Line plot from image.  Row #1044.</span>
+<span class="n">line_index</span> <span class="o">=</span> <span class="mi">1043</span>
+<span class="n">line</span> <span class="o">=</span> <span class="n">adimg</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">line_index</span><span class="p">,</span> <span class="p">:]</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c"># Column plot from image, averaging across 11 pixels around column #327.</span>
+<span class="n">col_index</span> <span class="o">=</span> <span class="mi">326</span>
+<span class="n">width</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">col_section</span> <span class="o">=</span> <span class="n">adimg</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span><span class="n">col_index</span><span class="o">-</span><span class="n">width</span><span class="p">:</span><span class="n">col_index</span><span class="o">+</span><span class="n">width</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">column</span> <span class="o">=</span> <span class="n">col_section</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">column</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c"># Contour plot for section</span>
+<span class="n">galaxy</span> <span class="o">=</span> <span class="n">adimg</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">1045</span><span class="p">:</span><span class="mi">1085</span><span class="p">,</span><span class="mi">695</span><span class="p">:</span><span class="mi">735</span><span class="p">]</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">galaxy</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s">&#39;binary&#39;</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">LogNorm</span><span class="p">())</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">galaxy</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s">&#39;equal&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c"># Spectrum in pixel</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">adspec</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c"># Spectrum in wavelength (CRPIX1 = 1)</span>
+<span class="n">crpix1</span> <span class="o">=</span> <span class="n">adspec</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_key_value</span><span class="p">(</span><span class="s">&#39;CRPIX1&#39;</span><span class="p">)</span>
+<span class="n">crval1</span> <span class="o">=</span> <span class="n">adspec</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_key_value</span><span class="p">(</span><span class="s">&#39;CRVAL1&#39;</span><span class="p">)</span>
+<span class="n">cdelt1</span> <span class="o">=</span> <span class="n">adspec</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_key_value</span><span class="p">(</span><span class="s">&#39;CDELT1&#39;</span><span class="p">)</span>
+<span class="n">length</span> <span class="o">=</span> <span class="n">adspec</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_key_value</span><span class="p">(</span><span class="s">&#39;NAXIS1&#39;</span><span class="p">)</span>
+<span class="n">wavelengths</span> <span class="o">=</span> <span class="n">crval1</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">length</span><span class="p">)</span><span class="o">-</span><span class="n">crpix1</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">cdelt1</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">wavelengths</span><span class="p">,</span> <span class="n">adspec</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. Pixel Data</a><ul>
+<li><a class="reference internal" href="#operate-on-the-pixel-data">5.1. Operate on the Pixel Data</a></li>
+<li><a class="reference internal" href="#arithmetic-on-astrodata-objects">5.2. Arithmetic on AstroData Objects</a></li>
+<li><a class="reference internal" href="#variance">5.3. Variance</a><ul>
+<li><a class="reference internal" href="#adding-variance-extensions">5.3.1. Adding variance extensions</a></li>
+<li><a class="reference internal" href="#automatic-variance-propagation">5.3.2. Automatic variance propagation</a></li>
+<li><a class="reference internal" href="#manual-propagation-with-numpy">5.3.3. Manual propagation with numpy</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#display">5.4. Display</a><ul>
+<li><a class="reference internal" href="#displaying">5.4.1. Displaying</a></li>
+<li><a class="reference internal" href="#retrieving-cursor-position">5.4.2. Retrieving cursor position</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#useful-tools-from-the-numpy-and-scipy-modules">5.5. Useful tools from the Numpy and SciPy Modules</a><ul>
+<li><a class="reference internal" href="#ndarray">5.5.1. ndarray</a></li>
+<li><a class="reference internal" href="#simple-numpy-statistics">5.5.2. Simple numpy statistics</a></li>
+<li><a class="reference internal" href="#clipped-statistics">5.5.3. Clipped statistics</a></li>
+<li><a class="reference internal" href="#filters-with-scipy">5.5.4. Filters with scipy</a></li>
+<li><a class="reference internal" href="#many-other-tools">5.5.5. Many other tools</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#using-the-astrodata-data-quality-plane">5.6. Using the AstroData Data Quality Plane</a></li>
+<li><a class="reference internal" href="#manipulate-data-sections">5.7. Manipulate Data Sections</a><ul>
+<li><a class="reference internal" href="#basic-statistics-on-section">5.7.1. Basic statistics on section</a></li>
+<li><a class="reference internal" href="#example-overscan-subtraction">5.7.2. Example - Overscan subtraction</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#data-cubes">5.8. Data Cubes</a></li>
+<li><a class="reference internal" href="#plot-data">5.9. Plot Data</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="headers.html"
+                        title="previous chapter">4. FITS Headers</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tables.html"
+                        title="next chapter">6. Table Data</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/data.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="tables.html" title="6. Table Data"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="headers.html" title="4. FITS Headers"
+             >previous</a> |</li>
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Kathleen Labrie.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

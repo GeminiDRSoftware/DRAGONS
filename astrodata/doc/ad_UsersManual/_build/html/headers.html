@@ -1,0 +1,447 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. FITS Headers &mdash; AstroData Users Manual X1.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/todo-styles.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'X1.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="AstroData Users Manual X1.0.1 documentation" href="index.html" />
+    <link rel="next" title="5. Pixel Data" href="data.html" />
+    <link rel="prev" title="3. AstroDataTypes" href="types.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="data.html" title="5. Pixel Data"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="types.html" title="3. AstroDataTypes"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="fits-headers">
+<span id="headers"></span><h1>4. FITS Headers<a class="headerlink" href="#fits-headers" title="Permalink to this headline">¶</a></h1>
+<p><strong>Try it yourself</strong></p>
+<p>If you wish to follow along and try the commands yourself, download
+the data package, go to the <tt class="docutils literal"><span class="pre">playground</span></tt> directory and copy over
+the necessary file.</p>
+<div class="highlight-python"><div class="highlight"><pre>cd &lt;path&gt;/gemini_python_datapkg-X1/playground
+cp ../data_for_ad_user_manual/N20111124S0203.fits .
+</pre></div>
+</div>
+<p>Then launch the Python shell:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">python</span>
+</pre></div>
+</div>
+<div class="section" id="astrodata-descriptors">
+<h2>4.1. AstroData Descriptors<a class="headerlink" href="#astrodata-descriptors" title="Permalink to this headline">¶</a></h2>
+<p>AstroData Descriptors provide a &#8220;header keyword-to-concept&#8221; mapping that
+allows one to access header information in a consistent manner, regardless
+of which instrument the dataset is from.  Like for the AstroDataTypes, the
+mapping is coded in a configuration package that is provided by the
+observatory or the user.</p>
+<p>For example, if one were interested to know the filter used for an
+observation, normally one would need to know which specific keyword or set of
+keywords to look at for that instrument.  However, once the concept of
+&#8220;filter&#8221; is coded in a Descriptor, one now only needs to call the
+<tt class="docutils literal"><span class="pre">filtername</span></tt> Descriptor to retrieve the information.</p>
+<p>The Descriptors are closely associated with AstroDataTypes.  The AstroDataType
+of the AstroData object will tell the Descriptor system which piece of the
+configuration package code to call to retrieve the information requested.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If the Descriptors have not been configured for a dataset&#8217;s specific
+AstroDataType, or if the AstroDataType for the data had not been defined,
+in the configuration package, the Descriptors will not work.  In that case,
+it is nevertheless possible to access AstroData header information directly
+with the pyfits interface.  This is also shown later in this chapter.</p>
+</div>
+<p>To get the list of descriptors available for an AstroData object:</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20111124S0203.fits&#39;</span><span class="p">)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">descriptors</span>
+<span class="nb">sorted</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">descriptors</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+</pre></div>
+</td></tr></table></div>
+<p>The <tt class="docutils literal"><span class="pre">descriptors</span></tt> property returns a dictionary with the name of the
+descriptors available for this AstroData object as the keys.  The really
+interesting information is in the keys.  On Line 5, we retrieve the
+sorted list of available Descriptors.</p>
+<p>Most Descriptor names are readily understood, but one can get a short
+description of what the Descriptor refers to by calling the Python help
+function, for example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">help</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">airmass</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Descriptors associated with standard FITS keywords are defined in the
+<tt class="docutils literal"><span class="pre">ADCONFIG_FITS</span></tt> package found in <tt class="docutils literal"><span class="pre">astrodata_FITS</span></tt>.  All the Descriptors
+associated with other concepts used by the Gemini software are found in the
+<tt class="docutils literal"><span class="pre">ADCONFIG_Gemini</span></tt> package, part of <tt class="docutils literal"><span class="pre">astrodata_Gemini</span></tt>.</p>
+<p>A user reducing Gemini data or coding for existing Gemini data only need to
+make sure that <tt class="docutils literal"><span class="pre">astrodata_FITS</span></tt> and <tt class="docutils literal"><span class="pre">astrodata_Gemini</span></tt> have been
+installed.  A user coding for a new Gemini instrument, or for another
+observatory, will need to write the configuration code for the new Descriptors
+and AstrodataTypes.  That is an advanced topic not covered by this manual.</p>
+</div>
+<div class="section" id="accessing-headers">
+<h2>4.2. Accessing Headers<a class="headerlink" href="#accessing-headers" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="accessing-headers-with-descriptors">
+<h3>4.2.1. Accessing headers with Descriptors<a class="headerlink" href="#accessing-headers-with-descriptors" title="Permalink to this headline">¶</a></h3>
+<p>Whenever possible the Descriptors should be used to get information from the
+headers.  This allows for maximum re-use of the code as it will work on any
+datasets with an AstroDataTypes. Here are a few examples using Descriptors:</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20111124S0203.fits&#39;</span><span class="p">)</span>
+
+<span class="c">#--- print a value</span>
+<span class="k">print</span> <span class="s">&#39;The airmass is : &#39;</span><span class="p">,</span><span class="n">ad</span><span class="o">.</span><span class="n">airmass</span><span class="p">()</span>
+
+<span class="c">#--- use a value to control the flow</span>
+<span class="k">if</span> <span class="n">ad</span><span class="o">.</span><span class="n">exposure_time</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">240.</span><span class="p">:</span>
+   <span class="k">print</span> <span class="s">&#39;This is a short exposure&#39;</span>
+<span class="k">else</span><span class="p">:</span>
+   <span class="k">print</span> <span class="s">&#39;This is a long exposure&#39;</span>
+
+<span class="c">#--- multiply all extensions by their respective gain</span>
+<span class="k">print</span> <span class="s">&#39;The average before: &#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&#39;The gain for [SCI,2]&#39;</span><span class="p">,</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">gain</span><span class="p">()</span>
+
+<span class="n">ad</span><span class="o">.</span><span class="n">mult</span><span class="p">(</span><span class="n">ad</span><span class="o">.</span><span class="n">gain</span><span class="p">())</span>
+
+<span class="k">print</span> <span class="s">&#39;The average after: &#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">average</span><span class="p">(</span><span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+<span class="c">#--- do arithmetics</span>
+<span class="n">fwhm_pixel</span> <span class="o">=</span> <span class="mf">3.5</span>
+<span class="n">fwhm_arcsec</span> <span class="o">=</span> <span class="n">fwhm_pixel</span> <span class="o">*</span> <span class="n">ad</span><span class="o">.</span><span class="n">pixel_scale</span><span class="p">()</span>
+
+<span class="k">print</span> <span class="s">&#39;The FWHM in arcsec is: &#39;</span><span class="p">,</span> <span class="n">fwhm_arcsec</span>
+</pre></div>
+</td></tr></table></div>
+<p>The Descriptors are returned as DescriptorValue objects. In many types of
+statements the DescriptorValue will be automatically converted to the
+appropriate Python type based on context.  All the Descriptor calls above
+do that convertion.  For example, on Line 25, the DescriptorValue returned
+by <tt class="docutils literal"><span class="pre">pixel_scale()</span></tt> is converted to a Python float for the multiplication.</p>
+<p>The AstroData arithmetics used on Line 19 will be discussed in more details
+in a later chapter.  Essentially, the <tt class="docutils literal"><span class="pre">gain()</span></tt> Descriptor returns a
+DescriptorValue with gain information for each of the 6 extensions.  Then
+AstroData&#8217;s <tt class="docutils literal"><span class="pre">mult</span></tt> method multiplies each pixel data extensions with the
+appropriate gain value for that extension.  No looping necessary, AstroData
+and Descriptors are taking care of it.</p>
+<p>When the automatic convertion to a Python cannot be determine from context
+the programmer must use the method <tt class="docutils literal"><span class="pre">as_pytype()</span></tt>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ad</span><span class="o">.</span><span class="n">pixel_scale</span><span class="p">()</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">pixel_scale</span><span class="p">()</span><span class="o">.</span><span class="n">as_pytype</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The first line returns a DescriptorValue, the second line returns a float.</p>
+</div>
+<div class="section" id="accessing-headers-directly">
+<h3>4.2.2. Accessing headers directly<a class="headerlink" href="#accessing-headers-directly" title="Permalink to this headline">¶</a></h3>
+<p>Not all the header content has been mapped with Descriptors, nor should it.
+The header content is nevertheless accessible.  With direct access, there
+are no DescriptorValue involved and the type returned matches what is stored
+in the header.</p>
+<p>One important thing to keep in mind is that the PHU and the extension headers
+are accessed differently. The method <tt class="docutils literal"><span class="pre">phu_get_key_value</span></tt> accesses the PHU
+header; the method <tt class="docutils literal"><span class="pre">get_key_value</span></tt> accesses the header of the specified
+extension.</p>
+<p>Here are some direct access examples:</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20111124S0203.fits&#39;</span><span class="p">)</span>
+
+<span class="c"># Get keyword value from the PHU</span>
+<span class="n">aofold_position</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">phu_get_key_value</span><span class="p">(</span><span class="s">&#39;AOFOLD&#39;</span><span class="p">)</span>
+
+<span class="c"># Get keyword value from a specific extension</span>
+<span class="k">print</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_key_value</span><span class="p">(</span><span class="s">&#39;NAXIS2&#39;</span><span class="p">)</span>
+
+<span class="c"># Get keyword value for all SCI extensions</span>
+<span class="k">for</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">]:</span>
+   <span class="n">naxis2</span> <span class="o">=</span> <span class="n">extension</span><span class="o">.</span><span class="n">get_key_value</span><span class="p">(</span><span class="s">&#39;NAXIS2&#39;</span><span class="p">)</span>
+   <span class="k">print</span> <span class="n">naxis2</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<div class="section" id="whole-headers">
+<h3>4.2.3. Whole headers<a class="headerlink" href="#whole-headers" title="Permalink to this headline">¶</a></h3>
+<p>Entire headers can be retrieve as PyFITS Header object.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5</pre></div></td><td class="code"><div class="highlight"><pre><span class="c"># Get the header for the PHU</span>
+<span class="n">phuhdr</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">phu</span><span class="o">.</span><span class="n">header</span>
+
+<span class="c"># Get the header for extension SCI, 1</span>
+<span class="n">exthdr</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">header</span>
+</pre></div>
+</td></tr></table></div>
+<p>In the interactive Python shell, listing the header contents to screen can be
+done as follow:</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5
+6
+7
+8</pre></div></td><td class="code"><div class="highlight"><pre><span class="c"># For the PHU</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">phu</span><span class="o">.</span><span class="n">header</span>
+
+<span class="c"># For a specific extension:</span>
+<span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">header</span>
+
+<span class="c"># For all the extensions:  (PHU excluded)</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">headers</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<div class="section" id="extname-and-extver">
+<h3>4.2.4. EXTNAME and EXTVER<a class="headerlink" href="#extname-and-extver" title="Permalink to this headline">¶</a></h3>
+<p>MEF files have the concept of naming and versioning extensions.  The header
+keywords storing the name and version are <tt class="docutils literal"><span class="pre">EXTNAME</span></tt> and <tt class="docutils literal"><span class="pre">EXTVER</span></tt>.  AstroData uses
+that concept extensively.  In fact, even if a MEF on disk does not have
+<tt class="docutils literal"><span class="pre">EXTNAME</span></tt> and <tt class="docutils literal"><span class="pre">EXTVER</span></tt> defined, for example Gemini raw datasets, upon
+opening the file AstroData will assign names and versions to each extension.
+The default behavior is to assign all extension a <tt class="docutils literal"><span class="pre">EXTNAME</span></tt> of <tt class="docutils literal"><span class="pre">SCI</span></tt>
+and then version them sequential from 1 to the number of extension present.</p>
+<p>The name and version of an extension is obtained this way:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">name</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">extname</span><span class="p">()</span>
+<span class="n">version</span> <span class="o">=</span> <span class="n">ad</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">extver</span><span class="p">()</span>
+<span class="k">print</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="updating-and-adding-headers">
+<h2>4.3. Updating and Adding Headers<a class="headerlink" href="#updating-and-adding-headers" title="Permalink to this headline">¶</a></h2>
+<p>Header cards can be updated or added to the headers.  As for the simple access
+to the headers, there are methods to work on the PHU and different methods to
+work on the extensions.</p>
+<p>The methods to update and add headers mirror the access methods.  The method
+<tt class="docutils literal"><span class="pre">phu_set_key_value()</span></tt> modifies the PHU.  The method <tt class="docutils literal"><span class="pre">set_key_value()</span></tt>
+modifies the extension headers.</p>
+<p>The inputs to the <tt class="docutils literal"><span class="pre">phu_set_key_value</span></tt> and <tt class="docutils literal"><span class="pre">set_key_value</span></tt> methods are
+<em>keyword</em>, <em>value</em>, <em>comment</em>.  The comment is optional.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;N20111124S0203.fits&#39;</span><span class="p">)</span>
+
+<span class="c"># Add a header card to the PHU</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">phu_set_key_value</span><span class="p">(</span><span class="s">&#39;MYTEST&#39;</span><span class="p">,</span> <span class="mi">99</span><span class="p">,</span> <span class="s">&#39;Some meaningless keyword&#39;</span><span class="p">)</span>
+
+<span class="c"># Modify a header card in the second extension</span>
+<span class="n">ad</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_key_value</span><span class="p">(</span><span class="s">&#39;GAIN&#39;</span><span class="p">,</span><span class="mf">5.</span><span class="p">)</span>
+
+<span class="c"># The extension can also be specified by name and version.</span>
+<span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_key_value</span><span class="p">(</span><span class="s">&#39;GAIN&#39;</span><span class="p">,</span> <span class="mf">10.</span><span class="p">)</span>
+
+<span class="c"># In a loop</span>
+<span class="k">for</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">]:</span>
+   <span class="n">extension</span><span class="o">.</span><span class="n">set_key_value</span><span class="p">(</span><span class="s">&#39;TEST&#39;</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span> <span class="s">&#39;This is a test.&#39;</span><span class="p">)</span>
+</pre></div>
+</td></tr></table></div>
+<p>The <tt class="docutils literal"><span class="pre">set_key_value</span></tt> method works only on an extension, it will not work
+on the whole AstroData object. For example, the following <strong>will not</strong>
+work:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># DOES NOT WORK.  An extension must be specified.</span>
+<span class="n">ad</span><span class="o">.</span><span class="n">set_key_value</span><span class="p">(</span><span class="s">&#39;TEST&#39;</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="s">&#39;This test does not work&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="id1">
+<h3>4.3.1. EXTNAME and EXTVER<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>The name and version of an extension are so critical to AstroData that, like
+for access, the editing of <tt class="docutils literal"><span class="pre">EXTNAME</span></tt> and <tt class="docutils literal"><span class="pre">EXTVER</span></tt> is done through a special
+method.</p>
+<p>The name and version of an extension can be set or reset manually with the
+<tt class="docutils literal"><span class="pre">rename_ext</span></tt> method:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ad</span><span class="p">[</span><span class="s">&#39;SCI&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">rename_ext</span><span class="p">(</span><span class="s">&#39;VAR&#39;</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Be careful with this function.  Having two extensions with the same name and
+version in an AstroData data object, or a MEF files for that matter, can lead
+to strange problems.</p>
+</div>
+</div>
+<div class="section" id="adding-descriptors-for-new-instruments-advanced-topic">
+<h2>4.4. Adding Descriptors for New Instruments [Advanced Topic]<a class="headerlink" href="#adding-descriptors-for-new-instruments-advanced-topic" title="Permalink to this headline">¶</a></h2>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Primer on Descriptor definitions for new instrument.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">refer to Descriptors document for complete instructions</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. FITS Headers</a><ul>
+<li><a class="reference internal" href="#astrodata-descriptors">4.1. AstroData Descriptors</a></li>
+<li><a class="reference internal" href="#accessing-headers">4.2. Accessing Headers</a><ul>
+<li><a class="reference internal" href="#accessing-headers-with-descriptors">4.2.1. Accessing headers with Descriptors</a></li>
+<li><a class="reference internal" href="#accessing-headers-directly">4.2.2. Accessing headers directly</a></li>
+<li><a class="reference internal" href="#whole-headers">4.2.3. Whole headers</a></li>
+<li><a class="reference internal" href="#extname-and-extver">4.2.4. EXTNAME and EXTVER</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#updating-and-adding-headers">4.3. Updating and Adding Headers</a><ul>
+<li><a class="reference internal" href="#id1">4.3.1. EXTNAME and EXTVER</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#adding-descriptors-for-new-instruments-advanced-topic">4.4. Adding Descriptors for New Instruments [Advanced Topic]</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="types.html"
+                        title="previous chapter">3. AstroDataTypes</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="data.html"
+                        title="next chapter">5. Pixel Data</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/headers.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="data.html" title="5. Pixel Data"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="types.html" title="3. AstroDataTypes"
+             >previous</a> |</li>
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Kathleen Labrie.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,583 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>6. Table Data &mdash; AstroData Users Manual X1.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/todo-styles.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'X1.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="AstroData Users Manual X1.0.1 documentation" href="index.html" />
+    <link rel="next" title="1. List of Descriptors" href="appendices/appendix_descriptors.html" />
+    <link rel="prev" title="5. Pixel Data" href="data.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="appendices/appendix_descriptors.html" title="1. List of Descriptors"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="data.html" title="5. Pixel Data"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="table-data">
+<h1>6. Table Data<a class="headerlink" href="#table-data" title="Permalink to this headline">¶</a></h1>
+<p>AstroData does not provide any special wrappers for FITS Table Data.  But
+since AstroData is built on top of PyFITS, the standard PyFITS
+table functions can be used.  The reader should refer to the PyFITS
+table documentation for complete details (e.g.
+<a class="reference external" href="https://pythonhosted.org/pyfits/users_guide/users_table.html">https://pythonhosted.org/pyfits/users_guide/users_table.html</a>). In this chapter,
+a few useful examples of basic usage are shown.  As the reader will see, table
+manipulation can be tedious and tricky.</p>
+<p><tt class="docutils literal"><span class="pre">astropy.table</span></tt> might simplify some of the examples presented
+in this chapter.  This will be looked into at some future time.  (Suggestions
+for improvements are welcome.)</p>
+<p><strong>Try it yourself</strong></p>
+<p>If you wish to follow along and try the commands yourself, download
+the data package, go to the <tt class="docutils literal"><span class="pre">playground</span></tt> directory and copy over
+the necessary files.</p>
+<div class="highlight-python"><div class="highlight"><pre>cd &lt;path&gt;/gemini_python_datapkg-X1/playground
+cp ../data_for_ad_user_manual/estgsS20080220S0078.fits .
+</pre></div>
+</div>
+<p>Then launch the Python shell:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">python</span>
+</pre></div>
+</div>
+<div class="section" id="read-from-a-fits-table">
+<h2>6.1. Read from a FITS Table<a class="headerlink" href="#read-from-a-fits-table" title="Permalink to this headline">¶</a></h2>
+<p>A FITS table is stored in a MEF file as a <tt class="docutils literal"><span class="pre">BinTableHDU</span></tt>.  The table data is
+retrieved from the <tt class="docutils literal"><span class="pre">AstroData</span></tt> object with the same <tt class="docutils literal"><span class="pre">.data</span></tt> attribute as
+for pixel extensions, but for FITS tables <tt class="docutils literal"><span class="pre">.data</span></tt> returns a <tt class="docutils literal"><span class="pre">FITS_rec</span></tt>,
+which is a PyFITS class, instead of a Numpy <tt class="docutils literal"><span class="pre">ndarray</span></tt>.  Here is how to
+get information out of a FITS table.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+
+<span class="n">adspec</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="s">&#39;estgsS20080220S0078.fits&#39;</span><span class="p">)</span>
+<span class="n">adspec</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<span class="c"># For easier reference, assign FITS table to variable.</span>
+<span class="n">tabledata</span> <span class="o">=</span> <span class="n">adspec</span><span class="p">[</span><span class="s">&#39;MDF&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+<span class="c"># Get the column names with &#39;names&#39; or more details with &#39;columns&#39;</span>
+<span class="n">tabledata</span><span class="o">.</span><span class="n">names</span>
+<span class="n">tabledata</span><span class="o">.</span><span class="n">columns</span>
+
+<span class="c"># Get all the data for a column</span>
+<span class="n">x_ccd_values</span> <span class="o">=</span> <span class="n">tabledata</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;x_ccd&#39;</span><span class="p">)</span>
+<span class="n">third_col</span> <span class="o">=</span> <span class="n">tabledata</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c"># Print the table content</span>
+<span class="k">print</span> <span class="n">tabledata</span>
+
+<span class="c"># Print the first 2 rows</span>
+<span class="k">print</span> <span class="n">tabledata</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+
+<span class="c"># Select rows based on some criterion</span>
+<span class="n">select_tabledata</span> <span class="o">=</span> <span class="n">tabledata</span><span class="p">[</span><span class="n">tabledata</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;y_ccd&#39;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">2000.</span><span class="p">]</span>
+<span class="k">print</span> <span class="n">select_tabledata</span>
+</pre></div>
+</td></tr></table></div>
+<p>The first extension in that file is a FITS table with <tt class="docutils literal"><span class="pre">EXTNAME</span></tt> MDF, and
+<tt class="docutils literal"><span class="pre">EXTVER</span></tt> 1 (Lines 4, 7) .  MDF stands for &#8220;Mask Definition File&#8221;.  In
+Gemini data, those are used in the data reduction to identify, to first
+order, where spectra fall on the detector.</p>
+<p>The output of <tt class="docutils literal"><span class="pre">names</span></tt> (Line 10) is a simple list of strings.  The output
+of <tt class="docutils literal"><span class="pre">columns</span></tt> is a PyFITS <tt class="docutils literal"><span class="pre">ColDefs</span></tt> object.  When printed it looks like this:</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14</pre></div></td><td class="code"><div class="highlight"><pre>ColDefs(
+    name = &#39;ID&#39;; format = &#39;1J&#39;; null = -2147483647; disp = &#39;A3&#39;
+    name = &#39;x_ccd&#39;; format = &#39;1E&#39;; disp = &#39;F8.2&#39;
+    name = &#39;y_ccd&#39;; format = &#39;1E&#39;; disp = &#39;F8.2&#39;
+    name = &#39;slittype&#39;; format = &#39;20A&#39;; disp = &#39;A10&#39;
+    name = &#39;slitid&#39;; format = &#39;1J&#39;; null = -2147483647; disp = &#39;A3&#39;
+    name = &#39;slitpos_mx&#39;; format = &#39;1E&#39;; disp = &#39;F8.2&#39;
+    name = &#39;slitpos_my&#39;; format = &#39;1E&#39;; disp = &#39;F8.2&#39;
+    name = &#39;slitsize_mx&#39;; format = &#39;1E&#39;; disp = &#39;F8.2&#39;
+    name = &#39;slitsize_my&#39;; format = &#39;1E&#39;; disp = &#39;F8.2&#39;
+    name = &#39;slittilt_m&#39;; format = &#39;1E&#39;; disp = &#39;F8.2&#39;
+    name = &#39;slitsize_mr&#39;; format = &#39;1E&#39;; disp = &#39;F6.2&#39;
+    name = &#39;slitsize_mw&#39;; format = &#39;1E&#39;; disp = &#39;F6.2&#39;
+)
+</pre></div>
+</td></tr></table></div>
+<p>When a column is retrieved, like in Lines 14 and 15, the returned value is
+a numpy <tt class="docutils literal"><span class="pre">ndarray</span></tt>.</p>
+<p>Note on Line 15 that the third column is in index position 2; all Python
+arrays are zero-indexed.</p>
+</div>
+<div class="section" id="create-a-fits-table">
+<h2>6.2. Create a FITS Table<a class="headerlink" href="#create-a-fits-table" title="Permalink to this headline">¶</a></h2>
+<p>Creating a FITS table is mostly a matter of creating the columns, name and
+data.  The name is a string, the data is stored in a numpy <tt class="docutils literal"><span class="pre">ndarray</span></tt>.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">import</span> <span class="nn">pyfits</span> <span class="kn">as</span> <span class="nn">pf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="c"># Create the input data</span>
+<span class="n">snr_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s">&#39;S001&#39;</span><span class="p">,</span><span class="s">&#39;S002&#39;</span><span class="p">,</span><span class="s">&#39;S003&#39;</span><span class="p">])</span>
+<span class="n">feii</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">780.</span><span class="p">,</span><span class="mf">78.</span><span class="p">,</span><span class="mf">179.</span><span class="p">])</span>
+<span class="n">pabeta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">740.</span><span class="p">,</span><span class="mf">307.</span><span class="p">,</span><span class="mf">220.</span><span class="p">])</span>
+<span class="n">ratio</span> <span class="o">=</span> <span class="n">pabeta</span><span class="o">/</span><span class="n">feii</span>
+
+<span class="c"># Create the columns</span>
+<span class="n">col1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;4A&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">snr_id</span><span class="p">)</span>
+<span class="n">col2</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;ratio&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">ratio</span><span class="p">)</span>
+<span class="n">col3</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;feii&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">feii</span><span class="p">)</span>
+<span class="n">col4</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;pabeta&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">pabeta</span><span class="p">)</span>
+
+<span class="c"># Assemble the columns</span>
+<span class="n">cols</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">ColDefs</span><span class="p">([</span><span class="n">col1</span><span class="p">,</span> <span class="n">col2</span><span class="p">,</span> <span class="n">col3</span><span class="p">,</span> <span class="n">col4</span><span class="p">])</span>
+
+<span class="c"># Create the table HDU</span>
+<span class="n">tablehdu</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
+
+<span class="c"># Create an AstroData object to contain the table</span>
+<span class="c"># and write to disk.</span>
+<span class="n">new_ad</span> <span class="o">=</span> <span class="n">AstroData</span><span class="p">(</span><span class="n">tablehdu</span><span class="p">)</span>
+<span class="n">new_ad</span><span class="o">.</span><span class="n">rename_ext</span><span class="p">(</span><span class="s">&#39;MYTABLE&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">new_ad</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+
+<span class="n">new_ad</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;mytable.fits&#39;</span><span class="p">)</span>
+</pre></div>
+</td></tr></table></div>
+<p>A new FITS table can also be appended to an already existing AstroData object with
+the <tt class="docutils literal"><span class="pre">.append()</span></tt> function.</p>
+</div>
+<div class="section" id="operate-on-a-fits-table">
+<h2>6.3. Operate on a FITS Table<a class="headerlink" href="#operate-on-a-fits-table" title="Permalink to this headline">¶</a></h2>
+<p>The PyFITS manual is the recommended source for more complete documentation
+on working on FITS table with Python.  Here are a few examples of how one can
+modify a FITS table.</p>
+<div class="section" id="preparation-for-the-examples">
+<h3>6.3.1. Preparation for the examples<a class="headerlink" href="#preparation-for-the-examples" title="Permalink to this headline">¶</a></h3>
+<p>In order to run the examples in the next few sections, the reader will need
+to create these three tables.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">astrodata</span> <span class="kn">import</span> <span class="n">AstroData</span>
+<span class="kn">import</span> <span class="nn">pyfits</span> <span class="kn">as</span> <span class="nn">pf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="c"># Let us first create tables to play with</span>
+<span class="n">snr_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s">&#39;S001&#39;</span><span class="p">,</span><span class="s">&#39;S002&#39;</span><span class="p">,</span><span class="s">&#39;S003&#39;</span><span class="p">])</span>
+<span class="n">feii</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">780.</span><span class="p">,</span><span class="mf">78.</span><span class="p">,</span><span class="mf">179.</span><span class="p">])</span>
+<span class="n">pabeta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">740.</span><span class="p">,</span><span class="mf">307.</span><span class="p">,</span><span class="mf">220.</span><span class="p">])</span>
+<span class="n">ratio</span> <span class="o">=</span> <span class="n">pabeta</span><span class="o">/</span><span class="n">feii</span>
+<span class="n">col1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;4A&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">snr_id</span><span class="p">)</span>
+<span class="n">col2</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;ratio&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">ratio</span><span class="p">)</span>
+<span class="n">col3</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;feii&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">feii</span><span class="p">)</span>
+<span class="n">col4</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;pabeta&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;E&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">pabeta</span><span class="p">)</span>
+<span class="n">cols_t1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">ColDefs</span><span class="p">([</span><span class="n">col1</span><span class="p">,</span><span class="n">col3</span><span class="p">])</span>
+<span class="n">cols_t2</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">ColDefs</span><span class="p">([</span><span class="n">col1</span><span class="p">,</span><span class="n">col4</span><span class="p">])</span>
+<span class="n">cols_t3</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">ColDefs</span><span class="p">([</span><span class="n">col2</span><span class="p">])</span>
+
+<span class="n">table1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">cols_t1</span><span class="p">)</span>
+<span class="n">table2</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">cols_t2</span><span class="p">)</span>
+<span class="n">table3</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">cols_t3</span><span class="p">)</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<div class="section" id="merging-tables">
+<h3>6.3.2. Merging tables<a class="headerlink" href="#merging-tables" title="Permalink to this headline">¶</a></h3>
+<p>WARNING:  The input tables must <strong>not</strong> share any common field (ie. column)
+names.  For example, <em>table1</em> and <em>table2</em> created above cannot be merged this
+way since they share <tt class="docutils literal"><span class="pre">col1</span></tt>.</p>
+<p>The merging of tables is effectively the equivalent of appending columns.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5</pre></div></td><td class="code"><div class="highlight"><pre><span class="n">merged_cols</span> <span class="o">=</span> <span class="n">table1</span><span class="o">.</span><span class="n">columns</span> <span class="o">+</span> <span class="n">table3</span><span class="o">.</span><span class="n">columns</span>
+<span class="n">merged_table</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">merged_cols</span><span class="p">)</span>
+
+<span class="n">merged_table</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span>  <span class="c"># or merged_table.data.names</span>
+<span class="k">print</span> <span class="n">merged_table</span><span class="o">.</span><span class="n">data</span>
+</pre></div>
+</td></tr></table></div>
+<p>The columns are now:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">,</span> <span class="s">&#39;feii&#39;</span><span class="p">,</span> <span class="s">&#39;ratio&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>It is interesting to note that table operations are actually <em>column</em>
+operations followed by the creation of a new table (Lines 1 and 2).
+The next example will illustrate this a bit better.</p>
+</div>
+<div class="section" id="appending-and-deleting-columns">
+<h3>6.3.3. Appending and deleting columns<a class="headerlink" href="#appending-and-deleting-columns" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5
+6
+7</pre></div></td><td class="code"><div class="highlight"><pre><span class="c"># Append the &#39;pabeta&#39; column from table2 to table1</span>
+<span class="n">index_of_pabeta_col</span> <span class="o">=</span> <span class="n">table2</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;pabeta&#39;</span><span class="p">)</span>
+<span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">add_col</span><span class="p">(</span><span class="n">table2</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">index_of_pabeta_col</span><span class="p">])</span>
+<span class="n">table1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+
+<span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span>
+<span class="k">print</span> <span class="n">table1</span><span class="o">.</span><span class="n">data</span>
+</pre></div>
+</td></tr></table></div>
+<p>The append example (Lines 2-4) shows that the real work is done on the
+columns, not on the table as such.  To add a column to <tt class="docutils literal"><span class="pre">table1</span></tt>, once the
+columns have been reorganized, a <em>new</em> table is created and, in this case,
+replaces the original <tt class="docutils literal"><span class="pre">table1</span></tt>.</p>
+<p>The index of the <tt class="docutils literal"><span class="pre">pabeta</span></tt> column in <tt class="docutils literal"><span class="pre">table2</span></tt> is found with the <tt class="docutils literal"><span class="pre">index</span></tt>
+method as shown on Line 2.  Then it is just a matter of adding that column
+from <tt class="docutils literal"><span class="pre">table2</span></tt> to the columns of <tt class="docutils literal"><span class="pre">table1</span></tt> (Line 3).</p>
+<p>The columns in the new <tt class="docutils literal"><span class="pre">table1</span></tt> are:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">,</span> <span class="s">&#39;feii&#39;</span><span class="p">,</span> <span class="s">&#39;pabeta&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5
+6</pre></div></td><td class="code"><div class="highlight"><pre><span class="c">#   To &quot;delete&quot; the &#39;pabeta&#39; column from this new table1</span>
+<span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">del_col</span><span class="p">(</span><span class="s">&#39;pabeta&#39;</span><span class="p">)</span>
+<span class="n">table1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+
+<span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span>
+<span class="k">print</span> <span class="n">table1</span><span class="o">.</span><span class="n">data</span>
+</pre></div>
+</td></tr></table></div>
+<p>To delete a column, the process is similar:  the work is done on the columns,
+then a <em>new</em> table is created to replace the original (Lines 2, 3).</p>
+<p>The columns in the final <tt class="docutils literal"><span class="pre">table1</span></tt> are:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">,</span> <span class="s">&#39;feii&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="inserting-columns">
+<h3>6.3.4. Inserting columns<a class="headerlink" href="#inserting-columns" title="Permalink to this headline">¶</a></h3>
+<p>Column insertion is really about gathering all the columns and reorganizing
+them manually.  There are no &#8220;insertion&#8221; tool, per se, in pyfits.
+(<tt class="docutils literal"><span class="pre">astropy.table</span></tt> does have one though.)</p>
+<p>Below, we insert the column from <tt class="docutils literal"><span class="pre">table3</span></tt> in-between the first and second
+column of <tt class="docutils literal"><span class="pre">table1</span></tt>.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5
+6
+7</pre></div></td><td class="code"><div class="highlight"><pre><span class="n">t1_col1</span> <span class="o">=</span> <span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">t1_col2</span> <span class="o">=</span> <span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">t3_col1</span> <span class="o">=</span> <span class="n">table3</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">table1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">([</span><span class="n">t1_col1</span><span class="p">,</span><span class="n">t3_col1</span><span class="p">,</span><span class="n">t1_col2</span><span class="p">])</span>
+
+<span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span>
+<span class="k">print</span> <span class="n">table1</span><span class="o">.</span><span class="n">data</span>
+</pre></div>
+</td></tr></table></div>
+<p>The columns in the resulting <tt class="docutils literal"><span class="pre">table1</span></tt> are:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">,</span> <span class="s">&#39;ratio&#39;</span><span class="p">,</span> <span class="s">&#39;feii&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="changing-the-name-of-a-column">
+<h3>6.3.5. Changing the name of a column<a class="headerlink" href="#changing-the-name-of-a-column" title="Permalink to this headline">¶</a></h3>
+<p>WARNING: There is a pyfits <tt class="docutils literal"><span class="pre">columns</span></tt> method called <tt class="docutils literal"><span class="pre">change_name</span></tt> but it
+does not seem to be working properly.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s">&#39;feii&#39;</span><span class="p">)]</span><span class="o">.</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;ironII&#39;</span>
+<span class="n">table1</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+
+<span class="n">table1</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span>
+</pre></div>
+</div>
+<p>To change the name of a column, one needs to change the <tt class="docutils literal"><span class="pre">name</span></tt> attribute
+of the column.  On the first line, the position index of the
+column named <tt class="docutils literal"><span class="pre">feii</span></tt> is used to select the column to change, and then the
+name of that column is changed to <tt class="docutils literal"><span class="pre">ironII</span></tt>.</p>
+<p>Again, a <em>new</em> table needs to be created once the modifications to the columns
+are completed.</p>
+<p>The <tt class="docutils literal"><span class="pre">table1</span></tt> columns are now:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">,</span> <span class="s">&#39;ratio&#39;</span><span class="p">,</span> <span class="s">&#39;ironII&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="appending-and-deleting-rows">
+<h3>6.3.6. Appending and deleting rows<a class="headerlink" href="#appending-and-deleting-rows" title="Permalink to this headline">¶</a></h3>
+<p>Appending and deleting rows is uncannily complicated with PyFITS.
+This is an area where the use <tt class="docutils literal"><span class="pre">astropy.table</span></tt> can certainly help.  We hope
+to be able to add astropy-based examples to this manual in the near future.
+But for now, let us study the PyFITS way.</p>
+<p><em>Disclaimer</em>:  This is the way the author figured out how to do the row
+manipulations.  If the reader knows of a better way to do it with PyFITS,
+please let us know.</p>
+<p>Below, we append two new entries to <tt class="docutils literal"><span class="pre">table2</span></tt>.  Only the <tt class="docutils literal"><span class="pre">SNR_ID</span></tt> and
+<tt class="docutils literal"><span class="pre">pabeta</span></tt> fields will be added to the table since those are the only
+two columns in <tt class="docutils literal"><span class="pre">table2</span></tt>.  When an entry has fields not represented
+in the table, those fields are simply ignored.</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18</pre></div></td><td class="code"><div class="highlight"><pre><span class="c"># New entries for object S004 and S005.</span>
+<span class="n">new_entries</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s">&#39;S004&#39;</span><span class="p">,</span><span class="s">&#39;S005&#39;</span><span class="p">],</span>
+             <span class="s">&#39;ratio&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mf">1.12</span><span class="p">,</span> <span class="mf">0.72</span><span class="p">],</span>
+             <span class="s">&#39;feii&#39;</span>  <span class="p">:</span> <span class="p">[</span><span class="mf">77.</span><span class="p">,</span> <span class="mf">87.</span><span class="p">],</span>
+             <span class="s">&#39;pabeta&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">69.</span><span class="p">,</span> <span class="mf">122.</span><span class="p">]</span>
+             <span class="p">}</span>
+<span class="n">nb_new_entries</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_entries</span><span class="p">[</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">])</span>
+
+<span class="c"># Create new, larger table.</span>
+<span class="n">nrowst2</span> <span class="o">=</span> <span class="n">table2</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">large_table</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">table2</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">nrows</span><span class="o">=</span><span class="n">nrowst2</span><span class="o">+</span><span class="n">nb_new_entries</span><span class="p">)</span>
+
+<span class="c"># Append the new entries and replace table2 with new table.</span>
+<span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">table2</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+   <span class="n">large_table</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">name</span><span class="p">)[</span><span class="n">nrowst2</span><span class="p">:]</span> <span class="o">=</span> <span class="n">new_entries</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+<span class="n">table2</span> <span class="o">=</span> <span class="n">large_table</span>
+<span class="k">print</span> <span class="n">table2</span><span class="o">.</span><span class="n">data</span>
+</pre></div>
+</td></tr></table></div>
+<p>The values must be entered for each column separately.  On Lines 14-15,
+we loop through the columns by name.  To simplify things, it is convenient
+to have the new values stored in a dictionary keyed on the column names
+(Lines 2-6).</p>
+<p>Adding, and deleting rows (next example), requires the creation of a new table of the correct,
+new size (Lines 10-11).</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12</pre></div></td><td class="code"><div class="highlight"><pre><span class="c"># Delete the last 2 entries from table2</span>
+
+<span class="c"># Create new, smaller table.</span>
+<span class="n">nb_bad_entries</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">nrowst2</span> <span class="o">=</span> <span class="n">table2</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">small_table</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">new_table</span><span class="p">(</span><span class="n">table2</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">nrows</span><span class="o">=</span><span class="n">nrowst2</span><span class="o">-</span><span class="n">nb_bad_entries</span><span class="p">)</span>
+
+<span class="c"># Copy the large table minus the last two lines to the small table.</span>
+<span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">table2</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+   <span class="n">small_table</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">name</span><span class="p">)[:]</span> <span class="o">=</span> <span class="n">table2</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">name</span><span class="p">)[:</span><span class="o">-</span><span class="n">nb_bad_entries</span><span class="p">]</span>
+
+<span class="n">table2</span> <span class="o">=</span> <span class="n">small_table</span>
+</pre></div>
+</td></tr></table></div>
+</div>
+<div class="section" id="changing-a-value">
+<h3>6.3.7. Changing a value<a class="headerlink" href="#changing-a-value" title="Permalink to this headline">¶</a></h3>
+<p>Changing a value is simply a matter of identifying the column and the row that
+needs the new value.</p>
+<p>Below we show how one might search one column to identify the row and then
+change that row in another column.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Change the &#39;pabeta&#39; value for source S002 in table2</span>
+<span class="n">rowindex</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">table2</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;SNR_ID&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s">&#39;S002&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">table2</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s">&#39;pabeta&#39;</span><span class="p">)[</span><span class="n">rowindex</span><span class="p">]</span> <span class="o">=</span> <span class="mf">888.</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">6. Table Data</a><ul>
+<li><a class="reference internal" href="#read-from-a-fits-table">6.1. Read from a FITS Table</a></li>
+<li><a class="reference internal" href="#create-a-fits-table">6.2. Create a FITS Table</a></li>
+<li><a class="reference internal" href="#operate-on-a-fits-table">6.3. Operate on a FITS Table</a><ul>
+<li><a class="reference internal" href="#preparation-for-the-examples">6.3.1. Preparation for the examples</a></li>
+<li><a class="reference internal" href="#merging-tables">6.3.2. Merging tables</a></li>
+<li><a class="reference internal" href="#appending-and-deleting-columns">6.3.3. Appending and deleting columns</a></li>
+<li><a class="reference internal" href="#inserting-columns">6.3.4. Inserting columns</a></li>
+<li><a class="reference internal" href="#changing-the-name-of-a-column">6.3.5. Changing the name of a column</a></li>
+<li><a class="reference internal" href="#appending-and-deleting-rows">6.3.6. Appending and deleting rows</a></li>
+<li><a class="reference internal" href="#changing-a-value">6.3.7. Changing a value</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="data.html"
+                        title="previous chapter">5. Pixel Data</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="appendices/appendix_descriptors.html"
+                        title="next chapter">1. List of Descriptors</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/tables.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="appendices/appendix_descriptors.html" title="1. List of Descriptors"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="data.html" title="5. Pixel Data"
+             >previous</a> |</li>
+        <li><a href="index.html">AstroData Users Manual X1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Kathleen Labrie.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,88 @@
+#!/usr/bin/env python
+
+"""
+App to print to screen descriptor values for astrodata-supported FITS files.
+
+Eg. showd N20120212S0012.fits -d camera filter_name
+    showd N20120212S*.fits -d camera filter_name
+"""
+
+import sys
+import argparse
+
+from astrodata import AstroData
+
+def get_descriptor_value(ad, descriptors):
+    """
+    Return the descriptor values as a list of DescriptorValue objects.
+
+    Parameters
+    ----------
+    ad : AstroData object
+        The AstroData object we are probing.
+    descriptors : list of str
+        A list of strings each equivalent to the name of the descriptor
+        one wants to access.
+
+    Returns
+    -------
+    A list of DescriptorValue objects.
+
+    Raises
+    ------
+    See Also
+    --------
+    Examples
+    --------
+    ad = AstroData('filename.fits')
+    descriptors = ['camera', 'filter_name']
+    values = get_descriptor_value(ad, descriptors)
+    """
+    values = []
+    for descriptor in descriptors:
+        values.append(getattr(ad, descriptor)())
+    return values
+
+
+def parse_args(command_line_args):
+    """
+    Parse the command line.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('inputs', type=str, nargs="*",
+                        help="Input FITS files")
+    parser.add_argument('--descriptors', '-d', type=str, nargs='*',
+                        dest='descriptors', action='store', required=True,
+                        help='descriptor to return')
+    parser.add_argument('--debug', default=False, action='store_true',
+                        help='Toggle debug mode')
+
+    args = parser.parse_args(command_line_args)
+
+    if args.debug:
+        print args
+
+    return args
+
+
+def main(argv=None):
+    """
+    Print the requested descriptor values for each input files.
+    One file per line.
+    """
+    if argv is None:
+        argv = sys.argv
+
+    args = parse_args(sys.argv[1:])
+
+    for filename in args.inputs:
+        ad = AstroData(filename)
+        values = get_descriptor_value(ad, args.descriptors)
+        msg = "%s: " % ad.filename
+        for value in values:
+            msg += "%s " % value
+        print msg
+
+
+if __name__ == '__main__':
+    sys.exit(main())

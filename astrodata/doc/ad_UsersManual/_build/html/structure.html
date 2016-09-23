@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. MEF Structure Mapping &mdash; AstroData Users Manual 0.9.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/todo-styles.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.9.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="AstroData Users Manual 0.9.0 documentation" href="index.html" />
+    <link rel="next" title="5. AstroDataTypes" href="types.html" />
+    <link rel="prev" title="3. Input and Output Operations" href="io.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="types.html" title="5. AstroDataTypes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="io.html" title="3. Input and Output Operations"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="mef-structure-mapping">
+<span id="structure"></span><h1>4. MEF Structure Mapping<a class="headerlink" href="#mef-structure-mapping" title="Permalink to this headline">¶</a></h1>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Structures are not fully implemented in astrodata.</p>
+</div>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">The structure section needs to be written, but since the functionality
+is not available, other than the SCI,VAR,DQ model, this is not a priority.</p>
+</div>
+<div class="section" id="file-structure-definitions">
+<h2>4.1. File Structure Definitions<a class="headerlink" href="#file-structure-definitions" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="gemini-data-structure">
+<h2>4.2. Gemini Data Structure<a class="headerlink" href="#gemini-data-structure" title="Permalink to this headline">¶</a></h2>
+<p>Raw Gemini data are Multi-Extension FITS that contains only the scientific
+pixel data.  The extensions are not named (EXTNAME) or versioned (EXTVER).</p>
+<p>When the raw data is &#8220;prepared&#8221;, the science extensions are named &#8220;SCI&#8221;
+(ie. EXTNAME keyword set to &#8220;SCI&#8221;) and versioned with an index (ie.
+EXTVER keyword set to 1 ... N, N being the number of extensions the MEF
+contains).</p>
+<p>As early as possible, the variance plane and the data quality plane will
+be calculated and added.  Those planes are named &#8220;VAR&#8221; and &#8220;DQ&#8221;, and
+receive an EXTVER value corresponding to their respective &#8220;SCI&#8221; extension.</p>
+<p>For spectroscopic observation, a Mask Definition File, a FITS table, is attached to the
+data and the extension is named &#8220;MDF&#8221;, with version number 1.</p>
+<p>Those version names are implied when an AstroData object is created.</p>
+</div>
+<div class="section" id="using-structures">
+<h2>4.3. Using Structures<a class="headerlink" href="#using-structures" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="adding-new-structure">
+<h2>4.4. Adding New Structure<a class="headerlink" href="#adding-new-structure" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">4. MEF Structure Mapping</a><ul>
+<li><a class="reference internal" href="#file-structure-definitions">4.1. File Structure Definitions</a></li>
+<li><a class="reference internal" href="#gemini-data-structure">4.2. Gemini Data Structure</a></li>
+<li><a class="reference internal" href="#using-structures">4.3. Using Structures</a></li>
+<li><a class="reference internal" href="#adding-new-structure">4.4. Adding New Structure</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="io.html"
+                        title="previous chapter">3. Input and Output Operations</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="types.html"
+                        title="next chapter">5. AstroDataTypes</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/structure.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="types.html" title="5. AstroDataTypes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="io.html" title="3. Input and Output Operations"
+             >previous</a> |</li>
+        <li><a href="index.html">AstroData Users Manual 0.9.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Kathleen Labrie.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

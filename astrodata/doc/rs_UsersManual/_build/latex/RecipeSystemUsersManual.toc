@@ -1,0 +1,14 @@
+\select@language {english}
+\contentsline {chapter}{\numberline {1}Introduction to the RecipeSystem}{1}{chapter.1}
+\contentsline {section}{\numberline {1.1}Definitions}{1}{section.1.1}
+\contentsline {chapter}{\numberline {2}Installation Instructions}{3}{chapter.2}
+\contentsline {chapter}{\numberline {3}Quick Start Guide}{5}{chapter.3}
+\contentsline {chapter}{\numberline {4}How to Process Data with the Recipe System}{7}{chapter.4}
+\contentsline {chapter}{\numberline {5}All about the \texttt {reduce} User Interface}{9}{chapter.5}
+\contentsline {section}{\numberline {5.1}Test}{9}{section.5.1}
+\contentsline {chapter}{\numberline {6}Customizing the Data Processing}{11}{chapter.6}
+\contentsline {section}{\numberline {6.1}Adding and Modifying Recipes}{11}{section.6.1}
+\contentsline {section}{\numberline {6.2}Writing and Using your own Primitive}{11}{section.6.2}
+\contentsline {chapter}{Appendices}{}{section*.3}
+\contentsline {chapter}{\numberline {A}List of all recipes}{13}{appendix.A}
+\contentsline {chapter}{\numberline {B}List of all primitives}{15}{appendix.B}

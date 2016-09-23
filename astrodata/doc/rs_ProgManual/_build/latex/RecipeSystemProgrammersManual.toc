@@ -1,0 +1,10 @@
+\select@language {english}
+\contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}
+\contentsline {chapter}{\numberline {2}Installation Instructions}{3}{chapter.2}
+\contentsline {chapter}{\numberline {3}What is the RecipeSystem}{5}{chapter.3}
+\contentsline {chapter}{\numberline {4}RecipeSystem Package Structure and Content}{7}{chapter.4}
+\contentsline {chapter}{\numberline {5}RecipeSystem User Interfaces}{9}{chapter.5}
+\contentsline {chapter}{\numberline {6}Calibrations Association and Handling}{11}{chapter.6}
+\contentsline {chapter}{Appendices}{}{section*.3}
+\contentsline {chapter}{\numberline {A}RecipeSystem Design Notes}{13}{appendix.A}
+\contentsline {chapter}{\numberline {B}RecipeSystem API}{15}{appendix.B}
