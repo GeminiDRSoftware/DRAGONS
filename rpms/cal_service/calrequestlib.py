@@ -22,7 +22,7 @@ from .caches import set_caches
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
-# Currently delivers request_transport.calibration_search fn.
+# Currently delivers transport_request.calibration_search fn.
 calibration_search = cal_search_factory()
 # ------------------------------------------------------------------------------
 descriptor_list = ['amp_read_area','camera','central_wavelength','coadds',
@@ -75,7 +75,7 @@ def get_cal_requests(inputs, caltype):
     @param inputs: list of input AstroData instances
     @type inputs:  <list>
     
-    @param caltype: Calibration, ie bias, flat, dark, etc.
+    @param caltype: Calibration type, eg., 'processed_bias', 'flat', etc.
     @type caltype:  <str>
     
     @return: Returns a list of CalibrationRequest instances, one for
@@ -136,6 +136,9 @@ def process_cal_requests(cal_requests):
 
         log.info("found calibration (url): " + calurl)
         components = urlparse(calurl)
+
+        # This logic needs fixing. It appears to work, but it is inscrutable
+        # and much of it probably unnecessary.
         if components.scheme == 'file':
             calfile = components.path
             calurl = calfile

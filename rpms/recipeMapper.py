@@ -26,8 +26,6 @@ class RecipeMapper(object):
     >>> primitive_set.__class__
     <class 'primitives_IMAGE.PrimitivesIMAGE'>
 
-    
-
     """
     def __init__(self, adinputs, recipename='default', context='QA', uparms=None):
         """
