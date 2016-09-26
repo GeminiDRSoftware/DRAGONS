@@ -1,6 +1,6 @@
 import pytest
 import astrodata
-import instruments
+import gemini_instruments
 import os
 
 from lut_tags import fixture_data as tags_fixture_data

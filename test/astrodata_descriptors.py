@@ -1,6 +1,6 @@
 import pytest
 import astrodata
-import instruments
+import gemini_instruments
 
 from lut_descriptors import fixture_data as descriptors_fixture_data
 
