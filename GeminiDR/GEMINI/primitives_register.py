@@ -15,6 +15,9 @@ from .parameters_register import ParametersRegister
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
+from pkg_utilities.decorators import parameter_override
+# ------------------------------------------------------------------------------
+@parameter_override
 class Register(PrimitivesCORE):
     """
     This is the class containing all of the registration primitives for the
@@ -24,8 +27,8 @@ class Register(PrimitivesCORE):
     """
     tagset = set(["GEMINI"])
 
-    def __init__(self, adinputs):
-        super(Register, self).__init__(adinputs)
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(Register, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)
         self.parameters = ParametersRegister
     
     def correctWCSToReferenceFrame(self, adinputs=None, stream='main', **params):

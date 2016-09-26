@@ -6,6 +6,9 @@ from .parameters_mask import ParametersMask
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
+from pkg_utilities.decorators import parameter_override
+# ------------------------------------------------------------------------------
+@parameter_override
 class Mask(PrimitivesCORE):
     """
     This is the class containing all of the mask-related primitives
@@ -14,8 +17,8 @@ class Mask(PrimitivesCORE):
     """
     tagset = set(["GEMINI"])
 
-    def __init__(self, adinputs):
-        super(Mask, self).__init__(adinputs)
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(Mask, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)
         self.parameters = ParametersMask
 
     def addObjectMaskToDQ(self, rc):

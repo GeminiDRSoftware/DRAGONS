@@ -8,6 +8,9 @@ from gempy.adlibrary.extract import trace_footprints, cut_footprints
 
 from .primitivesGEMINI import PrimitivesGemini
 
+from pkg_utilities.decorators import parameter_override
+# ------------------------------------------------------------------------------
+@parameter_override
 class PrimitivesSpect(PrimitivesGemini):
     """
     This is the class containing all of the primitives for the GEMINI level of

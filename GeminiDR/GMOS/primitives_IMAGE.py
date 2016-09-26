@@ -12,7 +12,7 @@ class PrimitivesIMAGE(PrimitivesGMOS):
     """
     tagset = set(["GMOS", "IMAGE"])
 
-    def __init__(self, adinputs, uparms={}):
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
         """
         Receive a list of astrodata objects and a dictionary of user-supplied 
         parameters. Typically, adinputs is of length 1, a single dataset.
@@ -36,10 +36,10 @@ class PrimitivesIMAGE(PrimitivesGMOS):
         :type uparms: <dict>, a dictionary of key:val pairs.
 
         """
-        super(self.__class__, self).__init__(adinputs)
+        super(self.__class__, self).__init__(adinputs, context, 
+                                             ucals=ucals, uparms=uparms)
         self.parameters = ParametersIMAGE
         self.primitive_parset = None
-        self.user_params = uparms
         if self.user_params:
             print "PrimitivesIMAGE recieved user parameters:"
             print str(self.user_params)

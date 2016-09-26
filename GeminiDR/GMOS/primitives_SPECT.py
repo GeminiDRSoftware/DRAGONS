@@ -10,8 +10,9 @@ class PrimitivesSPECT(PrimitivesGMOS):
     """
     tagset = set(["GMOS", "SPECT"])
     
-    def __init__(self, adinputs):
-        super(self.__class__, self).__init__(adinputs)
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(self.__class__, self).__init__(adinputs, context, 
+                                             ucals=ucals, uparms=uparms)
         self.parameters = ParametersSPECT
 
     def determineWavelengthSolution(self, adinputs=None, stream='main', **params):

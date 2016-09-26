@@ -7,7 +7,9 @@ from .lookups import MDFDict
 from .parameters_standardize import ParametersStandardize
 from .primitives_CORE import PrimitivesCORE
 
+from pkg_utilities.decorators import parameter_override
 # ------------------------------------------------------------------------------
+@parameter_override
 class Standardize(PrimitivesCORE):
     """
     This is the class containing all of the primitives used to standardize an
@@ -16,8 +18,8 @@ class Standardize(PrimitivesCORE):
     """
     tagset = set(["GEMINI"])
 
-    def __init__(self, adinputs):
-        super(Standardize, self).__init__(adinputs)
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(Standardize, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)
         self.parameters = ParametersStandardize
 
 

@@ -10,7 +10,9 @@ from GMOS.lookups import GMOSArrayGaps
 from GMOS.parameters_GMOS import ParametersGMOS
 from GEMINI.primitives_GEMINI import PrimitivesGemini
 
+from pkg_utilities.decorators import parameter_override
 # ------------------------------------------------------------------------------
+@parameter_override
 class PrimitivesGMOS(PrimitivesGemini):
     """
     This is the class containing all of the primitives for the GMOS level of
@@ -19,8 +21,9 @@ class PrimitivesGMOS(PrimitivesGemini):
     """
     tagset = set(["GMOS"])
 
-    def __init__(self, adinputs):
-        super(PrimitivesGMOS, self).__init__(adinputs)
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(PrimitivesGMOS, self).__init__(adinputs, context, 
+                                             ucals=ucals, uparms=uparms)
         self.parameters = ParametersGMOS
 
     def biasCorrect(self, adinputs=None, stream='main', **params):

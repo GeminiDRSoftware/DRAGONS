@@ -13,7 +13,9 @@ from .primitives_standardize import Standardize
 
 from .parameters_GEMINI import ParametersGemini
 
+from pkg_utilities.decorators import parameter_override
 # ------------------------------------------------------------------------------
+@parameter_override
 class PrimitivesGemini(Bookkeeping, Calibration, Display, Mask, Preprocess,
                        Photometry, QA, Stack, Standardize, Register, Resample):
     """
@@ -24,8 +26,9 @@ class PrimitivesGemini(Bookkeeping, Calibration, Display, Mask, Preprocess,
     """
     tagset = set(["GEMINI"])
 
-    def __init__(self, adinputs):
-        super(PrimitivesGemini, self).__init__(adinputs)
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(PrimitivesGemini, self).__init__(adinputs, context, 
+                                               ucals=ucals, uparms=uparms)
         self.parameters = ParametersGemini
     
     def standardizeGeminiHeaders(self, adinputs=None, stream='main', **params):

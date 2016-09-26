@@ -5,7 +5,9 @@ from gempy.gemini import gemini_tools as gt
 from .parameters_stack import ParametersStack
 from .primitives_CORE import PrimitivesCORE
 
+from pkg_utilities.decorators import parameter_override
 # ------------------------------------------------------------------------------
+@parameter_override
 class Stack(PrimitivesCORE):
     """
     This is the class containing all of the primitives for the GEMINI level of
@@ -15,8 +17,8 @@ class Stack(PrimitivesCORE):
     """
     tagset = set(["GEMINI"])
 
-    def __init__(self, adinputs):
-        super(Stack, self).__init__(adinputs)
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(Stack, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)
         self.parameters = ParametersStack
     
     def alignAndStack(self, adinputs=None, stream='main', **params):

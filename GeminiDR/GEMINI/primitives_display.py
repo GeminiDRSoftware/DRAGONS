@@ -4,6 +4,9 @@ from .parameters_display import ParametersDisplay
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
+from pkg_utilities.decorators import parameter_override
+# ------------------------------------------------------------------------------
+@parameter_override
 class Display(PrimitivesCORE):
     """
     This is the class containing all of the display primitives
@@ -12,8 +15,9 @@ class Display(PrimitivesCORE):
     """
     tagset = set(["GEMINI"])
 
-    def __init__(self, adinputs):
-        super(Display, self).__init__(adinputs)
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(Display, self).__init__(adinputs, context, 
+                                               ucals=ucals, uparms=uparms)
         self.parameters = ParametersDisplay
     
     def display(self, adinputs=None, stream='main', **params):

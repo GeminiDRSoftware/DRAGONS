@@ -4,7 +4,9 @@ from gempy.gemini    import gemini_tools as gt
 from .parameters_preprocess import ParametersPreprocess
 from .primitives_CORE import PrimitivesCORE
 
+from pkg_utilities.decorators import parameter_override
 # ------------------------------------------------------------------------------
+@parameter_override
 class Preprocess(PrimitivesCORE):
     """
     This is the class containing all of the preprocessing primitives
@@ -13,8 +15,9 @@ class Preprocess(PrimitivesCORE):
     """
     tagset = set(["GEMINI"])
 
-    def __init__(self, adinputs):
-        super(Preprocess, self).__init__(adinputs)
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(Preprocess, self).__init__(adinputs, context, ucals=ucals, 
+                                         uparms=uparms)
         self.parameters = ParametersPreprocess
 
     def ADUToElectrons(self, adinputs=None, stream='main', **params):

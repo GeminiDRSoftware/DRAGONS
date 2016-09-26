@@ -4,6 +4,9 @@ from astrodata.utils import Errors
 from GEMINI.primitives.primitivesGEMINI import PrimitivesGemini
 
 # ------------------------------------------------------------------------------
+from pkg_utilities.decorators import parameter_override
+# ------------------------------------------------------------------------------
+@parameter_override
 class PrimitivesImage(PrimitivesGemini):
     """
     This is the class containing all of the primitives for the GEMINI level of

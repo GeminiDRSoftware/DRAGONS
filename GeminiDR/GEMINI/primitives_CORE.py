@@ -13,9 +13,11 @@ from .lookups.source_detection import sextractor_default_dict
 
 from .parameters_CORE import ParametersCORE
 
+from pkg_utilities.decorators import parameter_override
 # ------------------------------------------------------------------------------
 DENT = 3
 # ------------------------------------------------------------------------------
+@parameter_override
 class PrimitivesCORE(object):
     """
     This is the class containing all of the primitives for the GENERAL level of
@@ -24,14 +26,18 @@ class PrimitivesCORE(object):
     """
     tagset = None
     
-    def __init__(self, adinputs):
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        self.adinputs         = adinputs
+        self.adoutputs        = None
+        self.context          = context
+        self.parameters       = ParametersCORE
+        self.user_params      = uparms if uparms else {}
+        self.usercals         = ucals if ucals else {}
+        self.calurl_dict      = calurl_dict.calurl_dict
         self.timestamp_keys   = timestamp_keywords.timestamp_keys
         self.keyword_comments = keyword_comments.keyword_comments
         self.sx_default_dict  = sextractor_default_dict.sextractor_default_dict
-        self.calurl_dict      = calurl_dict.calurl_dict
-        self.parameters       = ParametersCORE
-        self.adinputs         = adinputs
-        self.adoutputs        = None
+
         # This lambda will return the name of the current caller.
         self.myself           = lambda: stack()[1][3]
     

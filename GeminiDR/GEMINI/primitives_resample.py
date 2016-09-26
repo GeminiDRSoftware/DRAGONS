@@ -11,6 +11,9 @@ from .parameters_resample import ParametersResample
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
+from pkg_utilities.decorators import parameter_override
+# ------------------------------------------------------------------------------
+@parameter_override
 class Resample(PrimitivesCORE):
     """
     This is the class containing all of the primitives for the GEMINI level of
@@ -20,8 +23,8 @@ class Resample(PrimitivesCORE):
     """
     tagset = set(["GEMINI"])
     
-    def __init__(self, adinputs):
-        super(Resample, self).__init__(adinputs)
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(Resample, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)
         self.parameters = ParametersResample
     
     def alignToReferenceFrame(self, adinputs=None, stream='main', **params):

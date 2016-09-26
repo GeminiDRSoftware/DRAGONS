@@ -5,11 +5,15 @@ from .parameters_calibration import ParametersCalibration
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
+from pkg_utilities.decorators import parameter_override
+# ------------------------------------------------------------------------------
+@parameter_override
 class Calibration(PrimitivesCORE):
     tagset = set(["GEMINI"])
 
-    def __init__(self, adinputs):
-        super(Calibration, self).__init__(adinputs)
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(Calibration, self).__init__(adinputs, context, 
+                                               ucals=ucals, uparms=uparms)
         self.parameters = ParametersCalibration
 
     def failCalibration(self, adinputs=None, stream='main', **params):

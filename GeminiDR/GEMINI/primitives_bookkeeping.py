@@ -6,6 +6,9 @@ from .parameters_bookkeeping import ParametersBookkeeping
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
+from pkg_utilities.decorators import parameter_override
+# ------------------------------------------------------------------------------
+@parameter_override
 class Bookkeeping(PrimitivesCORE):
     """
     This is the class containing all of the bookkeeping primitives
@@ -14,8 +17,9 @@ class Bookkeeping(PrimitivesCORE):
     """
     tagset = set(["GEMINI"])
 
-    def __init__(self, adinputs):
-        super(Bookkeeping, self).__init__(adinputs)
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(Bookkeeping, self).__init__(adinputs, context, 
+                                          ucals=ucals, uparms=uparms)
         self.parameters = ParametersBookkeeping
 
     def addToList(self, adinputs=None, stream='main', **params):

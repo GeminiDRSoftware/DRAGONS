@@ -9,6 +9,9 @@ from .primitives_CORE import PrimitivesCORE
 # Define the earliest acceptable SExtractor version, currently: 2.8.6
 SEXTRACTOR_VERSION = [2,8,6]
 # ------------------------------------------------------------------------------
+from pkg_utilities.decorators import parameter_override
+# ------------------------------------------------------------------------------
+@parameter_override
 class Photometry(PrimitivesCORE):
     """
     This is the class containing all of the photometry primitives for
@@ -17,8 +20,9 @@ class Photometry(PrimitivesCORE):
     """
     tagset = set(["GEMINI"])
 
-    def __init__(self, adinputs):
-        super(Photometry, self).__init__(adinputs)
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(Photometry, self).__init__(adinputs, context, ucals=ucals, 
+                                         uparms=uparms)
         self.parameters = ParametersPhotometry
 
     
