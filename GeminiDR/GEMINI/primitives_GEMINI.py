@@ -13,7 +13,7 @@ from .primitives_standardize import Standardize
 
 from .parameters_GEMINI import ParametersGemini
 
-from pkg_utilities.decorators import parameter_override
+from rpms.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
 class PrimitivesGemini(Bookkeeping, Calibration, Display, Mask, Preprocess,

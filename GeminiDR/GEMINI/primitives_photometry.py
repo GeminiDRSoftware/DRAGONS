@@ -9,7 +9,7 @@ from .primitives_CORE import PrimitivesCORE
 # Define the earliest acceptable SExtractor version, currently: 2.8.6
 SEXTRACTOR_VERSION = [2,8,6]
 # ------------------------------------------------------------------------------
-from pkg_utilities.decorators import parameter_override
+from rpms.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
 class Photometry(PrimitivesCORE):

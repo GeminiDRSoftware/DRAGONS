@@ -4,7 +4,7 @@ from astrodata.utils import Errors
 from GEMINI.primitives.primitivesGEMINI import PrimitivesGemini
 
 # ------------------------------------------------------------------------------
-from pkg_utilities.decorators import parameter_override
+from rpms.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
 class PrimitivesImage(PrimitivesGemini):

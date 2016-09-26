@@ -6,7 +6,7 @@ from .parameters_bookkeeping import ParametersBookkeeping
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
-from pkg_utilities.decorators import parameter_override
+from rpms.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
 class Bookkeeping(PrimitivesCORE):

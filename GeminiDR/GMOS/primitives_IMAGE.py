@@ -1,7 +1,7 @@
 from GMOS.primitives_GMOS import PrimitivesGMOS
 from GMOS.parameters_IMAGE import ParametersIMAGE
 
-from pkg_utilities.decorators import parameter_override
+from rpms.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
 class PrimitivesIMAGE(PrimitivesGMOS):

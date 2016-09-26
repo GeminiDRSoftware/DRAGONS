@@ -5,7 +5,7 @@ from gempy.gemini import gemini_tools as gt
 from .parameters_stack import ParametersStack
 from .primitives_CORE import PrimitivesCORE
 
-from pkg_utilities.decorators import parameter_override
+from rpms.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
 class Stack(PrimitivesCORE):

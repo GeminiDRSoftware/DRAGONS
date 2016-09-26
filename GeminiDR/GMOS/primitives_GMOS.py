@@ -10,7 +10,7 @@ from GMOS.lookups import GMOSArrayGaps
 from GMOS.parameters_GMOS import ParametersGMOS
 from GEMINI.primitives_GEMINI import PrimitivesGemini
 
-from pkg_utilities.decorators import parameter_override
+from rpms.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
 class PrimitivesGMOS(PrimitivesGemini):

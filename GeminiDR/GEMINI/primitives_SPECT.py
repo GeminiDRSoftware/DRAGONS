@@ -8,7 +8,7 @@ from gempy.adlibrary.extract import trace_footprints, cut_footprints
 
 from .primitivesGEMINI import PrimitivesGemini
 
-from pkg_utilities.decorators import parameter_override
+from rpms.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
 class PrimitivesSpect(PrimitivesGemini):

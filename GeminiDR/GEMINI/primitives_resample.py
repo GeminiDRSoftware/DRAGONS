@@ -11,7 +11,7 @@ from .parameters_resample import ParametersResample
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
-from pkg_utilities.decorators import parameter_override
+from rpms.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
 class Resample(PrimitivesCORE):

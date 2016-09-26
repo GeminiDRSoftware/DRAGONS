@@ -4,7 +4,7 @@ from .parameters_display import ParametersDisplay
 from .primitives_CORE import PrimitivesCORE
 
 # ------------------------------------------------------------------------------
-from pkg_utilities.decorators import parameter_override
+from rpms.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
 class Display(PrimitivesCORE):
