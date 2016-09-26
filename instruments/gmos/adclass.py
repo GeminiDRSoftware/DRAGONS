@@ -1,6 +1,10 @@
-from astrodata import astro_data_tag, TagSet
-from ..gemini import AstroDataGemini
 import re
+
+from astrodata import astro_data_tag, astro_data_descriptor, TagSet
+
+from ..gemini import AstroDataGemini
+from .. import gmu
+from . import lookup
 
 class AstroDataGmos(AstroDataGemini):
     @staticmethod
@@ -120,3 +124,7 @@ class AstroDataGmos(AstroDataGemini):
     @property
     def instrument_name(self):
         return 'GMOS'
+
+    @astro_data_descriptor
+    def overscan_section(self, pretty=False):
+        return self._some_section('overscan_section', 'BIASSEC', pretty)
