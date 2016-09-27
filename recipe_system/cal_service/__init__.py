@@ -1,5 +1,6 @@
 from ..config import globalConf
-from . import prsproxyutil
+from . import transport_request
+
 try:
     from . import localmanager
     localmanager_available = True
@@ -27,7 +28,8 @@ def cal_search_factory():
     Defaults to `prsproxyutil.calibration_search` if there is missing calibs
     setup, or if the `[calibs]`.`standalone` option is turned off.
     """
-    ret = prsproxyutil.calibration_search
+
+    ret = transport_request.calibration_search
     try:
         calconf = globalConf[CONFIG_SECTION]
         if calconf.standalone:

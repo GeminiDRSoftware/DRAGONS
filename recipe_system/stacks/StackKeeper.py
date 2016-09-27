@@ -1,13 +1,5 @@
 #
-#                                                                  gemini_python
-#
-#                                                        recipe_system.reduction
 #                                                                 StackKeeper.py
-# ------------------------------------------------------------------------------
-# $Id$
-# ------------------------------------------------------------------------------
-__version__      = '$Revision$'[11:-2]
-__version_date__ = '$Date$'[7:-2]
 # ------------------------------------------------------------------------------
 import os
 import pickle
@@ -15,33 +7,23 @@ import pickle
 from copy import copy
 from threading import RLock
 
-from ..adcc.servers import xmlrpc_proxy
-from .reductionContextRecords import StackableRecord, FringeRecord
+# This crap needs to be dealt with thorooughly, esp. the "Records" classes
+# and usage. These classes (reductionContextRecords) purpose is not clear
+# in the context of NH. 
+# The xmlrpc proxy is dispatched and needs to be purged if, in fact, the methods
+# here are even needed.
+# from ..adcc.servers import xmlrpc_proxy
+# from .reductionContextRecords import StackableRecord, FringeRecord
 
-class SKExcept:
-    """ This is the general exception the classes and functions in the
-    StackKeeper.py module raise.
-    """
-    def __init__(self, msg="Exception Raised in StackKeeper", **argv):
-        """This constructor takes a message to print to the user."""
-        self.message = msg
-        for arg, value in argv.items():
-            setattr(self, arg, value)
+from ..utils.errors import StackError
 
-
-    def __str__(self):
-        """
-        This str conversion member returns the message given by the user 
-        (or the default message) when the exception is not caught.
-
-        """
-        return self.message
-        
+# ------------------------------------------------------------------------------
 class StackKeeper(object):
     """
     A data structure for accessing stackable lists.
     It keeps a dictionary indexed by the cachefile name, which
     contain a dict keyed by stack id, with a list of filenames as the value.
+
     """
     # stack dirs
     adcc = None
@@ -49,22 +31,20 @@ class StackKeeper(object):
     shared = False
     stackLists = None
     cacheIndex = None
-    def __init__(self, local = False):
-        # print "SK34:", repr(local)
+    def __init__(self, local=False):
         shared = (not local)
         self.lock = RLock()
         self.stackLists = {}
         self.cacheIndex = {}
         
-        if local != True:
+        if local is False:
             self.local = local
             self.adcc = xmlrpc_proxy.PRSProxy.get_adcc()
-            # print "SK43:", repr(self.adcc)
 
         self.local = local
         self.shared = shared
     
-    def add(self, id, addtostack, cachefile = None):
+    def add(self, id, addtostack, cachefile=None):
         """
         Add a list of stackables for a given id. If the id does not exist, 
         make a new stackable list.
@@ -84,7 +64,7 @@ class StackKeeper(object):
         cachefile = os.path.abspath(cachefile)
         self.lock.acquire()
         if cachefile == None:
-            raise SKExcept("""
+            raise StackError("""
                             cachedir not specified, 
                             will use local cachedir in future but must 
                             be set at current time.""")
@@ -134,8 +114,8 @@ class StackKeeper(object):
         return []           
         
 
-    def get(self, id, cachefile = None):
-        '''
+    def get(self, id, cachefile=None):
+        """
         Get the stackable list for a given id.
         
         @param id: An id based off that derived from IDFactory.getStackableID.
@@ -143,16 +123,13 @@ class StackKeeper(object):
         
         @return: List of files for stacking.
         @rtype: list of str
-        '''
+        """
         
         cachefile = os.path.abspath(cachefile)
         if self.local == False:
-            #print "SK136: remote stack request"
             retval = self.adcc.prs.stackGet(id, cachefile)
-            #print "SK138:", repr(retval)
             return retval
         else:
-            #print "SK139: local stack load"
             pass
             
         print "SK143",repr(self.cacheIndex)
@@ -166,9 +143,7 @@ class StackKeeper(object):
                 return []
 
         self.lock.acquire()
-
         stacksDict = self.cacheIndex[cachefile]
-                    
         if id not in stacksDict:
             self.lock.release()
             return []
@@ -177,54 +152,45 @@ class StackKeeper(object):
             self.lock.release() 
             return scopy
             
-    def load(self, cachefile = None):
+    def load(self, cachefile=None):
         """
-        This member loads the persistent stack for the given cachefile
-        name. NOTE: the contents of the cachefile will stomp any in-memory
+        Load the persistent stack for the given cachefile name. 
+        NOTE: the contents of the cachefile will stomp any in-memory
         copy of the cachefile. Process and thread safety 
-        (say if the list should
-        be made a union) must take place in the calling function.
+        (say if the list should be made a union) must take place in the 
+        calling function.
+
         """
-        if cachefile == None:
-            raise SKExcept("Cannot load stack list, cachefile == None")
+        if cachefile is None:
+            raise StackError("Cannot load stack list, no cachefile")
         self.lock.acquire()
-        try:
-            if os.path.exists(cachefile):
-                pfile = open(cachefile, "r")
-                # print "SK131:", cachefile
+        if os.path.exists(cachefile):
+            with open(cachefile, "r") as pfile:
                 stacksDict = pickle.load(pfile)
-                pfile.close()
-            else:
-                stacksDict = {}
-            # @@NOTE: consider doing union between in memory stack and loaded one
-            # @@NOTE: this would only be an issue if there are either
-            # @@NOTE:  two or more adcc instances running (which has to be forced)
-            # @@NOTE:  or adcc instances running on different machine while two
-            # @@NOTE:  or more reduces run on different machine, in a shared directory
-            # @@NOTE:  i.e. via network mount (i.e. NFS)
-            self.cacheIndex.update({cachefile: stacksDict})
-        except:
-            self.lock.release()
-            raise
+        else:
+            stacksDict = {}
+
+        self.cacheIndex.update({cachefile: stacksDict})
         self.lock.release()
+        return
                 
     def persist(self, cachefile = None):
-        if (self.local == False):
-            #do nothing, persistence is done on local side
+        if (self.local is False):
             return
             
-        if cachefile == None:
-            raise SKExcept("Cannot persist, cachefile == None")
+        if cachefile is None:
+            raise StackError("Cannot persist, cachefile == None")
+
         self.lock.acquire()
         if cachefile not in self.cacheIndex:
-            print "cachefile not in Index"
-            raise
-            return # nothing to persist
-        pfile = open(cachefile, "w")
-        stacksDict = self.cacheIndex[cachefile]
-        pickle.dump(stacksDict, pfile)
-        pfile.close()
+            raise StackError("No cache file")
+
+        with open(cachefile, "w") as pfile:
+            stacksDict = self.cacheIndex[cachefile]
+            pickle.dump(stacksDict, pfile)
+
         self.lock.release()
+        return
         
     def __str__(self):
         self.lock.acquire()
@@ -235,9 +201,11 @@ class StackKeeper(object):
         self.lock.release()
         return tempstr
 
+
 class FringeKeeper:
     """
     A data structure for accessing stackable lists.
+
     """
     stack_lists = None
     
@@ -249,11 +217,12 @@ class FringeKeeper:
         Add a list of stackables for a given id. If the id does not exist, 
         make a new stackable list.
         
-        @param id: An id based off that derived from IDFactory.getStackableID. 
-        @type id: <str>
+        :param id: An id based off that derived from IDFactory.getStackableID. 
+        :type id: <str>
         
-        @param addtostack: A list of stackable files or a StackableRecord instance.
-        @type addtostack: <list> or <StackableRecord>  
+        :param addtostack: A list of stackable files or a StackableRecord instance.
+        :type addtostack: <list> or <StackableRecord>  
+
         """
         if type(addtostack) != list:
             addtostack = [addtostack]
@@ -280,6 +249,7 @@ class FringeKeeper:
         
         @return: List of files for stacking.
         @rtype: list of str
+
         """
         if id not in self.stack_lists:
             return None
