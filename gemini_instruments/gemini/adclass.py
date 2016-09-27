@@ -12,6 +12,7 @@ from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
 #       won't work with this implementation
 from ..gmu import *
 
+# Default simple header mapping
 gemini_direct_keywords = dict(
     ao_fold = keyword("AOFOLD"),
     array_name = keyword("ARRAYNAM"),
@@ -184,6 +185,7 @@ class AstroDataGemini(AstroDataFits):
         if self.phu.OBSTYPE == 'OBJECT':
             return TagSet(['PROCESSED_SCIENCE'])
 
+    # TODO: rename function to _parse_section.  Refactor all descriptors using it.
     def _some_section(self, descriptor_name, keyword, pretty):
         try:
             value_filter = (str if pretty else sectionStrToIntList)
@@ -207,6 +209,15 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_descriptor
     def airmass(self):
+        """
+        Returns the airmass of the observation.
+
+        Returns
+        -------
+        float
+            Airmass value.
+
+        """
         am = self.phu.AIRMASS
 
         if am < 1:
@@ -216,6 +227,16 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_descriptor
     def ao_seeing(self):
+        """
+        Returns an estimate of the natural seeing as calculated from the
+        adaptive optics systems.
+
+        Returns
+        -------
+        float
+            AO estimate of the natural seeing
+
+        """
         try:
             return self.phu.AOSEEING
         except KeyError:
@@ -232,16 +253,71 @@ class AstroDataGemini(AstroDataFits):
             except KeyError:
                 raise AttributeError("There is no information about AO seeing")
 
+    # TODO: Clean up the array_section output interface. Trac #821
     @astro_data_descriptor
     def array_section(self, pretty=False):
+        """
+        Returns the section covered by the array(s) relative to the detector
+        frame.  For example, this can be the position of multiple amps read
+        within a CCD.  If pretty is False, a tuple of 0-based coordinates
+        is returned with format (x1, x2, y1, y2).  If pretty is True, a keyword
+        value is returned without parsing as a string.  In this format, the
+        coordinates are generally 1-based.
+
+        One tuple or string is return per extension/array.  If more than one
+        array, the tuples/strings are return in a list.  Otherwise, the
+        section is returned as a tuple or a string.
+
+        Parameters
+        ----------
+        pretty : bool
+            If True, return the formatted string found in the header.
+
+        Returns
+        -------
+        tuple of integers or list of tuples
+            Position of extension(s) using Python slice values
+
+        string or list of strings
+            Position of extension(s) using an IRAF section format (1-based)
+
+
+        """
         return self._some_section('array_section', 'ARRAYSEC', pretty)
 
     @astro_data_descriptor
     def camera(self, stripID=False, pretty=False):
+        """
+        Returns the name of the camera.  The component ID can be removed
+        with either 'stripID' or 'pretty' set to True.
+
+        Parameters
+        ----------
+        stripID : bool
+            If True, removes the component ID and returns only the name of
+            the camera.
+        pretty : bool
+            Same as for stripID.  Pretty here does not do anything more.
+
+        Returns
+        -------
+        str
+            The name of the camera with or without the component ID.
+
+        """
         return self._may_remove_component('CAMERA', stripID, pretty)
 
     @astro_data_descriptor
     def cass_rotator_pa(self):
+        """
+        Returns the position angle of the Cassegrain rotator.
+
+        Returns
+        -------
+        float
+            Position angle of the Cassegrain rotator.
+
+        """
         val = float(self.phu.CRPA)
         if val < -360 or val > 360:
             raise ValueError("Invalid CRPA value: {}".format(val))
@@ -250,6 +326,15 @@ class AstroDataGemini(AstroDataFits):
     # TODO: Allow for unit conversion
     @astro_data_descriptor
     def central_wavelength(self):
+        """
+        Returns the central wavelength in meters.
+
+        Returns
+        -------
+        float
+            The central wavelength setting in meters.
+
+        """
         val = self.raw_central_wavelength()
         if val < 0:
             raise ValueError("Invalid CWAVE value: {}".format(val))
@@ -259,26 +344,142 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_descriptor
     def coadds(self):
+        """
+        Returns the number of co-adds used for the observation.
+
+        Returns
+        -------
+        int
+            Number of co-adds.
+
+        """
         return int(self.phu.get('COADDS', 1))
 
     @astro_data_descriptor
     def data_section(self, pretty=False):
+        """
+        Returns the rectangular section that includes the pixels that would be
+        exposed to light.  If pretty is False, a tuple of 0-based coordinates
+        is returned with format (x1, x2, y1, y2).  If pretty is True, a keyword
+        value is returned without parsing as a string.  In this format, the
+        coordinates are generally 1-based.
+
+        One tuple or string is return per extension/array.  If more than one
+        array, the tuples/strings are return in a list.  Otherwise, the
+        section is returned as a tuple or a string.
+
+        Parameters
+        ----------
+        pretty : bool
+         If True, return the formatted string found in the header.
+
+        Returns
+        -------
+        tuple of integers or list of tuples
+            Location of the pixels exposed to light using Python slice values.
+
+        string or list of strings
+            Location of the pixels exposed to light using an IRAF section
+            format (1-based).
+
+
+        """
+
         return self._some_section('data_section', 'DATASEC', pretty)
 
     @astro_data_descriptor
     def decker(self, stripID=False, pretty=False):
+        """
+        Returns the name of the decker.  The component ID can be removed
+        with either 'stripID' or 'pretty' set to True.
+
+        Parameters
+        ----------
+        stripID : bool
+            If True, removes the component ID and returns only the name of
+            the decker.
+        pretty : bool
+            Same as for stripID.  Pretty here does not do anything more.
+
+        Returns
+        -------
+        str
+            The name of the decker with or without the component ID.
+
+        """
+
         return self._may_remove_component('DECKER', stripID, pretty)
 
     @astro_data_descriptor
     def detector_section(self, pretty=False):
+        """
+        Returns the section covered by the detector relative to the whole
+        mosaic of detectors.  If pretty is False, a tuple of 0-based coordinates
+        is returned with format (x1, x2, y1, y2).  If pretty is True, a keyword
+        value is returned without parsing as a string.  In this format, the
+        coordinates are generally 1-based.
+
+        One tuple or string is return per extension/array.  If more than one
+        array, the tuples/strings are return in a list.  Otherwise, the
+        section is returned as a tuple or a string.
+
+        Parameters
+        ----------
+        pretty : bool
+         If True, return the formatted string found in the header.
+
+        Returns
+        -------
+        tuple of integers or list of tuples
+            Position of the detector using Python slice values.
+
+        string or list of strings
+            Position of the detector using an IRAF section format (1-based).
+
+
+        """
+
         return self._some_section('detector_section', 'DETSEC', pretty)
 
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
+        """
+        Returns the name of the disperser.  The component ID can be removed
+        with either 'stripID' or 'pretty' set to True.
+
+        Parameters
+        ----------
+        stripID : bool
+            If True, removes the component ID and returns only the name of
+            the disperser.
+        pretty : bool
+            Same as for stripID.  Pretty here does not do anything more.
+
+        Returns
+        -------
+        str
+            The name of the disperser with or without the component ID.
+
+        """
+
         return self._may_remove_component('DISPERSR', stripID, pretty)
 
     @astro_data_descriptor
     def dispersion_axis(self):
+        """
+        Returns the axis along which the light is dispersed.
+
+        Returns
+        -------
+        int
+            Dispersion axis.
+
+        Raises
+        ------
+        ValueError
+            If the data is tagged IMAGE or is not PREPARED.
+
+        """
         # Keyword: DISPAXIS
         tags = self.tags
         if 'IMAGE' in tags or 'PREPARED' not in tags:
@@ -289,7 +490,24 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_descriptor
     def effective_wavelength(self):
-        # TODO: We need to return the appropriate output units
+        """
+        Returns the wavelength representing the bandpass or the spectrum.
+        For imaging data this normally is the wavelength at the center of
+        the bandpass as defined by the filter used.  For spectra, this is
+        the central wavelength.  The returned value is in meters.
+
+        This descriptor makes uses of a lookup table to associate filters
+        with their effective_wavelength.
+
+        Returns
+        -------
+        float
+            Wavelength representing the bandpass or the spectrum coverage.
+
+        """
+        # TODO: We need to return the appropriate output units.  KL what is "appropriate"?
+        # central_wavelength returns a value in meters.  Shouldn't we
+        # expect effective_wavelength to return a value in meters too?
         tags = self.tags
         if 'IMAGE' in tags:
             inst = self.instrument()
@@ -299,23 +517,54 @@ class AstroDataGemini(AstroDataFits):
                     return filter_wavelengths[inst, filter_name]
                 except KeyError:
                     pass
-            raise KeyError("Can't find the wavelenght for this filter in the look-up table")
+            raise KeyError("Can't find the wavelength for this filter in the look-up table")
         elif 'SPECT' in tags:
             return self.central_wavelength()
 
     @astro_data_descriptor
     def exposure_time(self):
+        """
+        Returns the exposure time in seconds.
+
+        Returns
+        -------
+        float
+            Exposure time.
+
+        """
         exposure_time = self.phu.EXPTIME
         if exposure_time < 0:
             raise ValueError("Invalid exposure time: {}".format(exposure_time))
 
-        if 'PREPARED' not in self.tags and self.is_coadds_summed():
+        if 'PREPARED' in self.tags and self.is_coadds_summed():
             return exposure_time * self.coadds()
         else:
             return exposure_time
 
     @astro_data_descriptor
     def filter_name(self, stripID=False, pretty=False):
+        """
+        Returns the name of the filter(s) used.  The component ID can be
+        removed with either 'stripID' or 'pretty'.  If a combination of filters
+        is used, the filter names will be join into a unique string with '&' as
+        separator.  If 'pretty' is True, filter positions such as 'Open',
+        'Dark', 'blank', and others are removed leaving only the relevant
+        filters in the string.
+
+        Parameters
+        ----------
+        stripID : bool
+            If True, removes the component ID and returns only the name of
+            the filter.
+        pretty : bool
+            Same as for stripID.  Pretty here does not do anything more.
+
+        Returns
+        -------
+        str
+            The name of the filter combination with or without the component ID.
+
+        """
         f1 = self.phu.FILTER1
         f2 = self.phu.FILTER2
 
@@ -341,10 +590,39 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_descriptor
     def focal_plane_mask(self, stripID=False, pretty=False):
+        """
+        Returns the name of the focal plane mask.  The component ID can be
+        removed with either 'stripID' or 'pretty' set to True.
+
+        Parameters
+        ----------
+        stripID : bool
+            If True, removes the component ID and returns only the name of
+            the focal plane mask.
+        pretty : bool
+            Same as for stripID.  Pretty here does not do anything more.
+
+        Returns
+        -------
+        str
+            The name of the focal plane mask with or without the component ID.
+
+        """
+
         self._may_remove_component('FPMASK', stripID, pretty)
 
     @astro_data_descriptor
     def gcal_lamp(self):
+        """
+        Returns the name of the GCAL lamp being used, or "Off" if no lamp is
+        in used.
+
+        Returns
+        -------
+        str
+            Name of the GCAL lamp being used, or "Off" if not in use.
+
+        """
         try:
             lamps, shut = self.phu.GCALLAMP, self.phu.GCALSHUT
             if (shut.upper() == 'CLOSED' and lamps.upper() in ('IRHIGH', 'IRLOW')) or lamps.upper() in ('', 'NO VALUE'):
@@ -356,10 +634,33 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_descriptor
     def group_id(self):
+        """
+        Returns a string representing a group of data that are compatible
+        with each other.  This is used when stacking, for example.  Each
+        instrument and mode of observation will have its own rules.
+
+        At the Gemini class level, the default is to group by the Gemini
+        observation ID.
+
+        Returns
+        -------
+        str
+            A group ID for compatible data.
+
+        """
         return self.observation_id()
 
     @astro_data_descriptor
     def is_ao(self):
+        """
+        Tells whether or not the data was taken with adaptive optics.
+
+        Returns
+        -------
+        bool
+            True if the data is AO, False otherwise.
+
+        """
         try:
             return self.ao_fold() == 'IN'
         except KeyError:
@@ -367,10 +668,32 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_descriptor
     def is_coadds_summed(self):
+        """
+        Tells whether or not the co-adds have been summed.  If not, they
+        have been averaged.
+
+        At the Gemini level, this descriptor is hardcoded to True as it is
+        the default at the observatory.
+
+        Returns
+        -------
+        bool
+            True if the data has been summed.  False if it has been averaged.
+
+        """
         return True
 
     @astro_data_descriptor
     def local_time(self):
+        """
+        Returns the local time stored at the time of the observation.
+
+        Returns
+        -------
+        datetime.datetime.time()
+            Local time of the observation.
+
+        """
         local_time = self.phu.LT
         if re.match("^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$", local_time):
             return dateutil.parser.parse(local_time).time()
@@ -379,11 +702,35 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_descriptor
     def mdf_row_id(self):
+        """
+        Returns row ID from the MDF (Mask Definition File) table associated
+        with the spectrum.  Applies to "cut" MOS or X-dispersed data.
+
+        Returns
+        -------
+        int
+            Row of the MDF associated with the extension.
+
+        Raises
+        ------
+        NotImplementedError
+            This descriptor cannot mean anything at the Gemini level.
+        """
         # Keyword: MDFROW
         raise NotImplementedError("mdf_row_id needs types/tags...")
 
     @astro_data_descriptor
     def nominal_atmospheric_extinction(self):
+        """
+        Returns the nominal atmospheric extinction at observation airmass
+        and bandpass.
+
+        Returns
+        -------
+        float
+            Nominal atmospheric extinction from model.
+
+        """
         nom_ext_idx = (self.telescope(), self.filter_name(pretty=True))
         coeff = nominal_extinction.get(nom_ext_idx, 0.0)
 
@@ -391,6 +738,15 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_descriptor
     def qa_state(self):
+        """
+        Returns the Gemini quality assessment flags.
+
+        Returns
+        -------
+        str
+            Gemini quality assessment flags.
+
+        """
         rawpireq = self.raw_pi_requirements_met()
         rawgemqa = self.raw_gemini_qa()
         pair = rawpireq.upper(), rawgemqa.upper()
@@ -412,8 +768,25 @@ class AstroDataGemini(AstroDataFits):
 
         return ret_qa_state
 
-    @astro_data_descriptor
     def _raw_to_percentile(self, descriptor, raw_value):
+        """
+        Parses the Gemini constraint bands, and returns the percentile
+        part as an integer.
+
+        Parameters
+        ----------
+        descriptor : str
+            The name of the descriptor calling this function.  For error
+            reporting purposes.
+        raw_value : str
+            The sky constraint band.  (eg. 'IQ50')
+
+        Returns
+        -------
+        int
+            Percentile part of the Gemini constraint band.
+
+        """
         val = parse_percentile(raw_value)
         if val is None:
             raise ValueError("Invalid value for {}: {!r}".format(descriptor, raw_value))
@@ -421,38 +794,131 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_descriptor
     def raw_bg(self):
+        """
+        Returns the BG, background brightness, of the observation.
+
+        Returns
+        -------
+        str
+            BG, background brightness, of the observation.
+
+        """
         return self._raw_to_percentile('raw_bg', self.phu.RAWBG)
 
     @astro_data_descriptor
     def raw_cc(self):
+        """
+        Returns the CC, cloud coverage, of the observation.
+
+        Returns
+        -------
+        str
+            CC, cloud coverage of the observation.
+
+        """
         return self._raw_to_percentile('raw_cc', self.phu.RAWCC)
 
     @astro_data_descriptor
     def raw_iq(self):
+        """
+        Returns the , image quality, of the observation.
+
+        Returns
+        -------
+        str
+            IQ, image quality, of the observation.
+
+        """
         return self._raw_to_percentile('raw_iq', self.phu.RAWIQ)
 
     @astro_data_descriptor
     def raw_wv(self):
+        """
+        Returns the WV, water vapor, of the observation.
+
+        Returns
+        -------
+        str
+            WV, water vapor, of the observation.
+
+        """
         return self._raw_to_percentile('raw_wv', self.phu.RAWWV)
 
     @astro_data_descriptor
     def requested_bg(self):
-        return self._raw_to_percentile('raw_bg', self.phu.REQBG)
+        """
+        Returns the BG, background brightness, requested by the PI.
+
+        Returns
+        -------
+        str
+            BG, background brightness, requested by the PI.
+
+        """
+        return self._raw_to_percentile('requested_bg', self.phu.REQBG)
 
     @astro_data_descriptor
     def requested_cc(self):
-        return self._raw_to_percentile('raw_cc', self.phu.REQCC)
+        """
+        Returns the CC, cloud coverage, requested by the PI.
+
+        Returns
+        -------
+        str
+            CC, cloud coverage, requested by the PI.
+
+        """
+        return self._raw_to_percentile('requested_cc', self.phu.REQCC)
 
     @astro_data_descriptor
     def requested_iq(self):
-        return self._raw_to_percentile('raw_iq', self.phu.REQIQ)
+        """
+        Returns the IQ, image quality, requested by the PI.
+
+        Returns
+        -------
+        str
+            IQ, image quality, requested by the PI.
+
+        """
+        return self._raw_to_percentile('requested_iq', self.phu.REQIQ)
 
     @astro_data_descriptor
     def requested_wv(self):
-        return self._raw_to_percentile('raw_wv', self.phu.REQWV)
+        """
+        Returns the WV, water vapor, requested by the PI.
+
+        Returns
+        -------
+        str
+            WV, water vapor, requested by the PI.
+
+        """
+        return self._raw_to_percentile('requested_wv', self.phu.REQWV)
 
     @astro_data_descriptor
     def target_ra(self, offset=False, pm=True, icrs=False):
+        """
+        Returns the Right Ascension of the target in degrees. Optionally, the
+        telescope offsets can be applied.  The proper motion can also be
+        applied if requested.  Finally, the RA can be converted to ICRS
+        coordinates.
+
+        Parameters
+        ----------
+        offset : bool
+            If True, applies the telescope offsets.
+        pm : bool
+            If True, applies proper motion parameters.
+        icrs : bool
+            If True, convert the RA to the ICRS coordinate system.
+
+        Returns
+        -------
+        float
+            Right Ascension of the target in degrees.
+
+        """
         ra = self.ra()
         raoffset = self.phu.get('RAOFFSET', 0)
         targ_raoffset = self.phu.get('RATRGOFF', 0)
@@ -496,6 +962,27 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_descriptor
     def target_dec(self, offset=False, pm=True, icrs=False):
+        """
+        Returns the Declination of the target in degrees. Optionally, the
+        telescope offsets can be applied.  The proper motion can also be
+        applied if requested.  Finally, the RA can be converted to ICRS
+        coordinates.
+
+        Parameters
+        ----------
+        offset : bool
+            If True, applies the telescope offsets.
+        pm : bool
+            If True, applies proper motion parameters.
+        icrs : bool
+            If True, convert the Declination to the ICRS coordinate system.
+
+        Returns
+        -------
+        float
+            Declination of the target in degrees.
+
+        """
         dec = self.dec()
         decoffset = self.phu.get('DECOFFSE', 0)
         targ_decoffset = self.phu.get('DECTRGOF', 0)
@@ -536,17 +1023,45 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_descriptor
     def ut_date(self):
+        """
+        Returns the UT date of the observation as a datetime object.
+
+        Returns
+        -------
+        datetime.datetime
+            UT date.
+
+        """
         try:
             return self.ut_datetime(strict=True, dateonly=True).date()
         except AttributeError:
             raise LookupError("Can't find information to return a proper date")
 
+    # TODO: Implement the ut_datetime function.
     @astro_data_descriptor
     def ut_datetime(self, strict=False, dateonly=False, timeonly=False):
+        """
+        Returns the UT date and time of the observation as a datetime object.
+
+        Returns
+        -------
+        datetime.datetime
+            UT date and time.
+
+        """
         raise NotImplementedError("Getting ut_datetime is stupidly complicated. Will be implemented later")
 
     @astro_data_descriptor
     def ut_time(self):
+        """
+        Returns the UT time of the observation as a datetime object.
+
+        Returns
+        -------
+        datetime.datetime
+            UT time.
+
+        """
         try:
             return self.ut_datetime(strict=True, timeonly=True).time()
         except AttributeError:
@@ -554,6 +1069,16 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_descriptor
     def wavefront_sensor(self):
+        """
+        Returns the name of the wavefront sensor used for the observation.
+        If more than one is being used, the names will be joined with '&'.
+
+        Returns
+        -------
+        str
+            Name of the wavefront sensor.
+
+        """
         candidates = (
             ('AOWFS', self.phu.get("AOWFS_ST")),
             ('OIWFS', self.phu.get("OIWFS_ST")),
@@ -571,7 +1096,22 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_descriptor
     def wavelength_band(self):
+        """
+        Returns the name of the bandpass of the observation.  This is just
+        to broadly know what type of data one is working with, eg. K band,
+        H band, B band, etc.
+
+        Returns
+        -------
+        str
+            Name of the bandpass.
+
+        """
         # TODO: Make sure we get this in micrometers...
+        # KL: central_wavelength returns meters, we should make sure that
+        #     effective_wavelength does the same.  If micrometers are needed
+        #     here, then we convert here.
+        # TODO: verify that wavelength_band works.  (units problems)
         ctrl_wave = self.effective_wavelength()
 
         def wavelength_diff((_, l)):
@@ -586,10 +1126,30 @@ class AstroDataGemini(AstroDataFits):
 
     @astro_data_descriptor
     def wcs_ra(self):
+        """
+        Returns the Right Ascension of the center of the field based on the
+        WCS rather than the RA header keyword.
+
+        Returns
+        -------
+        float
+            Right Ascension of the center of the field in degrees
+
+        """
         raise NotImplementedError("wcs_dec needs types/tags, and direct access to header...")
 
     @astro_data_descriptor
     def wcs_dec(self):
+        """
+        Returns the Declination of the center of the field based on the
+        WCS rather than the DEC header keyword.
+
+        Returns
+        -------
+        float
+            Declination of the center of the field in degrees
+
+        """
         raise NotImplementedError("wcs_dec needs types/tags, and direct access to header...")
 
     ra = wcs_ra
