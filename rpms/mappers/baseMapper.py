@@ -14,19 +14,8 @@ class Mapper(object):
     This is the base class for RecipeMapper and PrimitiveMapper classes and 
     provide initialization only. 
 
-    Recipes and primitives are algorithmically selected based on an dataset's 
-    tags. 
-    (See utils.mapper_utils.retrieve_primitive_set())
-
-    Retrieve the appropriate primitive class for a dataset, using all
-    defined defaults:
-
-    >>> ad = astrodata.open(<fitsfile>)
-    >>> adinputs = [ad]
-    >>> rm = RecipeMapper(adinputs)
-    >>> recipe = rm.get_applicable_recipe()
-    >>> recipe.__name__ 
-    'qaReduce'
+    Recipes and primitives are algorithmically selected via instropection of
+    module and class attributes that match on a dataset's tags attribute.
 
     """
     def __init__(self, adinputs, recipename='default', context='QA', 

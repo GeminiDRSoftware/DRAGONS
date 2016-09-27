@@ -10,7 +10,18 @@ from .baseMapper import Mapper
 from ..utils.errors import PrimitivesNotFound
 # ------------------------------------------------------------------------------
 class PrimitiveMapper(Mapper):
+    """
+    Retrieve the appropriate primitive class for a dataset, using all
+    defined defaults:
 
+    >>> ad = astrodata.open(<fitsfile>)
+    >>> adinputs = [ad]
+    >>> pm = PrimitiveMapper(adinputs)
+    >>> p = pm.get_applicable_primitives()
+    >>> p.__class__
+    <class 'primitives_IMAGE.PrimitivesIMAGE'>
+
+    """
     def get_applicable_primitives(self):
         tag_match, primitive_actual = self._retrieve_primitive_set()
         if primitive_actual is None:
