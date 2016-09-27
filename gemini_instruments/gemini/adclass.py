@@ -309,7 +309,7 @@ class AstroDataGemini(AstroDataFits):
         if exposure_time < 0:
             raise ValueError("Invalid exposure time: {}".format(exposure_time))
 
-        if 'PREPARED' in self.tags and self.is_coadds_summed():
+        if 'PREPARED' not in self.tags and self.is_coadds_summed():
             return exposure_time * self.coadds()
         else:
             return exposure_time
