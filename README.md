@@ -1,3 +1,12 @@
+The package's top level directory structure is:
+
+* astrodata - core astrodata
+* gemini\_instruments - astrodata instrument configuration
+* geminidr - primitives and recipes. data reduction algorithms
+* gempy - function libraries. algorithms and tools.
+* recipe\_system - the core infrastructure of the recipe system.
+
+----------------------------
 # AstroData Reborn
 
 This project is a prototype to test the ideas drafted in the design document
