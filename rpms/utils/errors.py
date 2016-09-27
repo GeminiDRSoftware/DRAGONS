@@ -1,6 +1,9 @@
 class RecipeNotFound(Exception):
       pass
 
+class PrimitivesNotFound(Exception):
+      pass
+
 class AstroDataError(Exception):
       pass
 

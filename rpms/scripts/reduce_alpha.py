@@ -24,15 +24,18 @@ import signal
 #from astrodata.core import AstroDataError
 from astrodata import AstroData
 
-from rpms.recipeMapper import RecipeMapper
-
 from rpms.utils import logutils
-from rpms.utils.errors import RecipeNotFound
 from rpms.utils.errors import AstroDataError
+from rpms.utils.errors import RecipeNotFound
+from rpms.utils.errors import PrimitivesNotFound
+
 from rpms.utils.reduce_utils import buildParser
 from rpms.utils.reduce_utils import normalize_args
 from rpms.utils.reduce_utils import set_btypes
 from rpms.utils.reduce_utils import show_parser_options
+
+from rpms.mappers.recipeMapper import RecipeMapper
+from rpms.mappers.primitiveMapper import PrimitiveMapper
 
 # ------------------------------------------------------------------------------
 class ReduceNH(object):
@@ -41,7 +44,7 @@ class ReduceNH(object):
     __init__ may receive one (1) parameter, nominally, an argparse Namespace 
     instance. However, this object type is not required, but only that any 
     passed object *must* present an equivalent interface to that of an
-    <argparse.Namespace> instance.
+    <argparse.Namespace> instance, i.e. a duck type.
 
     The class provides one (1) public method, runnh(), the only call needed to
     run reduce on the supplied argument set.
@@ -65,10 +68,12 @@ class ReduceNH(object):
             args = buildParser(__version__).parse_args([])
 
         self.adinputs = None
-        self.files = args.files
-        self.uparms = set_btypes(args.userparam)
+        self.files   = args.files
+        self.uparms  = set_btypes(args.userparam)
+        self.ucals   = args.user_cal
         self.context = args.context if args.context else 'QA'
         self.urecipe = args.recipename if args.recipename else 'default'
+
 
     def runnh(self):
         """
@@ -78,6 +83,23 @@ class ReduceNH(object):
 
         :returns: exit code 
         :rtype: <int>
+
+        @TODO !!!!!!!!!
+        RE: user supplied calibration files. --user_cal. User supplied
+        calibrations no longer need an indicated 'caltype.'
+
+        In the old system, a user had to pass a user_cal like,
+
+        --user_cal processed_bias:foo_bias.fits
+
+        This is unncessary. This class can and will determine this caltype,
+        such as,
+
+           'processed_bias', 'processed_flat', etc.
+
+        and pass this to the primitive set when instantiated.
+
+        BUT this is not yet implemented!
 
         """
         xstat = 0
@@ -98,7 +120,10 @@ class ReduceNH(object):
             return xstat
 
         rm = RecipeMapper(self.adinputs, recipename=self.urecipe, 
-                              context=self.context, uparms=self.uparms)
+                          context=self.context)
+
+        pm = PrimitiveMapper(self.adinputs, context=self.context,
+                             usercals=self.ucals, uparms=self.uparms)
 
         try:
             recipe = rm.get_applicable_recipe()
@@ -107,7 +132,13 @@ class ReduceNH(object):
             log.error(str(err))
             return xstat
 
-        p = rm.get_applicable_primitives()
+        try:
+            p = pm.get_applicable_primitives()
+        except PrimitivesNotFound as err:
+            xstat = signal.SIGIO
+            log.error(str(err))
+            return xstat
+
         self._logheader(recipe)
         recipe(p)
 
