@@ -1,6 +1,9 @@
 import pytest
 import astrodata
 import gemini_instruments
+import os
+
+THIS_DIR = os.path.dirname(__file__)
 
 from lut_descriptors import fixture_data as descriptors_fixture_data
 
@@ -10,7 +13,7 @@ class FixtureIterator(object):
 
     def __iter__(self):
         for (instr, filename) in sorted(self._data.keys()):
-            ad = astrodata.open('data/{}/{}'.format(instr, filename))
+            ad = astrodata.open(os.path.join(THIS_DIR, 'test_data/{}/{}').format(instr, filename))
             for desc, value in self._data[(instr, filename)]:
                 yield filename, ad, desc, value
 
@@ -21,4 +24,8 @@ def test_descriptor(fn, ad ,descriptor ,value):
         with pytest.raises(Exception):
             method()
     else:
-        assert method() == value
+        mvalue = method()
+        if float in (type(value), type(mvalue)):
+            assert abs(mvalue - value) < 0.0001
+        else:
+            assert mvalue == value
