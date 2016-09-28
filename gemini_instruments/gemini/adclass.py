@@ -186,7 +186,7 @@ class AstroDataGemini(AstroDataFits):
             return TagSet(['PROCESSED_SCIENCE'])
 
     # TODO: rename function to _parse_section.  Refactor all descriptors using it.
-    def _some_section(self, descriptor_name, keyword, pretty):
+    def _parse_section(self, descriptor_name, keyword, pretty):
         try:
             value_filter = (str if pretty else sectionStrToIntList)
             ret = [(None if raw is None else value_filter(raw))
@@ -283,7 +283,7 @@ class AstroDataGemini(AstroDataFits):
 
 
         """
-        return self._some_section('array_section', 'ARRAYSEC', pretty)
+        return self._parse_section('array_section', 'ARRAYSEC', pretty)
 
     @astro_data_descriptor
     def camera(self, stripID=False, pretty=False):
@@ -385,7 +385,7 @@ class AstroDataGemini(AstroDataFits):
 
         """
 
-        return self._some_section('data_section', 'DATASEC', pretty)
+        return self._parse_section('data_section', 'DATASEC', pretty)
 
     @astro_data_descriptor
     def decker(self, stripID=False, pretty=False):
@@ -439,7 +439,7 @@ class AstroDataGemini(AstroDataFits):
 
         """
 
-        return self._some_section('detector_section', 'DETSEC', pretty)
+        return self._parse_section('detector_section', 'DETSEC', pretty)
 
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):

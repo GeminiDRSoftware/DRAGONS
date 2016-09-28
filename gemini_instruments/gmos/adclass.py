@@ -127,4 +127,4 @@ class AstroDataGmos(AstroDataGemini):
 
     @astro_data_descriptor
     def overscan_section(self, pretty=False):
-        return self._some_section('overscan_section', 'BIASSEC', pretty)
+        return self._parse_section('overscan_section', 'BIASSEC', pretty)
