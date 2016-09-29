@@ -559,7 +559,7 @@ class AstroDataGnirs(AstroDataGemini):
     @astro_data_descriptor
     def saturation_level(self):
         """
-        Returns the saturation level, in ADUs, for the observation.
+        Returns the saturation level or the observation, in ADUs.
         A lookup table indexed on read_mode and well_depth_setting is used
         to retrieve the saturation level.
 
@@ -602,6 +602,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         return (removeComponentID(slit) if stripID or pretty else slit)
 
+    @astro_data_descriptor
     def well_depth_setting(self):
         """
         Returns the well depth setting used for the observation.
