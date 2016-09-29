@@ -127,4 +127,30 @@ class AstroDataGmos(AstroDataGemini):
 
     @astro_data_descriptor
     def overscan_section(self, pretty=False):
+        """
+        Returns the overscan (or bias) section.  If pretty is False, a
+        tuple of 0-based coordinates is returned with format (x1, x2, y1, y2).
+        If pretty is True, a keyword value is returned without parsing as a
+        string.  In this format, the coordinates are generally 1-based.
+
+        One tuple or string is return per extension/array.  If more than one
+        array, the tuples/strings are return in a list.  Otherwise, the
+        section is returned as a tuple or a string.
+
+        Parameters
+        ----------
+        pretty : bool
+         If True, return the formatted string found in the header.
+
+        Returns
+        -------
+        tuple of integers or list of tuples
+            Position of the overscan section using Python slice values.
+
+        string or list of strings
+            Position of the overscan section using an IRAF section
+            format (1-based).
+
+
+        """
         return self._parse_section('overscan_section', 'BIASSEC', pretty)
