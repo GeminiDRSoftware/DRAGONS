@@ -1,6 +1,6 @@
 import math
 
-from astrodata import astro_data_tag, simple_descriptor_mapping, keyword, TagSet
+from astrodata import astro_data_tag, astro_data_descriptor, simple_descriptor_mapping, keyword, TagSet
 from ..gemini import AstroDataGemini
 from .lookups import constants_by_bias, config_dict, lnrs_mode_map
 
