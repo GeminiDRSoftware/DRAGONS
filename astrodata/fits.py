@@ -35,15 +35,15 @@ class KeywordCallableWrapper(object):
         return wrapper
 
 class FitsKeywordManipulator(object):
-    def __init__(self, headers, on_extensions=False, sliced=False):
+    def __init__(self, headers, on_extensions=False, single=False):
         self.__dict__.update({
             "_headers": headers,
-            "_sliced": sliced,
+            "_single": single,
             "_on_ext": on_extensions
         })
 
     def _ret_ext(self, values):
-        if self._sliced and len(self._headers) == 1:
+        if self._single and len(self._headers) == 1:
             return values[0]
         else:
             return values
@@ -159,6 +159,7 @@ def force_load(fn):
 class FitsProvider(DataProvider):
     def __init__(self):
         self._sliced = False
+        self._single = False
         self._header = None
         self._nddata = None
         self._hdulist = None
@@ -295,12 +296,13 @@ class FitsProvider(DataProvider):
         return set(self._exposed)
 
     @force_load
-    def _slice(self, indices):
+    def _slice(self, indices, multi=True):
         # if not self._sliced and not self._hdulist:
         #     # Force the loading of data, we may need it later
         #     self.nddata
         scopy = self.__class__()
         scopy._sliced = True
+        scopy._single = not multi
         scopy.path = self.path
         scopy._header = [self._header[0]] + [self._header[n+1] for n in indices]
         if self._nddata:
@@ -319,18 +321,20 @@ class FitsProvider(DataProvider):
     @force_load
     def __getitem__(self, slc):
         nitems = len(self._header) - 1 # The Primary HDU does not count
+        multiple = True
         if isinstance(slc, slice):
             start, stop, step = slc.indices(nitems)
             indices = range(start, stop, step)
         else:
             if isinstance(slc, int):
                 slc = (slc,)
+                multiple = False
             # Normalize negative indices...
             indices = [(x if x >= 0 else nitems + x) for x in slc]
         if any(i >= nitems for i in indices):
             raise IndexError("Index out of range")
 
-        return self._slice(indices)
+        return self._slice(indices, multi=multiple)
 
     @force_load
     def __delitem__(self, idx):
@@ -482,7 +486,7 @@ class FitsProvider(DataProvider):
     def ext_manipulator(self):
         if len(self.header) < 2:
             return None
-        return FitsKeywordManipulator(self.header[1:], on_extensions=True, sliced=self._sliced)
+        return FitsKeywordManipulator(self.header[1:], on_extensions=True, single=self._single)
 
     @force_load
     def set_name(self, ext, name):
