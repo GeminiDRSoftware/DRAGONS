@@ -35,16 +35,23 @@ class KeywordCallableWrapper(object):
         return wrapper
 
 class FitsKeywordManipulator(object):
-    def __init__(self, headers, on_extensions=False):
+    def __init__(self, headers, on_extensions=False, sliced=False):
         self.__dict__.update({
             "_headers": headers,
+            "_sliced": sliced,
             "_on_ext": on_extensions
         })
+
+    def _ret_ext(self, values):
+        if self._sliced and len(self._headers) == 1:
+            return values[0]
+        else:
+            return values
 
     @property
     def keywords(self):
         if self._on_ext:
-            return [set(h.keys()) for h in self._headers]
+            return self._ret_ext([set(h.keys()) for h in self._headers])
         else:
             return set(self._headers[0].keys())
 
@@ -64,13 +71,13 @@ class FitsKeywordManipulator(object):
                 vals = err.values
                 for n in err.missing_at:
                     vals[n] = default
-                return vals
+                return self._ret_ext(vals)
             else:
                 return default
 
     def get_comment(self, key):
         if self._on_ext:
-            return [header.comments[key] for header in self._headers]
+            return self._ret_ext([header.comments[key] for header in self._headers])
         else:
             return self._headers[0].comments[key]
 
@@ -108,7 +115,7 @@ class FitsKeywordManipulator(object):
                 error.missing_at = missing_at
                 error.values = ret
                 raise error
-            return ret
+            return self._ret_ext(ret)
         else:
             return self._headers[0][key]
 
@@ -475,7 +482,7 @@ class FitsProvider(DataProvider):
     def ext_manipulator(self):
         if len(self.header) < 2:
             return None
-        return FitsKeywordManipulator(self.header[1:], on_extensions=True)
+        return FitsKeywordManipulator(self.header[1:], on_extensions=True, sliced=self._sliced)
 
     @force_load
     def set_name(self, ext, name):
