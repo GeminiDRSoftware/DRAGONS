@@ -647,7 +647,7 @@ class AstroDataFits(AstroData):
     __keyword_dict = {
         'instrument': 'INSTRUME',
         'object': 'OBJECT',
-        'telescope', 'TELESCOP',
+        'telescope': 'TELESCOP',
         'ut_date': 'DATE-OBS'
     }
 
