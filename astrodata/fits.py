@@ -575,8 +575,10 @@ class FitsLoader(FitsProvider):
         new_list = []
         highest_ver = 0
         recognized = set()
-        for unit in hdulist:
-            if unit.header.get('EXTVER') not in (-1, None):
+        for n, unit in enumerate(hdulist):
+            ev = unit.header.get('EXTVER')
+            eh = unit.header.get('EXTNAME')
+            if ev not in (-1, None) and eh is not None:
                 highest_ver = max(highest_ver, unit.header['EXTVER'])
             elif not isinstance(unit, PrimaryHDU):
                 continue
@@ -589,8 +591,10 @@ class FitsLoader(FitsProvider):
                 continue
             elif isinstance(unit, ImageHDU):
                 highest_ver += 1
-                unit.header['EXTNAME'] = ('SCI', 'Added by AstroData')
-                unit.header['EXTVER'] = (highest_ver, 'Added by AstroData')
+                if 'EXTNAME' not in unit.header:
+                    unit.header['EXTNAME'] = ('SCI', 'Added by AstroData')
+                if unit.header.get('EXTNAME') in (-1, None):
+                    unit.header['EXTVER'] = (highest_ver, 'Added by AstroData')
 
             new_list.append(unit)
             recognized.add(unit)
