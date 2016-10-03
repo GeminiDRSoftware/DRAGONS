@@ -1,0 +1,276 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2. Installation &mdash; Reduce Users Manual X1.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/todo-styles.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'X1.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Reduce Users Manual X1.0.1 documentation" href="index.html" />
+    <link rel="next" title="3. Interfaces" href="interfaces.html" />
+    <link rel="prev" title="1. Introduction" href="intro.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="interfaces.html" title="3. Interfaces"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="1. Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Reduce Users Manual X1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installation">
+<h1>2. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>The <tt class="docutils literal"><span class="pre">astrodata</span></tt> package has several dependencies like <tt class="docutils literal"><span class="pre">numpy</span></tt>, <tt class="docutils literal"><span class="pre">astropy</span></tt>,
+and others. All dependencies of <tt class="docutils literal"><span class="pre">gemini_python</span></tt> and <tt class="docutils literal"><span class="pre">astrodata</span></tt> are provide by
+the Ureka package, and users are highly encouraged to install and use this very
+useful package. It is an easy and, perhaps, best way to get everything you need
+and then some. Ureka is available at <a class="reference external" href="http://ssb.stsci.edu/ureka/">http://ssb.stsci.edu/ureka/</a>.</p>
+<p>WARNING:  The Ureka installation script will not set up IRAF for you. You need to do
+that yourself. Here&#8217;s how:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ cd ~
+$ mkdir iraf
+$ cd iraf
+$ mkiraf
+-- creating a new uparm directory
+Terminal types: xgterm,xterm,gterm,vt640,vt100,etc.
+Enter terminal type: xgterm
+A new LOGIN.CL file has been created in the current directory.
+You may wish to review and edit this file to change the defaults.
+</pre></div>
+</div>
+<p>Once a user has has retrieved the gemini_python package, available as a tarfile
+from the Gemini website (<a class="reference external" href="http://gemini.edu">http://gemini.edu</a>), and untarred only minor adjustments
+need to be made to the user environment in order to make astrodata importable and
+allow <tt class="docutils literal"><span class="pre">reduce</span></tt> to work properly.</p>
+<div class="section" id="install">
+<span id="config"></span><h2>2.1. Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="recommended-installation">
+<h3>2.1.1. Recommended Installation<a class="headerlink" href="#recommended-installation" title="Permalink to this headline">¶</a></h3>
+<p>It is recommended to install the software in a location other than the standard
+python location for modules (the default <tt class="docutils literal"><span class="pre">site-packages</span></tt>). This is also the
+only solution if you do not have write permission to the default <tt class="docutils literal"><span class="pre">site-packages</span></tt>.
+Here is how you install the software somewhere other than the default location:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ python setup.py install --prefix=/your/favorite/location
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">/your/favorite/location</span></tt> must already exist.  This command will install executable
+scripts in a <tt class="docutils literal"><span class="pre">bin</span></tt> subdirectory, the documentation in a <tt class="docutils literal"><span class="pre">share</span></tt> subdirectory,
+and the modules in a <tt class="docutils literal"><span class="pre">lib/python2.7/site-packages</span></tt> subdirectory.  The modules being
+installed are <tt class="docutils literal"><span class="pre">astrodata</span></tt>, <tt class="docutils literal"><span class="pre">astrodata_FITS</span></tt>, <tt class="docutils literal"><span class="pre">astrodata_Gemini</span></tt>, and <tt class="docutils literal"><span class="pre">gempy</span></tt>.
+In this manual, we will only use <tt class="docutils literal"><span class="pre">astrodata</span></tt>.</p>
+<p>Because you are not using the default location, you will need to add two paths to
+your environment.  You might want to add the following to your .cshrc or
+.bash_profile, or equivalent shell configuration script.</p>
+<p>C shell(csh, tcsh):</p>
+<div class="highlight-python"><div class="highlight"><pre>setenv PATH /your/favorite/location/bin:${PATH}
+setenv PYTHONPATH /your/favorite/location/lib/python2.7/site-packages:${PYTHONPATH}
+</pre></div>
+</div>
+<p>Bourne shells (sh, bash, ksh, ...)</p>
+<div class="highlight-python"><div class="highlight"><pre>export PATH=/your/favorite/location/bin:${PATH}
+export PYTHONPATH=/your/favorite/location/lib/python2.7/site-packages:${PYTHONPATH}
+</pre></div>
+</div>
+<p>If you added those lines to your shell configuration script, make sure your
+<tt class="docutils literal"><span class="pre">source</span></tt> the file to activate the new setting.</p>
+<p>For csh/tcsh:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ source ~/.cshrc
+$ rehash
+</pre></div>
+</div>
+<p>For bash:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ source ~/.bash_profile
+</pre></div>
+</div>
+</div>
+<div class="section" id="installation-under-ureka">
+<h3>2.1.2. Installation under Ureka<a class="headerlink" href="#installation-under-ureka" title="Permalink to this headline">¶</a></h3>
+<p>Assuming that you have installed Ureka and that you have write access to the Ureka
+directory, this will install <tt class="docutils literal"><span class="pre">astrodata</span></tt> in the Ureka <tt class="docutils literal"><span class="pre">site-packages</span></tt> directory.
+WARNING: While easier to install and configure, this will modify your Ureka
+installation.</p>
+<div class="highlight-python"><div class="highlight"><pre>$ python setup.py install
+</pre></div>
+</div>
+<p>This will also add executables to the Ureka <tt class="docutils literal"><span class="pre">bin</span></tt> directory and documentation to
+the Ureka <tt class="docutils literal"><span class="pre">share</span></tt> directory.</p>
+<p>With this installation scheme, there is no need to add paths to your environment.
+However, it is a lot more complicated to remove the Gemini software in case of
+problems, or if you just want to clean it out after evaluation.</p>
+<p>In tcsh, you will need to run <tt class="docutils literal"><span class="pre">rehash</span></tt> to pick the new executables written to
+<tt class="docutils literal"><span class="pre">bin</span></tt>.</p>
+</div>
+</div>
+<div class="section" id="test-the-installation">
+<span id="test"></span><h2>2.2. Test the installation<a class="headerlink" href="#test-the-installation" title="Permalink to this headline">¶</a></h2>
+<p>Start up the python interpreter and import astrodata:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ python
+&gt;&gt;&gt; import astrodata
+</pre></div>
+</div>
+<p>Next, return to the command line and test that <tt class="docutils literal"><span class="pre">reduce</span></tt> is reachable
+and runs. There may be some delay as package modules are byte compiled:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ reduce -h
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-python"><div class="highlight"><pre>$ reduce [--help]
+</pre></div>
+</div>
+<p>This will print the reduce help to the screen.</p>
+<p>If users have Gemini fits files available, they can test that the Recipe System
+is functioning as expected with a test recipe provided by the astrodata_Gemini
+package:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ reduce --recipe test_one /path/to/gemini_data.fits
+</pre></div>
+</div>
+<p>If all is well, users will see something like:</p>
+<div class="highlight-python"><div class="highlight"><pre>Resetting logger for application: reduce
+Logging configured for application: reduce
+                       --- reduce, v4890  ---
+              Running under astrodata Version GP-X1
+All submitted files appear valid
+Starting Reduction on set #1 of 1
+
+  Processing dataset(s):
+        gemini_data.fits
+
+==============================================================================
+RECIPE: test_one
+==============================================================================
+ PRIMITIVE: showParameters
+ -------------------------
+ rtf = False
+ suffix = &#39;_scafaasled&#39;
+ otherTest = False
+ logindent = 3
+ logfile = &#39;reduce.log&#39;
+ reducecache = &#39;.reducecache&#39;
+ storedcals = &#39;calibrations/storedcals&#39;
+ index = 1
+ retrievedcals = &#39;calibrations/retrievedcals&#39;
+ cachedict = {&#39;storedcals&#39;: &#39;calibrations/storedcals&#39;, &#39;retrievedcals&#39;:
+              &#39;calibrations/retrievedcals&#39;, &#39;calibrations&#39;: &#39;calibrations&#39;,
+              &#39;reducecache&#39;: &#39;.reducecache&#39;}
+ loglevel = &#39;stdinfo&#39;
+ calurl_dict = {&#39;CALMGR&#39;: &#39;http://fits/calmgr&#39;,
+                &#39;UPLOADPROCCAL&#39;: &#39;http://fits/upload_processed_cal&#39;,
+                &#39;QAMETRICURL&#39;: &#39;http://fits/qareport&#39;,
+                &#39;QAQUERYURL&#39;: &#39;http://fits/qaforgui&#39;,
+                &#39;LOCALCALMGR&#39;: &#39;http://localhost:%(httpport)d/calmgr/%(caltype)s&#39;}
+ logmode = &#39;standard&#39;
+ test = True
+ writeInt = False
+ calibrations = &#39;calibrations&#39;
+ .
+Wrote gemini_data.fits in output directory
+
+
+reduce completed successfully.
+</pre></div>
+</div>
+<p>Users curious about the URLs in the example above, i.e. <tt class="docutils literal"><span class="pre">http://fits/...</span></tt>, see
+Sec. <a class="reference internal" href="discuss.html#fitsstore"><em>Fits Storage</em></a> in Chapter 5, Discussion.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">2. Installation</a><ul>
+<li><a class="reference internal" href="#install">2.1. Install</a><ul>
+<li><a class="reference internal" href="#recommended-installation">2.1.1. Recommended Installation</a></li>
+<li><a class="reference internal" href="#installation-under-ureka">2.1.2. Installation under Ureka</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#test-the-installation">2.2. Test the installation</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="intro.html"
+                        title="previous chapter">1. Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="interfaces.html"
+                        title="next chapter">3. Interfaces</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/userenv.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="interfaces.html" title="3. Interfaces"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="1. Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">Reduce Users Manual X1.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Kenneth Anderson.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

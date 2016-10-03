@@ -37,9 +37,8 @@ class RecipeMapper(Mapper):
     # Recipe search cascade
     def _retrieve_recipe(self):
         """
-        Caller passes a recipe name, set of AstroData tags, the instrument package 
-        name and a "context". Currently, this is defined as either "QA" or "SQ".
-        
+        Start of the recipe library search cascade.
+
         :returns: tuple including the best tag set match and the primitive class
                   that provided the match.
         :rtype: <tuple>, (set, class)
