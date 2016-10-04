@@ -29,7 +29,7 @@ Description:
   For example, find all gmos images from Cerro Pachon in the top level
   directory and write out the matching files, then run reduce on them,
 
-    $ typewalk -n --types SOUTH GMOS IMAGE --out gmos_images_south
+    $ typewalk -n --tags SOUTH GMOS IMAGE --out gmos_images_south
     $ reduce @gmos_images_south
 
   This will also report match results to stdout, colourized if requested (-c).
