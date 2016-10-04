@@ -89,6 +89,6 @@ def generate_fringe_list_id(dataset):
     '''
     return generate_stackable_id(dataset)
 
-    def make_id_safe_for_filename(spaced_id):
-        return spaced_id.replace(" ", "_")
+def make_id_safe_for_filename(spaced_id):
+    return spaced_id.replace(" ", "_")
 

@@ -48,7 +48,9 @@ coverage.xml
 *.log
 
 # Sphinx documentation
+_build/
 docs/_build/
+
 
 # PyBuilder
 target/
@@ -60,3 +62,6 @@ target/
 
 # PyCharm
 .idea
+
+#Mac junk
+.DS_Store

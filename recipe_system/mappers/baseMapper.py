@@ -11,8 +11,12 @@ GMOS_INSTR    = ['GMOS-S', 'GMOS-N']
 # ------------------------------------------------------------------------------
 class Mapper(object):
     """
-    This is the base class for RecipeMapper and PrimitiveMapper classes and 
-    provide initialization only. 
+    This is the base class for classes 
+
+    RecipeMapper
+    PrimitiveMapper
+
+    It provides initialization only.
 
     Recipes and primitives are algorithmically selected via instropection of
     module and class attributes that match on a dataset's tags attribute.
@@ -21,12 +25,11 @@ class Mapper(object):
     def __init__(self, adinputs, recipename='default', context='QA', 
                  usercals=None, uparms=None):
         """
-        :parameter ads: list of AstroData objects.
-        :type ads: <list>
+        :parameter adinputs: list of AstroData objects.
+        :type adinputs: <list>
 
-        :parameter recipename: The recipe to use for processing. Passed by
-                               user with -r or set by caller. 
-                               If None, 'default' recipe.
+        :parameter recipename: The recipe to use for processing. Passed by user 
+                               with -r or set by caller. Else 'default' recipe.
         :type recipename: <str>
 
         :parameter context: The context. This defines which recipe set to use,

@@ -12,13 +12,22 @@ except ImportError:
 
 from urllib2  import HTTPError
 
+# Legacy AstroData can recieve a url and will implicitly request 
+# and open the file as an AstroData instance. See end of process_requests()
+#
+# ad = AstroData(calurl, store=caldname)
+#
+# It is not yet clear what implemention will be needed to emulate this with the
+# new astrodata.
+# import astrodata
+# import gemini_instruments
 from astrodata import AstroData
 
-from rpms.utils import logutils
-from rpms.cal_service import cal_search_factory
-
+from ..utils  import logutils
 from ..stacks import IDFactory
-from .caches import set_caches
+from .caches  import set_caches
+
+from recipe_system.cal_service import cal_search_factory
 # ------------------------------------------------------------------------------
 log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------

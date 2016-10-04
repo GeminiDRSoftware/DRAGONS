@@ -48,8 +48,10 @@ log = logutils.get_logger(__name__)
 def upload_calibration(filename):
     """Uploads a calibration file to the FITS Store.
 
-    parameters: <string>, the file to be uploaded.
-    return:     <void>
+    :parameter filename: file to be uploaded.
+    :type filename: <str>
+
+    :return:     <void>
     """
     fn  = basename(filename)
     url = join(UPLOADPROCCAL, fn)
@@ -68,6 +70,22 @@ def upload_calibration(filename):
 
 
 def calibration_search(rq, return_xml=False):
+    """
+    Recieves a CalibrationRequest object, encodes the data and make the
+    request on the appropriate server. Returns a URL, if any, and the MD%
+    hash checksum.
+
+    :parameter rq: CalibrationRequest obj
+    :type rq: <CalibrationRequest object>
+
+    :parameter return_xml: return the xml message to the caller when no URL
+                           is returned from the cal server.
+    :type return_xml: <bool>
+
+    :return: A tuple of the matching URL and md5 hash checksum
+    :rtype: (<str>, <str>)
+
+    """
     rqurl = None
     calserv_msg = None
     CALMGR = _CALMGR
