@@ -1,4 +1,4 @@
-from astrodata import astro_data_tag
+from astrodata import astro_data_tag, TagSet
 from ..gemini import AstroDataGemini
 import re
 
@@ -9,12 +9,12 @@ class AstroDataGpi(AstroDataGemini):
 
     @astro_data_tag
     def _tag_instrument(self):
-        return (set(['GPI']), ())
+        return TagSet(set(['GPI']), ())
 
     @astro_data_tag
     def _tag_disperser(self):
         disp = self.phu.get('DISPERSR', '')
         if disp.startswith('DISP_WOLLASTON'):
-            return (set(['POL']), ())
+            return TagSet(set(['POL']), ())
         elif disp.startswith('DISP_PRISM'):
-            return (set(['SPECT', 'IFU']), ())
+            return TagSet(set(['SPECT', 'IFU']), ())
