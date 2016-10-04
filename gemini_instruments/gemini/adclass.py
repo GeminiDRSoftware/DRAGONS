@@ -1,4 +1,5 @@
 import re
+import math
 import datetime
 import dateutil.parser
 
@@ -14,60 +15,61 @@ from ..gmu import *
 
 # Default simple header mapping
 gemini_direct_keywords = dict(
-    ao_fold = keyword("AOFOLD"),
-    array_name = keyword("ARRAYNAM"),
-    azimuth = keyword("AZIMUTH"),
-    bias_image = keyword("BIASIM"),
-    bunit = keyword("BUNIT"),
-    cd11 = keyword("CD1_1"),
-    cd12 = keyword("CD1_2"),
-    cd21 = keyword("CD2_1"),
-    cd22 = keyword("CD2_2"),
-    dark_image = keyword("DARKIM"),
-    data_label = keyword("DATALAB"),
-    dec = keyword("DEC"),
-    detector_name = keyword("DETNAME"),
-    detector_roi_setting = keyword("DROISET", default="Fixed"),
-    detector_rois_requested = keyword("DROIREQ"),
-    detector_x_bin = keyword("XCCDBIN", default=1),
-    detector_y_bin = keyword("YCCDBIN", default=1),
-    dispersion = keyword("WDELTA"),
-    elevation = keyword("ELEVATIO"),
-    gain = keyword("GAIN"),
-    gain_setting = keyword("GAINSET"),
-    grating = keyword("GRATING"),
-    lyot_stop = keyword("LYOTSTOP"),
-    naxis1 = keyword("NAXIS1"),
-    naxis2 = keyword("NAXIS2"),
-    nod_count = keyword("NODCOUNT"),
-    nod_pixels = keyword("NODPIX"),
-    nominal_photometric_zeropoint = keyword("NOMPHOTZ"),
-    non_linear_level = keyword("NONLINEA"),
-    observation_class = keyword("OBSCLASS"),
-    observation_epoch = keyword("OBSEPOCH", coerce_with=str),
-    observation_id = keyword("OBSID"),
-    observation_type = keyword("OBSTYPE"),
-    overscan_section = keyword("OVERSSEC"),
-    pixel_scale = keyword("PIXSCALE"),
-    prism = keyword("PRISM"),
-    program_id = keyword("GEMPRGID"),
-    pupil_mask = keyword("PUPILMSK"),
-    r_zero_val = keyword("RZEROVAL"),
-    ra = keyword("RA"),
-    raw_central_wavelength = keyword("CWAVE"),
-    raw_gemini_qa = keyword("RAWGEMQA"),
-    raw_pi_requirements_met = keyword("RAWPIREQ"),
-    read_mode = keyword("READMODE"),
-    read_noise = keyword("RDNOISE"),
-    read_speed_setting = keyword("RDSPDSET"),
-    saturation_level = keyword("SATLEVEL"),
-    slit = keyword("SLIT"),
-    wavelength = keyword("WAVELENG"),
-    wavelength_reference_pixel = keyword("WREFPIX", on_ext=True),
-    well_depth_setting = keyword("WELDEPTH"),
-    x_offset = keyword("XOFFSET"),
-    y_offset = keyword("YOFFSET"),
+    ao_fold=keyword("AOFOLD"),
+    array_name=keyword("ARRAYNAM"),
+    azimuth=keyword("AZIMUTH"),
+    bias_image=keyword("BIASIM"),
+    bunit=keyword("BUNIT"),
+    cd11=keyword("CD1_1"),
+    cd12=keyword("CD1_2"),
+    cd21=keyword("CD2_1"),
+    cd22=keyword("CD2_2"),
+    dark_image=keyword("DARKIM"),
+    data_label=keyword("DATALAB"),
+    dec=keyword("DEC"),
+    detector_name=keyword("DETNAME"),
+    detector_roi_setting=keyword("DROISET", default="Fixed"),
+    detector_rois_requested=keyword("DROIREQ"),
+    detector_x_bin=keyword("XCCDBIN", default=1),
+    detector_y_bin=keyword("YCCDBIN", default=1),
+    dispersion=keyword("WDELTA"),
+    elevation=keyword("ELEVATIO"),
+    gain=keyword("GAIN"),
+    gain_setting=keyword("GAINSET"),
+    grating=keyword("GRATING"),
+    lyot_stop=keyword("LYOTSTOP"),
+    naxis1=keyword("NAXIS1"),
+    naxis2=keyword("NAXIS2"),
+    nod_count=keyword("NODCOUNT"),
+    nod_pixels=keyword("NODPIX"),
+    nominal_photometric_zeropoint=keyword("NOMPHOTZ"),
+    non_linear_level=keyword("NONLINEA"),
+    observation_class=keyword("OBSCLASS"),
+    observation_epoch=keyword("OBSEPOCH", coerce_with=str),
+    observation_id=keyword("OBSID"),
+    observation_type=keyword("OBSTYPE"),
+    overscan_section=keyword("OVERSSEC"),
+    pixel_scale=keyword("PIXSCALE"),
+    prism=keyword("PRISM"),
+    program_id=keyword("GEMPRGID"),
+    pupil_mask=keyword("PUPILMSK"),
+    r_zero_val=keyword("RZEROVAL"),
+    ra=keyword("RA"),
+    raw_central_wavelength=keyword("CWAVE"),
+    raw_gemini_qa=keyword("RAWGEMQA"),
+    raw_pi_requirements_met=keyword("RAWPIREQ"),
+    read_mode=keyword("READMODE"),
+    read_noise=keyword("RDNOISE"),
+    read_speed_setting=keyword("RDSPDSET"),
+    saturation_level=keyword("SATLEVEL"),
+    slit=keyword("SLIT"),
+    wavelength=keyword("WAVELENG"),
+    wavelength_reference_pixel=keyword("WREFPIX", on_ext=True),
+    well_depth_setting=keyword("WELDEPTH"),
+    x_offset=keyword("XOFFSET"),
+    y_offset=keyword("YOFFSET"),
 )
+
 
 @simple_descriptor_mapping(**gemini_direct_keywords)
 class AstroDataGemini(AstroDataFits):
@@ -190,7 +192,7 @@ class AstroDataGemini(AstroDataFits):
         try:
             value_filter = (str if pretty else sectionStrToIntList)
             ret = [(None if raw is None else value_filter(raw))
-                    for raw in getattr(self.hdr, keyword)]
+                   for raw in getattr(self.hdr, keyword)]
             if len(ret) == 1:
                 return ret[0]
             return ret
@@ -754,15 +756,15 @@ class AstroDataGemini(AstroDataFits):
         # Calculate the derived QA state
         ret_qa_state = "%s:%s" % (rawpireq, rawgemqa)
         if 'UNKNOWN' in pair:
-                        ret_qa_state = "Undefined"
+            ret_qa_state = "Undefined"
         elif pair == ('YES', 'USABLE'):
-                        ret_qa_state = "Pass"
+            ret_qa_state = "Pass"
         elif pair == ('NO', 'USABLE'):
-                        ret_qa_state = "Usable"
+            ret_qa_state = "Usable"
         elif rawgemqa.upper() == "BAD":
-                        ret_qa_state = "Fail"
+            ret_qa_state = "Fail"
         elif 'CHECK' in pair:
-                        ret_qa_state = "CHECK"
+            ret_qa_state = "CHECK"
         else:
             ret_qa_state = "%s:%s" % (rawpireq, rawgemqa)
 
@@ -939,24 +941,24 @@ class AstroDataGemini(AstroDataFits):
             year = dt.year
             startyear = datetime.datetime(year, 1, 1, 0, 0, 0)
             # Handle leap year properly
-            nextyear = datetime.datetime(year+1, 1, 1, 0, 0, 0)
+            nextyear = datetime.datetime(year + 1, 1, 1, 0, 0, 0)
             thisyear = nextyear - startyear
             sofar = dt - startyear
             fraction = sofar.total_seconds() / thisyear.total_seconds()
             obsepoch = year + fraction
             years = obsepoch - epoch
             pmra *= years
-            pmra *= 15.0*math.cos(math.radians(self.target_dec(offset=True)))
+            pmra *= 15.0 * math.cos(math.radians(self.target_dec(offset=True)))
             pmra /= 3600.0
             ra += pmra
 
         if icrs:
             ra, dec = toicrs(frame,
-                    self.target_ra(offset=offset, pm=pm, icrs=False),
-                    self.target_dec(offset=offset, pm=pm, icrs=False),
-                    equinox=2000.0,
-                    ut_datetime=dataset.ut_datetime()
-                )
+                             self.target_ra(offset=offset, pm=pm, icrs=False),
+                             self.target_dec(offset=offset, pm=pm, icrs=False),
+                             equinox=2000.0,
+                             ut_datetime=dataset.ut_datetime()
+                             )
 
         return ra
 
@@ -1001,7 +1003,7 @@ class AstroDataGemini(AstroDataFits):
             year = dt.year
             startyear = datetime.datetime(year, 1, 1, 0, 0, 0)
             # Handle leap year properly
-            nextyear = datetime.datetime(year+1, 1, 1, 0, 0, 0)
+            nextyear = datetime.datetime(year + 1, 1, 1, 0, 0, 0)
             thisyear = nextyear - startyear
             sofar = dt - startyear
             fraction = sofar.total_seconds() / thisyear.total_seconds()
@@ -1013,11 +1015,11 @@ class AstroDataGemini(AstroDataFits):
 
         if icrs:
             ra, dec = toicrs(frame,
-                    self.target_ra(offset=offset, pm=pm, icrs=False),
-                    self.target_dec(offset=offset, pm=pm, icrs=False),
-                    equinox=2000.0,
-                    ut_datetime=dataset.ut_datetime()
-                )
+                             self.target_ra(offset=offset, pm=pm, icrs=False),
+                             self.target_dec(offset=offset, pm=pm, icrs=False),
+                             equinox=2000.0,
+                             ut_datetime=dataset.ut_datetime()
+                             )
 
         return dec
 
@@ -1116,7 +1118,8 @@ class AstroDataGemini(AstroDataFits):
 
         def wavelength_diff((_, l)):
             return abs(l - ctrl_wave)
-        band = min(wavelength_band.items(), key = wavelength_diff)[0]
+
+        band = min(wavelength_band.items(), key=wavelength_diff)[0]
 
         # TODO: This can't happen. We probably want to check against "None"
         if band is None:
@@ -1154,3 +1157,20 @@ class AstroDataGemini(AstroDataFits):
 
     ra = wcs_ra
     dec = wcs_dec
+
+    def _get_wcs_pixel_scale(self):
+        """
+        Returns a list of pixel scales (in arcseconds), derived from the
+        CD matrices of the image extensions
+
+        Returns
+        -------
+        list
+            List of pixel scales, one per extension
+        """
+        return [3600 * 0.5 * (math.sqrt(cd11 * cd11 + cd12 * cd12) +
+                              math.sqrt(cd21 * cd21 + cd22 * cd22))
+                for cd11, cd12, cd21, cd22 in zip(self.hdr.CD1_1,
+                                                  self.hdr.CD1_2,
+                                                  self.hdr.CD2_1,
+                                                  self.hdr.CD2_2)]

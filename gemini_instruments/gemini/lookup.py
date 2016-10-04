@@ -39,6 +39,9 @@ nominal_extinction = {
 }
 
 # TODO: This should be moved to the instruments. Figure out a way...
+# CJS says: I don't think it should. These are standard filter
+# wavelengths that can live in astrodata. Specific instruments
+# override them, and *those* can live in the instrument lookups.
 
 # Instrument, filter effective wavlengths
 # '*' can be overriden by a specific instrument
