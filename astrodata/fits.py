@@ -655,13 +655,47 @@ class FitsLoader(FitsProvider):
 
         return provider
 
-@simple_descriptor_mapping(
-        instrument = KeywordCallableWrapper('INSTRUME'),
-        object = KeywordCallableWrapper('OBJECT'),
-        telescope = KeywordCallableWrapper('TELESCOP'),
-        ut_date = KeywordCallableWrapper('DATE-OBS')
-        )
 class AstroDataFits(AstroData):
+    # Derived classes may provide their own __keyword_dict. Being a private
+    # variable, each class will preserve its own, and there's no risk of
+    # overriding the whole thing
+    __keyword_dict = {
+        'instrument': 'INSTRUME',
+        'object': 'OBJECT',
+        'telescope': 'TELESCOP',
+        'ut_date': 'DATE-OBS'
+    }
+
+    def _keyword_for(self, name):
+        """
+        Returns the FITS keyword name associated to ``name``.
+
+        Parameters
+        ----------
+        name : str
+            The common "key" name for which we want to know the associated
+            FITS keyword
+
+        Returns
+        -------
+        str
+            The desired keyword name
+
+        Raises
+        ------
+        AttributeError
+            If there is no keyword for the specified ``name``
+        """
+
+        for cls in self.__class__.mro():
+            mangled_dict_name = '_{}__keyword_dict'.format(cls.__name__)
+            try:
+                return getattr(self, mangled_dict_name)[name]
+            except (AttributeError, KeyError) as e:
+                pass
+        else:
+            raise AttributeError("No match for '{}'".format(name))
+
     @staticmethod
     def _matches_data(dataprov):
         # This one is trivial. As long as we get a FITS file...

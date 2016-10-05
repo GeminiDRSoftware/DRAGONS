@@ -5,72 +5,72 @@ import dateutil.parser
 import pywcs
 
 from astrodata import AstroDataFits, astro_data_tag, astro_data_descriptor, TagSet
-from astrodata import factory, simple_descriptor_mapping, keyword
 from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
 from ..gmu import *
 
-# Default simple header mapping
-gemini_direct_keywords = dict(
-    ao_fold = keyword("AOFOLD"),
-    array_name = keyword("ARRAYNAM"),
-    azimuth = keyword("AZIMUTH"),
-    bias_image = keyword("BIASIM"),
-    bunit = keyword("BUNIT"),
-    cd11 = keyword("CD1_1"),
-    cd12 = keyword("CD1_2"),
-    cd21 = keyword("CD2_1"),
-    cd22 = keyword("CD2_2"),
-    dark_image = keyword("DARKIM"),
-    data_label = keyword("DATALAB"),
-    dec = keyword("DEC"),
-    detector_name = keyword("DETNAME"),
-    detector_roi_setting = keyword("DROISET", default="Fixed"),
-    detector_rois_requested = keyword("DROIREQ"),
-    detector_x_bin = keyword("XCCDBIN", default=1),
-    detector_y_bin = keyword("YCCDBIN", default=1),
-    dispersion = keyword("WDELTA"),
-    elevation = keyword("ELEVATIO"),
-    gain = keyword("GAIN"),
-    gain_setting = keyword("GAINSET"),
-    grating = keyword("GRATING"),
-    lyot_stop = keyword("LYOTSTOP"),
-    naxis1 = keyword("NAXIS1"),
-    naxis2 = keyword("NAXIS2"),
-    nod_count = keyword("NODCOUNT"),
-    nod_pixels = keyword("NODPIX"),
-    nominal_photometric_zeropoint = keyword("NOMPHOTZ"),
-    non_linear_level = keyword("NONLINEA"),
-    observation_class = keyword("OBSCLASS"),
-    observation_epoch = keyword("OBSEPOCH", coerce_with=str),
-    observation_id = keyword("OBSID"),
-    observation_type = keyword("OBSTYPE"),
-    overscan_section = keyword("OVERSSEC"),
-    pixel_scale = keyword("PIXSCALE"),
-    prism = keyword("PRISM"),
-    program_id = keyword("GEMPRGID"),
-    pupil_mask = keyword("PUPILMSK"),
-    r_zero_val = keyword("RZEROVAL"),
-    ra = keyword("RA"),
-    raw_central_wavelength = keyword("CWAVE"),
-    raw_gemini_qa = keyword("RAWGEMQA"),
-    raw_pi_requirements_met = keyword("RAWPIREQ"),
-    read_mode = keyword("READMODE"),
-    read_noise = keyword("RDNOISE"),
-    read_speed_setting = keyword("RDSPDSET"),
-    saturation_level = keyword("SATLEVEL"),
-    slit = keyword("SLIT"),
-    wavelength = keyword("WAVELENG"),
-    wavelength_reference_pixel = keyword("WREFPIX", on_ext=True),
-    well_depth_setting = keyword("WELDEPTH"),
-    x_offset = keyword("XOFFSET"),
-    y_offset = keyword("YOFFSET"),
+gemini_keyword_names = dict(
+    airmass = 'AIRMASS',
+    ao_fold = 'AOFOLD',
+    array_name = 'ARRAYNAM',
+    azimuth = 'AZIMUTH',
+    bias_image = 'BIASIM',
+    bunit = 'BUNIT',
+    cd11 = 'CD1_1',
+    cd12 = 'CD1_2',
+    cd21 = 'CD2_1',
+    cd22 = 'CD2_2',
+    dark_image = 'DARKIM',
+    data_label = 'DATALAB',
+    dec = 'DEC',
+    detector_name = 'DETNAME',
+    detector_roi_setting = 'DROISET',
+    detector_rois_requested = 'DROIREQ',
+    detector_x_bin = 'XCCDBIN',
+    detector_y_bin = 'YCCDBIN',
+    dispersion = 'WDELTA',
+    elevation = 'ELEVATIO',
+    gain = 'GAIN',
+    gain_setting = 'GAINSET',
+    grating = 'GRATING',
+    lyot_stop = 'LYOTSTOP',
+    naxis1 = 'NAXIS1',
+    naxis2 = 'NAXIS2',
+    nod_count = 'NODCOUNT',
+    nod_pixels = 'NODPIX',
+    nominal_photometric_zeropoint = 'NOMPHOTZ',
+    non_linear_level = 'NONLINEA',
+    observation_class = 'OBSCLASS',
+    observation_epoch = 'OBSEPOCH',
+    observation_id = 'OBSID',
+    observation_type = 'OBSTYPE',
+    overscan_section = 'OVERSSEC',
+    pixel_scale = 'PIXSCALE',
+    prism = 'PRISM',
+    program_id = 'GEMPRGID',
+    pupil_mask = 'PUPILMSK',
+    r_zero_val = 'RZEROVAL',
+    ra = 'RA',
+    raw_central_wavelength = 'CWAVE',
+    raw_gemini_qa = 'RAWGEMQA',
+    raw_pi_requirements_met = 'RAWPIREQ',
+    read_mode = 'READMODE',
+    read_noise = 'RDNOISE',
+    read_speed_setting = 'RDSPDSET',
+    saturation_level = 'SATLEVEL',
+    slit = 'SLIT',
+    wavelength = 'WAVELENG',
+    wavelength_reference_pixel = 'WREFPIX',
+    well_depth_setting = 'WELDEPTH',
+    x_offset = 'XOFFSET',
+    y_offset = 'YOFFSET',
 )
 
-@simple_descriptor_mapping(**gemini_direct_keywords)
 class AstroDataGemini(AstroDataFits):
+    __keyword_dict = gemini_keyword_names
+
     @staticmethod
     def _matches_data(data_provider):
         obs = data_provider.header[0].get('OBSERVAT', '').upper()
@@ -218,7 +218,7 @@ class AstroDataGemini(AstroDataFits):
             Airmass value.
 
         """
-        am = self.phu.AIRMASS
+        am = self._raw_value_for('airmass')
 
         if am < 1:
             raise ValueError("Can't have less than 1 airmass!")
