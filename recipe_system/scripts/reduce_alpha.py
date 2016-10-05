@@ -12,10 +12,7 @@ Prototype reduce (New Hope).
 
 """
 # ---------------------------- Package Import ----------------------------------
-import os
 import sys
-import inspect
-import signal
 
 #import astrodata
 #import instruments
