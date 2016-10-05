@@ -83,10 +83,10 @@ class FitsKeywordManipulator(object):
 
     def set_comment(self, key, comment):
         def _inner_set_comment(header):
-            try:
-                header[key] = (header[key], comment)
-            except KeyError:
+            if key not in header:
                 raise KeyError("Keyword {!r} not available".format(key))
+
+            header.set(key, comment=comment)
 
         if self._on_ext:
             for n, header in enumerate(self._headers):
