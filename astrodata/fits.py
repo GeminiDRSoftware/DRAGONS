@@ -681,35 +681,6 @@ class AstroDataFits(AstroData):
         else:
             raise AttributeError("No match for '{}'".format(name))
 
-    def _raw_value_for(self, name):
-        """
-        Returns the value stored in the FITS PHU for the keyword ``name``.
-
-        Parameters
-        ----------
-        name : str
-            The common "key" name for which we want to know the associated
-            FITS keyword
-
-        Returns
-        -------
-        Some value. The type varies
-
-        Raises
-        ------
-        AttributeError
-            If there is no keyword for the specified ``name``
-
-        KeyError
-            If the PHU doesn't contain an entry for the matching keyword
-        """
-        try:
-            kwd_name = self._keyword_for(name)
-        except KeyError:
-            raise AttributeError("No matching keyword for '{}'".format(name))
-        else:
-            return getattr(self.phu, kwd_name)
-
     @staticmethod
     def _matches_data(dataprov):
         # This one is trivial. As long as we get a FITS file...
