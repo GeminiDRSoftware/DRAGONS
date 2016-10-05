@@ -22,8 +22,8 @@ from urllib2  import HTTPError
 # import astrodata
 # import gemini_instruments
 from astrodata import AstroData
+from gempy.utils  import logutils
 
-from ..utils  import logutils
 from ..stacks import IDFactory
 from .caches  import set_caches
 

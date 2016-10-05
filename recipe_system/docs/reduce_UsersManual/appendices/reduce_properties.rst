@@ -71,11 +71,11 @@ files). Here, each list of ``procfiles`` is then passed to the internal
 .. code-block:: python
     :linenos:
 
-    from <???>.utils import logutils
-    from recipe_system.<mod>.reduce_alpha import ReduceNH
+    from gempy.utils import logutils
+    from recipe_systenm.reduction.coreReduce import Reduce
 
     def reduce_conditions_are_met(procfiles, control_options={}):
-        reduce_object = ReduceNH()
+        reduce_object = Reduce()
         reduce_object.logfile = 'my_reduce.log'
         # write logfile only, no stdout.
         reduce_object.logmode = 'quiet'

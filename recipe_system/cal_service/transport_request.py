@@ -11,8 +11,8 @@ from os.path import join, basename
 from xml.dom import minidom
 from pprint  import pformat
 
+from gempy.utils import logutils
 from . import calurl_dict
-from ..utils import logutils
 # ------------------------------------------------------------------------------
 CALURL_DICT   = calurl_dict.calurl_dict
 UPLOADPROCCAL = CALURL_DICT["UPLOADPROCCAL"]

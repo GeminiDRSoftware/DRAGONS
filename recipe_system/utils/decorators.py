@@ -45,7 +45,7 @@ the decorated class.
 
 """
 from functools import wraps
-from astrodata.utils import logutils
+from gempy.utils import logutils
 
 # ------------------------------------------------------------------------------
 LOGINDENT = 0

@@ -22,11 +22,34 @@ We begin with the command line help provided by ``reduce --help``, followed by
 further description and discussion of certain non-trivial options that require 
 detailed explanation. ::
 
-  usage: reduce [options] fitsfile [fitsfile ...]
+  usage: reduce [-h] [-v] [-d] [--context CONTEXT] [--logmode LOGMODE]
+              [--logfile LOGFILE] [--loglevel LOGLEVEL]
+              [-p USERPARAM [USERPARAM ...]] [-r RECIPENAME]
+              [--user_cal USER_CAL] [--suffix SUFFIX]
+              fitsfile [fitsfile ...]
 
-positional arguments::
+  _____________________________ Gemini Observatory ____________________________
+  ____________________ Recipe Processing Management System ____________________
+  __________________ recipeSystem2 Release alpha (new_hope) __________________
 
-  fitsfile [fitsfile ...]
+  positional arguments:
+    fitsfile              fitsfile [fitsfile ...]
+
+  optional arguments:
+    -h, --help            show this help message and exit
+    -v, --version         show program's version number and exit
+    -d , --displayflags   display all parsed option flags and exit.
+    --context CONTEXT     Use <context> for recipe selection.
+    --logmode LOGMODE     log mode: 'standard', 'console', 'quiet', 'debug','null'.
+    --logfile LOGFILE     name of log (default is 'reduce.log')
+    --loglevel LOGLEVEL   Set the verbose level for console logging.
+    -p USERPARAM [USERPARAM ...], --param USERPARAM [USERPARAM ...]
+                          Set a parameter from the command line.
+    -r RECIPENAME, --recipe RECIPENAME 
+                          Specify a recipe by name.
+    --user_cal USER_CAL   Specify user supplied calibrations.
+    --suffix SUFFIX       Add 'suffix' to filenames at end of reduction.
+
 
 The [options] are described in the following sections.
 
@@ -541,7 +564,7 @@ prior to calling the ``runr()`` method.
 
 To use ``logutils``, import, configure, and get it::
 
-  from astrodata.utils import logutils
+  from gempy.utils import logutils
   logutils.config()
   log = logutils.get_logger(__name__)
 
@@ -589,7 +612,7 @@ function, or pass other values directly to ``config()``. This is precisely what
 Appendix :ref:`Class Reduce: Settable properties and attributes <props>` for 
 allowable and default values of these and other options.
 
->>> from astrodata.utils import logutils
+>>> from gempy.utils import logutils
 >>> logutils.config(file_name=reduce.logfile, mode=reduce.logmode, 
                     console_lvl=reduce.loglevel)
 
@@ -605,7 +628,7 @@ called. The following brings the examples above into one "end-to-end" use of
 Reduce and logutils::
 
   >>> from recipe_system.reduction.coreReduce import Reduce
-  >>> from astrodata.utils import logutils
+  >>> from gempy.utils import logutils
   >>> reduce = Reduce()
   >>> reduce.files.append('S20130616S0019.fits')
   >>> reduce.recipename = 'recipe.MyRecipe'
@@ -626,7 +649,7 @@ with a different dataset or options.
 Eg.,::
 
  >>> from recipe_system.reduction.coreReduce import Reduce
- >>> from astrodata.utils import logutils
+ >>> from gempy.utils import logutils
  >>> reduce = Reduce()
  >>> reduce.files.append('S20130616S0019.fits')
  >>> reduce.recipename = 'recipe.MyRecipe'

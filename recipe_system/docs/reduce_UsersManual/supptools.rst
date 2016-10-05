@@ -24,7 +24,7 @@ typewalk
 ``typewalk`` examines files in a directory or directory tree and reports the types 
 and status values through the AstroDataType classification scheme. Running ``typewalk`` 
 on a directory containing some Gemini datasets will demonstrate what users can expect 
-to see. If a user has downloaded gemini_python X1 package with the 'test_data', the 
+to see. If a user has downloaded gemini_python package with the 'test_data', the 
 user can move to this directory and run ``typewalk`` on that extensive set of
 Gemini datasets.
 
@@ -39,33 +39,26 @@ directory. Users may specify an explicit directory with the **-d** or
                         In shallow walk mode, number of files to process at a
                         time in the current directory. Controls behavior in
                         large data directories. Default = 100.
-  --calibrations        Show local calibrations (NOT IMPLEMENTED).
-  -c, --color           Colorize display
   -d TWDIR, --dir TWDIR
                         Walk this directory and report types. default is cwd.
   -f FILEMASK, --filemask FILEMASK
                         Show files matching regex <FILEMASK>. Default is all
                         .fits and .FITS files.
-  -i, --info            Show file meta information.
-  --keys KEY [KEY ...]  Print keyword values for reported files.Eg., --keys
-                        TELESCOP OBJECT
   -n, --norecurse       Do not recurse subdirectories.
   --or                  Use OR logic on 'types' criteria. If not specified,
                         matching logic is AND (See --types). Eg., --or --types
-                        GEMINI_SOUTH GMOS_IMAGE will report datasets that are
-                        either GEMINI_SOUTH *OR* GMOS_IMAGE.
+                        SOUTH GMOS IMAGE will report datasets that are one of
+                        SOUTH *OR* GMOS *OR* IMAGE.
   -o OUTFILE, --out OUTFILE
                         Write reported files to this file. Effective only with
-                        --types option.
-  --raise               Raise descriptor exceptions.
-  --types TYPES [TYPES ...]
-                        Find datasets that match only these type criteria.
-                        Eg., --types GEMINI_SOUTH GMOS_IMAGE will report
-                        datasets that are both GEMINI_SOUTH *and* GMOS_IMAGE.
-  --status              Report data processing status only.
-  --typology            Report data typologies only.
-  --xtypes XTYPES [[XTYPES ...]
-                        Exclude <xtypes> from reporting.
+                        --tags option.
+  --tags TAGS [TAGS ...]
+                        Find datasets that match only these tag criteria. Eg.,
+                        --tags SOUTH GMOS IMAGE will report datasets that are
+                        all tagged SOUTH *and* GMOS *and* IMAGE.
+  --xtags XTAGS [XTAGS ...]
+                        Exclude <xtags> from reporting.
+
 
 Files are selected and reported through a regular expression mask which, 
 by default, finds all ".fits" and ".FITS" files. Users can change this mask 
@@ -93,12 +86,12 @@ For example, find all GMOS images from Cerro Pachon in the top level
 directory and write out the matching files, then run reduce on them
 (**-n** is 'norecurse')::
 
-  $ typewalk -n --types GEMINI_SOUTH GMOS_IMAGE --out gmos_images_south
+  $ typewalk -n --tags SOUTH GMOS IMAGE --out gmos_images_south
   $ reduce @gmos_images_south
 
-Find all F2_SPECT and GMOS_SPECT datasets in a directory tree::
+Find all F2 SPECT datasets in a directory tree::
 
- $ typewalk --or --types GMOS_SPECT F2_SPECT
+ $ typewalk --tags SPECT F2
 
 This will also report match results to stdout, colourized if requested (**-c**).
 
@@ -108,27 +101,28 @@ report.
 
 For example, find GMOS_IMAGE types, but exclude ACQUISITION images from reporting::
 
-  $ typewalk --types GMOS_IMAGE --xtypes ACQUISITION
+  $ typewalk --tags GMOS IMAGE --xtags ACQUISITION
 
   directory: ../test_data/output
-     S20131010S0105.fits ............... (GEMINI) (GEMINI_SOUTH) (GMOS) (GMOS_IMAGE) 
-     (GMOS_RAW) (GMOS_S) (IMAGE) (RAW) (SIDEREAL) (UNPREPARED)
+     S20131010S0105.fits ............... (GEMINI) (SOUTH) (GMOS) (IMAGE) (RAW) 
+     (SIDEREAL) (UNPREPARED)
 
-     S20131010S0105_forFringe.fits ..... (GEMINI) (GEMINI_SOUTH) (GMOS) (GMOS_IMAGE) 
-     (GMOS_S) (IMAGE) (NEEDSFLUXCAL) (OVERSCAN_SUBTRACTED) (OVERSCAN_TRIMMED) 
+     S20131010S0105_forFringe.fits ..... (GEMINI) (SOUTH) (GMOS)
+     (IMAGE) (NEEDSFLUXCAL) (OVERSCAN_SUBTRACTED) (OVERSCAN_TRIMMED) 
+     (PREPARED) (PROCESSED_SCIENCE) (SIDEREAL)
+
+     S20131010S0105_forStack.fits ...... (GEMINI) (SOUTH) (GMOS) (IMAGE) 
+     (NEEDSFLUXCAL) (OVERSCAN_SUBTRACTED) (OVERSCAN_TRIMMED) 
      (PREPARED) (SIDEREAL)
 
-     S20131010S0105_forStack.fits ...... (GEMINI) (GEMINI_SOUTH) (GMOS) (GMOS_IMAGE) 
-     (GMOS_S) (IMAGE) (NEEDSFLUXCAL) (OVERSCAN_SUBTRACTED) (OVERSCAN_TRIMMED) 
-     (PREPARED) (SIDEREAL)
+Exclude GMOS ACQUISITION images and GMOS IMAGE datasets that have been 
+'prepared'::
 
-Exclude GMOS_IMAGE ACQUISITION images and GMOS_IMAGE datasets that have been 'prepared'::
-
-  $ typewalk --types GMOS_IMAGE --xtypes ACQUISITION PREPARED
+  $ typewalk --tags GMOS IMAGE --xtags ACQUISITION PREPARED
 
   directory: ../test_data/output
-     S20131010S0105.fits ............... (GEMINI) (GEMINI_SOUTH) (GMOS) (GMOS_IMAGE) 
-     (GMOS_RAW) (GMOS_S) (IMAGE) (RAW) (SIDEREAL) (UNPREPARED)
+     S20131010S0105.fits ............... (GEMINI) (SOUTH) (GMOS) (IMAGE) (RAW) 
+     (SIDEREAL) (UNPREPARED)
 
-With **--types** and **--xtypes**, users may really tune their searches for very
+With **--tags** and **--xtags**, users may really tune their searches for very
 specific datasets.
