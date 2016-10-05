@@ -477,7 +477,10 @@ class FitsProvider(DataProvider):
     def nddata(self):
         self._lazy_populate_object()
 
-        return self._nddata
+        if not self._single:
+            return self._nddata
+        else:
+            return self._nddata[0]
 
     @property
     def phu(self):
