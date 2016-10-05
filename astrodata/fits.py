@@ -1,8 +1,8 @@
 from types import StringTypes
 from abc import abstractmethod
 from collections import defaultdict
+import os
 from functools import partial
-from abc import abstractmethod
 
 from .core import *
 
@@ -63,6 +63,10 @@ class FitsKeywordManipulator(object):
         else:
             print(repr(self._headers[0]))
 
+    def set(self, key, value=None, comment=None):
+        for header in self._headers:
+            header.set(key, value=value, comment=comment)
+
     def get(self, key, default=None):
         try:
             return getattr(self, key)
@@ -83,10 +87,10 @@ class FitsKeywordManipulator(object):
 
     def set_comment(self, key, comment):
         def _inner_set_comment(header):
-            try:
-                header[key] = (header[key], comment)
-            except KeyError:
+            if key not in header:
                 raise KeyError("Keyword {!r} not available".format(key))
+
+            header.set(key, comment=comment)
 
         if self._on_ext:
             for n, header in enumerate(self._headers):
@@ -120,11 +124,7 @@ class FitsKeywordManipulator(object):
             return self._headers[0][key]
 
     def __setattr__(self, key, value):
-        if self._on_ext:
-            for header in self._headers:
-                header[key] = value
-        else:
-            self._headers[0][key] = value
+        self.set(key, value=value)
 
     def __delattr__(self, key):
         if self._on_ext:
@@ -453,6 +453,11 @@ class FitsProvider(DataProvider):
             self._exposed.append(name)
 
     @property
+    def filename(self):
+        if self.path is not None:
+            return os.path.basename(self.path)
+
+    @property
     def header(self):
         return self._header
 
@@ -472,7 +477,10 @@ class FitsProvider(DataProvider):
     def nddata(self):
         self._lazy_populate_object()
 
-        return self._nddata
+        if not self._single:
+            return self._nddata
+        else:
+            return self._nddata[0]
 
     @property
     def phu(self):
