@@ -43,7 +43,6 @@ import time
 import astrodata
 import gemini_instruments
 
-from gempy.utils import terminal
 from astrodata.core import AstroDataError
 
 # ------------------------------------------------------------------------------
@@ -59,9 +58,6 @@ def typewalk_argparser():
                       "at a time in the current directory. Controls behavior "
                       "in large data directories. Default = 100.")
 
-    parser.add_argument("-c", "--color", dest="usecolor", action="store_true",
-                      help="Colorize display")
-
     parser.add_argument("-d", "--dir", dest="twdir", default=os.getcwd(),
                       help="Walk this directory and report types. "
                       "default is cwd.")
@@ -69,9 +65,6 @@ def typewalk_argparser():
     parser.add_argument("-f", "--filemask", dest="filemask", default=None,
                       help="Show files matching regex <FILEMASK>. Default "
                         "is all .fits and .FITS files.")
-
-    parser.add_argument("-i", "--info", dest="showinfo", action="store_true",
-                      help="Show file meta information.")
 
     parser.add_argument("-n", "--norecurse", dest="stayTop", action="store_true",
                       help="Do not recurse subdirectories.")
@@ -145,6 +138,18 @@ def generate_outfile(outfile, olist, match_type, logical_or, xtypes):
             ofile.write("\n")
     return
 
+class Faces(object):
+    PURPLE    = '\033[95m'
+    CYAN      = '\033[96m'
+    DARKCYAN  = '\033[36m'
+    BLUE      = '\033[94m'
+    GREEN     = '\033[92m'
+    YELLOW    = '\033[93m'
+    RED       = '\033[91m'
+    BOLD      = '\033[1m'
+    UNDERLINE = '\033[4m'
+    END       = '\033[0m'
+
 # ------------------------------------------------------------------------------
 class DataSpider(object):
     """
@@ -173,11 +178,11 @@ class DataSpider(object):
         for root, dirn, files in walkfunc(directory):
             fullroot = os.path.abspath(root)
             if root == ".":
-                rootln = "\n${NORMAL}${BOLD}directory: ${NORMAL}. (" + \
-                         fullroot + ")${NORMAL}"
+                rootln = "\n{}directory: {}. ({})".format(Faces.CYAN, Faces.END,
+                                                          fullroot)
+
             else:
-                rootln = "\n${NORMAL}${BOLD}directory: ${NORMAL}" + \
-                         root + "${NORMAL}"
+                rootln = "\n{}directory: {} {}".format(Faces.CYAN, Faces.END, root)
 
             firstfile = True
             for tfile in files:
@@ -244,12 +249,13 @@ class DataSpider(object):
                     pwid = 40
                     fwid = pwid - indent
                     while len(tfile) >= (fwid - 1):
-                        print "     ${BG_WHITE}%s${NORMAL}" % tfile
+                        print "     {}{}{}".format(Faces.BLUE, tfile, Faces.END)
                         tfile = ""
 
                     if len(tfile) > 0:
-                        prlin = "     %s " % tfile
-                        prlincolor = "     ${BG_WHITE}%s${NORMAL} " % tfile
+                        prlin = "     {} ".format(tfile)
+                        prlincolor = "     {}{}{} ".format(Faces.BLUE, tfile,
+                                                           Faces.END)
                     else:
                         prlin = "     "
                         prlincolor = "     "
@@ -258,30 +264,19 @@ class DataSpider(object):
                     fwid  = pwid+indent
                     lp    = len(prlin)
                     nsp   = pwid - ( lp % pwid )
-                    print prlincolor+("."*nsp)+"${NORMAL}",
+                    print prlincolor+("."*nsp)+"{}".format(Faces.END),
                     tstr = ""
-                    termsize = terminal.getTerminalSize()
-                    maxlen   = termsize[0] - pwid -1
+                    astr = ""
                     dtypes.sort()
                     for dtype in dtypes:
-                        if (dtype != None):
-                            newtype = "(%s) " % dtype
+                        if (dtype is not None):
+                            newtype = "({}) ".format(dtype)
                         else:
                             newtype = "(Unknown) "
 
-                        astr = tstr + newtype
-                        if len(astr) >= maxlen:
-                            print "${BLUE}"+ tstr + "${NORMAL}"
-                            tstr = newtype
-                            print empty,
-                        else:
-                            tstr = astr
+                        astr += newtype
 
-                    if tstr != "":
-                        print "${BLUE}"+ tstr + "${NORMAL}"
-                        tstr = ""
-                        astr = ""
-
+                    print "{}{}{}".format(Faces.RED, astr, Faces.END)
 
         if outfile and outfile_list:
             generate_outfile(outfile, outfile_list, only, or_logic, xtypes)
@@ -297,15 +292,6 @@ def main(options):
     # runs a script IN the package itself.
     if (curpath in sys.path):
         sys.path.remove(curpath)
-
-    if not options.usecolor:
-        os.environ["TERM"] = ""
-
-    REASLSTDOUT = sys.stdout
-    REALSTDERR  = sys.stderr
-    fstdout     = terminal.FilteredStdout()
-    fstdout.addFilter(terminal.ColorFilter())
-    sys.stdout = fstdout
 
     # Gemini Specific class code
     dt = DataSpider()
