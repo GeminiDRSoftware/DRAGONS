@@ -28,7 +28,7 @@ def compat_with_iraf_GMOS(ad, verbose):
     if "PREPARED" in ad.tags:
         if verbose:
             print("Add GPREPARE to PHU")
-        ad.phu.GPREPARE = ("Compatibility", comment="For IRAF compatibility")
+        ad.phu.GPREPARE = ("Compatibility", "For IRAF compatibility")
     if 'STACKFRM' in ad.phu.keywords and  ad.phu.OBSTYPE == "BIAS":
         if verbose:
             print("Add GBIAS to PHU")
