@@ -2,15 +2,17 @@
 Collection of functions to make pipeline-processed and 
 IRAF-processed files compatible with the other system.
 """
+# TODO: write unit tests for irafcompat
+
 import re
 
 def pipeline2iraf(ad, verbose=False):
         
-    if "GMOS" in ad.types:
+    if "GMOS" in ad.tags:
         compat_with_iraf_GMOS(ad, verbose)
     else:
         if verbose:
-            print "Data type not supported, {0}".format(filename)
+            print("Data type not supported, {0}".format(filename))
          
     return
 
@@ -19,48 +21,40 @@ def compat_with_iraf_GMOS(ad, verbose):
     # The mighty GMOS OBSMODE
     obsmode = _get_gmos_obsmode(ad)
     if verbose:
-        print "Add OBSMODE {0} to PHU.".format(obsmode)
-    ad.phu_set_key_value(keyword='OBSMODE', value=obsmode, 
-                         comment="Observing mode (IMAGE|IFU|MOS|LONGSLIT)")  
+        print("Add OBSMODE {0} to PHU.".format(obsmode))
+    ad.phu.OBSMODE = (obsmode, "Observing mode (IMAGE|IFU|MOS|LONGSLIT)")
     
     # The other keywords required by the Gemini IRAF tasks.
-    if "PREPARED" in ad.types:
+    if "PREPARED" in ad.tags:
         if verbose:
-            print "Add GPREPARE to PHU"
-        ad.phu_set_key_value(keyword="GPREPARE", value="Compatibility",
-                             comment="For IRAF compatibility")
-    if 'STACKFRM' in ad.phu.header.keys() and  \
-          ad.phu_get_key_value('OBSTYPE') == "BIAS":
+            print("Add GPREPARE to PHU")
+        ad.phu.GPREPARE = ("Compatibility", "For IRAF compatibility")
+    if 'STACKFRM' in ad.phu.keywords and  ad.phu.OBSTYPE == "BIAS":
         if verbose:
-            print "Add GBIAS to PHU"
-        ad.phu_set_key_value(keyword="GBIAS", value="Compatibility", 
-                             comment="For IRAF compatibility")
-    if 'ADUTOELE' in ad.phu.header.keys():
+            print("Add GBIAS to PHU")
+        ad.phu.GBIAS = ("Compatibility", "For IRAF compatibility")
+    if 'ADUTOELE' in ad.phu.keywords:
         if verbose:
-            print "Add GGAIN to PHU"
-            print "Add GAINMULT to PHU"
-        ad.phu_set_key_value(keyword='GGAIN', value="Compatibility",
-                             comment="For IRAF compatibility")
-        ad.phu_set_key_value(keyword='GAINMULT', value="Compatibility",
-                             comment="For IRAF compatibility")
-    if 'NORMLIZE' in ad.phu.header.keys():
+            print("Add GGAIN to PHU")
+            print("Add GAINMULT to PHU")
+        ad.phu.GGAIN = ("Compatibility", "For IRAF compatibility")
+        ad.phu.GAINMULT = ("Compatibility", "For IRAF compatibility")
+    if 'NORMLIZE' in ad.phu.keywords:
         if verbose:
-            print "Add GIFLAT to PHU"
-        ad.phu_set_key_value(keyword='GIFLAT', value="Compatibility",
-                             comment="For IRAF compatibility")
-    if 'BIASIM' in ad.phu.header.keys():
+            print("Add GIFLAT to PHU")
+        ad.phu.GIFLAT = ("Compatibility", "For IRAF compatibility")
+    if 'BIASIM' in ad.phu.keywords:
         if verbose:
-            print "Add GIREDUCE to PHU"
-        ad.phu_set_key_value(keyword='GIREDUCE', value="Compatibility",
-                             comment="For IRAF compatibility")
+            print("Add GIREDUCE to PHU")
+        ad.phu.GIREDUCE = ("Compatibility", "For IRAF compatibility")
     
     return
 
 def _get_gmos_obsmode(ad):
-    obstype = ad.phu_get_key_value('OBSTYPE')
-    masktype = ad.phu_get_key_value('MASKTYP')
-    maskname = ad.phu_get_key_value('MASKNAME')
-    grating = ad.phu_get_key_value('GRATING')
+    obstype = ad.phu.OBSTYPE
+    masktype = ad.phu.MASKTYP
+    maskname = ad.phu.MASKNAME
+    grating = ad.phu.GRATING
         
     if obstype == "BIAS" or obstype == "DARK" or masktype == 0:
         obsmode = "IMAGE"
