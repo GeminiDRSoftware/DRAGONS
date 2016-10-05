@@ -4,7 +4,8 @@ import sys
 import argparse
 
 from gempy.gemini import irafcompat
-from astrodata import AstroData
+import astrodata
+import gemini_instruments
 
 VERSION = '0.1.0'
 
@@ -33,7 +34,7 @@ def parse_args(command_line_args):
     
     if args.debug:
         args.verbose = True
-        print args
+        print(args)
         
     if args.dry_run:
         args.verbose = True
@@ -46,13 +47,12 @@ def main(argv=None):
         argv = sys.argv
         
     args = parse_args(sys.argv[1:])
-    
-    readmode = "readonly" if args.dry_run else "update"
-    
+
     for filename in args.files:
-        ad = AstroData(filename, mode=readmode)
+        ad = astrodata.open(filename)
         irafcompat.pipeline2iraf(ad, args.verbose)
-        ad.close()
+        if not args.dry_run:
+            astrodata.write(ad.path, ad, clobber=True)
 
 if __name__ == '__main__':
     sys.exit(main())
