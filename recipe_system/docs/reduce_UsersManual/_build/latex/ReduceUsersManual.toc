@@ -11,7 +11,7 @@
 \contentsline {chapter}{\numberline {3}Interfaces}{7}{chapter.3}
 \contentsline {section}{\numberline {3.1}Introduction}{7}{section.3.1}
 \contentsline {section}{\numberline {3.2}Command line interface}{7}{section.3.2}
-\contentsline {subsection}{\numberline {3.2.1}Informational switches}{7}{subsection.3.2.1}
+\contentsline {subsection}{\numberline {3.2.1}Informational switches}{8}{subsection.3.2.1}
 \contentsline {subsection}{\numberline {3.2.2}Configuration Switches, Options}{8}{subsection.3.2.2}
 \contentsline {subsection}{\numberline {3.2.3}Nominal Usage}{9}{subsection.3.2.3}
 \contentsline {subsection}{\numberline {3.2.4}Overriding Primitive Parameters}{10}{subsection.3.2.4}
@@ -22,8 +22,8 @@
 \contentsline {subsection}{\numberline {3.3.1}Class Reduce, logging, and the runr() method}{14}{subsection.3.3.1}
 \contentsline {subsubsection}{Using the logger}{15}{subsubsection*.3}
 \contentsline {subsubsection}{Call the runr() method}{16}{subsubsection*.4}
-\contentsline {chapter}{\numberline {4}Supplemental tools}{17}{chapter.4}
-\contentsline {section}{\numberline {4.1}typewalk}{17}{section.4.1}
+\contentsline {chapter}{\numberline {4}Supplemental tools}{19}{chapter.4}
+\contentsline {section}{\numberline {4.1}typewalk}{19}{section.4.1}
 \contentsline {chapter}{\numberline {5}Discussion}{21}{chapter.5}
 \contentsline {section}{\numberline {5.1}Fits Storage}{21}{section.5.1}
 \contentsline {section}{\numberline {5.2}Future Enhancements}{21}{section.5.2}
@@ -41,6 +41,6 @@
 \contentsline {subsection}{\numberline {A.4.3}The Science Frames}{28}{subsection.A.4.3}
 \contentsline {subsection}{\numberline {A.4.4}Clean up}{28}{subsection.A.4.4}
 \contentsline {section}{\numberline {A.5}Limitations}{28}{section.A.5}
-\contentsline {chapter}{\numberline {B}Class Reduce: Settable properties and attributes}{31}{appendix.B}
-\contentsline {section}{\numberline {B.1}Examples}{31}{section.B.1}
-\contentsline {section}{\numberline {B.2}Example function}{32}{section.B.2}
+\contentsline {chapter}{\numberline {B}Class Reduce: Settable properties and attributes}{29}{appendix.B}
+\contentsline {section}{\numberline {B.1}Examples}{29}{section.B.1}
+\contentsline {section}{\numberline {B.2}Example function}{30}{section.B.2}
