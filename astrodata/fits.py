@@ -1,8 +1,8 @@
 from types import StringTypes
 from abc import abstractmethod
 from collections import defaultdict
+import os
 from functools import partial
-from abc import abstractmethod
 
 from .core import *
 
@@ -451,6 +451,11 @@ class FitsProvider(DataProvider):
                 self._tables[name] = Table(other.data, meta={'hdu': other.header})
             setattr(self, name, process_meta_unit(None, other, add=False))
             self._exposed.append(name)
+
+    @property
+    def filename(self):
+        if self.path is not None:
+            return os.path.basename(self.path)
 
     @property
     def header(self):
