@@ -63,6 +63,10 @@ class FitsKeywordManipulator(object):
         else:
             print(repr(self._headers[0]))
 
+    def set(self, key, value=None, comment=None):
+        for header in self._headers:
+            header.set(key, value=value, comment=comment)
+
     def get(self, key, default=None):
         try:
             return getattr(self, key)
@@ -120,11 +124,7 @@ class FitsKeywordManipulator(object):
             return self._headers[0][key]
 
     def __setattr__(self, key, value):
-        if self._on_ext:
-            for header in self._headers:
-                header[key] = value
-        else:
-            self._headers[0][key] = value
+        self.set(key, value=value)
 
     def __delattr__(self, key):
         if self._on_ext:
