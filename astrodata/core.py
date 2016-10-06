@@ -16,6 +16,21 @@ def astro_data_descriptor(fn):
     fn.descriptor_method = True
     return fn
 
+# Ensures descriptors coded to return a list (one value per extension)
+# only return a value if sent a slice with a single extension
+def returns_list(fn):
+    @wraps(fn)
+    def wrapper(self, *args, **kwargs):
+        ret = fn(self, *args, **kwargs)
+        if self._single and isinstance(ret, list):
+            # TODO: log a warning if the list is >1 element
+            if len(ret) > 1:
+                pass
+            return ret[0]
+        else:
+            return ret
+    return wrapper
+
 def descriptor_list(ad):
     members = inspect.getmembers(ad, lambda x: hasattr(x, 'descriptor_method'))
     return tuple(mname for (mname, method) in members)

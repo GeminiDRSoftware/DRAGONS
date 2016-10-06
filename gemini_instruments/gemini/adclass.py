@@ -1,56 +1,81 @@
 import re
+import os
+import math
 import datetime
 import dateutil.parser
+import warnings
 
-import pywcs
-
+from astropy.wcs import WCS, FITSFixedWarning
 from astrodata import AstroDataFits, astro_data_tag, astro_data_descriptor, TagSet
+from astrodata import factory, simple_descriptor_mapping, keyword
 from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
 from ..gmu import *
 
+# TODO: Some of these should go to AstroDataFITS
 gemini_keyword_names = dict(
     airmass = 'AIRMASS',
     ao_fold = 'AOFOLD',
+    ao_seeing = 'AOSEEING',
     array_name = 'ARRAYNAM',
+    array_section = 'ARRAYSEC',
     azimuth = 'AZIMUTH',
     bias_image = 'BIASIM',
     bunit = 'BUNIT',
+    camera = 'CAMERA',
+    cass_rotator_pa = 'CRPA',
     cd11 = 'CD1_1',
     cd12 = 'CD1_2',
     cd21 = 'CD2_1',
     cd22 = 'CD2_2',
+    central_wavelength = 'CWAVE',
+    coadds = 'COADDS',
     dark_image = 'DARKIM',
     data_label = 'DATALAB',
+    data_section = 'DATASEC',
     dec = 'DEC',
+    decker = 'DECKER',
     detector_name = 'DETNAME',
     detector_roi_setting = 'DROISET',
     detector_rois_requested = 'DROIREQ',
+    detector_section = 'DETSEC',
     detector_x_bin = 'XCCDBIN',
     detector_y_bin = 'YCCDBIN',
+    disperser = 'DISPERSR',
     dispersion = 'WDELTA',
+    dispersion_axis = 'DISPAXIS',
     elevation = 'ELEVATIO',
+    exposure_time = 'EXPTIME',
+    filter_name = 'FILTNAME',
+    focal_plane_mask = 'FPMASK',
     gain = 'GAIN',
     gain_setting = 'GAINSET',
+    gems = 'GWFS1CFG',
     grating = 'GRATING',
+    group_id = 'GROUPID',
+    local_time = 'LT',
     lyot_stop = 'LYOTSTOP',
+    mdf_row_id = 'MDFROW',
     naxis1 = 'NAXIS1',
     naxis2 = 'NAXIS2',
-    nod_count = 'NODCOUNT',
-    nod_pixels = 'NODPIX',
+    nominal_atmospheric_extinction = 'NOMATMOS',
     nominal_photometric_zeropoint = 'NOMPHOTZ',
     non_linear_level = 'NONLINEA',
     observation_class = 'OBSCLASS',
     observation_epoch = 'OBSEPOCH',
     observation_id = 'OBSID',
     observation_type = 'OBSTYPE',
+    oiwfs = 'OIWFS_ST',
     overscan_section = 'OVERSSEC',
     pixel_scale = 'PIXSCALE',
     prism = 'PRISM',
     program_id = 'GEMPRGID',
     pupil_mask = 'PUPILMSK',
+    pwfs1 = 'PWFS1_ST',
+    pwfs2 = 'PWFS2_ST',
+    qa_state = 'QASTATE',
     r_zero_val = 'RZEROVAL',
     ra = 'RA',
     raw_central_wavelength = 'CWAVE',
@@ -61,13 +86,41 @@ gemini_keyword_names = dict(
     read_speed_setting = 'RDSPDSET',
     saturation_level = 'SATLEVEL',
     slit = 'SLIT',
+    ut_datetime = 'DATETIME',
+    ut_time = 'UT',
+    wavefront_sensor = 'WFS',
     wavelength = 'WAVELENG',
+    wavelength_band = 'WAVEBAND',
     wavelength_reference_pixel = 'WREFPIX',
     well_depth_setting = 'WELDEPTH',
     x_offset = 'XOFFSET',
     y_offset = 'YOFFSET',
 )
 
+# These construct descriptors that simply get that keyword from the PHU
+# These will override any descriptor functions in the class definition
+gemini_simple_descriptors = dict(
+    azimuth = keyword('AZIMUTH'),
+    data_label = keyword('DATALAB'),
+    dispersion = keyword('WDELTA'),
+    elevation = keyword('ELEVATIO'),
+    grating = keyword('GRATING'),
+    group_id = keyword('GROUPID'),
+    lyot_stop = keyword('LYOTSTOP'),
+    nominal_photometric_zeropoint = keyword('NOMPHOTZ'),
+    observation_class = keyword('OBSCLASS'),
+    observation_epoch = keyword('OBSEPOCH'),
+    observation_id = keyword('OBSID'),
+    observation_type = keyword('OBSTYPE'),
+    prism = keyword('PRISM'),
+    program_id = keyword('GEMPRGID'),
+    pupil_mask = keyword('PUPILMSK'),
+    r_zero_val = keyword('RZEROVAL'),
+    slit = keyword('SLIT'),
+    wavelength = keyword('WAVELENG'),
+)
+
+@simple_descriptor_mapping(**gemini_simple_descriptors)
 class AstroDataGemini(AstroDataFits):
     __keyword_dict = gemini_keyword_names
 
@@ -190,7 +243,7 @@ class AstroDataGemini(AstroDataFits):
         try:
             value_filter = (str if pretty else sectionStrToIntList)
             ret = [(None if raw is None else value_filter(raw))
-                    for raw in getattr(self.hdr, keyword)]
+                    for raw in self.hdr.get(keyword)]
             if len(ret) == 1:
                 return ret[0]
             return ret
@@ -198,7 +251,7 @@ class AstroDataGemini(AstroDataFits):
             raise AttributeError("No {} information".format(descriptor_name))
 
     def _may_remove_component(self, keyword, stripID, pretty):
-        val = getattr(self.phu, keyword)
+        val = self.phu.get(keyword)
         if stripID or pretty:
             return removeComponentID(val)
         return val
@@ -218,7 +271,7 @@ class AstroDataGemini(AstroDataFits):
             Airmass value.
 
         """
-        am = self._raw_value_for('airmass')
+        am = getattr(self.phu, self._keyword_for('airmass'))
 
         if am < 1:
             raise ValueError("Can't have less than 1 airmass!")
@@ -248,7 +301,7 @@ class AstroDataGemini(AstroDataFits):
                 # http://www.ctio.noao.edu/~atokovin/tutorial/part1/turb.html )
 
                 # Seeing at 0.5 micron
-                rzv = self.r_zero_val()
+                rzv = getattr(self.phu, self._keyword_for('r_zero_val'))
                 return (206265. * 0.98 * 0.5e-6) / (rzv * 0.01)
             except KeyError:
                 raise AttributeError("There is no information about AO seeing")
@@ -283,7 +336,8 @@ class AstroDataGemini(AstroDataFits):
 
 
         """
-        return self._parse_section('array_section', 'ARRAYSEC', pretty)
+        return self._parse_section('array_section',
+                                   self._keyword_for('array_section'), pretty)
 
     @astro_data_descriptor
     def camera(self, stripID=False, pretty=False):
@@ -305,7 +359,8 @@ class AstroDataGemini(AstroDataFits):
             The name of the camera with or without the component ID.
 
         """
-        return self._may_remove_component('CAMERA', stripID, pretty)
+        return self._may_remove_component(self._keyword_for('camera'),
+                                          stripID, pretty)
 
     @astro_data_descriptor
     def cass_rotator_pa(self):
@@ -318,7 +373,7 @@ class AstroDataGemini(AstroDataFits):
             Position angle of the Cassegrain rotator.
 
         """
-        val = float(self.phu.CRPA)
+        val = float(self.phu.get(self._keyword_for('cass_rotator_pa')))
         if val < -360 or val > 360:
             raise ValueError("Invalid CRPA value: {}".format(val))
         return val
@@ -353,7 +408,7 @@ class AstroDataGemini(AstroDataFits):
             Number of co-adds.
 
         """
-        return int(self.phu.get('COADDS', 1))
+        return int(self.phu.get(self._keyword_for('coadds'), 1))
 
     @astro_data_descriptor
     def data_section(self, pretty=False):
@@ -385,7 +440,8 @@ class AstroDataGemini(AstroDataFits):
 
         """
 
-        return self._parse_section('data_section', 'DATASEC', pretty)
+        return self._parse_section('data_section',
+                                   self._keyword_for('data_section'), pretty)
 
     @astro_data_descriptor
     def decker(self, stripID=False, pretty=False):
@@ -408,7 +464,8 @@ class AstroDataGemini(AstroDataFits):
 
         """
 
-        return self._may_remove_component('DECKER', stripID, pretty)
+        return self._may_remove_component(self._keyword_for('decker'),
+                                          stripID, pretty)
 
     @astro_data_descriptor
     def detector_section(self, pretty=False):
@@ -439,7 +496,32 @@ class AstroDataGemini(AstroDataFits):
 
         """
 
-        return self._parse_section('detector_section', 'DETSEC', pretty)
+        return self._parse_section('detector_section',
+                                   self._keyword_for('detector_section'), pretty)
+
+    @astro_data_descriptor
+    def detector_x_bin(self):
+        """
+        Returns the detector binning in the x-direction
+
+        Returns
+        -------
+        int
+            The detector binning
+        """
+        return self.phu.get(self._keyword_for('detector_x_bin', 1))
+
+    @astro_data_descriptor
+    def detector_y_bin(self):
+        """
+        Returns the detector binning in the y-direction
+
+        Returns
+        -------
+        int
+            The detector binning
+        """
+        return self.phu.get(self._keyword_for('detector_y_bin', 1))
 
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
@@ -462,7 +544,8 @@ class AstroDataGemini(AstroDataFits):
 
         """
 
-        return self._may_remove_component('DISPERSR', stripID, pretty)
+        return self._may_remove_component(self._keyword_for('disperser'),
+                                          stripID, pretty)
 
     @astro_data_descriptor
     def dispersion_axis(self):
@@ -480,13 +563,13 @@ class AstroDataGemini(AstroDataFits):
             If the data is tagged IMAGE or is not PREPARED.
 
         """
-        # Keyword: DISPAXIS
         tags = self.tags
         if 'IMAGE' in tags or 'PREPARED' not in tags:
             raise ValueError("This descriptor doesn't work on RAW or IMAGE files")
 
         # TODO: We may need to sort out Nones here...
-        return [int(dispaxis) for dispaxis in self.hdr.DISPAXIS]
+        dispaxis_kwd = self._keyword_for('dispersion_axis')
+        return [int(dispaxis) for dispaxis in self.hdr.dispaxis_kwd]
 
     @astro_data_descriptor
     def effective_wavelength(self):
@@ -532,7 +615,7 @@ class AstroDataGemini(AstroDataFits):
             Exposure time.
 
         """
-        exposure_time = self.phu.EXPTIME
+        exposure_time = getattr(self.phu, self._keyword_for('exposure_time'))
         if exposure_time < 0:
             raise ValueError("Invalid exposure time: {}".format(exposure_time))
 
@@ -608,8 +691,21 @@ class AstroDataGemini(AstroDataFits):
             The name of the focal plane mask with or without the component ID.
 
         """
+        return self._may_remove_component(self._keyword_for('focal_plane_mask'),
+                                   stripID, pretty)
 
-        self._may_remove_component('FPMASK', stripID, pretty)
+    @astro_data_descriptor
+    def gain(self):
+        """
+        Returns the gain (electrons/ADU) for each extension
+
+        Returns
+        -------
+        list
+            Gains used for the observation
+
+        """
+        return self.hdr.get(self._keyword_for('gain'))
 
     @astro_data_descriptor
     def gcal_lamp(self):
@@ -661,10 +757,7 @@ class AstroDataGemini(AstroDataFits):
             True if the data is AO, False otherwise.
 
         """
-        try:
-            return self.ao_fold() == 'IN'
-        except KeyError:
-            return False
+        return self.phu.get(self._keyword_for('ao_fold', 'OUT')) == 'IN'
 
     @astro_data_descriptor
     def is_coadds_summed(self):
@@ -694,7 +787,7 @@ class AstroDataGemini(AstroDataFits):
             Local time of the observation.
 
         """
-        local_time = self.phu.LT
+        local_time = getattr(self.phu, self._keyword_for('local_time'))
         if re.match("^([012]\d)(:)([012345]\d)(:)(\d\d\.?\d*)$", local_time):
             return dateutil.parser.parse(local_time).time()
         else:
@@ -710,14 +803,12 @@ class AstroDataGemini(AstroDataFits):
         -------
         int
             Row of the MDF associated with the extension.
-
-        Raises
-        ------
-        NotImplementedError
-            This descriptor cannot mean anything at the Gemini level.
         """
-        # Keyword: MDFROW
-        raise NotImplementedError("mdf_row_id needs types/tags...")
+        tags = self.tags
+        if 'IMAGE' in tags or 'PREPARED' not in tags:
+            raise ValueError("This descriptor doesn't work on RAW or IMAGE files")
+
+        return getattr(self.hdr, self._keyword_for('mdf_row_id'))
 
     @astro_data_descriptor
     def nominal_atmospheric_extinction(self):
@@ -1033,7 +1124,7 @@ class AstroDataGemini(AstroDataFits):
 
         """
         try:
-            return self.ut_datetime(strict=True, dateonly=True).date()
+            return self.ut_datetime(strict=True, dateonly=True)
         except AttributeError:
             raise LookupError("Can't find information to return a proper date")
 
@@ -1049,7 +1140,118 @@ class AstroDataGemini(AstroDataFits):
             UT date and time.
 
         """
-        raise NotImplementedError("Getting ut_datetime is stupidly complicated. Will be implemented later")
+        # Loop through possible header keywords to get the date (time may come
+        # as a bonus with DATE-OBS)
+        for kw in ['DATE-OBS', self._keyword_for('ut_date'), 'DATE', 'UTDATE']:
+            utdate_hdr = self.phu.get(kw, '').strip()
+
+            # Is this a full date+time string?
+            if re.match("(\d\d\d\d-[01]\d-[0123]\d)(T)"
+                        "([012]\d:[012345]\d:\d\d.*\d*)", utdate_hdr):
+                return dateutil.parser.parse(utdate_hdr)
+
+            # Did we just get a date?
+            if re.match("\d\d\d\d-[01]\d-[0123]\d", utdate_hdr):
+                break
+
+            # Did we get a horrible early NIRI date: DD/MM/YY[Y]?
+            match = re.match("([0123]\d)/([01]\d)/(\d\d+)", utdate_hdr)
+            if match:
+                y = 1900 + int(match.group(3))
+                utdate_hdr = '{}-{}-{}'.format(y, match.group(2),
+                                               match.group(1))
+                break
+            else:
+                # Set any non-matching string to null
+                utdate_hdr = ''
+
+        # If we're here, utdate_hdr is either a date or empty
+        # If we only need a date and we've got one, exit
+        if dateonly and utdate_hdr:
+            return dateutil.parser.parse('{} 00:00:00'.format(utdate_hdr)).date()
+
+        # Now look for a time; again, several possible keywords
+        for kw in [self._keyword_for('ut_time'), 'UT', 'TIME-OBS',
+                   'STARTUT', 'UTSTART']:
+            uttime_hdr = self.phu.get(kw, '').strip()
+            if re.match("^([012]?\d)(:)([012345]?\d)(:)(\d\d?\.?\d*)$",
+                        uttime_hdr):
+                break
+            else:
+                uttime_hdr = ''
+
+        # Now we've either got a time or a null string
+        # If we only need a time and we've got one, exit
+        if timeonly and uttime_hdr:
+            return dateutil.parser.parse('2000-01-01 {}'.format(uttime_hdr)).time()
+
+        # If we've got a date and a time, marry them and send them on honeymoon
+        if utdate_hdr and uttime_hdr:
+            return dateutil.parser.parse('{}T{}'.format(utdate_hdr,
+                                                        uttime_hdr))
+
+        # This is non-compliant data, maybe engineering or something
+        # Try MJD_OBS
+        mjd = self.phu.get('MJD_OBS', 0)
+        if mjd > 1:
+            mjdzero = datetime.datetime(1858, 11, 17, 0, 0, 0, 0, None)
+            ut_datetime = mjdzero + datetime.timedelta(mjd)
+            if dateonly:
+                return ut_datetime.date()
+            elif timeonly:
+                return ut_datetime.time()
+            else:
+                return ut_datetime
+
+        # Try OBSSTART
+        obsstart = self.phu.get('OBSSTART')
+        if obsstart:
+            ut_datetime = dateutil.parser.parse(obsstart).replace(tzinfo=None)
+        if dateonly:
+            return ut_datetime.date()
+        elif timeonly:
+            return ut_datetime.time()
+        else:
+            return ut_datetime
+
+        # Now we're getting desperate. Give up if strict=True
+        if strict:
+            return None
+
+        # If we're missing a date, try to get it from the FRMNAME keyword or
+        # the filename (.filename strips the path)
+        if not utdate_hdr:
+            values = self.hdr.get('FRMNAME', '') + [self.filename]
+            for string in values:
+                try:
+                    year = string[1:5]
+                    month = string[5:7]
+                    day = string[7:9]
+                    y = int(year)
+                    m = int(month)
+                    d = int(day)
+                    if (y>1999 and m<13 and d<32):
+                        utdate_hdr = '{}-{}-{}'.format(year, month, day)
+                except (KeyError, ValueError, IndexError):
+                    pass
+
+        # If we're missing a time, set it to midnight
+        if not uttime_hdr:
+            uttime_hdr = '00:00:00'
+
+        # Return something if we can fulfil the request
+        if dateonly and utdate_hdr:
+            return dateutil.parser.parse('{} 00:00:00'.format(utdate_hdr)).date()
+
+        if timeonly and uttime_hdr:
+            return dateutil.parser.parse('2000-01-01 {}'.format(uttime_hdr)).time()
+
+        if utdate_hdr and uttime_hdr:
+            return dateutil.parser.parse('{}T{}'.format(utdate_hdr, uttime_hdr))
+
+        # Give up
+        #raise LookupError("Can't find information to return requested date/time")
+        return None
 
     @astro_data_descriptor
     def ut_time(self):
@@ -1063,7 +1265,7 @@ class AstroDataGemini(AstroDataFits):
 
         """
         try:
-            return self.ut_datetime(strict=True, timeonly=True).time()
+            return self.ut_datetime(strict=True, timeonly=True)
         except AttributeError:
             raise LookupError("Can't find information to return a proper time")
 
@@ -1125,6 +1327,19 @@ class AstroDataGemini(AstroDataFits):
         return band
 
     @astro_data_descriptor
+    def wavelength_reference_pixel(self):
+        """
+        Returns the wavelength reference pixel for each extension
+
+        Returns
+        -------
+        list
+            wavelength reference pixels
+        """
+        return getattr(self.hdr, self._keyword_for('wavelength_reference_pixel'))
+
+    # TODO: Move everything below here to AstroDataFITS?
+    @astro_data_descriptor
     def wcs_ra(self):
         """
         Returns the Right Ascension of the center of the field based on the
@@ -1133,10 +1348,9 @@ class AstroDataGemini(AstroDataFits):
         Returns
         -------
         float
-            Right Ascension of the center of the field in degrees
-
+            right ascension in degrees
         """
-        raise NotImplementedError("wcs_dec needs types/tags, and direct access to header...")
+        return self._get_wcs_coords()[0]
 
     @astro_data_descriptor
     def wcs_dec(self):
@@ -1147,10 +1361,57 @@ class AstroDataGemini(AstroDataFits):
         Returns
         -------
         float
-            Declination of the center of the field in degrees
-
+            declination in degrees
         """
-        raise NotImplementedError("wcs_dec needs types/tags, and direct access to header...")
+        return self._get_wcs_coords()[1]
 
     ra = wcs_ra
     dec = wcs_dec
+
+    def _get_wcs_coords(self, x=None, y=None):
+        """
+        Returns the RA and dec of the middle of the first extension
+        or a specific pixel therein (added by CJS in case it's useful)
+
+        Returns
+        -------
+        tuple
+            (right ascension, declination)
+        """
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=FITSFixedWarning)
+            # header[0] is PHU, header[1] is first extension HDU
+            # If no CTYPE1 in first HDU, try PHU
+            if self.hdr.get('CTYPE1')[0] is None:
+                wcs = WCS(self.header[0])
+            else:
+                wcs = WCS(self.header[1])
+            if x is None or y is None:
+                x, y = [0.5 * self.hdr.get(naxis)[0]
+                        for naxis in ('NAXIS1','NAXIS2')]
+            result = wcs.wcs_pix2world(x,y, 1)
+        ra, dec = float(result[0]), float(result[1])
+
+        # TODO: This isn't in old Gemini descriptors. Should it be?
+        if 'NON_SIDEREAL' in self.tags:
+            ra, dec = toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
+
+        return (ra, dec)
+
+    # TODO: Move to AstroDataFITS? And deal with PCi_j/CDELTi keywords?
+    def _get_wcs_pixel_scale(self):
+        """
+        Returns a list of pixel scales (in arcseconds), derived from the
+        CD matrices of the image extensions
+
+        Returns
+        -------
+        list
+            List of pixel scales, one per extension
+        """
+        return [3600 * 0.5 * (math.sqrt(cd11 * cd11 + cd12 * cd12) +
+                              math.sqrt(cd21 * cd21 + cd22 * cd22))
+                for cd11, cd12, cd21, cd22 in zip(self.hdr.CD1_1,
+                                                  self.hdr.CD1_2,
+                                                  self.hdr.CD2_1,
+                                                  self.hdr.CD2_2)]

@@ -1,6 +1,18 @@
 # This module should be removed when we have a working gempy for new astrodata
 
+import math
 import re
+from astropy import coordinates, units, _erfa
+
+# The unitDict dictionary defines the factors for the function
+# convert_units
+unitDict = {
+    'meters': 0,
+    'micrometers': -6,
+    'nanometers': -9,
+    'angstroms': -10,
+}
+
 
 def removeComponentID(instr):
     """
@@ -10,13 +22,14 @@ def removeComponentID(instr):
     :rtype: string
     :return: the filter name with the component ID removed
     """
-    m = re.match (r"(?P<filt>.*?)_G(.*?)", instr)
+    m = re.match(r"(?P<filt>.*?)_G(.*?)", instr)
     if not m:
-                # There was no "_G" in the input string. Return the input string
+        # There was no "_G" in the input string. Return the input string
         ret_str = str(instr)
     else:
-                ret_str = str(m.group("filt"))
+        ret_str = str(m.group("filt"))
     return ret_str
+
 
 def sectionStrToIntList(section):
     """
@@ -46,21 +59,93 @@ def sectionStrToIntList(section):
     # Return the list in the form [x1 - 1, x2, y1 - 1, y2]
     return [x1, x2, y1, y2]
 
+
 def parse_percentile(string):
-        # Given the type of string that ought to be present in the site condition
+    # Given the type of string that ought to be present in the site condition
     # headers, this function returns the integer percentile number
     #
     # Is it 'Any' - ie 100th percentile?
-    if(string == "Any"):
+    if (string == "Any"):
         return 100
 
     # Is it a xx-percentile string?
     m = re.match("^(\d\d)-percentile$", string)
-    if(m):
+    if (m):
         return int(m.group(1))
 
     # We didn't recognise it
     return None
 
-### END temporaty functions
 
+def convert_units(input_units, input_value, output_units):
+    """
+    :param input_units: the units of the value specified by input_value.
+                        Possible values are 'meters', 'micrometers',
+                        'nanometers' and 'angstroms'.
+    :type input_units: string
+    :param input_value: the input value to be converted from the
+                        input_units to the output_units
+    :type input_value: float
+    :param output_units: the units of the returned value. Possible values
+                         are 'meters', 'micrometers', 'nanometers' and
+                         'angstroms'.
+    :type output_units: string
+    :rtype: float
+    :return: the converted value of input_value from input_units to
+             output_units
+    """
+    # Determine the factor required to convert the input_value from the
+    # input_units to the output_units
+    power = unitDict[input_units] - unitDict[output_units]
+    factor = math.pow(10, power)
+
+    # Return the converted output value
+    return input_value * factor
+
+
+# From gempy.gemini.coordinate_utils.py
+def toicrs(frame, ra, dec, equinox=2000.0, ut_datetime=None):
+    # Utility function. Converts and RA and Dec in the specified reference frame
+    # and equinox at ut_datetime into ICRS. This is used by the ra and dec descriptors.
+
+    # Assume equinox is julian calendar
+    equinox = 'J%s' % equinox
+
+    # astropy doesn't understand APPT coordinates. However, it does understand
+    # CIRS coordinates, and we can convert from APPT to CIRS by adding the
+    # equation of origins to the RA. We can get that using ERFA.
+    # To proceed with this, we first let astopy construct the CIRS frame, so
+    # that we can extract the obstime object from that to pass to erfa.
+
+    appt_frame = True if frame == 'APPT' else False
+    frame = 'cirs' if frame == 'APPT' else frame
+    frame = 'fk5' if frame == 'FK5' else frame
+
+    coords = coordinates.SkyCoord(ra=ra * units.degree,
+                                  dec=dec * units.degree,
+                                  frame=frame,
+                                  equinox=equinox,
+                                  obstime=ut_datetime)
+
+    if appt_frame:
+        # Call ERFA.apci13 to get the Equation of Origin (EO).
+        # We just discard the astrom context return
+        astrom, eo = _erfa.apci13(coords.obstime.jd1, coords.obstime.jd2)
+        astrom = None
+        # eo comes back as a single element array in radians
+        eo = float(eo)
+        eo = eo * units.radian
+        # re-create the coords frame object with the corrected ra
+        coords = coordinates.SkyCoord(ra=coords.ra + eo,
+                                      dec=coords.dec,
+                                      frame=coords.frame.name,
+                                      equinox=coords.equinox,
+                                      obstime=coords.obstime)
+
+    # Now we can just convert to ICRS...
+    icrs = coords.icrs
+
+    # And return values in degrees
+    return (icrs.ra.degree, icrs.dec.degree)
+
+### END temporary functions
