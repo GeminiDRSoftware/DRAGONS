@@ -1,4 +1,4 @@
-from astrodata import astro_data_tag, TagSet, astro_data_descriptor
+from astrodata import astro_data_tag, TagSet, astro_data_descriptor, returns_list
 from ..gemini import AstroDataGemini
 from .lookup import array_properties, nominal_zeropoints
 from astropy.wcs import WCS, FITSFixedWarning
@@ -7,6 +7,13 @@ import warnings
 from ..gmu import *
 
 class AstroDataF2(AstroDataGemini):
+
+    __keyword_dict = dict(camera = 'LYOT',
+                          central_wavelength = 'GRWLEN',
+                          disperser = 'GRISM',
+                          focal_plane_mask = 'MOSPOS',
+                          )
+
     @staticmethod
     def _matches_data(data_provider):
         return data_provider.phu.get('INSTRUME', '').upper() in ('F2', 'FLAM')
@@ -209,6 +216,7 @@ class AstroDataF2(AstroDataGemini):
         # Return &-concatenated names if we still have two filter names
         return str(filter[0]) if len(filter)==1 else '{}&{}'.format(*filter)
 
+    @returns_list
     @astro_data_descriptor
     def gain(self):
         """
@@ -217,18 +225,15 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        float
-            Gain used for the observation.
+        list/float
+            Gain used for the observation
 
         """
         lnrs = self.phu.LNRS
-        try:
-            # F2 adds the reads (in ADU), so the electron-to-ADU conversion
-            # needs to be divided by the number of reads
-            gain = array_properties[lnrs][1] / lnrs
-        except KeyError:
-            pass
-        return gain
+        # F2 adds the reads (in ADU), so the electron-to-ADU conversion
+        # needs to be divided by the number of reads
+        gain = array_properties[lnrs][1] / lnrs
+        return [gain for ext in self]
 
     @astro_data_descriptor
     def group_id(self):
@@ -334,9 +339,7 @@ class AstroDataF2(AstroDataGemini):
         """
         return 'F2'
 
-    # TODO: Not really sure what's going on here. camera() should get the
-    # value of the LYOT keyword (could use Gemini-class descriptor, except
-    # that's hardcoded to use CAMERA. lyot_stop() does the same. Is it used?
+    # TODO: Don't think this is used. camera() returns the same thing
     @astro_data_descriptor
     def lyot_stop(self, stripID=False, pretty=False):
         """
@@ -357,8 +360,8 @@ class AstroDataF2(AstroDataGemini):
             The name of the Lyot stop with or without the component ID.
         """
         return self._may_remove_component('LYOT', stripID, pretty)
-    camera = lyot_stop
 
+    @returns_list
     @astro_data_descriptor
     def nominal_photometric_zeropoint(self):
         """
@@ -380,9 +383,9 @@ class AstroDataF2(AstroDataGemini):
 
         nom_zpt = nominal_zeropoints[(self.filter_name(pretty=True),
                                       self.camera(pretty=True))]
-        # Must return a list
-        return [nom_zpt]
+        return [nom_zpt for ext in self]
 
+    @returns_list
     @astro_data_descriptor
     def non_linear_level(self):
         """
@@ -390,12 +393,13 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        float
+        float/list
             Value at which the data become non-linear
         """
         # Element [3] gives the fraction of the saturation level at which
         # the data become non-linear
-        return self.saturation_level() * array_properties[self.phu.LNRS][3]
+        return [ext.saturation_level() * array_properties[self.phu.LNRS][3]
+                for ext in self]
 
     # TODO: is 'F2_DARK' still a tag?
     @astro_data_descriptor
@@ -434,11 +438,12 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        int
+        str
             readout mode
         """
-        return self.phu.LNRS
+        return str(self.phu.LNRS)
 
+    @returns_list
     @astro_data_descriptor
     def read_noise(self):
         """
@@ -446,12 +451,13 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        float
+        float/list
             read noise
         """
         # Element [0] gives the read noise
-        return array_properties[self.phu.LNRS][0]
+        return [array_properties[self.phu.LNRS][0] for ext in self]
 
+    @returns_list
     @astro_data_descriptor
     def saturation_level(self):
         """
@@ -459,35 +465,11 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        float
+        list/float
             saturation level
         """
         # Element [2] gives the saturation level in electrons
-        return array_properties[self.phu.LNRS][2] / self.gain()
-
-    @astro_data_descriptor
-    def wcs_ra(self):
-        """
-        Returns the RA of the middle of the data array
-
-        Returns
-        -------
-        float
-            right ascension
-        """
-        return self._get_wcs_coords()[0]
-
-    @astro_data_descriptor
-    def wcs_dec(self):
-        """
-        Returns the declination of the middle of the data array
-
-        Returns
-        -------
-        float
-            declination
-        """
-        return self._get_wcs_coords()[1]
+        return [array_properties[self.phu.LNRS][2] / ext.gain() for ext in self]
 
     # TODO: document why these are reversed
     @astro_data_descriptor
