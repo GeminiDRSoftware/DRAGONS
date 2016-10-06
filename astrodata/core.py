@@ -22,7 +22,10 @@ def returns_list(fn):
     @wraps(fn)
     def wrapper(self, *args, **kwargs):
         ret = fn(self, *args, **kwargs)
-        if self._single and isinstance(ret, list) and len(ret)==1:
+        if self._single and isinstance(ret, list):
+            # TODO: log a warning if the list is >1 element
+            if len(ret) > 1:
+                pass
             return ret[0]
         else:
             return ret
