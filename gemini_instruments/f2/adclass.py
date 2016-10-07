@@ -94,6 +94,7 @@ class AstroDataF2(AstroDataGemini):
         elif disp.startswith('DISP_PRISM'):
             return TagSet(['SPECT', 'IFU'])
 
+    @returns_list
     @astro_data_descriptor
     def array_section(self, pretty=False):
         """
@@ -226,7 +227,7 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        list/float
+        float
             Gain used for the observation
 
         """
@@ -234,7 +235,7 @@ class AstroDataF2(AstroDataGemini):
         # F2 adds the reads (in ADU), so the electron-to-ADU conversion
         # needs to be divided by the number of reads
         gain = array_properties[lnrs][1] / lnrs
-        return [gain for ext in self]
+        return gain
 
     @astro_data_descriptor
     def group_id(self):
@@ -371,8 +372,8 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        list
-            List of zeropoint values, one per SCI extension (i.e., one for F2)
+        float
+            zeropoint values, one per SCI extension (i.e., one for F2)
         """
         offset = 0.0
         # Apply conversion if data are in ADU (if no BUNIT, assume electrons)
@@ -384,7 +385,7 @@ class AstroDataF2(AstroDataGemini):
 
         nom_zpt = nominal_zeropoints[(self.filter_name(pretty=True),
                                       self.camera(pretty=True))]
-        return [nom_zpt for ext in self]
+        return nom_zpt
 
     @returns_list
     @astro_data_descriptor
@@ -394,13 +395,19 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        float/list
+        float
             Value at which the data become non-linear
         """
         # Element [3] gives the fraction of the saturation level at which
         # the data become non-linear
-        return [ext.saturation_level() * array_properties[self.phu.LNRS][3]
-                for ext in self]
+        fraction = array_properties[self.phu.LNRS][3]
+        saturation_level = self.saturation_level()
+        # Saturation level might be an element or a list
+        try:
+            nonlin_level = [fraction * s for s in saturation_level]
+        except TypeError:
+            nonlin_level = fraction * saturation_level
+        return nonlin_level
 
     # TODO: is 'F2_DARK' still a tag?
     @astro_data_descriptor
@@ -452,11 +459,11 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        float/list
+        float
             read noise
         """
         # Element [0] gives the read noise
-        return [array_properties[self.phu.LNRS][0] for ext in self]
+        return array_properties[self.phu.LNRS][0]
 
     @returns_list
     @astro_data_descriptor
@@ -466,11 +473,18 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        list/float
+        float
             saturation level
         """
         # Element [2] gives the saturation level in electrons
-        return [array_properties[self.phu.LNRS][2] / ext.gain() for ext in self]
+        saturation_electrons = array_properties[self.phu.LNRS][2]
+        gain = self.gain()
+        # Gain might be an element or a list
+        try:
+            saturation_adu = [saturation_electrons / g for g in gain]
+        except TypeError:
+            saturation_adu = saturation_electrons / gain
+        return saturation_adu
 
     # TODO: document why these are reversed
     @astro_data_descriptor
