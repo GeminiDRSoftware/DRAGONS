@@ -127,9 +127,6 @@ class AstroDataF2(AstroDataGemini):
         # TODO: discover reason why this is hardcoded, rather than from keyword
         return value_filter('[1:2048,1:2048]')
 
-    data_section = array_section
-    detector_section = array_section
-
     # TODO: sort out the unit-handling here
     @astro_data_descriptor
     def central_wavelength(self, asMicrometers=False, asNanometers=False,
