@@ -1353,6 +1353,30 @@ class AstroDataGemini(AstroDataFits):
         return self._get_wcs_coords()[0]
 
     @astro_data_descriptor
+    def dec(self):
+        """
+        Returns the Declination of the center of the field.
+
+        Returns
+        -------
+        float
+            declination in degrees
+        """
+        return self._get_wcs_coords()[1]
+
+    @astro_data_descriptor
+    def ra(self):
+        """
+        Returns the Right Ascension of the center of the field
+
+        Returns
+        -------
+        float
+            right ascension in degrees
+        """
+        return self._get_wcs_coords()[0]
+
+    @astro_data_descriptor
     def wcs_dec(self):
         """
         Returns the Declination of the center of the field based on the
@@ -1364,9 +1388,6 @@ class AstroDataGemini(AstroDataFits):
             declination in degrees
         """
         return self._get_wcs_coords()[1]
-
-    ra = wcs_ra
-    dec = wcs_dec
 
     def _get_wcs_coords(self, x=None, y=None):
         """
