@@ -22,13 +22,22 @@ def returns_list(fn):
     @wraps(fn)
     def wrapper(self, *args, **kwargs):
         ret = fn(self, *args, **kwargs)
-        if self._single and isinstance(ret, list):
-            # TODO: log a warning if the list is >1 element
-            if len(ret) > 1:
-                pass
-            return ret[0]
+        if self._single:
+            if isinstance(ret, list):
+                # TODO: log a warning if the list is >1 element
+                if len(ret) > 1:
+                    pass
+                return ret[0]
+            else:
+                return ret
         else:
-            return ret
+            if isinstance(ret, list):
+                if len(ret) == len(self):
+                    return ret
+                else:
+                    raise IndexError("Incompatible numbers of extensions and elements in {}".format(fn.__name__))
+            else:
+                return [ret] * len(self)
     return wrapper
 
 def descriptor_list(ad):
