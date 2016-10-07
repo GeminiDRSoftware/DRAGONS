@@ -607,6 +607,7 @@ class FitsLoader(object):
         new_list = []
         highest_ver = 0
         recognized = set()
+
         for n, unit in enumerate(hdulist):
             ev = unit.header.get('EXTVER')
             eh = unit.header.get('EXTNAME')
@@ -625,7 +626,7 @@ class FitsLoader(object):
                 highest_ver += 1
                 if 'EXTNAME' not in unit.header:
                     unit.header['EXTNAME'] = ('SCI', 'Added by AstroData')
-                if unit.header.get('EXTNAME') in (-1, None):
+                if unit.header.get('EXTVER') in (-1, None):
                     unit.header['EXTVER'] = (highest_ver, 'Added by AstroData')
 
             new_list.append(unit)
