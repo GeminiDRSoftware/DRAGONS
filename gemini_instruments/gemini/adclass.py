@@ -271,12 +271,12 @@ class AstroDataGemini(AstroDataFits):
             Airmass value.
 
         """
-        am = getattr(self.phu, self._keyword_for('airmass'))
+        am = float(getattr(self.phu, self._keyword_for('airmass')))
 
         if am < 1:
             raise ValueError("Can't have less than 1 airmass!")
 
-        return float(am)
+        return am
 
     @astro_data_descriptor
     def ao_seeing(self):
