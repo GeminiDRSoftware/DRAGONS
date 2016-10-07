@@ -229,16 +229,16 @@ class FitsProvider(DataProvider):
         # Let's try to be generic. Could it be that some file contains only tables?
         self._lazy_populate_object()
         if len(self._nddata) > 0:
-            main_fmt = "{:6} {:24} {:16} {:14} {}"
-            other_fmt = "          .{:20} {:16} {:14} {}"
+            main_fmt = "{:6} {:24} {:17} {:14} {}"
+            other_fmt = "          {:21} {:17} {:14} {}"
             print("\nPixels Extensions")
             print(main_fmt.format("Index", "Content", "Type", "Dimensions", "Format"))
             for pi in self._pixel_info():
                 main_obj = pi['main']
-                print(main_fmt.format(pi['idx'], main_obj['content'], main_obj['type'],
+                print(main_fmt.format(pi['idx'], main_obj['content'][:24], main_obj['type'][:17],
                                                  main_obj['dim'], main_obj['data_type']))
                 for other in pi['other']:
-                    print(other_fmt.format(other['attr'], other['type'], other['dim'],
+                    print(other_fmt.format(other['attr'][:21], other['type'][:17], other['dim'],
                                            other['data_type']))
 
         additional_ext = list(self._other_info())
@@ -246,7 +246,7 @@ class FitsProvider(DataProvider):
             print("\nOther Extensions")
             print("               Type        Dimensions")
             for (attr, type_, dim) in additional_ext:
-                print(".{:13} {:11} {}".format(attr, type_, dim))
+                print("{:14} {:11} {}".format(attr[:14], type_[:11], dim))
 
     def _pixel_info(self):
         self._lazy_populate_object()
@@ -263,17 +263,21 @@ class FitsProvider(DataProvider):
                             data_type='n/a'
                         ))
                     else:
+                        dim = ''
                         if hasattr(other, 'dtype'):
                             dt = other.dtype.name
+                            dim = str(other.shape)
                         elif hasattr(other, 'data'):
                             dt = other.data.dtype.name
+                            dim = str(other.data.shape)
                         elif hasattr(other, 'array'):
                             dt = other.array.dtype.name
+                            dim = str(other.array.shape)
                         else:
                             dt = 'unknown'
                         other_objects.append(dict(
                             attr=name, type=type(other).__name__,
-                            dim='', data_type = dt
+                            dim=dim, data_type = dt
                         ))
 
             yield dict(
