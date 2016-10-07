@@ -2,7 +2,7 @@ from types import StringTypes
 from abc import abstractmethod
 from collections import defaultdict
 import os
-from functools import partial
+from functools import partial, wraps
 
 from .core import *
 
@@ -150,6 +150,7 @@ class FitsKeywordManipulator(object):
             return key in self._headers[0]
 
 def force_load(fn):
+    @wraps(fn)
     def wrapper(self, *args, **kw):
         # Force the loading of data, we may need it later
         self._lazy_populate_object()
@@ -322,9 +323,9 @@ class FitsProvider(DataProvider):
         if self._tables is not None:
             for name, content in self._tables.items():
                 if type(content) is list:
-                    scopy._tables[name] = [self.content[n] for n in indices]
+                    scopy._tables[name] = [content[n] for n in indices]
                 else:
-                    scopy._tables[name] = self.content
+                    scopy._tables[name] = content
 
         return scopy
 
