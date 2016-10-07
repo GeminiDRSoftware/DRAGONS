@@ -182,7 +182,11 @@ class FitsProvider(DataProvider):
             if len(operand) != len(self):
                 raise ValueError("Operands are not the same size")
             for n in range(len(self)):
-                self._nddata[n] = operator(self._nddata[n], operand.nddata[n])
+                try:
+                    self._nddata[n] = operator(self._nddata[n], operand.nddata[n])
+                except TypeError:
+                    # This may happen if operand is a sliced, single AstroData object
+                    self._nddata[n] = operator(self._nddata[n], operand.nddata)
             ltab, rtab = set(self._tables), set(operand.table)
             for tab in (rtab - ltab):
                 self._tables[tab] = operand.table[tab]
@@ -223,7 +227,8 @@ class FitsProvider(DataProvider):
         print(tag_line)
 
         # Let's try to be generic. Could it be that some file contains only tables?
-        if len(self.nddata) > 0:
+        self._lazy_populate_object()
+        if len(self._nddata) > 0:
             main_fmt = "{:6} {:24} {:16} {:14} {}"
             other_fmt = "          .{:20} {:16} {:14} {}"
             print("\nPixels Extensions")
@@ -244,7 +249,8 @@ class FitsProvider(DataProvider):
                 print(".{:13} {:11} {}".format(attr, type_, dim))
 
     def _pixel_info(self):
-        for idx, obj in enumerate(self.nddata):
+        self._lazy_populate_object()
+        for idx, obj in enumerate(self._nddata):
             header = obj.meta['hdu']
             other_objects = []
             for name in ['uncertainty', 'mask'] + sorted(obj.meta['other']):
@@ -349,7 +355,8 @@ class FitsProvider(DataProvider):
         del self._nddata[idx]
 
     def __len__(self):
-        return len(self.nddata)
+        self._lazy_populate_object()
+        return len(self._nddata)
 
     def _set_headers(self, hdulist):
         self._header = [hdulist[0].header] + [x.header for x in hdulist[1:] if

@@ -39,6 +39,7 @@ class AstroDataF2(AstroDataGemini):
         if self.phu.get('GRISM') == 'Open':
             return TagSet(['IMAGE'])
 
+    @astro_data_tag
     def _tag_is_spect(self):
         grism = self.phu.get('GRISM', '')
         grpos = self.phu.get('GRISMPOS', '')
