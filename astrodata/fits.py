@@ -369,6 +369,7 @@ class FitsProvider(DataProvider):
             meta_obj = table
 
         if add is True:
+            name = table.header.get('EXTNAME')
             if name in self._tables:
                 self._tables[name].append(meta_obj)
             else:
