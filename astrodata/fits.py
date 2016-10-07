@@ -176,7 +176,18 @@ class FitsProvider(DataProvider):
             if nd.meta.get('name') == attribute:
                 return nd
 
-        raise AttributeError("{} not found in this object".format(attribute))
+        # Not quite. Ok, if we're working with single slices, let's look some things up
+        # in the ND object
+        if self._single:
+            if attribute.isupper() or attribute in ('data', 'mask', 'uncertainty'):
+                try:
+                    return getattr(self._nddata[0], attribute)
+                except AttributeError:
+                    # Not found. Will raise an exception...
+                    pass
+            raise AttributeError("{} not found in this object".format(attribute))
+        else:
+            raise AttributeError("{} not found in this object, or available only for sliced data".format(attribute))
 
     def __oper(self, operator, operand):
         if isinstance(operand, AstroData):
@@ -231,7 +242,7 @@ class FitsProvider(DataProvider):
         self._lazy_populate_object()
         if len(self._nddata) > 0:
             main_fmt = "{:6} {:24} {:17} {:14} {}"
-            other_fmt = "          {:21} {:17} {:14} {}"
+            other_fmt = "          .{:20} {:17} {:14} {}"
             print("\nPixels Extensions")
             print(main_fmt.format("Index", "Content", "Type", "Dimensions", "Format"))
             for pi in self._pixel_info():
@@ -239,7 +250,7 @@ class FitsProvider(DataProvider):
                 print(main_fmt.format(pi['idx'], main_obj['content'][:24], main_obj['type'][:17],
                                                  main_obj['dim'], main_obj['data_type']))
                 for other in pi['other']:
-                    print(other_fmt.format(other['attr'][:21], other['type'][:17], other['dim'],
+                    print(other_fmt.format(other['attr'][:20], other['type'][:17], other['dim'],
                                            other['data_type']))
 
         additional_ext = list(self._other_info())
@@ -247,7 +258,7 @@ class FitsProvider(DataProvider):
             print("\nOther Extensions")
             print("               Type        Dimensions")
             for (attr, type_, dim) in additional_ext:
-                print("{:14} {:11} {}".format(attr[:14], type_[:11], dim))
+                print(".{:13} {:11} {}".format(attr[:13], type_[:11], dim))
 
     def _pixel_info(self):
         self._lazy_populate_object()
