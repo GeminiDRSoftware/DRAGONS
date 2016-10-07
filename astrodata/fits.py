@@ -592,7 +592,7 @@ class FitsProvider(DataProvider):
         else: # Assume that it is going to be something we know how to deal with...
             return self._add_pixel_image(ext, append=True)
 
-class FitsLoader(FitsProvider):
+class FitsLoader(object):
     @staticmethod
     def provider_for_hdulist(hdulist):
         """
