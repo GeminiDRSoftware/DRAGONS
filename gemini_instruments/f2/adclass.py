@@ -127,14 +127,19 @@ class AstroDataF2(AstroDataGemini):
         # TODO: discover reason why this is hardcoded, rather than from keyword
         return value_filter('[1:2048,1:2048]')
 
-    data_section = array_section
-    detector_section = array_section
-
     # TODO: sort out the unit-handling here
     @astro_data_descriptor
     def central_wavelength(self, asMicrometers=False, asNanometers=False,
                            asAngstroms=False):
+        """
+        Returns the central wavelength in meters or the specified units
 
+        Returns
+        -------
+        float
+            The central wavelength setting
+
+        """
         unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
         if unit_arg_list.count(True) == 1:
             # Just one of the unit arguments was set to True. Return the
@@ -160,6 +165,67 @@ class AstroDataF2(AstroDataGemini):
         else:
             return convert_units('micrometers', central_wavelength,
                                      output_units)
+
+    @returns_list
+    @astro_data_descriptor
+    def data_section(self, pretty=False):
+        """
+        Returns the rectangular section that includes the pixels that would be
+        exposed to light.  If pretty is False, a tuple of 0-based coordinates
+        is returned with format (x1, x2, y1, y2).  If pretty is True, a keyword
+        value is returned without parsing as a string.  In this format, the
+        coordinates are generally 1-based.
+
+        One tuple or string is return per extension/array.  If more than one
+        array, the tuples/strings are return in a list.  Otherwise, the
+        section is returned as a tuple or a string.
+
+        Parameters
+        ----------
+        pretty : bool
+         If True, return the formatted string found in the header.
+
+        Returns
+        -------
+        tuple of integers or list of tuples
+            Location of the pixels exposed to light using Python slice values.
+
+        string or list of strings
+            Location of the pixels exposed to light using an IRAF section
+            format (1-based).
+
+        """
+        return array_section(self, pretty=pretty)
+
+    @returns_list
+    @astro_data_descriptor
+    def detector_section(self, pretty=False):
+        """
+        Returns the section covered by the detector relative to the whole
+        mosaic of detectors.  If pretty is False, a tuple of 0-based coordinates
+        is returned with format (x1, x2, y1, y2).  If pretty is True, a keyword
+        value is returned without parsing as a string.  In this format, the
+        coordinates are generally 1-based.
+
+        One tuple or string is return per extension/array.  If more than one
+        array, the tuples/strings are return in a list.  Otherwise, the
+        section is returned as a tuple or a string.
+
+        Parameters
+        ----------
+        pretty : bool
+         If True, return the formatted string found in the header.
+
+        Returns
+        -------
+        tuple of integers or list of tuples
+            Position of the detector using Python slice values.
+
+        string or list of strings
+            Position of the detector using an IRAF section format (1-based).
+
+        """
+        return array_section(self, pretty=pretty)
 
     @astro_data_descriptor
     def filter_name(self, stripID=False, pretty=False):
