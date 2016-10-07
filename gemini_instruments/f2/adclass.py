@@ -39,6 +39,7 @@ class AstroDataF2(AstroDataGemini):
         if self.phu.get('GRISM') == 'Open':
             return TagSet(['IMAGE'])
 
+    # Do not tag this as astro_data_tag. It's a helper function
     def _tag_is_spect(self):
         grism = self.phu.get('GRISM', '')
         grpos = self.phu.get('GRISMPOS', '')
@@ -125,6 +126,9 @@ class AstroDataF2(AstroDataGemini):
         value_filter = (str if pretty else sectionStrToIntList)
         # TODO: discover reason why this is hardcoded, rather than from keyword
         return value_filter('[1:2048,1:2048]')
+
+    data_section = array_section
+    detector_section = array_section
 
     # TODO: sort out the unit-handling here
     @astro_data_descriptor
@@ -282,8 +286,6 @@ class AstroDataF2(AstroDataGemini):
 
         # Return &-concatenated names if we still have two filter names
         return str(filter[0]) if len(filter)==1 else '{}&{}'.format(*filter)
-
-    test = filter_name
 
     @returns_list
     @astro_data_descriptor
