@@ -227,7 +227,7 @@ class AstroData(object):
 
     def __sub__(self, oper):
         copy = deepcopy(self)
-        copy += oper
+        copy -= oper
         return copy
 
     def __mul__(self, oper):
