@@ -134,6 +134,15 @@ class AstroDataF2(AstroDataGemini):
         """
         Returns the central wavelength in meters or the specified units
 
+        Parameters
+        ----------
+        asMicrometers : bool
+            If True, return the wavelength in microns
+        asNanometers : bool
+            If True, return the wavelength in nanometers
+        asAngstroms : bool
+            If True, return the wavelength in Angstroms
+
         Returns
         -------
         float
