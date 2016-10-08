@@ -19,78 +19,81 @@ import gemini_instruments
 import numpy as np
 import matplotlib.pyplot as plt
 
-from random import random
+def main():
+    filename = sys.argv[1]
 
-filename = sys.argv[1]
+    ad = astrodata.open(filename)
+    objcat = ad[0].OBJCAT
 
-ad = astrodata.open(filename)
-objcat = ad[0].OBJCAT
+    x = objcat.field("X_IMAGE")
+    y = objcat.field("Y_IMAGE")
+    fwhm_pix = objcat.field("FWHM_IMAGE")
+    fwhm_arcsec = objcat.field("FWHM_WORLD")
+    flux = objcat.field("FLUX_AUTO")
+    fluxerr = objcat.field("FLUXERR_AUTO")
+    ellip = objcat.field("ELLIPTICITY")
+    sxflag = objcat.field("FLAGS")
+    dqflag = objcat.field("IMAFLAGS_ISO")
+    class_star = objcat.field("CLASS_STAR")
+    area = objcat.field("ISOAREA_IMAGE")
 
-x = objcat.field("X_IMAGE")
-y = objcat.field("Y_IMAGE")
-fwhm_pix = objcat.field("FWHM_IMAGE")
-fwhm_arcsec = objcat.field("FWHM_WORLD")
-flux = objcat.field("FLUX_AUTO")
-fluxerr = objcat.field("FLUXERR_AUTO")
-ellip = objcat.field("ELLIPTICITY")
-sxflag = objcat.field("FLAGS")
-dqflag = objcat.field("IMAFLAGS_ISO")
-class_star = objcat.field("CLASS_STAR")
-area = objcat.field("ISOAREA_IMAGE")
+    # Source is good if ellipticity defined and <0.5
+    eflag = np.where((ellip>0.5)|(ellip==-999),1,0)
 
-# Source is good if ellipticity defined and <0.5
-eflag = np.where((ellip>0.5)|(ellip==-999),1,0)
+    # Source is good if probability of being a star >0.9
+    sflag = np.where(class_star<0.9,1,0)
 
-# Source is good if probability of being a star >0.9
-sflag = np.where(class_star<0.9,1,0)
+    # Source is good if isoarea < 20 pixels
+    aflag = np.where(area<20,1,0)
 
-# Source is good if isoarea < 20 pixels
-aflag = np.where(area<20,1,0)
-
-# Source is good if better than 50:1 signal to noise
-snflag = np.where(flux < 50*fluxerr, 1, 0)
-
-
-# Jump ahead a bit to calculate the clipped sources
-f = sxflag|dqflag|sflag|eflag|aflag|snflag
-g = (f==0)
-r = np.rec.fromarrays([fwhm_arcsec[g]], names=["fwhm_arcsec"])
-d = r["fwhm_arcsec"]
-m = d.mean()
-s = d.std()
-u = m + s
-l = m - s
-clipflag = np.where((fwhm_arcsec>u) | (fwhm_arcsec<l), 1, 0)
-# Now apply the clipping and re-calculate the mean and sigma
-f = f | clipflag
-g = (f==0)
-r = np.rec.fromarrays([fwhm_arcsec[g]], names=["fwhm_arcsec"])
-d = r["fwhm_arcsec"]
-m = d.mean()
-s = d.std()
-u = m + s
-l = m - s
-print("FWHM: %.2f +- %.2f" % (m, s)))
-
-data=[]
-labels = ('all', 'stars', 'hsnstars', 'clipped')
-flags = [ sxflag|dqflag, sxflag|dqflag|sflag|eflag|aflag, sxflag|dqflag|sflag|eflag|snflag|aflag, sxflag|dqflag|sflag|eflag|snflag|aflag|clipflag]
-
-bins = (0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4)
+    # Source is good if better than 50:1 signal to noise
+    snflag = np.where(flux < 50*fluxerr, 1, 0)
 
 
-for it in range(len(flags)):
+    # Jump ahead a bit to calculate the clipped sources
+    f = sxflag|dqflag|sflag|eflag|aflag|snflag
+    g = (f==0)
+    r = np.rec.fromarrays([fwhm_arcsec[g]], names=["fwhm_arcsec"])
+    d = r["fwhm_arcsec"]
+    m = d.mean()
+    s = d.std()
+    u = m + s
+    l = m - s
+    clipflag = np.where((fwhm_arcsec>u) | (fwhm_arcsec<l), 1, 0)
+    # Now apply the clipping and re-calculate the mean and sigma
+    f = f | clipflag
+    g = (f==0)
+    r = np.rec.fromarrays([fwhm_arcsec[g]], names=["fwhm_arcsec"])
+    d = r["fwhm_arcsec"]
+    m = d.mean()
+    s = d.std()
+    u = m + s
+    l = m - s
+    print("FWHM: %.2f +- %.2f" % (m, s))
 
-    # Use flag=0 to find good data
-    good = (flags[it]==0)
-    rec = np.rec.fromarrays([fwhm_arcsec[good]], names=["fwhm_arcsec"]) 
+    data=[]
+    labels = ('all', 'stars', 'hsnstars', 'clipped')
+    flags = [ sxflag|dqflag, sxflag|dqflag|sflag|eflag|aflag, sxflag|dqflag|sflag|eflag|snflag|aflag, sxflag|dqflag|sflag|eflag|snflag|aflag|clipflag]
 
-    data.append(rec['fwhm_arcsec'])
+    bins = (0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4)
 
-plt.xlabel('FWHM')
-plt.ylabel('Nstars')
-plt.hist(data, bins=bins, histtype='stepfilled', label=labels)
-plt.legend()
-plt.axvspan(l, u, 0.98, 1.0)
-plt.axvspan(m-0.01, m+0.01, 0.95, 1.0)
-plt.show()
+
+    for it in range(len(flags)):
+
+        # Use flag=0 to find good data
+        good = (flags[it]==0)
+        rec = np.rec.fromarrays([fwhm_arcsec[good]], names=["fwhm_arcsec"])
+
+        data.append(rec['fwhm_arcsec'])
+
+    plt.xlabel('FWHM')
+    plt.ylabel('Nstars')
+    plt.hist(data, bins=bins, histtype='stepfilled', label=labels)
+    plt.legend()
+    plt.axvspan(l, u, 0.98, 1.0)
+    plt.axvspan(m-0.01, m+0.01, 0.95, 1.0)
+    plt.show()
+
+
+if __name__ == '__main__':
+    sys.exit(main())
