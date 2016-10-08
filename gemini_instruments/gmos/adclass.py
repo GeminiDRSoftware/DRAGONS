@@ -367,7 +367,7 @@ class AstroDataGmos(AstroDataGemini):
             Exposure time.
 
         """
-        exp_time = float(getattr(self.hdu, self._keyword_for('exposure_time')))
+        exp_time = float(getattr(self.phu, self._keyword_for('exposure_time')))
         if exp_time < 0 or exp_time > 10000:
             raise ValueError('Invalid exposure time {}'.format(exp_time))
         return exp_time
@@ -570,7 +570,21 @@ class AstroDataGmos(AstroDataGemini):
 
     @astro_data_descriptor
     def read_speed_setting(self):
-        pass
+        """
+        Returns the setting for the readout speed (slow or fast)
+
+        Returns
+        -------
+        str
+            the setting for the readout speed
+        """
+        ampinteg = self.phu.AMPINTEG
+        detector = self.detector_name(pretty=True)
+        if detector == 'Hamamatsu':
+            setting = 'slow' if ampinteg > 8000 else 'fast'
+        else:
+            setting = 'slow' if ampinteg > 2000 else 'fast'
+        return setting
 
     @returns_list
     @astro_data_descriptor
@@ -596,7 +610,19 @@ class AstroDataGmos(AstroDataGemini):
         float
             right ascension in degrees
         """
-        pass
+        # Try the first (only if sliced) extension, then the PHU
+        try:
+            h = self[0].hdr
+            crval = h.CRVAL1
+            ctype = h.CTYPE1
+        except KeyError:
+            crval = self.phu.CRVAL1
+            ctype = self.phu.CTYPE1
+
+        if ctype == 'RA---TAN':
+            return crval
+        else:
+            raise ValueError('CTYPE1 keyword is not RA---TAN')
 
     @astro_data_descriptor
     def wcs_dec(self):
@@ -609,4 +635,16 @@ class AstroDataGmos(AstroDataGemini):
         float
             declination in degrees
         """
-        pass
+        # Try the first (only if sliced) extension, then the PHU
+        try:
+            h = self[0].hdr
+            crval = h.CRVAL2
+            ctype = h.CTYPE2
+        except KeyError:
+            crval = self.phu.CRVAL2
+            ctype = self.phu.CTYPE2
+
+        if ctype == 'DEC--TAN':
+            return crval
+        else:
+            raise ValueError('CTYPE2 keyword is not DEC--TAN')
