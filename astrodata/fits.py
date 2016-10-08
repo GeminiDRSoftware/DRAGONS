@@ -381,11 +381,12 @@ class FitsProvider(DataProvider):
     def _add_table(self, table, add=True):
         if isinstance(table, fits.BinTableHDU):
             meta_obj = Table(table.data, meta={'hdu': table.header})
+            name = table.header.get('EXTNAME')
         elif isinstance(table, Table):
             meta_obj = table
+            name = table.meta['hdu'].get('EXTNAME')
 
         if add is True:
-            name = table.header.get('EXTNAME')
             if name in self._tables:
                 self._tables[name].append(meta_obj)
             else:
