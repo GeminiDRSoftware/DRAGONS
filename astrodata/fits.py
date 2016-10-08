@@ -381,11 +381,12 @@ class FitsProvider(DataProvider):
     def _add_table(self, table, add=True):
         if isinstance(table, fits.BinTableHDU):
             meta_obj = Table(table.data, meta={'hdu': table.header})
+            name = table.header.get('EXTNAME')
         elif isinstance(table, Table):
             meta_obj = table
+            name = table.meta['hdu'].get('EXTNAME')
 
         if add is True:
-            name = table.header.get('EXTNAME')
             if name in self._tables:
                 self._tables[name].append(meta_obj)
             else:
@@ -592,7 +593,7 @@ class FitsProvider(DataProvider):
         else: # Assume that it is going to be something we know how to deal with...
             return self._add_pixel_image(ext, append=True)
 
-class FitsLoader(FitsProvider):
+class FitsLoader(object):
     @staticmethod
     def provider_for_hdulist(hdulist):
         """
@@ -607,6 +608,7 @@ class FitsLoader(FitsProvider):
         new_list = []
         highest_ver = 0
         recognized = set()
+
         for n, unit in enumerate(hdulist):
             ev = unit.header.get('EXTVER')
             eh = unit.header.get('EXTNAME')
@@ -625,7 +627,7 @@ class FitsLoader(FitsProvider):
                 highest_ver += 1
                 if 'EXTNAME' not in unit.header:
                     unit.header['EXTNAME'] = ('SCI', 'Added by AstroData')
-                if unit.header.get('EXTNAME') in (-1, None):
+                if unit.header.get('EXTVER') in (-1, None):
                     unit.header['EXTVER'] = (highest_ver, 'Added by AstroData')
 
             new_list.append(unit)
