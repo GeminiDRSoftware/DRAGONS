@@ -11,7 +11,8 @@
 # Paul Hirst 20120321
 import math
 import sys
-from astrodata import AstroData
+import astrodata
+import gemini_instruments
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -19,7 +20,7 @@ from random import random
 
 filename = sys.argv[1]
 
-ad = AstroData(filename)
+ad = astrodata.open(filename)
 objcat = ad['OBJCAT']
 
 if (ad['REFCAT'] is None):
@@ -54,7 +55,7 @@ if(len(mag) == 0):
 
 # Now apply the exposure time and nom_at_ext corrections to mag
 et = float(ad.exposure_time())
-if 'GMOS_NODANDSHUFFLE' in ad.types:
+if 'GMOS_NODANDSHUFFLE' in ad.tags:
     print "Imaging Nod-And-Shuffle. Photometry may be dubious"
     et /= 2.0
 
@@ -75,7 +76,7 @@ refmag_trim = refmag[np.flatnonzero(zp_trim)]
 refmagerr_trim = refmagerr[np.flatnonzero(zp_trim)]
 zp_trim = zp[np.flatnonzero(zp_trim)]
 
-nzp = float(ad.nominal_photometric_zeropoint())
+nzp = float(ad.nominal_photometric_zeropoint()[0])
 
 plt.figure(1)
 

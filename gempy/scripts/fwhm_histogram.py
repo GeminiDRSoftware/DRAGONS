@@ -14,7 +14,8 @@
 #
 # Paul Hirst 20120321
 import sys
-from astrodata import AstroData
+import astrodata
+import gemini_instruments
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -22,20 +23,20 @@ from random import random
 
 filename = sys.argv[1]
 
-ad = AstroData(filename)
-objcat = ad['OBJCAT']
+ad = astrodata.open(filename)
+objcat = ad[0].OBJCAT
 
-x = objcat.data.field("X_IMAGE")
-y = objcat.data.field("Y_IMAGE")
-fwhm_pix = objcat.data.field("FWHM_IMAGE")
-fwhm_arcsec = objcat.data.field("FWHM_WORLD")
-flux = objcat.data.field("FLUX_AUTO")
-fluxerr = objcat.data.field("FLUXERR_AUTO")
-ellip = objcat.data.field("ELLIPTICITY")
-sxflag = objcat.data.field("FLAGS")
-dqflag = objcat.data.field("IMAFLAGS_ISO")
-class_star = objcat.data.field("CLASS_STAR")
-area = objcat.data.field("ISOAREA_IMAGE")
+x = objcat.field("X_IMAGE")
+y = objcat.field("Y_IMAGE")
+fwhm_pix = objcat.field("FWHM_IMAGE")
+fwhm_arcsec = objcat.field("FWHM_WORLD")
+flux = objcat.field("FLUX_AUTO")
+fluxerr = objcat.field("FLUXERR_AUTO")
+ellip = objcat.field("ELLIPTICITY")
+sxflag = objcat.field("FLAGS")
+dqflag = objcat.field("IMAFLAGS_ISO")
+class_star = objcat.field("CLASS_STAR")
+area = objcat.field("ISOAREA_IMAGE")
 
 # Source is good if ellipticity defined and <0.5
 eflag = np.where((ellip>0.5)|(ellip==-999),1,0)

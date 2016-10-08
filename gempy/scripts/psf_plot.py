@@ -2,7 +2,8 @@
 # This utility plots the psf, radial profile and encircled energy profile
 
 import sys
-from astrodata import AstroData
+import astrodata
+import gemini_instruments
 import scipy.ndimage
 import numpy as np
 import math
@@ -11,16 +12,14 @@ import matplotlib.image as mpimg
 
 filename = sys.argv[1]
 
-ad = AstroData(filename)
-objcat = ad['OBJCAT']
-catx = objcat.data.field("X_IMAGE")
-caty = objcat.data.field("Y_IMAGE")
-catfwhm = objcat.data.field("FWHM_IMAGE")
-catbg = objcat.data.field("BACKGROUND")
-cattotalflux = objcat.data.field("FLUX_AUTO")
-catmaxflux = objcat.data.field("FLUX_MAX")
-
-sci = ad['SCI']
+ad = astrodata.open(filename)
+objcat = ad[0].OBJCAT
+catx = objcat.field("X_IMAGE")
+caty = objcat.field("Y_IMAGE")
+catfwhm = objcat.field("FWHM_IMAGE")
+catbg = objcat.field("BACKGROUND")
+cattotalflux = objcat.field("FLUX_AUTO")
+catmaxflux = objcat.field("FLUX_MAX")
 
 i = int(raw_input('OBJCAT no: '))
 i -= 1
@@ -50,12 +49,12 @@ yc -= 0.5
 print "xc, yc: %.2f, %.2f" % (xc, yc)
 
 size=10
-stamp=sci.data[int(yc)-size:int(yc)+size,int(xc)-size:int(xc)+size]
+stamp=ad[0].data[int(yc)-size:int(yc)+size,int(xc)-size:int(xc)+size]
 
 # Print a small pixel table:
 #print "%8s %8d %8d %8d" % ('', int (xc-1), int(xc), int(xc+1))
 #for y in range(int (yc)-1, int(yc)+2):
-    #print "%8d %8f %8f %8f" % (y, sci.data[y,int (xc-1)], sci.data[y,int (xc)], sci.data[y,int (xc+1)])
+    #print "%8d %8f %8f %8f" % (y, ad[0].data[y,int (xc-1)], ad[0].data[y,int (xc)], ad[0].data[y,int (xc+1)])
   
 plt.figure(1)
 plt.subplot(1, 3, 1)
@@ -74,7 +73,7 @@ for y in range(int(yc)-size, int(yc)+size):
     d = math.sqrt(dx*dx + dy*dy)
     rpr.append(d)
     # And record the flux above the background
-    rpv.append(sci.data[y, x] - bg)
+    rpv.append(ad[0].data[y, x] - bg)
 
 halfflux = maxflux/2.0
 

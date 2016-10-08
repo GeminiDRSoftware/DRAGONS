@@ -1,8 +1,11 @@
+#!/usr/bin/env python
+
 import sys
 import datetime
 import math
 import numpy as np
-from astrodata import AstroData
+import astrodata
+import gemini_instruments
 
 def profile_numpy(data,xc,yc,bg,tf,mf,stamp_size=10):
     
@@ -144,16 +147,15 @@ def profile_loop(data,xc,yc,bg,tf,mf,sz):
     return (hwhm, ee50r)
 
 filename = sys.argv[1]
-ad = AstroData(filename)
-objcat = ad['OBJCAT',1]
-sci = ad['SCI',1]
-catx = objcat.data.field("X_IMAGE")
-caty = objcat.data.field("Y_IMAGE")
-catfwhm = objcat.data.field("FWHM_IMAGE")
-catbg = objcat.data.field("BACKGROUND")
-cattotalflux = objcat.data.field("FLUX_AUTO")
-catmaxflux = objcat.data.field("FLUX_MAX")
-data = sci.data
+ad = astrodata.open(filename)
+objcat = ad[0].OBJCAT
+data = ad[0].data
+catx = objcat.field("X_IMAGE")
+caty = objcat.field("Y_IMAGE")
+catfwhm = objcat.field("FWHM_IMAGE")
+catbg = objcat.field("BACKGROUND")
+cattotalflux = objcat.field("FLUX_AUTO")
+catmaxflux = objcat.field("FLUX_MAX")
 
 nobj = len(catx)
 print "%d objects" % nobj
@@ -163,7 +165,7 @@ print 'numpy'
 now = datetime.datetime.now()
 hwhm_list = []
 e50r_list = []
-for i in range(0,len(objcat.data)):
+for i in range(0,len(objcat)):
     if i>20:
         break
     xc = catx[i]
@@ -190,7 +192,7 @@ print 'loopy'
 now = datetime.datetime.now()
 hwhm_list = []
 e50r_list = []
-for i in range(0,len(objcat.data)):
+for i in range(0,len(objcat)):
     if i>20:
         break
     xc = catx[i]
