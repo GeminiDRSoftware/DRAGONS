@@ -29,7 +29,7 @@ bg = catbg[i]
 totalflux = cattotalflux[i]
 maxflux = catmaxflux[i]
 
-print "X, Y:  %.2f, %.2f" % (xc, yc)
+print("X, Y:  %.2f, %.2f" % (xc, yc))
 
 xc = raw_input('X: ')
 yc = raw_input('Y: ')
@@ -46,15 +46,15 @@ else:
 # co-ords in python are 0 based not 1 based
 xc -= 0.5
 yc -= 0.5
-print "xc, yc: %.2f, %.2f" % (xc, yc)
+print("xc, yc: %.2f, %.2f" % (xc, yc))
 
 size=10
 stamp=ad[0].data[int(yc)-size:int(yc)+size,int(xc)-size:int(xc)+size]
 
 # Print a small pixel table:
-#print "%8s %8d %8d %8d" % ('', int (xc-1), int(xc), int(xc+1))
+#print("%8s %8d %8d %8d" % ('', int (xc-1), int(xc), int(xc+1)))
 #for y in range(int (yc)-1, int(yc)+2):
-    #print "%8d %8f %8f %8f" % (y, ad[0].data[y,int (xc-1)], ad[0].data[y,int (xc)], ad[0].data[y,int (xc+1)])
+    #print("%8d %8f %8f %8f" % (y, ad[0].data[y,int (xc-1)], ad[0].data[y,int (xc)], ad[0].data[y,int (xc+1)]))
   
 plt.figure(1)
 plt.subplot(1, 3, 1)
@@ -88,16 +88,16 @@ below = 0
 for i in range(len(rpr)):
   if((rpv[sort[i]] < halfflux) and inner is None):
     inner = rpr[sort[i]]
-    print "inner: %.2f" % rpr[sort[i]]
+    print("inner: %.2f" % rpr[sort[i]])
   if((below<10) and (rpv[sort[i]] > halfflux)):
     outer = rpr[sort[i]]
-    print "outer: %.2f" % rpr[sort[i]]
+    print("outer: %.2f" % rpr[sort[i]])
   if(rpv[sort[i]] < halfflux):
     below += 1
 
 hwhm = (inner + outer) / 2.0
 
-print "HWHM: %.2f   FWHM: %.2f" % (hwhm, hwhm*2.0)
+print("HWHM: %.2f   FWHM: %.2f" % (hwhm, hwhm*2.0))
 
 plt.subplot(1,3,2)
 plt.scatter(rpr, rpv)
@@ -117,7 +117,7 @@ bgsub = stamp - bg
 rp = np.array([rpr, rpv], dtype=np.float32)
 sort = np.argsort(rp[0])
 
-print "Total Flux = %.1f" % totalflux
+print("Total Flux = %.1f" % totalflux)
 
 halfflux = totalflux / 2.0
 
@@ -125,13 +125,13 @@ halfflux = totalflux / 2.0
 flux=0
 i=0
 while (flux < halfflux):
-  #print "adding in r=%.2f v=%.1f" % (rp[0][sort[i]], rp[1][sort[i]]-bg)
+  #print("adding in r=%.2f v=%.1f" % (rp[0][sort[i]], rp[1][sort[i]]-bg))
   flux+= rp[1][sort[i]]
   i+=1
 
 ee50r = rp[0][sort[i]]
 
-print "EE50 radius: %.2f       diameter: %.2f" % (ee50r, 2.0*ee50r)
+print("EE50 radius: %.2f       diameter: %.2f" % (ee50r, 2.0*ee50r))
 
 # Now step through to make an encircled energy plot
 eer=[]

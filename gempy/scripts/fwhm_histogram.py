@@ -70,7 +70,7 @@ m = d.mean()
 s = d.std()
 u = m + s
 l = m - s
-print "FWHM: %.2f +- %.2f" % (m, s)
+print("FWHM: %.2f +- %.2f" % (m, s)))
 
 data=[]
 labels = ('all', 'stars', 'hsnstars', 'clipped')

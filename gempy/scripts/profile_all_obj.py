@@ -6,6 +6,7 @@ import math
 import numpy as np
 import astrodata
 import gemini_instruments
+from __future__ import print_function
 
 def profile_numpy(data,xc,yc,bg,tf,mf,stamp_size=10):
     
@@ -57,7 +58,7 @@ def profile_numpy(data,xc,yc,bg,tf,mf,stamp_size=10):
         if possible_outer.size>0:
             outer = np.max(possible_outer)
             hwhm = (inner + outer) / 2.0
-            print inner, outer
+            print(inner, outer)
         else:
             hwhm = None
     else:
@@ -109,11 +110,11 @@ def profile_loop(data,xc,yc,bg,tf,mf,sz):
     for i in range(len(rpr)):
         if((rpv[sort[i]] <= halfflux) and inner is None):
             inner = rpr[sort[i]]
-            #print "inner: %.2f" % rpr[sort[i]], i
+            #print("inner: %.2f" % rpr[sort[i]], i)
 
         if((below<10) and (rpv[sort[i]] >= halfflux)):
             outer = rpr[sort[i]]
-            #print "outer: %.2f" % rpr[sort[i]]
+            #print("outer: %.2f" % rpr[sort[i]])
         if(rpv[sort[i]] < halfflux):
             below += 1
         if below>10:
@@ -122,7 +123,7 @@ def profile_loop(data,xc,yc,bg,tf,mf,sz):
     if inner is None or outer is None:
         hwhm = None
     else:
-        print inner, outer
+        print(inner, outer)
         hwhm = (inner + outer) / 2.0
 
     # Now make the radial profile into a 2d numpy array
@@ -135,7 +136,7 @@ def profile_loop(data,xc,yc,bg,tf,mf,sz):
     flux=0
     i=0
     while (flux < halfflux and i<len(rpr)):
-      #print "adding in r=%.2f v=%.1f" % (rp[0][sort[i]], rp[1][sort[i]]-bg)
+      #print("adding in r=%.2f v=%.1f" % (rp[0][sort[i]], rp[1][sort[i]]-bg))
       flux+= rp[1][sort[i]]
       i+=1
 
@@ -158,10 +159,10 @@ cattotalflux = objcat.field("FLUX_AUTO")
 catmaxflux = objcat.field("FLUX_MAX")
 
 nobj = len(catx)
-print "%d objects" % nobj
+print("%d objects" % nobj)
 
 # the numpy way
-print 'numpy'
+print('numpy')
 now = datetime.datetime.now()
 hwhm_list = []
 e50r_list = []
@@ -178,17 +179,17 @@ for i in range(0,len(objcat)):
     yc -= 0.5
 
     hwhm,e50r = profile_numpy(data,xc,yc,bg,tf,mf)
-    #print i,hwhm,e50r
+    #print(i,hwhm,e50r)
     if (hwhm is not None and e50r is not None):
         hwhm_list.append(hwhm)
         e50r_list.append(e50r)
-print "  mean HWHM %.2f" % np.mean(hwhm_list)
-print "  mean E50R %.2f" % np.mean(e50r_list)
+print("  mean HWHM %.2f" % np.mean(hwhm_list))
+print("  mean E50R %.2f" % np.mean(e50r_list))
 elap = datetime.datetime.now() - now
-print "  %.2f s" % ((elap.seconds*10**6 + elap.microseconds)/10.**6)
+print("  %.2f s" % ((elap.seconds*10**6 + elap.microseconds)/10.**6))
 
 # the loopy way
-print 'loopy'
+print('loopy')
 now = datetime.datetime.now()
 hwhm_list = []
 e50r_list = []
@@ -207,12 +208,12 @@ for i in range(0,len(objcat)):
     sz=10
 
     hwhm,e50r = profile_loop(data,xc,yc,bg,tf,mf,sz)
-    #print i,hwhm,e50r
+    #print(i,hwhm,e50r)
     if (hwhm is not None and e50r is not None):
         hwhm_list.append(hwhm)
         e50r_list.append(e50r)
 
-print "  mean HWHM %.2f" % np.mean(hwhm_list)
-print "  mean E50R %.2f" % np.mean(e50r_list)
+print("  mean HWHM %.2f" % np.mean(hwhm_list))
+print("  mean E50R %.2f" % np.mean(e50r_list))
 elap = datetime.datetime.now() - now
-print "  %.2f s" % ((elap.seconds*10**6 + elap.microseconds)/10.**6)
+print("  %.2f s" % ((elap.seconds*10**6 + elap.microseconds)/10.**6))
