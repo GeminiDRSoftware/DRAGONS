@@ -317,10 +317,8 @@ class AstroDataF2(AstroDataGemini):
         """
         Returns a string representing a group of data that are compatible
         with each other.  This is used when stacking, for example.  Each
-        instrument and mode of observation will have its own rules.
-
-        At the Gemini class level, the default is to group by the Gemini
-        observation ID.
+        instrument and mode of observation will have its own rules. F2's
+        is quite a mouthful.
 
         Returns
         -------
