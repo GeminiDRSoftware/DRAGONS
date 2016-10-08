@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import sys
 import datetime
 import math
 import numpy as np
 import astrodata
 import gemini_instruments
-from __future__ import print_function
 
 def profile_numpy(data,xc,yc,bg,tf,mf,stamp_size=10):
     
@@ -147,73 +148,78 @@ def profile_loop(data,xc,yc,bg,tf,mf,sz):
 
     return (hwhm, ee50r)
 
-filename = sys.argv[1]
-ad = astrodata.open(filename)
-objcat = ad[0].OBJCAT
-data = ad[0].data
-catx = objcat.field("X_IMAGE")
-caty = objcat.field("Y_IMAGE")
-catfwhm = objcat.field("FWHM_IMAGE")
-catbg = objcat.field("BACKGROUND")
-cattotalflux = objcat.field("FLUX_AUTO")
-catmaxflux = objcat.field("FLUX_MAX")
+def main():
+    filename = sys.argv[1]
+    ad = astrodata.open(filename)
+    objcat = ad[0].OBJCAT
+    data = ad[0].data
+    catx = objcat.field("X_IMAGE")
+    caty = objcat.field("Y_IMAGE")
+    catfwhm = objcat.field("FWHM_IMAGE")
+    catbg = objcat.field("BACKGROUND")
+    cattotalflux = objcat.field("FLUX_AUTO")
+    catmaxflux = objcat.field("FLUX_MAX")
 
-nobj = len(catx)
-print("%d objects" % nobj)
+    nobj = len(catx)
+    print("%d objects" % nobj)
 
-# the numpy way
-print('numpy')
-now = datetime.datetime.now()
-hwhm_list = []
-e50r_list = []
-for i in range(0,len(objcat)):
-    if i>20:
-        break
-    xc = catx[i]
-    yc = caty[i]
-    bg = catbg[i]
-    tf = cattotalflux[i]
-    mf = catmaxflux[i]
+    # the numpy way
+    print('numpy')
+    now = datetime.datetime.now()
+    hwhm_list = []
+    e50r_list = []
+    for i in range(0,len(objcat)):
+        if i>20:
+            break
+        xc = catx[i]
+        yc = caty[i]
+        bg = catbg[i]
+        tf = cattotalflux[i]
+        mf = catmaxflux[i]
 
-    xc -= 0.5
-    yc -= 0.5
+        xc -= 0.5
+        yc -= 0.5
 
-    hwhm,e50r = profile_numpy(data,xc,yc,bg,tf,mf)
-    #print(i,hwhm,e50r)
-    if (hwhm is not None and e50r is not None):
-        hwhm_list.append(hwhm)
-        e50r_list.append(e50r)
-print("  mean HWHM %.2f" % np.mean(hwhm_list))
-print("  mean E50R %.2f" % np.mean(e50r_list))
-elap = datetime.datetime.now() - now
-print("  %.2f s" % ((elap.seconds*10**6 + elap.microseconds)/10.**6))
+        hwhm,e50r = profile_numpy(data,xc,yc,bg,tf,mf)
+        #print(i,hwhm,e50r)
+        if (hwhm is not None and e50r is not None):
+            hwhm_list.append(hwhm)
+            e50r_list.append(e50r)
+    print("  mean HWHM %.2f" % np.mean(hwhm_list))
+    print("  mean E50R %.2f" % np.mean(e50r_list))
+    elap = datetime.datetime.now() - now
+    print("  %.2f s" % ((elap.seconds*10**6 + elap.microseconds)/10.**6))
 
-# the loopy way
-print('loopy')
-now = datetime.datetime.now()
-hwhm_list = []
-e50r_list = []
-for i in range(0,len(objcat)):
-    if i>20:
-        break
-    xc = catx[i]
-    yc = caty[i]
-    bg = catbg[i]
-    tf = cattotalflux[i]
-    mf = catmaxflux[i]
+    # the loopy way
+    print('loopy')
+    now = datetime.datetime.now()
+    hwhm_list = []
+    e50r_list = []
+    for i in range(0,len(objcat)):
+        if i>20:
+            break
+        xc = catx[i]
+        yc = caty[i]
+        bg = catbg[i]
+        tf = cattotalflux[i]
+        mf = catmaxflux[i]
 
-    xc -= 0.5
-    yc -= 0.5
+        xc -= 0.5
+        yc -= 0.5
 
-    sz=10
+        sz=10
 
-    hwhm,e50r = profile_loop(data,xc,yc,bg,tf,mf,sz)
-    #print(i,hwhm,e50r)
-    if (hwhm is not None and e50r is not None):
-        hwhm_list.append(hwhm)
-        e50r_list.append(e50r)
+        hwhm,e50r = profile_loop(data,xc,yc,bg,tf,mf,sz)
+        #print(i,hwhm,e50r)
+        if (hwhm is not None and e50r is not None):
+            hwhm_list.append(hwhm)
+            e50r_list.append(e50r)
 
-print("  mean HWHM %.2f" % np.mean(hwhm_list))
-print("  mean E50R %.2f" % np.mean(e50r_list))
-elap = datetime.datetime.now() - now
-print("  %.2f s" % ((elap.seconds*10**6 + elap.microseconds)/10.**6))
+    print("  mean HWHM %.2f" % np.mean(hwhm_list))
+    print("  mean E50R %.2f" % np.mean(e50r_list))
+    elap = datetime.datetime.now() - now
+    print("  %.2f s" % ((elap.seconds*10**6 + elap.microseconds)/10.**6))
+
+
+if __name__ == '__main__':
+    sys.exit(main())
