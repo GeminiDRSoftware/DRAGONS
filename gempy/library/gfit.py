@@ -636,18 +636,24 @@ class Pix2coord():
              ef(1300,400)   # Evaluate wavelength at pixel 1300 at row 400
         """
 
-        tbh = ad['WAVECAL',1].header
-        pixsample = np.asfarray(tbh['pixrange'].split())
-        self.fitname = tbh['fitname']
-        self.order = tbh['fitorder']
-        self.coeff = np.asfarray(tbh['fitcoeff'].split())
+        # TODO: refactored for new astrodata, but not tested.
+
+        # KL: Is there one WAVECAL per extension or per file?
+        # KL: Refactoring with the slice since it seems implied but it is
+        #     not clear at all.  Later, no slice is used.  Was this tried
+        #     on MOS data, ever?
+        wavecaltbhdr = ad[0].WAVECAL.meta['hdu']
+        pixsample = np.asfarray(wavecaltbhdr['pixrange'].split())
+        self.fitname = wavecaltbhdr['fitname']
+        self.order = wavecaltbhdr['fitorder']
+        self.coeff = np.asfarray(wavecaltbhdr['fitcoeff'].split())
         # Set up the pix2wavelength evaluator function 
         xmin, xmax = pixsample
         self.xnorm = lambda x: 2.*(x - xmin) / (xmax-xmin) - 1
 
         f3dcoeff = []
         for k in ['A', 'B', 'C', 'D', 'E', 'F']:
-            f3dcoeff.append(tbh['COEFF_'+k])
+            f3dcoeff.append(wavecaltbhdr['COEFF_'+k])
         self.f3dcoeff = np.asfarray(f3dcoeff)
 
      
@@ -1109,20 +1115,22 @@ class Eval2(object):
         pass
 
 def TTread_wavecal(ad):
+    """read WAVECAL extension"""
+    #TODO: refactored for new astrodata, not tested.
 
-    #read WAVECAL extension
-
-    data = ad['WAVECAL'].data
+    # KL: question - Isn't WAVECAL associate to extver?  Shouldn't there
+    # be some slicing?
+    wavecaltb = ad.WAVECAL
 
     ev_function={}
     for row in [0,1]:
-        tb = data[row] 
-        order = tb.field('order')
-        coeff = tb.field('coeff')
-        xlim = tb.field('xlim')
-        ylim = tb.field('ylim')
-        fitname = tb.field('fitname')
-        mode = tb.field('fitmode')
+        onerow = wavecaltb[row]
+        order = onerow['order']
+        coeff = onerow['coeff']
+        xlim = onerow['xlim']
+        ylim = onerow['ylim']
+        fitname = onerow['fitname']
+        mode = onerow['fitmode']
         ev_function[mode] = Eval2(fitname,order,coeff,xlim,ylim)
 
     return ev_function
