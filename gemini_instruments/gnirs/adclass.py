@@ -151,7 +151,7 @@ class AstroDataGnirs(AstroDataGemini):
             Position of extension(s) using an IRAF section format (1-based)
 
         """
-        return data_section(self, pretty=pretty)
+        return self.data_section(pretty=pretty)
 
     @astro_data_descriptor
     def detector_section(self, pretty=False):
@@ -180,7 +180,7 @@ class AstroDataGnirs(AstroDataGemini):
             Position of the detector using an IRAF section format (1-based).
 
         """
-        return data_section(self, pretty=pretty)
+        return self.data_section(pretty=pretty)
 
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
