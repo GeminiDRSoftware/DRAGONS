@@ -175,7 +175,6 @@ class AstroDataF2(AstroDataGemini):
             return convert_units('micrometers', central_wavelength,
                                      output_units)
 
-    @returns_list
     @astro_data_descriptor
     def data_section(self, pretty=False):
         """
@@ -204,9 +203,8 @@ class AstroDataF2(AstroDataGemini):
             format (1-based).
 
         """
-        return array_section(self, pretty=pretty)
+        return self.array_section(pretty=pretty)
 
-    @returns_list
     @astro_data_descriptor
     def detector_section(self, pretty=False):
         """
@@ -234,7 +232,7 @@ class AstroDataF2(AstroDataGemini):
             Position of the detector using an IRAF section format (1-based).
 
         """
-        return array_section(self, pretty=pretty)
+        return self.array_section(pretty=pretty)
 
     @astro_data_descriptor
     def filter_name(self, stripID=False, pretty=False):
@@ -337,8 +335,8 @@ class AstroDataF2(AstroDataGemini):
         call_pretty_version_list = ["filter_name", "disperser",
                                     "focal_plane_mask"]
 
-        # Descriptors to be returned as an ordered list using descriptor
-        # 'as_list' method.
+        # Descriptors to be returned as a list, even if a single extension
+        # TODO: Maybe this descriptor should just barf if run on a slice.
         convert_to_list_list = ["detector_section"]
 
         # Other descriptors required for spectra
@@ -364,12 +362,13 @@ class AstroDataF2(AstroDataGemini):
         ## This requires updating to cover all spectral types
         ## Possible updates to the classification system will make this usable
         ## at the Gemini level
-        if "F2_DARK" in self.tags:
+        tags = self.tags
+        if "DARK" in tags:
             id_descriptor_list = dark_id
-        elif "F2_IMAGE_FLAT" in self.tags:
+        elif 'IMAGE' in tags and 'FLAT' in tags:
             id_descriptor_list = flat_id
             additional_item_to_include = "F2_IMAGE_FLAT"
-        elif "F2_IMAGE_TWILIGHT" in self.tags:
+        elif 'IMAGE' in tags and 'TWILIGHT' in tags:
             id_descriptor_list = flat_twilight_id
             additional_item_to_include = "F2_IMAGE_TWILIGHT"
         else:
@@ -384,14 +383,14 @@ class AstroDataF2(AstroDataGemini):
             kw = {}
             if descriptor in call_pretty_version_list:
                 kw['pretty'] = True
-            descriptor_object = getattr(dataset, descriptor)(**kw)
+            descriptor_object = getattr(self, descriptor)(**kw)
 
-            # In some cases require the information as a list
-            # TODO: check this. Since we don't have DVs, isn't it a list anyway?
-            if descriptor in convert_to_list_list:
-                descriptor_object = descriptor_object.as_list()
+            # Ensure we get a list, even if only looking at one extension
+            if (descriptor in convert_to_list_list and
+                    not isinstance(descriptor_object, list)):
+                descriptor_object = [descriptor_object]
 
-            # Convert DV value to a string and store
+            # Convert descriptor to a string and store
             descriptor_object_string_list.append(str(descriptor_object))
 
         # Add in any none descriptor related information
