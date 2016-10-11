@@ -21,18 +21,22 @@ from random import random
 filename = sys.argv[1]
 
 ad = astrodata.open(filename)
-objcat = ad['OBJCAT']
+objcat = ad[0].OBJCAT
 
-if (ad['REFCAT'] is None):
-  print "No Reference Catalog in this file, thus no Zeropoints. Sorry"
-  sys.exit(0)
+# check if there's a REFCAT.  If not, then the OBJCAT will be
+# incomplete, so no point in continuing.
+try:
+    refcat = ad.REFCAT
+except:
+    print "No Reference Catalog in this file, thus no Zeropoints. Sorry"
+    sys.exit(0)
 
-mag = objcat.data.field("MAG_AUTO")
-magerr = objcat.data.field("MAGERR_AUTO")
-refmag = objcat.data.field("REF_MAG")
-refmagerr = objcat.data.field("REF_MAG_ERR")
-sxflag = objcat.data.field("FLAGS")
-dqflag = objcat.data.field("IMAFLAGS_ISO")
+mag = objcat.field("MAG_AUTO")
+magerr = objcat.field("MAGERR_AUTO")
+refmag = objcat.field("REF_MAG")
+refmagerr = objcat.field("REF_MAG_ERR")
+sxflag = objcat.field("FLAGS")
+dqflag = objcat.field("IMAFLAGS_ISO")
 
 # set mag to None where we don't want to use the object
 mag = np.where((mag==-999), None, mag)
