@@ -689,6 +689,13 @@ class FitsLoader(object):
 
         return provider
 
+fits_simple_descriptors = dict(
+    instrument = KeywordCallableWrapper('INSTRUME'),
+    object = KeywordCallableWrapper('OBJECT'),
+    telescope = KeywordCallableWrapper('TELESCOP'),
+)
+
+@simple_descriptor_mapping(**fits_simple_descriptors)
 class AstroDataFits(AstroData):
     # Derived classes may provide their own __keyword_dict. Being a private
     # variable, each class will preserve its own, and there's no risk of

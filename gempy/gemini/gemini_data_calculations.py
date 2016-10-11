@@ -31,7 +31,7 @@ from datetime import datetime
 from astrodata.utils import Errors
 from astrodata.utils.gemconstants import SCI
 
-import gemini_metadata_utils as gmu
+import old_gempy.gemini.gemini_metadata_utils as gmu
 # ------------------------------------------------------------------------------
 try:
     from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSAmpTables
