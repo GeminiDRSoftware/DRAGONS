@@ -7,7 +7,8 @@ from functools import partial, wraps
 from .core import *
 
 from astropy.io import fits
-from astropy.io.fits import HDUList, PrimaryHDU, ImageHDU, Header, DELAYED
+from astropy.io.fits import HDUList, Header, DELAYED
+from astropy.io.fits import PrimaryHDU, ImageHDU, BinTableHDU
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
 from astropy.nddata import NDDataRef as NDDataObject
@@ -527,14 +528,39 @@ class FitsProvider(DataProvider):
 
     @force_load
     def to_hdulist(self):
+        def new_hdu(data, header, name=None, htype=ImageHDU):
+            i = htype(data=DELAYED, header=header.copy(), name=name)
+            i.data = data
+            return i
+
         hlst = HDUList()
         hlst.append(PrimaryHDU(header=self._header[0], data=DELAYED))
 
         for ext in self._nddata:
-            # TODO: Extend this to cover all cases
-            i = ImageHDU(data=DELAYED, header=ext.meta['hdu'])
-            i.data = ext.data
-            hlst.append(i)
+            header, ver = ext.meta['hdu'], ext.meta['ver']
+
+            hlst.append(new_hdu(ext.data, header))
+            if ext.uncertainty is not None:
+                hlst.append(new_hdu(ext.uncertainty.array ** 2, header, 'VAR'))
+            if ext.mask is not None:
+                hlst.append(new_hdu(ext.mask, header, 'DQ'))
+
+            for name in ext.meta.get('other', ()):
+                other = getattr(ext, name)
+                if isinstance(other, Table):
+                    hlst.append(new_hdu(other.as_array(),
+                                        other.meta['hdu'],
+                                        htype=BinTableHDU))
+                elif isinstance(other, NDDataObject):
+                    hlst.append(new_hdu(other.data, other.meta['hdu']))
+                else:
+                    raise ValueError("I don't know how to write back an object of type {}".format(type(other)))
+
+        if self._tables is not None:
+            for name, table in sorted(self._tables.items()):
+                hlst.append(new_hdu(table.as_array(),
+                                    table.meta['hdu'],
+                                    htype=BinTableHDU))
 
         return hlst
 
@@ -760,5 +786,6 @@ class AstroDataFits(AstroData):
             filename = self.path
         self._dataprov.to_hdulist().writeto(filename, clobber=clobber)
 
+# TODO: Remove this when we're sure that there are no external uses
 def write(filename, ad_object, clobber=False):
     ad_object._dataprov.to_hdulist().writeto(filename, clobber=clobber)

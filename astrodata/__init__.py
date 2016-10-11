@@ -4,6 +4,7 @@ __all__ = ['AstroData', 'AstroDataError', 'TagSet',
            'open', 'create', 'write']
 
 from .core import *
+# TODO: Remove 'write' when there's nothing else using it
 from .fits import AstroDataFits, KeywordCallableWrapper, write
 
 from .factory import AstroDataFactory
