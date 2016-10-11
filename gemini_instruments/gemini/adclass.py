@@ -238,15 +238,15 @@ class AstroDataGemini(AstroDataFits):
         if self.phu.OBSTYPE == 'OBJECT':
             return TagSet(['PROCESSED_SCIENCE'])
 
-    # TODO: rename function to _parse_section.  Refactor all descriptors using it.
     def _parse_section(self, descriptor_name, keyword, pretty):
         try:
             value_filter = (str if pretty else sectionStrToIntList)
-            ret = [(None if raw is None else value_filter(raw))
-                    for raw in self.hdr.get(keyword)]
-            if len(ret) == 1:
-                return ret[0]
-            return ret
+            process_fn = lambda x: (None if x is None else value_filter(x))
+            sections = self.hdr.get(keyword)
+            if self._single:
+                return process_fn(sections)
+            else:
+                return [process_fn(raw) for raw in sections]
         except KeyError:
             raise AttributeError("No {} information".format(descriptor_name))
 
