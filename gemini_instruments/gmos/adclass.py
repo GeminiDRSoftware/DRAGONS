@@ -652,7 +652,7 @@ class AstroDataGmos(AstroDataGemini):
 
         gain = self.gain()
         filter_name = self.filter_name(pretty=True)
-        ccd_name = self.hdr.CCDNAME
+        ccd_name = self.hdr.get('CCDNAME')
         # Explicit: if BUNIT is missing, assume data are in electrons
         bunit = self.hdr.get('BUNIT', 'electron')
 
@@ -660,11 +660,13 @@ class AstroDataGmos(AstroDataGemini):
         # Zeropoints in table are for electrons, so subtract 2.5*log10(gain)
         # if the data are in ADU
         try:
-            zpt = [zpt_dict[(ccd, filter_name)] -
+            zpt = [None if ccd is None else
+                    zpt_dict[(ccd, filter_name)] -
                    (2.5 * math.log10(g) if b=='adu' else 0)
                    for ccd,g,b in zip(ccd_name, gain, bunit)]
         except TypeError:
-            zpt = zpt_dict[(ccd_name, filter_name)] - (
+            zpt = None if ccd_name is None else \
+                zpt_dict[(ccd_name, filter_name)] - (
                 2.5 * math.log10(gain) if bunit=='adu' else 0)
 
         return zpt
