@@ -753,5 +753,12 @@ class AstroDataFits(AstroData):
     def info(self):
         self._dataprov.info(self.tags)
 
+    def write(self, filename=None, clobber=False):
+        if filename is None:
+            if self.path is None:
+                raise ValueError("A file name needs to be specified")
+            filename = self.path
+        self._dataprov.to_hdulist().writeto(filename, clobber=clobber)
+
 def write(filename, ad_object, clobber=False):
     ad_object._dataprov.to_hdulist().writeto(filename, clobber=clobber)
