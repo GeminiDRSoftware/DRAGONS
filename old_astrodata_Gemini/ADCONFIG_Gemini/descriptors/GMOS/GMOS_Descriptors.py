@@ -1,26 +1,22 @@
 import math
-import numpy as np
 from datetime import datetime
 from time import strptime
 
-from astrodata.utils import Errors
-from astrodata.interface.slices import pixel_exts
-from astrodata.interface.Descriptors import DescriptorValue
-
-from gempy.gemini import gemini_data_calculations as gdc
-from gempy.gemini import gemini_metadata_utils as gmu
-
 import GemCalcUtil
-
-from GMOS_Keywords import GMOS_KeyDict
 from GEMINI_Descriptors import GEMINI_DescriptorCalc
-
-from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import ROItable
+from astrodata.interface.Descriptors import DescriptorValue
+from astrodata.utils import Errors
 from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSAmpTables
-from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import Nominal_Zeropoints
 from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSPixelScale
 from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSReadModes
 from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSThresholdValues
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import Nominal_Zeropoints
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import ROItable
+
+from GMOS_Keywords import GMOS_KeyDict
+from gemini_instruments.gmos import pixel_functions as gdc
+from gempy.gemini import gemini_metadata_utils as gmu
+
 
 # ------------------------------------------------------------------------------
 class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
@@ -589,7 +585,7 @@ class GMOS_DescriptorCalc(GEMINI_DescriptorCalc):
             
             obs_ut_date = datetime(*strptime(ut_date, "%Y-%m-%d")[0:6])
             # These dates really shouldn't be hard wired so sloppily all over
-            # the place (including gempy gemini_data_calculations.py) but that
+            # the place (including gempy pixel_functions.py) but that
             # goes as far as the dictionary names so leave it for a possible
             # future clean up of how the dictionaries are keyed.
             change_2015_ut = datetime(2015, 8, 26, 0, 0)
