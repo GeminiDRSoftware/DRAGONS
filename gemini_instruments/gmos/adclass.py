@@ -1,4 +1,6 @@
 import re
+import math
+from datetime import date
 
 from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSet
 
@@ -138,12 +140,12 @@ class AstroDataGmos(AstroDataGemini):
             read_area of each extension
         """
         ampname = self.array_name()
-        detector_section = self.detector_section()
+        detector_section = self.detector_section(pretty=True)
         # Combine the amp name(s) and detector section(s)
         try:
-            read_area = ['{}:{}'.format(a,d) for a,d in zip(ampname, detector_section)]
+            read_area = ["'{}':{}".format(a,d) for a,d in zip(ampname, detector_section)]
         except TypeError:
-            read_area = '{}:{}'.format(ampname, detector_section)
+            read_area = "'{}':{}".format(ampname, detector_section)
         return read_area
 
     @astro_data_descriptor
@@ -157,7 +159,7 @@ class AstroDataGmos(AstroDataGemini):
         list/str
             names of the arrays
         """
-        return getattr(self.hdr, self._keyword_for('array_name'))
+        return self.hdr.AMPNAME
 
     @astro_data_descriptor
     def central_wavelength(self, asMicrometers=False, asNanometers=False, asAngstroms=False):
@@ -247,9 +249,36 @@ class AstroDataGmos(AstroDataGemini):
             y1 = self.phu.get('DETRO{}Y'.format(roi))
             ys = self.phu.get('DETRO{}YS'.format(roi))
             if x1 is not None:
-                xs *= int(self.detector_x_bin())
-        return
+                xs *= self.detector_x_bin()
+                ys *= self.detector_y_bin()
+                roi_list.append((x1, x1+xs-1, y1, y1+ys-1))
+            else:
+                break
+        return roi_list
 
+    @astro_data_descriptor
+    def detector_roi_setting(self):
+        """
+        Looks at the first ROI and returns a descriptive string describing it
+        These are more or less the options in the OT
+
+        Returns
+        -------
+        str
+            Name of the ROI setting used or
+            "Custom" if the ROI doesn't match
+            "Undefined" if there's no ROI in the header
+        """
+        roi_dict = lookup.gmosRoiSettings
+        rois = self.detector_rois_requested()
+        if rois:
+            roi_setting = 'Custom'
+            for s in roi_dict.keys():
+                if rois[0] in roi_dict[s]:
+                    roi_setting = s
+        else:
+            roi_setting = 'Undefined'
+        return roi_setting
 
     @astro_data_descriptor
     def detector_x_bin(self):
@@ -261,7 +290,16 @@ class AstroDataGmos(AstroDataGemini):
         int
             The detector binning
         """
-        pass
+        binning = self.hdr.CCDSUM
+        try:
+            xbin_list = [b.split()[0] for b in binning]
+            # Check list is single-valued
+            if xbin_list != xbin_list[::-1]:
+                raise ValueError("Multiple values of x-binning!")
+            xbin = xbin_list[0]
+        except TypeError:
+            xbin = binning.split()[0]
+        return int(xbin)
 
     @astro_data_descriptor
     def detector_y_bin(self):
@@ -273,7 +311,16 @@ class AstroDataGmos(AstroDataGemini):
         int
             The detector binning
         """
-        pass
+        binning = self.hdr.CCDSUM
+        try:
+            ybin_list = [b.split()[1] for b in binning]
+            # Check list is single-valued
+            if ybin_list != ybin_list[::-1]:
+                raise ValueError("Multiple values of y-binning!")
+            ybin = ybin_list[0]
+        except TypeError:
+            ybin = binning.split()[1]
+        return int(ybin)
 
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
@@ -389,9 +436,9 @@ class AstroDataGmos(AstroDataGemini):
         str
             The name of the focal plane mask
         """
-        return getattr(self.phu, self._keyword_for('focal_plane_mask'))
+        mask = self.phu.MASKNAME
+        return 'Imaging' if mask=='None' else mask
 
-    @returns_list
     @astro_data_descriptor
     def gain(self):
         """
@@ -407,12 +454,75 @@ class AstroDataGmos(AstroDataGemini):
         if 'PREPARED' in self.tags:
             return getattr(self.hdr, self._keyword_for('gain'))
 
-        ampinteg = self.phu.AMPINTEG
-        ut_date = str(self.ut_date())
+        # Get the correct dict of gain values
+        ut_date = self.ut_date()
+        if ut_date >= date(2015, 8, 26):
+            gain_dict = lookup.gmosampsGain
+        elif ut_date >= date(2006, 8, 31):
+            gain_dict = lookup.gmosampsGainBefore20150826
+        else:
+            gain_dict = lookup.gmosampsGainBefore20060831
+
+        read_speed_setting = self.read_speed_setting()
+        gain_setting = self.gain_setting()
+        # This may be a list
+        ampname = self.array_name()
+
+        # Return appropriate object
+        try:
+            gain = [gain_dict[read_speed_setting, gain_setting, a]
+                    for a in ampname]
+        except TypeError:
+            gain = gain_dict[read_speed_setting, gain_setting, ampname]
+        return gain
 
     @astro_data_descriptor
     def gain_setting(self):
-        pass
+        """
+        Returns the gain settings of the extensions. These could be different
+        but the old system couldn't handle that so we'll return a string but
+        check that they're all the same
+
+        Returns
+        -------
+        str
+            Gain setting
+        """
+        # This seems to rely on obtaining the original GAIN header keyword
+        if 'PREPARED' not in self.tags:
+            # Use the (incorrect) GAIN header keywords to determine the setting
+            gain = self.hdr.GAIN
+        else:
+            # For prepared data, we use the value of the gain_setting keyword
+            try:
+                return getattr(self.hdr, self._keyword_for('gain_setting'))
+            except KeyError:
+                # This code deals with data that haven't been processed with
+                # gemini_python, but somehow have a PREPARED tag
+                try:
+                    gain = self.hdr.GAINORIG
+                    # If GAINORIG is 1 in all the extensions, then the original
+                    # gain is actually in GAINMULT(!?)
+                    try:
+                        if gain == 1:
+                            gain = self.hdr.GAINMULT
+                    except TypeError:
+                        if gain == [1] * len(gain):
+                            gain = self.hdr.GAINMULT
+                except KeyError:
+                    # Use the gain() descriptor as a last resort
+                    gain = self.gain()
+
+        # Check that all gain settings are the same if multiple extensions
+        try:
+            gain_settings = ['high' if g > 3.0 else 'low' for g in gain]
+            if gain_settings != gain_settings[::-1]:
+                raise ValueError("Multiple values of gain setting!")
+            gain_setting = gain_settings[0]
+        except TypeError:
+            gain_setting = 'high' if gain > 3.0 else 'low'
+
+        return gain_setting
 
     @astro_data_descriptor
     def group_id(self):
@@ -421,16 +531,61 @@ class AstroDataGmos(AstroDataGemini):
         with each other.  This is used when stacking, for example.  Each
         instrument and mode of observation will have its own rules.
 
-        At the Gemini class level, the default is to group by the Gemini
-        observation ID.
+        GMOS uses the detector binning, amp_read_area, gain_setting, and
+        read_speed_setting. Flats and twilights have the pretty version of
+        the filter name included. Science data have the pretty filter name
+        and observation_id as well. And spectroscopic data have the grating.
+        Got all that?
 
         Returns
         -------
         str
             A group ID for compatible data.
-
         """
-        pass
+        tags = self.tags
+
+        # Things needed for all observations
+        unique_id_descriptor_list_all = ['detector_x_bin', 'detector_y_bin',
+                                             'read_mode', 'amp_read_area']
+        if 'SPECT' in tags:
+            unique_id_descriptor_list_all.append('disperser')
+
+        # List to format descriptor calls using 'pretty=True' parameter
+        call_pretty_version_list = ['filter_name', 'disperser']
+
+        # Force this to be a list
+        force_list = ['amp_read_area']
+
+        if 'BIAS' in tags:
+            id_descriptor_list = []
+        elif 'DARK' in tags:
+            id_descriptor_list = ['exposure_time']
+        elif 'IMAGE' in tags and ('FLAT' in tags or 'TWILIGHT' in tags):
+            id_descriptor_list = ['filter_name']
+        else:
+            id_descriptor_list = ['observation_id', 'filter_name']
+
+        # Add in all of the common descriptors required
+        id_descriptor_list.extend(unique_id_descriptor_list_all)
+
+        # Form the group_id
+        descriptor_object_string_list = []
+        for descriptor in id_descriptor_list:
+            kw = {}
+            if descriptor in call_pretty_version_list:
+                kw['pretty'] = True
+            descriptor_object = getattr(self, descriptor)(**kw)
+
+            # Ensure we get a list, even if only looking at one extension
+            if (descriptor in force_list and
+                    not isinstance(descriptor_object, list)):
+                descriptor_object = [descriptor_object]
+
+            # Convert descriptor to a string and store
+            descriptor_object_string_list.append(str(descriptor_object))
+
+        # Create and return the final group_id string
+        return '_'.join(descriptor_object_string_list)
 
     @astro_data_descriptor
     def nod_count(self):
@@ -493,7 +648,26 @@ class AstroDataGmos(AstroDataGemini):
         float/list
             zeropoint values, one per SCI extension
         """
-        pass
+        zpt_dict = lookup.nominal_zeropoints
+
+        gain = self.gain()
+        filter_name = self.filter_name(pretty=True)
+        ccd_name = self.hdr.CCDNAME
+        # Explicit: if BUNIT is missing, assume data are in electrons
+        bunit = self.hdr.get('BUNIT', 'electron')
+
+        # Have to do the list/not-list stuff here
+        # Zeropoints in table are for electrons, so subtract 2.5*log10(gain)
+        # if the data are in ADU
+        try:
+            zpt = [zpt_dict[(ccd, filter_name)] -
+                   (2.5 * math.log10(g) if b=='adu' else 0)
+                   for ccd,g,b in zip(ccd_name, gain, bunit)]
+        except TypeError:
+            zpt = zpt_dict[(ccd_name, filter_name)] - (
+                2.5 * math.log10(gain) if bunit=='adu' else 0)
+
+        return zpt
 
     @returns_list
     @astro_data_descriptor
@@ -540,33 +714,75 @@ class AstroDataGmos(AstroDataGemini):
     @astro_data_descriptor
     def pixel_scale(self):
         """
-        Returns the image scale in arcseconds per pixel
+        Returns the image scale in arcsec per pixel, accounting for binning
 
         Returns
         -------
         float
             pixel scale
         """
+        pixscale_dict = lookup.gmosPixelScales
 
-        pass
+        # Pixel scale dict is keyed by instrument ('GMOS-N' or 'GMOS-S')
+        # and detector type
+        pixscale_key = (self.instrument(), self.phu.DETTYPE)
+        raw_pixel_scale = pixscale_dict[pixscale_key]
+        return raw_pixel_scale * self.detector_y_bin()
 
     @astro_data_descriptor
     def read_mode(self):
-        pass
+        """
+        Returns a string describing the readout mode, which sets the
+        gain and readout speed
+
+        Returns
+        -------
+        str
+            read mode used
+        """
+        # Get the right mapping (detector-dependent)
+        det_key = 'Hamamatsu' if \
+            self.detector_name(pretty=True)=='Hamamatsu' else 'default'
+        mode_dict = lookup.read_mode_map[det_key]
+        mode_key = (self.gain_setting(), self.read_speed_setting())
+        return mode_dict[mode_key]
 
     @returns_list
     @astro_data_descriptor
     def read_noise(self):
         """
-        Returns the image scale in arcseconds per pixel
+        Returns the read noise (as a list if multiple extensions, or
+        a float if a single-extension slice)
 
         Returns
         -------
-        float
-            pixel scale
+        float/list
+            read noise
         """
+        if 'PREPARED' in self.tags:
+            return ad.hdr.get(self._keyword_for('read_noise'))
+        else:
+            # Get the correct dict of read noise values
+            ut_date = self.ut_date()
+            if ut_date >= date(2015, 8, 26):
+                rn_dict = lookup.gmosampsRdnoise
+            elif ut_date >= date(2006, 8, 31):
+                rn_dict = lookup.gmosampsRdnoiseBefore20150826
+            else:
+                rn_dict = lookup.gmosampsRdnoiseBefore20060831
 
-        pass
+        read_speed_setting = self.read_speed_setting()
+        gain_setting = self.gain_setting()
+        # This may be a list
+        ampname = self.array_name()
+
+        # Return appropriate object
+        try:
+            read_noise = [rn_dict[read_speed_setting, gain_setting, a]
+                    for a in ampname]
+        except TypeError:
+            read_noise = rn_dict[read_speed_setting, gain_setting, ampname]
+        return read_noise
 
     @astro_data_descriptor
     def read_speed_setting(self):
@@ -597,7 +813,23 @@ class AstroDataGmos(AstroDataGemini):
         list/float
             saturation level
         """
-        pass
+        # Get the value of the the name of the bias image and the name of the
+        # dark image keywords from the header of the PHU
+        bias_image = self.phu.get(self._keyword_for('bias_image'))
+        dark_image = self.phu.get(self._keyword_for('dark_image'))
+
+        ampname = self.array_name()
+        overscan = self.hdr.get('OVERSCAN')
+        bunit = self.hdr.get('BUNIT', 'electron')
+        detname = self.detector_name(pretty=True)
+        gain = self.gain()
+        xbin = self.detector_x_bin()
+        ybin = self.detector_y_bin()
+
+        bin_factor = xbin * ybin
+
+        return 65535
+
 
     @astro_data_descriptor
     def wcs_ra(self):
