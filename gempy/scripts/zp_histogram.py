@@ -28,7 +28,7 @@ objcat = ad[0].OBJCAT
 try:
     refcat = ad.REFCAT
 except:
-    print "No Reference Catalog in this file, thus no Zeropoints. Sorry"
+    print("No Reference Catalog in this file, thus no Zeropoints. Sorry")
     sys.exit(0)
 
 mag = objcat.field("MAG_AUTO")
@@ -54,13 +54,13 @@ refmagerr = refmagerr[np.flatnonzero(mag)]
 mag = mag[np.flatnonzero(mag)]
 
 if(len(mag) == 0):
-  print "No good sources to plot"
+  print("No good sources to plot")
   sys.exit(1)
 
 # Now apply the exposure time and nom_at_ext corrections to mag
 et = float(ad.exposure_time())
 if 'GMOS_NODANDSHUFFLE' in ad.tags:
-    print "Imaging Nod-And-Shuffle. Photometry may be dubious"
+    print("Imaging Nod-And-Shuffle. Photometry may be dubious")
     et /= 2.0
 
 etmag = 2.5*math.log10(et)
