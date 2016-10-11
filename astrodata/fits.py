@@ -379,19 +379,13 @@ class FitsProvider(DataProvider):
         self._header = [hdulist[0].header] + [x.header for x in hdulist[1:] if
                                                 (x.header.get('EXTNAME') in ('SCI', None))]
 
-    def _add_table(self, table, add=True):
+    def _add_table(self, table):
         if isinstance(table, fits.BinTableHDU):
             meta_obj = Table(table.data, meta={'hdu': table.header})
             name = table.header.get('EXTNAME')
         elif isinstance(table, Table):
             meta_obj = table
             name = table.meta['hdu'].get('EXTNAME')
-
-        if add is True:
-            if name in self._tables:
-                self._tables[name].append(meta_obj)
-            else:
-                self._tables[name] = [meta_obj]
 
         return meta_obj
 
@@ -428,7 +422,7 @@ class FitsProvider(DataProvider):
             return [x for x in hdulist
                       if x.header.get('EXTVER') == ver and x.header['EXTNAME'] not in skip_names]
 
-        def process_meta_unit(nd, meta, add=True):
+        def process_unit(nd, meta):
             eheader = meta.header
             name = eheader.get('EXTNAME')
             data = meta.data
@@ -439,17 +433,13 @@ class FitsProvider(DataProvider):
                 std_un.parent_nddata = nd
                 nd.uncertainty = std_un
             else:
-                if isinstance(meta, fits.BinTableHDU):
-                    meta_obj = self._add_table(meta, add=add)
-                elif isinstance(meta, fits.ImageHDU):
+                if isinstance(meta, BinTableHDU):
+                    meta_obj = self._add_table(meta)
+                elif isinstance(meta, ImageHDU):
                     meta_obj = NDDataObject(data, meta={'hdu': eheader})
                 else:
                     raise ValueError("Unknown extension type: {!r}".format(name))
-                if add:
-                    setattr(nd, name, meta_obj)
-                    nd.meta['other'].append(name)
-                else:
-                    return meta_obj
+                return name, meta_obj
 
         self._nddata = []
         sci_units = [x for x in hdulist[1:] if x.header['EXTNAME'] == 'SCI']
@@ -461,7 +451,11 @@ class FitsProvider(DataProvider):
 
             for extra_unit in search_for_associated(ver):
                 seen.add(extra_unit)
-                process_meta_unit(nd, extra_unit, add=True)
+                ret = process_unit(nd, extra_unit)
+                if ret is not None:
+                    name, obj = ret
+                    setattr(nd, name, obj)
+                    nd.meta['other'].append(name)
 
         for other in hdulist:
             if other in seen:
@@ -473,9 +467,10 @@ class FitsProvider(DataProvider):
 # NOTE: This happens with GPI. Let's leave it for later...
 #            if other.header.get('EXTVER', -1) >= 0:
 #                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
-            if isinstance(other, fits.BinTableHDU):
-                self._tables[name] = Table(other.data, meta={'hdu': other.header})
-            setattr(self, name, process_meta_unit(None, other, add=False))
+            processed = process_unit(None, other)
+            setattr(self, name, processed)
+            if isinstance(processed, Table):
+                self._tables[name] = processed
             self._exposed.append(name)
 
     @property
@@ -612,7 +607,7 @@ class FitsProvider(DataProvider):
                         self._crop_nd(o)
 
     def append(self, ext):
-        if isinstance(ext, (Table, fits.BinTableHDU)):
+        if isinstance(ext, (Table, BinTableHDU)):
             return self._add_table(ext)
         elif isinstance(ext, PrimaryHDU):
             raise ValueError("Only one Primary HDU allowed")
