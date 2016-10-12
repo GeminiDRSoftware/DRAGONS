@@ -1,12 +1,13 @@
-# The astroTools module contains astronomy specific utility functions
+"""
+The astroTools module contains astronomy specific utility functions
+"""
+from __future__ import print_function
 
 import os
 import re
 import math
 import numpy as np
 import scipy.optimize as opt
-import pandas as pd
-#import matplotlib.pyplot as plt
 
 import warnings
 
@@ -14,46 +15,50 @@ def rasextodec(string):
     """
     Convert hh:mm:ss.sss to decimal degrees
     """
-    m = re.match("(\d+):(\d+):(\d+\.\d+)", string)
-    if m:
-        hours = float(m.group(1))
-        minutes = float(m.group(2))
-        secs = float(m.group(3))
-        
+    match_ra = re.match(r"(\d+):(\d+):(\d+\.\d+)", string)
+    if match_ra:
+        hours = float(match_ra.group(1))
+        minutes = float(match_ra.group(2))
+        secs = float(match_ra.group(3))
+
         minutes += (secs/60.0)
         hours += (minutes/60.0)
-        
+
         degrees = hours * 15.0
-    
+    else:
+        raise ValueError('Invalid RA string')
+
     return degrees
 
 def degsextodec(string):
     """
     Convert [-]dd:mm:ss.sss to decimal degrees
     """
-    m = re.match("(-*)(\d+):(\d+):(\d+\.\d+)", string)
-    if m:
-        sign = m.group(1)
+    match_dec = re.match(r"(-*)(\d+):(\d+):(\d+\.\d+)", string)
+    if match_dec:
+        sign = match_dec.group(1)
         if sign == '-':
             sign = -1.0
         else:
             sign = +1.0
-        
-        degs = float(m.group(2))
-        minutes = float(m.group(3))
-        secs = float(m.group(4))
-        
+
+        degs = float(match_dec.group(2))
+        minutes = float(match_dec.group(3))
+        secs = float(match_dec.group(4))
+
         minutes += (secs/60.0)
         degs += (minutes/60.0)
-        
+
         degs *= sign
-    
+    else:
+        raise ValueError('Invalid Dec string')
+
     return degs
 
 class GaussFit:
     """
     This class provides access to a Gaussian model, intended
-    to be fit to a small stamp of data, via a  minimization of the 
+    to be fit to a small stamp of data, via a  minimization of the
     differences between the model and the data.
 
     Example usage:
@@ -66,7 +71,7 @@ class GaussFit:
     def __init__(self, stamp_data):
         """
         This instantiates the fitting object.
-        
+
         :param stamp_data: array containing image data, preferably the
                            source to fit plus a little padding
         :type stamp_data: NumPy array
@@ -78,14 +83,14 @@ class GaussFit:
         This function returns a Gaussian source in an 1D array the
         same shape as the stamp_data.  The Gaussian is determined by
         the parameters in pars.
-        
+
         :param pars: Gaussian parameters in this order: background, peak,
                      center, width
         :type pars: 4-element tuple
         """
-        bg, peak, c, w = pars
-        
-        model_fn = lambda x: bg + peak*np.exp((-((x-c)/w)**2)/2)
+        bkg, peak, center, width = pars
+
+        model_fn = lambda x: bkg + peak*np.exp((-((x-center)/width)**2)/2)
         gauss_array = np.fromfunction(model_fn, self.stamp.shape)
         return gauss_array
 
@@ -94,21 +99,21 @@ class GaussFit:
         This function returns a Gaussian source in an image array the
         same shape as the stamp_data.  The Gaussian is determined by
         the parameters in pars.
-        
+
         :param pars: Gaussian parameters in this order: background, peak,
                      x-center, y-center, x-width, y-width, position angle
                      (in degrees)
         :type pars: 7-element tuple
         """
-        bg, peak, cx, cy, wx, wy, theta = pars
-        
-        model_fn = lambda y,x: bg + peak*np.exp(-(   ((  (x-cx)*np.cos(theta)
-                                                       - (y-cy)*np.sin(theta))
-                                                       /wx)**2
-                                                   + ((  (x-cx)*np.sin(theta)
-                                                       + (y-cy)*np.cos(theta))
-                                                       /wy)**2)
-                                                 /2)
+        bkg, peak, xcenter, ycenter, xwidth, ywidth, theta = pars
+
+        model_fn = lambda y, x: \
+            bkg + peak * np.exp(-((((x-xcenter) * np.cos(theta) -
+                                   (y-ycenter) * np.sin(theta)) / xwidth)**2 +
+                                 (((x-xcenter) * np.sin(theta) +
+                                   (y-ycenter) * np.cos(theta)) / ywidth)**2
+                                 ) / 2
+                               )
         gauss_array = np.fromfunction(model_fn, self.stamp.shape)
         return gauss_array
 
@@ -123,7 +128,7 @@ class GaussFit:
                      (in degrees)
         :type pars: 7-element tuple
         """
-        if len(self.stamp.shape)==1:
+        if len(self.stamp.shape) == 1:
             model = self.model_gauss_1d(pars).flatten()
         else:
             model = self.model_gauss_2d(pars).flatten()
@@ -133,7 +138,7 @@ class GaussFit:
 class MoffatFit:
     """
     This class provides access to a Moffat model, intended
-    to be fit to a small stamp of data, via a minimization of the 
+    to be fit to a small stamp of data, via a minimization of the
     differences between the model and the data.
 
     Example usage:
@@ -146,7 +151,7 @@ class MoffatFit:
     def __init__(self, stamp_data):
         """
         This instantiates the fitting object.
-        
+
         :param stamp_data: array containing image data, preferably the
                            source to fit plus a little padding
         :type stamp_data: NumPy array
@@ -158,21 +163,21 @@ class MoffatFit:
         This function returns a Moffat source in an image array the
         same shape as the stamp_data.  The Moffat model is determined by
         the parameters in pars.
-        
+
         :param pars: Moffat parameters in this order: background, peak,
                      x-center, y-center, x-width, y-width, position angle
                      (in degrees), beta
         :type pars: 8-element tuple
         """
-        bg, peak, cx, cy, wx, wy, theta, beta = pars
-        
-        model_fn = lambda y,x: bg + peak*(1 + (((   (x-cx)*np.cos(theta)
-                                                  - (y-cy)*np.sin(theta))
-                                                 /wx)**2
-                                             + ((   (x-cx)*np.sin(theta)
-                                                  + (y-cy)*np.cos(theta))
-                                                 /wy)**2)
-                                          )**(-beta)
+        bkg, peak, xcenter, ycenter, xwidth, ywidth, theta, beta = pars
+
+        model_fn = lambda y, x: \
+            bkg + peak*(1 + ((((x-xcenter) * np.cos(theta) -
+                              (y-ycenter) * np.sin(theta)) / xwidth)**2 +
+                            (((x-xcenter) * np.sin(theta) +
+                              (y-ycenter) * np.cos(theta)) / ywidth)**2
+                            )
+                       )**(-beta)
 
         moffat_array = np.fromfunction(model_fn, self.stamp.shape)
         return moffat_array
@@ -195,17 +200,17 @@ class MoffatFit:
 
 def get_corners(shape):
     """
-    This is a recursive function to calculate the corner indices 
+    This is a recursive function to calculate the corner indices
     of an array of the specified shape.
 
     :param shape: length of the dimensions of the array
     :type shape: tuple of ints, one for each dimension
 
     """
-    if not type(shape)==tuple:
-        raise Errors.TypeError('get_corners argument is non-tuple')
+    if not type(shape) == tuple:
+        raise TypeError('get_corners argument is non-tuple')
 
-    if len(shape)==1:
+    if len(shape) == 1:
         corners = [(0,), (shape[0]-1,)]
     else:
         shape_less1 = shape[1:len(shape)]
@@ -216,7 +221,7 @@ def get_corners(shape):
             corners.append(newcorner)
             newcorner = (shape[0]-1,) + corner
             corners.append(newcorner)
-        
+
     return corners
 
 def rotate_2d(degs):
@@ -227,10 +232,10 @@ def rotate_2d(degs):
     :type degs: float
     """
     rads = np.radians(degs)
-    s = np.sin(rads)
-    c = np.cos(rads)
-    return np.array([[c,-s],
-                     [s,c]])
+    sine = np.sin(rads)
+    cosine = np.cos(rads)
+    return np.array([[cosine, -sine], [sine, cosine]])
+
 class WCSTweak:
     """
     This class allows slight tweaking of an image's WCS, to fit to a
@@ -247,7 +252,7 @@ class WCSTweak:
     def __init__(self, wcs, inp, ref, rotate=False, scale=False):
         """
         This instantiates the WCSTweak object.
-        
+
         :param wcs: the input image WCS
         :type wcs: pywcs WCS object
 
@@ -277,8 +282,8 @@ class WCSTweak:
         """
         This function transforms reference RA/Dec into input pixel
         frame, via a WCS tweaked by parameters pars.
-        
-        :param pars: list of parameters to tweak WCS by. Number of 
+
+        :param pars: list of parameters to tweak WCS by. Number of
                      elements is determined by whether rotation/scaling
                      is allowed.  Order is [dRA, dDec, dTheta, dMag].
                      dTheta and dMag are optional.
@@ -286,19 +291,19 @@ class WCSTweak:
         """
         if self.rotate and self.scale:
             d_ra, d_dec, d_theta, d_mag = pars
-            self.wcs.wcs.cd = np.dot(d_mag*rotate_2d(d_theta),self.cd)
+            self.wcs.wcs.cd = np.dot(d_mag * rotate_2d(d_theta), self.cd)
         elif self.rotate:
             d_ra, d_dec, d_theta = pars
-            self.wcs.wcs.cd = np.dot(rotate_2d(d_theta),self.cd)
+            self.wcs.wcs.cd = np.dot(rotate_2d(d_theta), self.cd)
         elif self.scale:
             d_ra, d_dec, d_mag = pars
-            self.wcs.wcs.cd = d_mag*self.cd
+            self.wcs.wcs.cd = d_mag * self.cd
         else:
             d_ra, d_dec = pars
 
         self.wcs.wcs.crval = self.crval + np.array([d_ra, d_dec])/3600.0
 
-        new_ref = self.wcs.wcs_sky2pix(self.ref,1)
+        new_ref = self.wcs.wcs_sky2pix(self.ref, 1)
         return new_ref.flatten()
 
     # calculate residual (called by scipy.optimize.leastsq)
@@ -306,10 +311,10 @@ class WCSTweak:
         """
         This function returns an array of the differences between the
         input sources and the reference sources in the input pixel frame.
-        It is intended to be fed to an optimization algorithm, such as 
+        It is intended to be fed to an optimization algorithm, such as
         scipy.optimize.leastsq.
 
-        :param pars: list of parameters to tweak WCS by. Number of 
+        :param pars: list of parameters to tweak WCS by. Number of
                      elements is determined by whether rotation/scaling
                      is allowed.  Order is [dRA, dDec, dTheta, dMag].
                      dTheta and dMag are optional.
@@ -320,14 +325,14 @@ class WCSTweak:
         return diff
 
 
-def match_cxy (xx, sx, yy, sy, firstPass=50, delta=10, log=None):
+def match_cxy(xx, sx, yy, sy, first_pass=50, delta=10, log=None):
     """
-    Match reference positions (sx,sy) with those of the 
-    object catalog (xx,yy). 
+    Match reference positions (sx,sy) with those of the
+    object catalog (xx,yy).
     Select those that are within delta pixels from
     the object positions.
-    
-    firstPass:  (50) First pass radius.
+
+    first_pass:  (50) First pass radius.
 
     This matching is a 2 pass algorithm. A form of cross-correlation
 
@@ -337,32 +342,30 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=10, log=None):
     """
 
     # Turn to numpy arrays
-    xx, sx, yy, sy = map(np.asarray,(xx,sx,yy,sy))
+    xx, sx, yy, sy = map(np.asarray, (xx, sx, yy, sy))
     if len(xx) == 0:
         return [], []
-    
-    deltax = firstPass
-    deltay = firstPass
+
     # current_delta is an estimate of final fit quality if delta=None
     if delta is None:
-        current_delta = 0.2*firstPass
+        current_delta = 0.2 * first_pass
     else:
         current_delta = delta
     sigmasq = 0.25*current_delta**2
-    hw = int(firstPass+1)
+    hw = int(first_pass + 1)
     # Make a "landscape" of Gaussian "mountains" onto which we're
     # going to cross-correlate the REFCAT sources
-    landscape = np.zeros((int(np.max(yy)+hw),int(np.max(xx)+hw)))
+    landscape = np.zeros((int(np.max(yy) + hw), int(np.max(xx) + hw)))
     lysize, lxsize = landscape.shape
-    xgrid, ygrid = np.mgrid[0:hw*2+1,0:hw*2+1]
+    xgrid, ygrid = np.mgrid[0:hw*2+1, 0:hw*2+1]
     rsq = (ygrid-hw)**2 + (xgrid-hw)**2
-    mountain = np.exp(-0.5*rsq/sigmasq)
+    mountain = np.exp(-0.5 * rsq / sigmasq)
     for i in range(len(xx)):
         if xx[i] > -999:
             mx1, mx2, my1, my2 = 0, hw*2+1, 0, hw*2+1
             lx1, lx2 = int(xx[i])-hw, int(xx[i])+hw+1
             ly1, ly2 = int(yy[i])-hw, int(yy[i])+hw+1
-            if lx2<0 or lx1>=lxsize or ly2<0 or ly1>=lysize:
+            if lx2 < 0 or lx1 >= lxsize or ly2 < 0 or ly1 >= lysize:
                 continue
             if lx1 < 0:
                 mx1 -= lx1
@@ -377,15 +380,15 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=10, log=None):
                 my2 -= (ly2-lysize)
                 ly2 = lysize
             try:
-                landscape[ly1:ly2,lx1:lx2] += mountain[my1:my2,mx1:mx2]
+                landscape[ly1:ly2, lx1:lx2] += mountain[my1:my2, mx1:mx2]
             except ValueError as e:
-                print yy[i], xx[i], landscape.shape
-                print ly1,ly2,lx1,lx2
-                print my1,my2,mx1,mx2
+                print(yy[i], xx[i], landscape.shape)
+                print(ly1, ly2, lx1, lx2)
+                print(my1, my2, mx1, mx2)
 
     # We've got the full REFCAT, so first cull that to rough image area
-    in_image = np.all((sx>-firstPass, sx<lxsize,
-                        sy>-firstPass, sy<lysize),axis=0)
+    in_image = np.all((sx > -first_pass, sx < lxsize,
+                       sy > -first_pass, sy < lysize), axis=0)
 
     # We can only do about 2500 cross-correlations per second, so we need
     # to limit the number we do. If the catalogs are sparse, we can just
@@ -394,31 +397,32 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=10, log=None):
     # Count the number of pairs for the first method;
     # if we exceed our limit, make a grid instead
     grid_step = 0.25*current_delta
-    num_grid_tests = np.pi*(firstPass/grid_step)**2
+    num_grid_tests = np.pi* (first_pass / grid_step) ** 2
     dax = []
     day = []
     height = []
-    for sxx,syy in zip(sx[in_image],sy[in_image]):
-        gindx, = np.where((xx-sxx)**2+(yy-syy)**2<firstPass*firstPass)
-        dax.extend(xx[gindx]-sxx)
-        day.extend(yy[gindx]-syy)
+    for sxx, syy in zip(sx[in_image], sy[in_image]):
+        gindx, = np.where((xx - sxx) ** 2 + (yy - syy) ** 2 < first_pass * first_pass)
+        dax.extend(xx[gindx] - sxx)
+        day.extend(yy[gindx] - syy)
     if len(dax) > num_grid_tests:
         # There are fewer in the grid search, so do that
-        dax=[]; day=[]
-        for dx in np.arange(-firstPass,firstPass,grid_step):
-            for dy in np.arange(-firstPass,firstPass,grid_step):
-                if dx*dx+dy*dy < firstPass*firstPass:
+        dax = []
+        day = []
+        for dx in np.arange(-first_pass, first_pass, grid_step):
+            for dy in np.arange(-first_pass, first_pass, grid_step):
+                if dx*dx + dy*dy < first_pass*first_pass:
                     dax.append(dx)
                     day.append(dy)
-        
+
     # For each shift, sum the landscape pixel values at all shifted
     # coordinates -- remember to test whether they're in the landscape
-    for dx,dy in zip(dax,day):
-        new_sx = (sx[in_image]+dx+0.5).astype(int)
-        new_sy = (sy[in_image]+dy+0.5).astype(int)
-        indices = np.all((new_sx>=0,new_sx<lxsize,
-                    new_sy>=0,new_sy<lysize),axis=0)
-        height.append(np.sum(landscape[new_sy[indices],new_sx[indices]]))
+    for dx, dy in zip(dax, day):
+        new_sx = (sx[in_image] + dx + 0.5).astype(int)
+        new_sy = (sy[in_image] + dy + 0.5).astype(int)
+        indices = np.all((new_sx >= 0, new_sx < lxsize,
+                    new_sy >= 0, new_sy < lysize), axis=0)
+        height.append(np.sum(landscape[new_sy[indices], new_sx[indices]]))
 
     # We've calculated offsets without matching objects, which is what we need
     # This is a two-pass algorithm; first get better offsets by matching and
@@ -427,27 +431,32 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=10, log=None):
     # performed, since the best offsets are not calculated from an actual match
     if len(dax) > 0:
         xoffset, yoffset = dax[np.argmax(height)], day[np.argmax(height)]
-        log.info("First pass offsets (x,y): %.2f %.2f" % (xoffset,yoffset))
-        sx += xoffset; sy += yoffset
+        if log:
+            log.info("First pass offsets (x,y): %.2f %.2f" % (xoffset, yoffset))
+        sx += xoffset
+        sy += yoffset
 
-        for iter in range(2):
-            g =[]; r=[]
-            dax=[]; day=[]
+        for iteration in range(2):
+            g = []
+            r = []
+            dax = []
+            day = []
             for k in [kk for kk in range(len(sx)) if in_image[kk]]:
-                gindx,= np.where((xx-sx[k])**2+(yy-sy[k])**2<current_delta**2)
+                gindx, = \
+                    np.where((xx-sx[k])**2 + (yy-sy[k])**2 < current_delta**2)
                 for i in gindx:
-                    dx = xx[i] - sx[k] 
-                    dy = yy[i] - sy[k] 
+                    dx = xx[i] - sx[k]
+                    dy = yy[i] - sy[k]
 
                     # if there are multiple matches, keep only the closest
-                    if (i in g or k in r):
+                    if i in g or k in r:
                         if i in g:
                             first_ind = g.index(i)
                         else:
                             first_ind = r.index(k)
                         first_dist = dax[first_ind]**2 + day[first_ind]**2
                         this_dist = dx**2 + dy**2
-                        if (first_dist > this_dist):
+                        if first_dist > this_dist:
                             del dax[first_ind]
                             del day[first_ind]
                             del g[first_ind]
@@ -467,15 +476,17 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=10, log=None):
             sy += dy
             xoffset += dx
             yoffset += dy
-            log.info("Tweaked offsets by: %.2f %.2f" % (dx,dy))
+            if log:
+                log.info("Tweaked offsets by: %.2f %.2f" % (dx, dy))
             # Use scatter in points to determine quality of fit for final pass
-            if delta is None and iter==0:
-                current_delta = 2*np.sqrt(np.std(dax-dx)*np.std(dax-dy))
-                log.info("Using %.3f pixels as final matching "
-                         "radius" % current_delta)
-        g,r,dax,day = map(np.asarray, (g,r,dax,day))
+            if delta is None and iteration == 0:
+                current_delta = 2 * np.sqrt(np.std(dax-dx) * np.std(dax-dy))
+                if log:
+                    log.info("Using %.3f pixels as final matching "
+                             "radius" % current_delta)
+        g, r, dax, day = map(np.asarray, (g, r, dax, day))
         #for i,k,dx,dy in zip(g,r,dax,day):
-        #    print i+1,k+1,dx,dy
+        #    print(i+1,k+1,dx,dy)
 
     # dax may have been >0 before but now 0 if there are no good matches
     if len(dax) > 0:
@@ -484,13 +495,16 @@ def match_cxy (xx, sx, yy, sy, firstPass=50, delta=10, log=None):
         stdx = np.std(dax)
         stdy = np.std(day)
         # Add 1 to debug display to match directly with catalogs
-        #print "indxy = ", indxy+1
-        #print "indr = ", indr+1
-        log.info('Final offset (x,y): %.2f %.2f (%.2f %.2f)' %
-             (xoffset,yoffset,stdx,stdy))
+        #print("indxy = ", indxy+1)
+        #print("indr = ", indr+1)
+        if log:
+            log.info('Final offset (x,y): %.2f %.2f (%.2f %.2f)' %
+                    (xoffset, yoffset, stdx, stdy))
     else:
-        indxy,indr=[],[]
-        log.info('No matched sources')
+        indxy = []
+        indr = []
+        if log:
+            log.info('No matched sources')
 
     return indxy, indr
 
@@ -499,41 +513,41 @@ def clipped_mean(data):
     mean = data.mean()
     sigma = data.std()
 
-    if num_total<3:
+    if num_total < 3:
         return mean, sigma
 
     num = num_total
     clipped_data = data
     clip = 0
-    while (num>0.5*num_total):
+    while num > 0.5 * num_total:
         # CJS: edited this as upper limit was mean+1*sigma => bias
-        clipped_data = data[(data<mean+3*sigma) & (data>mean-3*sigma)]
+        clipped_data = data[(data < mean + 3*sigma) & (data > mean - 3*sigma)]
         num = len(clipped_data)
 
-        if num>0:
-            mean = clipped_data.mean() 
+        if num > 0:
+            mean = clipped_data.mean()
             sigma = clipped_data.std()
-        elif clip==0:
+        elif clip == 0:
             return mean, sigma
         else:
             break
 
-        clip+=1
-        if clip>10:
+        clip += 1
+        if clip > 10:
             break
 
-    return mean,sigma
+    return mean, sigma
 
 
 # The following functions and classes were borrowed from STSCI's spectools
 # package, currently under development.  They might be able to be
 # replaced with a direct import of spectools.util if/when it is available
 
-iraf_models_map = {1.: 'chebyshev',
+IRAF_MODELS_MAP = {1.: 'chebyshev',
                    2.: 'legendre',
                    3.: 'spline3',
                    4.: 'spline1'}
-inverse_iraf_models_map = {'chebyshev': 1.,
+INVERSE_IRAF_MODELS_MAP = {'chebyshev': 1.,
                            'legendre': 2.,
                            'spline3': 3.,
                            'spline1': 4.}
@@ -541,19 +555,19 @@ inverse_iraf_models_map = {'chebyshev': 1.,
 def get_records(fname):
     """
     Read the records of an IRAF database file ionto a python list
-    
+
     Parameters
     ----------
     fname: string
            name of an IRAF database file
-           
+
     Returns
     -------
         A list of records
     """
-    f = open(fname)
-    dtb = f.read()
-    f.close()
+    filehandle = open(fname)
+    dtb = filehandle.read()
+    filehandle.close()
     records = []
     recs = dtb.split('begin')[1:]
     records = [Record(r) for r in recs]
@@ -562,12 +576,12 @@ def get_records(fname):
 def get_database_string(fname):
     """
     Read an IRAF database file
-    
+
     Parameters
     ----------
     fname: string
           name of an IRAF database file
-           
+
     Returns
     -------
         the database file as a string
@@ -580,10 +594,10 @@ def get_database_string(fname):
 class Record(object):
     """
     A base class for all records - represents an IRAF database record
-    
+
     Attributes
     ----------
-    recstr: string 
+    recstr: string
             the record as a string
     fields: dict
             the fields in the record
@@ -594,13 +608,13 @@ class Record(object):
         self.recstr = recstr
         self.fields = self.get_fields()
         self.taskname = self.get_task_name()
-        
+
     def aslist(self):
         reclist = self.recstr.split('\n')
         reclist = [l.strip() for l in reclist]
-        out = [reclist.remove(l) for l in reclist if len(l)==0]
+        out = [reclist.remove(l) for l in reclist if len(l) == 0]
         return reclist
-    
+
     def get_fields(self):
         # read record fields as an array
         fields = {}
@@ -609,7 +623,7 @@ class Record(object):
         for i in range(numfields):
             line = flist[i]
             if line and line[0].isalpha():
-                field =  line.split()
+                field = line.split()
                 if i+1 < numfields:
                     if not flist[i+1][0].isalpha():
                         fields[field[0]] = self.read_array_field(
@@ -621,13 +635,13 @@ class Record(object):
             else:
                 continue
         return fields
-    
+
     def get_task_name(self):
         try:
             return self.fields['task']
         except KeyError:
             return None
-    
+
     def read_array_field(self, fieldlist):
         # Turn an iraf record array field into a numpy array
         fieldline = [l.split() for l in fieldlist[1:]]
@@ -637,20 +651,20 @@ class Record(object):
         try:
             farr = np.array(xyz)
         except:
-            print "Could not read array field %s" % fieldlist[0].split()[0]
+            print("Could not read array field %s" % fieldlist[0].split()[0])
         return farr.astype(np.float64)
-    
+
 class IdentifyRecord(Record):
     """
     Represents a database record for the longslit.identify task
-    
+
     Attributes
     ----------
     x: array
        the X values of the identified features
        this represents values on axis1 (image rows)
     y: int
-       the Y values of the identified features 
+       the Y values of the identified features
        (image columns)
     z: array
        the values which X maps into
@@ -667,30 +681,30 @@ class IdentifyRecord(Record):
     def __init__(self, recstr):
         super(IdentifyRecord, self).__init__(recstr)
         self._flatcoeff = self.fields['coefficients'].flatten()
-        self.x = self.fields['features'][:,0]
+        self.x = self.fields['features'][:, 0]
         self.y = self.get_ydata()
-        self.z = self.fields['features'][:,1]
+        self.z = self.fields['features'][:, 1]
 ####here - ref?
-        self.zref = self.fields['features'][:,2]
+        self.zref = self.fields['features'][:, 2]
         self.modelname = self.get_model_name()
         self.nterms = self.get_nterms()
         self.mrange = self.get_range()
         self.coeff = self.get_coeff()
-        
+
     def get_model_name(self):
-        return iraf_models_map[self._flatcoeff[0]]
-    
+        return IRAF_MODELS_MAP[self._flatcoeff[0]]
+
     def get_nterms(self):
         return self._flatcoeff[1]
-    
+
     def get_range(self):
         low = self._flatcoeff[2]
         high = self._flatcoeff[3]
         return [low, high]
-    
+
     def get_coeff(self):
         return self._flatcoeff[4:]
-    
+
     def get_ydata(self):
         image = self.fields['image']
         left = image.find('[')+1
@@ -708,7 +722,7 @@ class IdentifyRecord(Record):
 class FitcoordsRecord(Record):
     """
     Represents a database record for the longslit.fitccords task
-    
+
     Attributes
     ----------
     modelname: string
@@ -728,20 +742,20 @@ class FitcoordsRecord(Record):
     def __init__(self, recstr):
         super(FitcoordsRecord, self).__init__(recstr)
         self._surface = self.fields['surface'].flatten()
-        self.modelname = iraf_models_map[self._surface[0]]
+        self.modelname = IRAF_MODELS_MAP[self._surface[0]]
         self.xorder = self._surface[1]
         self.yorder = self._surface[2]
         self.xbounds = [self._surface[4], self._surface[5]]
         self.ybounds = [self._surface[6], self._surface[7]]
         self.coeff = self.get_coeff()
-        
+
     def get_coeff(self):
         return self._surface[8:]
-        
+
 class IDB(object):
     """
-    Base class for an IRAF identify database 
-    
+    Base class for an IRAF identify database
+
     Attributes
     ----------
     records: list
@@ -757,18 +771,18 @@ class IDB(object):
     def aslist(self, dtb):
         # return a list of records
         # if the first one is a comment remove it from the list
-        rl = dtb.split('begin')
+        record_list = dtb.split('begin')
         try:
-            rl0 = rl[0].split('\n')
+            rl0 = record_list[0].split('\n')
         except:
-            return rl
+            return record_list
         if len(rl0) == 2 and rl0[0].startswith('#') and not rl0[1].strip():
-            return rl[1:]
-        elif len(rl0)==1 and not rl0[0].strip():
-            return rl[1:]
+            return record_list[1:]
+        elif len(rl0) == 1 and not rl0[0].strip():
+            return record_list[1:]
         else:
-            return rl
-        
+            return record_list
+
 class ReidentifyRecord(IDB):
     """
     Represents a database record for the onedspec.reidentify task
@@ -778,11 +792,11 @@ class ReidentifyRecord(IDB):
         self.x = np.array([r.x for r in self.records])
         self.y = self.get_ydata()
         self.z = np.array([r.z for r in self.records])
-        
-        
+
+
     def get_ydata(self):
         y = np.ones(self.x.shape)
-        y = y*np.array([r.y for r in self.records])[:,np.newaxis]
+        y = y * np.array([r.y for r in self.records])[:, np.newaxis]
         return y
 
 
@@ -790,7 +804,7 @@ class ReidentifyRecord(IDB):
 # a single entity that can be written to or read from disk files
 # or pyfits binary tables
 class SpectralDatabase(object):
-    def __init__(self, database_name=None, record_name=None, 
+    def __init__(self, database_name=None, record_name=None,
                  binary_table=None):
         """
         database_name is the name of the database directory
@@ -807,15 +821,15 @@ class SpectralDatabase(object):
         self.fitcoords_database = None
 
         # Initialize from database on disk
-        if (database_name is not None and record_name is not None):
+        if database_name is not None and record_name is not None:
 
             if not os.path.isdir(database_name):
                 raise IOError('Database directory %s does not exist' %
                               database_name)
 
             # Read in identify database
-            db_filename = "%s/id%s" % (database_name,record_name)
-            if not os.access(db_filename,os.R_OK):
+            db_filename = "%s/id%s" % (database_name, record_name)
+            if not os.access(db_filename, os.R_OK):
                 raise IOError("Database file %s does not exist " \
                               "or cannot be accessed" % db_filename)
 
@@ -823,8 +837,8 @@ class SpectralDatabase(object):
             self.identify_database = IDB(db_str)
 
             # Read in fitcoords database
-            db_filename = "%s/fc%s" % (database_name,record_name)
-            if not os.access(db_filename,os.R_OK):
+            db_filename = "%s/fc%s" % (database_name, record_name)
+            if not os.access(db_filename, os.R_OK):
                 raise IOError("Database file %s does not exist " \
                               "or cannot be accessed" % db_filename)
 
@@ -844,7 +858,7 @@ class SpectralDatabase(object):
             # data into a database string
             db_str = self._identify_db_from_table(binary_table)
             self.identify_database = IDB(db_str)
-            
+
             # Format fitcoords information from header
             # into a database string
             db_str = self._fitcoords_db_from_table(binary_table)
@@ -860,7 +874,7 @@ class SpectralDatabase(object):
         nrows = len(features)
         nfeat = features["spectral_coord"].shape[1]
         ncoeff = features["fit_coefficients"].shape[1]
-        
+
         db_str = ""
 
         for row in range(nrows):
@@ -877,11 +891,11 @@ class SpectralDatabase(object):
             fields["image"] = "%s[*,%d]" % (self.record_name,
                                             feature["spatial_coord"])
             fields["units"] = tab.header["IDUNITS"]
-            
+
             zip_feature = np.array([feature["spectral_coord"],
                                     feature["fit_wavelength"],
                                     feature["ref_wavelength"]])
-            fields["features"] = zip_feature.swapaxes(0,1)
+            fields["features"] = zip_feature.swapaxes(0, 1)
 
             fields["function"] = tab.header["IDFUNCTN"]
             fields["order"] = tab.header["IDORDER"]
@@ -901,12 +915,12 @@ class SpectralDatabase(object):
             # 3: x max
             # 4 on: function coefficients
             coefficients = []
-            
-            model_num = inverse_iraf_models_map[fields["function"]]
+
+            model_num = INVERSE_IRAF_MODELS_MAP[fields["function"]]
             coefficients.append(model_num)
 
             coefficients.append(fields["order"])
-            
+
             idrange = tab.header["IDRANGE"].split()
             coefficients.append(float(idrange[0]))
             coefficients.append(float(idrange[1]))
@@ -914,24 +928,27 @@ class SpectralDatabase(object):
             fit_coeff = feature["fit_coefficients"].tolist()
             coefficients.extend(fit_coeff)
             fields["coefficients"] = np.array(coefficients).astype(np.float64)
-            
+
 
             # Compose fields into a single string
-            rec_str = "%-8s%-8s %s\n" % ("begin",fields["task"],fields["image"])
-            for field in ["id","task","image","units"]:
-                rec_str += "%-8s%-8s%s\n" % ("",field,str(fields[field]))
-            rec_str += "%-8s%-8s %d\n" % ("","features",len(fields["features"]))
+            rec_str = "%-8s%-8s %s\n" % \
+                      ("begin", fields["task"], fields["image"])
+            for field in ["id", "task", "image", "units"]:
+                rec_str += "%-8s%-8s%s\n" % ("", field, str(fields[field]))
+            rec_str += "%-8s%-8s %d\n" % \
+                       ("", "features", len(fields["features"]))
             for feat in fields["features"]:
-                rec_str += "%16s%10f %10f %10f\n" % ("",feat[0],feat[1],feat[2])
-            for field in ["function","order","sample",
-                          "naverage","niterate","low_reject",
-                          "high_reject","grow"]:
-                rec_str += "%-8s%s %s\n" % ("",field,str(fields[field]))
-            rec_str += "%-8s%-8s %d\n" % ("","coefficients",
+                rec_str += "%16s%10f %10f %10f\n" % \
+                           ("", feat[0], feat[1], feat[2])
+            for field in ["function", "order", "sample",
+                          "naverage", "niterate", "low_reject",
+                          "high_reject", "grow"]:
+                rec_str += "%-8s%s %s\n" % ("", field, str(fields[field]))
+            rec_str += "%-8s%-8s %d\n" % ("", "coefficients",
                                          len(fields["coefficients"]))
             for coeff in fields["coefficients"]:
-                rec_str += "%-8s%-8s%E\n" % ("","",coeff)
-            rec_str+="\n"
+                rec_str += "%-8s%-8s%E\n" % ("", "", coeff)
+            rec_str += "\n"
 
             db_str += rec_str
 
@@ -961,9 +978,9 @@ class SpectralDatabase(object):
         # 7: xmax
         # 8 on: function coefficients
         surface = []
-        
-        model_num = inverse_iraf_models_map[tab.header["FCFUNCTN"]]
-        surface.append(model_num)            
+
+        model_num = INVERSE_IRAF_MODELS_MAP[tab.header["FCFUNCTN"]]
+        surface.append(model_num)
 
         xorder = tab.header["FCXORDER"]
         yorder = tab.header["FCYORDER"]
@@ -971,13 +988,13 @@ class SpectralDatabase(object):
         surface.append(yorder)
         surface.append(1.)
 
-        xrange = tab.header["FCXRANGE"].split()
-        surface.append(float(xrange[0]))
-        surface.append(float(xrange[1]))
-        yrange = tab.header["FCYRANGE"].split()
-        surface.append(float(yrange[0]))
-        surface.append(float(yrange[1]))
-            
+        fcxrange = tab.header["FCXRANGE"].split()
+        surface.append(float(fcxrange[0]))
+        surface.append(float(fcxrange[1]))
+        fcyrange = tab.header["FCYRANGE"].split()
+        surface.append(float(fcyrange[0]))
+        surface.append(float(fcyrange[1]))
+
         for i in range(int(xorder)*int(yorder)):
             coeff = tab.header["FCCOEF%d" % i]
             surface.append(coeff)
@@ -985,12 +1002,12 @@ class SpectralDatabase(object):
         fields["surface"] = np.array(surface).astype(np.float64)
 
         # Compose fields into a single string
-        db_str = "%-8s%s\n" % ("begin",fields["begin"])
-        for field in ["task","axis","units"]:
-            db_str += "%-8s%-8s%s\n" % ("",field,str(fields[field]))
-        db_str += "%-8s%-8s%d\n" % ("","surface",len(fields["surface"]))
+        db_str = "%-8s%s\n" % ("begin", fields["begin"])
+        for field in ["task", "axis", "units"]:
+            db_str += "%-8s%-8s%s\n" % ("", field, str(fields[field]))
+        db_str += "%-8s%-8s%d\n" % ("", "surface", len(fields["surface"]))
         for coeff in fields["surface"]:
-            db_str += "%-8s%-8s%E\n" % ("","",coeff)
+            db_str += "%-8s%-8s%E\n" % ("", "", coeff)
 
         return db_str
 
@@ -1006,7 +1023,7 @@ class SpectralDatabase(object):
             raise TypeError("No record_name provided")
         elif record_name is None and self.record_name is not None:
             record_name = self.record_name
-        
+
         # Make the directory if needed
         if not os.path.exists(database_name):
             os.mkdir(database_name)
@@ -1018,8 +1035,8 @@ class SpectralDatabase(object):
         # Write identify files
         id_db = self.identify_database
         if id_db is not None:
-            db_filename = "%s/id%s" % (database_name,record_name)
-            db_file = open(db_filename,"w")
+            db_filename = "%s/id%s" % (database_name, record_name)
+            db_file = open(db_filename, "w")
             db_file.write("# "+timestamp+"\n")
             for record in id_db.records:
                 db_file.write("begin")
@@ -1029,14 +1046,14 @@ class SpectralDatabase(object):
         # Write fitcoords files
         fc_db = self.fitcoords_database
         if fc_db is not None:
-            db_filename = "%s/fc%s" % (database_name,record_name)
-            db_file = open(db_filename,"w")
+            db_filename = "%s/fc%s" % (database_name, record_name)
+            db_file = open(db_filename, "w")
             db_file.write("# "+timestamp+"\n")
             db_file.write(fc_db.recstr)
             db_file.close()
 
-    def as_binary_table(self,record_name=None):
-        
+    def as_binary_table(self, record_name=None):
+
         # Should this be lazy loaded?
         import pyfits as pf
 
@@ -1057,16 +1074,16 @@ class SpectralDatabase(object):
         nrows = self.identify_database.numrecords
 
         # Create pyfits Columns for the table
-        column_formats = [{"name":"spatial_coord","format":"I"},
-                          {"name":"spectral_coord","format":"%dE"%nfeat},
-                          {"name":"fit_wavelength","format":"%dE"%nfeat},
-                          {"name":"ref_wavelength","format":"%dE"%nfeat},
-                          {"name":"fit_coefficients","format":"%dE"%ncoeff},]
-        columns = [pf.Column(**format) for format in column_formats]
+        column_formats = [{"name":"spatial_coord", "format":"I"},
+                          {"name":"spectral_coord", "format":"%dE"%nfeat},
+                          {"name":"fit_wavelength", "format":"%dE"%nfeat},
+                          {"name":"ref_wavelength", "format":"%dE"%nfeat},
+                          {"name":"fit_coefficients", "format":"%dE"%ncoeff},]
+        columns = [pf.Column(**fmt) for fmt in column_formats]
 
         # Make the empty table.  Use the number of records in the
         # database as the number of rows
-        table = pf.new_table(columns,nrows=nrows)
+        table = pf.new_table(columns, nrows=nrows)
 
         # Populate the table from the records
         for i in range(nrows):
@@ -1074,53 +1091,53 @@ class SpectralDatabase(object):
             row = table.data[i]
             row["spatial_coord"] = record.y
             row["fit_coefficients"] = record.coeff
-            if len(row["spectral_coord"])!=len(record.x):
+            if len(row["spectral_coord"]) != len(record.x):
                 row["spectral_coord"][:len(record.x)] = record.x
                 row["spectral_coord"][len(record.x):] = -999
             else:
                 row["spectral_coord"] = record.x
-            if len(row["fit_wavelength"])!=len(record.z):
+            if len(row["fit_wavelength"]) != len(record.z):
                 row["fit_wavelength"][:len(record.z)] = record.z
                 row["fit_wavelength"][len(record.z):] = -999
             else:
                 row["fit_wavelength"] = record.z
-            if len(row["ref_wavelength"])!=len(record.zref):
+            if len(row["ref_wavelength"]) != len(record.zref):
                 row["ref_wavelength"][:len(record.zref)] = record.zref
                 row["ref_wavelength"][len(record.zref):] = -999
             else:
                 row["ref_wavelength"] = record.zref
-            
+
         # Store the record name in the header
-        table.header.update("RECORDNM",record_name)
+        table.header.update("RECORDNM", record_name)
 
         # Store other important values from the identify records in the header
         # These should be the same for all records, so take values
         # from the first record
         first_record = self.identify_database.records[0]
-        table.header.update("IDUNITS",first_record.fields["units"])
-        table.header.update("IDFUNCTN",first_record.modelname)
-        table.header.update("IDORDER",first_record.nterms)
-        table.header.update("IDSAMPLE",first_record.fields["sample"])
-        table.header.update("IDNAVER",first_record.fields["naverage"])
-        table.header.update("IDNITER",first_record.fields["niterate"])
-        table.header.update("IDREJECT","%s %s" % 
+        table.header.update("IDUNITS", first_record.fields["units"])
+        table.header.update("IDFUNCTN", first_record.modelname)
+        table.header.update("IDORDER", first_record.nterms)
+        table.header.update("IDSAMPLE", first_record.fields["sample"])
+        table.header.update("IDNAVER", first_record.fields["naverage"])
+        table.header.update("IDNITER", first_record.fields["niterate"])
+        table.header.update("IDREJECT", "%s %s" %
                             (first_record.fields["low_reject"],
                              first_record.fields["high_reject"]))
-        table.header.update("IDGROW",first_record.fields["grow"])
-        table.header.update("IDRANGE","%s %s" % 
-                            (first_record.mrange[0],first_record.mrange[1]))
+        table.header.update("IDGROW", first_record.fields["grow"])
+        table.header.update("IDRANGE", "%s %s" %
+                            (first_record.mrange[0], first_record.mrange[1]))
 
         # Store fitcoords information in the header
         fc_record = self.fitcoords_database
-        table.header.update("FCUNITS",fc_record.fields["units"])
-        table.header.update("FCAXIS",fc_record.fields["axis"])
-        table.header.update("FCFUNCTN",fc_record.modelname)
-        table.header.update("FCXORDER",fc_record.xorder)
-        table.header.update("FCYORDER",fc_record.yorder)
-        table.header.update("FCXRANGE","%s %s" % 
-                            (fc_record.xbounds[0],fc_record.xbounds[1]))
-        table.header.update("FCYRANGE","%s %s" % 
-                            (fc_record.ybounds[0],fc_record.ybounds[1]))
+        table.header.update("FCUNITS", fc_record.fields["units"])
+        table.header.update("FCAXIS", fc_record.fields["axis"])
+        table.header.update("FCFUNCTN", fc_record.modelname)
+        table.header.update("FCXORDER", fc_record.xorder)
+        table.header.update("FCYORDER", fc_record.yorder)
+        table.header.update("FCXRANGE", "%s %s" %
+                            (fc_record.xbounds[0], fc_record.xbounds[1]))
+        table.header.update("FCYRANGE", "%s %s" %
+                            (fc_record.ybounds[0], fc_record.ybounds[1]))
         for i in range(len(fc_record.coeff)):
             coeff = fc_record.coeff[i]
             table.header.update("FCCOEF%d" % i, coeff)
@@ -1131,7 +1148,7 @@ class SpectralDatabase(object):
 class FittedFunction:
     """
     Represents the result of trying to fit a function to some data.
-    
+
     Members
     ----------
     get_model_function(): ndarray
@@ -1157,11 +1174,12 @@ class FittedFunction:
     get_beta(): float
         the beta of the moffat function or None if not a moffat function
     """
-    def __init__(self, function, function_name, success, bg, peak, x_ctr, y_ctr, x_width, y_width, theta, beta=None):
+    def __init__(self, function, function_name, success, bkg, peak,
+                 x_ctr, y_ctr, x_width, y_width, theta, beta=None):
         self.function = function
         self.success = success
         self.function_name = function_name
-        self.background = bg
+        self.background = bkg
         self.peak = peak
         self.x_ctr = x_ctr
         self.y_ctr = y_ctr
@@ -1178,11 +1196,11 @@ class FittedFunction:
                 self.x_width,
                 self.y_width,
                 self.theta)
-        
+
         if self.function_name == "moffat":
             pars = pars + (self.beta,)
 
-        return pars        
+        return pars
 
     def get_model_function(self):
         pars = self.get_params()
@@ -1191,7 +1209,8 @@ class FittedFunction:
         elif self.function_name == "moffat":
             return self.function.model_moffat_2d(pars)
         else:
-            raise Errors.InputError("Function %s not supported" % self.function_name)
+            raise ValueError("Function %s not supported" %
+                                    self.function_name)
 
     def get_stamp_data(self):
         return self.function.stamp
@@ -1249,45 +1268,48 @@ class FittedFunction:
         # convert fit parameters to FWHM, ellipticity
         if self.function_name == "moffat":
             # convert width to Gaussian-type sigma
-            x_width = x_width*np.sqrt(((2**(1/beta)-1)/(2*np.log(2))))
-            y_width = y_width*np.sqrt(((2**(1/beta)-1)/(2*np.log(2))))
-        
+            x_width = x_width*np.sqrt(((2**(1/self.beta)-1)/(2*np.log(2))))
+            y_width = y_width*np.sqrt(((2**(1/self.beta)-1)/(2*np.log(2))))
+
         fwhmx = abs(2*np.sqrt(2*np.log(2))*x_width)
         fwhmy = abs(2*np.sqrt(2*np.log(2))*y_width)
         pa = (self.theta * (180 / np.pi))
         pa = pa % 360
-        
+
         if fwhmy < fwhmx:
             ellip = 1 - fwhmy / fwhmx
         elif fwhmx < fwhmy:
             ellip = 1 - fwhmx / fwhmy
-            pa = pa - 90 
+            pa = pa - 90
         else:
             ellip = 0
 
         # FWHM is geometric mean of x and y FWHM
         fwhm = np.sqrt(fwhmx * fwhmy)
-        
+
         return fwhm, ellip
 
 def get_function_with_penalties(function):
-    """ heavily penalize the function when it wants to start using a negative width """
-    
+    """
+    heavily penalize the function when it wants to start using a negative width
+    """
+
     def bounded_function(pars):
         diff = function.calc_diff(pars)
 
-        bg, peak, x_ctr, y_ctr, x_width, y_width, theta = pars[:7]
+        bkg, peak, x_ctr, y_ctr, x_width, y_width, theta = pars[:7]
         if x_width < 0.0:
             diff = diff * abs(x_width) * 100
-        
+
         if y_width < 0.0:
             diff = diff * abs(y_width) * 100
 
         return diff
     return bounded_function
 
-            
-def get_fitted_function(stamp_data, default_fwhm, default_bg=None, centroid_function="moffat"):
+
+def get_fitted_function(stamp_data, default_fwhm, default_bg=None,
+                        centroid_function="moffat"):
     """
     This function returns a FittedFunction object containing the
     parameters needed to fit the `centroid_function` to the
@@ -1308,10 +1330,10 @@ def get_fitted_function(stamp_data, default_fwhm, default_bg=None, centroid_func
     """
     if default_bg is None:
         default_bg = np.median(stamp_data)
-    
+
     # starting values for model fit
-    bg = default_bg
-    peak = stamp_data.max() - bg
+    bkg = default_bg
+    peak = stamp_data.max() - bkg
     x_ctr = (stamp_data.shape[1] - 1) / 2.0
     y_ctr = (stamp_data.shape[0] - 1) / 2.0
     x_width = default_fwhm
@@ -1319,30 +1341,29 @@ def get_fitted_function(stamp_data, default_fwhm, default_bg=None, centroid_func
     theta = 0.0
     beta = 1.0
 
-    pars = (bg, peak, x_ctr, y_ctr, x_width, y_width, theta)
+    pars = (bkg, peak, x_ctr, y_ctr, x_width, y_width, theta)
 
     # instantiate model fit object and initial parameters
     if centroid_function == "gauss":
-        mf = GaussFit(stamp_data)
+        mfit = GaussFit(stamp_data)
     elif centroid_function == "moffat":
         pars = pars + (beta,)
-        mf = MoffatFit(stamp_data)
+        mfit = MoffatFit(stamp_data)
     else:
-        raise Errors.InputError("Centroid function %s not supported" %
+        raise ValueError("Centroid function %s not supported" %
                                 centroid_function)
 
-    func = get_function_with_penalties(mf)
-    
+    func = get_function_with_penalties(mfit)
+
     # least squares fit of model to data
     try:
         # for scipy versions < 0.9
         new_pars, success = opt.leastsq(func,
                                         pars,
-                                        maxfev=100, 
+                                        maxfev=100,
                                         warning=False)
     except:
         # for scipy versions >= 0.9
-        import warnings
         warnings.simplefilter("ignore")
         new_pars, success = opt.leastsq(func,
                                         pars,
@@ -1354,5 +1375,5 @@ def get_fitted_function(stamp_data, default_fwhm, default_bg=None, centroid_func
 
     # strip off the beta from moffat
     pars = new_pars[:7]
-    
-    return FittedFunction(mf, centroid_function, success, *pars, beta=beta)
+
+    return FittedFunction(mfit, centroid_function, success, *pars, beta=beta)
