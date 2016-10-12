@@ -152,7 +152,7 @@ fixture_data = {
         ('requested_cc', 100),
         ('requested_iq', 100),
         ('requested_wv', 100),
-        ('saturation_level', 13333),
+        ('saturation_level', [65535, 65535, 65535, 65535, 65535, 65535]),
         ('slit', None),
         ('target_dec', 12.43975),
         ('target_ra', 290.37070833),
