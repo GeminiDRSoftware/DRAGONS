@@ -1,6 +1,7 @@
 """
 The astroTools module contains astronomy specific utility functions
 """
+from __future__ import print_function
 
 import os
 import re
@@ -377,9 +378,9 @@ def match_cxy(xx, sx, yy, sy, first_pass=50, delta=10, log=None):
             try:
                 landscape[ly1:ly2, lx1:lx2] += mountain[my1:my2, mx1:mx2]
             except ValueError as e:
-                print yy[i], xx[i], landscape.shape
-                print ly1, ly2, lx1, lx2
-                print my1, my2, mx1, mx2
+                print(yy[i], xx[i], landscape.shape)
+                print(ly1, ly2, lx1, lx2)
+                print(my1, my2, mx1, mx2)
 
     # We've got the full REFCAT, so first cull that to rough image area
     in_image = np.all((sx > -first_pass, sx < lxsize,
@@ -478,7 +479,7 @@ def match_cxy(xx, sx, yy, sy, first_pass=50, delta=10, log=None):
                          "radius" % current_delta)
         g, r, dax, day = map(np.asarray, (g, r, dax, day))
         #for i,k,dx,dy in zip(g,r,dax,day):
-        #    print i+1,k+1,dx,dy
+        #    print(i+1,k+1,dx,dy)
 
     # dax may have been >0 before but now 0 if there are no good matches
     if len(dax) > 0:
@@ -487,8 +488,8 @@ def match_cxy(xx, sx, yy, sy, first_pass=50, delta=10, log=None):
         stdx = np.std(dax)
         stdy = np.std(day)
         # Add 1 to debug display to match directly with catalogs
-        #print "indxy = ", indxy+1
-        #print "indr = ", indr+1
+        #print("indxy = ", indxy+1)
+        #print("indr = ", indr+1)
         log.info('Final offset (x,y): %.2f %.2f (%.2f %.2f)' %
              (xoffset, yoffset, stdx, stdy))
     else:
@@ -641,7 +642,7 @@ class Record(object):
         try:
             farr = np.array(xyz)
         except:
-            print "Could not read array field %s" % fieldlist[0].split()[0]
+            print("Could not read array field %s" % fieldlist[0].split()[0])
         return farr.astype(np.float64)
 
 class IdentifyRecord(Record):
