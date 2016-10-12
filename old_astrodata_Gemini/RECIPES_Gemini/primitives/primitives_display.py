@@ -1,16 +1,16 @@
 from copy import deepcopy
+
 import numpy as np
+
 try:
     from stsci import numdisplay as nd
 except ImportError:
     import numdisplay as nd
 
 from astrodata.utils import Errors
-from astrodata.utils import Lookups
 from astrodata.utils import logutils
-from astrodata.utils.gemutil import pyrafLoader
 
-from gempy.gemini import gemini_data_calculations as gdc
+from gemini_instruments.gmos import pixel_functions as gdc
 from gempy.gemini import gemini_tools as gt
 from gempy.gemini import eti
 

@@ -1,21 +1,20 @@
-import sys
 import math
-import numpy as np
+import sys
 from copy import deepcopy
 
+import numpy as np
 from astrodata.utils import Errors
 from astrodata.utils import logutils
-
-from gempy.gemini import gemini_tools as gt
-from gempy.gemini import gemini_data_calculations as gdc
-
 from astrodata_Gemini.ADCONFIG_Gemini.lookups import BGConstraints
 from astrodata_Gemini.ADCONFIG_Gemini.lookups import CCConstraints
 from astrodata_Gemini.ADCONFIG_Gemini.lookups import IQConstraints
-
-from primitives_GENERAL import GENERALPrimitives
-from scipy.special import j1
 from astropy.stats import sigma_clip
+from scipy.special import j1
+
+from gemini_instruments.gmos import pixel_functions as gdc
+from gempy.gemini import gemini_tools as gt
+from primitives_GENERAL import GENERALPrimitives
+
 
 # ------------------------------------------------------------------------------
 class QAPrimitives(GENERALPrimitives):
@@ -1401,8 +1400,7 @@ class QAPrimitives(GENERALPrimitives):
                 "comment": []
                 },
          }
-        from copy import copy
-        import pprint
+
         def mock_metadata(ad, numcall = 0):
             mtd = {"metadata":
                     { "raw_filename": ad.filename,

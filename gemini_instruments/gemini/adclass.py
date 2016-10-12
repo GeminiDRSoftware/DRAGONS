@@ -118,6 +118,8 @@ gemini_simple_descriptors = dict(
     r_zero_val = keyword('RZEROVAL'),
     slit = keyword('SLIT'),
     wavelength = keyword('WAVELENG'),
+    x_offset = keyword('XOFFSET'),
+    y_offset = keyword('YOFFSET'),
 )
 
 @simple_descriptor_mapping(**gemini_simple_descriptors)
@@ -572,7 +574,7 @@ class AstroDataGemini(AstroDataFits):
         return [int(dispaxis) for dispaxis in self.hdr.dispaxis_kwd]
 
     @astro_data_descriptor
-    def effective_wavelength(self):
+    def effective_wavelength(self, output_units=None):
         """
         Returns the wavelength representing the bandpass or the spectrum.
         For imaging data this normally is the wavelength at the center of
@@ -588,21 +590,22 @@ class AstroDataGemini(AstroDataFits):
             Wavelength representing the bandpass or the spectrum coverage.
 
         """
-        # TODO: We need to return the appropriate output units.  KL what is "appropriate"?
-        # central_wavelength returns a value in meters.  Shouldn't we
-        # expect effective_wavelength to return a value in meters too?
+        if not output_units in ('micrometers', 'nanometers', 'angstroms'):
+            output_units = 'meters'
         tags = self.tags
         if 'IMAGE' in tags:
             inst = self.instrument()
             filter_name = self.filter_name(pretty=True)
             for inst in (self.instrument(), '*'):
                 try:
-                    return filter_wavelengths[inst, filter_name]
+                    wave_in_microns = filter_wavelengths[inst, filter_name]
                 except KeyError:
                     pass
             raise KeyError("Can't find the wavelength for this filter in the look-up table")
         elif 'SPECT' in tags:
-            return self.central_wavelength()
+            wave_in_microns = self.central_wavelength(asMicrometers=True)
+
+        return convert_units('micrometers', wave_in_microns, output_units)
 
     @astro_data_descriptor
     def exposure_time(self):
@@ -757,7 +760,7 @@ class AstroDataGemini(AstroDataFits):
             True if the data is AO, False otherwise.
 
         """
-        return self.phu.get(self._keyword_for('ao_fold', 'OUT')) == 'IN'
+        return self.phu.get(self._keyword_for('ao_fold'), 'OUT') == 'IN'
 
     @astro_data_descriptor
     def is_coadds_summed(self):
@@ -838,8 +841,8 @@ class AstroDataGemini(AstroDataFits):
             Gemini quality assessment flags.
 
         """
-        rawpireq = self.raw_pi_requirements_met()
-        rawgemqa = self.raw_gemini_qa()
+        rawpireq = getattr(self.phu, self._keyword_for('raw_pi_requirements_met'))
+        rawgemqa = getattr(self.phu, self._keyword_for('raw_gemini_qa'))
         pair = rawpireq.upper(), rawgemqa.upper()
 
         # Calculate the derived QA state
@@ -1010,7 +1013,7 @@ class AstroDataGemini(AstroDataFits):
             Right Ascension of the target in degrees.
 
         """
-        ra = self.ra()
+        ra = getattr(self.phu, self._keyword_for('ra'))
         raoffset = self.phu.get('RAOFFSET', 0)
         targ_raoffset = self.phu.get('RATRGOFF', 0)
         pmra = self.phu.get('PMRA', 0)
@@ -1074,7 +1077,7 @@ class AstroDataGemini(AstroDataFits):
             Declination of the target in degrees.
 
         """
-        dec = self.dec()
+        dec = getattr(self.phu, self._keyword_for('dec'))
         decoffset = self.phu.get('DECOFFSE', 0)
         targ_decoffset = self.phu.get('DECTRGOF', 0)
         pmdec = self.phu.get('PMDEC', 0)
@@ -1309,12 +1312,7 @@ class AstroDataGemini(AstroDataFits):
             Name of the bandpass.
 
         """
-        # TODO: Make sure we get this in micrometers...
-        # KL: central_wavelength returns meters, we should make sure that
-        #     effective_wavelength does the same.  If micrometers are needed
-        #     here, then we convert here.
-        # TODO: verify that wavelength_band works.  (units problems)
-        ctrl_wave = self.effective_wavelength()
+        ctrl_wave = self.effective_wavelength(output_units='micrometers')
 
         def wavelength_diff((_, l)):
             return abs(l - ctrl_wave)
@@ -1353,9 +1351,10 @@ class AstroDataGemini(AstroDataFits):
         return self._get_wcs_coords()[0]
 
     @astro_data_descriptor
-    def dec(self):
+    def wcs_dec(self):
         """
-        Returns the Declination of the center of the field.
+        Returns the Declination of the center of the field based on the
+        WCS rather than the DEC header keyword.
 
         Returns
         -------
@@ -1374,20 +1373,19 @@ class AstroDataGemini(AstroDataFits):
         float
             right ascension in degrees
         """
-        return self._get_wcs_coords()[0]
+        return self.wcs_ra()
 
     @astro_data_descriptor
-    def wcs_dec(self):
+    def dec(self):
         """
-        Returns the Declination of the center of the field based on the
-        WCS rather than the DEC header keyword.
+        Returns the Declination of the center of the field.
 
         Returns
         -------
         float
             declination in degrees
         """
-        return self._get_wcs_coords()[1]
+        return self.wcs_dec()
 
     def _get_wcs_coords(self, x=None, y=None):
         """

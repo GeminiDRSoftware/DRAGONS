@@ -1,21 +1,19 @@
 import os
+
 import numpy as np
 import pyfits as pf
 import pywcs
-
-from astrodata import AstroData
 from astrodata.utils import Errors
 from astrodata.utils import logutils
-from astrodata.utils.gemutil import pyrafLoader
-
-from gempy.gemini import eti
-from gempy.gemini import gemini_tools as gt
-from gempy.gemini import gemini_data_calculations as gdc
-##M Temporary fix
+from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSArrayGaps
 from gempy.gemini.gmoss_fix_headers import correct_headers
 
-from astrodata_Gemini.ADCONFIG_Gemini.lookups.GMOS import GMOSArrayGaps
+from astrodata import AstroData
+from gemini_instruments.gmos import pixel_functions as gdc
+from gempy.gemini import eti
+from gempy.gemini import gemini_tools as gt
 from primitives_GEMINI import GEMINIPrimitives
+
 
 # ------------------------------------------------------------------------------
 class GMOSPrimitives(GEMINIPrimitives):
