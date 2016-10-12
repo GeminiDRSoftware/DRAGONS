@@ -7,7 +7,8 @@ from functools import partial, wraps
 from .core import *
 
 from astropy.io import fits
-from astropy.io.fits import HDUList, PrimaryHDU, ImageHDU, Header, DELAYED
+from astropy.io.fits import HDUList, Header, DELAYED
+from astropy.io.fits import PrimaryHDU, ImageHDU, BinTableHDU
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
 from astropy.nddata import NDDataRef as NDDataObject
@@ -165,13 +166,17 @@ class FitsProvider(DataProvider):
         self._nddata = None
         self._hdulist = None
         self.path = None
-        self._tables = None
-        self._exposed = []
+        self._tables = {}
+        self._exposed = set()
 
     @force_load
     def __getattr__(self, attribute):
-        # If we get here, it means that the attribute hasn't been exposed. Probably
-        # an alias. Test...
+        # First, make sure that the object is not an exposed one. It may be that
+        # we just lazy-loaded the contents for the first time...
+        if attribute in self._exposed:
+            return getattr(self, attribute)
+
+        # So, the attribute hasn't been exposed. Probably an alias. Test...
         for nd in self._nddata:
             if nd.meta.get('name') == attribute:
                 return nd
@@ -315,7 +320,7 @@ class FitsProvider(DataProvider):
     @property
     def exposed(self):
         self._lazy_populate_object()
-        return set(self._exposed)
+        return self._exposed.copy()
 
     @force_load
     def _slice(self, indices, multi=True):
@@ -331,12 +336,11 @@ class FitsProvider(DataProvider):
             scopy._nddata = [self._nddata[n] for n in indices]
 
         scopy._tables = {}
-        if self._tables is not None:
-            for name, content in self._tables.items():
-                if type(content) is list:
-                    scopy._tables[name] = [content[n] for n in indices]
-                else:
-                    scopy._tables[name] = content
+        for name, content in self._tables.items():
+            if type(content) is list:
+                scopy._tables[name] = [content[n] for n in indices]
+            else:
+                scopy._tables[name] = content
 
         return scopy
 
@@ -377,20 +381,21 @@ class FitsProvider(DataProvider):
     def _set_headers(self, hdulist):
         self._header = [hdulist[0].header] + [x.header for x in hdulist[1:] if
                                                 (x.header.get('EXTNAME') in ('SCI', None))]
+        tables = [unit for unit in hdulist if isinstance(unit, BinTableHDU)]
+        for table in tables:
+            name = table.header.get('EXTNAME')
+            if name == 'OBJCAT':
+                continue
+            self._tables[name] = None
+            self._exposed.add(name)
 
-    def _add_table(self, table, add=True):
-        if isinstance(table, fits.BinTableHDU):
+    def _add_table(self, table):
+        if isinstance(table, BinTableHDU):
             meta_obj = Table(table.data, meta={'hdu': table.header})
             name = table.header.get('EXTNAME')
         elif isinstance(table, Table):
             meta_obj = table
             name = table.meta['hdu'].get('EXTNAME')
-
-        if add is True:
-            if name in self._tables:
-                self._tables[name].append(meta_obj)
-            else:
-                self._tables[name] = [meta_obj]
 
         return meta_obj
 
@@ -427,7 +432,7 @@ class FitsProvider(DataProvider):
             return [x for x in hdulist
                       if x.header.get('EXTVER') == ver and x.header['EXTNAME'] not in skip_names]
 
-        def process_meta_unit(nd, meta, add=True):
+        def process_unit(nd, meta):
             eheader = meta.header
             name = eheader.get('EXTNAME')
             data = meta.data
@@ -438,17 +443,13 @@ class FitsProvider(DataProvider):
                 std_un.parent_nddata = nd
                 nd.uncertainty = std_un
             else:
-                if isinstance(meta, fits.BinTableHDU):
-                    meta_obj = self._add_table(meta, add=add)
-                elif isinstance(meta, fits.ImageHDU):
+                if isinstance(meta, BinTableHDU):
+                    meta_obj = self._add_table(meta)
+                elif isinstance(meta, ImageHDU):
                     meta_obj = NDDataObject(data, meta={'hdu': eheader})
                 else:
                     raise ValueError("Unknown extension type: {!r}".format(name))
-                if add:
-                    setattr(nd, name, meta_obj)
-                    nd.meta['other'].append(name)
-                else:
-                    return meta_obj
+                return name, meta_obj
 
         self._nddata = []
         sci_units = [x for x in hdulist[1:] if x.header['EXTNAME'] == 'SCI']
@@ -460,7 +461,11 @@ class FitsProvider(DataProvider):
 
             for extra_unit in search_for_associated(ver):
                 seen.add(extra_unit)
-                process_meta_unit(nd, extra_unit, add=True)
+                ret = process_unit(nd, extra_unit)
+                if ret is not None:
+                    name, obj = ret
+                    setattr(nd, name, obj)
+                    nd.meta['other'].append(name)
 
         for other in hdulist:
             if other in seen:
@@ -472,10 +477,13 @@ class FitsProvider(DataProvider):
 # NOTE: This happens with GPI. Let's leave it for later...
 #            if other.header.get('EXTVER', -1) >= 0:
 #                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
-            if isinstance(other, fits.BinTableHDU):
-                self._tables[name] = Table(other.data, meta={'hdu': other.header})
-            setattr(self, name, process_meta_unit(None, other, add=False))
-            self._exposed.append(name)
+            processed = process_unit(None, other)
+            if processed is not None:
+                name, processed = processed
+            setattr(self, name, processed)
+            self._exposed.add(name)
+            if isinstance(processed, Table):
+                self._tables[name] = processed
 
     @property
     def filename(self):
@@ -527,20 +535,49 @@ class FitsProvider(DataProvider):
 
     @force_load
     def to_hdulist(self):
+        def new_hdu(data, header, name=None, htype=ImageHDU):
+            i = htype(data=DELAYED, header=header.copy(), name=name)
+            i.data = data
+            return i
+
         hlst = HDUList()
         hlst.append(PrimaryHDU(header=self._header[0], data=DELAYED))
 
         for ext in self._nddata:
-            # TODO: Extend this to cover all cases
-            i = ImageHDU(data=DELAYED, header=ext.meta['hdu'])
-            i.data = ext.data
-            hlst.append(i)
+            header, ver = ext.meta['hdu'], ext.meta['ver']
+
+            hlst.append(new_hdu(ext.data, header))
+            if ext.uncertainty is not None:
+                hlst.append(new_hdu(ext.uncertainty.array ** 2, header, 'VAR'))
+            if ext.mask is not None:
+                hlst.append(new_hdu(ext.mask, header, 'DQ'))
+
+            for name in ext.meta.get('other', ()):
+                other = getattr(ext, name)
+                if isinstance(other, Table):
+                    hlst.append(new_hdu(other.as_array(),
+                                        other.meta['hdu'],
+                                        htype=BinTableHDU))
+                elif isinstance(other, NDDataObject):
+                    hlst.append(new_hdu(other.data, other.meta['hdu']))
+                else:
+                    raise ValueError("I don't know how to write back an object of type {}".format(type(other)))
+
+        if self._tables is not None:
+            for name, table in sorted(self._tables.items()):
+                hlst.append(new_hdu(table.as_array(),
+                                    table.meta['hdu'],
+                                    htype=BinTableHDU))
 
         return hlst
 
     @force_load
     def table(self):
         return self._tables.copy()
+
+    @property
+    def tables(self):
+        return set(self._tables.keys())
 
     @property
     @force_load
@@ -586,7 +623,7 @@ class FitsProvider(DataProvider):
                         self._crop_nd(o)
 
     def append(self, ext):
-        if isinstance(ext, (Table, fits.BinTableHDU)):
+        if isinstance(ext, (Table, BinTableHDU)):
             return self._add_table(ext)
         elif isinstance(ext, PrimaryHDU):
             raise ValueError("Only one Primary HDU allowed")
@@ -753,5 +790,13 @@ class AstroDataFits(AstroData):
     def info(self):
         self._dataprov.info(self.tags)
 
+    def write(self, filename=None, clobber=False):
+        if filename is None:
+            if self.path is None:
+                raise ValueError("A file name needs to be specified")
+            filename = self.path
+        self._dataprov.to_hdulist().writeto(filename, clobber=clobber)
+
+# TODO: Remove this when we're sure that there are no external uses
 def write(filename, ad_object, clobber=False):
     ad_object._dataprov.to_hdulist().writeto(filename, clobber=clobber)
