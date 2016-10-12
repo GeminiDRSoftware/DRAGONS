@@ -14,7 +14,7 @@
 \usepackage{appendix} \setcounter{tocdepth}{0}
 
 \title{reduce Users Manual}
-\date{October 05, 2016}
+\date{October 07, 2016}
 \release{X1.0.1}
 \author{Kenneth Anderson}
 \newcommand{\sphinxlogo}{}
@@ -517,8 +517,8 @@ Literals                 var \PYGZsq{}dest\PYGZsq{}              Value
 [\PYGZsq{}\PYGZhy{}\PYGZhy{}logmode\PYGZsq{}]            :: logmode              :: [\PYGZsq{}console\PYGZsq{}]
 [\PYGZsq{}\PYGZhy{}r\PYGZsq{}, \PYGZsq{}\PYGZhy{}\PYGZhy{}recipe\PYGZsq{}]       :: recipename           :: None
 [\PYGZsq{}\PYGZhy{}\PYGZhy{}logfile\PYGZsq{}]            :: logfile              :: reduce.log
-[\PYGZsq{}\PYGZhy{}\PYGZhy{}user\PYGZus{}cal\PYGZsq{}]           :: user\PYGZus{}cals            :: None
-[\PYGZsq{}\PYGZhy{}\PYGZhy{}context\PYGZsq{}]            :: running\PYGZus{}contexts     :: None
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}user\PYGZus{}cal\PYGZsq{}]           :: user\PYGZus{}cal             :: None
+[\PYGZsq{}\PYGZhy{}\PYGZhy{}context\PYGZsq{}]            :: context              :: None
 [\PYGZsq{}\PYGZhy{}\PYGZhy{}suffix\PYGZsq{}]             :: suffix               :: None
 [\PYGZsq{}\PYGZhy{}\PYGZhy{}loglevel\PYGZsq{}]           :: loglevel             :: stdinfo
 \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}
@@ -532,8 +532,8 @@ Input fits file(s):      fitsfile.fits
 \subsection{Configuration Switches, Options}
 \label{interfaces:configuration-switches-options}\label{interfaces:options}\begin{description}
 \item[{\textbf{--context \textless{}CONTEXT\textgreater{}}}] \leavevmode
-Use \textless{}RUNNING\_CONTEXTS\textgreater{} for primitives sensitive to context. Eg.,
-\code{-{-}context QA}. When not specified, the context defaults to `QA'.
+Use \textless{}CONTEXT\textgreater{} for recipe selection and for primitives sensitive to context.
+Eg., \code{-{-}context QA}. When not specified, the context defaults to `QA'.
 
 \item[{\textbf{--logmode \textless{}LOGMODE\textgreater{}}}] \leavevmode
 Set logging mode. One of
@@ -632,7 +632,7 @@ The minimal call for reduce can be
 While this minimal call is available at the Gemini Observatory (see Sec.
 {\hyperref[discuss:fitsstore]{\emph{Fits Storage}}}), if a calibration service is unavailable to the user --
 likely true for most users -- users should call \code{reduce} on a specified
-dataset by providing calibration files with the  --overrride\_cal option.
+dataset by providing calibration files with the  --user\_cal option.
 
 For example:
 
@@ -642,13 +642,14 @@ For example:
 
 Such a command for complex processing of data is possible because AstroData
 and the Recipe System do all the necessary work in determining how the data are to
-be processed, which is critcially based upon the determination of the \emph{typeset}
+be processed, which is critcially based upon the determination of the \emph{tag set}
 that applies to that data.
 
 Without any user-specified recipe (-r --recipe), the default recipe is
-\code{qaReduce}, which is defined for various AstroDataTypes and currently used
-during summit operations. The Recipe System uses the astrodata tag set and context
-to search and find the recipe to run.
+\code{qaReduce}, which is defined for various AstroData tag sets and currently used
+during summit operations. Unless passed a explicit recipe (-r --recipename),
+the Recipe System uses the astrodata tag set and context to locate the appropriate
+recipe to run.
 
 The recipe libraries for a GMOS\_IMAGE, are defined under
 
@@ -749,7 +750,8 @@ To illustrate the convenience provided by an \href{mailto:'@file}{`@file}`, let 
 example \emph{reduce} command line that has a number of arguments:
 
 \begin{Verbatim}[commandchars=\\\{\}]
-\PYGZdl{} reduce \PYGZhy{}p detectSources:threshold=4.5 tpar=100 \PYGZhy{}r recipe.ArgsTest \PYGZhy{}\PYGZhy{}context sq S20130616S0019.fits N20100311S0090.fits
+\PYGZdl{} reduce \PYGZhy{}p detectSources:threshold=4.5 tpar=100 \PYGZhy{}r recipe.ArgsTest \PYGZhy{}\PYGZhy{}context SQ
+  S20130616S0019.fits N20100311S0090.fits
 \end{Verbatim}
 
 Ungainly, to be sure. Here, two (2) \emph{user parameters} are being specified
@@ -774,8 +776,8 @@ This then turns the previous reduce command line into something a little more
 \PYGZdl{} reduce @reduce\PYGZus{}args.par
 \end{Verbatim}
 
-The order of these arguments is irrelevant. The parser will figure out what is
-what. The above file could be thus written like:
+The order of these arguments is irrelevant. The above file could be thus written
+like:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYGZhy{}r recipe.ArgsTests
@@ -797,7 +799,6 @@ using comments and tabulation:
 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PYGZsh{} reduce parameter file
-\PYGZsh{} yyyy\PYGZhy{}mm\PYGZhy{}dd
 \PYGZsh{} GDPSG
 
 \PYGZsh{} Spec the recipe
@@ -805,7 +806,6 @@ using comments and tabulation:
     recipe.ArgsTests  \PYGZsh{} test recipe
 
 \PYGZsh{} primitive parameters here
-\PYGZsh{} These are \PYGZsq{}untyped\PYGZsq{}, i.e. global
 \PYGZhy{}\PYGZhy{}param
     tpar=100
     detectSources:threshold=4.5

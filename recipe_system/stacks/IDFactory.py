@@ -31,16 +31,16 @@ def generate_stackable_id(dataset):
         ad = AstroData(dataset)
         ID = "{}{}".format(_v, str(ad.group_id()))
     elif isinstance(dataset, AstroData):
-        ID = "{}{}".format(_v, str(ad.group_id()))
+        ID = "{}{}".format(_v, str(dataset.group_id()))
     else:
         raise TypeError("BAD ARGUMENT: {}".format(dataset))
 
-    return make_safe_id_(ID)
+    return make_safe_id(ID)
 
 def generate_astro_data_id(dataset):
     """
     An id to be used to identify AstroData types. This is used for:
-    
+
     1) Calibrations:
     
     Let's say a recipe performs
@@ -72,7 +72,7 @@ def generate_astro_data_id(dataset):
         ADID = ad.data_label().as_pytype()
         return ADID
     elif isinstance(dataset, AstroData):
-        ADID = ad.data_label().as_pytype()
+        ADID = dataset.data_label().as_pytype()
         return ADID
     else:
         raise TypeError("BAD ARGUMENT: {}".format(type(dataset)))
@@ -89,6 +89,6 @@ def generate_fringe_list_id(dataset):
     '''
     return generate_stackable_id(dataset)
 
-def make_id_safe_for_filename(spaced_id):
+def make_safe_id(spaced_id):
     return spaced_id.replace(" ", "_")
 

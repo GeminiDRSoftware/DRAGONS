@@ -110,7 +110,7 @@ from os.path import basename, exists, join
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 
-from astrodata.utils import logutils
+from gempy.utils import logutils
 
 # ------------------------------------------------------------------------------
 version = "1.0 (r" + __version__.strip() +")"

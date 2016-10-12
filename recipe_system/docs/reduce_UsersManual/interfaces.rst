@@ -85,8 +85,8 @@ Informational switches
        ['--logmode'] 		:: logmode 		:: ['console']
        ['-r', '--recipe'] 	:: recipename 		:: None
        ['--logfile'] 		:: logfile 		:: reduce.log
-       ['--user_cal'] 	        :: user_cals 		:: None
-       ['--context'] 		:: running_contexts 	:: None
+       ['--user_cal'] 	        :: user_cal 		:: None
+       ['--context'] 		:: context      	:: None
        ['--suffix'] 		:: suffix 		:: None
        ['--loglevel'] 		:: loglevel 		:: stdinfo
        -----------------------------------------------------------------
@@ -98,8 +98,8 @@ Informational switches
 Configuration Switches, Options
 +++++++++++++++++++++++++++++++
 **--context <CONTEXT>**
-    Use <RUNNING_CONTEXTS> for primitives sensitive to context. Eg., 
-    ``--context QA``. When not specified, the context defaults to 'QA'. 
+    Use <CONTEXT> for recipe selection and for primitives sensitive to context. 
+    Eg., ``--context QA``. When not specified, the context defaults to 'QA'. 
 
 **--logmode <LOGMODE>**
     Set logging mode. One of
@@ -167,7 +167,7 @@ The minimal call for reduce can be ::
 While this minimal call is available at the Gemini Observatory (see Sec. 
 :ref:`fitsstore`), if a calibration service is unavailable to the user -- 
 likely true for most users -- users should call ``reduce`` on a specified 
-dataset by providing calibration files with the  --overrride_cal option. 
+dataset by providing calibration files with the  --user_cal option. 
 
 For example::
 
@@ -175,13 +175,14 @@ For example::
 
 Such a command for complex processing of data is possible because AstroData 
 and the Recipe System do all the necessary work in determining how the data are to 
-be processed, which is critcially based upon the determination of the `typeset` 
+be processed, which is critcially based upon the determination of the `tag set` 
 that applies to that data.
 
 Without any user-specified recipe (-r --recipe), the default recipe is 
-``qaReduce``, which is defined for various AstroDataTypes and currently used 
-during summit operations. The Recipe System uses the astrodata tag set and context
-to search and find the recipe to run. 
+``qaReduce``, which is defined for various AstroData tag sets and currently used 
+during summit operations. Unless passed a explicit recipe (-r --recipename), 
+the Recipe System uses the astrodata tag set and context to locate the appropriate
+recipe to run. 
 
 The recipe libraries for a GMOS_IMAGE, are defined under ::
 
@@ -276,7 +277,8 @@ Essentially, an @file is some or all of the command line and parsed identically.
 To illustrate the convenience provided by an '@file', let us begin with an 
 example `reduce` command line that has a number of arguments::
 
-  $ reduce -p detectSources:threshold=4.5 tpar=100 -r recipe.ArgsTest --context sq S20130616S0019.fits N20100311S0090.fits
+  $ reduce -p detectSources:threshold=4.5 tpar=100 -r recipe.ArgsTest --context SQ 
+    S20130616S0019.fits N20100311S0090.fits
 
 Ungainly, to be sure. Here, two (2) `user parameters` are being specified 
 with **-p**, a `recipe` with **-r**, and a `context` argument is specified 
@@ -296,8 +298,8 @@ This then turns the previous reduce command line into something a little more
 
   $ reduce @reduce_args.par
 
-The order of these arguments is irrelevant. The parser will figure out what is 
-what. The above file could be thus written like::
+The order of these arguments is irrelevant. The above file could be thus written 
+like::
 
   -r recipe.ArgsTests
   --param
@@ -316,15 +318,13 @@ Here's a more readable version of the file from the previous example
 using comments and tabulation::
 
     # reduce parameter file
-    # yyyy-mm-dd
     # GDPSG 
-    
+
     # Spec the recipe
     -r 
         recipe.ArgsTests  # test recipe
     
     # primitive parameters here
-    # These are 'untyped', i.e. global
     --param
         tpar=100
         detectSources:threshold=4.5
@@ -350,9 +350,8 @@ users may check by adding the **-d** flag::
   ['--logmode'] 	     :: logmode 	:: standard
   ['-r', '--recipe'] 	     :: recipename 	:: ['recipe.ArgTests']
   ['--logfile'] 	     :: logfile 	:: reduce.log
-  ['--user_cal'] 	     :: user_cals 	:: None
+  ['--user_cal'] 	     :: user_cal 	:: None
   ['--context'] 	     :: context         :: ['QA']
-  ['--calmgr'] 		     :: cal_mgr 	:: None
   ['--suffix'] 		     :: suffix 		:: None
   ['--loglevel'] 	     :: loglevel 	:: stdinfo
   -----------------------------------------------------------------
