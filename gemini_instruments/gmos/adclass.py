@@ -11,7 +11,10 @@ from ..gemini import AstroDataGemini
 
 class AstroDataGmos(AstroDataGemini):
 
-    __keyword_dict = dict(camera = 'INSTRUME',
+    __keyword_dict = dict(array_name = 'AMPNAME',
+                          array_section = 'CCDSEC',
+                          camera = 'INSTRUME',
+                          overscan_section = 'BIASSEC',
                           wavelength_reference_pixel = 'CRPIX1',
                           )
 
