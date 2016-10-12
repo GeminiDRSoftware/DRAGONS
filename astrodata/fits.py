@@ -166,13 +166,17 @@ class FitsProvider(DataProvider):
         self._nddata = None
         self._hdulist = None
         self.path = None
-        self._tables = None
-        self._exposed = []
+        self._tables = {}
+        self._exposed = set()
 
     @force_load
     def __getattr__(self, attribute):
-        # If we get here, it means that the attribute hasn't been exposed. Probably
-        # an alias. Test...
+        # First, make sure that the object is not an exposed one. It may be that
+        # we just lazy-loaded the contents for the first time...
+        if attribute in self._exposed:
+            return getattr(self, attribute)
+
+        # So, the attribute hasn't been exposed. Probably an alias. Test...
         for nd in self._nddata:
             if nd.meta.get('name') == attribute:
                 return nd
@@ -316,7 +320,7 @@ class FitsProvider(DataProvider):
     @property
     def exposed(self):
         self._lazy_populate_object()
-        return set(self._exposed)
+        return self._exposed.copy()
 
     @force_load
     def _slice(self, indices, multi=True):
@@ -332,12 +336,11 @@ class FitsProvider(DataProvider):
             scopy._nddata = [self._nddata[n] for n in indices]
 
         scopy._tables = {}
-        if self._tables is not None:
-            for name, content in self._tables.items():
-                if type(content) is list:
-                    scopy._tables[name] = [content[n] for n in indices]
-                else:
-                    scopy._tables[name] = content
+        for name, content in self._tables.items():
+            if type(content) is list:
+                scopy._tables[name] = [content[n] for n in indices]
+            else:
+                scopy._tables[name] = content
 
         return scopy
 
@@ -378,9 +381,16 @@ class FitsProvider(DataProvider):
     def _set_headers(self, hdulist):
         self._header = [hdulist[0].header] + [x.header for x in hdulist[1:] if
                                                 (x.header.get('EXTNAME') in ('SCI', None))]
+        tables = [unit for unit in hdulist if isinstance(unit, BinTableHDU)]
+        for table in tables:
+            name = table.header.get('EXTNAME')
+            if name == 'OBJCAT':
+                continue
+            self._tables[name] = None
+            self._exposed.add(name)
 
     def _add_table(self, table):
-        if isinstance(table, fits.BinTableHDU):
+        if isinstance(table, BinTableHDU):
             meta_obj = Table(table.data, meta={'hdu': table.header})
             name = table.header.get('EXTNAME')
         elif isinstance(table, Table):
@@ -468,10 +478,12 @@ class FitsProvider(DataProvider):
 #            if other.header.get('EXTVER', -1) >= 0:
 #                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
             processed = process_unit(None, other)
+            if processed is not None:
+                name, processed = processed
             setattr(self, name, processed)
+            self._exposed.add(name)
             if isinstance(processed, Table):
                 self._tables[name] = processed
-            self._exposed.append(name)
 
     @property
     def filename(self):
@@ -562,6 +574,10 @@ class FitsProvider(DataProvider):
     @force_load
     def table(self):
         return self._tables.copy()
+
+    @property
+    def tables(self):
+        return set(self._tables.keys())
 
     @property
     @force_load
