@@ -10,6 +10,11 @@ from ..gemini import AstroDataGemini
 
 
 class AstroDataGmos(AstroDataGemini):
+
+    __keyword_dict = dict(camera = 'INSTRUME',
+                          wavelength_reference_pixel = 'CRPIX1',
+                          )
+
     @staticmethod
     def _matches_data(data_provider):
         return data_provider.phu.get('INSTRUME', '').upper() in ('GMOS-N', 'GMOS-S')
@@ -844,11 +849,8 @@ class AstroDataGmos(AstroDataGemini):
         # Explicit: if BUNIT is missing, assume data are in ADU
         bunits = self.hdr.get('BUNIT', 'adu')
 
-        # We need bias level estimates if data have been bias-subtracted
-        # or we have small (<=2) binning and we're not using the old EEV CCDs
-        if ((True in bias_subtracted if isinstance(bias_subtracted,list)
-                else bias_subtracted) or (detname!='EEV' and bin_factor<=2)):
-            bias_levels = get_bias_level(self, estimate=True)
+        # Get estimated bias levels from LUT
+        bias_levels = get_bias_level(self, estimate=True)
 
         adc_limit = 65535
         # Get the limit that could be processed without hitting the ADC limit
