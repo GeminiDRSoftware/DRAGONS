@@ -25,6 +25,8 @@ def rasextodec(string):
         hours += (minutes/60.0)
 
         degrees = hours * 15.0
+    else:
+        raise ValueError('Invalid RA string')
 
     return degrees
 
@@ -48,6 +50,8 @@ def degsextodec(string):
         degs += (minutes/60.0)
 
         degs *= sign
+    else:
+        raise ValueError('Invalid Dec string')
 
     return degs
 
@@ -427,7 +431,8 @@ def match_cxy(xx, sx, yy, sy, first_pass=50, delta=10, log=None):
     # performed, since the best offsets are not calculated from an actual match
     if len(dax) > 0:
         xoffset, yoffset = dax[np.argmax(height)], day[np.argmax(height)]
-        log.info("First pass offsets (x,y): %.2f %.2f" % (xoffset, yoffset))
+        if log:
+            log.info("First pass offsets (x,y): %.2f %.2f" % (xoffset, yoffset))
         sx += xoffset
         sy += yoffset
 
@@ -471,12 +476,14 @@ def match_cxy(xx, sx, yy, sy, first_pass=50, delta=10, log=None):
             sy += dy
             xoffset += dx
             yoffset += dy
-            log.info("Tweaked offsets by: %.2f %.2f" % (dx, dy))
+            if log:
+                log.info("Tweaked offsets by: %.2f %.2f" % (dx, dy))
             # Use scatter in points to determine quality of fit for final pass
             if delta is None and iteration == 0:
                 current_delta = 2 * np.sqrt(np.std(dax-dx) * np.std(dax-dy))
-                log.info("Using %.3f pixels as final matching "
-                         "radius" % current_delta)
+                if log:
+                    log.info("Using %.3f pixels as final matching "
+                             "radius" % current_delta)
         g, r, dax, day = map(np.asarray, (g, r, dax, day))
         #for i,k,dx,dy in zip(g,r,dax,day):
         #    print(i+1,k+1,dx,dy)
@@ -490,12 +497,14 @@ def match_cxy(xx, sx, yy, sy, first_pass=50, delta=10, log=None):
         # Add 1 to debug display to match directly with catalogs
         #print("indxy = ", indxy+1)
         #print("indr = ", indr+1)
-        log.info('Final offset (x,y): %.2f %.2f (%.2f %.2f)' %
-             (xoffset, yoffset, stdx, stdy))
+        if log:
+            log.info('Final offset (x,y): %.2f %.2f (%.2f %.2f)' %
+                    (xoffset, yoffset, stdx, stdy))
     else:
         indxy = []
         indr = []
-        log.info('No matched sources')
+        if log:
+            log.info('No matched sources')
 
     return indxy, indr
 
