@@ -9,6 +9,7 @@ from .core import *
 from astropy.io import fits
 from astropy.io.fits import HDUList, Header, DELAYED
 from astropy.io.fits import PrimaryHDU, ImageHDU, BinTableHDU
+from astropy.io.fits import Column, FITS_rec
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
 from astropy.nddata import NDDataRef as NDDataObject
@@ -149,6 +150,31 @@ class FitsKeywordManipulator(object):
             return any(tuple(key in h for h in self._headers))
         else:
             return key in self._headers[0]
+
+def new_imagehdu(data, header, name=None):
+    i = ImageHDU(data=DELAYED, header=header.copy(), name=name)
+    i.data = data
+    return i
+
+def table_to_bintablehdu(table):
+    array = table.as_array()
+    header = table.meta['hdu'].copy()
+    coldefs = []
+    for n, name in enumerate(array.dtype.names, 1):
+        coldefs.append(Column(
+            name   = header.get('TTYPE{}'.format(n)),
+            format = header.get('TFORM{}'.format(n)),
+            unit   = header.get('TUNIT{}'.format(n)),
+            null   = header.get('TNULL{}'.format(n)),
+            bscale = header.get('TSCAL{}'.format(n)),
+            bzero  = header.get('TZERO{}'.format(n)),
+            disp   = header.get('TDISP{}'.format(n)),
+            start  = header.get('TBCOL{}'.format(n)),
+            dim    = header.get('TDIM{}'.format(n)),
+            array  = array[name]
+        ))
+
+    return BinTableHDU(data=FITS_rec.from_columns(coldefs), header=header)
 
 def force_load(fn):
     @wraps(fn)
@@ -535,10 +561,6 @@ class FitsProvider(DataProvider):
 
     @force_load
     def to_hdulist(self):
-        def new_hdu(data, header, name=None, htype=ImageHDU):
-            i = htype(data=DELAYED, header=header.copy(), name=name)
-            i.data = data
-            return i
 
         hlst = HDUList()
         hlst.append(PrimaryHDU(header=self._header[0], data=DELAYED))
@@ -546,28 +568,24 @@ class FitsProvider(DataProvider):
         for ext in self._nddata:
             header, ver = ext.meta['hdu'], ext.meta['ver']
 
-            hlst.append(new_hdu(ext.data, header))
+            hlst.append(new_imagehdu(ext.data, header))
             if ext.uncertainty is not None:
-                hlst.append(new_hdu(ext.uncertainty.array ** 2, header, 'VAR'))
+                hlst.append(new_imagehdu(ext.uncertainty.array ** 2, header, 'VAR'))
             if ext.mask is not None:
-                hlst.append(new_hdu(ext.mask, header, 'DQ'))
+                hlst.append(new_imagehdu(ext.mask, header, 'DQ'))
 
             for name in ext.meta.get('other', ()):
                 other = getattr(ext, name)
                 if isinstance(other, Table):
-                    hlst.append(new_hdu(other.as_array(),
-                                        other.meta['hdu'],
-                                        htype=BinTableHDU))
+                    hlst.append(table_to_bintablehdu(other))
                 elif isinstance(other, NDDataObject):
-                    hlst.append(new_hdu(other.data, other.meta['hdu']))
+                    hlst.append(new_imagehdu(other.data, other.meta['hdu']))
                 else:
                     raise ValueError("I don't know how to write back an object of type {}".format(type(other)))
 
         if self._tables is not None:
             for name, table in sorted(self._tables.items()):
-                hlst.append(new_hdu(table.as_array(),
-                                    table.meta['hdu'],
-                                    htype=BinTableHDU))
+                hlst.append(table_to_bintablehdu(table))
 
         return hlst
 
