@@ -594,14 +594,15 @@ class AstroDataGemini(AstroDataFits):
             output_units = 'meters'
         tags = self.tags
         if 'IMAGE' in tags:
-            inst = self.instrument()
+            wave_in_microns = None
             filter_name = self.filter_name(pretty=True)
             for inst in (self.instrument(), '*'):
                 try:
                     wave_in_microns = filter_wavelengths[inst, filter_name]
                 except KeyError:
                     pass
-            raise KeyError("Can't find the wavelength for this filter in the look-up table")
+            if wave_in_microns is None:
+                raise KeyError("Can't find the wavelength for this filter in the look-up table")
         elif 'SPECT' in tags:
             wave_in_microns = self.central_wavelength(asMicrometers=True)
 
