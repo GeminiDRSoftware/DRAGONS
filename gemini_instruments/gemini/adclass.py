@@ -470,6 +470,19 @@ class AstroDataGemini(AstroDataFits):
                                           stripID, pretty)
 
     @astro_data_descriptor
+    def detector_roi_setting(self):
+        """
+        Returns the ROI setting. Most instruments don't allow this to be
+        changed, so at the Gemini level it just returns 'Fixed'
+
+        Returns
+        -------
+        str
+            Name of the ROI setting used, ie, "Fixed"
+        """
+        return 'Fixed'
+
+    @astro_data_descriptor
     def detector_section(self, pretty=False):
         """
         Returns the section covered by the detector relative to the whole
@@ -511,7 +524,7 @@ class AstroDataGemini(AstroDataFits):
         int
             The detector binning
         """
-        return self.phu.get(self._keyword_for('detector_x_bin', 1))
+        return self.phu.get(self._keyword_for('detector_x_bin'), 1)
 
     @astro_data_descriptor
     def detector_y_bin(self):
@@ -523,7 +536,7 @@ class AstroDataGemini(AstroDataFits):
         int
             The detector binning
         """
-        return self.phu.get(self._keyword_for('detector_y_bin', 1))
+        return self.phu.get(self._keyword_for('detector_y_bin'), 1)
 
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
