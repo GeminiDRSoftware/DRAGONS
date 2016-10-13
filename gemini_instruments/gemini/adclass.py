@@ -253,7 +253,7 @@ class AstroDataGemini(AstroDataFits):
             raise AttributeError("No {} information".format(descriptor_name))
 
     def _may_remove_component(self, keyword, stripID, pretty):
-        val = self.phu.get(keyword)
+        val = getattr(self.phu, keyword)
         if stripID or pretty:
             return removeComponentID(val)
         return val
