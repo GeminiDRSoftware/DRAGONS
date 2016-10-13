@@ -89,7 +89,7 @@ function-rgx=[a-z_][a-z0-9_]{2,30}$
 #method-rgx=[a-z_][a-z0-9_]{2,30}$
 # The following expression analyze with form is predominant in the
 # file and uses that form as the valid one.  Useful for primitive
-# files since the methods (ie. the name of the primitives) use 
+# files since the methods (ie. the name of the primitives) use
 # semi-camel case.
 method-rgx=(?:(?P<snake>[a-z_][a-z0-9_]{2,30})|(?P<camel>_?[a-z][a-zA-Z0-9]{2,30}))$
 
@@ -107,7 +107,7 @@ variable-rgx=[a-z_][a-z0-9_]{2,30}$
 inlinevar-rgx=[A-Za-z_][A-Za-z0-9_]*$
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=ad,ra,x1,x2,y1,x2,x,y,z,dx,dy,dz,i,j,k,ex,Run,_
+good-names=ad,ra,x1,x2,y1,y2,x,y,z,dx,dy,dz,i,j,k,ex,Run,_
 
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,bar,baz,toto,tutu,tata
@@ -156,7 +156,7 @@ ignore-mixin-members=yes
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set).
-ignored-classes=SQLObject
+ignored-classes=SQLObject,numpy
 
 # When zope mode is activated, add a predefined set of Zope acquired attributes
 # to generated-members.
