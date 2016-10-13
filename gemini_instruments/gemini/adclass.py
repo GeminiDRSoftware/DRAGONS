@@ -100,10 +100,8 @@ gemini_keyword_names = dict(
 # These construct descriptors that simply get that keyword from the PHU
 # These will override any descriptor functions in the class definition
 gemini_simple_descriptors = dict(
-    azimuth = keyword('AZIMUTH'),
     data_label = keyword('DATALAB'),
     dispersion = keyword('WDELTA'),
-    elevation = keyword('ELEVATIO'),
     grating = keyword('GRATING'),
     group_id = keyword('GROUPID'),
     lyot_stop = keyword('LYOTSTOP'),
@@ -117,7 +115,6 @@ gemini_simple_descriptors = dict(
     pupil_mask = keyword('PUPILMSK'),
     r_zero_val = keyword('RZEROVAL'),
     slit = keyword('SLIT'),
-    wavelength = keyword('WAVELENG'),
     x_offset = keyword('XOFFSET'),
     y_offset = keyword('YOFFSET'),
 )
@@ -253,7 +250,7 @@ class AstroDataGemini(AstroDataFits):
             raise AttributeError("No {} information".format(descriptor_name))
 
     def _may_remove_component(self, keyword, stripID, pretty):
-        val = self.phu.get(keyword)
+        val = getattr(self.phu, keyword)
         if stripID or pretty:
             return removeComponentID(val)
         return val
@@ -293,7 +290,7 @@ class AstroDataGemini(AstroDataFits):
 
         """
         try:
-            return self.phu.AOSEEING
+            return getattr(self.phu, self._keyword_for('ao_seeing'))
         except KeyError:
             try:
                 # If r_zero_val (Fried's parameter) is present, 
@@ -340,6 +337,18 @@ class AstroDataGemini(AstroDataFits):
         """
         return self._parse_section('array_section',
                                    self._keyword_for('array_section'), pretty)
+
+    @astro_data_descriptor
+    def azimuth(self):
+        """
+        Returns the azimuth of the telescope, in degrees
+
+        Returns
+        -------
+        float
+            azimuth
+        """
+        return self.phu.get(self._keyword_for('azimuth'))
 
     @astro_data_descriptor
     def camera(self, stripID=False, pretty=False):
@@ -470,6 +479,19 @@ class AstroDataGemini(AstroDataFits):
                                           stripID, pretty)
 
     @astro_data_descriptor
+    def detector_roi_setting(self):
+        """
+        Returns the ROI setting. Most instruments don't allow this to be
+        changed, so at the Gemini level it just returns 'Fixed'
+
+        Returns
+        -------
+        str
+            Name of the ROI setting used, ie, "Fixed"
+        """
+        return 'Fixed'
+
+    @astro_data_descriptor
     def detector_section(self, pretty=False):
         """
         Returns the section covered by the detector relative to the whole
@@ -511,7 +533,7 @@ class AstroDataGemini(AstroDataFits):
         int
             The detector binning
         """
-        return self.phu.get(self._keyword_for('detector_x_bin', 1))
+        return self.phu.get(self._keyword_for('detector_x_bin'), 1)
 
     @astro_data_descriptor
     def detector_y_bin(self):
@@ -523,7 +545,7 @@ class AstroDataGemini(AstroDataFits):
         int
             The detector binning
         """
-        return self.phu.get(self._keyword_for('detector_y_bin', 1))
+        return self.phu.get(self._keyword_for('detector_y_bin'), 1)
 
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
@@ -607,6 +629,18 @@ class AstroDataGemini(AstroDataFits):
             wave_in_microns = self.central_wavelength(asMicrometers=True)
 
         return convert_units('micrometers', wave_in_microns, output_units)
+
+    @astro_data_descriptor
+    def elevation(self):
+        """
+        Returns the elevation of the telescope, in degrees
+
+        Returns
+        -------
+        float
+            elevation
+        """
+        return self.phu.get(self._keyword_for('elevation'))
 
     @astro_data_descriptor
     def exposure_time(self):
@@ -938,6 +972,18 @@ class AstroDataGemini(AstroDataFits):
 
         """
         return self._raw_to_percentile('raw_wv', self.phu.RAWWV)
+
+    @astro_data_descriptor
+    def read_mode(self):
+        """
+        Returns the readout mode used for the observation
+
+        Returns
+        -------
+        str
+            the read mode used
+        """
+        return self.phu.get(self._keyword_for('read_mode'))
 
     @astro_data_descriptor
     def requested_bg(self):
@@ -1283,17 +1329,17 @@ class AstroDataGemini(AstroDataFits):
         -------
         str
             Name of the wavefront sensor.
-
         """
         candidates = (
             ('AOWFS', self.phu.get("AOWFS_ST")),
             ('OIWFS', self.phu.get("OIWFS_ST")),
             ('PWFS1', self.phu.get("PWFS1_ST")),
             ('PWFS2', self.phu.get("PWFS2_ST")),
-            ('GEMS', self.phu.get("GWFS1CFG"))
         )
 
         wavefront_sensors = [name for (name, value) in candidates if value == 'guiding']
+        if self.phu.get('GWFS1CFG') is not None:
+            wavefront_sensors.append('GEMS')
 
         if not wavefront_sensors:
             raise ValueError("No probes are guiding")

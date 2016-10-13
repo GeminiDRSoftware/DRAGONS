@@ -444,20 +444,29 @@ class AstroDataF2(AstroDataGemini):
 
         Returns
         -------
-        float
-            zeropoint values, one per SCI extension (i.e., one for F2)
+        list/float
+            zeropoint values, one per SCI extension
         """
-        offset = 0.0
-        # Apply conversion if data are in ADU (if no BUNIT, assume electrons)
-        try:
-            if self[0].hdr.BUNIT.lower() == 'adu':
-                offset = 2.5 * math.log10(self.gain())
-        except KeyError:
-            pass
+        zpt_dict = nominal_zeropoints
 
-        nom_zpt = nominal_zeropoints[(self.filter_name(pretty=True),
-                                      self.camera(pretty=True))]
-        return nom_zpt
+        gain = self.gain()
+        filter_name = self.filter_name(pretty=True)
+        camera = self.camera(pretty=True)
+        # Explicit: if BUNIT is missing, assume data are in ADU
+        bunit = self.hdr.get('BUNIT', 'adu')
+
+        # Have to do the list/not-list stuff here
+        # Zeropoints in table are for electrons, so subtract 2.5*log10(gain)
+        # if the data are in ADU
+        try:
+            zpt = [zpt_dict[filter_name, camera] -
+                   (2.5 * math.log10(g) if b=='adu' else 0)
+                   for g,b in zip(gain, bunit)]
+        except TypeError:
+            zpt = zpt_dict[camera, filter_name] - (
+                2.5 * math.log10(gain) if bunit=='adu' else 0)
+
+        return zpt
 
     @returns_list
     @astro_data_descriptor
