@@ -422,9 +422,11 @@ class AstroDataGemini(AstroDataFits):
             output_units = "meters"
 
         # We assume that the central_wavelength keyword is in microns
-        wave_in_microns = self.phu.get(self._keyword_for('central_wavelength'), -1)
+        keyword = self._keyword_for('central_wavelength')
+        wave_in_microns = self.phu.get(keyword, -1)
         if wave_in_microns < 0:
-            raise ValueError("Invalid CWAVE value: {}".format(wave_in_microns))
+            raise ValueError("Invalid {} value: {}".format(keyword,
+                                                           wave_in_microns))
         return gmu.convert_units('micrometers', wave_in_microns,
                              output_units)
 
