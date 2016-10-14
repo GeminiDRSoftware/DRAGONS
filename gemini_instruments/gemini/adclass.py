@@ -385,24 +385,48 @@ class AstroDataGemini(AstroDataFits):
             raise ValueError("Invalid CRPA value: {}".format(val))
         return val
 
-    # TODO: Allow for unit conversion
     @astro_data_descriptor
-    def central_wavelength(self):
+    def central_wavelength(self, asMicrometers=False, asNanometers=False,
+                           asAngstroms=False):
         """
-        Returns the central wavelength in meters.
+        Returns the central wavelength in meters or the specified units
+
+        Parameters
+        ----------
+        asMicrometers : bool
+            If True, return the wavelength in microns
+        asNanometers : bool
+            If True, return the wavelength in nanometers
+        asAngstroms : bool
+            If True, return the wavelength in Angstroms
 
         Returns
         -------
         float
-            The central wavelength setting in meters.
-
+            The central wavelength setting
         """
-        val = self.phu.get(self._keyword_for('raw_central_wavelength'), -1)
-        if val < 0:
-            raise ValueError("Invalid CWAVE value: {}".format(val))
+        unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
+        if unit_arg_list.count(True) == 1:
+            # Just one of the unit arguments was set to True. Return the
+            # central wavelength in these units
+            if asMicrometers:
+                output_units = "micrometers"
+            if asNanometers:
+                output_units = "nanometers"
+            if asAngstroms:
+                output_units = "angstroms"
+        else:
+            # Either none of the unit arguments were set to True or more than
+            # one of the unit arguments was set to True. In either case,
+            # return the central wavelength in the default units of meters.
+            output_units = "meters"
 
-        # We assume that raw_central_wavelength returns micrometers.
-        return val / 1e-6
+        # We assume that the central_wavelength keyword is in microns
+        wave_in_microns = self.phu.get(self._keyword_for('central_wavelength'), -1)
+        if wave_in_microns < 0:
+            raise ValueError("Invalid CWAVE value: {}".format(wave_in_microns))
+        return gmu.convert_units('micrometers', wave_in_microns,
+                             output_units)
 
     @astro_data_descriptor
     def coadds(self):
@@ -1755,10 +1779,9 @@ class AstroDataGemini(AstroDataFits):
         """
         return self.phu.get(self._keyword_for('y_offset'))
 
-    def _get_wcs_coords(self, x=None, y=None):
+    def _get_wcs_coords(self):
         """
         Returns the RA and dec of the middle of the first extension
-        or a specific pixel therein (added by CJS in case it's useful)
 
         Returns
         -------
@@ -1773,9 +1796,8 @@ class AstroDataGemini(AstroDataFits):
                 wcs = WCS(self.header[0])
             else:
                 wcs = WCS(self.header[1])
-            if x is None or y is None:
-                x, y = [0.5 * self.hdr.get(naxis)[0]
-                        for naxis in ('NAXIS1','NAXIS2')]
+            x, y = [0.5 * self.hdr.get(naxis)[0]
+                    for naxis in ('NAXIS1','NAXIS2')]
             result = wcs.wcs_pix2world(x,y, 1)
         ra, dec = float(result[0]), float(result[1])
 
