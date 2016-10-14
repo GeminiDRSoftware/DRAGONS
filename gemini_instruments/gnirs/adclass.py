@@ -66,6 +66,36 @@ class AstroDataGnirs(AstroDataGemini):
             else:
                 return TagSet(['FLAT', 'CAL'])
 
+    @astro_data_descriptor
+    def array_section(self, pretty=False):
+        """
+        Returns the section covered by the array(s) relative to the detector
+        frame.  For example, this can be the position of multiple amps read
+        within a CCD.  If pretty is False, a tuple of 0-based coordinates
+        is returned with format (x1, x2, y1, y2).  If pretty is True, a keyword
+        value is returned without parsing as a string.  In this format, the
+        coordinates are generally 1-based.
+
+        One tuple or string is return per extension/array, in a list. If the
+        method is called on a single slice, the section is returned as a tuple
+        or a string.
+
+        Parameters
+        ----------
+        pretty : bool
+            If True, return the formatted string found in the header.
+
+        Returns
+        -------
+        tuple of integers or list of tuples
+            Position of extension(s) using Python slice values
+
+        string or list of strings
+            Position of extension(s) using an IRAF section format (1-based)
+
+        """
+        return self.data_section(pretty=pretty)
+
     # TODO: write a function in the spirit of _parse_section for GNIRS *_section
     @astro_data_descriptor
     def data_section(self, pretty=False):
@@ -76,9 +106,9 @@ class AstroDataGnirs(AstroDataGemini):
         value is returned without parsing as a string.  In this format, the
         coordinates are generally 1-based.
 
-        One tuple or string is return per extension/array.  If more than one
-        array, the tuples/strings are return in a list.  Otherwise, the
-        section is returned as a tuple or a string.
+        One tuple or string is return per extension/array, in a list. If the
+        method is called on a single slice, the section is returned as a tuple
+        or a string.
 
         Parameters
         ----------
@@ -111,36 +141,6 @@ class AstroDataGnirs(AstroDataGemini):
             return format_section(lowrows, hirows, lowcols, hicols, pretty)
 
     @astro_data_descriptor
-    def array_section(self, pretty=False):
-        """
-        Returns the section covered by the array(s) relative to the detector
-        frame.  For example, this can be the position of multiple amps read
-        within a CCD.  If pretty is False, a tuple of 0-based coordinates
-        is returned with format (x1, x2, y1, y2).  If pretty is True, a keyword
-        value is returned without parsing as a string.  In this format, the
-        coordinates are generally 1-based.
-
-        One tuple or string is return per extension/array.  If more than one
-        array, the tuples/strings are return in a list.  Otherwise, the
-        section is returned as a tuple or a string.
-
-        Parameters
-        ----------
-        pretty : bool
-            If True, return the formatted string found in the header.
-
-        Returns
-        -------
-        tuple of integers or list of tuples
-            Position of extension(s) using Python slice values
-
-        string or list of strings
-            Position of extension(s) using an IRAF section format (1-based)
-
-        """
-        return self.data_section(pretty=pretty)
-
-    @astro_data_descriptor
     def detector_section(self, pretty=False):
         """
         Returns the section covered by the detector relative to the whole
@@ -149,9 +149,9 @@ class AstroDataGnirs(AstroDataGemini):
         value is returned without parsing as a string.  In this format, the
         coordinates are generally 1-based.
 
-        One tuple or string is return per extension/array.  If more than one
-        array, the tuples/strings are return in a list.  Otherwise, the
-        section is returned as a tuple or a string.
+        One tuple or string is return per extension/array, in a list. If the
+        method is called on a single slice, the section is returned as a tuple
+        or a string.
 
         Parameters
         ----------
