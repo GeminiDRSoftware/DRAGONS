@@ -1,28 +1,19 @@
 import math
+import re
 
-from astrodata import astro_data_tag, astro_data_descriptor, simple_descriptor_mapping, keyword, TagSet
+from astrodata import astro_data_tag, astro_data_descriptor, TagSet, returns_list
 from ..gemini import AstroDataGemini
 from .lookup import detector_properties, nominal_zeropoints, config_dict, read_modes
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
-from ..gmu import *
+from .. import gmu
 
-# TODO: not all those should be descriptors.  eg. HICOL. only central_wavelength is a real descriptor here.
-# TODO: how does one assign a docstring to those that are indeed descriptors?
-@simple_descriptor_mapping(
-    bias = keyword("DETBIAS"),
-    central_wavelength = keyword("GRATWAVE"),
-    filter1 = keyword("FILTER1"),
-    filter2 = keyword("FILTER2"),
-    hicol = keyword("HICOL", on_ext=True),
-    hirow = keyword("HIROW", on_ext=True),
-    lnrs = keyword("LNRS"),
-    lowcol = keyword("LOWCOL", on_ext=True),
-    lowrow = keyword("LOWROW", on_ext=True),
-    ndavgs = keyword("NDAVGS")
-)
 class AstroDataGnirs(AstroDataGemini):
+
+    __keyword_dict = dict(central_wavelength = 'GRATWAVE',
+                          )
+
     @staticmethod
     def _matches_data(data_provider):
         return data_provider.phu.get('INSTRUME', '').upper() == 'GNIRS'
@@ -104,24 +95,20 @@ class AstroDataGnirs(AstroDataGemini):
             format (1-based).
 
         """
-        hirows = self.hirow()
-        lowrows = self.lowrow()
-        hicols = self.hicol()
-        lowcols = self.lowcol()
+        hirows = self.hdr.HIROW
+        lowrows = self.hdr.LOWROW
+        hicols = self.hdr.HICOL
+        lowcols = self.hdr.LOWCOL
 
-        data_sections = []
         # NOTE: Rows are X and cols are Y? These Romans are crazy
-        for hir, hic, lowr, lowc in zip(hirows, hicols, lowrows, lowcols):
-            if pretty:
-                item = "[{:d}:{:d},{:d}:{:d}]".format(lowr+1, hir+1, lowc+1, hic+1)
-            else:
-                item = [lowr, hir+1, lowc, hic+1]
-            data_sections.append(item)
-
-        if len(data_sections) == 1:
-            return data_sections[0]
-
-        return data_sections
+        def format_section(x1,x2,y1,y2, pretty):
+            return "[{:d}:{:d},{:d}:{:d}]".format(x1+1, x2+1, y1+1,
+                y2+1) if pretty else (x1, x2+1, y1, y2+1)
+        try:
+            return [format_section(x1,x2,y1,y2, pretty)
+                    for x1,x2,y1,y2 in zip(lowrows, hirows, lowcols, hicols)]
+        except TypeError:
+            return format_section(lowrows, hirows, lowcols, hicols, pretty)
 
     @astro_data_descriptor
     def array_section(self, pretty=False):
@@ -255,6 +242,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         return fpm
 
+    @returns_list
     @astro_data_descriptor
     def gain(self):
         """
@@ -302,7 +290,7 @@ class AstroDataGnirs(AstroDataGemini):
             ret_grating = grating
 
         if stripID or pretty:
-            return removeComponentID(ret_grating)
+            return gmu.removeComponentID(ret_grating)
         return ret_grating
 
     @astro_data_descriptor
@@ -318,17 +306,17 @@ class AstroDataGnirs(AstroDataGemini):
             A group ID for compatible data.
 
         """
-
         tags = self.tags
         if 'DARK' in tags:
-            desc_list = 'read_mode', 'exposure_time', 'coadds'
+            desc_list = ['read_mode', 'exposure_time', 'coadds']
         else:
             # The descriptor list is the same for flats and science frames
-            desc_list = 'observation_id', 'filter_name', 'camera', 'read_mode'
+            desc_list = ['observation_id', 'filter_name', 'camera', 'read_mode']
 
-        desc_list = desc_list + ('well_depth_setting', 'detector_section', 'disperser', 'focal_plane_mask')
+        desc_list = desc_list + ['well_depth_setting', 'detector_section', 'disperser', 'focal_plane_mask']
 
-        pretty_ones = set(['filter_name', 'disperser', 'focal_plane_mask'])
+        pretty_ones = ['filter_name', 'disperser', 'focal_plane_mask']
+        force_list = ['detector_section']
 
         collected_strings = []
         for desc in desc_list:
@@ -337,7 +325,12 @@ class AstroDataGnirs(AstroDataGemini):
                 result = method(pretty=True)
             else:
                 result = method()
+            if desc in force_list and not isinstance(result, list):
+                result = [result]
             collected_strings.append(str(result))
+
+        if 'IMAGE' in tags and 'FLAT' in tags:
+            collected_strings.append('GNIRS_IMAGE_FLAT')
 
         return '_'.join(collected_strings)
 
@@ -384,8 +377,12 @@ class AstroDataGnirs(AstroDataGemini):
         well_depth = self.well_depth_setting()
 
         limit = detector_properties[read_mode, well_depth].linearlimit
+        saturation_level = self.saturation_level()
 
-        return int(limit * self.saturation_level())
+        try:
+            return [int(limit * s) for s in saturation_level]
+        except TypeError:
+            return int(limit * saturation_level)
 
     @astro_data_descriptor
     def pixel_scale(self):
@@ -450,7 +447,7 @@ class AstroDataGnirs(AstroDataGemini):
         ret_prism = match.group(1)
 
         if stripID or pretty:
-            ret_prism = removeComponentID(ret_prism)
+            ret_prism = gmu.removeComponentID(ret_prism)
 
         return ret_prism
 
@@ -466,7 +463,6 @@ class AstroDataGnirs(AstroDataGemini):
         -------
         float
             Right Ascension of the target in degrees.
-
         """
         wcs_ra = self.wcs_ra()
         tgt_ra = self.target_ra(offset=True, icrs=True)
@@ -497,13 +493,13 @@ class AstroDataGnirs(AstroDataGemini):
             Declination of the target in degrees.
 
         """
-
         # In general, the GNIRS WCS is the way to go. But sometimes the DC
         # has a bit of a senior moment and the WCS is miles off (presumably
         # still has values from the previous observation or something. Who knows.
         # So we do a sanity check on it and use the target values if it's messed up
         wcs_dec = self.wcs_dec()
         tgt_dec = self.target_dec(offset=True, icrs=True)
+        delta = abs(wcs_dec - tgt_dec)
 
         # wraparound?
         if delta > 180:
@@ -524,15 +520,8 @@ class AstroDataGnirs(AstroDataGemini):
         -------
         str
             Read mode for the observation.
-
         """
-        # Determine the number of non-destructive read pairs (lnrs) and the
-        # number of digital averages (ndavgs) keywords from the global keyword
-        # dictionary
-        lnrs = self.lnrs()
-        ndavgs = self.ndavgs()
-
-        return read_modes.get((lnrs, ndavgs), "Invalid")
+        return read_modes.get((self.phu.LNRS, self.phu.NDAVGS), "Invalid")
 
     @astro_data_descriptor
     def read_noise(self):
@@ -575,7 +564,10 @@ class AstroDataGnirs(AstroDataGemini):
         well_depth = self.well_depth_setting()
         well = detector_properties[(read_mode, well_depth)].well
 
-        return int(well * coadds / gain)
+        try:
+            return [int(well * coadds / g) for g in gain]
+        except TypeError:
+            return int(well * coadds / gain)
 
     @astro_data_descriptor
     def slit(self, stripID=False, pretty=False):
@@ -600,7 +592,7 @@ class AstroDataGnirs(AstroDataGemini):
 
         slit = self.phu.SLIT.replace(' ', '')
 
-        return (removeComponentID(slit) if stripID or pretty else slit)
+        return gmu.removeComponentID(slit) if stripID or pretty else slit
 
     @astro_data_descriptor
     def well_depth_setting(self):
@@ -614,7 +606,7 @@ class AstroDataGnirs(AstroDataGemini):
             Well depth setting.
 
         """
-        biasvolt = self.bias()
+        biasvolt = self.phu.DETBIAS
 
         if abs(0.3 - abs(biasvolt)) < 0.1:
             return "Shallow"
