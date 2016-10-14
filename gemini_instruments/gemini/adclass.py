@@ -862,17 +862,16 @@ class AstroDataGemini(AstroDataFits):
         return self.hdr.get(self._keyword_for('gain'))
 
     @astro_data_descriptor
-    def gain(self):
+    def gain_setting(self):
         """
-        Returns the gain (electrons/ADU) for each extension
+        Returns the gain setting for this observation (e.g., 'high', 'low')
 
         Returns
         -------
-        list
-            Gains used for the observation
-
+        str
+            the gain setting
         """
-        return self.hdr.get(self._keyword_for('gain'))
+        return self.phu.get(self._keyword_for('gain_setting'))
 
     @astro_data_descriptor
     def gcal_lamp(self):
