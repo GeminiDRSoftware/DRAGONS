@@ -84,7 +84,7 @@ def _get_bias_level(adinput=None):
                 overscan_section[1] -= 1
             
             # Extract overscan data. In numpy arrays, y indices come first.
-            overscan_data = ext.nddata.data[
+            overscan_data = ext.data[
                 overscan_section[2]:overscan_section[3],
                 overscan_section[0]:overscan_section[1]]
             bias_level.append(np.median(overscan_data))
