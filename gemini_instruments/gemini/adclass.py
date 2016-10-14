@@ -662,7 +662,7 @@ class AstroDataGemini(AstroDataFits):
         try:
             dispersion = getattr(self.hdr, self._keyword_for('dispersion'))
         except KeyError:
-            dispersion = self.phu.get(self._keyword('dispersion'))
+            dispersion = self.phu.get(self._keyword_for('dispersion'))
 
         if dispersion is not None:
             unit_arg_list = [asMicrometers, asNanometers, asAngstroms]
@@ -773,7 +773,7 @@ class AstroDataGemini(AstroDataFits):
         if exposure_time < 0:
             raise ValueError("Invalid exposure time: {}".format(exposure_time))
 
-        if 'PREPARED' in self.tags and self.is_coadds_summed():
+        if 'PREPARED' not in self.tags and self.is_coadds_summed():
             return exposure_time * self.coadds()
         else:
             return exposure_time
