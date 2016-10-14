@@ -107,9 +107,9 @@ class AstroDataF2(AstroDataGemini):
         value is returned without parsing as a string.  In this format, the
         coordinates are generally 1-based.
 
-        One tuple or string is return per extension/array.  If more than one
-        array, the tuples/strings are return in a list.  Otherwise, the
-        section is returned as a tuple or a string.
+        One tuple or string is return per extension/array, in a list. If the
+        method is called on a single slice, the section is returned as a tuple
+        or a string.
 
         Parameters
         ----------
@@ -187,9 +187,9 @@ class AstroDataF2(AstroDataGemini):
         value is returned without parsing as a string.  In this format, the
         coordinates are generally 1-based.
 
-        One tuple or string is return per extension/array.  If more than one
-        array, the tuples/strings are return in a list.  Otherwise, the
-        section is returned as a tuple or a string.
+        One tuple or string is return per extension/array, in a list. If the
+        method is called on a single slice, the section is returned as a tuple
+        or a string.
 
         Parameters
         ----------
@@ -217,9 +217,9 @@ class AstroDataF2(AstroDataGemini):
         value is returned without parsing as a string.  In this format, the
         coordinates are generally 1-based.
 
-        One tuple or string is return per extension/array.  If more than one
-        array, the tuples/strings are return in a list.  Otherwise, the
-        section is returned as a tuple or a string.
+        One tuple or string is return per extension/array, in a list. If the
+        method is called on a single slice, the section is returned as a tuple
+        or a string.
 
         Parameters
         ----------
