@@ -1,10 +1,13 @@
+import re
+import math
+
 from astrodata import astro_data_tag, TagSet, astro_data_descriptor, returns_list
 from ..gemini import AstroDataGemini
 from .lookup import array_properties, nominal_zeropoints
 from astropy.wcs import WCS, FITSFixedWarning
 import warnings
 
-from ..gmu import *
+from .. import gmu
 
 class AstroDataF2(AstroDataGemini):
 
@@ -123,7 +126,7 @@ class AstroDataF2(AstroDataGemini):
             format (1-based).
         """
 
-        value_filter = (str if pretty else sectionStrToIntList)
+        value_filter = (str if pretty else gmu.sectionStrToIntList)
         # TODO: discover reason why this is hardcoded, rather than from keyword
         return value_filter('[1:2048,1:2048]')
 
@@ -172,7 +175,7 @@ class AstroDataF2(AstroDataGemini):
         if central_wavelength < 0.0:
             raise ValueError("Central wavelength can't be negative!")
         else:
-            return convert_units('micrometers', central_wavelength,
+            return gmu.convert_units('micrometers', central_wavelength,
                                      output_units)
 
     @astro_data_descriptor
@@ -268,8 +271,8 @@ class AstroDataF2(AstroDataGemini):
             filter2 = self.phu.FILT2POS
 
         if stripID or pretty:
-            filter1 = removeComponentID(filter1)
-            filter2 = removeComponentID(filter2)
+            filter1 = gmu.removeComponentID(filter1)
+            filter2 = gmu.removeComponentID(filter2)
 
         filter = [filter1, filter2]
         if pretty:
@@ -612,6 +615,6 @@ class AstroDataF2(AstroDataGemini):
         ra, dec = float(result[0]), float(result[1])
 
         if 'NON_SIDEREAL' in self.tags:
-            ra, dec = toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
+            ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
 
         return (ra, dec)
