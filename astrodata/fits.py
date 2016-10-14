@@ -744,13 +744,6 @@ class FitsLoader(object):
 
         return provider
 
-fits_simple_descriptors = dict(
-    instrument = KeywordCallableWrapper('INSTRUME'),
-    object = KeywordCallableWrapper('OBJECT'),
-    telescope = KeywordCallableWrapper('TELESCOP'),
-)
-
-@simple_descriptor_mapping(**fits_simple_descriptors)
 class AstroDataFits(AstroData):
     # Derived classes may provide their own __keyword_dict. Being a private
     # variable, each class will preserve its own, and there's no risk of
@@ -814,6 +807,44 @@ class AstroDataFits(AstroData):
                 raise ValueError("A file name needs to be specified")
             filename = self.path
         self._dataprov.to_hdulist().writeto(filename, clobber=clobber)
+
+
+    @astro_data_descriptor
+    def instrument(self):
+        """
+        Returns the name of the instrument making the observation
+
+        Returns
+        -------
+        str
+            instrument name
+        """
+        return self.phu.get(self._keyword_for('instrument'))
+
+
+    @astro_data_descriptor
+    def object(self):
+        """
+        Returns the name of the object being observed
+
+        Returns
+        -------
+        str
+            object name
+        """
+        return self.phu.get(self._keyword_for('object'))
+
+    @astro_data_descriptor
+    def telescope(self):
+        """
+        Returns the name of the telescope
+
+        Returns
+        -------
+        str
+            name of the telescope
+        """
+        return self.phu.get(self._keyword_for('telescope'))
 
 # TODO: Remove this when we're sure that there are no external uses
 def write(filename, ad_object, clobber=False):

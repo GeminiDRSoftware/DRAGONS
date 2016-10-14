@@ -9,7 +9,7 @@ class AstroDataGsaoi(AstroDataGemini):
     __keyword_dict = dict(array_section='CCDSEC',
                           camera='DETECTOR',
                           central_wavelength='WAVELENG',
-                          detector_name='DETETCOR',
+                          detector_name='DETECTOR',
                           )
 
     @staticmethod
