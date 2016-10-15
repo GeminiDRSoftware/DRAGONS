@@ -314,9 +314,9 @@ class AstroDataGemini(AstroDataFits):
         value is returned without parsing as a string.  In this format, the
         coordinates are generally 1-based.
 
-        One tuple or string is return per extension/array.  If more than one
-        array, the tuples/strings are return in a list.  Otherwise, the
-        section is returned as a tuple or a string.
+        One tuple or string is return per extension/array, in a list. If the
+        method is called on a single slice, the section is returned as a tuple
+        or a string.
 
         Parameters
         ----------
@@ -422,9 +422,11 @@ class AstroDataGemini(AstroDataFits):
             output_units = "meters"
 
         # We assume that the central_wavelength keyword is in microns
-        wave_in_microns = self.phu.get(self._keyword_for('central_wavelength'), -1)
+        keyword = self._keyword_for('central_wavelength')
+        wave_in_microns = self.phu.get(keyword, -1)
         if wave_in_microns < 0:
-            raise ValueError("Invalid CWAVE value: {}".format(wave_in_microns))
+            raise ValueError("Invalid {} value: {}".format(keyword,
+                                                           wave_in_microns))
         return gmu.convert_units('micrometers', wave_in_microns,
                              output_units)
 
@@ -463,9 +465,9 @@ class AstroDataGemini(AstroDataFits):
         value is returned without parsing as a string.  In this format, the
         coordinates are generally 1-based.
 
-        One tuple or string is return per extension/array.  If more than one
-        array, the tuples/strings are return in a list.  Otherwise, the
-        section is returned as a tuple or a string.
+        One tuple or string is return per extension/array, in a list. If the
+        method is called on a single slice, the section is returned as a tuple
+        or a string.
 
         Parameters
         ----------
@@ -514,9 +516,7 @@ class AstroDataGemini(AstroDataFits):
         -------
         str
             The name of the decker with or without the component ID.
-
         """
-
         return self._may_remove_component(self._keyword_for('decker'),
                                           stripID, pretty)
 
@@ -567,9 +567,9 @@ class AstroDataGemini(AstroDataFits):
         value is returned without parsing as a string.  In this format, the
         coordinates are generally 1-based.
 
-        One tuple or string is return per extension/array.  If more than one
-        array, the tuples/strings are return in a list.  Otherwise, the
-        section is returned as a tuple or a string.
+        One tuple or string is return per extension/array, in a list. If the
+        method is called on a single slice, the section is returned as a tuple
+        or a string.
 
         Parameters
         ----------
@@ -583,8 +583,6 @@ class AstroDataGemini(AstroDataFits):
 
         string or list of strings
             Position of the detector using an IRAF section format (1-based).
-
-
         """
         return self._parse_section('detector_section',
                                    self._keyword_for('detector_section'), pretty)
@@ -726,7 +724,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         float
             Wavelength representing the bandpass or the spectrum coverage.
-
         """
         if not output_units in ('micrometers', 'nanometers', 'angstroms'):
             output_units = 'meters'
@@ -767,7 +764,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         float
             Exposure time.
-
         """
         exposure_time = getattr(self.phu, self._keyword_for('exposure_time'), -1)
         if exposure_time < 0:
@@ -800,7 +796,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         str
             The name of the filter combination with or without the component ID.
-
         """
         f1 = self.phu.FILTER1
         f2 = self.phu.FILTER2
@@ -843,7 +838,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         str
             The name of the focal plane mask with or without the component ID.
-
         """
         return self._may_remove_component(self._keyword_for('focal_plane_mask'),
                                    stripID, pretty)
@@ -857,7 +851,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         list of floats/float
             Gains used for the observation
-
         """
         return self.hdr.get(self._keyword_for('gain'))
 
@@ -883,7 +876,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         str
             Name of the GCAL lamp being used, or "Off" if not in use.
-
         """
         try:
             lamps, shut = self.phu.GCALLAMP, self.phu.GCALSHUT
@@ -903,7 +895,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         str
             Grating used for the observation
-
         """
         return self.phu.get(self._keyword_for('grating'))
 
@@ -921,7 +912,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         str
             A group ID for compatible data.
-
         """
         return self.observation_id()
 
@@ -934,7 +924,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         bool
             True if the data is AO, False otherwise.
-
         """
         # If the keyword's not there, assume the mirror is out
         return self.phu.get(self._keyword_for('ao_fold'), 'OUT') == 'IN'
@@ -1226,7 +1215,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         str
             BG, background brightness, of the observation.
-
         """
         return self._raw_to_percentile('raw_bg', self.phu.RAWBG)
 
@@ -1239,7 +1227,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         str
             CC, cloud coverage of the observation.
-
         """
         return self._raw_to_percentile('raw_cc', self.phu.RAWCC)
 
@@ -1252,7 +1239,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         str
             IQ, image quality, of the observation.
-
         """
         return self._raw_to_percentile('raw_iq', self.phu.RAWIQ)
 
@@ -1265,7 +1251,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         str
             WV, water vapor, of the observation.
-
         """
         return self._raw_to_percentile('raw_wv', self.phu.RAWWV)
 
@@ -1282,6 +1267,19 @@ class AstroDataGemini(AstroDataFits):
         return self.phu.get(self._keyword_for('read_mode'))
 
     @astro_data_descriptor
+    def read_noise(self):
+        """
+        Returns the read noise in electrons for each extension. A list is
+        returned unless called on a single-extension slice, when a float
+
+        Returns
+        -------
+        float/list of floats
+            the read noise
+        """
+        return self.hdr.get(self._keyword_for('read_noise'))
+
+    @astro_data_descriptor
     def requested_bg(self):
         """
         Returns the BG, background brightness, requested by the PI.
@@ -1290,7 +1288,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         str
             BG, background brightness, requested by the PI.
-
         """
         return self._raw_to_percentile('requested_bg', self.phu.REQBG)
 
@@ -1303,7 +1300,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         str
             CC, cloud coverage, requested by the PI.
-
         """
         return self._raw_to_percentile('requested_cc', self.phu.REQCC)
 
@@ -1316,7 +1312,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         str
             IQ, image quality, requested by the PI.
-
         """
         return self._raw_to_percentile('requested_iq', self.phu.REQIQ)
 
@@ -1329,7 +1324,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         str
             WV, water vapor, requested by the PI.
-
         """
         return self._raw_to_percentile('requested_wv', self.phu.REQWV)
 
@@ -1380,7 +1374,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         float
             Right Ascension of the target in degrees.
-
         """
         ra = getattr(self.phu, self._keyword_for('ra'))
         raoffset = self.phu.get('RAOFFSET', 0)
@@ -1444,7 +1437,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         float
             Declination of the target in degrees.
-
         """
         dec = getattr(self.phu, self._keyword_for('dec'))
         decoffset = self.phu.get('DECOFFSE', 0)
@@ -1493,7 +1485,6 @@ class AstroDataGemini(AstroDataFits):
         -------
         datetime.datetime
             UT date.
-
         """
         try:
             return self.ut_datetime(strict=True, dateonly=True)
@@ -1693,7 +1684,7 @@ class AstroDataGemini(AstroDataFits):
 
         def wavelength_diff((_, l)):
             return abs(l - ctrl_wave)
-        band = min(wavelength_band.items(), key = wavelength_diff)[0]
+        band = min(wavelength_band.items(), key=wavelength_diff)[0]
 
         # TODO: This can't happen. We probably want to check against "None"
         if band is None:
@@ -1796,7 +1787,7 @@ class AstroDataGemini(AstroDataFits):
             else:
                 wcs = WCS(self.header[1])
             x, y = [0.5 * self.hdr.get(naxis)[0]
-                    for naxis in ('NAXIS1','NAXIS2')]
+                    for naxis in ('NAXIS1', 'NAXIS2')]
             result = wcs.wcs_pix2world(x,y, 1)
         ra, dec = float(result[0]), float(result[1])
 
@@ -1829,25 +1820,25 @@ class AstroDataGemini(AstroDataFits):
             return 3600 * 0.5 * (math.sqrt(cd11*cd11 + cd12*cd12) +
                                  math.sqrt(cd21*cd21 + cd22*cd22))
 
-def _raw_to_percentile(self, descriptor, raw_value):
-    """
-    Parses the Gemini constraint bands, and returns the percentile
-    part as an integer.
+    def _raw_to_percentile(self, descriptor, raw_value):
+        """
+        Parses the Gemini constraint bands, and returns the percentile
+        part as an integer.
 
-    Parameters
-    ----------
-    descriptor : str
-        The name of the descriptor calling this function.  For error
-        reporting purposes.
-    raw_value : str
-        The sky constraint band.  (eg. 'IQ50')
+        Parameters
+        ----------
+        descriptor : str
+            The name of the descriptor calling this function.  For error
+            reporting purposes.
+        raw_value : str
+            The sky constraint band.  (eg. 'IQ50')
 
-    Returns
-    -------
-    int
-        Percentile part of the Gemini constraint band.
-    """
-    val = gmu.parse_percentile(raw_value)
-    if val is None:
-        raise ValueError("Invalid value for {}: {!r}".format(descriptor, raw_value))
-    return val
+        Returns
+        -------
+        int
+            Percentile part of the Gemini constraint band.
+        """
+        val = gmu.parse_percentile(raw_value)
+        if val is None:
+            raise ValueError("Invalid value for {}: {!r}".format(descriptor, raw_value))
+        return val
