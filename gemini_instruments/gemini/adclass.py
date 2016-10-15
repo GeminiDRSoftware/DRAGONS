@@ -1267,6 +1267,19 @@ class AstroDataGemini(AstroDataFits):
         return self.phu.get(self._keyword_for('read_mode'))
 
     @astro_data_descriptor
+    def read_noise(self):
+        """
+        Returns the read noise in electrons for each extension. A list is
+        returned unless called on a single-extension slice, when a float
+
+        Returns
+        -------
+        float/list of floats
+            the read noise
+        """
+        return self.hdr.get(self._keyword_for('read_noise'))
+
+    @astro_data_descriptor
     def requested_bg(self):
         """
         Returns the BG, background brightness, requested by the PI.
