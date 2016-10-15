@@ -1684,7 +1684,7 @@ class AstroDataGemini(AstroDataFits):
 
         def wavelength_diff((_, l)):
             return abs(l - ctrl_wave)
-        band = min(wavelength_band.items(), key = wavelength_diff)[0]
+        band = min(wavelength_band.items(), key=wavelength_diff)[0]
 
         # TODO: This can't happen. We probably want to check against "None"
         if band is None:
@@ -1787,7 +1787,7 @@ class AstroDataGemini(AstroDataFits):
             else:
                 wcs = WCS(self.header[1])
             x, y = [0.5 * self.hdr.get(naxis)[0]
-                    for naxis in ('NAXIS1','NAXIS2')]
+                    for naxis in ('NAXIS1', 'NAXIS2')]
             result = wcs.wcs_pix2world(x,y, 1)
         ra, dec = float(result[0]), float(result[1])
 
@@ -1820,25 +1820,25 @@ class AstroDataGemini(AstroDataFits):
             return 3600 * 0.5 * (math.sqrt(cd11*cd11 + cd12*cd12) +
                                  math.sqrt(cd21*cd21 + cd22*cd22))
 
-def _raw_to_percentile(self, descriptor, raw_value):
-    """
-    Parses the Gemini constraint bands, and returns the percentile
-    part as an integer.
+    def _raw_to_percentile(self, descriptor, raw_value):
+        """
+        Parses the Gemini constraint bands, and returns the percentile
+        part as an integer.
 
-    Parameters
-    ----------
-    descriptor : str
-        The name of the descriptor calling this function.  For error
-        reporting purposes.
-    raw_value : str
-        The sky constraint band.  (eg. 'IQ50')
+        Parameters
+        ----------
+        descriptor : str
+            The name of the descriptor calling this function.  For error
+            reporting purposes.
+        raw_value : str
+            The sky constraint band.  (eg. 'IQ50')
 
-    Returns
-    -------
-    int
-        Percentile part of the Gemini constraint band.
-    """
-    val = gmu.parse_percentile(raw_value)
-    if val is None:
-        raise ValueError("Invalid value for {}: {!r}".format(descriptor, raw_value))
-    return val
+        Returns
+        -------
+        int
+            Percentile part of the Gemini constraint band.
+        """
+        val = gmu.parse_percentile(raw_value)
+        if val is None:
+            raise ValueError("Invalid value for {}: {!r}".format(descriptor, raw_value))
+        return val
