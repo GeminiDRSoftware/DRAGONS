@@ -1,11 +1,15 @@
+#
+#                                                                  gemini_python
+#
+#                                                               manipulate_ad.py
+# ------------------------------------------------------------------------------
 # This module contains functions used to manipulate the AstroData object
 import numpy as np
 
-from astrodata.utils import Errors
-from astrodata.utils import logutils
+from gempy.utils import logutils
 
 # ------------------------------------------------------------------------------
-def remove_single_length_dimension(adinput=None):
+def remove_single_length_dimension(adinput):
     """
     If there is only one single length dimension in the pixel data, the
     remove_single_length_dimension function will remove the single length
@@ -14,12 +18,7 @@ def remove_single_length_dimension(adinput=None):
     primitives_F2.py.
     
     """
-    # Instantiate the log
     log = logutils.get_logger(__name__)
-    
-    if adinput is None:
-        raise Errors.InputError()
-    
     for ext in adinput:
         # Ensure that there is only one single length dimension in the pixel
         # data
@@ -42,13 +41,21 @@ def remove_single_length_dimension(adinput=None):
             
             # The np.squeeze method only removes a dimension from the array if
             # the dimension has a length equal to 1 
-            log.status("Removing the third dimension from %s" %
-                       adinput.filename) 
+            log.status("Removing the third dimension from {}".format(adinput.filename))
+
+            # @@TODO This does not work with new AD. data attr is not settable.
             ext.data = np.squeeze(ext.data)
             
             # Set the NAXIS keyword appropriately now that a dimension has been
             # removed
-            ext.set_key_value("NAXIS", ext.data.ndim)
+            ext.hdr.set("NAXIS", ext.data.ndim)
+
+            # This should be a log.debug call, but that doesn't appear to work
+            # right now, so using log.fullinfo
+            log.fullinfo("Updated dimensions of {}[{},{}] = {}".format(adinput.filename,
+                                                                   ext.hdr.EXTNAME,
+                                                                   ext.hdr.EXTVER,
+                                                                   ext.data.shape))
             
             # Remove the keywords relating to the dimension that has been
             # removed (IRAF seems to add WCSDIM=3, CTYPE3='LINEAR  ', CD3_3=1.,
@@ -56,19 +63,12 @@ def remove_single_length_dimension(adinput=None):
             # WAT0_001='system=image', WAT1_001='wtype=tan axtype=ra' and
             # WAT2_001= 'wtype=tan axtype=dec' when doing e.g., imcopy
             # f2.fits[*,*,1], so perhaps these should be removed as well?)
-            keywords = ("NAXIS%(dn)s, AXISLAB%(dn)s, CD%(dn)s_%(dn)s" % 
-                        {"dn":dimension_number})
+            keywords = ("NAXIS{0}, AXISLAB{0}, CD{0}_{0}".format(dimension_number))
             keyword_list = keywords.split(",")
             for keyword in keyword_list:
                 del ext.header[keyword]
         else:
-            log.warning("No changes will be made to %s, since there was not "
-                        "only one single length dimension in the pixel data" %
-                        adinput.filename)
-        
-        # This should be a log.debug call, but that doesn't appear to work
-        # right now, so using log.fullinfo
-        log.fullinfo("Updated dimensions of %s[%s,%d] = %s" % (
-          adinput.filename, ext.extname(), ext.extver(), ext.data.shape))
+            log.warning("No dimension of length 1 in extension pixel data."
+                        "No changes will be made to {}. ".format(adinput.filename))
     
     return adinput
