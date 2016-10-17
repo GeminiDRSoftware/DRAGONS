@@ -76,6 +76,10 @@ class DataProvider(object):
 #    def data(self):
 #        pass
 
+    @abstractproperty
+    def settable(self):
+        pass
+
     @abstractmethod
     def append(self, ext):
         pass
@@ -209,6 +213,13 @@ class AstroData(object):
         except AttributeError:
             clsname = self.__class__.__name__
             raise AttributeError("{!r} object has no attribute {!r}".format(clsname, attribute))
+
+    def __setattr__(self, attribute, value):
+        if attribute != '_dataprov' and '_dataprov' in self.__dict__:
+            if attribute in self._dataprov.settable:
+                setattr(self._dataprov, attribute, value)
+                return
+        super(AstroData, self).__setattr__(attribute, value)
 
     def __contains__(self, attribute):
         return attribute in self._dataprov.exposed

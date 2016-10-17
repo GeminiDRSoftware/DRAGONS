@@ -195,6 +195,14 @@ class FitsProvider(DataProvider):
         self._tables = {}
         self._exposed = set()
 
+    @property
+    def settable(self):
+        return set([
+            'data',
+            'uncertainty',
+            'mask'
+            ])
+
     @force_load
     def __getattr__(self, attribute):
         # First, make sure that the object is not an exposed one. It may be that
@@ -600,15 +608,27 @@ class FitsProvider(DataProvider):
     @property
     @force_load
     def data(self):
-        if self._sliced and len(self._nddata) == 1:
+        if self._single:
             return self._nddata[0].data
         else:
             return [nd.data for nd in self._nddata]
 
+    @data.setter
+    @force_load
+    def data(self, value):
+        if not self._single:
+            raise ValueError("Trying to assign to a non-sliced AstroData object")
+        ext = self._nddata[0]
+        # Setting the ._data in the NDData is a bit kludgy, but we're all grown adults
+        # and know what we're doing, isn't it?
+        ext._data = value
+        ext.uncertainty = None
+        ext.mask = None
+
     @property
     @force_load
     def uncertainty(self):
-        if self._sliced and len(self._nddata) == 1:
+        if self._single:
             return self._nddata[0].uncertainty
         else:
             return [nd.uncertainty for nd in self._nddata]
@@ -616,11 +636,24 @@ class FitsProvider(DataProvider):
     @uncertainty.setter
     @force_load
     def uncertainty(self, value):
-        if not self._sliced:
+        if not self._single:
             raise ValueError("Trying to assign uncertainty to a non-sliced AstroData object")
-        elif len(self._nddata) != 1:
-            raise ValueError("The uncertainty needs to be assigned to a single object")
         self._nddata[0].uncertainty = value
+
+    @property
+    @force_load
+    def mask(self):
+        if self._single:
+            return self._nddata[0].mask
+        else:
+            return [nd.mask for nd in self._nddata]
+
+    @mask.setter
+    @force_load
+    def mask(self, value):
+        if not self._single:
+            raise ValueError("Tryint to assign mask to a non-sliced AstroData object")
+        self._nddata[0].mask = value
 
     def _crop_nd(self, nd, x1, y1, x2, y2):
         nd.data = nd.data[y1:y2+1, x1:x2+1]
