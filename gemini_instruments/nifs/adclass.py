@@ -1,22 +1,21 @@
 import math
 
-from astrodata import astro_data_tag, astro_data_descriptor, simple_descriptor_mapping, keyword, TagSet
+from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSet
 from ..gemini import AstroDataGemini
-from .lookups import constants_by_bias, config_dict, lnrs_mode_map
+from .lookup import constants_by_bias, config_dict, lnrs_mode_map
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
-from ..gmu import *
+from .. import gmu
 
-@simple_descriptor_mapping(
-    bias = keyword("BIASPWR"),
-    camera = keyword("INSTRUME"),
-    central_wavelength = keyword("GRATWAVE"),
-    focal_plane_mask = keyword("APERTURE"),
-    lnrs = keyword("LNRS"),
-    observation_epoch = keyword("EPOCH", coerce_with=str)
-)
 class AstroDataNifs(AstroDataGemini):
+
+    __keyword_dict = dict(array_section = 'DATASEC',
+                          camera = 'INSTRUME',
+                          central_wavelength = 'GRATWAVE',
+                          detector_section = 'DATASEC',
+                          disperser = 'GRATING',
+                          focal_plane_mask = 'APERTURE')
     @staticmethod
     def _matches_data(data_provider):
         return data_provider.phu.get('INSTRUME', '').upper() == 'NIFS'
@@ -52,31 +51,6 @@ class AstroDataNifs(AstroDataGemini):
             return TagSet(['SPECT', 'IFU'])
 
     @astro_data_descriptor
-    def disperser(self, stripID=False, pretty=False):
-        """
-        Returns the name of the disperser.  The component ID can be removed
-        with either 'stripID' or 'pretty' set to True.
-
-        Parameters
-        ----------
-        stripID : bool
-            If True, removes the component ID and returns only the name of
-            the disperser.
-        pretty : bool
-            Same as for stripID.  Pretty here does not do anything more.
-
-        Returns
-        -------
-        str
-            The name of the disperser with or without the component ID.
-
-        """
-        disp = str(self.phu.GRATING)
-        if stripID or pretty:
-            return removeComponentID(disp)
-        return disp
-
-    @astro_data_descriptor
     def filter_name(self, stripID=False, pretty=False):
         """
         Returns the name of the filter(s) used.  The component ID can be
@@ -100,14 +74,14 @@ class AstroDataNifs(AstroDataGemini):
         """
         filt = str(self.phu.FILTER)
         if stripID or pretty:
-            filt = removeComponentID(filt)
+            filt = gmu.removeComponentID(filt)
 
         if filt == "Blocked":
             return "blank"
         return filt
 
     def _from_biaspwr(self, constant_name):
-        bias_volt = self.bias()
+        bias_volt = self.phu.BIASPWR
 
         for bias, constants in constants_by_bias.items():
             if abs(bias - bias_volt) < 0.1:
@@ -115,6 +89,7 @@ class AstroDataNifs(AstroDataGemini):
 
         raise KeyError("The bias value for this image doesn't match any on the lookup table")
 
+    @returns_list
     @astro_data_descriptor
     def gain(self):
         """
@@ -136,10 +111,11 @@ class AstroDataNifs(AstroDataGemini):
         Returns the level at which the array becomes non-linear.  The
         return units are ADUs.  A lookup table is used.  Whether the data
         has been corrected for non-linearity or not is taken into account.
+         A list is returned unless called on a single-extension slice.
 
         Returns
         -------
-        int
+        list/int
             Level in ADU at which the non-linear regime starts.
 
         """
@@ -147,17 +123,22 @@ class AstroDataNifs(AstroDataGemini):
         corrected = 'NONLINCR' in self.phu
 
         linearlimit = self._from_biaspwr("linearlimit" if corrected else "nonlinearlimit")
-        return int(saturation_level * linearlimit)
+        try:
+            return [int(linear_limit * s) for s in saturation_level]
+        except TypeError:
+            return int(saturation_level * linearlimit)
 
+    @returns_list
     @astro_data_descriptor
     def pixel_scale(self):
         """
         Returns the pixel scale in arc seconds.  A lookup table indexed on
         focal_plane_mask, disperser, and filter_name is used.
+         A list is returned unless called on a single-extension slice.
 
         Returns
         -------
-        float
+        list/float
             Pixel scale in arcsec.
 
         """
@@ -191,34 +172,36 @@ class AstroDataNifs(AstroDataGemini):
         # NOTE: The original read_mode descriptor obtains the bias voltage
         #       value, but then it does NOTHING with it. I'll just skip it.
 
-        return lnrs_mode_map.get(self.lnrs(), 'Invalid')
+        return lnrs_mode_map.get(self.phu.LNRS, 'Invalid')
 
+    @returns_list
     @astro_data_descriptor
     def read_noise(self):
         """
         Returns the detector read noise, in electrons, for the observation.
         A lookup table is used.  The read noise depends on the gain setting
         and is affected by the number of coadds and non-destructive pairs.
-
+        A list is returned unless called on a single-extension slice.
         Returns
         -------
-        float
+        list/float
             Detector read noise in electrons.
 
         """
         rn = self._from_biaspwr("readnoise")
-        return float(rn * math.sqrt(self.coadds()) / math.sqrt(self.lnrs()))
+        return float(rn * math.sqrt(self.coadds()) / math.sqrt(self.phu.LNRS))
 
+    @returns_list
     @astro_data_descriptor
     def saturation_level(self):
         """
         Returns the saturation level for the observation, in ADUs
         A lookup table is used to get the full well value based on the
-        gain.
+        gain. A list is returned unless called on a single-extension slice.
 
         Returns
         -------
-        int
+        list/int
             Saturation level in ADUs.
 
         """
