@@ -1152,16 +1152,26 @@ class AstroDataGemini(AstroDataFits):
         return self.phu.get('GEMPRGID')
 
     @astro_data_descriptor
-    def pupil_mask(self):
+    def pupil_mask(self, stripID=False, pretty=False):
         """
-        Returns the name of the pupil mask used for the observation
+        Returns the name of the focal plane mask.  The component ID can be
+        removed with either 'stripID' or 'pretty' set to True.
+
+        Parameters
+        ----------
+        stripID : bool
+            If True, removes the component ID and returns only the name of
+            the focal plane mask.
+        pretty : bool
+            Same as for stripID.  Pretty here does not do anything more.
 
         Returns
         -------
         str
-            the pupil mask
+            The name of the focal plane mask with or without the component ID.
         """
-        return self.phu.get(self._keyword_for('pupil_mask'))
+        return self._may_remove_component(self._keyword_for('pupil_mask'),
+                                   stripID, pretty)
 
     @astro_data_descriptor
     def qa_state(self):
