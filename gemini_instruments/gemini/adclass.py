@@ -63,6 +63,7 @@ gemini_keyword_names = dict(
     nominal_atmospheric_extinction = 'NOMATMOS',
     nominal_photometric_zeropoint = 'NOMPHOTZ',
     non_linear_level = 'NONLINEA',
+    observation_epoch = 'OBSEPOCH',
     oiwfs = 'OIWFS_ST',
     overscan_section = 'OVERSSEC',
     pixel_scale = 'PIXSCALE',
@@ -1053,7 +1054,7 @@ class AstroDataGemini(AstroDataFits):
         str
             the observation epoch
         """
-        return self.phu.get('OBSEPOCH')
+        return self.phu.get(self._keyword_for('observation_epoch'))
 
     @astro_data_descriptor
     def observation_id(self):
