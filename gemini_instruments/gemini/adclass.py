@@ -1722,7 +1722,11 @@ class AstroDataGemini(AstroDataFits):
         float
             right ascension in degrees
         """
-        return self._get_wcs_coords()[0]
+        # Return None if the WCS isn't sky coordinates
+        try:
+            return self._get_wcs_coords()[0]
+        except AssertionError:
+            return None
 
     @astro_data_descriptor
     def wcs_dec(self):
@@ -1735,7 +1739,11 @@ class AstroDataGemini(AstroDataFits):
         float
             declination in degrees
         """
-        return self._get_wcs_coords()[1]
+        # Return None if the WCS isn't sky coordinates
+        try:
+            return self._get_wcs_coords()[1]
+        except AssertionError:
+            return None
 
     @astro_data_descriptor
     def well_depth_setting(self):
@@ -1789,9 +1797,15 @@ class AstroDataGemini(AstroDataFits):
             # header[0] is PHU, header[1] is first extension HDU
             # If no CTYPE1 in first HDU, try PHU
             if self.hdr.get('CTYPE1')[0] is None:
+                ctypes = (self.phu.get('CTYPE1', ''),
+                          self.phu.get('CTYPE2', ''))
                 wcs = WCS(self.header[0])
             else:
+                ctypes = (self.hdr.get('CTYPE1', '')[0],
+                          self.hdr.get('CTYPE2', '')[0])
                 wcs = WCS(self.header[1])
+            assert ctypes[0].startswith('RA') and ctypes[1].startswith('DEC'), \
+                'WCS error'
             x, y = [0.5 * self.hdr.get(naxis)[0]
                     for naxis in ('NAXIS1', 'NAXIS2')]
             result = wcs.wcs_pix2world(x,y, 1)

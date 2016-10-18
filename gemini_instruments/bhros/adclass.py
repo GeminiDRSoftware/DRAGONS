@@ -1,9 +1,12 @@
 from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSet
 from ..gemini import AstroDataGemini
+from .. import gmu
 
 class AstroDataBhros(AstroDataGemini):
 
-    __keyword_dict = dict(central_wavelength = 'WAVELENG')
+    __keyword_dict = dict(array_section = 'CCDSEC',
+                          central_wavelength = 'WAVELENG',
+                          overscan_section = 'BIASSEC')
 
     @staticmethod
     def _matches_data(data_provider):
@@ -11,7 +14,7 @@ class AstroDataBhros(AstroDataGemini):
 
     @astro_data_tag
     def _tag_instrument(self):
-        return (set(['BHROS', 'SPECT']), ())
+        return TagSet(set(['BHROS', 'SPECT']), ())
 
     @astro_data_descriptor
     def central_wavelength(self, asMicrometers=False, asNanometers=False,
@@ -51,9 +54,54 @@ class AstroDataBhros(AstroDataGemini):
 
         # The central_wavelength keyword is in Angstroms
         keyword = self._keyword_for('central_wavelength')
-        wave_in_microns = self.phu.get(keyword, -1)
-        if wave_in_microns < 0:
+        wave_in_angstroms = self.phu.get(keyword, -1)
+        if wave_in_angstroms < 0:
             raise ValueError("Invalid {} value: {}".format(keyword,
-                                                           wave_in_microns))
-        return gmu.convert_units('angstroms', wave_in_microns,
+                                                           wave_in_angstroms))
+        return gmu.convert_units('angstroms', wave_in_angstroms,
                                  output_units)
+
+    @astro_data_descriptor
+    def dec(self):
+        """
+        Returns the Declination of the target, using the target_dec
+        descriptor since the WCS is not sky coords
+
+        Returns
+        -------
+        float
+            right ascension in degrees
+        """
+        return self.target_dec(offset=True, icrs=True)
+
+    @astro_data_descriptor
+    def disperser(self, stripID=False, pretty=False):
+        """
+        Returns the name of the disperser. This is always 'bHROS'
+
+        Parameters
+        ----------
+        stripID : bool
+            Does nothing
+        pretty : bool
+            Does nothing
+
+        Returns
+        -------
+        str
+            The name of the disperser
+        """
+        return 'bHROS'
+
+    @astro_data_descriptor
+    def ra(self):
+        """
+        Returns the Right ascensionion of the target, using the target_ra
+        descriptor since the WCS is not sky coords
+
+        Returns
+        -------
+        float
+            right ascension in degrees
+        """
+        return self.target_dec(offset=True, icrs=True)

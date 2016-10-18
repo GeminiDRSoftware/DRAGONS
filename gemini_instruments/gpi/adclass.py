@@ -4,7 +4,12 @@ from .. import gmu
 
 class AstroDataGpi(AstroDataGemini):
 
-    __keyword_dict = dict(pupil_mask = 'APODIZER')
+    __keyword_dict = dict(array_section = 'DATASEC',
+                          detector_section = 'DATASEC',
+                          exposure_time = 'ITIME',
+                          filter = 'IFSFILT',
+                          focal_plane_mask = 'OCCULTER',
+                          pupil_mask = 'APODIZER')
 
     @staticmethod
     def _matches_data(data_provider):

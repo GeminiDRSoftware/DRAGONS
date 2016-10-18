@@ -1,11 +1,16 @@
-from astrodata import astro_data_tag, astro_data_descriptor
+from astrodata import astro_data_tag, astro_data_descriptor, returns_list, TagSet
 from ..gemini import AstroDataGemini
 
 class AstroDataMichelle(AstroDataGemini):
 
-    __keyword_dict = dict(coadds = 'NUMEXPOS',
+    __keyword_dict = dict(central_wavelength = 'GRATPOS',
+                          coadds = 'NUMEXPOS',
+                          disperser = 'GRATNAME',
+                          dispersion = 'GRATDISP',
                           exposure_time = 'EXPOSURE',
-                          filter_name = 'FILTER')
+                          filter_name = 'FILTER',
+                          focal_plane_mask = 'SLITNAME',
+                          read_mode = 'MODE')
 
     @staticmethod
     def _matches_data(data_provider):
@@ -13,15 +18,15 @@ class AstroDataMichelle(AstroDataGemini):
 
     @astro_data_tag
     def _tag_instrument(self):
-        return (set(['MICHELLE']), ())
+        return TagSet(set(['MICHELLE']), ())
 
     @astro_data_tag
     def _tag_mode(self):
         camera = self.phu.get('CAMERA')
         if camera == 'imaging':
-            return (set(['IMAGE']), ())
+            return TagSet(set(['IMAGE']), ())
         elif camera == 'spectroscopy':
-            return (set(['SPECT', 'LS']), ())
+            return TagSet(set(['SPECT', 'LS']), ())
 
     @astro_data_descriptor
     def exposure_time(self):
@@ -63,3 +68,18 @@ class AstroDataMichelle(AstroDataGemini):
         if filter_name == 'NBlock':
             filter_name = 'blank'
         return filter_name
+
+    @returns_list
+    @astro_data_descriptor
+    def pixel_scale(self):
+        """
+        Returns the image scale in arcseconds per pixel, one value per
+        extension unless called on a single-extension slice. For Michelle,
+        this comes from the PIXELSIZ PHU keyword
+
+        Returns
+        -------
+        float/list of floats
+            the pixel scale
+        """
+        return self.phu.PIXELSIZ
