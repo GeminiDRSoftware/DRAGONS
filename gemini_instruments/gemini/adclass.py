@@ -765,7 +765,7 @@ class AstroDataGemini(AstroDataFits):
         float
             Exposure time.
         """
-        exposure_time = getattr(self.phu, self._keyword_for('exposure_time'), -1)
+        exposure_time = self.phu.get(self._keyword_for('exposure_time'), -1)
         if exposure_time < 0:
             raise ValueError("Invalid exposure time: {}".format(exposure_time))
 
@@ -797,12 +797,8 @@ class AstroDataGemini(AstroDataFits):
         str
             The name of the filter combination with or without the component ID.
         """
-        f1 = self.phu.FILTER1
-        f2 = self.phu.FILTER2
-
-        if stripID or pretty:
-            f1 = gmu.removeComponentID(f1)
-            f2 = gmu.removeComponentID(f2)
+        f1 = self._may_remove_component('FILTER1', stripID, pretty)
+        f2 = self._may_remove_component('FILTER2', stripID, pretty)
 
         if pretty:
             filter_comps = []
