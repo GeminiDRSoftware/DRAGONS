@@ -15,7 +15,8 @@ class AstroDataNifs(AstroDataGemini):
                           central_wavelength = 'GRATWAVE',
                           detector_section = 'DATASEC',
                           disperser = 'GRATING',
-                          focal_plane_mask = 'APERTURE')
+                          focal_plane_mask = 'APERTURE',
+                          observation_epoch = 'EPOCH')
     @staticmethod
     def _matches_data(data_provider):
         return data_provider.phu.get('INSTRUME', '').upper() == 'NIFS'
