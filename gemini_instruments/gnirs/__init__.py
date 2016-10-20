@@ -1,4 +1,4 @@
-__all__ = ['AstroDataF2']
+__all__ = ['AstroDataGnirs']
 
 from astrodata import factory
 from ..gemini import addInstrumentFilterWavelengths
