@@ -1,12 +1,5 @@
-#
-#                                                                  gemini_python
-#
-#                                                               manipulate_ad.py
-# ------------------------------------------------------------------------------
-# This module contains functions used to manipulate the AstroData object
 import numpy as np
-
-from gempy.utils import logutils
+from . import logutils
 
 # ------------------------------------------------------------------------------
 def remove_single_length_dimension(adinput):
@@ -14,11 +7,20 @@ def remove_single_length_dimension(adinput):
     If there is only one single length dimension in the pixel data, the
     remove_single_length_dimension function will remove the single length
     dimension. In addition, this function removes any keywords associated with
-    that dimension. Used by the standardizeStructure primitive in
+    that dimension. Used ONLY by the standardizeStructure primitive in
     primitives_F2.py.
-    
+
+    Parameters
+    ----------
+    adinput
+        AstroDataFits: input AD object
+
+    Returns
+    -------
+        AstroData: modified object of same subclass as input
     """
-    log = logutils.get_logger(__name__)
+
+    #log = logutils.get_logger(__name__)
     for ext in adinput:
         # Ensure that there is only one single length dimension in the pixel
         # data
@@ -52,10 +54,10 @@ def remove_single_length_dimension(adinput):
 
             # This should be a log.debug call, but that doesn't appear to work
             # right now, so using log.fullinfo
-            log.fullinfo("Updated dimensions of {}[{},{}] = {}".format(adinput.filename,
-                                                                   ext.hdr.EXTNAME,
-                                                                   ext.hdr.EXTVER,
-                                                                   ext.data.shape))
+            #log.fullinfo("Updated dimensions of {}[{},{}] = {}".format(adinput.filename,
+            #                                                       ext.hdr.EXTNAME,
+            #                                                       ext.hdr.EXTVER,
+            #                                                       ext.data.shape))
             
             # Remove the keywords relating to the dimension that has been
             # removed (IRAF seems to add WCSDIM=3, CTYPE3='LINEAR  ', CD3_3=1.,
