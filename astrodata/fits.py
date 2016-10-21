@@ -200,7 +200,8 @@ class FitsProvider(DataProvider):
         return set([
             'data',
             'uncertainty',
-            'mask'
+            'mask',
+            'variance'
             ])
 
     @force_load
@@ -652,8 +653,27 @@ class FitsProvider(DataProvider):
     @force_load
     def mask(self, value):
         if not self._single:
-            raise ValueError("Tryint to assign mask to a non-sliced AstroData object")
+            raise ValueError("Trying to assign mask to a non-sliced AstroData object")
         self._nddata[0].mask = value
+
+    @property
+    @force_load
+    def variance(self):
+        def variance_for(nd):
+            if nd.uncertainty is not None:
+                return nd.uncertainty.array**2
+
+        if self._single:
+            return variance_for(self._nddata[0])
+        else:
+            return [variance_for(nd) for nd in self._nddata]
+
+    @variance.setter
+    @force_load
+    def variance(self, value):
+        if not self._single:
+            raise ValueError("Trying to assign variance to a non-sliced AstroData object")
+        self._nddata[0].uncertainty = StdDevUncertainty(np.sqrt(value))
 
     def _crop_nd(self, nd, x1, y1, x2, y2):
         nd.data = nd.data[y1:y2+1, x1:x2+1]
