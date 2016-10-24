@@ -7,7 +7,9 @@ import warnings
 from astropy.wcs import WCS, FITSFixedWarning
 from astrodata import AstroDataFits, astro_data_tag, astro_data_descriptor, TagSet
 from astrodata import factory, simple_descriptor_mapping, keyword
+
 from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
+from ..common import section_to_tuple
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
 #       won't work with this implementation
@@ -212,7 +214,7 @@ class AstroDataGemini(AstroDataFits):
 
     def _parse_section(self, descriptor_name, keyword, pretty):
         try:
-            value_filter = (str if pretty else gmu.sectionStrToIntList)
+            value_filter = (str if pretty else section_to_tuple)
             process_fn = lambda x: (None if x is None else value_filter(x))
             sections = self.hdr.get(keyword)
             if self._single:
