@@ -516,9 +516,9 @@ class AstroDataF2(AstroDataGemini):
         float
             pixel scale
         """
-        # Try to use the Gemini-level helper method (which returns a list)
+        # Try to use the Gemini-level helper method
         try:
-            pixel_scale = self._get_wcs_pixel_scale()[0]
+            pixel_scale = self._get_wcs_pixel_scale()
         except KeyError:
             pixel_scale = self.phu.PIXSCALE
         return pixel_scale

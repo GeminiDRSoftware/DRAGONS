@@ -300,23 +300,6 @@ class AstroDataGsaoi(AstroDataGemini):
         return nonlin_level
 
     @astro_data_descriptor
-    def pixel_scale(self):
-        """
-        Return the mean pixel scale of all the extensions
-
-        Returns
-        -------
-        float
-            pixel scale
-        """
-        pixscale = self._get_wcs_pixel_scale()
-        try:
-            # Average if we have a list
-            return sum(x for x in pixscale) / len(pixscale)
-        except TypeError:
-            return pixscale
-
-    @astro_data_descriptor
     def read_noise(self):
         """
         Returns the read noise of each extension, as a float or list of floats
