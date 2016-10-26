@@ -673,7 +673,10 @@ class FitsProvider(DataProvider):
     def variance(self, value):
         if not self._single:
             raise ValueError("Trying to assign variance to a non-sliced AstroData object")
-        self._nddata[0].uncertainty = StdDevUncertainty(np.sqrt(value))
+        if value is None:
+            self._nddata[0].uncertainty = None
+        else:
+            self._nddata[0].uncertainty = StdDevUncertainty(np.sqrt(value))
 
     def _crop_nd(self, nd, x1, y1, x2, y2):
         nd.data = nd.data[y1:y2+1, x1:x2+1]
