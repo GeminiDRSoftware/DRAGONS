@@ -100,7 +100,8 @@ def convert_units(input_units, input_value, output_units):
     factor = math.pow(10, power)
 
     # Return the converted output value
-    return input_value * factor
+    if input_value is not None:
+        return input_value * factor
 
 
 # From gempy.gemini.coordinate_utils.py
