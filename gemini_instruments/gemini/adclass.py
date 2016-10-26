@@ -1116,15 +1116,15 @@ class AstroDataGemini(AstroDataFits):
     @astro_data_descriptor
     def pixel_scale(self):
         """
-        Returns the image scale in arcseconds per pixel, one value per
-        extension unless called on a single-extension slice
+        Returns the image scale in arcseconds per pixel, as an average over
+        the extensions
 
         Returns
         -------
-        float/list of floats
+        float
             the pixel scale
         """
-        return self._get_wcs_pixel_scale()
+        return self._get_wcs_pixel_scale(mean=True)
 
     @astro_data_descriptor
     def prism(self):
@@ -1821,10 +1821,15 @@ class AstroDataGemini(AstroDataFits):
         return (ra, dec)
 
     # TODO: Move to AstroDataFITS? And deal with PCi_j/CDELTi keywords?
-    def _get_wcs_pixel_scale(self):
+    def _get_wcs_pixel_scale(self, mean=True):
         """
         Returns a list of pixel scales (in arcseconds), derived from the
         CD matrices of the image extensions
+
+        Parameters
+        ----------
+        mean: bool
+            if set, return a single value across all extensions
 
         Returns
         -------
@@ -1836,12 +1841,17 @@ class AstroDataGemini(AstroDataFits):
         cd21 = self.hdr.CD2_1
         cd22 = self.hdr.CD2_2
         try:
-            return [3600 * 0.5 * (math.sqrt(a*a + b*b) +
+            pixel_scale_list = [3600 * 0.5 * (math.sqrt(a*a + b*b) +
                                   math.sqrt(c*c + d*d))
                 for a,b,c,d in zip(cd11,cd12,cd21,cd22)]
         except TypeError:
             return 3600 * 0.5 * (math.sqrt(cd11*cd11 + cd12*cd12) +
                                  math.sqrt(cd21*cd21 + cd22*cd22))
+        else:
+            if mean:
+                return sum(pixel_scale_list) / len(pixel_scale_list)
+            else:
+                return pixel_scale_list
 
     def _raw_to_percentile(self, descriptor, raw_value):
         """
