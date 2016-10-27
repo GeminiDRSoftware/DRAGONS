@@ -81,6 +81,23 @@ class FitsKeywordManipulator(object):
             else:
                 return default
 
+    def remove(self, key):
+        if self._on_ext:
+            deleted = 0
+            for header in self._headers:
+                try:
+                    del header[key]
+                    deleted = deleted + 1
+                except KeyError:
+                    pass
+            if not deleted:
+                raise AttributeError("'{}' is not on any of the extensions".format(key))
+        else:
+            try:
+                del self._headers[0][key]
+            except KeyError:
+                raise AttributeError("'{}' is not on the PHU".format(key))
+
     def get_comment(self, key):
         if self._on_ext:
             return self._ret_ext([header.comments[key] for header in self._headers])
@@ -129,21 +146,7 @@ class FitsKeywordManipulator(object):
         self.set(key, value=value)
 
     def __delattr__(self, key):
-        if self._on_ext:
-            deleted = 0
-            for header in self._headers:
-                try:
-                    del header[key]
-                    deleted = deleted + 1
-                except KeyError:
-                    pass
-            if not deleted:
-                raise AttributeError("'{}' is not on any of the extensions".format(key))
-        else:
-            try:
-                del self._headers[0][key]
-            except KeyError:
-                raise AttributeError("'{}' is not on the PHU".format(key))
+        self.remove(key)
 
     def __contains__(self, key):
         if self._on_ext:
