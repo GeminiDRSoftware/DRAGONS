@@ -20,7 +20,8 @@ def remove_single_length_dimension(adinput):
         AstroData: modified object of same subclass as input
     """
 
-    #log = logutils.get_logger(__name__)
+    log = logutils.get_logger(__name__)
+
     for ext in adinput:
         # Ensure that there is only one single length dimension in the pixel
         # data
@@ -28,25 +29,20 @@ def remove_single_length_dimension(adinput):
             
             # Determine the position of the single length dimension in the
             # tuple of array dimensions output by ext.data.shape
-            for i, data_length in enumerate(ext.data.shape):
-                if ext.data.shape[i] == 1:
-                    position = i
+            axis = np.where([length==1 for length in ext.data.shape])[0][0]
             
             # numpy arrays use 0-based indexing and the axes are ordered from 
             # slow to fast. So, if the position of the single length dimension
             # is located in e.g., ext.data.shape[0], the dimension number of
             # the FITS pixel data array is ext.data.ndim + 1 (since FITS pixel
             # data arrays use 1-based indexing).
-            position_list = [x for x in range(ext.data.ndim)]
-            position_list.reverse()
-            dimension_number = position_list[position] + 1
+            dimension = ext.data.ndim - axis
             
             # The np.squeeze method only removes a dimension from the array if
             # the dimension has a length equal to 1 
-            log.status("Removing the third dimension from {}".format(adinput.filename))
-
-            # @@TODO This does not work with new AD. data attr is not settable.
-            ext.data = np.squeeze(ext.data)
+            log.status("Removing dimension {} from {}".
+                       format(dimension, adinput.filename))
+            ext.operate(np.squeeze)
             
             # Set the NAXIS keyword appropriately now that a dimension has been
             # removed
@@ -65,10 +61,8 @@ def remove_single_length_dimension(adinput):
             # WAT0_001='system=image', WAT1_001='wtype=tan axtype=ra' and
             # WAT2_001= 'wtype=tan axtype=dec' when doing e.g., imcopy
             # f2.fits[*,*,1], so perhaps these should be removed as well?)
-            keywords = ("NAXIS{0}, AXISLAB{0}, CD{0}_{0}".format(dimension_number))
-            keyword_list = keywords.split(",")
-            for keyword in keyword_list:
-                del ext.header[keyword]
+            keywords = ("NAXIS{0}, AXISLAB{0}, CD{0}_{0}".format(dimension))
+            [ext.hdr.remove(keyword) for keyword in keywords.split(",")]
         else:
             log.warning("No dimension of length 1 in extension pixel data."
                         "No changes will be made to {}. ".format(adinput.filename))
