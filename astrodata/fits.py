@@ -622,7 +622,10 @@ class FitsProvider(DataProvider):
         ext = self._nddata[0]
         # Setting the ._data in the NDData is a bit kludgy, but we're all grown adults
         # and know what we're doing, isn't it?
-        ext._data = value
+        if hasattr(value, 'shape'):
+            ext._data = value
+        else:
+            raise AttributeError("Trying to assign data to be something with no shape")
 
     @property
     @force_load
