@@ -128,6 +128,10 @@ def simple_descriptor_mapping(**kw):
     return decorator
 
 class AstroData(object):
+
+    # Simply a value that nobody is going to try to set an NDData attribute to
+    _IGNORE = -23
+
     def __init__(self, provider):
         if not isinstance(provider, DataProvider):
             raise ValueError("AstroData is initialized with a DataProvider object. You may want to use ad.open('...') instead")
@@ -180,26 +184,6 @@ class AstroData(object):
     @property
     def tags(self):
         return self.__process_tags()
-
-    @property
-    def nddata(self):
-        return self._dataprov.nddata
-
-    @property
-    def data(self):
-        return self._dataprov.data
-
-    @property
-    def uncertainty(self):
-        return self._dataprov.uncertainty
-
-    @uncertainty.setter
-    def uncertainty(self, value):
-        self._dataprov.uncertainty = value
-
-    @property
-    def table(self):
-        return self._dataprov.table
 
     def __getitem__(self, slicing):
         return self.__class__(self._dataprov[slicing])
@@ -274,3 +258,38 @@ class AstroData(object):
 
     def append(self, extension):
         self._dataprov.append(extension)
+
+    def operate(self, operator):
+        for ext in self:
+            ext.data = operator(ext.data)
+            if ext.mask is not None:
+                ext.mask = operator(ext.mask)
+            if ext.variance is not None:
+                ext.variance = operator(ext.variance)
+
+    def reset(self, data, mask=_IGNORE, variance=_IGNORE, check=True):
+        if not self._single:
+            raise ValueError("Trying to reset a non-sliced AstroData object")
+        self.data = data
+        # Set mask, with checking if required
+        try:
+            if mask.shape != data.shape and check:
+                raise ValueError("Mask shape incompatible with data shape")
+        except AttributeError:
+            if mask is None:
+                self.mask = mask
+            elif mask != self._IGNORE:
+                raise TypeError("Attempt to set mask inappropriately")
+        else:
+            self.mask = mask
+        # Set variance, with checking if required
+        try:
+            if variance.shape != data.shape and check:
+                raise ValueError("Variance shape incompatible with data shape")
+        except AttributeError:
+            if variance is None:
+                self.uncertainty = None
+            elif variance != self._IGNORE:
+                raise TypeError("Attempt to set variance inappropriately")
+        else:
+            self.variance = variance
