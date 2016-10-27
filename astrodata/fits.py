@@ -623,8 +623,6 @@ class FitsProvider(DataProvider):
         # Setting the ._data in the NDData is a bit kludgy, but we're all grown adults
         # and know what we're doing, isn't it?
         ext._data = value
-        ext.uncertainty = None
-        ext.mask = None
 
     @property
     @force_load
