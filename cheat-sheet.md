@@ -39,6 +39,31 @@ you'll be overwriting the file you loaded). `clobber` works the same way as
 with PyFITS: if it's `False` (default), an exception will be rised when
 trying to overwrite an existing file.
 
+We can access to the path, and change it, too:
+
+    >>> ad.path
+    '/path/to/file.fits'
+    >>> ad.filename
+    'file.fits'
+    >>> ad.filename = 'newfile.fits'
+    >>> ad.path
+    '/path/to/newfile.fits'
+    >>> ad.path = '/totally/new/path/file.fits'
+    >>> ad.path
+    '/totally/new/path/file.fits'
+
+`ad.filename` can be assigned a new filename or a relative path, eg:
+
+    >>> ad.path
+    '/path/to/file.fits'
+    >>> ad.filename = 'subdir/file.fits'
+    >>> ad.path
+    '/path/to/subdir/file.fits'
+
+It will complain loudly if you try to assign an absolute path (one
+starting with `'/'`), though. If you want to do that, modify `ad.path`
+directly.
+
 ## Obtaining information from an instance
 
 The classic `ad.info()` gives an overall view of the file. This example comes
@@ -93,15 +118,30 @@ You can iterate over an `AstroData` instance:
     for ext in ad:
         # do something with the extension
 
-The order is always predictable: first extensions with `EXTVER`
+The order is always predictable: first come extensions with `EXTVER`
 (sorted by this field); then pixel images that had no `EXTVER`, which
-are assigned one.
+are assigned one automatically, starting with `n+1`, where `n` is
+the highest previously assigned `EXTVER`.
 
 `AstroData` objects support the same kind of slicing than other
 sequences. Eg.:
 
-    ad[2]                   # Returns the 3rd extension in the list
-    ad[:3]                  # Returns the first 3
+    >>> ad[2]                   # Returns the 3rd slice in the list
+    ...
+    >>> ad[:3]                  # Returns the first 3 slices
+    ...
+
+As it may be convenient to access slices by their `EXTVER`, we provide
+two methods to make that easier:
+
+    # Mapping EXTVER -> slice index
+    >>> ad.extver_map()
+    {1: 0, 2: 1, 3: 2}
+
+    # Following that mapping, the following two expressions return the same slice
+    >>> ad[1]
+    ...
+    >>> ad.extver(2)
 
 ## Accessing the headers
 
@@ -133,12 +173,14 @@ To get values from the PHU:
     >>> ad.phu.get('EXISTSNO', 'default_value')
     'default_value'
 
-To set values:
+Setting values:
 
     >>> ad.phu.KEYWORD = 'bar'
     >>> ad.set('KEYWORD', 'bar')
 
-To get/set comments:
+This, of course, works on non-existing keywords (it will create a new one)
+
+Getting/setting comments:
 
     >>> ad.phu.get_comment('KEYWORD')
     '..........'
@@ -146,6 +188,29 @@ To get/set comments:
 
     # Convenience method to set value and comment at the same time:
     >>> ad.phu.set('KEYWORD', value='value', comment='a comment')
+
+Removing keywords:
+
+    >>> del ad.phu.KEYWORD
+    >>> ad.phu.remove('KEYWORD')
+
+All these operations work the same for extension headers, but to access them
+we'll use `hdr` instead of `phu`, eg:
+
+    >>> ad.hdr.KEYWORD
+    ['SOMETHING', 'SOMETHING ELSE']
+
+The main difference is that we get a list of values, one per extension, even
+if there is a single extension (for consistency). **There is only one exception
+to this**: when working with single extensions, we always return single values.
+So:
+
+    # Generic slice, still returns a list
+    >>> ad[:3].hdr.RNDKEYW
+    [13.1351, 74.8523, 0.1534]
+    # BUT
+    >>> ad[1].hdr.RNDKEYW
+    74.8523
 
 ## Accessing the data
 
