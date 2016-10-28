@@ -204,7 +204,9 @@ class FitsProvider(DataProvider):
             'data',
             'uncertainty',
             'mask',
-            'variance'
+            'variance',
+            'path',
+            'filename'
             ])
 
     @force_load
@@ -527,6 +529,16 @@ class FitsProvider(DataProvider):
     def filename(self):
         if self.path is not None:
             return os.path.basename(self.path)
+
+    @filename.setter
+    def filename(self, value):
+        if self.path is None:
+            self.path = os.path.abspath(value)
+        elif os.path.isabs(value):
+            raise ValueError("Cannot set the filename to an absolute path!")
+        else:
+            dirname = os.path.dirname(self.path)
+            self.path = os.path.join(dirname, value)
 
     @property
     def header(self):
