@@ -720,6 +720,52 @@ class FitsProvider(DataProvider):
         else: # Assume that it is going to be something we know how to deal with...
             return self._add_pixel_image(ext, append=True)
 
+    def extver_map(self):
+        """
+        Provide a mapping between the FITS EXTVER of an extension and the index
+        that will be used to access it within this object.
+
+        Returns
+        -------
+        A dictionary `{EXTVER:index, ...}`
+
+        Raises
+        ------
+        ValueError
+            If used against a single slice. It is of no use in that situation.
+        """
+        if self._single:
+            raise ValueError("Trying to get a mapping out of a single slice")
+        return dict((nd._meta['ver'], n) for (n, nd) in enumerate(self.nddata))
+
+    def extver(self, ver):
+        """
+        Get an extension using its EXTVER instead of the positional index in this
+        object.
+
+        Parameters
+        ----------
+        ver: int
+             The EXTVER for the desired extension
+
+        Returns
+        -------
+        A sliced object containing the desired extension
+
+        Raises
+        ------
+        IndexError
+            If the provided EXTVER doesn't exist
+        """
+
+        try:
+            if isinstance(ver, int):
+                return self[self.extver_map()[ver]]
+            else:
+                raise ValueError("{} is not an integer EXTVER".format(ver))
+        except KeyError as e:
+            raise IndexError("EXTVER {} not found".format(e.args[0]))
+
 class FitsLoader(object):
     @staticmethod
     def provider_for_hdulist(hdulist):
