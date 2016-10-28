@@ -195,6 +195,7 @@ class FitsProvider(DataProvider):
         self._nddata = None
         self._hdulist = None
         self._path = None
+        self._orig_filename = None
         self._tables = {}
         self._exposed = set()
 
@@ -533,6 +534,8 @@ class FitsProvider(DataProvider):
     def path(self, value):
         if self._path is not None:
             self._lazy_populate_object()
+        else:
+            self._orig_filename = os.path.basename(value)
         self._path = value
 
     @property
@@ -549,6 +552,10 @@ class FitsProvider(DataProvider):
         else:
             dirname = os.path.dirname(self.path)
             self.path = os.path.join(dirname, value)
+
+    @property
+    def orig_filename(self):
+        return self._orig_filename
 
     @property
     def header(self):
