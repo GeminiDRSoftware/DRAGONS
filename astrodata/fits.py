@@ -738,34 +738,6 @@ class FitsProvider(DataProvider):
             raise ValueError("Trying to get a mapping out of a single slice")
         return dict((nd._meta['ver'], n) for (n, nd) in enumerate(self.nddata))
 
-    def extver(self, ver):
-        """
-        Get an extension using its EXTVER instead of the positional index in this
-        object.
-
-        Parameters
-        ----------
-        ver: int
-             The EXTVER for the desired extension
-
-        Returns
-        -------
-        A sliced object containing the desired extension
-
-        Raises
-        ------
-        IndexError
-            If the provided EXTVER doesn't exist
-        """
-
-        try:
-            if isinstance(ver, int):
-                return self[self.extver_map()[ver]]
-            else:
-                raise ValueError("{} is not an integer EXTVER".format(ver))
-        except KeyError as e:
-            raise IndexError("EXTVER {} not found".format(e.args[0]))
-
 class FitsLoader(object):
     @staticmethod
     def provider_for_hdulist(hdulist):
@@ -963,6 +935,34 @@ class AstroDataFits(AstroData):
             name of the telescope
         """
         return self.phu.get(self._keyword_for('telescope'))
+
+    def extver(self, ver):
+        """
+        Get an extension using its EXTVER instead of the positional index in this
+        object.
+
+        Parameters
+        ----------
+        ver: int
+             The EXTVER for the desired extension
+
+        Returns
+        -------
+        A sliced object containing the desired extension
+
+        Raises
+        ------
+        IndexError
+            If the provided EXTVER doesn't exist
+        """
+
+        try:
+            if isinstance(ver, int):
+                return self[self._dataprov.extver_map()[ver]]
+            else:
+                raise ValueError("{} is not an integer EXTVER".format(ver))
+        except KeyError as e:
+            raise IndexError("EXTVER {} not found".format(e.args[0]))
 
 # TODO: Remove this when we're sure that there are no external uses
 def write(filename, ad_object, clobber=False):
