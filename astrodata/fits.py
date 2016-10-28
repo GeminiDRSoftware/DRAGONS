@@ -194,7 +194,7 @@ class FitsProvider(DataProvider):
         self._header = None
         self._nddata = None
         self._hdulist = None
-        self.path = None
+        self._path = None
         self._tables = {}
         self._exposed = set()
 
@@ -524,6 +524,16 @@ class FitsProvider(DataProvider):
             self._exposed.add(name)
             if isinstance(processed, Table):
                 self._tables[name] = processed
+
+    @property
+    def path(self):
+        return self._path
+
+    @path.setter
+    def path(self, value):
+        if self._path is not None:
+            self._lazy_populate_object()
+        self._path = value
 
     @property
     def filename(self):
