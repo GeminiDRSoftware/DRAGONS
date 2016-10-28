@@ -7,6 +7,7 @@ from .lookup import array_properties, nominal_zeropoints
 from astropy.wcs import WCS, FITSFixedWarning
 import warnings
 
+from ..common import section_to_tuple
 from .. import gmu
 
 class AstroDataF2(AstroDataGemini):
@@ -126,7 +127,7 @@ class AstroDataF2(AstroDataGemini):
             format (1-based).
         """
 
-        value_filter = (str if pretty else gmu.sectionStrToIntList)
+        value_filter = (str if pretty else section_to_tuple)
         # TODO: discover reason why this is hardcoded, rather than from keyword
         return value_filter('[1:2048,1:2048]')
 

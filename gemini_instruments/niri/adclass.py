@@ -4,6 +4,7 @@ import math
 
 from . import lookup
 from .. import gmu
+from ..common import build_ir_section
 
 class AstroDataNiri(AstroDataGemini):
 
@@ -146,21 +147,8 @@ class AstroDataNiri(AstroDataGemini):
             Location of the pixels exposed to light using an IRAF section
             format (1-based).
         """
-        # This is identical to the GNIRS code
-        hirows = self.hdr.HIROW
-        lowrows = self.hdr.LOWROW
-        hicols = self.hdr.HICOL
-        lowcols = self.hdr.LOWCOL
 
-        # NOTE: Rows are X and cols are Y? These Romans are crazy
-        def format_section(x1,x2,y1,y2, pretty):
-            return "[{:d}:{:d},{:d}:{:d}]".format(x1+1, x2+1, y1+1,
-                y2+1) if pretty else (x1, x2+1, y1, y2+1)
-        try:
-            return [format_section(x1,x2,y1,y2, pretty)
-                    for x1,x2,y1,y2 in zip(lowrows, hirows, lowcols, hicols)]
-        except TypeError:
-            return format_section(lowrows, hirows, lowcols, hicols, pretty)
+        return build_ir_section(self, pretty)
 
     @astro_data_descriptor
     def detector_roi_setting(self):

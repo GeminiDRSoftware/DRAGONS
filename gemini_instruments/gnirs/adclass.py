@@ -2,7 +2,9 @@ import math
 import re
 
 from astrodata import astro_data_tag, astro_data_descriptor, TagSet, returns_list
+
 from ..gemini import AstroDataGemini
+from ..common import build_ir_section
 from .lookup import detector_properties, nominal_zeropoints, config_dict, read_modes
 
 # NOTE: Temporary functions for test. gempy imports astrodata and
@@ -96,7 +98,6 @@ class AstroDataGnirs(AstroDataGemini):
         """
         return self.data_section(pretty=pretty)
 
-    # TODO: write a function in the spirit of _parse_section for GNIRS *_section
     @astro_data_descriptor
     def data_section(self, pretty=False):
         """
@@ -125,20 +126,8 @@ class AstroDataGnirs(AstroDataGemini):
             format (1-based).
 
         """
-        hirows = self.hdr.HIROW
-        lowrows = self.hdr.LOWROW
-        hicols = self.hdr.HICOL
-        lowcols = self.hdr.LOWCOL
 
-        # NOTE: Rows are X and cols are Y? These Romans are crazy
-        def format_section(x1,x2,y1,y2, pretty):
-            return "[{:d}:{:d},{:d}:{:d}]".format(x1+1, x2+1, y1+1,
-                y2+1) if pretty else (x1, x2+1, y1, y2+1)
-        try:
-            return [format_section(x1,x2,y1,y2, pretty)
-                    for x1,x2,y1,y2 in zip(lowrows, hirows, lowcols, hicols)]
-        except TypeError:
-            return format_section(lowrows, hirows, lowcols, hicols, pretty)
+        return build_ir_section(self, pretty)
 
     @astro_data_descriptor
     def detector_section(self, pretty=False):
