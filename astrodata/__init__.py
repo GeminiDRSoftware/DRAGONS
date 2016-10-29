@@ -1,7 +1,9 @@
 __all__ = ['AstroData', 'AstroDataError', 'TagSet',
            'astro_data_descriptor', 'astro_data_tag', 'keyword',
            'descriptor_list',
-           'open', 'create', 'write']
+           'open', 'create', 'write', '__version__']
+
+__version__ = '9999'
 
 from .core import *
 # TODO: Remove 'write' when there's nothing else using it
