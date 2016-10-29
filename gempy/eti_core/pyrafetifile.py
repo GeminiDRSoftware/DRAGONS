@@ -7,15 +7,16 @@ class PyrafETIFile(ETIFile):
     """This class coordinates the ETI files as it pertains to Pyraf
     tasks in general.
     """
-    rc = None
+    inputs = None
+    params = None
     filedict = None
-    def __init__(self, rc=None):
+    def __init__(self, inputs=None, params=None):
         """
         :param rc: Used to store reduction information
         :type rc: ReductionContext
         """
         log.debug("PyrafETIFile __init__")
-        ETIFile.__init__(self, name=None, rc=rc)
+        ETIFile.__init__(self, name=None, inputs=inputs, params=params)
         self.filedict = {}
 
     def get_parameter(self):
@@ -36,4 +37,4 @@ class PyrafETIFile(ETIFile):
     def clean(self):
         log.debug("PyrafETIFile clean(): pass")
         pass
-        
+

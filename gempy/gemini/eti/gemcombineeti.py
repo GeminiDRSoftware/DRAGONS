@@ -5,15 +5,13 @@ from pyraf import iraf
 from iraf import gemini
 from iraf import gemtools
 
-from astrodata.utils import Errors
-from astrodata.utils import logutils
-from astrodata.utils.gemutil import pyrafLoader
-from astrodata.eti.pyrafeti import PyrafETI
+from gempy.utils import logutils
+from gempy.eti_core.pyrafeti import PyrafETI
 
 from gemcombinefile import InAtList, OutFile, LogFile
 from gemcombineparam import FlVardq, FlDqprop, Combine, \
     Masktype, Nlow, Nhigh, Reject, hardcoded_params, GemcombineParam
-    
+
 log = logutils.get_logger(__name__)
 
 class GemcombineETI(PyrafETI):
@@ -21,7 +19,7 @@ class GemcombineETI(PyrafETI):
     directly to the IRAF task: gemcombine
     """
     clparam_dict = None
-    def __init__(self, rc):
+    def __init__(self, inputs, params):
         """
         Adds the file and parameter objects to a list
 
@@ -29,20 +27,20 @@ class GemcombineETI(PyrafETI):
         :type rc: ReductionContext
         """
         log.debug("GemcombineETI __init__")
-        PyrafETI.__init__(self, rc)
+        PyrafETI.__init__(self, inputs, params)
         self.clparam_dict = {}
-        self.add_file(InAtList(rc))
-        self.add_file(OutFile(rc))
-        self.add_file(LogFile(rc))
-        self.add_param(FlVardq(rc))
-        self.add_param(FlDqprop(rc))
-        self.add_param(Combine(rc))
-        self.add_param(Masktype(rc))
-        self.add_param(Nlow(rc))
-        self.add_param(Nhigh(rc))
-        self.add_param(Reject(rc))
+        self.add_file(InAtList(inputs, params))
+        self.add_file(OutFile(inputs, params))
+        self.add_file(LogFile(inputs, params))
+        self.add_param(FlVardq(inputs, params))
+        self.add_param(FlDqprop(inputs, params))
+        self.add_param(Combine(inputs, params))
+        self.add_param(Masktype(inputs, params))
+        self.add_param(Nlow(inputs, params))
+        self.add_param(Nhigh(inputs, params))
+        self.add_param(Reject(inputs, params))
         for param in hardcoded_params:
-            self.add_param(GemcombineParam(rc, param, hardcoded_params[param]))
+            self.add_param(GemcombineParam(inputs, params, param, hardcoded_params[param]))
 
     def execute(self):
         """Execute pyraf task: gemcombine"""
@@ -56,7 +54,7 @@ class GemcombineETI(PyrafETI):
             xcldict.update(par.get_parameter())
         iraf.unlearn(iraf.gemcombine)
 
-        # Use setParam to list the parameters in the logfile 
+        # Use setParam to list the parameters in the logfile
         for par in xcldict:
             #Stderr and Stdout are not recognized by setParam
             if par != "Stderr" and par !="Stdout":
@@ -71,10 +69,10 @@ class GemcombineETI(PyrafETI):
             gemini.gemcombine(**xcldict)
         except:
             # catch hard crash of the primitive
-            raise Errors.OutputError("The IRAF task gemcombine failed")
+            raise RuntimeError("The IRAF task gemcombine failed")
         if gemini.gemcombine.status:
             # catch graceful exit on error
-            raise Errors.OutputError("The IRAF task gemcombine failed")
+            raise RuntimeError("The IRAF task gemcombine failed")
         else:
             log.fullinfo("The IRAF task gemcombine completed successfully")
 
@@ -99,5 +97,5 @@ class GemcombineETI(PyrafETI):
             else:
                 fil.recover()
         return ad
-        
-        
+
+

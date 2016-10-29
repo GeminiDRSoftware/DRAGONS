@@ -6,14 +6,12 @@ from iraf import gemini
 from iraf import gmos
 from iraf import gemtools
 
-from astrodata.utils import Errors
-from astrodata.utils import logutils
-from astrodata.utils.gemutil import pyrafLoader
-from astrodata.eti.pyrafeti import PyrafETI
+from gempy.utils import logutils
+from gempy.eti_core.pyrafeti import PyrafETI
 
 from gmosaicfile import InAtList, OutAtList, LogFile
 from gmosaicparam import FlPaste, FlFixpix, Geointer, FlVardq, FlClean, mosaic_detectors_hardcoded_params, GmosaicParam
-    
+
 log = logutils.get_logger(__name__)
 
 class GmosaicETI(PyrafETI):
@@ -22,7 +20,7 @@ class GmosaicETI(PyrafETI):
     """
     clparam_dict = None
     ad = None
-    def __init__(self, rc, ad):
+    def __init__(self, inputs, params, ad):
         """
         Adds the file and parameter objects to a list
 
@@ -30,20 +28,20 @@ class GmosaicETI(PyrafETI):
         :type rc: ReductionContext
         """
         log.debug("GmosaicETI __init__")
-        PyrafETI.__init__(self, rc)
+        PyrafETI.__init__(self, inputs, params)
         self.clparam_dict = {}
 
         # if ad then it will only process the ad
-        self.add_file(InAtList(rc, ad))
-        self.add_file(OutAtList(rc, ad))
-        self.add_file(LogFile(rc))
-        self.add_param(FlPaste(rc))
-        self.add_param(FlFixpix(rc))
-        self.add_param(Geointer(rc))
-        self.add_param(FlVardq(rc, ad))
-        self.add_param(FlClean(rc, ad))
+        self.add_file(InAtList(inputs, params, ad))
+        self.add_file(OutAtList(inputs, params, ad))
+        self.add_file(LogFile(inputs, params))
+        self.add_param(FlPaste(inputs, params))
+        self.add_param(FlFixpix(inputs, params))
+        self.add_param(Geointer(inputs, params))
+        self.add_param(FlVardq(inputs, params, ad))
+        self.add_param(FlClean(inputs, params, ad))
         for param in mosaic_detectors_hardcoded_params:
-            self.add_param(GmosaicParam(rc, param, \
+            self.add_param(GmosaicParam(inputs, params, param, \
                            mosaic_detectors_hardcoded_params[param]))
 
     def execute(self):
@@ -58,7 +56,7 @@ class GmosaicETI(PyrafETI):
             xcldict.update(par.get_parameter())
         iraf.unlearn(iraf.gmos.gmosaic)
 
-        # Use setParam to list the parameters in the logfile 
+        # Use setParam to list the parameters in the logfile
         for par in xcldict:
             #Stderr and Stdout are not recognized by setParam
             if par != "Stderr" and par !="Stdout":
@@ -68,17 +66,17 @@ class GmosaicETI(PyrafETI):
             Stdout=xcldict["Stdout"])
 
         # Execute the task using the same dict as setParam
-        # (but this time with Stderr and Stdout) 
+        # (but this time with Stderr and Stdout)
         #from pprint import pprint
         #pprint(xcldict)
         try:
             gemini.gmos.gmosaic(**xcldict)
         except:
             # catch hard crash
-            raise Errors.OutputError("The IRAF task gmos.gmosaic failed")
+            raise RuntimeError("The IRAF task gmos.gmosaic failed")
         if gemini.gmos.gmosaic.status:
             # catch graceful exit upon error
-            raise Errors.OutputError("The IRAF task gmos.gmosaic failed")
+            raise RuntimeError("The IRAF task gmos.gmosaic failed")
         else:
             log.fullinfo("The IRAF task gmos.gmosaic completed successfully")
 
@@ -107,5 +105,5 @@ class GmosaicETI(PyrafETI):
             return adlist[0]
         else:
             return adlist
-        
-        
+
+

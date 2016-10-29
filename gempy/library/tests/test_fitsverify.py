@@ -7,8 +7,9 @@ This is a suite of tests to be run with pytest.
 
 To run:
    1) Set the environment variable GEMPYTHON_TESTDATA to the path that contains
-      the file N20130510S0178_forStack.fits.
-      Eg. /net/chara/data2/pub/ad_testdata/GMOS
+      the gempython test data files.
+      This suite uses the file N20130510S0178_forStack.fits.
+      Eg. /net/chara/data2/pub/gempython_testdata
    2) From the ??? (location): py.test -v
 """
 
@@ -17,7 +18,7 @@ import os.path
 from gempy.library import fitsverify
 
 TESTDATAPATH = os.getenv('GEMPYTHON_TESTDATA', '.')
-TESTFITS = 'N20130510S0178_forStack.fits'
+TESTFITS = os.path.join('GMOS','N20130510S0178_forStack.fits')
 
 class TestFitsverify:
     """

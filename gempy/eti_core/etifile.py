@@ -4,17 +4,19 @@ log = logutils.get_logger(__name__)
 class ETIFile(object):
     """The base class for all External Class Interface file objects.
     """
-    rc = None
+    inputs = None
+    params = None
     name = None
-    def __init__(self, name=None, rc=None):
+    def __init__(self, name=None, inputs=None, params=None):
         """
         :param rc: Used to store reduction information
         :type rc: ReductionContext
         """
         log.debug("ETIFile __init__")
-        self.rc = rc
+        self.inputs = inputs
+        self.params = params
         self.name = name
-    
+
     def prepare(self):
         print("ETIFile prepare()")
         pass
@@ -22,7 +24,7 @@ class ETIFile(object):
     def recover(self):
         print("ETIFile recover()")
         pass
-    
+
     def clean(self):
         print("ETIFile clean()")
         pass

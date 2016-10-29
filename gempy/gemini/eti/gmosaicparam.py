@@ -1,9 +1,8 @@
 import os
 from pyraf import iraf
 
-from astrodata.utils import logutils
-from astrodata.eti.pyrafetiparam import PyrafETIParam, IrafStdout
-from gempy.gemini.gemini_tools import calc_nbiascontam
+from gempy.utils import logutils
+from gempy.eti_core.pyrafetiparam import PyrafETIParam, IrafStdout
 
 log = logutils.get_logger(__name__)
 
@@ -11,10 +10,11 @@ class GmosaicParam(PyrafETIParam):
     """This class coordinates the ETI parameters as it pertains to the IRAF
     task gireduce directly.
     """
-    rc = None
+    inputs = None
+    params = None
     key = None
     value = None
-    def __init__(self, rc=None, key=None, value=None):
+    def __init__(self, inputs=None, params=None, key=None, value=None):
         """
         :param rc: Used to store reduction information
         :type rc: ReductionContext
@@ -27,7 +27,7 @@ class GmosaicParam(PyrafETIParam):
         :type value: any
         """
         log.debug("GmosaicParam __init__")
-        PyrafETIParam.__init__(self, rc)
+        PyrafETIParam.__init__(self, inputs, params)
         self.key = key
         self.value = value
 
@@ -39,14 +39,15 @@ class GmosaicParam(PyrafETIParam):
     def prepare(self):
         log.debug("Gmosaic prepare()")
         self.paramdict.update({self.key:self.value})
-        
+
 class FlPaste(GmosaicParam):
-    rc = None
+    inputs = None
+    params = None
     fl_paste = None
-    def __init__(self, rc=None):
+    def __init__(self, inputs=None, params=None):
         log.debug("FlPaste __init__")
-        GmosaicParam.__init__(self, rc)
-        tile = self.nonecheck(rc["tile"])
+        GmosaicParam.__init__(self, inputs, params)
+        tile = self.nonecheck(params["tile"])
         if tile == "none" or tile == False:
             self.fl_paste = iraf.no
         else:
@@ -57,12 +58,13 @@ class FlPaste(GmosaicParam):
         self.paramdict.update({"fl_paste":self.fl_paste})
 
 class FlFixpix(GmosaicParam):
-    rc = None
+    inputs = None
+    params = None
     fl_fixpix = None
-    def __init__(self, rc=None):
+    def __init__(self, inputs=None, params=None):
         log.debug("FlFixpix __init__")
-        GmosaicParam.__init__(self, rc)
-        igaps = self.nonecheck(rc["interpolate_gaps"])
+        GmosaicParam.__init__(self, inputs, params)
+        igaps = self.nonecheck(params["interpolate_gaps"])
         if igaps == "none" or igaps == False:
             self.fl_fixpix = iraf.no
         else:
@@ -73,12 +75,13 @@ class FlFixpix(GmosaicParam):
         self.paramdict.update({"fl_fixpix":self.fl_fixpix})
 
 class Geointer(GmosaicParam):
-    rc = None
+    inputs = None
+    params = None
     geointer = None
-    def __init__(self, rc=None):
+    def __init__(self, inputs=None, params=None):
         log.debug("Geointer __init__")
-        GmosaicParam.__init__(self, rc)
-        inter = self.nonecheck(rc["interpolator"])
+        GmosaicParam.__init__(self, inputs, params)
+        inter = self.nonecheck(params["interpolator"])
         if inter == "none":
             inter = "linear"
         self.geointer = inter
@@ -88,13 +91,15 @@ class Geointer(GmosaicParam):
         self.paramdict.update({"geointer":self.geointer})
 
 class FlVardq(GmosaicParam):
-    rc = None
+    inputs = None
+    params = None
     fl_vardq = None
     ad = None
-    def __init__(self, rc=None, ad=None):
+    def __init__(self, inputs=None, params=None, ad=None):
         log.debug("FlVardq __init__")
-        GmosaicParam.__init__(self, rc)
-        if ad.count_exts("VAR") == ad.count_exts("DQ") == ad.count_exts("SCI"):
+        GmosaicParam.__init__(self, inputs, params)
+        #if ad.count_exts("VAR") == ad.count_exts("DQ") == ad.count_exts("SCI"):
+        if ad.variance is not None and ad.mask is not None:
             self.fl_vardq = iraf.yes
         else:
             self.fl_vardq = iraf.no
@@ -104,12 +109,13 @@ class FlVardq(GmosaicParam):
         self.paramdict.update({"fl_vardq":self.fl_vardq})
 
 class FlClean(GmosaicParam):
-    rc = None
+    inputs = None
+    params = None
     fl_clean = None
     ad = None
-    def __init__(self, rc=None, ad=None):
+    def __init__(self, inputs=None, params=None, ad=None):
         log.debug("FlClean __init__")
-        GmosaicParam.__init__(self, rc)
+        GmosaicParam.__init__(self, inputs, params)
         self.fl_clean = iraf.yes
 
     def prepare(self):

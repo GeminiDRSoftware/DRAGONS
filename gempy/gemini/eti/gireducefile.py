@@ -1,11 +1,13 @@
 import os
 import tempfile
+import re
 
-from astrodata import AstroData
-from astrodata.utils import logutils
-from astrodata.eti.pyrafetifile import PyrafETIFile
+import astrodata
+import gemini_instruments
+from gempy.utils import logutils
+from gempy.eti_core.pyrafetifile import PyrafETIFile
 
-from gempy.gemini import gemini_tools
+#from gempy.gemini import gemini_tools
 
 log = logutils.get_logger(__name__)
 
@@ -13,20 +15,22 @@ class GireduceFile(PyrafETIFile):
     """This class coordinates the ETI files as it pertains to the IRAF
     task gireduce directly.
     """
-    rc = None
+    inputs = None
+    params = None
+
     diskinlist = None
     diskoutlist = None
     pid_str = None
     pid_task = None
     adinput = None
     ad = None
-    def __init__(self, rc=None, ad=None):
+    def __init__(self, inputs=None, params=None, ad=None):
         """
         :param rc: Used to store reduction information
         :type rc: ReductionContext
         """
         log.debug("GireduceFile __init__")
-        PyrafETIFile.__init__(self, rc)
+        PyrafETIFile.__init__(self, inputs, params)
         self.diskinlist = []
         self.diskoutlist = []
         self.taskname = "gireduce"
@@ -35,34 +39,37 @@ class GireduceFile(PyrafETIFile):
         if ad:
             self.adinput = [ad]
         else:
-            self.adinput = self.rc.get_inputs_as_astrodata()
-    
+            self.adinput = inputs
+
     def get_prefix(self):
         return "tmp" + self.pid_task
 
 class InAtList(GireduceFile):
-    rc = None
+    inputs = None
+    params = None
+
     atlist = None
     ad = None
-    def __init__(self, rc=None, ad=None):
+    def __init__(self, inputs=None, params=None, ad=None):
         """
         :param rc: Used to store reduction information
         :type rc: ReductionContext
         """
         log.debug("InAtList __init__")
-        GireduceFile.__init__(self, rc, ad)
+        GireduceFile.__init__(self, inputs, params, ad)
         self.atlist = ""
 
     def prepare(self):
         log.debug("InAtList prepare()")
         for ad in self.adinput:
-            ad = gemini_tools.obsmode_add(ad)
-            newname = gemini_tools.filename_updater(adinput=ad, \
-                            prefix=self.get_prefix(), strip=True)
+            #ad = gemini_tools.obsmode_add(ad)
+            #newname = gemini_tools.filename_updater(adinput=ad, \
+            #                prefix=self.get_prefix(), strip=True)
+            newname = ''.join([self.get_prefix(), ad.filename])
             self.diskinlist.append(newname)
             log.fullinfo("Temporary image (%s) on disk for the IRAF task %s" % \
                           (newname, self.taskname))
-            ad.write(newname, rename=False, clobber=True)
+            ad.write(newname, clobber=True)
         self.atlist = "tmpImageList" + self.pid_task
         fh = open(self.atlist, "w")
         for fil in self.diskinlist:
@@ -81,28 +88,31 @@ class InAtList(GireduceFile):
         log.fullinfo("%s was deleted from disk" % self.atlist)
 
 class OutAtList(GireduceFile):
-    rc = None
+    inputs = None
+    params = None
+
     suffix = None
     recover_name = None
     ad_name = None
     atlist = None
     ad = None
-    def __init__(self, rc, ad):
+    def __init__(self, inputs, params, ad):
         """
         :param rc: Used to store reduction information
         :type rc: ReductionContext
         """
         log.debug("OutAtList __init__")
-        GireduceFile.__init__(self, rc, ad)
-        self.suffix = rc["suffix"]
+        GireduceFile.__init__(self, inputs, params, ad)
+        self.suffix = params["suffix"]
         self.ad_name = []
         self.atlist = ""
 
     def prepare(self):
         log.debug("OutAtList prepare()")
         for ad in self.adinput:
-            outname = gemini_tools.filename_updater(adinput=self.adinput[0], \
-                            suffix=self.suffix, strip=True)
+            #outname = gemini_tools.filename_updater(adinput=self.adinput[0], \
+            #                suffix=self.suffix, strip=True)
+            outname = re.sub('_varAdded', self.suffix, self.adinput[0].filename)
             self.ad_name.append(outname)
             self.diskoutlist.append(self.get_prefix() + outname)
         self.atlist = "tmpOutList" + self.pid_task
@@ -118,9 +128,9 @@ class OutAtList(GireduceFile):
         log.debug("OutAtList recover()")
         adlist = []
         for i, tmpname in enumerate(self.diskoutlist):
-            ad = AstroData(tmpname, mode="update")
+            ad = astrodata.open(tmpname)
             ad.filename = self.ad_name[i]
-            ad = gemini_tools.obsmode_del(ad)
+            #ad = gemini_tools.obsmode_del(ad)
             adlist.append(ad)
             log.fullinfo(tmpname + " was loaded into memory")
         return adlist
@@ -135,14 +145,15 @@ class OutAtList(GireduceFile):
 
 
 class LogFile(GireduceFile):
-    rc = None
-    def __init__(self, rc=None):
+    inputs = None
+    params = None
+    def __init__(self, inputs=None, params=None):
         """
         :param rc: Used to store reduction information
         :type rc: ReductionContext
         """
         log.debug("LogFile __init__")
-        GireduceFile.__init__(self, rc)
+        GireduceFile.__init__(self, inputs, params)
 
     def prepare(self):
         log.debug("LogFile prepare()")

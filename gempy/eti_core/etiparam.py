@@ -3,11 +3,13 @@ log = logutils.get_logger(__name__)
 
 
 class ETIParam(object):
-    rc = None
-    def __init__(self, rc=None):
+    inputs = None
+    params = None
+    def __init__(self, inputs=None, params=None):
         log.debug ("ETIParam __init__")
-        self.rc = rc
-    
+        self.inputs = inputs
+        self.params = params
+
     def prepare(self):
         log.debug("ETIParam prepare()")
         pass

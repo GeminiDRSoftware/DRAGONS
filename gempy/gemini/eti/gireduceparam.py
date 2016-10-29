@@ -1,9 +1,9 @@
 import os
 from pyraf import iraf
 
-from astrodata.utils import logutils
-from astrodata.eti.pyrafetiparam import PyrafETIParam, IrafStdout
-from gempy.gemini.gemini_tools import calc_nbiascontam
+from gempy.utils import logutils
+from gempy.eti_core.pyrafetiparam import PyrafETIParam, IrafStdout
+#from gempy.gemini.gemini_tools import calc_nbiascontam
 
 log = logutils.get_logger(__name__)
 
@@ -11,10 +11,11 @@ class GireduceParam(PyrafETIParam):
     """This class coordinates the ETI parameters as it pertains to the IRAF
     task gireduce directly.
     """
-    rc = None
+    inputs = None
+    params = None
     key = None
     value = None
-    def __init__(self, rc=None, key=None, value=None):
+    def __init__(self, inputs=None, params=None, key=None, value=None):
         """
         :param rc: Used to store reduction information
         :type rc: ReductionContext
@@ -27,7 +28,7 @@ class GireduceParam(PyrafETIParam):
         :type value: any
         """
         log.debug("GireduceParam __init__")
-        PyrafETIParam.__init__(self, rc)
+        PyrafETIParam.__init__(self, inputs, params)
         self.key = key
         self.value = value
 
@@ -39,28 +40,30 @@ class GireduceParam(PyrafETIParam):
     def prepare(self):
         log.debug("Gireduce prepare()")
         self.paramdict.update({self.key:self.value})
-        
+
 
 class Nbiascontam(GireduceParam):
-    rc = None
+    inputs = None
+    params = None
     nbcontam = None
     ad = None
-    def __init__(self, rc=None, ad=None):
+    def __init__(self, inputs=None, params=None, ad=None):
         log.debug("Nbiascontam __init__")
-        GireduceParam.__init__(self, rc)
-        osect = self.nonecheck(rc["overscan_section"])
+        GireduceParam.__init__(self, inputs, params)
+        osect = self.nonecheck(params["overscan_section"])
         self.nbcontam = 4
         if osect != "none":
-            self.nbcontam = calc_nbiascontam(self.adinput, osect)
+            raise NotImplementedError('Cannot use overscan_section.')
+            #self.nbcontam = calc_nbiascontam(self.adinput, osect)
         else:
             e2v = False
             if ad:
-                detector_type = ad.phu_get_key_value("DETTYPE")
+                detector_type = ad.phu.DETTYPE
                 if detector_type == "SDSU II e2v DD CCD42-90":
                     e2v = True
             else:
-                for ad in self.rc.get_inputs_as_astrodata():
-                    detector_type = ad.phu_get_key_value("DETTYPE")
+                for ad in inputs:
+                    detector_type = ad.phu.DETTYPE
                     if detector_type == "SDSU II e2v DD CCD42-90":
                         e2v = True
             if e2v:
