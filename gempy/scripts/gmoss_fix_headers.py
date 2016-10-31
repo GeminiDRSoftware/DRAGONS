@@ -48,6 +48,8 @@ TODO:
     Add more logging / reports
 
 """
+from __future__ import print_function
+
 import argparse
 import datetime
 import glob
@@ -157,8 +159,8 @@ def correct_headers(hdulist, report=None, logger=None, correct_phu=True,
     instrument = _get_key_value(phu, 'INSTRUME')
     dettype = _get_key_value(phu, 'DETTYPE')
 
-    log.debug ("{0}".format(hdulist.filename()))
-    log.debug ("INSTRUMENT: {0}; DETTYPE: {1}".format(instrument, dettype))
+    log.debug("{0}".format(hdulist.filename()))
+    log.debug("INSTRUMENT: {0}; DETTYPE: {1}".format(instrument, dettype))
 
     # Check for non-existent keywords
     if None in [instrument, dettype]:
@@ -168,7 +170,7 @@ def correct_headers(hdulist, report=None, logger=None, correct_phu=True,
         raise KeyError(errmsg)
 
     # Check values of criteria
-    if (instrument != INSTRUMENT or dettype != DETTYPE):
+    if instrument != INSTRUMENT or dettype != DETTYPE:
         log.info("Criteria not met")
         return None
 
@@ -195,7 +197,7 @@ def fix_image_extensions(hdulist):
     assert isinstance(hdulist, pf.HDUList)
 
     updated = False
-    for i, hdu in enumerate(hdulist[1:]):
+    for hdu in hdulist[1:]:
         if isinstance(hdu, pf.ImageHDU):
             if True in [fix_ccdsec(hdu), fix_crpix1(hdu)]:
                 updated = True
@@ -254,7 +256,6 @@ def fix_crpix1(hdu):
     """ Fix crpix1 keywords in image extensions """
     # Always updated
     updated = True
-    crpix1 = _get_key_value(hdu, 'CRPIX1')
 
     datasec = _get_key_value(hdu, 'DATASEC')
     detsec = _get_key_value(hdu, 'DETSEC')
@@ -266,7 +267,6 @@ def fix_crpix1(hdu):
     log.debug("biassec: {0}".format(biassec))
     log.debug("ccdsum: {0}".format(ccdsum))
 
-    data_coords = _parse_section(datasec)
     detector_coords = _parse_section(detsec)
     biassec_coords = _parse_section(biassec)
     [xbin, ybin] = [int(value) for value in ccdsum.replace(" ", "")]
@@ -315,7 +315,7 @@ def fix_phu(phu):
     return updated
 
 
-def fix_date_obs(phu, correct_key=__CORRECT_KEY__):
+def fix_date_obs(phu):
     """ Correct DATE-OBS keyword in PHU"""
     date = _get_key_value(phu, "DATE")
     date_obs = _get_key_value(phu, "DATE-OBS")
@@ -425,7 +425,7 @@ def _update_date_object(date, months):
     """
     days_future = round(365.25 * (months / 12.0))
     delta_t = datetime.timedelta(days=days_future)
-    return (date + delta_t)
+    return date + delta_t
 
 
 def fix_obsepoch(phu, date_key=__CORRECT_KEY__, time_key=__CORRECT_TIME_KEY__):
@@ -495,7 +495,7 @@ def _default_log_file():
 
     extension = "log"
     part_one = __PROGRAM__
-    part_two = __VERSION_STRING__
+#    part_two = __VERSION_STRING__
     part_three = _get_time()
 #    components = [part_one, part_two, part_three]
     components = [part_one, part_three]
@@ -536,9 +536,9 @@ def main(args=None):
     out_path = args.outpath
 
     # Print statements are for INFO to screen formatting only
-    print ("")
+    print("")
     log.info("Logfile: {0}".format(args.logfile))
-    print ("")
+    print("")
     log.info("Path: {0}".format(args.rawpath))
     log.info("Out path: {0}".format(out_path))
     log.info("Backup path: {0}".format(backup_path))
@@ -549,9 +549,9 @@ def main(args=None):
 
         (inpath, filename) = os.path.split(infile)
 
-        print ("")
+        print("")
         log.info("{0}".format(DELIMINATOR))
-        print ("")
+        print("")
         log.info("File: {0}".format(filename))
 
         backup = os.path.join(backup_path, '.'.join([filename, args.suffix]))
@@ -641,9 +641,9 @@ def main(args=None):
         #     be left untouched
         hdulist.close()
 
-    print ("")
+    print("")
     log.info(DELIMINATOR)
-    print ("")
+    print("")
 
 
 ####
@@ -771,11 +771,11 @@ def get_logger(name=None, log_level="DEBUG"):
     # Get logger
     logger = logging.getLogger('')
     # Configure logger
-    logger = _configure_log(logger, name, log_level)
+    logger = _configure_log(name, log_level)
     return logger
 
 
-def _configure_log(logger, logfile=None, log_level="DEBUG"):
+def _configure_log(logfile=None, log_level="DEBUG"):
     """
     Configure a custom logger. If logfile is None a default logfile name is
     used.
@@ -902,7 +902,7 @@ def parse_command_line_inputs():
 ####
 # Run as a script
 if __name__ == "__main__":
-    """TODO return correct status"""
+    # TODO return correct status
 
     # Parse arguments: Allow exceptions to be raised as the parsing is done up
     # front
@@ -910,7 +910,7 @@ if __name__ == "__main__":
         args = parse_command_line_inputs()
     except KeyboardInterrupt:
         # Parsing arguments may take a long time allow user to escape easily
-        print "KeyboardInterrupt"
+        print("KeyboardInterrupt")
         sys.exit(1)
 
     # Call the main function to update headers
@@ -919,5 +919,5 @@ if __name__ == "__main__":
     try:
         main(args)
     except KeyboardInterrupt:
-        print "KeyboardInterrupt"
+        print("KeyboardInterrupt")
         sys.exit(1)

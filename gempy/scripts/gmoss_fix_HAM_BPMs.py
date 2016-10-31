@@ -10,9 +10,10 @@ Contents:
     update_bpms
 
 """
+from __future__ import print_function
+
 import argparse
 import os
-import sys
 
 import numpy as np
 import astropy.io.fits as pf
@@ -71,13 +72,13 @@ def _update_bpm_file(ffile):
     section_keywords.extend(unbinned_section_keywords)
     section_keywords.extend(binned_section_keywords)
 
-    print "Working on...\n{0}:\n".format(ffile.filename())
+    print("Working on...\n{0}:\n".format(ffile.filename()))
 
     ffile_slice = ffile[1:]
     for ext in ffile_slice:
 
         if VERBOSE:
-            print "{0}, {1}\n".format(ext.name, ext.ver)
+            print("{0}, {1}\n".format(ext.name, ext.ver))
 
         # Require shape for some reason...
         old_shape = ext.data.shape
@@ -113,7 +114,7 @@ def _update_bpm_file(ffile):
             _set_key_value(ext, section.upper(),
                            _set_iraf_section(new_value))
             if VERBOSE:
-                print ("{0}: {1} -> {2}\n".format(section.upper(),
+                print("{0}: {1} -> {2}\n".format(section.upper(),
                         old_str_value, _get_key_value(ext, section.upper())))
 
         # Unbinned version
@@ -125,7 +126,7 @@ def _update_bpm_file(ffile):
             _set_key_value(ext, section.upper(),
                            _set_iraf_section(new_value))
             if VERBOSE:
-                print ("{0}: {1} -> {2}\n".format(section.upper(),
+                print("{0}: {1} -> {2}\n".format(section.upper(),
                         old_str_value, _get_key_value(ext, section.upper())))
 
     return ffile
@@ -202,7 +203,7 @@ def _open_files(inputs, mode):
     assert isinstance(inputs, list)
 
     local_open = pf.open
-    return [local_open(file, mode=mode) for file in inputs]
+    return [local_open(ffile, mode=mode) for ffile in inputs]
 
 
 ####
@@ -222,7 +223,7 @@ def _get_key_value(ext, key, raise_exceptions=False):
         value = ext.header[key]
     except KeyError as err:
         value = None
-    except Error as err:
+    except Exception as err:
         pass
     finally:
         if raise_exceptions and err is not None:
@@ -337,7 +338,7 @@ def parse_command_line_inputs():
     return args
 
 if __name__ == '__main__':
-    """ Script parser """
+    # Script parser
 
     args = parse_command_line_inputs()
     main(args)
