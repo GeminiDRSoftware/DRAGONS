@@ -74,16 +74,17 @@ class Nbiascontam(GireduceParam):
         log.debug("Nbiascontam prepare()")
         self.paramdict.update({"nbiascontam":self.nbcontam})
 
-subtract_overscan_hardcoded_params = {"gp_outpref"  : "tmp" + str(os.getpid()) + "g",
-                                      "fl_over"     : iraf.yes,
-                                      "fl_trim"     : iraf.no,
-                                      "fl_mult"     : iraf.no,
-                                      "fl_vardq"    : iraf.no,
-                                      "fl_bias"     : iraf.no,
-                                      "fl_flat"     : iraf.no,
-                                      "mdfdir"     : "",
-                                      "sat"         : 65000,
-                                      "gain"        : 2.2000000000000002,
-                                      "Stdout"      : IrafStdout(),
-                                      "Stderr"      :IrafStdout()}
+subtract_overscan_hardcoded_params = \
+                {"gp_outpref"  : "tmp" + str(os.getpid()) + "g",
+                 "fl_over"     : iraf.yes,
+                 "fl_trim"     : iraf.no,
+                 "fl_mult"     : iraf.no,
+                 "fl_vardq"    : iraf.no,
+                 "fl_bias"     : iraf.no,
+                 "fl_flat"     : iraf.no,
+                 "mdfdir"     : "",
+                 "sat"         : 65000,
+                 "gain"        : 2.2000000000000002,
+                 "Stdout"      : IrafStdout(),
+                 "Stderr"      :IrafStdout()}
 

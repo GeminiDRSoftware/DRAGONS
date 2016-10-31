@@ -66,19 +66,19 @@ class InAtList(GemcombineFile):
                           (newname, self.taskname))
             ad.write(newname, clobber=True)
         self.atlist = "tmpImageList" + self.pid_task
-        fh = open(self.atlist, "w")
+        fhdl = open(self.atlist, "w")
         for fil in self.diskinlist:
-            fh.writelines(fil + "\n")
-        fh.close
+            fhdl.writelines(fil + "\n")
+        fhdl.close()
         log.fullinfo("Temporary list (%s) on disk for the IRAF task %s" % \
                       (self.atlist, self.taskname))
         self.filedict.update({"input": "@" + self.atlist})
 
     def clean(self):
         log.debug("InAtList clean()")
-        for file in self.diskinlist:
-            os.remove(file)
-            log.fullinfo("%s was deleted from disk" % file)
+        for a_file in self.diskinlist:
+            os.remove(a_file)
+            log.fullinfo("%s was deleted from disk" % a_file)
         os.remove(self.atlist)
         log.fullinfo("%s was deleted from disk" % self.atlist)
 

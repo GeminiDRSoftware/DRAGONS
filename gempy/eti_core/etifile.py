@@ -19,12 +19,9 @@ class ETIFile(object):
 
     def prepare(self):
         print("ETIFile prepare()")
-        pass
 
     def recover(self):
         print("ETIFile recover()")
-        pass
 
     def clean(self):
         print("ETIFile clean()")
-        pass

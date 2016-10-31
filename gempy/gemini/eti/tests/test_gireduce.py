@@ -26,7 +26,7 @@ TESTDEFAULTPARAMS = {
     "overscan_section" : None
 }
 
-class TestGireduce:
+class TestGireduce(object):
     """
     Suite of tests for the gireduce eti
     """
@@ -49,7 +49,7 @@ class TestGireduce:
         """Run once after every test."""
         pass
 
-    def test_gireduce_gmosoverscan_default(self):
+    def test_gmosoverscan_default(self):
         """
         Test the overscan subtraction in a GMOS image using default
         parameters.
@@ -66,4 +66,3 @@ class TestGireduce:
         del ad_oversub
         ##  NEED TO ADD A FITS DIFF.  Then remove clobber and delete
         ##  the output fits once the diff is completed.
-        pass

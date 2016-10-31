@@ -1,4 +1,3 @@
-import sys
 from copy import copy
 
 from pyraf import iraf
@@ -9,8 +8,8 @@ from iraf import gemtools
 from gempy.utils import logutils
 from gempy.eti_core.pyrafeti import PyrafETI
 
-from gireducefile import InAtList, OutAtList, LogFile
-from gireduceparam import Nbiascontam, \
+from .gireducefile import InAtList, OutAtList, LogFile
+from .gireduceparam import Nbiascontam, \
                         subtract_overscan_hardcoded_params, GireduceParam
 
 log = logutils.get_logger(__name__)
@@ -56,8 +55,8 @@ class GireduceETI(PyrafETI):
         # Use setParam to list the parameters in the logfile
         for par in xcldict:
             #Stderr and Stdout are not recognized by setParam
-            if par != "Stderr" and par !="Stdout":
-                gemini.gmos.gireduce.setParam(par,xcldict[par])
+            if par != "Stderr" and par != "Stdout":
+                gemini.gmos.gireduce.setParam(par, xcldict[par])
         log.fullinfo("\nGIREDUCE PARAMETERS:\n")
         iraf.lpar(iraf.gmos.gireduce, Stderr=xcldict["Stderr"], \
             Stdout=xcldict["Stdout"])

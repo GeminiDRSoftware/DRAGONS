@@ -148,5 +148,6 @@ class Reject(GemcombineParam):
         self.paramdict.update({"reject":self.reject_method})
 
 
-hardcoded_params = {'title':'DEFAULT','Stdout':IrafStdout(),'Stderr':IrafStdout()}
+hardcoded_params = {'title':'DEFAULT', 'Stdout':IrafStdout(),
+                    'Stderr':IrafStdout()}
 

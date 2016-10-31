@@ -28,13 +28,10 @@ class PyrafETIFile(ETIFile):
 
     def prepare(self):
         log.debug("PyrafETIFile prepare()")
-        pass
 
     def recover(self):
         log.debug("PyrafETIFile recover(): pass")
-        pass
 
     def clean(self):
         log.debug("PyrafETIFile clean(): pass")
-        pass
 

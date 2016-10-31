@@ -28,7 +28,7 @@ TESTDEFAULTPARAMS = {
     "interpolator" : "linear"
 }
 
-class TestGmosaic:
+class TestGmosaic(object):
     """
     Suite of tests for the gmosaic eti
     """
@@ -51,7 +51,7 @@ class TestGmosaic:
         """Run once after every test."""
         pass
 
-    def test_gmosaic_gmos_default(self):
+    def test_gmos_default(self):
         """
         Test the mosaic of a GMOS dataset with var dq but that has
         not be overscan subtracted or trimmed.  Use default parameters.
@@ -68,4 +68,3 @@ class TestGmosaic:
         del ad_mosaic
         ##  NEED TO ADD A FITS DIFF.  Then remove clobber and delete
         ##  the output fits once the diff is completed.
-        pass

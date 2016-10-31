@@ -1,15 +1,14 @@
-import sys
 from copy import copy
 
 from pyraf import iraf
 from iraf import gemini
-from iraf import gemtools
+#from iraf import gemtools
 
 from gempy.utils import logutils
 from gempy.eti_core.pyrafeti import PyrafETI
 
-from gemcombinefile import InAtList, OutFile, LogFile
-from gemcombineparam import FlVardq, FlDqprop, Combine, \
+from .gemcombinefile import InAtList, OutFile, LogFile
+from .gemcombineparam import FlVardq, FlDqprop, Combine, \
     Masktype, Nlow, Nhigh, Reject, hardcoded_params, GemcombineParam
 
 log = logutils.get_logger(__name__)
@@ -40,7 +39,8 @@ class GemcombineETI(PyrafETI):
         self.add_param(Nhigh(inputs, params))
         self.add_param(Reject(inputs, params))
         for param in hardcoded_params:
-            self.add_param(GemcombineParam(inputs, params, param, hardcoded_params[param]))
+            self.add_param(GemcombineParam(inputs, params, param,
+                                           hardcoded_params[param]))
 
     def execute(self):
         """Execute pyraf task: gemcombine"""
@@ -57,8 +57,8 @@ class GemcombineETI(PyrafETI):
         # Use setParam to list the parameters in the logfile
         for par in xcldict:
             #Stderr and Stdout are not recognized by setParam
-            if par != "Stderr" and par !="Stdout":
-                gemini.gemcombine.setParam(par,xcldict[par])
+            if par != "Stderr" and par != "Stdout":
+                gemini.gemcombine.setParam(par, xcldict[par])
         log.fullinfo("\nGEMCOMBINE PARAMETERS:\n")
         iraf.lpar(iraf.gemcombine, Stderr=xcldict["Stderr"], \
             Stdout=xcldict["Stdout"])

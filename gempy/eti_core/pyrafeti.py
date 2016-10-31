@@ -15,10 +15,8 @@ class PyrafETI(ExternalTaskInterface):
 
     def execute(self):
         log.debug("PyrafETI.execute()")
-        pass
 
     def recover(self):
         log.debug("PyrafETI.recover()")
-        pass
 
 

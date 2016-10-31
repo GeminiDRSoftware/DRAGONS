@@ -34,9 +34,9 @@ class ExternalTaskInterface(object):
         log.debug("ExternalTaskInterface.add_param()")
         self.param_objs.append(param)
 
-    def add_file(self, file):
+    def add_file(self, a_file):
         log.debug("ExternalTaskInterface.add_file()")
-        self.file_objs.append(file)
+        self.file_objs.append(a_file)
 
     def prepare(self):
         log.debug("ExternalTaskInterface.prepare()")
@@ -47,7 +47,6 @@ class ExternalTaskInterface(object):
 
     def execute(self):
         log.debug("ExternalTaskInterface.execute()")
-        pass
 
     def recover(self):
         log.debug("ExternalTaskInterface.recover()")

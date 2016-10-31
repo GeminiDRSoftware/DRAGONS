@@ -43,7 +43,7 @@ TESTDEFAULTPARAMS = {
     "reject_method": "avsigclip"
 }
 
-class TestGemcombine:
+class TestGemcombine(object):
     """
     Suite of tests for the gemcombine eti.
     """
@@ -72,7 +72,7 @@ class TestGemcombine:
         """Run once after every test."""
         pass
 
-    def test_gemcombine_niri_default(self):
+    def test_niri_default(self):
         """
         Test the stacking of NIRI data using QAP default parameters.
         """
@@ -90,4 +90,3 @@ class TestGemcombine:
         del ad_stack
         ##  NEED TO ADD A FITS DIFF.  Then remove clobber and delete
         ##  the output fits once the diff is completed.
-        pass

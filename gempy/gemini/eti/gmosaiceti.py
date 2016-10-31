@@ -1,4 +1,3 @@
-import sys
 from copy import copy
 
 from pyraf import iraf
@@ -9,8 +8,9 @@ from iraf import gemtools
 from gempy.utils import logutils
 from gempy.eti_core.pyrafeti import PyrafETI
 
-from gmosaicfile import InAtList, OutAtList, LogFile
-from gmosaicparam import FlPaste, FlFixpix, Geointer, FlVardq, FlClean, mosaic_detectors_hardcoded_params, GmosaicParam
+from .gmosaicfile import InAtList, OutAtList, LogFile
+from .gmosaicparam import FlPaste, FlFixpix, Geointer, FlVardq, FlClean, \
+    mosaic_detectors_hardcoded_params, GmosaicParam
 
 log = logutils.get_logger(__name__)
 
@@ -59,8 +59,8 @@ class GmosaicETI(PyrafETI):
         # Use setParam to list the parameters in the logfile
         for par in xcldict:
             #Stderr and Stdout are not recognized by setParam
-            if par != "Stderr" and par !="Stdout":
-                gemini.gmos.gmosaic.setParam(par,xcldict[par])
+            if par != "Stderr" and par != "Stdout":
+                gemini.gmos.gmosaic.setParam(par, xcldict[par])
         log.fullinfo("\nGMOSAIC PARAMETERS:\n")
         iraf.lpar(iraf.gmos.gmosaic, Stderr=xcldict["Stderr"], \
             Stdout=xcldict["Stdout"])

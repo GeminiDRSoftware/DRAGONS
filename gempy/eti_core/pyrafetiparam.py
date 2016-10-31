@@ -19,11 +19,9 @@ class PyrafETIParam(ETIParam):
 
     def prepare(self):
         log.debug("PyrafETIParam prepare()")
-        pass
 
     def recover(self):
         log.debug("PyrafETIParam recover(): pass")
-        pass
 
 class IrafStdout():
     """ This is a class to act as the standard output for the IRAF"""

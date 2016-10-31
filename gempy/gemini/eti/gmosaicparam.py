@@ -122,6 +122,6 @@ class FlClean(GmosaicParam):
         log.debug("FlClean prepare()")
         self.paramdict.update({"fl_clean":self.fl_clean})
 
-mosaic_detectors_hardcoded_params = { "Stdout"      : IrafStdout(),
-                                      "Stderr"      : IrafStdout()}
+mosaic_detectors_hardcoded_params = {"Stdout"      : IrafStdout(),
+                                     "Stderr"      : IrafStdout()}
 
