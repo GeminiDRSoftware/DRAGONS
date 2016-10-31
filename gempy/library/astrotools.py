@@ -1055,7 +1055,7 @@ class SpectralDatabase(object):
     def as_binary_table(self, record_name=None):
 
         # Should this be lazy loaded?
-        import pyfits as pf
+        import astropy.io.fits as pf
 
         if record_name is None:
             record_name = self.record_name
