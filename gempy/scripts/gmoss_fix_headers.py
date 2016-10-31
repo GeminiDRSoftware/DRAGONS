@@ -29,11 +29,11 @@ Contents:
         fix_date_obs
         fix_release_date
         fix_obsepoch
-        
+
         fix_image_extensions
         fix_ccdsec
         fix_crpix1
-        
+
         _update_date_object
         _get_key_value
         _parse_section
@@ -46,7 +46,7 @@ Contents:
 
 TODO:
     Add more logging / reports
-    
+
 """
 import argparse
 import datetime
@@ -57,14 +57,7 @@ import re
 import shutil
 import sys
 
-try:
-    import pyfits as pf
-except ImportError:
-    try:
-        from astropy.io import fits as pf
-    except ImportError:
-        raise ImportError("Cannot import pyfits or astropy.io.fits, "
-                          "please make sure one of them is installed.")
+import astropy.io.fits as pf
 
 from astropy.time import Time
 
@@ -141,18 +134,18 @@ def correct_headers(hdulist, report=None, logger=None, correct_phu=True,
         None if crtieria for updating an image are not met but keywords exist
 
         or
-        
+
         bool: whether the file was updated or not (Currently all files
         that match the criteria will AWLAYS be updated).
 
     Raises:
         KeyError if criteria keywords are None
-        
-    """ 
+
+    """
     assert isinstance(hdulist, pf.HDUList)
 
     global log
-    
+
     # Create logger
     if logger is None:
         log = get_logger("/dev/null/", "INFO")
@@ -183,11 +176,11 @@ def correct_headers(hdulist, report=None, logger=None, correct_phu=True,
     phu_updated = False
     if correct_phu:
         phu_updated = fix_phu(hdulist[0])
-        
+
     image_extensions_updated = False
     if correct_image_extensions:
         image_extensions_updated = fix_image_extensions(hdulist)
-        
+
     if True in [phu_updated, image_extensions_updated]:
         updated = True
     else:
@@ -213,7 +206,7 @@ def fix_image_extensions(hdulist):
 def fix_ccdsec(hdu):
     """ Fix CCDSEC keywords in image extensions """
     section_regexp = re.compile(SECTION_STRING)
-    
+
     # In unbinned space
     ccdsec = _get_key_value(hdu, 'CCDSEC')
     detsec = _get_key_value(hdu, 'DETSEC')
@@ -228,7 +221,7 @@ def fix_ccdsec(hdu):
     # Y coordinates should match!
     if ccd_coords[2:4] != detector_coords[2:4]:
         raise ValueError("Y values: {0} {1}".format(ccdsec, detsec))
-    
+
     # X coordinates maybe wrong
     if ccd_coords[0:2] != detector_coords[0:2]:
 
@@ -262,7 +255,7 @@ def fix_crpix1(hdu):
     # Always updated
     updated = True
     crpix1 = _get_key_value(hdu, 'CRPIX1')
-    
+
     datasec = _get_key_value(hdu, 'DATASEC')
     detsec = _get_key_value(hdu, 'DETSEC')
     biassec = _get_key_value(hdu, 'BIASSEC')
@@ -288,7 +281,7 @@ def fix_crpix1(hdu):
                    xbin) + CENTRE_X_OFFSET)
 
     new_crpix1 += offset
-    
+
     if detector_coords[0] < CCDWIDTH:
         factor = 1
     elif detector_coords[0] > 2 * CCDWIDTH:
@@ -358,9 +351,9 @@ def fix_date_obs(phu, correct_key=__CORRECT_KEY__):
 def fix_release_date(phu, correct_key=__CORRECT_KEY__):
     """
     Fix release date keyword in PHU
-    
+
     Crteria:
-    
+
     If PROGID is CAL or OBSCLASS is {dayCal,acqCal,partnerCal} -> 'Release Now'
 
     If PROGID is -Q-,-DD-,-C- and OBSCLASS {science,acq,progcal} -> '18 months'
@@ -403,7 +396,7 @@ def _update_date_object(date, months):
     """
     Employed here is the datetime 'timedelta' class.
     Because a 'month' is inherently fuzzy, timedelta does not use
-    'months' to express a delta-t. Any timedelta arguments must be in 
+    'months' to express a delta-t. Any timedelta arguments must be in
     'days', 'weeks' (and others, see doc on datetime.timedelta).
 
     Conversion of months to days is fraught, but here a year == 365.25d
@@ -415,20 +408,20 @@ def _update_date_object(date, months):
          For 18 months:
          18/12 --> 1.5 * 365.25 --> round(547.857) --> 548 days
 
-    This may introduce some minor variations over the course of a year, 
-    and certainly for a leap year, but variations are not expected to 
+    This may introduce some minor variations over the course of a year,
+    and certainly for a leap year, but variations are not expected to
     be > ~ (+/-)1d. These are perceived variations in that they arise
-    from the common notion that one month is 30 days. 
+    from the common notion that one month is 30 days.
 
     :param date: the date from which to add the timedelta for future release.
     :type date: <datetime.datetime>
-    
+
     :param months: the number of months in the future.
     :type months: <int>
 
     :returns: The calculated future release date.
     :rtype: <datetime.datetime>
-    
+
     """
     days_future = round(365.25 * (months / 12.0))
     delta_t = datetime.timedelta(days=days_future)
@@ -442,7 +435,7 @@ def fix_obsepoch(phu, date_key=__CORRECT_KEY__, time_key=__CORRECT_TIME_KEY__):
     keyword will be limited to half a second rather than milli-seconds, as the
     DATE-OBS is normally supplied by the GPS time from the syncro bus. Both
     date and time are required to fix this keyword.
-    
+
     """
     date = _get_key_value(phu, date_key)
     ut = _get_key_value(phu, time_key)
@@ -468,13 +461,13 @@ def fix_obsepoch(phu, date_key=__CORRECT_KEY__, time_key=__CORRECT_TIME_KEY__):
     phu.header["OBSEPOCH"] = (new_obsepoch, new_comment)
 
     return True
-    
+
 ####
 # Helper functions
 def _get_key_value(header, key):
     """
     Helper function to get header keywords wrapping any KeyErrors
-    
+
     Returns:
         Keyword value; None if KeyError
 
@@ -484,13 +477,13 @@ def _get_key_value(header, key):
     except KeyError:
         value = None
     return value
-    
+
 
 def _parse_section(section):
     section_regexp = re.compile(SECTION_STRING)
     return [int(value)
             for value in list(section_regexp.match(section).groups())]
-        
+
 def _get_time():
     global DATETIME
     if DATETIME is None:
@@ -503,19 +496,19 @@ def _default_log_file():
     extension = "log"
     part_one = __PROGRAM__
     part_two = __VERSION_STRING__
-    part_three = _get_time()             
+    part_three = _get_time()
 #    components = [part_one, part_two, part_three]
     components = [part_one, part_three]
     logfile = '.'.join(["_".join(components), extension])
-    
+
     return logfile
 
 def _write_report(filename, report_name, message):
-    """ Write filename and message to report_name on disk """ 
+    """ Write filename and message to report_name on disk """
     report_file = open(report_name, 'w')
     report_file.write('\n'.join([filename, message]))
     report_file.close()
-    
+
 
 ####
 # Main function when called as script: Requires arg parsed input.
@@ -535,7 +528,7 @@ def main(args=None):
     assert isinstance(args, argparse.Namespace)
 
     global log
-    
+
     # Get the logger
     log = get_logger(args.logfile, args.log_level)
 
@@ -553,14 +546,14 @@ def main(args=None):
     # Create filenames and update headers
     for infile in args.files:
         do_update = False
-        
+
         (inpath, filename) = os.path.split(infile)
 
         print ("")
         log.info("{0}".format(DELIMINATOR))
         print ("")
         log.info("File: {0}".format(filename))
-        
+
         backup = os.path.join(backup_path, '.'.join([filename, args.suffix]))
         outfile = os.path.join(out_path, filename)
 
@@ -577,7 +570,7 @@ def main(args=None):
             log.warning('"{0}" already exists'.format(outfile))
         else:
             do_update = True
-        
+
         if not do_update:
             log.info("{0} has been left untouched".format(filename))
             continue
@@ -588,9 +581,9 @@ def main(args=None):
         report = "{0}.{1}".format(report, "log")
 
         # Always open in readonly unless not doing a dry run and editing fie in
-        # place 
+        # place
         read_mode = 'readonly'
-        
+
         # Make a backup of input file
         if not args.dry_run:
             try:
@@ -636,7 +629,7 @@ def main(args=None):
             log.warning(errmsg)
             del err
             continue
-        
+
         if updated is not None and infile != outfile:
             if not args.dry_run:
                 hdulist.writeto(outfile)
@@ -666,7 +659,7 @@ def _parse_files(args):
 
     Returns:
         argparse.Namespace
-        
+
     """
     assert isinstance(args, argparse.Namespace)
 
@@ -675,11 +668,11 @@ def _parse_files(args):
     for infile in args.files:
         found_files = glob.glob(os.path.join(path, infile.strip()))
         found_files = [fname for fname in found_files if fname != path]
-        if found_files:                    
+        if found_files:
             file_system_files.extend(found_files)
 
     args.files = file_system_files
-    
+
     return args
 
 
@@ -696,7 +689,7 @@ def _expand_inputs(variable):
     """
     if "$" in variable:
         variable = os.path.expandvars(variable)
-        
+
     variable = os.path.expanduser(variable)
     return variable
 
@@ -710,7 +703,7 @@ def _parse_file_system(arg):
 
     Returns:
         Expanded input: basestring
-    
+
     """
     if FILE_SYSTEM_REGEXP.search(arg):
         arg = _expand_inputs(arg)
@@ -771,9 +764,9 @@ def get_logger(name=None, log_level="DEBUG"):
         logging.logger
 
     Raises:
-    
+
         ValueError on incorrect logging level
-    
+
     """
     # Get logger
     logger = logging.getLogger('')
@@ -834,7 +827,7 @@ def _configure_log(logger, logfile=None, log_level="DEBUG"):
 
     # Set different format for STDERR
     formatter = logging.Formatter(STDERRFMT)
-    
+
     # add the handler to the root logger
     log.addHandler(screen)
 
@@ -907,7 +900,7 @@ def parse_command_line_inputs():
     return args
 
 ####
-# Run as a script    
+# Run as a script
 if __name__ == "__main__":
     """TODO return correct status"""
 

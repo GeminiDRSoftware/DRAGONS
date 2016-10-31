@@ -15,7 +15,7 @@ import os
 import sys
 
 import numpy as np
-import pyfits as pf
+import astropy.io.fits as pf
 
 from glob import glob
 
@@ -63,7 +63,7 @@ def _update_bpm_file(ffile):
     """
     # Loop over extensions
     # ASSUMES all extensions are image extensions AND first extension is a PHU
-    
+
     # Unbinned versions are in entire detector and individual ccd frames
     unbinned_section_keywords = ['detsec', 'ccdsec']
     binned_section_keywords = ['datasec', 'trimsec']
@@ -72,17 +72,17 @@ def _update_bpm_file(ffile):
     section_keywords.extend(binned_section_keywords)
 
     print "Working on...\n{0}:\n".format(ffile.filename())
-    
+
     ffile_slice = ffile[1:]
     for ext in ffile_slice:
 
         if VERBOSE:
             print "{0}, {1}\n".format(ext.name, ext.ver)
-        
+
         # Require shape for some reason...
         old_shape = ext.data.shape
         old_y_size, old_x_size = old_shape
-        
+
         # Parse sections and binning
         for key in section_keywords:
             vars()[key] = _parse_iraf_section(_get_key_value(ext, key.upper()))
@@ -101,7 +101,7 @@ def _update_bpm_file(ffile):
         y_slice = slice(old_array_start, new_y_size)
         new_array[y_slice, :] = ext.data
         ext.data = new_array
-        
+
 
         # Update keywords
         #
@@ -160,7 +160,7 @@ def _write_file(inobject, prefix=None, clobber=False):
     -------
 
     None
-    
+
     """
     local_write = 'writeto'
     local_write_func = getattr(inobject, local_write)
@@ -170,7 +170,7 @@ def _write_file(inobject, prefix=None, clobber=False):
     local_write_func(filename, clobber=clobber)
     return
 
-    
+
 def _open(args):
     """ Parse input arguments and then open """
     directory = args.directory
@@ -182,7 +182,7 @@ def _open(args):
                  for infile in args.infiles]
     return _open_files(files, args.open_mode)
 
-    
+
 def _open_files(inputs, mode):
     """
     Load the FITS files into the data abstraction class
@@ -197,14 +197,14 @@ def _open_files(inputs, mode):
     -------
 
     open_list: list of data abstraction classes
-    
+
     """
     assert isinstance(inputs, list)
 
     local_open = pf.open
     return [local_open(file, mode=mode) for file in inputs]
 
-    
+
 ####
 # Helper functions
 ####
@@ -212,7 +212,7 @@ def _open_files(inputs, mode):
 def _get_key_value(ext, key, raise_exceptions=False):
     """
     Helper function to get header keywords wrapping any KeyErrors
-    
+
     Returns:
         Keyword value; None if KeyError
 
@@ -229,11 +229,11 @@ def _get_key_value(ext, key, raise_exceptions=False):
             raise err
     return value
 
-    
+
 def _set_key_value(ext, key, value):
     """
     Helper function to get header keywords wrapping any KeyErrors
-    
+
     Returns:
         Keyword value; None if KeyError
 
@@ -255,7 +255,7 @@ def _set_iraf_section(section_list):
 
     return "[{0:d}:{1:d},{2:d}:{3:d}]".format(x1, x2, y1, y2)
 
-    
+
 def _parse_iraf_section(section):
     """
     Convert IRAF section to Python syntax: zero based non-inclusive
@@ -267,15 +267,15 @@ def _parse_iraf_section(section):
 
     """
     assert isinstance(section, basestring)
-        
+
     [x1, x2, y1, y2] = [int(a) for b in section.strip('[]').split(':')
                         for a in b.split(",")]
     x1 -= 1
     y1 -= 1
-        
+
     return [y1, y2, x1, x2]
 
-    
+
 ####
 # Script handling
 ####
@@ -288,7 +288,7 @@ def main(args):
     Parameters
     ----------
     args: argpare parser object
-    
+
     Returns
     -------
     None
