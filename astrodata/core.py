@@ -270,26 +270,37 @@ class AstroData(object):
     def reset(self, data, mask=_IGNORE, variance=_IGNORE, check=True):
         if not self._single:
             raise ValueError("Trying to reset a non-sliced AstroData object")
-        self.data = data
+
+        # In case data is an NDData object
+        try:
+            self.data = data
+        except AttributeError:
+            self.data = data.data
         # Set mask, with checking if required
         try:
-            if mask.shape != data.shape and check:
+            if mask.shape != self.data.shape and check:
                 raise ValueError("Mask shape incompatible with data shape")
         except AttributeError:
             if mask is None:
                 self.mask = mask
-            elif mask != self._IGNORE:
+            elif mask == self._IGNORE:
+                if hasattr(data, 'mask'):
+                    self.mask = data.mask
+            else:
                 raise TypeError("Attempt to set mask inappropriately")
         else:
             self.mask = mask
         # Set variance, with checking if required
         try:
-            if variance.shape != data.shape and check:
+            if variance.shape != self.data.shape and check:
                 raise ValueError("Variance shape incompatible with data shape")
         except AttributeError:
             if variance is None:
                 self.uncertainty = None
-            elif variance != self._IGNORE:
+            elif variance == self._IGNORE:
+                if hasattr(data, 'uncertainty'):
+                    self.uncertainty = data.uncertainty
+            else:
                 raise TypeError("Attempt to set variance inappropriately")
         else:
             self.variance = variance
