@@ -7,7 +7,7 @@ import gemini_instruments
 from gempy.utils import logutils
 from gempy.eti_core.pyrafetifile import PyrafETIFile
 
-#from gempy.gemini import gemini_tools
+from gempy.gemini import gemini_tools
 
 log = logutils.get_logger(__name__)
 
@@ -62,10 +62,10 @@ class InAtList(GireduceFile):
     def prepare(self):
         log.debug("InAtList prepare()")
         for ad in self.adinput:
-            #ad = gemini_tools.obsmode_add(ad)
-            #newname = gemini_tools.filename_updater(adinput=ad, \
-            #                prefix=self.get_prefix(), strip=True)
-            newname = ''.join([self.get_prefix(), ad.filename])
+            ad = gemini_tools.obsmode_add(ad)
+            newname = gemini_tools.filename_updater(adinput=ad, \
+                            prefix=self.get_prefix(), strip=True)
+            #newname = ''.join([self.get_prefix(), ad.filename])
             self.diskinlist.append(newname)
             log.fullinfo("Temporary image (%s) on disk for the IRAF task %s" % \
                           (newname, self.taskname))
@@ -110,9 +110,9 @@ class OutAtList(GireduceFile):
     def prepare(self):
         log.debug("OutAtList prepare()")
         for ad in self.adinput:
-            #outname = gemini_tools.filename_updater(adinput=ad, \
-            #                suffix=self.suffix, strip=True)
-            outname = re.sub('_varAdded', self.suffix, ad.filename)
+            outname = gemini_tools.filename_updater(adinput=ad, \
+                            suffix=self.suffix, strip=True)
+            #outname = re.sub('_varAdded', self.suffix, ad.filename)
             self.ad_name.append(outname)
             self.diskoutlist.append(self.get_prefix() + outname)
         self.atlist = "tmpOutList" + self.pid_task
@@ -130,7 +130,7 @@ class OutAtList(GireduceFile):
         for i, tmpname in enumerate(self.diskoutlist):
             ad = astrodata.open(tmpname)
             ad.filename = self.ad_name[i]
-            #ad = gemini_tools.obsmode_del(ad)
+            ad = gemini_tools.obsmode_del(ad)
             adlist.append(ad)
             log.fullinfo(tmpname + " was loaded into memory")
         return adlist

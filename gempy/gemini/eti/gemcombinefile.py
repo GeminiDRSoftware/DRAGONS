@@ -7,7 +7,7 @@ import gemini_instruments
 from gempy.utils import logutils
 from gempy.eti_core.pyrafetifile import PyrafETIFile
 
-#from gempy.gemini import gemini_tools
+from gempy.gemini import gemini_tools
 
 log = logutils.get_logger(__name__)
 
@@ -57,10 +57,10 @@ class InAtList(GemcombineFile):
     def prepare(self):
         log.debug("InAtList prepare()")
         for ad in self.adinput:
-            #ad = gemini_tools.obsmode_add(ad)
-            #newname = gemini_tools.filename_updater(adinput=ad, \
-            #                prefix=self.get_prefix(), strip=True)
-            newname = ''.join([self.get_prefix(), ad.filename])
+            ad = gemini_tools.obsmode_add(ad)
+            newname = gemini_tools.filename_updater(adinput=ad, \
+                            prefix=self.get_prefix(), strip=True)
+            #newname = ''.join([self.get_prefix(), ad.filename])
             self.diskinlist.append(newname)
             log.fullinfo("Temporary image (%s) on disk for the IRAF task %s" % \
                           (newname, self.taskname))
@@ -104,9 +104,9 @@ class OutFile(GemcombineFile):
 
     def prepare(self):
         log.debug("Outfile prepare()")
-        #outname = gemini_tools.filename_updater(adinput=self.adinput[0], \
-        #                suffix=self.suffix, strip=True)
-        outname = re.sub('_aligned', self.suffix, self.adinput[0].filename)
+        outname = gemini_tools.filename_updater(adinput=self.adinput[0], \
+                        suffix=self.suffix, strip=True)
+        #outname = re.sub('_aligned', self.suffix, self.adinput[0].filename)
         self.ad_name = outname
         self.tmp_name = self.get_prefix() + outname
         self.filedict.update({"output": self.tmp_name})
@@ -115,7 +115,7 @@ class OutFile(GemcombineFile):
         log.debug("OufileETIFile recover()")
         ad = astrodata.open(self.tmp_name)
         ad.filename = self.ad_name
-        #ad = gemini_tools.obsmode_del(ad)
+        ad = gemini_tools.obsmode_del(ad)
         log.fullinfo(self.tmp_name + " was loaded into memory")
         return ad
 
