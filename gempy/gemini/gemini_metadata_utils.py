@@ -5,6 +5,7 @@ strings. Eg., filter names, time strings, etc.
 import re
 import datetime
 
+# TODO: PEP8 the camelCap functions.
 # ------------------------------------------------------------------------------
 def removeComponentID(instr):
     """
@@ -14,12 +15,12 @@ def removeComponentID(instr):
     :rtype: string
     :return: the filter name with the component ID removed
     """
-    m = re.match (r"(?P<filt>.*?)_G(.*?)", instr)
-    if not m:
+    match = re.match(r"(?P<filt>.*?)_G(.*?)", instr)
+    if not match:
         # There was no "_G" in the input string. Return the input string
         ret_str = str(instr)
     else:
-        ret_str = str(m.group("filt"))
+        ret_str = str(match.group("filt"))
     return ret_str
 
 def sectionStrToIntList(section):
@@ -74,8 +75,8 @@ def gemini_date():
 
     # If before transit, use the earlier date
     fake_date = None
-    if lt_now.time()<transit:
-        if lt_date==ut_date:
+    if lt_now.time() < transit:
+        if lt_date == ut_date:
             fake_date = ut_date
         else:
             # UT date changed before transit, use the
@@ -84,7 +85,7 @@ def gemini_date():
 
     # If before transit, use the later date
     else:
-        if lt_date!=ut_date:
+        if lt_date != ut_date:
             fake_date = ut_date
         else:
             # UT date hasn't changed and it's after transit,
@@ -93,23 +94,50 @@ def gemini_date():
     return fake_date
 
 def parse_percentile(string):
+    """
+    Given the type of string that ought to be present in the site condition
+    headers, this function returns the integer percentile number
+    'Any' is 100th percentile
+
+    Parameters
+    ----------
+    string : str
+        A string with the percentile.
+
+    Returns
+    -------
+    An integer between 0 and 100.
+    """
     # Given the type of string that ought to be present in the site condition
     # headers, this function returns the integer percentile number
     #
     # Is it 'Any' - ie 100th percentile?
-    if(string == "Any"):
+    if string == "Any":
         return 100
 
     # Is it a xx-percentile string?
-    m = re.match("^(\d\d)-percentile$", string)
-    if(m):
-        return int(m.group(1))
+    match = re.match(r"^(\d\d)-percentile$", string)
+    if match:
+        return int(match.group(1))
 
     # We didn't recognise it
     return None
 
 def filternameFrom(filters):
-    # reject "open" "grism" and "pupil"
+    """
+    Build a string from the filters in the list.  Reject "open" "grism"
+    and "pupil".  If the list contains 'blank', return 'blank'.  If the list
+    has zero length, return 'open'.
+
+    Parameters
+    ----------
+    filters : list of str
+        List of components.
+
+    Returns
+    -------
+    A string of the valid filters in the list, separated by '&'.
+    """
     filters2 = []
     for filt in filters:
         filtlow = filt.lower()
