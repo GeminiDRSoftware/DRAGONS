@@ -12,6 +12,11 @@ def makeProcessedBias(p):
     the raw input bias images into a single stacked bias image. This output
     processed bias is stored on disk using storeProcessedBias and has a name
     equal to the name of the first input bias image with "_bias.fits" appended.
+
+    Parameters
+    ----------
+    p : PrimitivesCORE object
+        A primitive set matching the recipe_tags.
     """
 
     p.prepare()

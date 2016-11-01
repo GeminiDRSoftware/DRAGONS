@@ -1,19 +1,37 @@
-# This recipe performs the standardization and corrections needed to convert 
-# the raw input flat images into a single stacked and normalized flat image. 
-# This output processed flat is stored on disk using storeProcessedFlat and 
-# has a name equal to the name of the first input flat image with "_flat.fits" 
-# appended.
+"""
+Recipes available to data with tags ['GMOS', 'IMAGE', 'CAL', 'FLAT']
+Default is "makeProcessedFlat".
+"""
+recipe_tags = set(['GMOS', 'IMAGE', 'CAL', 'FLAT'])
 
-prepare
-addDQ
-addVAR(read_noise=True)
-display
-overscanCorrect
-biasCorrect
-ADUToElectrons
-addVAR(poisson_noise=True)
-addToList(purpose="forStack")
-getList(purpose="forStack")
-stackFlats
-normalizeFlat
-storeProcessedFlat
+default = makeProcessedFlat
+
+def makeProcessedFlat(p):
+    """
+    This recipe performs the standardization and corrections needed to
+    convert the raw input flat images into a single stacked and normalized
+    flat image.  This output processed flat is stored on disk using
+    storeProcessedFlat and has a name equal to the name of the first input
+    flat image with "_flat.fits" appended.
+
+    Parameters
+    ----------
+    p : PrimitivesCORE object
+        A primitive set matching the recipe_tags.
+    """
+
+    p.prepare()
+    p.addDQ()
+    p.addVAR(read_noise=True)
+    p.display()
+    p.overscanCorrect()
+    p.biasCorrect()
+    p.ADUToElectrons()
+    p.addVAR(poisson_noise=True)
+    p.addToList(purpose="forStack")
+    p.getList(purpose="forStack")
+    p.stackFlats()
+    p.normalizeFlat()
+    p.storeProcessedFlat()
+    return
+
