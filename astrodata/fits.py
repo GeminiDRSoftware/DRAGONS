@@ -430,17 +430,22 @@ class FitsProvider(DataProvider):
             self._tables[name] = None
             self._exposed.add(name)
 
-    def _add_table(self, table):
+    def _add_table(self, table, name=None):
         if isinstance(table, BinTableHDU):
             meta_obj = Table(table.data, meta={'hdu': table.header})
-            name = table.header.get('EXTNAME')
+            hname = table.header.get('EXTNAME')
         elif isinstance(table, Table):
             meta_obj = table
-            name = table.meta['hdu'].get('EXTNAME')
+            hname = table.meta['hdu'].get('EXTNAME')
+
+        if hname is None:
+            if name is None:
+                raise ValueError("Cannot add a table that has no EXTNAME")
+            table.meta['hdu']['EXTNAME'] = name
 
         return meta_obj
 
-    def _add_pixel_image(self, pixim, append=False):
+    def _add_pixel_image(self, pixim, append=False, name=None):
         if not isinstance(pixim, ImageHDU):
             hdu = ImageHDU(pixim)
 
@@ -452,7 +457,7 @@ class FitsProvider(DataProvider):
             nd.meta['other'] = []
 
             if header.get('EXTNAME') is None:
-                header['EXTNAME'] = 'SCI'
+                header['EXTNAME'] = (name if name is not None else 'SCI')
 
             if ver == -1:
                 ver = max(_nd.meta['ver'] for _nd in self._nddata)
@@ -729,13 +734,13 @@ class FitsProvider(DataProvider):
                     if o.shape == dim:
                         self._crop_nd(o)
 
-    def append(self, ext):
+    def append(self, ext, name=None):
         if isinstance(ext, (Table, BinTableHDU)):
-            return self._add_table(ext)
+            return self._add_table(ext, name=name)
         elif isinstance(ext, PrimaryHDU):
             raise ValueError("Only one Primary HDU allowed")
         else: # Assume that it is going to be something we know how to deal with...
-            return self._add_pixel_image(ext, append=True)
+            return self._add_pixel_image(ext, append=True, name=name)
 
     def extver_map(self):
         """
