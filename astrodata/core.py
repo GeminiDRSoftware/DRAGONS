@@ -259,13 +259,13 @@ class AstroData(object):
     def append(self, extension):
         self._dataprov.append(extension)
 
-    def operate(self, operator):
+    def operate(self, operator, *args, **kwargs):
         for ext in self:
-            ext.data = operator(ext.data)
+            ext.data = operator(ext.data, *args, **kwargs)
             if ext.mask is not None:
-                ext.mask = operator(ext.mask)
+                ext.mask = operator(ext.mask, *args, **kwargs)
             if ext.variance is not None:
-                ext.variance = operator(ext.variance)
+                ext.variance = operator(ext.variance, *args, **kwargs)
 
     def reset(self, data, mask=_IGNORE, variance=_IGNORE, check=True):
         if not self._single:
