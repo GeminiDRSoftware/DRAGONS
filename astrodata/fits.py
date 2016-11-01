@@ -189,26 +189,31 @@ def force_load(fn):
 
 class FitsProvider(DataProvider):
     def __init__(self):
-        self._sliced = False
-        self._single = False
-        self._header = None
-        self._nddata = None
-        self._hdulist = None
-        self._path = None
-        self._orig_filename = None
-        self._tables = {}
-        self._exposed = set()
+        # We're overloading __setattr__. This is safer than setting the
+        # attributes the normal way.
+        self.__dict__.update({
+            '_sliced': False,
+            '_single': False,
+            '_header': None,
+            '_nddata': None,
+            '_hdulist': None,
+            '_path': None,
+            '_orig_filename': None,
+            '_tables': {},
+            '_exposed': set(),
+            '_resetting': False,
+            '_fixed_settable': set([
+                'data',
+                'uncertainty',
+                'mask',
+                'variance',
+                'path',
+                'filename'
+                ])
+            })
 
-    @property
-    def settable(self):
-        return set([
-            'data',
-            'uncertainty',
-            'mask',
-            'variance',
-            'path',
-            'filename'
-            ])
+    def settable(self, attr):
+        return attr in self._fixed_settable or attr.isupper()
 
     @force_load
     def __getattr__(self, attribute):
@@ -234,6 +239,25 @@ class FitsProvider(DataProvider):
             raise AttributeError("{} not found in this object".format(attribute))
         else:
             raise AttributeError("{} not found in this object, or available only for sliced data".format(attribute))
+
+    def __setattr__(self, attribute, value):
+        def _my_attribute(attr):
+            return attr in self.__dict__ or attr in self.__class__.__dict__
+
+        # This method is meant to let the user set certain attributes of the NDData
+        # objects.
+        #
+        # self._resetting shortcircuits the method when populating the object. In that
+        # situation, we don't want to interfere. Of course, we need to check first
+        # if self._resetting is there, because otherwise we enter a loop..
+        if '_resetting' in self.__dict__ and not self._resetting and not _my_attribute(attribute):
+            if attribute.isupper():
+                if self._sliced and not self._single:
+                    raise TypeError("This attribute cannot be assigned to a partial slice")
+                self._lazy_populate_object()
+                raise NotImplementedError("Assignment of new associated extensions is not yet implemented")
+        # Fallback
+        super(FitsProvider, self).__setattr__(attribute, value)
 
     def __oper(self, operator, operand):
         if isinstance(operand, AstroData):
@@ -469,67 +493,72 @@ class FitsProvider(DataProvider):
         return nd
 
     def _reset_members(self, hdulist):
-        self._tables = {}
-        seen = set([hdulist[0]])
+        prev_reset = self._resetting
+        self._resetting = True
+        try:
+            self._tables = {}
+            seen = set([hdulist[0]])
 
-        skip_names = set(['SCI', 'REFCAT', 'MDF'])
+            skip_names = set(['SCI', 'REFCAT', 'MDF'])
 
-        def search_for_associated(ver):
-            return [x for x in hdulist
-                      if x.header.get('EXTVER') == ver and x.header['EXTNAME'] not in skip_names]
+            def search_for_associated(ver):
+                return [x for x in hdulist
+                          if x.header.get('EXTVER') == ver and x.header['EXTNAME'] not in skip_names]
 
-        def process_unit(nd, meta):
-            eheader = meta.header
-            name = eheader.get('EXTNAME')
-            data = meta.data
-            if name == 'DQ':
-                nd.mask = data
-            elif name == 'VAR':
-                std_un = StdDevUncertainty(np.sqrt(data))
-                std_un.parent_nddata = nd
-                nd.uncertainty = std_un
-            else:
-                if isinstance(meta, BinTableHDU):
-                    meta_obj = self._add_table(meta)
-                elif isinstance(meta, ImageHDU):
-                    meta_obj = NDDataObject(data, meta={'hdu': eheader})
+            def process_unit(nd, meta):
+                eheader = meta.header
+                name = eheader.get('EXTNAME')
+                data = meta.data
+                if name == 'DQ':
+                    nd.mask = data
+                elif name == 'VAR':
+                    std_un = StdDevUncertainty(np.sqrt(data))
+                    std_un.parent_nddata = nd
+                    nd.uncertainty = std_un
                 else:
-                    raise ValueError("Unknown extension type: {!r}".format(name))
-                return name, meta_obj
+                    if isinstance(meta, BinTableHDU):
+                        meta_obj = self._add_table(meta)
+                    elif isinstance(meta, ImageHDU):
+                        meta_obj = NDDataObject(data, meta={'hdu': eheader})
+                    else:
+                        raise ValueError("Unknown extension type: {!r}".format(name))
+                    return name, meta_obj
 
-        self._nddata = []
-        sci_units = [x for x in hdulist[1:] if x.header['EXTNAME'] == 'SCI']
+            self._nddata = []
+            sci_units = [x for x in hdulist[1:] if x.header['EXTNAME'] == 'SCI']
 
-        for unit in sci_units:
-            seen.add(unit)
-            ver = unit.header.get('EXTVER', -1)
-            nd = self._add_pixel_image(unit, append=True)
+            for unit in sci_units:
+                seen.add(unit)
+                ver = unit.header.get('EXTVER', -1)
+                nd = self._add_pixel_image(unit, append=True)
 
-            for extra_unit in search_for_associated(ver):
-                seen.add(extra_unit)
-                ret = process_unit(nd, extra_unit)
-                if ret is not None:
-                    name, obj = ret
-                    setattr(nd, name, obj)
-                    nd.meta['other'].append(name)
+                for extra_unit in search_for_associated(ver):
+                    seen.add(extra_unit)
+                    ret = process_unit(nd, extra_unit)
+                    if ret is not None:
+                        name, obj = ret
+                        setattr(nd, name, obj)
+                        nd.meta['other'].append(name)
 
-        for other in hdulist:
-            if other in seen:
-                continue
-            name = other.header['EXTNAME']
-            if name in self._tables:
-                continue
-# TODO: Fix it
-# NOTE: This happens with GPI. Let's leave it for later...
-#            if other.header.get('EXTVER', -1) >= 0:
-#                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
-            processed = process_unit(None, other)
-            if processed is not None:
-                name, processed = processed
-            setattr(self, name, processed)
-            self._exposed.add(name)
-            if isinstance(processed, Table):
-                self._tables[name] = processed
+            for other in hdulist:
+                if other in seen:
+                    continue
+                name = other.header['EXTNAME']
+                if name in self._tables:
+                    continue
+    # TODO: Fix it
+    # NOTE: This happens with GPI. Let's leave it for later...
+    #            if other.header.get('EXTVER', -1) >= 0:
+    #                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
+                processed = process_unit(None, other)
+                if processed is not None:
+                    name, processed = processed
+                setattr(self, name, processed)
+                self._exposed.add(name)
+                if isinstance(processed, Table):
+                    self._tables[name] = processed
+        finally:
+            self._resetting = prev_reset
 
     @property
     def path(self):
@@ -567,16 +596,21 @@ class FitsProvider(DataProvider):
         return self._header
 
     def _lazy_populate_object(self):
+        prev_reset = self._resetting
         if self._nddata is None:
-            if self.path:
-                hdulist = FitsLoader._prepare_hdulist(fits.open(self.path))
-            else:
-                hdulist = self._hdulist
-            # We need to replace the headers, to make sure that we don't end
-            # up with different objects in self._headers and elsewhere
-            self._set_headers(hdulist)
-            self._reset_members(hdulist)
-            self._hdulist = None
+            self._resetting = True
+            try:
+                if self.path:
+                    hdulist = FitsLoader._prepare_hdulist(fits.open(self.path))
+                else:
+                    hdulist = self._hdulist
+                # We need to replace the headers, to make sure that we don't end
+                # up with different objects in self._headers and elsewhere
+                self._set_headers(hdulist)
+                self._reset_members(hdulist)
+                self._hdulist = None
+            finally:
+                self._resetting = prev_reset
 
     @property
     def nddata(self):
