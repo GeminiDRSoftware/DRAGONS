@@ -95,7 +95,7 @@ def stack(p):
     p : PrimitivesCORE object
         A primitive set matching the recipe_tags.
     """
-    p.getList(purpose=forStack)
+    p.getList(purpose='forStack')
     p.correctWCSToReferenceFrame()
     p.alignToReferenceFrame()
     p.correctBackgroundToReferenceImage()

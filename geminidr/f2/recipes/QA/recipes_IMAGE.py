@@ -1,8 +1,8 @@
 """
-Recipes available to data with tags ['F2', 'IMAGE', 'CAL', 'FLAT']
+Recipes available to data with tags ['F2', 'IMAGE']
 Default is "reduce_nostack".
 """
-recipe_tags = set(['F2', 'IMAGE', 'CAL', 'FLAT'])
+recipe_tags = set(['F2', 'IMAGE'])
 
 # The nostack version is used because stacking was too slow for QAP.
 # KL: Is this still true with gemini_python 2.0?
@@ -10,7 +10,7 @@ default = reduce_nostack
 
 def reduce(p):
     """
-    This recipe process F2 data up to and including alignement and stacking.
+    This recipe process F2 data up to and including alignment and stacking.
     A single stacked output image is produced.
     It will attempt to do dark and flat correction if a processed calibration
     is available.  Sky subtraction is done when possible.  QA metrics are
@@ -33,8 +33,8 @@ def reduce(p):
     p.measureBG()
     p.measureCCAndAstrometry()
     p.subtractSkyBackground()
-    p.addToList(purpose=forSky)
-    p.getList(purpose=forSky)
+    p.addToList(purpose='forSky')
+    p.getList(purpose='forSky')
     p.makeSky()
     p.skyCorrect()
     p.detectSources()
@@ -71,8 +71,8 @@ def reduce_nostack(p):
     p.measureBG()
     p.measureCCAndAstrometry()
     p.subtractSkyBackground()
-    p.addToList(purpose=forSky)
-    p.getList(purpose=forSky)
+    p.addToList(purpose='forSky')
+    p.getList(purpose='forSky')
     p.makeSky()
     p.skyCorrect()
     p.detectSources()
