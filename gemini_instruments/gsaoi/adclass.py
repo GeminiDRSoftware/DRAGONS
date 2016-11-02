@@ -23,7 +23,7 @@ class AstroDataGsaoi(AstroDataGemini):
     @astro_data_tag
     def _tag_dark(self):
         if self.phu.get('OBSTYPE') == 'DARK':
-            return TagSet(['DARK', 'CAL'])
+            return TagSet(['DARK', 'CAL'], blocks=['IMAGE'])
 
     @astro_data_tag
     def _tag_image(self):
