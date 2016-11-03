@@ -257,7 +257,8 @@ class FitsProvider(DataProvider):
                 if self._sliced and not self._single:
                     raise TypeError("This attribute cannot be assigned to a partial slice")
                 self._lazy_populate_object()
-                raise NotImplementedError("Assignment of new associated extensions is not yet implemented")
+                target = self._nddata[0] if self._single else None
+                self._append(value, name=attribute, add_to=target)
         # Fallback
         super(FitsProvider, self).__setattr__(attribute, value)
 
@@ -538,7 +539,6 @@ class FitsProvider(DataProvider):
     #            if other.header.get('EXTVER', -1) >= 0:
     #                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
                 added = self._append(other, name=name)
-                self._exposed.add(name)
         finally:
             self._resetting = prev_reset
 
@@ -762,6 +762,7 @@ class FitsProvider(DataProvider):
                 # Don't use setattr, which is overloaded and may case problems
                 self.__dict__[hname] = tb
                 self._tables[hname] = tb
+                self._exposed.add(hname)
             else:
                 setattr(add_to, hname, tb)
                 add_to.meta['other'].append(hname)
@@ -783,6 +784,7 @@ class FitsProvider(DataProvider):
             elif top and name != 'SCI':
                 # Don't use setattr, which is overloaded and may case problems
                 self.__dict__[name] = ext
+                self._exposed.add(name)
                 return ext
             else:
                 nd = self._process_pixel_plane(ext, name=name, top_level=top)
