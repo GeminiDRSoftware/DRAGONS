@@ -28,8 +28,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
 
     # Extract pointing info. (currently p/q but this will be replaced with
     # RA/Dec/PA) from the AstroData instance.
-    position = (ad.phu_get_key_value('POFFSET'),
-                ad.phu_get_key_value('QOFFSET'))
+    position = (ad.phu.POFFSET, ad.phu.QOFFSET)
 
     # TO DO: References to the field size will need changing to decimal
     # degrees once we pass absolute co-ordinates?
@@ -40,10 +39,10 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     # need recalculating here). The first branch of this condition can be
     # removed once pixel_scale() is improved or has the same check has
     # been added to it:
-    if 'PREPARED' in ad.types:
-        scale = ad.phu_get_key_value('PIXSCALE')
+    if 'PREPARED' in ad.tags:
+        scale = ad.phu.PIXSCALE
     else:
-        scale = ad.pixel_scale().get_value()
+        scale = ad.pixel_scale()
 
     # GeMS truncates the FOV to 2' and since there are currently no AO
     # type classifications, use the pixel scale that we just looked up to
@@ -51,14 +50,14 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     with_gems = (scale < 0.1)
 
     # Imaging:
-    if 'F2_IMAGE' in ad.types:
+    if 'IMAGE' in ad.tags:
         dist = 60. if with_gems else 183.
         return math.sqrt(sum([(x-r)**2 for x, r in zip(position,refpos)])) \
              < frac_FOV * dist
     # Long slit:
-    elif 'F2_LS' in ad.types:
+    elif 'LS' in ad.tags:
         # Parse slit width in pixels from mask name:
-        mask = str(ad.focal_plane_mask())
+        mask = ad.focal_plane_mask()
         try:
             width = float(re.match("([0-9]{1,2})pix-slit$", mask).group(1))
         except (AttributeError, TypeError, ValueError):
@@ -76,7 +75,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
         return all([abs(x-r) < d for x, r, d in zip(position,refpos,dist)])
 
     # MOS:
-    elif 'F2_MOS' in ad.types:
+    elif 'MOS' in ad.tags:
         # If we need to check the MOS mask name at some point, the regexp is
         # "G(N|S)[0-9]{4}(A|B)(Q|L)[0-9]{3}-[0-9]+$" (harmlessly relaxing the
         # final running mask number to avoid a new release if Gemini were to

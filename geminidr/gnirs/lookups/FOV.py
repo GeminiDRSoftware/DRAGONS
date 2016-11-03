@@ -3,8 +3,8 @@ from astrodata.utils import Lookups
 from astrodata.utils.ConfigSpace  import lookup_path
 from gempy.gemini import gemini_tools as gt
 
-from .. import keyword_comments
-from . import IllumMaskDict
+from geminidr.gemini.lookups.keyword_comments import keyword_comments
+from .lookup import illum_masks
 
 # ------------------------------------------------------------------------------
 keyword_comments = keyword_comments.keyword_comments
@@ -47,17 +47,17 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
     # Since we are only looking at the center position of the image relative
     # to the reference image, the PA of the image to be classified is 
     # sufficient (luckily!)
-    theta = math.radians(pos.phu_get_key_value("PA"))
+    theta = math.radians(pos.phu.PA)
     scale = pos.pixel_scale()
-    position = (pos.phu_get_key_value('POFFSET'),
-                pos.phu_get_key_value('QOFFSET'))
+    position = (pos.phu.POFFSET, pos.phu.QOFFSET)
     deltap = (refpos[0] - position[0]) / scale
     deltaq = (refpos[1] - position[1]) / scale
     xshift = (deltap * math.cos(theta)) - (deltaq * math.sin(theta))
-    yshift =  (deltap * math.sin(theta)) + (deltaq * math.cos(theta))                 
+    yshift =  (deltap * math.sin(theta)) + (deltaq * math.cos(theta))
+    ad = pos
     
     # Imaging:
-    if 'GNIRS_IMAGE' in pos.types:
+    if 'IMAGE' in pos.tags:
         illum_ad = fetch_illum_mask(pos)
         
         # Checking the size of the illumination mask                
@@ -68,11 +68,10 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
             final_illum = gt.clip_auxiliary_data(adinput=pos, aux=illum_ad, 
                                                  aux_type="bpm", 
                                                  keyword_comments=keyword_comments)[0]
-        illum_data = final_illum['DQ'].data
+        illum_data = final_illum[0].data
 
         # Finding the center of the illumination mask
-        center_illum = (final_illum.phu_get_key_value('CENMASSX'), 
-                        final_illum.phu_get_key_value('CENMASSY'))
+        center_illum = (final_illum.phu.CENMASSX, final_illum.phu.CENMASSY)
         checkpos = (int(center_illum[0] + xshift),
                     int(center_illum[1] + yshift))
         
@@ -86,7 +85,7 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
         return illum_data[checkpos[1], checkpos[0]] == 0 
 
     # Spectroscopy:
-    elif 'GNIRS_SPECT' in ad.types:
+    elif 'SPECT' in ad.tags:
         raise NotImplementedError("FOV lookup not yet supported for GNIRS "
                                   "Spectroscopy")
 
@@ -98,9 +97,8 @@ def pointing_in_field(pos, refpos, frac_FOV=1.0, frac_slit=1.0):
 def fetch_illum_mask(ad):
     # Fetches the appropriate illumination mask for an astrodata instance
             
-    illum_mask_dict = IllumMaskDict.illum_masks
-    key1 = ad.camera().as_pytype()
-    filter = ad.filter_name(pretty=True).as_pytype()
+    key1 = ad.camera()
+    filter = ad.filter_name(pretty=True)
     if filter in ['Y', 'J', 'H', 'K', 'H2', 'PAH']:
         key2 = 'Wings'
     elif filter in ['JPHOT', 'HPHOT', 'KPHOT']:
@@ -109,16 +107,16 @@ def fetch_illum_mask(ad):
         raise ValueError("Unrecognised filter, no illumination mask can "
                          "be found for %s" % ad.filename)
     key = (key1,key2)
-    if key in illum_mask_dict:
-        illum = lookup_path(illum_mask_dict[key])
+    if key in illum_masks:
+        illum = lookup_path(illum_masks[key])
     else:
-        raise IOError("No illumination mask found for %s" % pos.filename)
+        raise IOError("No illumination mask found for %s" % ad.filename)
     
     illum_ad = None
     if isinstance(illum, AstroData):
         illum_ad = illum
     else:
-        illum_ad = AstroData(illum)
+        illum_ad = astrodata.open(illum)
         if illum_ad is None:
             raise TypeError("Cannot convert %s into an AstroData object" 
                             % illum)                
