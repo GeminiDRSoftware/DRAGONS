@@ -10,6 +10,7 @@ from astropy.io import fits
 from astropy.io.fits import HDUList, Header, DELAYED
 from astropy.io.fits import PrimaryHDU, ImageHDU, BinTableHDU
 from astropy.io.fits import Column, FITS_rec
+from astropy.io.fits.hdu.table import _TableBaseHDU
 # NDDataRef is still not in the stable astropy, but this should be the one
 # we use in the future...
 from astropy.nddata import NDDataRef as NDDataObject
@@ -217,9 +218,10 @@ class FitsProvider(DataProvider):
 
     @force_load
     def __getattr__(self, attribute):
-        # First, make sure that the object is not an exposed one. It may be that
-        # we just lazy-loaded the contents for the first time...
+        # Exposed objects are part of the normal object interface. We may not
+        # have loaded them yet, and that's why we get here...
         if attribute in self._exposed:
+            self._lazy_populate_object()
             return getattr(self, attribute)
 
         # So, the attribute hasn't been exposed. Probably an alias. Test...
@@ -454,41 +456,48 @@ class FitsProvider(DataProvider):
             self._tables[name] = None
             self._exposed.add(name)
 
-    def _add_table(self, table, name=None):
+    def _process_table(self, table, name=None):
         if isinstance(table, BinTableHDU):
-            meta_obj = Table(table.data, meta={'hdu': table.header})
-            hname = table.header.get('EXTNAME')
+            obj = Table(table.data, meta={'hdu': table.header})
         elif isinstance(table, Table):
-            meta_obj = table
-            hname = table.meta['hdu'].get('EXTNAME')
+            obj = table
+        else:
+            raise ValueError("{} is not a recognized table type".format(table.__class__))
 
-        if hname is None:
-            if name is None:
-                raise ValueError("Cannot add a table that has no EXTNAME")
-            table.meta['hdu']['EXTNAME'] = name
+        return obj
 
-        return meta_obj
+    def _process_pixel_plane(self, pixim, name=None, top_level=False):
+        if not isinstance(pixim, NDDataObject):
+            # Assume that we get an ImageHDU or something that can be
+            # turned into one
+            if not isinstance(pixim, ImageHDU):
+                pixim = ImageHDU(pixim)
 
-    def _add_pixel_image(self, pixim, append=False, name=None):
-        if not isinstance(pixim, ImageHDU):
-            hdu = ImageHDU(pixim)
+            header = pixim.header
+            nd = NDDataObject(pixim.data, meta={'hdu': header})
 
-        header = pixim.header
-        nd = NDDataObject(pixim.data, meta={'hdu': header})
-
-        if append:
+            currname = header.get('EXTNAME')
             ver = header.get('EXTVER', -1)
-            nd.meta['other'] = []
+        else:
+            nd = pixim
+            currname = nd.meta['hdu'].get('EXTNAME')
+            ver = nd.meta['ver'].get('EXTVER', -1)
 
-            if header.get('EXTNAME') is None:
-                header['EXTNAME'] = (name if name is not None else 'SCI')
+        if name and (currname is None):
+            header['EXTNAME'] = (name if name is not None else 'SCI')
+
+        if top_level:
+            if 'other' not in nd.meta:
+                nd.meta['other'] = []
 
             if ver == -1:
-                ver = max(_nd.meta['ver'] for _nd in self._nddata)
+                try:
+                    ver = max(_nd.meta['ver'] for _nd in self._nddata) + 1
+                except ValueError:
+                    # Got an empty sequence. This is the first extension!
+                    ver = 1
                 header['EXTVER'] = ver
             nd.meta['ver'] = ver
-
-            self._nddata.append(nd)
 
         return nd
 
@@ -505,40 +514,18 @@ class FitsProvider(DataProvider):
                 return [x for x in hdulist
                           if x.header.get('EXTVER') == ver and x.header['EXTNAME'] not in skip_names]
 
-            def process_unit(nd, meta):
-                eheader = meta.header
-                name = eheader.get('EXTNAME')
-                data = meta.data
-                if name == 'DQ':
-                    nd.mask = data
-                elif name == 'VAR':
-                    std_un = StdDevUncertainty(np.sqrt(data))
-                    std_un.parent_nddata = nd
-                    nd.uncertainty = std_un
-                else:
-                    if isinstance(meta, BinTableHDU):
-                        meta_obj = self._add_table(meta)
-                    elif isinstance(meta, ImageHDU):
-                        meta_obj = NDDataObject(data, meta={'hdu': eheader})
-                    else:
-                        raise ValueError("Unknown extension type: {!r}".format(name))
-                    return name, meta_obj
-
             self._nddata = []
             sci_units = [x for x in hdulist[1:] if x.header['EXTNAME'] == 'SCI']
 
             for unit in sci_units:
                 seen.add(unit)
                 ver = unit.header.get('EXTVER', -1)
-                nd = self._add_pixel_image(unit, append=True)
+                nd = self._append(unit, name='SCI')
 
                 for extra_unit in search_for_associated(ver):
                     seen.add(extra_unit)
-                    ret = process_unit(nd, extra_unit)
-                    if ret is not None:
-                        name, obj = ret
-                        setattr(nd, name, obj)
-                        nd.meta['other'].append(name)
+                    name = extra_unit.header.get('EXTNAME')
+                    self._append(extra_unit, name=name, add_to=nd)
 
             for other in hdulist:
                 if other in seen:
@@ -550,13 +537,8 @@ class FitsProvider(DataProvider):
     # NOTE: This happens with GPI. Let's leave it for later...
     #            if other.header.get('EXTVER', -1) >= 0:
     #                raise ValueError("Extension {!r} has EXTVER, but doesn't match any of SCI".format(name))
-                processed = process_unit(None, other)
-                if processed is not None:
-                    name, processed = processed
-                setattr(self, name, processed)
+                added = self._append(other, name=name)
                 self._exposed.add(name)
-                if isinstance(processed, Table):
-                    self._tables[name] = processed
         finally:
             self._resetting = prev_reset
 
@@ -768,13 +750,70 @@ class FitsProvider(DataProvider):
                     if o.shape == dim:
                         self._crop_nd(o)
 
+    def _append(self, ext, name=None, add_to=None):
+        self._lazy_populate_object()
+        top = add_to is None
+        if isinstance(ext, (Table, _TableBaseHDU)):
+            tb = self._process_table(ext, name)
+            hname = tb.meta['hdu'].get('EXTNAME')
+            if hname is None:
+                raise ValueError("Cannot add a table that has no EXTNAME")
+            if top:
+                # Don't use setattr, which is overloaded and may case problems
+                self.__dict__[hname] = tb
+                self._tables[hname] = tb
+            else:
+                setattr(add_to, hname, tb)
+                add_to.meta['other'].append(hname)
+            return tb
+        else: # Assume that this is a pixel plane
+
+            # Special cases for Gemini
+            if name in {'DQ', 'VAR'}:
+                if add_to is None:
+                    raise ValueError("'{}' need to be associated to a 'SCI' one".format(name))
+                if name == 'DQ':
+                    add_to.mask = ext.data
+                    return ext.data
+                elif name == 'VAR':
+                    std_un = StdDevUncertainty(np.sqrt(ext.data))
+                    std_un.parent_nddata = add_to
+                    add_to.uncertainty = std_un
+                    return std_un
+            elif top and name != 'SCI':
+                # Don't use setattr, which is overloaded and may case problems
+                self.__dict__[name] = ext
+                return ext
+            else:
+                nd = self._process_pixel_plane(ext, name=name, top_level=top)
+
+                if top:
+                    self._nddata.append(nd)
+                else:
+                    if name is None:
+                        raise TypeError("Can't append pixel planes to other objects without a name")
+                    nd.meta['hdu']['EXTVER'] = nd.meta.get('ver', -1)
+                    setattr(add_to, name, nd)
+                    add_to.meta['other'].append(name)
+
+                return nd
+
     def append(self, ext, name=None):
-        if isinstance(ext, (Table, BinTableHDU)):
-            return self._add_table(ext, name=name)
-        elif isinstance(ext, PrimaryHDU):
+        if isinstance(ext, PrimaryHDU):
             raise ValueError("Only one Primary HDU allowed")
-        else: # Assume that it is going to be something we know how to deal with...
-            return self._add_pixel_image(ext, append=True, name=name)
+
+        self._lazy_populate_object()
+        if self._sliced:
+            if not self._single:
+                # TODO: We could rethink this one, but leave it like that at the moment
+                raise TypeError("Can't append pixel planes to non-single slices")
+            elif name is None:
+                raise TypeError("Can't append pixel planes to a slice without an extension name")
+            target = self._nddata[0]
+        else:
+            target = None
+
+        return self._append(ext, name=name, add_to=target)
 
     def extver_map(self):
         """
