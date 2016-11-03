@@ -1,5 +1,5 @@
-import astropy.coordinates
-import astropy.units
+from astropy.coordinates import SkyCoord
+import astropy.units as u
 import astropy._erfa as erfa
 
 def toicrs(frame, ra, dec, equinox=2000.0, ut_datetime=None):
@@ -19,11 +19,8 @@ def toicrs(frame, ra, dec, equinox=2000.0, ut_datetime=None):
     frame = 'cirs' if frame == 'APPT' else frame
     frame = 'fk5' if frame == 'FK5' else frame
 
-    coords = astropy.coordinates.SkyCoord(ra=ra*astropy.units.degree,
-                                      dec=dec*astropy.units.degree,
-                                      frame=frame,
-                                      equinox=equinox,
-                                      obstime=ut_datetime)
+    coords = SkyCoord(ra=ra*u.degree, dec=dec*u.degree,
+                      frame=frame, equinox=equinox, obstime=ut_datetime)
 
     if appt_frame:
         # Call ERFA.apci13 to get the Equation of Origin (EO).
@@ -32,13 +29,11 @@ def toicrs(frame, ra, dec, equinox=2000.0, ut_datetime=None):
         astrom = None
         # eo comes back as a single element array in radians
         eo = float(eo)
-        eo = eo * astropy.units.radian
+        eo = eo * u.radian
         # re-create the coords frame object with the corrected ra
-        coords = astropy.coordinates.SkyCoord(ra=coords.ra+eo,
-                                              dec=coords.dec,
-                                              frame=coords.frame.name,
-                                              equinox=coords.equinox,
-                                              obstime=coords.obstime)
+        coords = SkyCoord(ra=coords.ra+eo, dec=coords.dec,
+                          frame=coords.frame.name, equinox=coords.equinox,
+                          obstime=coords.obstime)
 
     # Now we can just convert to ICRS...
     icrs = coords.icrs
