@@ -144,7 +144,10 @@ class FitsKeywordManipulator(object):
             return self._headers[0][key]
 
     def __setattr__(self, key, value):
-        self.set(key, value=value)
+        if isinstance(value, tuple):
+            self.set(key, value=value[0], comment=value[1])
+        else:
+            self.set(key, value=value)
 
     def __delattr__(self, key):
         self.remove(key)
