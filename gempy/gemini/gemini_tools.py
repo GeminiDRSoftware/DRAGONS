@@ -1597,7 +1597,8 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
     # The GEM-TLM keyword will always be added or updated
     keyword_dict = {"GEM-TLM": "UT last modification with GEMINI",
                     keyword: comment}
-    
+    print keyword_dict
+
     # Loop over each input AstroData object in the input list
     for ad in adinput:
         for key, comm in keyword_dict.iteritems():

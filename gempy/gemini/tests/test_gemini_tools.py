@@ -13,6 +13,7 @@ To run:
 import os
 import numpy as np
 import astrodata
+import gemini_instruments
 from datetime import datetime
 from gempy.gemini import gemini_tools as gt
 from geminidr.gemini.lookups.keyword_comments import keyword_comments
@@ -57,7 +58,7 @@ class TestGeminiTools:
                                           'N20130404S0372_aligned.fits'))
         ad2 = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
                                           'N20130404S0373_aligned.fits'))
-        assert gt.check_inputs_match(ad1, ad2)
+        gt.check_inputs_match(ad1, ad2)
 
     def test_matching_inst_config(self):
         ad1 = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
@@ -74,13 +75,15 @@ class TestGeminiTools:
 
     def test_clip_sources(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'GSAOI',
-                                    'S20150528S0138_sourcesDetected.fits'))
+                                    'S20150110S0208_sourcesDetected.fits'))
         ret = gt.clip_sources(ad)
         # Only check the x-values, which are all unique in the table
-        correct_x_values = [(1174,81,), (200.874,1616.33),
+        correct_x_values = [(1174.81,), (200.874,1616.33),
                     (915.444,1047.15,1106.54,1315.22), (136.063,957.848)]
-        for rv, cv in zip(ret, correct_x_values):
-            assert np.sort(rv) == np.sort(cv)
+        for rv, cv in zip([objcat['x'].data for objcat in ret], correct_x_values):
+            assert len(rv) == len(cv)
+            for a, b in zip(np.sort(rv), np.sort(cv)):
+                assert abs(a-b) < 0.01
 
     def test_convert_to_cal_header(self):
         pass
@@ -93,11 +96,14 @@ class TestGeminiTools:
 
     def test_finalise_ad_input(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'GSAOI',
-                                    'S20150528S0138_sourcesDetected.fits'))
-        tlm = datetime.now().isoformat()[0:-7]
+                                    'S20150110S0208_sourcesDetected.fits'))
+        tlm = datetime.now()
         ret = gt.finalise_adinput(ad, 'ASSOCSKY', '_forSky')
-        assert ret.phu.get('ASSOCSKY') == ret.phu.get('GEM-TLM') == tlm
+        dt1 = datetime.strptime(ret.phu.get('ASSOCSKY'), '%Y-%m-%dT%H:%M:%S')
+        dt2 = datetime.strptime(ret.phu.get('GEM-TLM'), '%Y-%m-%dT%H:%M:%S')
         assert ret.filename == 'S20150110S0208_forSky.fits'
+        assert abs(dt1 - tlm).total_seconds() <= 1
+        assert abs(dt2 - tlm).total_seconds() <= 1
 
     def test_fit_continuum(self):
         pass
