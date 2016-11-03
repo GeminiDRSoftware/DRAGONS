@@ -2258,7 +2258,7 @@ def pointing_in_field(pos, package, refpos, frac_FOV=1.0, frac_slit=None):
     # Use the first argument for looking up the instrument, since that's
     # the one that's always an AstroData instance because the reference point
     # doesn't always correspond to a single exposure.
-    inst = pos.instrument()
+    inst = pos.instrument().lower()
 
     # To keep the back-end functions simple, always pass them a dictionary
     # for the reference position (at least for now). All these checks add ~4%
@@ -2268,12 +2268,12 @@ def pointing_in_field(pos, package, refpos, frac_FOV=1.0, frac_slit=None):
     except AttributeError:
         if not isinstance(refpos, (list, tuple)) or \
            not all(isinstance(x, numbers.Number) for x in refpos):
-            raise IOError('Parameter refpos should be a ' + \
+            raise IOError('Parameter refpos should be a '
                 'co-ordinate tuple or AstroData instance')
         # Currently the comparison is always 2D since we're explicitly
         # looking up POFFSET & QOFFSET:
         if len(refpos) != 2:
-            raise IOError('Points to group must have the ' + \
+            raise IOError('Points to group must have the '
                     'same number of co-ords')
         pointing = refpos
 
@@ -2292,9 +2292,8 @@ def pointing_in_field(pos, package, refpos, frac_FOV=1.0, frac_slit=None):
     # or use the previously-cached one.
     # Build the lookup name to the instrument specific FOV module. In all 
     # likelihood this is 'Gemini'.
-    FOV_mod = "astrodata_{0}.ADCONFIG_{0}.lookups.{1}.FOV".format(package, inst)
+    FOV_mod = "geminidr.{}.lookups.FOV".format(inst)
 
-    ERROR
     try:
         FOV = import_module(FOV_mod)
         _FOV_pointing_in_field = FOV.pointing_in_field
