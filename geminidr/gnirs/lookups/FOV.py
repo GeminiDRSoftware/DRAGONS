@@ -1,10 +1,8 @@
-from astrodata import AstroData
-from astrodata.utils import Lookups
-from astrodata.utils.ConfigSpace  import lookup_path
+import astrodata
 from gempy.gemini import gemini_tools as gt
 
 from geminidr.gemini.lookups.keyword_comments import keyword_comments
-from .lookup import illum_masks
+from .IllumMaskDict import illum_masks
 
 # ------------------------------------------------------------------------------
 keyword_comments = keyword_comments.keyword_comments
