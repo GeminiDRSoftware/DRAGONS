@@ -862,7 +862,7 @@ def clip_sources(ad):
         try:
             objcat = ext.OBJCAT
         except AttributeError:
-            good_sources.append(None)
+            good_sources.append(Table())
             continue
 
         stellar = np.fabs(objcat['FWHM_IMAGE']/1.08 - objcat['PROFILE_FWHM']
