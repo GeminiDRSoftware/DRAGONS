@@ -76,8 +76,8 @@ class DataProvider(object):
 #    def data(self):
 #        pass
 
-    @abstractproperty
-    def settable(self):
+    @abstractmethod
+    def settable(self, attribute):
         pass
 
     @abstractmethod
@@ -200,7 +200,7 @@ class AstroData(object):
 
     def __setattr__(self, attribute, value):
         if attribute != '_dataprov' and '_dataprov' in self.__dict__:
-            if attribute in self._dataprov.settable:
+            if self._dataprov.settable(attribute):
                 setattr(self._dataprov, attribute, value)
                 return
         super(AstroData, self).__setattr__(attribute, value)
