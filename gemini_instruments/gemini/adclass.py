@@ -175,6 +175,11 @@ class AstroDataGemini(AstroDataFits):
             return TagSet(['NON_SIDEREAL'])
 
     @astro_data_tag
+    def _type_bad_pixel_mask(self):
+        if 'BPMASK' in self.phu:
+            return TagSet(['BPMASK'])
+
+    @astro_data_tag
     def _status_raw(self):
         if 'GEM-TLM' not in self.phu:
             return TagSet(['RAW'])
