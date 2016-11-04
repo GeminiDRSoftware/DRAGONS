@@ -6,7 +6,7 @@ import warnings
 
 from astropy.wcs import WCS, FITSFixedWarning
 from astrodata import AstroDataFits, astro_data_tag, astro_data_descriptor, TagSet
-from astrodata import factory, simple_descriptor_mapping, keyword
+from gempy.gemini.coordinate_utils import toicrs
 
 from .lookup import wavelength_band, nominal_extinction, filter_wavelengths
 from ..common import section_to_tuple
@@ -1421,7 +1421,7 @@ class AstroDataGemini(AstroDataFits):
             ra += pmra
 
         if icrs:
-            ra, dec = gmu.toicrs(frame,
+            ra, dec = toicrs(frame,
                     self.target_ra(offset=offset, pm=pm, icrs=False),
                     self.target_dec(offset=offset, pm=pm, icrs=False),
                     equinox=2000.0,
@@ -1481,7 +1481,7 @@ class AstroDataGemini(AstroDataFits):
             dec += pmdec
 
         if icrs:
-            ra, dec = gmu.toicrs(frame,
+            ra, dec = toicrs(frame,
                     self.target_ra(offset=offset, pm=pm, icrs=False),
                     self.target_dec(offset=offset, pm=pm, icrs=False),
                     equinox=2000.0,
@@ -1821,7 +1821,7 @@ class AstroDataGemini(AstroDataFits):
 
         # TODO: This isn't in old Gemini descriptors. Should it be?
         if 'NON_SIDEREAL' in self.tags:
-            ra, dec = gmu.toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
+            ra, dec = toicrs('APPT', ra, dec, ut_datetime=self.ut_datetime())
 
         return (ra, dec)
 

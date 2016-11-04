@@ -115,8 +115,8 @@ class AstroDataNiri(AstroDataGemini):
             output_units = "meters"
 
         # Use the lookup dict, keyed on focal_plane_mask and grism
-        wave_in_angstroms = lookup.spec_wavlengths[self.focal_plane_mask(),
-                                                   self.disperser(stripID=True)]
+        wave_in_angstroms = lookup.spec_wavlengths.get((self.focal_plane_mask(),
+                                                   self.disperser(stripID=True)))
         return gmu.convert_units('angstroms', wave_in_angstroms,
                              output_units)
 
