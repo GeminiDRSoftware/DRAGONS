@@ -221,8 +221,8 @@ class AstroDataGemini(AstroDataFits):
         try:
             value_filter = (str if pretty else section_to_tuple)
             process_fn = lambda x: (None if x is None else value_filter(x))
-            # Dummy keyword FULL returns shape of full data array
-            if keyword == 'FULL':
+            # Dummy keyword FULLFRAME returns shape of full data array
+            if keyword == 'FULLFRAME':
                 try:
                     sections = '[1:{1},1:{0}]'.format(*self.data.shape)
                 except AttributeError:

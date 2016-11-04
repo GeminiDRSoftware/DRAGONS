@@ -126,7 +126,8 @@ class AstroDataGnirs(AstroDataGemini):
             format (1-based).
 
         """
-        return self._parse_section('data_section', 'FULL', pretty)
+        # All GNIRS pixels are data
+        return self._parse_section('data_section', 'FULLFRAME', pretty)
 
     @astro_data_descriptor
     def detector_section(self, pretty=False):
