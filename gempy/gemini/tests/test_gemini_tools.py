@@ -68,9 +68,25 @@ class TestGeminiTools:
         assert gt.matching_inst_config(ad1, ad2)
 
     def test_clip_auxiliary_data(self):
-        pass
+        ad = astrodata.open(os.path.join(TESTDATAPATH, 'NIRI',
+                                          'N20160620S0035.fits'))
+        bpm_ad = astrodata.open('geminidr/niri/lookups/BPM/NIRI_bpm.fits')
+        ret = gt.clip_auxiliary_data(ad, bpm_ad, 'bpm', np.int16,
+                                     keyword_comments)
+        assert ret[0].data.shape == ad[0].data.shape
+        assert np.all(ret[0].data == bpm_ad[0].data[256:768,256:768])
 
     def test_clip_auxliary_data_GSAOI(self):
+        ad = astrodata.open(os.path.join(TESTDATAPATH, 'GSAOI',
+                                          'S20150528S0112.fits'))
+        bpm_ad = astrodata.open('geminidr/gsaoi/lookups/BPM/gsaoibpm_high_full.fits')
+        ret = gt.clip_auxiliary_data_GSAOI(ad, bpm_ad, 'bpm', np.int16,
+                                     keyword_comments)
+        for rd, cd, bd in zip(ret.data, ad.data, bpm_ad.data):
+            assert rd.shape == cd.shape
+            # Note this only works for unprepared data because of the ROI
+            # row problem
+            assert np.all(rd == bd[512:1536,512:1536])
         pass
 
     def test_clip_sources(self):
@@ -97,6 +113,8 @@ class TestGeminiTools:
     def test_finalise_ad_input(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'GSAOI',
                                     'S20150110S0208_sourcesDetected.fits'))
+        # Needed due to problem with lazy loading
+        ad.nddata
         tlm = datetime.now()
         ret = gt.finalise_adinput(ad, 'ASSOCSKY', '_forSky')
         dt1 = datetime.strptime(ret.phu.get('ASSOCSKY'), '%Y-%m-%dT%H:%M:%S')

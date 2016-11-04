@@ -493,9 +493,8 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
     # Loop over each input AstroData object in the input list
     for ad, this_aux in zip(adinput, aux):
-
-        # Make a new auxiliary file for appending to
-        new_aux = astrodata.create(phu=this_aux.header[0])
+        # Make a new auxiliary file for appending to, starting with PHU
+        new_aux_hdulist = this_aux._dataprov.to_hdulist()[:1]
 
         # Get the detector section, data section, array section and the
         # binning of the x-axis and y-axis values for the science AstroData
@@ -624,21 +623,19 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
                 # Rename the auxext to the science extver
                 ext_to_clip.hdr.EXTVER = ext.hdr.EXTVER
-                new_aux.append(ext_to_clip)
+                new_aux_hdulist.extend(ext_to_clip._dataprov.to_hdulist()[1:])
 
             if not found:
                 raise IOError(
                   "No auxiliary data in {} matches the detector section "
                   "{} in {}[SCI,{}]".format(this_aux.filename, detsec,
-                                       ad.filename, ext.EXTVER))
+                                       ad.filename, ext.hdr.EXTVER))
 
         log.stdinfo("Clipping {} to match science data.".
-                    format(os.path.basename(new_aux.filename)))
-        aux_output_list.append(new_aux)
+                    format(os.path.basename(this_aux.filename)))
+        aux_output_list.append(astrodata.open(new_aux_hdulist))
 
     return aux_output_list
-    
-
 
 @accept_single_adinput
 def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None, 
@@ -688,9 +685,8 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
 
     # Loop over each input AstroData object in the input list
     for ad, this_aux in zip(adinput, aux):
-
-        # Make a new auxiliary file for appending to
-        new_aux = astrodata.create(phu=this_aux.phu)
+        # Make a new auxiliary file for appending to, starting with PHU
+        new_aux_hdulist = this_aux._dataprov.to_hdulist()[:1]
 
         # Get the detector section, data section, array section and the
         # binning of the x-axis and y-axis values for the science AstroData
@@ -809,7 +805,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
 
                 # Rename the auxext to the science extver
                 ext_to_clip.hdr.EXTVER = ext.hdr.EXTVER
-                new_aux.append(ext_to_clip)
+                new_aux_hdulist.extend(ext_to_clip._dataprov.to_hdulist()[1:])
 
             if not found:
                 raise IOError(
@@ -818,8 +814,8 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
                                               ad.filename, ext.EXTVER))
 
         log.stdinfo("Clipping {} to match science data.".
-                    format(os.path.basename(new_aux.filename)))
-        aux_output_list.append(new_aux)
+                    format(os.path.basename(this_aux.filename)))
+        aux_output_list.append(astrodata.open(new_aux_hdulist))
 
     return aux_output_list
 
@@ -1597,7 +1593,6 @@ def mark_history(adinput=None, keyword=None, primname=None, comment=None):
     # The GEM-TLM keyword will always be added or updated
     keyword_dict = {"GEM-TLM": "UT last modification with GEMINI",
                     keyword: comment}
-    print keyword_dict
 
     # Loop over each input AstroData object in the input list
     for ad in adinput:

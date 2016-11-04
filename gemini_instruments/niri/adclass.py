@@ -145,7 +145,8 @@ class AstroDataNiri(AstroDataGemini):
             Location of the pixels exposed to light using an IRAF section
             format (1-based).
         """
-        return self._parse_section('data_section', 'FULL', pretty)
+        # All NIRI pixels are data
+        return self._parse_section('data_section', 'FULLFRAME', pretty)
 
     @astro_data_descriptor
     def detector_roi_setting(self):
