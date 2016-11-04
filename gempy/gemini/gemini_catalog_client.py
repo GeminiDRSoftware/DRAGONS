@@ -22,18 +22,12 @@ priority ordered list of servers if the primary server appears to be down.
 question in a different format to the primary.
 """
 # ------------------------------------------------------------------------------
-import pyfits
+from astropy.vo.client.conesearch import conesearch as vo_conesearch
+from astropy.vo.client.vos_catalog import VOSError
+from astropy.table import Table, Column
+from astropy.io import fits
 
-try:
-    from astropy.vo.client.conesearch import conesearch as vo_conesearch
-    from astropy.vo.client.vos_catalog import VOSError
-except ImportError:
-    try:
-        from vo.conesearch import conesearch as vo_conesearch
-    except ImportError:
-        raise ImportError("Unable to find VO definitions.")
-
-from astrodata.utils import logutils
+from ..utils import logutils
 # ------------------------------------------------------------------------------
 # Used  to determine the function signature of the imported conesearch function
 function_defaults = vo_conesearch.func_defaults
@@ -42,23 +36,26 @@ log = logutils.get_logger(__name__)
 # ------------------------------------------------------------------------------
 def get_fits_table(catalog, ra, dec, sr, server=None):
     """
-    This function returns a QAP style REFCAT in the form of a pyfits
-    table hdu. 
-    catalog is the name of the catalog to fetch, the optional server
-    is the name of the server to use. If server is not given, this
-    function will run through a priority ordered list of servers 
-    for the given catalog.
-    ra, dec and sr are the Right Ascension, Declination and Search
-    Radius, all in decimal degrees. Only circular search areas are
-    currently supported.
+    This function returns a QAP style REFCAT in the form of an astropy Table
 
-    catalog must be one of : sdss9, 2mass, ukids9, gmos
-      - gmos is a combination of the catalogs on the server that use the sload filter set.
-
-    if given, server must be one of: sdss9_mko, sdss9_cpo, sdss9_vizier,
-    2mass_mko, 2mass_cpo, 2mass_vizier, ukidss9_mko, ukidss9_cpo
+    Parameters
+    ----------
+    catalog: str [sdss9 | 2mass | ukidss9 | gmos]
+        name of catalog to search
+    ra: float
+        right ascension of search center, decimal degrees
+    dec: float
+        declination of search center, decimal degrees
+    sr: float
+        search radius, decimal degrees
+    server: str/None
+        name of server to query [sdss9_mko | sdss9_cpo | sdss9_vizier |
+        2mass_mko | 2mass_cpo | 2mass_vizier | ukidss9_mko | ukidss9_cpo]
+    Returns
+    -------
+    Table
+        sources within the search cone
     """
-
     # This defines the list of available servers for each catalog. 
     cat_servers = {
         #'sdss9' : ['sdss9_mko', 'sdss9_cpo', 'sdss9_vizier'],
@@ -70,12 +67,10 @@ def get_fits_table(catalog, ra, dec, sr, server=None):
     }
 
     # Check catalog given is valid
-    if catalog not in cat_servers.keys():
-        raise "Invalid Catalog"
+    assert catalog in cat_servers, 'Invalid Catalog'
 
     # Check server if given is valid
-    if server and server not in cat_servers[catalog]:
-        raise "Invalid Server"
+    assert server is None or server in cat_servers[catalog], 'Invalid Server'
 
     if server:
         cat_servers[catalog] = [server]
@@ -83,17 +78,34 @@ def get_fits_table(catalog, ra, dec, sr, server=None):
     fits_table = None
     for server in cat_servers[catalog]:
         fits_table = get_fits_table_from_server(catalog, server, ra, dec, sr)
-        if(fits_table):
+        if fits_table:
             break
     return fits_table
 
 
 def get_fits_table_from_server(catalog, server, ra, dec, sr):
     """
-    This function fetches the specified catalog from the specified server and
-    returns a fits table hdu containing it.
-    """
+    This function fetches sources from the specified catalog from the specified
+    server within the search radius and returns a Table containing them.
 
+    Parameters
+    ----------
+    catalog: str [sdss9 | 2mass | ukidss9 | gmos]
+        name of catalog to search
+    server: str
+        name of server to query [sdss9_mko | sdss9_cpo | sdss9_vizier |
+        2mass_mko | 2mass_cpo | 2mass_vizier | ukidss9_mko | ukidss9_cpo]
+    ra: float
+        right ascension of search center, decimal degrees
+    dec: float
+        declination of search center, decimal degrees
+    sr: float
+        search radius, decimal degrees
+    Returns
+    -------
+    Table
+        sources within the search cone
+    """
     # This defines the URL for each server
     # There must be an entry in this dictionary for each server
     # listed in cat_servers above
@@ -115,7 +127,6 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
         'gmos_mko': "http://mkocatalog2/cgi-bin/conesearch.py?CATALOG=gmos&",
         'gmos_cpo': "http://cpocatalog2/cgi-bin/conesearch.py?CATALOG=gmos&",
     }
-
 
     # This defines the column names *we* will use for that catalog.
     # There must be one entry in this list for each catalog listed
@@ -189,25 +200,12 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
     # signatures and return behaviours of vo conesearch function. Under 
     # astropy, conesearch throws a VOSError exception on no results. Which
     # seems a bit extreme. See the import phrase at top.
-
-    if len(function_defaults) == 1:            # astropy vo services
-        try:
-            table = vo_conesearch((ra,dec), sr, verb=3, catalog_db=url,
-                                  pedantic=False, verbose=False)
-        except VOSError:
-            log.stdinfo("VO conesearch produced no results")
-            return None
-
-    elif len(function_defaults) == 6:          # vo v0.7.2
-        table = vo_conesearch(catalog_db=url, ra=ra, dec=dec, sr=sr, 
-                              pedantic=False, verb=3)
-
-    elif len(function_defaults) == 7:          # vo v1.03
-        table = vo_conesearch(catalog_db=url, ra=ra, dec=dec, sr=sr,
-                              pedantic=False, verb=3, verbose=False)
-
-    else:
-        raise SyntaxError("Unrecognized function signature")
+    try:
+        table = vo_conesearch((ra,dec), sr, verb=3, catalog_db=url,
+                              pedantic=False, verbose=False)
+    except VOSError:
+        log.stdinfo("VO conesearch produced no results")
+        return None
 
     # Did we get any results?
     if(table.is_empty() or len(table.array) == 0):
@@ -216,41 +214,31 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
 
     # It turns out to be not viable to use UCDs to select the columns,
     # even for the id, ra, and dec. Even with vizier. <sigh>
-
-    # Make a list of the pyfits columns for the output table
-    pfc = []
-
     # The first column is our running integer column
-    pfc.append(pyfits.Column(name="Id", format="J", 
-                             array=range(1, 
-                                         len(table.array[server_cols[0]])+1)))
+    ret_table = Table([range(1, len(table.array[server_cols[0]])+1)],
+                      names=('Id',), dtype=('i4',))
 
-    # Next the catalog ID, RA and DEC columns
-    pfc.append(pyfits.Column(name="Cat_Id", format="32A", 
-                             array=table.array[server_cols[0]]))
-    pfc.append(pyfits.Column(name="RAJ2000", format="D", unit='deg',
-                             array=table.array[server_cols[1]]))
-    pfc.append(pyfits.Column(name="DEJ2000", format="D", unit='deg',
-                             array=table.array[server_cols[2]]))
+    ret_table.add_column(Column(table.array[server_cols[0]], name='Cat_Id',
+                                dtype='a'))
+    ret_table.add_column(Column(table.array[server_cols[1]], name='RAJ2000',
+                                dtype='f8', unit='deg'))
+    ret_table.add_column(Column(table.array[server_cols[2]], name='DEJ2000',
+                                dtype='f8', unit='deg'))
 
     # Now the photometry columns
     for col in range(3, len(cols)):
-        pfc.append(pyfits.Column(name=cols[col], format="E", unit='mag',
-                   array=table.array[server_cols[col]]))
+        ret_table.add_column(Column(table.array[server_cols[col]], name=cols[col],
+                             dtype='f4', unit='mag', format='8.4f'))
 
-    # Make the fits table
-    col_defs = pyfits.ColDefs(pfc)
-    tb_hdu = pyfits.new_table(col_defs)
-
+    header = fits.Header()
     # Add comments to the header to describe it
-    tb_hdu.header.add_comment('Source catalog derived from the %s catalog' % 
-                              catalog)
-    tb_hdu.header.add_comment('Source catalog fetched from server at %s' % url)
-    tb_hdu.header.add_comment('Delivered Table name from serer:  %s' % 
-                              table.name)
+    header.add_comment('Source catalog derived from the {} catalog'.
+                       format(catalog))
+    header.add_comment('Source catalog fetched from server at {}'.format(url))
+    header.add_comment('Delivered Table name from serer:  {}'.
+                       format(table.name))
     for col in range(len(cols)):
-        tb_hdu.header.add_comment('UCD for field %s is %s' % 
-                                  (cols[col], 
+        header.add_comment('UCD for field {} is {}'.format(cols[col],
                                    table.get_field_by_id(server_cols[col]).ucd))
-
-    return tb_hdu
+    ret_table.meta = {'hdu': header}
+    return ret_table
