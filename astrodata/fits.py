@@ -553,7 +553,7 @@ class FitsProvider(DataProvider):
     def path(self, value):
         if self._path is not None:
             self._lazy_populate_object()
-        else:
+        elif value is not None:
             self._orig_filename = os.path.basename(value)
         self._path = value
 
@@ -564,10 +564,10 @@ class FitsProvider(DataProvider):
 
     @filename.setter
     def filename(self, value):
-        if self.path is None:
-            self.path = os.path.abspath(value)
-        elif os.path.isabs(value):
+        if os.path.isabs(value):
             raise ValueError("Cannot set the filename to an absolute path!")
+        elif self.path is None:
+            self.path = os.path.abspath(value)
         else:
             dirname = os.path.dirname(self.path)
             self.path = os.path.join(dirname, value)
