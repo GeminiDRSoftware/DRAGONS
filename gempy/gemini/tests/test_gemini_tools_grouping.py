@@ -11,6 +11,7 @@ def dummy_ad():
     phu.header['OBSERVAT'] = 'Gemini-South'
     phu.header['TELESCOP'] = 'Gemini-South'
     phu.header['MOSPOS'] = 'Open'
+    phu.header['PIXSCALE'] = 0.18
     sci = fits.ImageHDU(data=[])
     sci.header['EXTNAME'] = 'SCI'
     sci.header['EXTVER'] = 1
