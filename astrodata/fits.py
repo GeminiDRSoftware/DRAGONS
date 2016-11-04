@@ -3,6 +3,7 @@ from abc import abstractmethod
 from collections import defaultdict
 import os
 from functools import partial, wraps
+from itertools import izip_longest
 
 from .core import *
 
@@ -182,6 +183,36 @@ def table_to_bintablehdu(table):
         ))
 
     return BinTableHDU(data=FITS_rec.from_columns(coldefs), header=header)
+
+def card_filter(cards, include=None, exclude=None):
+    for card in cards:
+        if include is not None and card not in include:
+            continue
+        elif exclude is not None and card in exclude:
+            continue
+        yield card
+
+def update_header(headera, headerb):
+    cardsa = tuple(tuple(cr) for cr in headera.cards)
+    cardsb = tuple(tuple(cr) for cr in headerb.cards)
+
+    if cardsa == cardsb:
+        return headera
+
+    # Ok, headerb differs somehow. Let's try to bring the changes to
+    # headera
+    # Updated keywords that should be unique
+    difference = set(cardsb) - set(cardsa)
+    headera.update(card_filter(difference, exclude={'HISTORY', 'COMMENT', ''}))
+    # Check the HISTORY and COMMENT cards, just in case
+    for key in ('HISTORY', 'COMMENT'):
+        fltcardsa = card_filter(cardsa, include={key})
+        fltcardsb = card_filter(cardsb, include={key})
+        for (ca, cb) in izip_longest(fltcardsa, fltcardsb):
+            if cb is None:
+                headera.update((cb,))
+
+    return headera
 
 def force_load(fn):
     @wraps(fn)
@@ -449,9 +480,15 @@ class FitsProvider(DataProvider):
         self._lazy_populate_object()
         return len(self._nddata)
 
-    def _set_headers(self, hdulist):
-        self._header = [hdulist[0].header] + [x.header for x in hdulist[1:] if
+    def _set_headers(self, hdulist, update=True):
+        new_headers = [hdulist[0].header] + [x.header for x in hdulist[1:] if
                                                 (x.header.get('EXTNAME') in ('SCI', None))]
+        # When update is True, self._header should NEVER be None, but check anyway
+        if update and self._header is not None:
+            assert len(self._header) == len(new_headers)
+            self._header = [update_header(ha, hb) for (ha, hb) in zip(new_headers, self._header)]
+        else:
+            self._header = new_headers
         tables = [unit for unit in hdulist if isinstance(unit, BinTableHDU)]
         for table in tables:
             name = table.header.get('EXTNAME')
@@ -591,7 +628,7 @@ class FitsProvider(DataProvider):
                     hdulist = self._hdulist
                 # We need to replace the headers, to make sure that we don't end
                 # up with different objects in self._headers and elsewhere
-                self._set_headers(hdulist)
+                self._set_headers(hdulist, update=True)
                 self._reset_members(hdulist)
                 self._hdulist = None
             finally:
