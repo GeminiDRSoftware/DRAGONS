@@ -48,7 +48,9 @@ def build_ir_section(instance, pretty=False):
     Parameters
     ----------
     instance: AstroData
-              The object that we want to extract the section from
+        The object that we want to extract the section from
+    pretty: bool
+        if True, return a string rather than a Section
 
     Returns
     -------
@@ -65,7 +67,11 @@ def build_ir_section(instance, pretty=False):
         return "[{:d}:{:d},{:d}:{:d}]".format(x1+1, x2+1, y1+1,
             y2+1) if pretty else Section(x1, x2+1, y1, y2+1)
     try:
-        return [format_section(x1,x2,y1,y2, pretty)
-                for x1,x2,y1,y2 in zip(lowrows, hirows, lowcols, hicols)]
+        xsize = [x2 - x1 + 1 for x1, x2 in zip(lowrows, hirows)]
+        ysize = [y2 - y1 + 1 for y1, y2 in zip(lowcols, hicols)]
+        return [format_section(512-xs/2, 512+xs/2, 512-ys/2, 512+ys/2, pretty)
+                for xs, ys in zip(xsize, ysize)]
     except TypeError:
-        return format_section(lowrows, hirows, lowcols, hicols, pretty)
+        xs = hirows - lowrows + 1
+        ys = hicols - lowcols + 1
+        return format_section(512-xs/2, 512+xsize/2, 512-ys/2, 512+ys/2, pretty)

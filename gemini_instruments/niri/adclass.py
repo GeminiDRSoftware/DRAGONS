@@ -74,9 +74,7 @@ class AstroDataNiri(AstroDataGemini):
         str/list of str
             Position of extension(s) using an IRAF section format (1-based)
         """
-        # TODO: surely this is wrong..? a central 512x512 readout should
-        # have array_section = [257:768,257:768], not [1:512,1:512]
-        return self.data_section(pretty=pretty)
+        return build_ir_section(self, pretty)
 
     @astro_data_descriptor
     def central_wavelength(self, asMicrometers=False, asNanometers=False,
@@ -147,8 +145,7 @@ class AstroDataNiri(AstroDataGemini):
             Location of the pixels exposed to light using an IRAF section
             format (1-based).
         """
-
-        return build_ir_section(self, pretty)
+        return self._parse_section('data_section', 'FULL', pretty)
 
     @astro_data_descriptor
     def detector_roi_setting(self):
@@ -202,7 +199,7 @@ class AstroDataNiri(AstroDataGemini):
         string or list of strings
             Position of the detector using an IRAF section format (1-based).
         """
-        return self.data_section(pretty=pretty)
+        return self.array_section(pretty=pretty)
 
     @astro_data_descriptor
     def disperser(self, stripID=False, pretty=False):
