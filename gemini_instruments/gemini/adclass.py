@@ -221,7 +221,15 @@ class AstroDataGemini(AstroDataFits):
         try:
             value_filter = (str if pretty else section_to_tuple)
             process_fn = lambda x: (None if x is None else value_filter(x))
-            sections = self.hdr.get(keyword)
+            # Dummy keyword FULL returns shape of full data array
+            if keyword == 'FULL':
+                try:
+                    sections = '[1:{1},1:{0}]'.format(*self.data.shape)
+                except AttributeError:
+                    sections = ['[1:{1},1:{0}]'.format(*ext.shape)
+                                for ext in self.data]
+            else:
+                sections = self.hdr.get(keyword)
             if self._single:
                 return process_fn(sections)
             else:
