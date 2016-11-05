@@ -13,7 +13,7 @@ from .lookups.source_detection import sextractor_default_dict
 
 from .parameters_CORE import ParametersCORE
 
-from rpms.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 DENT = 3
 # ------------------------------------------------------------------------------
