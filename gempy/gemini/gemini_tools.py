@@ -599,8 +599,12 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
                         # Replace the array with one that's padded with the
                         # appropriate number of zeros at each edge:
-                        ext_to_clip.operate(np.pad(padding, 'constant',
-                                          constant_values=0))
+                        print padding
+                        print ext_to_clip.data.shape
+                        for x in ext_to_clip:
+                            print x
+                        ext_to_clip.operate(np.pad, padding, 'constant',
+                                          constant_values=0)
 
                 # If nothing is trimmed, just use the unmodified data
                 # after checking that the regions match (a condition
@@ -781,8 +785,8 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
 
                         # Replace the array with one that's padded with the
                         # appropriate number of zeros at each edge:
-                        ext_to_clip.operate(np.pad(padding, 'constant',
-                                                   constant_values=0))
+                        ext_to_clip.operate(np.pad, padding, 'constant',
+                                                   constant_values=0)
 
                 # If nothing is trimmed, just use the unmodified data
                 # after checking that the regions match (a condition
