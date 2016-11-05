@@ -7,7 +7,7 @@ from .lookups import MDFDict
 from .parameters_standardize import ParametersStandardize
 from .primitives_CORE import PrimitivesCORE
 
-from rpms.utils.decorators import parameter_override
+from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
 @parameter_override
 class Standardize(PrimitivesCORE):
