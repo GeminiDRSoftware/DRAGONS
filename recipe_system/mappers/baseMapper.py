@@ -51,12 +51,12 @@ class Mapper(object):
                              E.g., [('foo','bar'), ('tileArrays:par1','val1')]
 
         """
-        self.adinputs = adinputs
-        self.context = context
-        self.tags = adinputs[0].tags            # change to new ad, ad.tags
-        self.pkg = adinputs[0].instrument_name  # change to new ad, ad.instrument_name
+        self.adinputs   = adinputs
+        self.context    = context
+        self.pkg        = adinputs[0].instrument_name
         self.recipename = recipename
-        self.usercals = usercals if usercals else {}
+        self.tags       = adinputs[0].tags
+        self.usercals   = usercals if usercals else {}
         self.userparams = dictify(uparms)
 
 
