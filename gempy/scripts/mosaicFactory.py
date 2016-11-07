@@ -1,15 +1,12 @@
 #!/usr/bin/env python
 #
-#                                                                     QAP Gemini
+#                                                                  gemini_python
 #
 #                                                               mosaicFactory.py
-#                                                               Kenneth Anderson
-#                                                                        07-2013
-#                                                          <kanderso@gemini.edu>
 # ------------------------------------------------------------------------------
 """
 This module provides the MosaicFactory class and command line interface to
-receive a list of files to process with gemini_python mosaic package,currently
+receive a list of files to process with gemini_python mosaic package, currently
 under gemini_python/trunk/devel/mosaic. The mosaic package currently supports
 GMOS and GSAOI images.
 
@@ -34,13 +31,14 @@ optional arguments:
   -h, --help     show this help message and exit
   -v, --version  show program's version number and exit
 
-Mosaic-ed FITS  images are written to cwd(), like
+Mosaicked FITS images are written to cwd(), like
 
 inputImage.fits --> inputImage_mosaic.fits
-"""
-------------------------------------------------------------------------------
-__version__ = "0.1"
 
+"""
+# ------------------------------------------------------------------------------
+__version__ = "0.1"
+# ------------------------------------------------------------------------------
 import os
 import sys
 from datetime import datetime
@@ -49,8 +47,8 @@ from argparse import ArgumentParser
 import astrodata
 import gemini_instruments
 
-from gempy.gmosaic.mosaicAD import MosaicAD
-from gempy.gmosaic.gemMosaicFunction import gemini_mosaic_function
+from gempy.mosaic.mosaicAD import MosaicAD
+from gempy.mosaic.gemMosaicFunction import gemini_mosaic_function
 
 # ------------------------------------------------------------------------------
 def ptime():
