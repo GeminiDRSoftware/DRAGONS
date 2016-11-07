@@ -599,8 +599,8 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
                         # Replace the array with one that's padded with the
                         # appropriate number of zeros at each edge:
-                        ext_to_clip.operate(np.pad(padding, 'constant',
-                                          constant_values=0))
+                        ext_to_clip.operate(np.pad, padding, 'constant',
+                                          constant_values=0)
 
                 # If nothing is trimmed, just use the unmodified data
                 # after checking that the regions match (a condition
@@ -781,8 +781,8 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
 
                         # Replace the array with one that's padded with the
                         # appropriate number of zeros at each edge:
-                        ext_to_clip.operate(np.pad(padding, 'constant',
-                                                   constant_values=0))
+                        ext_to_clip.operate(np.pad, padding, 'constant',
+                                                   constant_values=0)
 
                 # If nothing is trimmed, just use the unmodified data
                 # after checking that the regions match (a condition
@@ -2015,8 +2015,7 @@ class ExposureGroup:
     # pass around nddata instances rather than lists or dictionaries but
     # that's not even well defined within AstroPy yet.
 
-    @accept_single_adinput
-    def __init__(self, adinput, pkg, frac_FOV=1.0):
+    def __init__(self, adinput, pkg=None, frac_FOV=1.0):
 
         """
         :param adinputs: an exposure list from which to initialize the group
@@ -2032,6 +2031,8 @@ class ExposureGroup:
         :type frac_FOV: float
         """
 
+        if not isinstance(adinput, list):
+            adinput = [adinput]
         # Make sure the field scaling is valid:
         if not isinstance(frac_FOV, numbers.Number) or frac_FOV < 0.:
             raise IOError('frac_FOV must be >= 0.')
@@ -2098,7 +2099,6 @@ class ExposureGroup:
 
         return self.members.keys()
 
-    @accept_single_adinput
     def add_members(self, adinput):
 
         """
@@ -2109,7 +2109,8 @@ class ExposureGroup:
         :type adinputs: AstroData, list of AstroData instances
         """
 
-
+        if not isinstance(adinput, list):
+            adinput = [adinput]
         # How many points were there previously and will there be now?
         ngroups = self.__len__()
         ntot = ngroups + len(adinput)
@@ -2135,7 +2136,7 @@ class ExposureGroup:
           for cval, nval in zip(self.group_cen, newsum)]
 
 
-def group_exposures(adinput, pkg, frac_FOV=1.0):
+def group_exposures(adinput, pkg=None, frac_FOV=1.0):
 
     """
     Sort a list of AstroData instances into dither groups around common
