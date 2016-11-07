@@ -43,6 +43,7 @@ class PrimitivesBASE(object):
         self.adoutputs        = None
         self.context          = context
         self.parameters       = ParametersBASE
+        self.log              = logutils.get_logger(__name__)
         self.user_params      = uparms if uparms else {}
         self.usercals         = ucals if ucals else {}
         self.calurl_dict      = calurl_dict.calurl_dict
