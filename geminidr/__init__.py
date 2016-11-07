@@ -1,6 +1,6 @@
 """
-The geminidr package provides the base classes for all parameter and primitive classes
-for all such classes in the geminidr package.
+The geminidr package provides the base classes for all parameter and primitive
+classes in the geminidr package.
 
 E.g.,
 >>> from geminidr import ParametersBASE
