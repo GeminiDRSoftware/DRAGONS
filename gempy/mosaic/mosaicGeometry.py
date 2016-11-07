@@ -25,12 +25,12 @@ class MosaicGeometry(object):
         ----------
 
         geometry_dict:  Dictionary with the following keys:
-        -------------
+        --------------------------------------------------
+        NOTE: required keys are blocksize and mosaic_grid.
 
-        NOTE: The only require keys are blocksize and mosaic_grid.
-
-        blocksize:        # Requireq
+        blocksize:        # Required
               Tuple of (npixels_x,npixels_y). Size of one block.
+
         mosaic_grid:      # Required
               Tuple (ncols,nrows). Number of blocks per row and
               number of rows in the output mosaic array.
@@ -40,43 +40,50 @@ class MosaicGeometry(object):
                 List of tuples (x_shift,y_shift). Amount in pixels (floating
                 numbers) to shift to align with the ref_block. There
                 are as many tuples as number of blocks.
+
             'rotation':
                 (Degrees). List of real numbers. Amount to rotate each
                 block to align with the ref_block. There are as
                 many numbers as number of blocks. Angle is counter wise
                 from the x-axis.
+
             'magnification': List of real numbers. Amount to magnify each
                 block to align with the ref_block. There are as
                 many numbers as number of blocks. Magnification is about
                 the center of the block.
-                                            }
+          }
 
         ref_block:
             Reference block tuple. The block location (x,y) coordinate
             in the mosaic_grid. This is a 0-based tuple. 'x' increases to
             the right, 'y' increases in the upwards direction. The origin
             (0,0) is the lower left block.
+
         interpolator:
             (String). Default is 'linear'. Name of the transformation
             function used for translation,rotation, magnification of the
             blocks to be aligned with the reference block. Allow values
             are: 'linear', 'nearest', 'spline'.
+
         spline_order
             (int). Default 2. Is the 'spline' interpolator order. Values
             should be in the range [0-5].
+
         gaps:
             A dictionary with key the block tuple and values
             a tuple (x_gap, y_gap) with the gap for each block. Where
             the gap is added to the block is left to the handling method.
+
         gap_dict:
-            If you have different set of gaps for 'tiling' and
-            'transform', then use this entry. It takes precedence over
-            the 'gaps' entry.
             'gap_dict' is a dictionary with two keys: 'tile_gaps' and
             'transform_gaps', with value a dictionary with key the block
             tuple and values a tuple (x_gap, y_gap) with the gap for
             each block. Where the gap is added to the block is left to
             the handling method.
+
+            If you have different set of gaps for 'tiling' and
+            'transform', then use this entry. It takes precedence over
+            the 'gaps' entry.
 
         Output
         ------
@@ -93,10 +100,8 @@ class MosaicGeometry(object):
         transformation: dictionary {'shift':shift ,'rotation':rotation,
                          'magnification':magnification }
 
-
         EXAMPLE
         -------
-
          >>> from gempy.library.mosaic import MosaicGeometry
          >>> geometry_dict = {
               'transformation': {
@@ -129,7 +134,7 @@ class MosaicGeometry(object):
             raise ValueError('Mosaic grid: Should be a 2 value tuple')
         else:
             nblocks = mosaic_grid[0] * mosaic_grid[1]     # The number of blocks
-                                                        # in the mosaic
+                                                          # in the mosaic
         self.mosaic_grid = mosaic_grid
 
         if (type(blocksize) is not tuple) or (len(blocksize) < 2):
@@ -142,6 +147,7 @@ class MosaicGeometry(object):
         interpolator = 'linear'
         if 'interpolator' in geometry_dict:
             interpolator = geometry_dict['interpolator']
+
         if interpolator == 'spline':
             if 'spline_order' in geometry_dict:
                 spline_order = geometry_dict['spline_order']
@@ -149,19 +155,21 @@ class MosaicGeometry(object):
                     raise ValueError('spline_order: Should be >0 or <6')
             else:
                 spline_order = 2
+
             self.spline_order = spline_order
+
         self.interpolator = interpolator
 
         gap_dict = None
         if 'gap_dict' in geometry_dict:
             gap_dict = geometry_dict['gap_dict']
-            if not ('tile_gaps' in gap_dict or
-                    ('transform_gaps' in gap_dict)):
+            if not ('tile_gaps' in gap_dict or ('transform_gaps' in gap_dict)):
                 raise ValueError("gap_dict: key is not 'tile_gaps' or "
                                  "'transform_gaps'")
+
             for gap_type in ['tile_gaps', 'transform_gaps']:
                 for key, val in zip(gap_dict[gap_type].keys(),
-                                gap_dict[gap_type].values()):
+                                    gap_dict[gap_type].values()):
                     if (type(key) is tuple) and (type(val) is tuple):
                         if (len(key) != 2) or (len(val) != 2):
                             raise ValueError("Gaps values are not of length 2")
@@ -169,7 +177,6 @@ class MosaicGeometry(object):
                         raise ValueError("Gaps keys are not tuples")
 
         elif 'gaps' in geometry_dict:
-            # Simples 'gaps' format.
             # This is dictionary {(col,row): (x_gap,y_gap)....}
             # that applies to tile and transform
             gaps = geometry_dict['gaps']

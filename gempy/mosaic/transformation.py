@@ -11,17 +11,18 @@ class Transformation(object):
 
     Members
     -------
-
     params: Dictionary with:
-            {'rotation':         # Radians of rotation about the
-                                   # frame center. It has reverse sign
-                                   # as the input argument to be compatible
-                                   # with IRAF.
-            'shift':(xshift,yshift)  # Shift in pixels
-            'magnification':(xmag,ymag) # (scalars). Magnification
-                                           # about the frame center.
+            {'rotation':  Radians of rotation about the frame center. 
+                          It has reverse sign as the input argument to be 
+                          compatible with IRAF.
+
+            'shift'    :  (xshift, yshift)  # Shift in pixels
+
+            'magnification': (xmag, ymag)   # (scalars). Magnification
+                                            # about the frame center.
             }
-    matrix: Matrix rotation. Set when affine_transform is used.
+
+    matrix:       Matrix rotation. Set when affine_transform is used.
     notransform:  Boolean flag indicating whether to apply the
                   transformation function or not.
     xy_coords:    A tuple is (x_array, y_array) contanining the
@@ -84,8 +85,14 @@ class Transformation(object):
         transform_dq
             Transform the data quality plane. Must be handled a little
             differently. DQ flags are set bit-wise, such that each pixel is the
-            sum of any of the following values: 0=good pixel,
-            1=bad pixel (from bad pixel mask), 2=nonlinear, 4=saturated, etc.
+            sum of any of the following values:
+
+            0 = good pixel
+            1 = bad pixel (from bad pixel mask)
+            2 = nonlinear
+            4 = saturated
+            etc.,
+
             To transform the DQ plane without losing flag information, it is
             unpacked into separate masks, each of which is transformed in the
             same way as the science data. A pixel is flagged if it had greater
@@ -93,7 +100,6 @@ class Transformation(object):
             added back together to generate the transformed DQ plane.
 
     """
-
     def __init__(self, rotation, shift, magnification, interpolator='affine',
                  order=1, as_iraf=True):
         """
@@ -143,9 +149,11 @@ class Transformation(object):
             self.notransform = True
 
         # For clarity put the pars in a dictionary.
-        self.params = {'rotation': rot_rads,
-                       'shift': (xshift, yshift),
-                       'magnification': (xmag, ymag)}
+        self.params = {
+            'rotation'     : rot_rads,
+            'shift'        : (xshift, yshift),
+            'magnification': (xmag, ymag)
+        }
 
         if interpolator not in ['affine', 'map_coords']:
             raise ValueError('Bad input parameter "interpolator" value')
@@ -185,18 +193,15 @@ class Transformation(object):
 
 
         # Set rotation origin as the center of the image
-        ycen, xcen = np.asarray(imagesize) / 2.
-
-        xmag, ymag = self.params['magnification']
-
-
+        ycen, xcen     = np.asarray(imagesize) / 2.
+        xmag, ymag     = self.params['magnification']
+        rot_rads       = self.params['rotation']
         xshift, yshift = self.params['shift']
-        rot_rads = self.params['rotation']
 
         cosine_x = xmag * np.cos(rot_rads)
-        sine_x = xmag * np.sin(rot_rads)
+        sine_x   = xmag * np.sin(rot_rads)
         cosine_y = ymag * np.cos(rot_rads)
-        sine_y = ymag * np.sin(rot_rads)
+        sine_y   = ymag * np.sin(rot_rads)
         self.matrix = np.array([[cosine_y, sine_y], [-sine_x, cosine_x]])
 
         # Add translation to this point
@@ -233,14 +238,13 @@ class Transformation(object):
 
             If order, mode and/or cval are different from None, they
             replace the default values.
+
         """
-
-
-        if order == None:
+        if order is None:
             order = self.order
-        if mode == None:
+        if mode is None:
             mode = self.mode
-        if cval == None:
+        if cval is None:
             cval = self.cval
 
         if self.notransform:
@@ -250,12 +254,11 @@ class Transformation(object):
             self.affine_init(image.shape)
 
         prefilter = order > 1
-        matrix = self.matrix
-        offset = self.offset
-
-        image = nd.affine_transform(image, matrix, offset=offset,
-                                    prefilter=prefilter,
-                                    mode=mode, order=order, cval=cval)
+        matrix    = self.matrix
+        offset    = self.offset
+        image     = nd.affine_transform(image, matrix, offset=offset,
+                                        prefilter=prefilter,
+                                        mode=mode, order=order, cval=cval)
 
         return image
 
@@ -270,21 +273,18 @@ class Transformation(object):
             imagesize: The shape of the frame where the (x,y)
                        coordinates are taken from. It sets
                        the center of rotation.
-        """
 
+        """
         # Set rotation origin as the center of the image
         ycen, xcen = np.asarray(imagesize) / 2.
-
-
         xsc, ysc = self.params['magnification']
-        xshift, yshift = self.params['shift']
         rot_rads = self.params['rotation']
+        xshift, yshift = self.params['shift']
 
         cosine_x = xsc * np.cos(rot_rads)
-        sine_x = xsc * np.sin(rot_rads)
+        sine_x   = xsc * np.sin(rot_rads)
         cosine_y = ysc * np.cos(rot_rads)
-        sine_y = ysc * np.sin(rot_rads)
-
+        sine_y   = ysc * np.sin(rot_rads)
 
         # Create am open mesh_grid. Only one-dimension
         # of each argument is returned.
@@ -324,11 +324,11 @@ class Transformation(object):
             replace the default values.
         """
 
-        if order == None:
+        if order is None:
             order = self.order
-        if mode == None:
+        if mode is None:
             mode = self.mode
-        if cval == None:
+        if cval is None:
             cval = self.cval
 
         if self.notransform:
@@ -339,8 +339,7 @@ class Transformation(object):
 
         prefilter = order > 1
         # The xy_ccords member is set in map_coords_init().
-        image = nd.map_coordinates(image, self.xy_coords,
-                                   prefilter=prefilter,
+        image = nd.map_coordinates(image, self.xy_coords, prefilter=prefilter,
                                    mode=mode, order=order, cval=cval)
 
         del self.xy_coords
@@ -351,13 +350,13 @@ class Transformation(object):
         """
           High level method to drive an already set transformation
           function. The default one is 'affine'
-        """
 
-        if self.affine:    # Use affine_transform
+        """
+        if self.affine:                         # Use affine_transform
             output = self.affine_transform(data)
-        elif self.map_coords:  # Use map_coordinates
+        elif self.map_coords:                   # Use map_coordinates
             output = self.map_coordinates(data)
-        elif self.dq_data:     # For DQ data use map_coordinates
+        elif self.dq_data:                      # DQ data use map_coordinates
             output = self.transform_dq(data)
         else:
             raise ValueError("Transform function not defined.")
@@ -365,21 +364,31 @@ class Transformation(object):
         return output
 
     def set_affine(self):
-        """Set attribute affine to True"""
-        self.affine = True
+        """
+        Set attribute affine to True
+
+        """
+        self.affine     = True
+        self.dq_data    = False
         self.map_coords = False
-        self.dq_data = False
 
     def set_map_coords(self):
-        """Set attribute map_coords to True or False"""
+        """
+        Set attribute map_coords to True or False
+
+        """
+        self.affine     = False
+        self.dq_data    = False
         self.map_coords = True
-        self.affine = False
-        self.dq_data = False
+
 
     def set_dq_data(self):
-        """Set attribute dq_data to True or False"""
-        self.dq_data = True
-        self.affine = False
+        """
+        Set attribute dq_data to True or False
+
+        """
+        self.affine     = False
+        self.dq_data    = True
         self.map_coords = False
 
     def set_interpolator(self, tfunction='linear', spline_order=2):
@@ -404,11 +413,10 @@ class Transformation(object):
                 of the spline interpolator.  (default is 2).
 
         """
-
         # check for allowed values:
         if tfunction not in ('linear', 'nearest', 'spline'):
-            raise ValueError("Interpolator:'" + tfunction +
-                "' is not in ('linear', 'nearest', 'spline')")
+            err = "Interpolator: '{}' is not in ('linear', 'nearest', 'spline')"
+            raise ValueError(err.format(tfunction))
 
         # Set the order:
         if tfunction == 'linear':
@@ -469,9 +477,7 @@ class Transformation(object):
         outdata = np.zeros(data.shape)
         do_nans = False
         gnan = None
-
         for j in range(0, 8):
-
             # skip the transformation if there are no flags set
             # (but always do the bad pixel mask because it is
             # needed to mask the part of the array that was

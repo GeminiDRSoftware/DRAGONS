@@ -1,28 +1,34 @@
 #
+#                                                                  gemini_python
+#
+#                                                                      mosaic.py
+# ------------------------------------------------------------------------------
 import numpy as np
-import gempy.library.transformation as tran
 
+from .mosaicGeometry import MosaicGeometry
+from .transformation import Transformation
+
+# ------------------------------------------------------------------------------
 class Mosaic(object):
     """
-      Mosaic is a base class that provides functionality to layout a list
-      of data ndarrays of the same size into an output mosaic. The main
-      characteristics are:
+    Mosaic is a base class that provides functionality to layout a list
+    of data ndarrays of the same size into an output mosaic. The main
+    characteristics are:
 
-      - Input data and their location in the output mosaic is done via
-        MosaicData objects.
+    - Input data and their location in the output mosaic is done via
+      MosaicData objects.
 
-      - Information about gaps between the blocks and transformation is
-        given by the MosaicGeometry  object.
+    - Information about gaps between the blocks and transformation is
+      given by the MosaicGeometry  object.
 
-      - Mosaic object can generate masks associated with the output mosaic
+    - Mosaic object can generate masks associated with the output mosaic
 
-      - Can reset the interpolated function use in tranformation via Mosaic
-        class function.
+    - Can reset the interpolated function use in tranformation via Mosaic
+      class function.
 
-      - Preserving flux when transforming a block
+    - Preserving flux when transforming a block
 
     """
-
     def __init__(self, mosaic_data, mosaic_geometry=None):
         """
         USAGE
@@ -94,7 +100,7 @@ class Mosaic(object):
 
           EXAMPLE
           -------
-          >>> from gemp.library.mosaic import Mosaic
+          >>> from gempy.mosaic import Mosaic
               # Now import you own 'my_mosaic_function' to compose the input
               # data_list coordinate descriptors and the geometry object.
           >>> from my_module import my_mosaic_function
@@ -247,18 +253,17 @@ class Mosaic(object):
 
     def set_transformations(self):
         """
-        Instantiates the Transformation class objects for
-        each block that needs correction for rotation, shift
-        and/or magnification. Set a dictionary with (col,row)
-        as a key and value the Transformation object.
+        Instantiates the Transformation class objects for each block that needs
+        correction for rotation, shift and/or magnification. Set a dictionary 
+        with (col,row) as a key and value the Transformation object.
 
         """
         # Correction parameters from the MosaicGeometry object dict.
         geo = self.geometry
         nblocksx, nblocksy = geo.mosaic_grid
         mag = geo.transformation['magnification']
-        rot = geo.transformation['rotation']   # (x_rot,y_rot)
-        shift = geo.transformation['shift']    # (x_shift,y_shift)
+        rot = geo.transformation['rotation']       # (x_rot, y_rot)
+        shift = geo.transformation['shift']        # (x_shift, y_shift)
         order = 1
         if geo.interpolator == 'spline':
             order = geo.spline_order
@@ -272,11 +277,12 @@ class Mosaic(object):
 
             # Instantiates a Transformation object. The interpolator
             # order can be reset if needed.
-            trf = tran.Transformation(rot[indx][0], shift[indx],
-                         mag[indx], order=order, as_iraf=self.as_iraf)
-            # Add a key to the dictionary with value the
-            # object.
+            trf = Transformation(rot[indx][0], shift[indx], mag[indx], 
+                                 order=order, as_iraf=self.as_iraf)
+
+            # Add a key to the dictionary with value the object.
             transform_objects[col, row] = trf
+
         # Reset the attribute
         self.transform_objects = transform_objects
         return
@@ -407,7 +413,6 @@ class Mosaic(object):
 
         for col, row in block_data:
             data = block_data[col, row]
-
             if not tile:
                 # Correct data for rotation, shift and magnification
                 trans_obj = self.transform_objects[col, row]
@@ -418,8 +423,7 @@ class Mosaic(object):
                 indx = col + row*nblocksx
                 data = data / jfactor[indx]
 
-            # Get the block corner coordinates plus the gaps w/r to
-            # mosaic origin
+            # Get the block corner coordinates plus gaps wrt to mosaic origin
             x_gap, y_gap = gaps[(col, row)]
             my1, my2, mx1, mx2 = \
                 self._get_block_corners(bszx, bszy, col, row, x_gap, y_gap)
