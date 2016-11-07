@@ -1,4 +1,12 @@
+"""
+The geminidr package provides the base classes for all parameter and primitive classes
+for all such classes in the geminidr package.
 
+E.g.,
+>>> from geminidr import ParametersBASE
+>>> from geminidr import PrimitivesBASE
+
+"""
 class ParametersBASE(object):
     """
     Base class for all Gemini package parameter sets.
