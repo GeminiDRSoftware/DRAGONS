@@ -23,8 +23,6 @@ class ParametersBASE(object):
 from inspect import stack
 
 from gempy.utils import logutils
-from gempy.gemini import gemini_tools as gt
-
 
 # new system imports - 10-06-2016 kra
 # NOTE: imports of these and other tables will be moving around ...
