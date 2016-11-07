@@ -20,14 +20,13 @@ import sys
 import inspect
 import signal
 
-#import astrodata
-#import instruments
-#from astrodata.core import AstroDataError
-from astrodata import AstroData
+import astrodata
+import gemini_instruments
 
 from gempy.utils import logutils
 
-from recipe_system.utils.errors import AstroDataError
+from astrodata.core import AstroDataError
+
 from recipe_system.utils.errors import RecipeNotFound
 from recipe_system.utils.errors import PrimitivesNotFound
 
@@ -204,14 +203,12 @@ class Reduce(object):
         allinputs = []
         for inp in inputs:
             try:
-                ad = AstroData(inp)
-                ad.filename = os.path.basename(inp)
-                ad.mode = "readonly"
+                ad = astrodata.open(inp)
             except AstroDataError, err:
                 log.warning("Can't Load Dataset: %s" % inp)
                 log.warning(err)
                 continue
-            except ValueError, err:
+            except IOError, err:
                 log.warning("Can't Load Dataset: %s" % inp)
                 log.warning(err)
                 continue

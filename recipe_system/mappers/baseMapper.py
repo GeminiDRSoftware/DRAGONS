@@ -52,18 +52,13 @@ class Mapper(object):
 
         """
         self.adinputs = adinputs
-        self.adinit = adinputs[0]
         self.context = context
-        self.tags = set(self.adinit.type()) # change to new ad, ad.tags
-        self.pkg = self._set_pkg()          # change to new ad, ad.instrument_name
+        self.tags = adinputs[0].tags            # change to new ad, ad.tags
+        self.pkg = adinputs[0].instrument_name  # change to new ad, ad.instrument_name
         self.recipename = recipename
         self.usercals = usercals if usercals else {}
         self.userparams = dictify(uparms)
 
-
-    def _set_pkg(self):
-        raw_inst = self.adinit.instrument().as_pytype()
-        return 'GMOS' if raw_inst in GMOS_INSTR else raw_inst
 
     def _package_loader(self, pkgname):
         pfile, pkgpath, descr = imp.find_module(pkgname)
