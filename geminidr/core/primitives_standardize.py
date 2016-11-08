@@ -285,23 +285,6 @@ class Standardize(PrimitivesBASE):
 
         return
 
-    def markAsPrepared(self, adinputs=None, stream='main', **params):
-        """
-        This primitive is used to add a time stamp keyword to the PHU of the
-        AstroData object and update the AstroData type, allowing the output
-        AstroData object to be recognised as PREPARED.
-        """
-        log = self.log
-        log.debug(gt.log_message("primitive", "markAsPrepared", "starting"))
-        timestamp_key = self.timestamp_keys["prepare"]
-        sfx = self.parameters.markAsPrepared["suffix"]
-        for ad in self.adinputs:
-            gt.mark_history(ad, self.myself(), timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-            log.stdinfo(ad.filename)
-
-        return
-
     def prepare(self):
         """
         Validate and standardize the datasets to ensure compatibility
@@ -313,12 +296,38 @@ class Standardize(PrimitivesBASE):
         """
         log = self.log
         log.debug(gt.log_message("primitive", "prepare", "starting"))
+        timestamp_key = self.timestamp_keys["prepare"]
+        sfx = self.parameters.prepare["suffix"]
         self.validateData()
         self.standardizeStructure()
-        self.standardizeGeminiHeaders()
+        self.standardizeObservatoryHeaders()
         self.standardizeInstrumentHeaders()
-        self.markAsPrepared()
+        for ad in self.adinputs:
+            gt.mark_history(ad, self.myself(), timestamp_key)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
         return
+
+    def standardizeHeaders(self, adinputs=None, stream='main', **params):
+        log = self.log
+        log.debug(gt.log_message("primitive", "standardizeHeaders",
+                                 "starting"))
+        self.standardizeObservatoryHeaders()
+        self.standardizeInstrumentHeaders()
+        return
+
+    def standardizeInstrumentHeaders(self, adinputs=None, stream='main',
+                                     **params):
+        pass
+
+    def standardizeObservatoryHeaders(self, adinputs=None, stream='main',
+                                      **params):
+        pass
+
+    def standardizeStructure(self, adinputs=None, stream='main', **params):
+        pass
+
+    def validateData(self, adinputs=None, stream='main', **params):
+        pass
 
     ##########################################################################
     # Below are the helper functions for the primitives in this module       #

@@ -18,6 +18,6 @@ class ParametersStandardize(ParametersBASE):
         "read_noise"        : False,
         "poisson_noise"     : False,
     }
-    markAsPrepared = {
+    prepare = {
         "suffix"            : "_prepared",
     }
