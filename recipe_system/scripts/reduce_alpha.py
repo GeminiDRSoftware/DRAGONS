@@ -14,11 +14,8 @@ Prototype reduce (New Hope).
 # ---------------------------- Package Import ----------------------------------
 import sys
 
-#import astrodata
-#import instruments
-#from astrodata.core import AstroDataError
-from astrodata import AstroData
 from gempy.utils import logutils
+
 from recipe_system.reduction.coreReduce import Reduce
 
 from recipe_system.utils.reduce_utils import buildParser
