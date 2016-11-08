@@ -191,6 +191,7 @@ class Standardize(PrimitivesBASE):
                     for location in MDFDict.mdf_locations:
                         fullname = os.path.join(os.path.sep, location, mdf)
                         if os.path.exists(fullname):
+                            # Copy MDF to local directory if it's elsewhere
                             if location != '.':
                                 shutil.copy(fullname, '.')
                             break
@@ -386,6 +387,7 @@ class Standardize(PrimitivesBASE):
             # Assume units are ADU if not explicitly given
             bunit = ext.hdr.get('BUNIT', 'ADU')
 
+            # Create a variance array with the read noise (or zero)
             if add_read_noise:
                 if read_noise is None:
                     log.warning('Read noise for {} extver {} = None. Setting '
@@ -402,6 +404,7 @@ class Standardize(PrimitivesBASE):
             else:
                 var_array = np.zeros(ext.data.shape)
 
+            # Add the Poisson noise if desired
             if add_poisson_noise:
                 poisson_array = (ext.data if ext.is_coadds_summed() else
                                  ext.data / ext.coadds())
@@ -411,6 +414,7 @@ class Standardize(PrimitivesBASE):
                              'the variance in {}'.format(bunit))
                 var_array += np.where(poisson_array > 0, poisson_array, 0)
 
+            # Attach to the extension
             ext.variance = var_array.astype(var_dtype)
 
         return adinput
