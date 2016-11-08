@@ -1,6 +1,7 @@
 import astrodata
 import gemini_instruments
 from gempy.gemini import gemini_tools as gt
+from gempy.gemini import irafcompat
 
 from ..gemini.lookups import BPMDict
 from ..gemini.lookups import MDFDict
@@ -37,6 +38,15 @@ class Standardize(PrimitivesBASE):
         following: (0=good, 1=bad pixel (found in bad pixel mask), 2=pixel is
         in the non-linear regime, 4=pixel is saturated). This primitive will
         trim the BPM to match the input AstroData object(s).
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        bpm: str/None
+            name of bad pixel mask (None -> use default)
+        illum_mask: bool
+            add illumination mask?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -132,10 +142,17 @@ class Standardize(PrimitivesBASE):
                         ext.mask |= np.where(ext.data >= non_linear_level,
                                              DQ.non_linear, 0)
 
-            gt.mark_history(ad, self.myself(), timestamp_key)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
 
+        # Add the illumination mask if requested
+        if self.parameters.addDQ['illum_mask']:
+            self.addIllumMaskToDQ()
+
         return
+
+    def addIllumMaskToDQ(self, adinputs=None, stream='main', **params):
+        pass
 
     def addMDF(self, adinputs=None, stream='main', **params):
         """
@@ -145,6 +162,13 @@ class Standardize(PrimitivesBASE):
         MDF AstroData objects must match the number of input AstroData objects.
         If no MDF is provided, the primitive will attempt to determine an
         appropriate MDF.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        mdf: str/None
+            name of MDF to add (None => use default)
         """
         log = self.log
         log.debug(gt.log_message("primitive", "addMDF", "starting"))
@@ -210,7 +234,7 @@ class Standardize(PrimitivesBASE):
                             'MDF will be added'.format(mdf))
                 continue
 
-            gt.mark_history(ad, self.myself(), timestamp_key)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
 
         return
@@ -246,6 +270,15 @@ class Standardize(PrimitivesBASE):
         The variance of a raw bias frame contains only a read noise component
         (which represents the uncertainty in the bias level of each pixel),
         since the Poisson noise component of a bias frame is meaningless.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        read_noise: bool
+            add the read noise component?
+        poisson_noise: bool
+            add the Poisson noise component?
         """
         log = self.log
         log.debug(gt.log_message("primitive", "addVAR", "starting"))
@@ -280,25 +313,24 @@ class Standardize(PrimitivesBASE):
                             "still contains a bias level")
 
             ad = self._calculate_var(ad, read_noise, poisson_noise)
-            gt.mark_history(ad, self.myself(), timestamp_key)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
 
         return
 
-    def markAsPrepared(self, adinputs=None, stream='main', **params):
+    def makeIRAFCompatible(self, adinputs=None, stream='main', **params):
         """
-        This primitive is used to add a time stamp keyword to the PHU of the
-        AstroData object and update the AstroData type, allowing the output
-        AstroData object to be recognised as PREPARED.
+        Add keywords to make the pipeline-processed file compatible
+        with the tasks in the Gemini IRAF package.
         """
         log = self.log
-        log.debug(gt.log_message("primitive", "markAsPrepared", "starting"))
-        timestamp_key = self.timestamp_keys["prepare"]
-        sfx = self.parameters.markAsPrepared["suffix"]
+        log.debug(gt.log_message('primitive', 'makeIRAFCompatible',
+                                 'starting'))
+        timestamp_key = self.timestamp_keys['makeIRAFCompatible']
+
         for ad in self.adinputs:
-            gt.mark_history(ad, self.myself(), timestamp_key)
-            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-            log.stdinfo(ad.filename)
+            irafcompat.pipeline2iraf(ad)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
 
         return
 
@@ -310,15 +342,46 @@ class Standardize(PrimitivesBASE):
 
         Currently, there are no input parameters associated with
         this primitive.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
         """
         log = self.log
         log.debug(gt.log_message("primitive", "prepare", "starting"))
+        timestamp_key = self.timestamp_keys["prepare"]
+        sfx = self.parameters.prepare["suffix"]
         self.validateData()
         self.standardizeStructure()
-        self.standardizeGeminiHeaders()
+        self.standardizeObservatoryHeaders()
         self.standardizeInstrumentHeaders()
-        self.markAsPrepared()
+        for ad in self.adinputs:
+            gt.mark_history(ad, self.myself(), timestamp_key)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
         return
+
+    def standardizeHeaders(self, adinputs=None, stream='main', **params):
+        log = self.log
+        log.debug(gt.log_message("primitive", "standardizeHeaders",
+                                 "starting"))
+        self.standardizeObservatoryHeaders()
+        self.standardizeInstrumentHeaders()
+        return
+
+    def standardizeInstrumentHeaders(self, adinputs=None, stream='main',
+                                     **params):
+        pass
+
+    def standardizeObservatoryHeaders(self, adinputs=None, stream='main',
+                                      **params):
+        pass
+
+    def standardizeStructure(self, adinputs=None, stream='main', **params):
+        pass
+
+    def validateData(self, adinputs=None, stream='main', **params):
+        pass
 
     ##########################################################################
     # Below are the helper functions for the primitives in this module       #
