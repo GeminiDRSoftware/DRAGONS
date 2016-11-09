@@ -142,6 +142,10 @@ class TestGeminiTools:
         ret = gt.make_dict([1,2,3], 4)
         assert ret == {1: 4, 2: 4, 3: 4}
 
+    def test_make_list(self):
+        ret = gt.make_list([1,2,3], 4)
+        assert ret == ([1, 2, 3], [4, 4, 4])
+
     def test_measure_bg_from_image(self):
         ad = astrodata.open(os.path.join(TESTDATAPATH, 'GSAOI',
                                     'S20150110S0208_sourcesDetected.fits'))

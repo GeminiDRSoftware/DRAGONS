@@ -1555,6 +1555,36 @@ def make_dict(key_list=None, value_list=None):
     
     return ret_dict
 
+def make_list(key_list=None, value_list=None):
+    """
+    The make_list function returns two lists, one of the keys and one of the
+    values. It ensures that both inputs are made into lists if they weren't
+    originally. It also expands the list of values to be the same length as
+    the list of keys, if only one value was given.
+
+    Parameters
+    ----------
+    key_list: list of AstroData objects
+        the keys for the dict
+    value_list: list of AstroData objects
+        the values for the dict
+
+    Returns
+    -------
+    2-tuple of lists
+        the lists made from the keys and values
+    """
+    # Check the inputs have matching filters, binning and SCI shapes.
+    if not isinstance(key_list, list):
+        key_list = [key_list]
+    if not isinstance(value_list, list):
+        value_list = [value_list]
+    # We allow only one value that can be assigned to multiple keys
+    if len(value_list) == 1:
+        value_list *= len(key_list)
+
+    return key_list, value_list
+
 @accept_single_adinput
 def mark_history(adinput=None, keyword=None, primname=None, comment=None):
     """
