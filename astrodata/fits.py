@@ -306,9 +306,10 @@ class FitsProvider(DataProvider):
                 except TypeError:
                     # This may happen if operand is a sliced, single AstroData object
                     self._nddata[n] = operator(self._nddata[n], operand.nddata)
-            ltab, rtab = set(self._tables), set(operand.table)
+            op_table = operand.table()
+            ltab, rtab = set(self._tables), set(op_table)
             for tab in (rtab - ltab):
-                self._tables[tab] = operand.table[tab]
+                self._tables[tab] = op_table[tab]
         else:
             for n in range(len(self)):
                 self._nddata[n] = operator(self._nddata[n], operand)
