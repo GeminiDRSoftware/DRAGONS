@@ -53,11 +53,10 @@ class CCD(PrimitivesBASE):
             if bias_file is None:
                 if 'qa' in self.context:
                     log.warning("No changes will be made to {}, since no "
-                                "appropriate bias could be retrieved".
-                                format(ad.filename))
+                                "bias was specified".format(ad.filename))
                     continue
                 else:
-                    raise IOError('No processed bias found for {}'.
+                    raise IOError('No processed bias listed for {}'.
                                   format(ad.filename))
 
             bias = astrodata.open(bias_file)
