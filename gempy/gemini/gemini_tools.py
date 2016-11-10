@@ -1555,7 +1555,7 @@ def make_dict(key_list=None, value_list=None):
     
     return ret_dict
 
-def make_list(key_list=None, value_list=None):
+def make_lists(key_list=None, value_list=None):
     """
     The make_list function returns two lists, one of the keys and one of the
     values. It ensures that both inputs are made into lists if they weren't

@@ -142,7 +142,7 @@ class TestGeminiTools:
         ret = gt.make_dict([1,2,3], 4)
         assert ret == {1: 4, 2: 4, 3: 4}
 
-    def test_make_list(self):
+    def test_make_lists(self):
         ret = gt.make_list([1,2,3], 4)
         assert ret == ([1, 2, 3], [4, 4, 4])
 
