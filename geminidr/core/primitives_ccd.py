@@ -11,16 +11,14 @@ from recipe_system.utils.decorators import parameter_override
 @parameter_override
 class CCD(PrimitivesBASE):
     """
-    This is the class containing all of the primitives used to standardize an
-    AstroData object.
-
+    This is the class containing all of the primitives used for generic CCD
+    reduction.
     """
     tagset = set(["GEMINI"])
 
     def __init__(self, adinputs, context, ucals=None, uparms=None):
         super(CCD, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)
         self.parameters = ParametersCCD
-
 
     def biasCorrect(self, adinputs=None, stream='main', **params):
         self.getProcessedBias()
@@ -50,7 +48,7 @@ class CCD(PrimitivesBASE):
         sfx = self.parameters.subtractBias["suffix"]
 
         #TODO? Assume we're getting filenames, rather than AD instances
-        for ad, bias_file in zip(gt.make_lists(self.adinputs,
+        for ad, bias_file in zip(*gt.make_lists(self.adinputs,
                                     self.parameters.subtractBias["bias"])):
             if bias_file is None:
                 if 'qa' in self.context:
@@ -100,6 +98,8 @@ class CCD(PrimitivesBASE):
         log.debug(gt.log_message("primitive", "subtractOverscan", "starting"))
         timestamp_key = self.timestamp_keys["subtractOverscan"]
 
+        # Need to create a new output list since the ETI makes new AD objects
+        adoutputs = []
         for ad in self.adinputs:
             if (ad.phu.get('GPREPARE') is None and
                         ad.phu.get('PREPARE') is None):
@@ -113,6 +113,9 @@ class CCD(PrimitivesBASE):
             gireduce_task = gireduceeti.GireduceETI([], self.parameters.subtractOverscan, ad)
             ad = gireduce_task.run()
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            adoutputs.append(ad)
+
+        self.adinputs = adoutputs
         return
 
     def trimOverscan(self, adinputs=None, stream='main', **params):
