@@ -776,7 +776,7 @@ class AstroDataGmos(AstroDataGemini):
             read noise
         """
         if 'PREPARED' in self.tags:
-            return ad.hdr.get(self._keyword_for('read_noise'))
+            return self.hdr.get(self._keyword_for('read_noise'))
         else:
             # Get the correct dict of read noise values
             ut_date = self.ut_date()
