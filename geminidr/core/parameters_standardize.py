@@ -1,9 +1,9 @@
 # This parameter file contains the parameters related to the primitives located
-# in the primitives_GEMINI.py file, in alphabetical order.
+# in the primitives_standardize.py file, in alphabetical order.
 
-from parameters_CORE import ParametersCORE
+from geminidr import ParametersBASE
 
-class ParametersStandardize(ParametersCORE):
+class ParametersStandardize(ParametersBASE):
     addDQ = {
         "suffix"            : "_dqAdded",
         "bpm"               : None,
@@ -18,6 +18,6 @@ class ParametersStandardize(ParametersCORE):
         "read_noise"        : False,
         "poisson_noise"     : False,
     }
-    markAsPrepared = {
+    prepare = {
         "suffix"            : "_prepared",
     }
