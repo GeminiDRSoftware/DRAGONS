@@ -1,13 +1,12 @@
 import astrodata
 import gemini_instruments
 from gempy.gemini import gemini_tools as gt
+from gempy.gemini.eti import gireduceeti
 
 from geminidr import PrimitivesBASE
 from .parameters_ccd import ParametersCCD
 
 from recipe_system.utils.decorators import parameter_override
-
-import numpy as np
 # ------------------------------------------------------------------------------
 @parameter_override
 class CCD(PrimitivesBASE):
@@ -42,8 +41,8 @@ class CCD(PrimitivesBASE):
         ----------
         suffix: str
             suffix to be added to output files
-        bias: str/None
-            bias to subtract (None => use default)
+        bias: str/list of str
+            bias(es) to subtract
         """
         log = self.log
         log.debug(gt.log_message("primitive", "subtractBias", "starting"))
@@ -51,7 +50,7 @@ class CCD(PrimitivesBASE):
         sfx = self.parameters.subtractBias["suffix"]
 
         #TODO? Assume we're getting filenames, rather than AD instances
-        for ad, bias_file in zip(gt.make_lists(adinputs,
+        for ad, bias_file in zip(gt.make_lists(self.adinputs,
                                     self.parameters.subtractBias["bias"])):
             if bias_file is None:
                 if 'qa' in self.context:
@@ -69,6 +68,7 @@ class CCD(PrimitivesBASE):
             except ValueError:
                 bias = gt.clip_auxiliary_data(ad, bias, aux_type='cal',
                                     keyword_comments=self.keyword_comments)
+                # An Error will be raised if they don't match now
                 gt.check_inputs_match(ad, bias, check_filter=False)
 
             log.fullinfo('Subtracting this bias from {}:\n{}'.
@@ -80,9 +80,66 @@ class CCD(PrimitivesBASE):
         return
 
     def subtractOverscan(self, adinputs=None, stream='main', **params):
-        pass
+        """
+        This primitive uses External Task Interface to gireduce to subtract
+        the overscan from the input images.
 
+        Variance and DQ planes, if they exist, will be saved and restored
+        after gireduce has been run.
+
+        NOTE:
+        The inputs to this function MUST be prepared.
+
+        Parameters
+        ----------
+        overscan_section: str/None
+            comma-separated list of IRAF-style overscan sections
+            None => use nbiascontam=4 columns
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", "subtractOverscan", "starting"))
+        timestamp_key = self.timestamp_keys["subtractOverscan"]
+
+        for ad in self.adinputs:
+            if (ad.phu.get('GPREPARE') is None and
+                        ad.phu.get('PREPARE') is None):
+                raise IOError('{} must be prepared'.format(ad.filename))
+            if ad.phu.get(timestamp_key) is not None:
+                log.warning('No changes will be made to {}, since it has '
+                            'already been processed by subtractOverscan'.
+                            format(ad.filename))
+                continue
+
+            gireduce_task = gireduceeti.GireduceETI([], self.parameters.subtractOverscan, ad)
+            ad = gireduce_task.run()
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+        return
 
     def trimOverscan(self, adinputs=None, stream='main', **params):
-        pass
+        """
+        The trimOverscan primitive trims the overscan region from the input
+        AstroData object and updates the headers.
 
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", "trimOvserscan", "starting"))
+        timestamp_key = self.timestamp_keys["trimOverscan"]
+        sfx = self.parameters.trimOverscan["suffix"]
+
+        for ad in self.adinputs:
+            if ad.phu.get(timestamp_key) is not None:
+                log.warning('No changes will be made to {}, since it has '
+                            'already been processed by trimOverscan'.
+                            format(ad.filename))
+                continue
+
+            ad = gt.trim_to_data_section(ad,
+                                    keyword_comments=self.keyword_comments)
+            ad.phu.set('TRIMMED', 'yes', self.keyword_comments['TRIMMED'])
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
+        return
