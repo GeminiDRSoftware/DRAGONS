@@ -1680,14 +1680,12 @@ class AstroDataGemini(AstroDataFits):
             ('PWFS2', self.phu.get("PWFS2_ST")),
         )
 
-        wavefront_sensors = [name for (name, value) in candidates if value == 'guiding']
+        wavefront_sensors = [name for (name, value) in candidates
+                             if value == 'guiding']
         if self.phu.get('GWFS1CFG') is not None:
             wavefront_sensors.append('GEMS')
 
-        if not wavefront_sensors:
-            raise ValueError("No probes are guiding")
-
-        return '&'.join(sorted(wavefront_sensors))
+        return '&'.join(sorted(wavefront_sensors)) if wavefront_sensors else None
 
     @astro_data_descriptor
     def wavelength_band(self):
