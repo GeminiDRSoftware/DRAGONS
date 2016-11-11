@@ -16,13 +16,13 @@ from urllib2  import HTTPError
 # and open the file as an AstroData instance. See end of process_requests()
 #
 # ad = AstroData(calurl, store=caldname)
-#
-# It is not yet clear what implemention will be needed to emulate this with the
-# new astrodata.
-# import astrodata
-# import gemini_instruments
-from astrodata import AstroData
-from gempy.utils  import logutils
+# 
+# @TODO handle urls !!!
+import astrodata
+import gemini_instruments
+
+from gempy.utils import logutils
+from gempy.utils import netutil
 
 from ..stacks import IDFactory
 from .caches  import set_caches
