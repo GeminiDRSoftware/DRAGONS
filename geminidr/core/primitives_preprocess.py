@@ -1,3 +1,8 @@
+import astrodata
+import gemini_instruments
+from gempy.gemini import gemini_tools as gt
+from geminidr.gemini.lookups import DQ_definitions as DQ
+
 import os
 import math
 import datetime
@@ -5,107 +10,69 @@ import numpy as np
 
 from copy import deepcopy
 
-from astrodata import AstroData
-from astrodata.utils import Errors
-from astrodata.utils import logutils
-from astrodata.utils.gemconstants import SCI, VAR, DQ
+from geminidr import PrimitivesBASE
+from .parameters_preprocess import ParametersPreprocess
 
-from gempy.gemini import gemini_tools as gt
-
-from recipe_system.reduction import reductionContextRecords as RCR
-
-from primitives_GENERAL import GENERALPrimitives
+from recipe_system.utils.decorators import parameter_override
 # ------------------------------------------------------------------------------
-pkgname =  __file__.split('astrodata_')[1].split('/')[0]
-
-# ------------------------------------------------------------------------------
-class PreprocessPrimitives(GENERALPrimitives):
+@parameter_override
+class Preprocess(PrimitivesBASE):
     """
     This is the class containing all of the preprocessing primitives
     for the GEMINI level of the type hierarchy tree. It inherits all
     the primitives from the level above, 'GENERALPrimitives'.
     """
-    astrotype = "GEMINI"
+    tagset = set(["GEMINI"])
+
+    def __init__(self, adinputs, context, ucals=None, uparms=None):
+        super(Preprocess, self).__init__(adinputs, context, ucals=ucals,
+                                         uparms=uparms)
+        self.parameters = ParametersPreprocess
+
     
-    def init(self, rc):
-        GENERALPrimitives.init(self, rc)
-        return rc
-    init.pt_hide = True
-    
-    def ADUToElectrons(self, rc):
+    def ADUToElectrons(self, adinputs=None, stream='main', **params):
         """
         This primitive will convert the units of the pixel data extensions
         of the input AstroData object from ADU to electrons by multiplying
         by the gain.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
         """
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
-        # Log the standard "starting primitive" debug message
+        log = self.log
         log.debug(gt.log_message("primitive", "ADUToElectrons", "starting"))
-        
-        # Define the keyword to be used for the time stamp for this primitive
         timestamp_key = self.timestamp_keys["ADUToElectrons"]
-        
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-        
-        # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
-            
-            # Check whether the ADUToElectrons primitive has been run
-            # previously
-            if ad.phu_get_key_value(timestamp_key):
-                log.warning("No changes will be made to %s, since it has "
-                            "already been processed by ADUToElectrons"
-                            % ad.filename)
-                
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
+        sfx = self.parameters.ADUToElectrons["suffix"]
+
+        for ad in self.adinputs:
+            if ad.phu.get(timestamp_key):
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by ADUToElectrons".
+                            format(ad.filename))
                 continue
-            
-            # Convert the pixel data in the AstroData object from ADU to
-            # electrons. First, get the gain value using the appropriate
-            # descriptor
-            gain = ad.gain()
-            
-            # Now multiply the pixel data in the science extension by the gain
-            # and the pixel data in the variance extension by the gain squared
-            log.status("Converting %s from ADU to electrons by multiplying by "
-                       "the gain" % (ad.filename))
-            for ext in ad[SCI]:
-                extver = ext.extver()
-                log.stdinfo("  gain for [%s,%d] = %s" %
-                            (SCI, extver, gain.get_value(extver=extver)))
-            ad = ad.mult(gain)
+
+            gain_list = ad.gain()
+            # Now multiply the pixel data in each science extension by the gain
+            # and the pixel data in each variance extension by the gain squared
+            log.status("Converting {} from ADU to electrons by multiplying by "
+                       "the gain".format(ad.filename))
+            for ext, gain in zip(ad, gain_list):
+                extver = ext.hdr.EXTVER
+                log.stdinfo("  gain for EXTVER {} = {}".format(extver, gain))
+                ext.multiply(gain)
             
             # Update the headers of the AstroData Object. The pixel data now
             # has units of electrons so update the physical units keyword.
-            gt.update_key(adinput=ad, keyword="BUNIT", value="electron", comment=None,
-                          extname=SCI, keyword_comments=self.keyword_comments)
-            if ad[VAR]:
-                gt.update_key(adinput=ad, keyword="BUNIT", value="electron*electron",
-                              comment=None, extname=VAR, 
-                              keyword_comments=self.keyword_comments)
-            
-            # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
-            
-            # Change the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
-                                              strip=True)
-            
-            # Append the output AstroData object to the list of output
-            # AstroData objects
-            adoutput_list.append(ad)
-        
-        # Report the list of output AstroData objects to the reduction context
-        rc.report_output(adoutput_list)
-        
-        yield rc
+            ad.hdr.set('BUNIT', 'electron',
+                       keyword_comments=self.keyword_comments)
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.filename = gt.filename_updater(ad, suffix=sfx,  strip=True)
+
+        return
     
-    def associateSky(self, rc):
+    def associateSky(self, adinputs=None, stream='main', **params):
         """
         This primitive determines which sky AstroData objects are associated
         with each science AstroData object and adds this information to a
@@ -119,9 +86,20 @@ class PreprocessPrimitives(GENERALPrimitives):
         the main stream (as normal) and the sky AstroData objects are found in
         the sky stream.
         
-        :param adinput: input science AstroData objects
-        :type adinput: Astrodata or Python list of AstroData
-        
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        distance: float
+            minimum separation (in arcseconds) required to use an image as sky
+        max_skies: int/None
+            maximum number of skies to associate to each input frame
+        sky: str/list
+            name(s) of sky frame(s) to associate to each input
+        time: float
+            number of seconds
+        use_all: bool
+
         :param sky: The input sky frame(s) to be subtracted from the input
                     science frame(s). The input sky frame(s) can be a list of
                     sky filenames, a sky filename, a list of AstroData objects
@@ -133,48 +111,30 @@ class PreprocessPrimitives(GENERALPrimitives):
         :type sky: string, Python list of string, AstroData or Python list of
                    Astrodata 
         """
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
-        # Log the standard "starting primitive" debug message
+        log = self.log
         log.debug(gt.log_message("primitive", "associateSky", "starting"))
-        
-        # Define the keyword to be used for the time stamp for this primitive
         timestamp_key = self.timestamp_keys["associateSky"]
-        
-        # Determine the suffix for this primitive
-        suffix = rc["suffix"]
-        
-        # Maximum number of sky frames to use
-        max_skies = rc["max_skies"]
-        
-        # Create a timedelta object using the value of the "time" parameter
-        seconds = datetime.timedelta(seconds=rc["time"])
+        sfx = self.parameters.associateSky["suffix"]
+        max_skies = self.parameters.associateSky["max_skies"]
+        min_distance = self.parameters.associateSky["distance"]
 
-        # This primitives requires at least one input science AstroData object
-        # and at least one input sky AstroData object
-        ad_science_list = rc.get_inputs_as_astrodata()
-        
-        if rc["sky"]:
-            if not isinstance(rc["sky"], list):
-                ad_sky_list = [rc["sky"]]
-            else:
-                ad_sky_list = rc["sky"]
-                
-            # Convert filenames to AD instances if necessary
-            tmp_list = []
-            for sky in ad_sky_list:
-                if type(sky) is not AstroData:
-                    sky = AstroData(sky)
-                tmp_list.append(sky)
-            ad_sky_list = tmp_list
+        # Create a timedelta object using the value of the "time" parameter
+        seconds = datetime.timedelta(seconds=self.parameters.associateSky["time"])
+
+        sky = self.parameters.associateSky["sky"]
+        if sky:
+            # Produce a list of AD objects from the sky frame/list
+            ad_sky_list = sky if isinstance(sky, list) else [sky]
+            ad_sky_list = [ad if isinstance(ad, astrodata.AstroData) else
+                           astrodata.open(ad) for ad in ad_sky_list]
         else:
+            #TODO: What replaces this?
             # The separateSky primitive puts the sky AstroData objects in the
             # sky stream. The get_stream function returns a list of AstroData
             # objects when style="AD"
             ad_sky_list = rc.get_stream(stream="sky", style="AD")
         
-        if not ad_science_list or not ad_sky_list:
+        if not self.adinputs or not ad_sky_list:
             log.warning("Cannot associate sky frames, since at least one "
                         "science AstroData object and one sky AstroData "
                         "object are required for associateSky")
@@ -183,28 +143,22 @@ class PreprocessPrimitives(GENERALPrimitives):
             # and sky AstroData object lists, respectively, without further
             # processing, after adding the appropriate time stamp to the PHU
             # and updating the filename.
-            if ad_science_list:
-                ad_science_output_list = gt.finalise_adinput(
-                    adinput=ad_science_list, timestamp_key=timestamp_key,
-                    suffix=suffix)
-            else:
-                ad_science_output_list = []
+            if self.adinputs:
+                self.adinputs = gt.finalise_adinput(self.adinputs,
+                    timestamp_key=timestamp_key, suffix=sfx)
             
             if ad_sky_list:
                 ad_sky_output_list = gt.finalise_adinput(
                     adinput=ad_sky_list, timestamp_key=timestamp_key,
-                    suffix=suffix)
+                    suffix=sfx)
             else:
                 ad_sky_output_list = []
         else:
-            # Initialize the dictionary that will contain the association
-            # between the science AstroData objects and the sky AstroData
-            # objects 
+            # Initialize the dict that will contain the association between
+            # the science AstroData objects and the sky AstroData objects
             sky_dict = {}
             
-            # Loop over each science AstroData object in the science list
-            for ad_science in ad_science_list:
-                
+            for ad_sci in self.adinputs:
                 # Determine the sky AstroData objects that are associated with
                 # this science AstroData object. Initialize the list of sky
                 # AstroDataRecord objects
@@ -215,64 +169,52 @@ class PreprocessPrimitives(GENERALPrimitives):
                 
                 # Use the ORIGNAME of the science AstroData object as the key
                 # of the dictionary 
-                origname = ad_science.phu_get_key_value("ORIGNAME")
+                origname = ad_sci.phu.get('ORIGNAME')
                 
                 # If use_all is True, use all of the sky AstroData objects for
                 # each science AstroData object
-                if rc["use_all"]:
+                if self.parameters.associateSky["use_all"]:
                     log.stdinfo("Associating all available sky AstroData "
-                                 "objects to %s" % ad_science.filename)
-                    
+                                 "objects with {}" .format(ad_sci.filename))
+
+                    #TODO: SORT THIS OUT! It was AstroDataRecords
                     # Set the list of sky AstroDataRecord objects for this
                     # science AstroData object equal to the input list of sky
                     # AstroDataRecord objects
-                    for ad_sky in ad_sky_list:
-                        adr_sky_list.append(RCR.AstroDataRecord(ad_sky))
+                    #for ad_sky in ad_sky_list:
+                    #    adr_sky_list.append(RCR.AstroDataRecord(ad_sky))
                     
-                    # Update the dictionary with the list of sky
-                    # AstroDataRecord objects associated with this science
-                    # AstroData object
-                    sky_dict.update({origname: adr_sky_list})
+                    # Update the dictionary with the list of sky AstroData
+                    # objects associated with this science AstroData object
+                    sky_dict.update({origname: ad_sky_list})
                 else:
-                    # Get the datetime object of the science AstroData object
-                    # using the appropriate descriptor 
-                    ad_science_datetime = ad_science.ut_datetime()
-                    
-                    # Loop over each sky AstroData object in the sky list
+                    ad_sci_datetime = ad_sci.ut_datetime()
                     for ad_sky in ad_sky_list:
-                    
                         # Make sure the candidate sky exposures actually match
                         # the science configuration (eg. if sequenced over
                         # different filters or exposure times):
-                        same_cfg = gt.matching_inst_config(ad_science, ad_sky,
+                        same_cfg = gt.matching_inst_config(ad_sci, ad_sky,
                             check_exposure=True)
 
-                        # Get the datetime object of the sky AstroData object
-                        # using the appropriate descriptor
+                        # Time difference between science and sky observations
                         ad_sky_datetime = ad_sky.ut_datetime()
-                        
-
-                        delta_time = abs(ad_science_datetime - ad_sky_datetime)
+                        delta_time = abs(ad_sci_datetime - ad_sky_datetime)
                         
                         # Select only those sky AstroData objects observed
                         # within "time" seconds of the science AstroData object
                         if (same_cfg and delta_time < seconds):
                             
-                            # Get the distance of the science and sky AstroData
-                            # objects using the x_offset and y_offset
-                            # descriptors
-                            delta_x = ad_science.x_offset() - ad_sky.x_offset()
-                            delta_y = ad_science.y_offset() - ad_sky.y_offset()
+                            # Get the distance between science and sky images
+                            delta_x = ad_sci.x_offset() - ad_sky.x_offset()
+                            delta_y = ad_sci.y_offset() - ad_sky.y_offset()
                             delta_sky = math.sqrt(delta_x**2 + delta_y**2)
-                            
-                            # Select only those sky AstroData objects that are
-                            # greater than "distance" arcsec away from the
-                            # science AstroData object
-                            if (delta_sky > rc["distance"]):
+                            if (delta_sky > min_distance):
+                                #TODO: ADR issues again
                                 adr_sky_list.append(RCR.AstroDataRecord(ad_sky))
                                 delta_time_list.append(delta_time)
                                 
-                    # Now cull the list of associated skies if necessary
+                    # Now cull the list of associated skies if necessary to
+                    # those closest in time to the sceince observation
                     if max_skies is not None and len(adr_sky_list) > max_skies:
                         sorted_list = sorted(zip(delta_time_list, adr_sky_list))
                         adr_sky_list = [x[1] for x in sorted_list[:max_skies]]
@@ -283,315 +225,217 @@ class PreprocessPrimitives(GENERALPrimitives):
                     sky_dict.update({origname: adr_sky_list})
                 
                 if not sky_dict[origname]:
-                    log.warning("No sky frames available for %s" % origname)
+                    log.warning("No sky frames available for {}".format(origname))
                 else:
-                    log.stdinfo("The sky frames associated with %s are:"
-                                 % origname)
+                    log.stdinfo("The sky frames associated with {} are:".
+                                 format(origname))
                     for adr_sky in sky_dict[origname]:
-                        log.stdinfo("  %s" % adr_sky.ad.filename)
-            
+                        log.stdinfo("  {}".format(adr_sky.ad.filename))
+
+            #TODO: Sort this out!
             # Add the appropriate time stamp to the PHU and change the filename
             # of the science and sky AstroData objects 
-            ad_science_output_list = gt.finalise_adinput(
-              adinput=ad_science_list, timestamp_key=timestamp_key,
-              suffix=suffix)
+            self.adinputs = gt.finalise_adinput(self.adinputs,
+                                    timestamp_key=timestamp_key, suffix=sfx)
             
-            ad_sky_output_list = gt.finalise_adinput(
-              adinput=ad_sky_list, timestamp_key=timestamp_key, suffix=suffix)
+            ad_sky_output_list = gt.finalise_adinput(ad_sky_list,
+                                    timestamp_key=timestamp_key, suffix=sfx)
             
             # Add the association dictionary to the reduction context
-            rc["sky_dict"] = sky_dict
+            #rc["sky_dict"] = sky_dict
         
         # Report the list of output sky AstroData objects to the sky stream in
         # the reduction context 
-        rc.report_output(ad_sky_output_list, stream="sky")
-        
-        # Report the list of output science AstroData objects to the reduction
-        # context 
-        rc.report_output(ad_science_output_list)
-        
-        yield rc
-    
-    def correctBackgroundToReferenceImage(self, rc):
+        #rc.report_output(ad_sky_output_list, stream="sky")
+
+        return
+
+    def correctBackgroundToReferenceImage(self, adinputs=None,
+                                          stream='main', **params):
         """
         This primitive does an additive correction to a set
         of images to put their sky background at the same level
         as the reference image before stacking.
-        """
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
 
-        # Log the standard "starting primitive" debug message
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        remove_zero_level: bool
+            if True, set the new background level to zero in all images
+            if False, set it to the level of the first image
+        """
+        log = self.log
         log.debug(gt.log_message("primitive", 
                                  "correctBackgroundToReferenceImage",
                                  "starting"))
-
-        # Define the keyword to be used for the time stamp for this primitive
         timestamp_key = self.timestamp_keys["correctBackgroundToReferenceImage"]
+        sfx = self.parameters.associateSky["suffix"]
+        remove_zero_level = self.parameters.associateSky["remove_zero_level"]
 
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-
-        # Get input files
-        adinput = rc.get_inputs_as_astrodata()
-        
-        # Get the number of science extensions in each file
-        next = np.array([ad.count_exts(SCI) for ad in adinput])
-
-        # Check whether we are offsetting to zero or to 1st image
-        remove_zero_level = rc["remove_zero_level"]
-
-        # Initialize reference BG
         ref_bg = None
 
-        # Check whether two or more input AstroData objects were provided
-        if len(adinput) <= 1:
-            log.warning("No correction will be performed, since at least " \
-                        "two input AstroData objects are required for " \
+        if len(self.adinputs) <= 1:
+            log.warning("No correction will be performed, since at least "
+                        "two input AstroData objects are required for "
                         "correctBackgroundToReferenceImage")
-
-            # Set the input AstroData object list equal to the output AstroData
-            # objects list without further processing
-            adoutput_list = adinput
-
-        # Check that all images have the same number of science extensions
-        elif not np.all(next==next[0]):
-            raise Errors.InputError("Number of science extensions in input "\
+        # Check that all images have the same number of extensions
+        elif not all(len(ad)==len(self.adinputs[0]) for ad in self.adinputs):
+            raise IOError("Number of science extensions in input "
                                     "images do not match")
         else:
             # Loop over input files
-            ref_bg_dict = {}
-            for ad in adinput:
-                # Calculate the background value from the pixels in the SCI extn
-                bg_dict = gt.measure_bg_from_image(ad, value_only=True)
+            ref_bg_list = {}
+            for ad in self.adinputs:
+                bg_list = gt.measure_bg_from_image(ad, value_only=True)
                 # If this is the first (reference) image, set the reference bg levels
-                if not ref_bg_dict:
+                if not ref_bg_list:
                     if remove_zero_level:
-                        for extver in bg_dict:
-                            ref_bg_dict[extver] = 0
+                        ref_bg_list = [0] * len(ad)
                     else:
-                        ref_bg_dict = bg_dict.copy()
-                #diff_dict = {}
-                for sciext in ad[SCI]:
-                    # Get background value from header
-                    bg = bg_dict[sciext.extver()]
+                        ref_bg_list = bg_list.copy()
+
+                for ext, bg, ref in zip(ad, bg_list, ref_bg_list):
                     if bg is None:
-                        if "qa" in rc.context:
-                            log.warning(
-                                "Could not get background level from "\
-                                "%s[SCI,%d]" %
-                                (sciext.filename,sciext.extver()))
+                        if 'qa' in self.context:
+                            log.warning("Could not get background level from "
+                                "{} EXTVER {}".format(ad.filename,
+                                                      ext.hdr.EXTVER))
                             continue
                         else:
-                            raise Errors.ScienceError(
-                                "Could not get background level from "\
-                                "%s[SCI,%d]" %
-                                (sciext.filename,sciext.extver()))
-                    
-                    log.fullinfo("Background level is %.0f for %s" %
-                                 (bg, ad.filename))
-                    
-                    ref = ref_bg_dict[sciext.extver()]
+                            raise LookupError("Could not get background level "
+                            "from {} EXTVER {}".format(ad.filename,
+                                                       ext.hdr.EXTVER))
+
+                    # Add the appropriate value to this extension
+                    log.fullinfo("Background level is {:.0f} for {} EXTVER {}".
+                                 format(bg, ad.filename, ext.hdr.EXTVER))
                     difference = ref - bg
-                    log.fullinfo("Adding %.0f to match reference background " 
-                                     "level %.0f" % (difference,ref))
-                    sciext.add(difference)
-                    sciext.set_key_value("SKYLEVEL", ref,     
-                       comment=self.keyword_comments["SKYLEVEL"])
+                    log.fullinfo("Adding {:.0f} to match reference background "
+                                     "level {:.0f}".format(difference, ref))
+                    ext.add(difference)
+                    ext.hdr.set('SKYLEVEL', ref,
+                                comment=self.keyword_comments["SKYLEVEL"])
 
-                # Add time stamps, change the filename, and
-                # append to output list
-                gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
-                ad.filename = gt.filename_updater(adinput=ad, 
-                                                  suffix=rc["suffix"], 
-                                                  strip=True)
-                adoutput_list.append(ad)
- 
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
+                # Timestamp the header and update the filename
+                gt.mark_history(ad, primname=self.myself(),
+                                keyword=timestamp_key)
+                ad.filename = gt.filename_updater(ad, suffix=sfx, strip=True)
 
-        yield rc
+        return
 
-    def divideByFlat(self, rc):
+    def divideByFlat(self, adinputs=None, stream='main', **params):
         """
         This primitive will divide each SCI extension of the inputs by those
         of the corresponding flat. If the inputs contain VAR or DQ frames,
         those will also be updated accordingly due to the division on the data.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        flat: str
+            name of flatfield to use
         """
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
-        # Log the standard "starting primitive" debug message
+        log = self.log
         log.debug(gt.log_message("primitive", "divideByFlat", "starting"))
-        
-        # Define the keyword to be used for the time stamp for this primitive
         timestamp_key = self.timestamp_keys["divideByFlat"]
+        sfx = self.parameters.divideByFlat["suffix"]
 
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-        
-        # Check for a user-supplied flat
-        adinput = rc.get_inputs_as_astrodata()
-        flat_param = rc["flat"]
-        flat_dict = None
-        if flat_param is not None:
-            # The user supplied an input to the flat parameter
-            if not isinstance(flat_param, list):
-                flat_list = [flat_param]
-            else:
-                flat_list = flat_param
-
-            # Convert filenames to AD instances if necessary
-            tmp_list = []
-            for flat in flat_list:
-                if type(flat) is not AstroData:
-                    flat = AstroData(flat)
-                tmp_list.append(flat)
-            flat_list = tmp_list
-            
-            flat_dict = gt.make_dict(key_list=adinput, value_list=flat_list)
-
-        # Loop over each input AstroData object in the input list
-        for ad in adinput:
-            
-            # Check whether the divideByFlat primitive has been run previously
-            if ad.phu_get_key_value(timestamp_key):
-                log.warning("No changes will be made to %s, since it has " \
-                            "already been processed by divideByFlat" \
-                            % (ad.filename))
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
+        for ad, flat_file in zip(*gt.make_lists(self.adinputs,
+                                           self.parameters.divideByFlat["flat"])):
+            if ad.phu.get(timestamp_key):
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by divideByFlat".
+                            format(ad.filename))
                 continue
-            
-            # Retrieve the appropriate flat
-            if flat_dict is not None:
-                flat = flat_dict[ad]
-            else:
-                flat = rc.get_cal(ad, "processed_flat")
-            
-                # If there is no appropriate flat, there is no need to divide by
-                # the flat in QA context; in SQ context, raise an error
-                if flat is None:
-                    if "qa" in rc.context:
-                        log.warning("No changes will be made to %s, since no " \
-                                    "appropriate flat could be retrieved" \
-                                    % (ad.filename))
-                        # Append the input AstroData object to the list of output
-                        # AstroData objects without further processing
-                        adoutput_list.append(ad)
-                        continue
-                    else:
-                        raise Errors.PrimitiveError("No processed flat found "\
-                                                    "for %s" % ad.filename)
+
+            if flat_file is None:
+                if 'qa' in self.context:
+                    log.warning("No changes will be made to {}, since no "
+                                "flatfield has been specified".
+                                format(ad.filename))
+                    continue
                 else:
-                    flat = AstroData(flat)
-            
-            # Check the inputs have matching filters, binning, and SCI shapes.
+                    raise IOError("No processed flat listed for {}".
+                                   format(ad.filename))
+
+            flat = astrodata.open(flat_file)
+            # Check the inputs have matching filters, binning, and shapes
             try:
-                gt.check_inputs_match(ad1=ad, ad2=flat) 
-            except Errors.ToolboxError:
-                # If not, try to clip the flat frame to the size
-                # of the science data
-                # For a GMOS example, this allows a full frame flat to
+                gt.check_inputs_match(ad, flat)
+            except ValueError:
+                # Else try to clip the flat frame to the size of the science
+                # data (e.g., for GMOS, this allows a full frame flat to
                 # be used for a CCD2-only science frame. 
-                if 'GSAOI' in ad.types:
+                if 'GSAOI' in ad.tags:
                     flat = gt.clip_auxiliary_data_GSAOI(adinput=ad, 
                                     aux=flat, aux_type="cal",
-                                    keyword_comments=self.keyword_comments)[0]
+                                    keyword_comments=self.keyword_comments)
                 else:
                     flat = gt.clip_auxiliary_data(adinput=ad, 
                                     aux=flat, aux_type="cal", 
-                                    keyword_comments=self.keyword_comments)[0]
+                                    keyword_comments=self.keyword_comments)
 
                 # Check again, but allow it to fail if they still don't match
-                gt.check_inputs_match(ad1=ad, ad2=flat)
+                gt.check_inputs_match(ad, flat)
 
+            # Do the division
+            log.fullinfo("Dividing the input AstroData object {} by this "
+                         "flat:\n{}".format(ad.filename, flat.filename))
+            ad.divide(flat)
 
-            # Divide the adinput by the flat
-            log.fullinfo("Dividing the input AstroData object (%s) " \
-                         "by this flat:\n%s" % (ad.filename,
-                                                flat.filename))
-            ad = ad.div(flat)
-                        
-            # Record the flat file used
-            ad.phu_set_key_value("FLATIM", 
-                                 os.path.basename(flat.filename),
+            # Update the header and filename
+            ad.phu.set("FLATIM", flat.filename,
                                  comment=self.keyword_comments["FLATIM"])
-
-            
-            # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
-
-            # Change the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
                                               strip=True)
-            
-            # Append the output AstroData object to the list 
-            # of output AstroData objects
-            adoutput_list.append(ad)
-        
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
-        
-        yield rc
-     
-    def nonlinearityCorrect(self, rc):
+
+        return
+
+    def nonlinearityCorrect(self, adinputs=None, stream='main', **params):
         """
         Apply a generic non-linearity correction to data.
         At present (based on GSAOI implementation) this assumes/requires that
         the correction is polynomial. The ad.non_linear_coeffs() descriptor
         should return the coefficients in ascending order of power
-        """
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "nonlinearityCorrect",
-                                "starting"))
-        
-        # Define the keyword to be used for the time stamp for this primitive
-        timestamp_key = self.timestamp_keys["nonlinearityCorrect"]
 
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-        
-        # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
-            
-            # Check whether the nonlinearityCorrect primitive has been run
-            # previously
-            if ad.phu_get_key_value(timestamp_key):
-                log.warning("No changes will be made to %s, since it has " \
-                            "already been processed by nonlinearityCorrect" \
-                            % (ad.filename))
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", "nonlinearityCorrect",
+                                 "starting"))
+        timestamp_key = self.timestamp_keys["nonlinearityCorrect"]
+        sfx = self.parameters.nonlinearityCorrect["suffix"]
+
+        for ad in self.adinputs:
+            if ad.phu.get(timestamp_key):
+                log.warning("No changes will be made to %s, since it has "
+                            "already been processed by nonlinearityCorrect".
+                            format(ad.filename))
                 continue
             
-            # Get the coefficients from the lookup table
+            # Get the correction coefficients
             try:
                 nonlin_coeffs = ad.nonlinearity_coeffs()
-            except Errors.DescriptorInfrastructureError as e:
+            except:
                 log.warning("Unable to obtain nonlinearity coefficients for "
-                            "%s" % (ad.filename))
-                adoutput_list.append(ad)
+                            "{}".format(ad.filename))
                 continue
             
             # It's impossible to do this cleverly with a string of ad.mult()s
             # so use regular maths
-            log.status("Applying nonlinearity correction to %s "
-                       % (ad.filename))
-            for ext in ad[SCI]:
-                extver = ext.extver()
-                coeffs = nonlin_coeffs.get_value(extver=extver)
-                log.status("   nonlinearity correction for [%s,%d] is %s" %
-                           (SCI, extver, coeffs))
+            log.status("Applying nonlinearity correction to {}".
+                       format(ad.filename))
+            for ext, coeffs in zip(ad, nonlin_coeffs):
+                log.status("   nonlinearity correction for EXTVER {} is {:s}".
+                           format(ext.hdr.EXTVER, coeffs))
                 pixel_data = np.zeros_like(ext.data)
-                for n in range(len(coeffs),0,-1):
+                for n in range(len(coeffs), 0, -1):
                     pixel_data += coeffs[n-1]
                     pixel_data *= ext.data
                 # Try to do something useful with the VAR plane, if it exists
@@ -600,116 +444,81 @@ class PreprocessPrimitives(GENERALPrimitives):
                 # if the coadds are averaged), possibly plus read-noise**2
                 # So making an additive correction will sort this out,
                 # irrespective of whether there's read noise
-                if ad[VAR,extver] is not None:
+                if ext.variance is not None:
                     div_factor = 1
-                    bunit  = ext.get_key_value("BUNIT")
+                    bunit  = ext.hdr.get("BUNIT", 'ADU')
                     if bunit.upper() == 'ADU':
                         div_factor *= ext.gain().as_pytype()
                     if not ext.is_coadds_summed().as_pytype():
                         div_factor *= ext.coadds().as_pytype()
-                    ad[VAR,extver].data += (pixel_data - ext.data) / div_factor
+                    ext.variance += (pixel_data - ext.data) / div_factor
                 # Now update the SCI extension
                 ext.data = pixel_data
 
-            # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
-
-            # Change the filename
-            ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
+            # Timestamp the header and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
                                               strip=True)
-            
-            # Append the output AstroData object to the list 
-            # of output AstroData objects
-            adoutput_list.append(ad)
         
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
-        
-        yield rc
+        return
     
-    def thresholdFlatfield(self, rc):
+    def thresholdFlatfield(self, adinputs=None, stream='main', **params):
         """
         This primitive sets the DQ '64' bit for any pixels which have a value
         <lower or >upper in the SCI plane.
         it also sets the science plane pixel value to 1.0 for pixels which are bad
         and very close to zero, to avoid divide by zero issues and inf values
         in the flatfielded science data.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        lower: float
+            value below which DQ pixels should be set to unilluminated
+        upper: float
+            value above which DQ pixels should be set to unilluminated
         """
-        # Instantiate the log
-        log = logutils.get_logger(__name__)
-        
-        # Log the standard "starting primitive" debug message
-        log.debug(gt.log_message("primitive", "thresholdFlatfield", "starting"))
-        
-        # Define the keyword to be used for the time stamp for this primitive
+        log = self.log
+        log.debug(gt.log_message("primitive", "thresholdFlatfield",
+                                 "starting"))
         timestamp_key = self.timestamp_keys["thresholdFlatfield"]
+        sfx = self.parameters.thresholdFlatfield["suffix"]
+        lower = self.parameters.thresholdFlatfield["lower"]
+        upper = self.parameters.thresholdFlatfield["upper"]
 
-        # Initialize the list of output AstroData objects
-        adoutput_list = []
-        
-        # Loop over each input AstroData object in the input list
-        for ad in rc.get_inputs_as_astrodata():
-            
-            # Check whether the normalizeFlat primitive has been run previously
-            # ASK EMMA if we need this message
-            if ad.phu_get_key_value(timestamp_key):
-                log.warning("No changes will be made to %s, since it has " \
-                            "already been processed by thresholdFlatfield" \
-                            % (ad.filename))
-                # Append the input AstroData object to the list of output
-                # AstroData objects without further processing
-                adoutput_list.append(ad)
+        for ad in self.adinputs:
+            if ad.phu.get(timestamp_key):
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by thresholdFlatfield".
+                            format(ad.filename))
                 continue
-            
-            # Loop over each science extension in each input AstroData object
-            upper = rc['upper']
-            lower = rc['lower']
-            for ext in ad[SCI]:
-                
-                extver = ext.extver()
-                sci_data = ext.data
-                dq_data = ad[DQ,extver].data
 
+            for ext in ad:
                 # Mark the unilumminated pixels with a bit '64' in the DQ plane.
-                # make sure the 64 is an int16 64 else it will promote the DQ plane to int64
-                unilum = np.where(((sci_data>upper) | (sci_data<lower)) &
-                                   (dq_data | 1==0), np.int16(64), np.int16(0))
-
-                dq_data = np.bitwise_or(dq_data,unilum)
-
-                # Now replace the DQ data
-                ad[DQ,extver].data = dq_data
-
-                log.fullinfo("ThresholdFlatfield set bit '64' for values"
-                             " outside the range [%.2f,%.2f]"%(lower,upper))
+                # make sure the 64 is an int16 64 else it will
+                # promote the DQ plane to int64
+                unillum = np.where(((ext.data>upper) | (ext.data<lower)) &
+                                   (ext.mask | DQ.bad_pixel==0),
+                                  np.int16(DQ.unilluminated), np.int16(0))
+                ext.mask |= unillum
+                log.fullinfo("ThresholdFlatfield set bit '64' for values "
+                             "outside the range [{:.2f},{:.2f}]".
+                             format(lower, upper))
 
                 # Set the sci value to 1.0 where it is less that 0.001 and
                 # where the DQ says it's non-illuminated.
-                sci_data = np.where(sci_data < 0.001, 1.0, sci_data)
-                sci_data = np.where(dq_data == 64, 1.0, sci_data)
-                ad['SCI',extver].data=sci_data
+                ext.data[ext.data < 0.001] = 1.0
+                ext.data[ext.mask==DQ.unilluminated] = 1.0
+                log.fullinfo("ThresholdFlatfield set flatfield pixels to 1.0 "
+                             "for values below 0.001 and non-illuminated pixels.")
 
-                log.fullinfo("ThresholdFlatfield set flatfield pixels to 1.0"
-                             " for values below 0.001 and non-illuminated pixels.")
-
-
-            # Add the appropriate time stamps to the PHU
-            gt.mark_history(adinput=ad, primname=self.myself(), keyword=timestamp_key)
-
-            # Change the filename
+            # Timestamp and update the filename
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=rc["suffix"], 
                                               strip=True)
 
-            # Append the output AstroData object to the list
-            # of output AstroData objects
-            adoutput_list.append(ad)
-        
-        # Report the list of output AstroData objects to the reduction
-        # context
-        rc.report_output(adoutput_list)
-        
-        yield rc
+        return
 
     def normalizeFlat(self, rc):
         """
