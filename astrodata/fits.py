@@ -616,10 +616,7 @@ class FitsProvider(DataProvider):
 
     @property
     def header(self):
-        if self._sliced:
-            return self._header[1] if self._single else self._header[1:]
-        else:
-            return self._header
+        return self._header
 
     def _lazy_populate_object(self):
         prev_reset = self._resetting
