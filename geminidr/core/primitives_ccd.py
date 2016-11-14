@@ -76,6 +76,8 @@ class CCD(PrimitivesBASE):
             log.fullinfo('Subtracting this bias from {}:\n{}'.
                          format(ad.filename, bias.filename))
             ad.subtract(bias)
+
+            # Record bias used, timestamp, and update filename
             ad.phu.set('BIASIM', bias.filename, self.keyword_comments['BIASIM'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
@@ -119,6 +121,7 @@ class CCD(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             adoutputs.append(ad)
 
+        # Reset inputs to the ETI outputs
         self.adinputs = adoutputs
         return
 
@@ -146,6 +149,8 @@ class CCD(PrimitivesBASE):
 
             ad = gt.trim_to_data_section(ad,
                                     keyword_comments=self.keyword_comments)
+
+            # Set keyword, timestamp, and update filename
             ad.phu.set('TRIMMED', 'yes', self.keyword_comments['TRIMMED'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
