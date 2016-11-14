@@ -43,13 +43,18 @@ class CCD(PrimitivesBASE):
             bias(es) to subtract
         """
         log = self.log
-        log.debug(gt.log_message("primitive", "subtractBias", "starting"))
-        timestamp_key = self.timestamp_keys["subtractBias"]
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = self.parameters.subtractBias["suffix"]
 
         #TODO? Assume we're getting filenames, rather than AD instances
         for ad, bias_file in zip(*gt.make_lists(self.adinputs,
                                     self.parameters.subtractBias["bias"])):
+            if ad.phu_get_key_value(timestamp_key):
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by subtractBias".
+                            format(ad.filename))
+
             if bias_file is None:
                 if 'qa' in self.context:
                     log.warning("No changes will be made to {}, since no "
@@ -94,8 +99,8 @@ class CCD(PrimitivesBASE):
             None => use nbiascontam=4 columns
         """
         log = self.log
-        log.debug(gt.log_message("primitive", "subtractOverscan", "starting"))
-        timestamp_key = self.timestamp_keys["subtractOverscan"]
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
 
         # Need to create a new output list since the ETI makes new AD objects
         adoutputs = []
@@ -128,8 +133,8 @@ class CCD(PrimitivesBASE):
             suffix to be added to output files
         """
         log = self.log
-        log.debug(gt.log_message("primitive", "trimOvserscan", "starting"))
-        timestamp_key = self.timestamp_keys["trimOverscan"]
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = self.parameters.trimOverscan["suffix"]
 
         for ad in self.adinputs:
