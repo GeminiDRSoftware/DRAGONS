@@ -50,7 +50,7 @@ class CCD(PrimitivesBASE):
         #TODO? Assume we're getting filenames, rather than AD instances
         for ad, bias_file in zip(*gt.make_lists(self.adinputs,
                                     self.parameters.subtractBias["bias"])):
-            if ad.phu_get_key_value(timestamp_key):
+            if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by subtractBias".
                             format(ad.filename))
