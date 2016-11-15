@@ -228,7 +228,7 @@ def normalize_indices(slc, nitems):
         raise ValueError("Invalid index: {}".format(slc))
 
     if any(i >= nitems for i in indices):
-        raise IndexError("Index {} out of range".format(i))
+        raise IndexError("Index out of range")
 
     return indices, multiple
 
@@ -317,19 +317,19 @@ class FitsProviderProxy(DataProvider):
         raise TypeError("Can't remove items from a sliced object")
 
     def __iadd__(self, operand):
-        self._provider += operand
+        self._provider._oper(partial(NDDataObject.add, handle_meta='first_found'), operand, self._mapping)
         return self
 
     def __isub__(self, operand):
-        self._provider -= operand
+        self._provider._oper(partial(NDDataObject.subtract, handle_meta='first_found'), operand, self._mapping)
         return self
 
     def __imul__(self, operand):
-        self._provider *= operand
+        self._provider._oper(partial(NDDataObject.multiply, handle_meta='first_found'), operand, self._mapping)
         return self
 
     def __idiv__(self, operand):
-        self._provider /= operand
+        self._provider._oper(partial(NDDataObject.divide, handle_meta='first_found'), operand, self._mapping)
         return self
 
     @property
@@ -524,11 +524,14 @@ class FitsProvider(DataProvider):
         # Fallback
         super(FitsProvider, self).__setattr__(attribute, value)
 
-    def __oper(self, operator, operand):
+    @force_load
+    def _oper(self, operator, operand, indices=None):
+        if indices is None:
+            indices = tuple(range(len(self._nddata)))
         if isinstance(operand, AstroData):
-            if len(operand) != len(self):
+            if len(operand) != len(indices):
                 raise ValueError("Operands are not the same size")
-            for n in range(len(self)):
+            for n in indices:
                 try:
                     self._nddata[n] = operator(self._nddata[n], operand.nddata[n])
                 except TypeError:
@@ -539,23 +542,23 @@ class FitsProvider(DataProvider):
             for tab in (rtab - ltab):
                 self._tables[tab] = op_table[tab]
         else:
-            for n in range(len(self)):
+            for n in indices:
                 self._nddata[n] = operator(self._nddata[n], operand)
 
     def __iadd__(self, operand):
-        self.__oper(partial(NDDataObject.add, handle_meta='first_found'), operand)
+        self._oper(partial(NDDataObject.add, handle_meta='first_found'), operand)
         return self
 
     def __isub__(self, operand):
-        self.__oper(partial(NDDataObject.subtract, handle_meta='first_found'), operand)
+        self._oper(partial(NDDataObject.subtract, handle_meta='first_found'), operand)
         return self
 
     def __imul__(self, operand):
-        self.__oper(partial(NDDataObject.multiply, handle_meta='first_found'), operand)
+        self._oper(partial(NDDataObject.multiply, handle_meta='first_found'), operand)
         return self
 
     def __idiv__(self, operand):
-        self.__oper(partial(NDDataObject.divide, handle_meta='first_found'), operand)
+        self._oper(partial(NDDataObject.divide, handle_meta='first_found'), operand)
         return self
 
     def info(self, tags):
