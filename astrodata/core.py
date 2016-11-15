@@ -120,6 +120,14 @@ class DataProvider(object):
     def uncertainty(self):
         pass
 
+    @abstractproperty
+    def mask(self):
+        pass
+
+    @abstractproperty
+    def variance(self):
+        pass
+
 def simple_descriptor_mapping(**kw):
     def decorator(cls):
         for descriptor, descriptor_def in kw.items():
