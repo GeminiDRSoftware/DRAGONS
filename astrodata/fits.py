@@ -214,6 +214,241 @@ def update_header(headera, headerb):
 
     return headera
 
+def normalize_indices(slc, nitems):
+    multiple = True
+    if isinstance(slc, slice):
+        start, stop, step = slc.indices(nitems)
+        indices = range(start, stop, step)
+    elif isinstance(slc, int):
+        slc = (slc,)
+        multiple = False
+        # Normalize negative indices...
+        indices = [(x if x >= 0 else nitems + x) for x in slc]
+    else:
+        raise ValueError("Invalid index: {}".format(slc))
+
+    if any(i >= nitems for i in indices):
+        raise IndexError("Index {} out of range".format(i))
+
+    return indices, multiple
+
+class FitsProviderProxy(DataProvider):
+    # TODO: CAVEAT. Not all methods are intercepted. Some, like "info", may not make
+    #       sense for slices. If a method of interest is identified, we need to
+    #       implement it properly, or make it raise an exception if not valid.
+
+    def __init__(self, provider, mapping, single):
+        # We're overloading __setattr__. This is safer than setting the
+        # attributes the normal way.
+        self.__dict__.update({
+            '_provider': provider,
+            '_mapping': tuple(mapping),
+            '_sliced': True,
+            '_single': single
+            })
+
+    def settable(self, attr):
+        if attr in {'path', 'filename'}:
+            return False
+
+        return self._provider.settable(attr)
+
+    def __len__(self):
+        return len(self._mapping)
+
+    def _mapped_nddata(self, idx=None):
+        self._provider._lazy_populate_object()
+        if idx is None:
+            return [self._provider._nddata[idx] for idx in self._mapping]
+        else:
+            return self._provider._nddata[self._mapping[idx]]
+
+    def __getattr__(self, attribute):
+        try:
+            # Check first if this is something we can get from the main object
+            try:
+                return self._provider._getattr_impl(attribute, self._mapped_nddata())
+            except AttributeError:
+                # Not a special attribute. Check the regular interface
+                return getattr(self._provider, attribute)
+        except AttributeError:
+            # Not found in the real Provider. Ok, if we're working with single
+            # slices, let's look some things up in the ND object
+            if self._single:
+                if attribute.isupper():
+                    try:
+                        return getattr(self._mapped_nddata(0), attribute)
+                    except AttributeError:
+                        # Not found. Will raise an exception...
+                        pass
+            raise AttributeError("{} not found in this object".format(attribute))
+
+    def __setattr__(self, attribute, value):
+        def _my_attribute(attr):
+            return attr in self.__dict__ or attr in self.__class__.__dict__
+
+        # This method is meant to let the user set certain attributes of the NDData
+        # objects. First we check if the attribute belongs to this object's dictionary.
+        # Otherwise, see if we can pass it down.
+
+        if not _my_attribute(attribute) and self._provider.settable(attribute):
+            if attribute.isupper():
+                if not self._single:
+                    raise TypeError("This attribute can only be assigned to a single-slice object")
+                target = self._mapped_nddata(0)
+                self._provider._append(value, name=attribute, add_to=target)
+                return
+            elif attribute in {'path', 'filename'}:
+                raise AttributeError("Can't set path or filename on a sliced object")
+            else:
+                setattr(self._provider, attribute, value)
+
+        super(FitsProviderProxy, self).__setattr__(attribute, value)
+
+    def __getitem__(self, slc):
+        if self._single:
+            raise TypeError("Can't slice a single slice!")
+
+        indices, multiple = normalize_indices(slc, nitems=len(self))
+        mapped_indices = tuple(self._mapping[idx] for idx in indices)
+        return self._provider._slice(mapped_indices, multi=multiple)
+
+    def __delitem__(self, idx):
+        raise TypeError("Can't remove items from a sliced object")
+
+    def __iadd__(self, operand):
+        self._provider += operand
+        return self
+
+    def __isub__(self, operand):
+        self._provider -= operand
+        return self
+
+    def __imul__(self, operand):
+        self._provider *= operand
+        return self
+
+    def __idiv__(self, operand):
+        self._provider /= operand
+        return self
+
+    @property
+    def header(self):
+        return [self._provider._header[idx] for idx in [0] + [n+1 for n in self._mapping]]
+
+    @property
+    def data(self):
+        if self._single:
+            return self._mapped_nddata(0).data
+        else:
+            return [nd.data for nd in self._mapped_nddata()]
+
+    @data.setter
+    def data(self, value):
+        if not self._single:
+            raise ValueError("Trying to assign to an AstroData object that is not a single slice")
+
+        ext = self._mapped_nddata(0).data
+        # Setting the ._data in the NDData is a bit kludgy, but we're all grown adults
+        # and know what we're doing, isn't it?
+        if hasattr(value, 'shape'):
+            ext._data = value
+        else:
+            raise AttributeError("Trying to assign data to be something with no shape")
+
+    @property
+    def uncertainty(self):
+        if self._single:
+            return self._mapped_nddata(0).uncertainty
+        else:
+            return [nd.uncertainty for nd in self._mapped_nddata()]
+
+    @uncertainty.setter
+    def uncertainty(self, value):
+        if not self._single:
+            raise ValueError("Trying to assign to an AstroData object that is not a single slice")
+        self._mapped_nddata(0).uncertainty = value
+
+    @property
+    def mask(self):
+        if self._single:
+            return self._mapped_nddata(0).mask
+        else:
+            return [nd.mask for nd in self._mapped_nddata()]
+
+    @mask.setter
+    def mask(self, value):
+        if not self._single:
+            raise ValueError("Trying to assign to an AstroData object that is not a single slice")
+        self._mapped_nddata(0).mask = value
+
+    @property
+    def variance(self):
+        def variance_for(un):
+            if un is not None:
+                return un.array**2
+
+        if self._single:
+            return variance_for(self.uncertainty)
+        else:
+            return [variance_for(un) for un in self.uncertainty]
+
+    @variance.setter
+    def variance(self, value):
+        if not self._single:
+            raise ValueError("Trying to assign to an AstroData object that is not a single slice")
+        nd = self._mapped_nddata(0)
+        if value is None:
+            nd.uncertainty = None
+        else:
+            nd.uncertainty = StdDevUncertainty(np.sqrt(value))
+
+    @property
+    def nddata(self):
+        if not self._single:
+            return self._mapped_nddata()
+        else:
+            return self._mapped_nddata(0)
+
+    @property
+    def ext_manipulator(self):
+        return FitsKeywordManipulator(self.header[1:], on_extensions=True, single=self._single)
+
+    def set_name(self, ext, name):
+        self._provider.set_name(self._mapping[ext], name)
+
+    def crop(self, x1, y1, x2, y2):
+        self._crop_impl(x1, y1, x2, y2, self._mapped_nddata)
+
+    def append(self, ext, name):
+        if not self._single:
+            # TODO: We could rethink this one, but leave it like that at the moment
+            raise TypeError("Can't append pixel planes to non-single slices")
+        elif name is None:
+            raise TypeError("Can't append pixel planes to a slice without an extension name")
+        target = self._mapped_nddata(0)
+
+        return self._provider._append(ext, name=name, add_to=target)
+
+    def extver_map(self):
+        """
+        Provide a mapping between the FITS EXTVER of an extension and the index
+        that will be used to access it within this object.
+
+        Returns
+        -------
+        A dictionary `{EXTVER:index, ...}`
+
+        Raises
+        ------
+        ValueError
+            If used against a single slice. It is of no use in that situation.
+        """
+        if self._single:
+            raise ValueError("Trying to get a mapping out of a single slice")
+
+        return self._provider._extver_impl(self._mapped_nddata)
+
 def force_load(fn):
     @wraps(fn)
     def wrapper(self, *args, **kw):
@@ -251,29 +486,23 @@ class FitsProvider(DataProvider):
         return attr in self._fixed_settable or attr.isupper()
 
     @force_load
-    def __getattr__(self, attribute):
+    def _getattr_impl(self, attribute, nds):
         # Exposed objects are part of the normal object interface. We may not
         # have loaded them yet, and that's why we get here...
         if attribute in self._exposed:
-            self._lazy_populate_object()
             return getattr(self, attribute)
 
-        # So, the attribute hasn't been exposed. Probably an alias. Test...
-        for nd in self._nddata:
+        # Check if it's an aliased object
+        for nd in nds:
             if nd.meta.get('name') == attribute:
                 return nd
 
-        # Not quite. Ok, if we're working with single slices, let's look some things up
-        # in the ND object
-        if self._single:
-            if attribute.isupper() or attribute in ('data', 'mask', 'uncertainty'):
-                try:
-                    return getattr(self._nddata[0], attribute)
-                except AttributeError:
-                    # Not found. Will raise an exception...
-                    pass
-            raise AttributeError("{} not found in this object".format(attribute))
-        else:
+        raise AttributeError("Not found")
+
+    def __getattr__(self, attribute):
+        try:
+            return self._getattr_impl(attribute, self._nddata)
+        except AttributeError:
             raise AttributeError("{} not found in this object, or available only for sliced data".format(attribute))
 
     def __setattr__(self, attribute, value):
@@ -288,11 +517,10 @@ class FitsProvider(DataProvider):
         # if self._resetting is there, because otherwise we enter a loop..
         if '_resetting' in self.__dict__ and not self._resetting and not _my_attribute(attribute):
             if attribute.isupper():
-                if self._sliced and not self._single:
-                    raise TypeError("This attribute cannot be assigned to a partial slice")
                 self._lazy_populate_object()
-                target = self._nddata[0] if self._single else None
-                self._append(value, name=attribute, add_to=target)
+                self._append(value, name=attribute, add_to=None)
+                return
+
         # Fallback
         super(FitsProvider, self).__setattr__(attribute, value)
 
@@ -430,46 +658,16 @@ class FitsProvider(DataProvider):
         # if not self._sliced and not self._hdulist:
         #     # Force the loading of data, we may need it later
         #     self.nddata
-        scopy = self.__class__()
-        scopy._sliced = True
-        scopy._single = not multi
-        scopy.path = self.path
-        scopy._header = [self._header[0]] + [self._header[n+1] for n in indices]
-        if self._nddata:
-            scopy._nddata = [self._nddata[n] for n in indices]
-
-        scopy._tables = {}
-        for name, content in self._tables.items():
-            if type(content) is list:
-                scopy._tables[name] = [content[n] for n in indices]
-            else:
-                scopy._tables[name] = content
-
-        return scopy
+        return FitsProviderProxy(self, indices, single=not multi)
 
     @force_load
     def __getitem__(self, slc):
         nitems = len(self._header) - 1 # The Primary HDU does not count
-        multiple = True
-        if isinstance(slc, slice):
-            start, stop, step = slc.indices(nitems)
-            indices = range(start, stop, step)
-        else:
-            if isinstance(slc, int):
-                slc = (slc,)
-                multiple = False
-            # Normalize negative indices...
-            indices = [(x if x >= 0 else nitems + x) for x in slc]
-        if any(i >= nitems for i in indices):
-            raise IndexError("Index out of range")
-
+        indices, multiple = normalize_indices(slc, nitems=nitems)
         return self._slice(indices, multi=multiple)
 
     @force_load
     def __delitem__(self, idx):
-        if self._sliced:
-            raise TypeError("Can't remove items from a sliced object")
-
         nitems = len(self._header) - 1 # The Primary HDU does not count
         if idx >= nitems or idx < (-nitems):
             raise IndexError("Index out of range")
@@ -498,6 +696,8 @@ class FitsProvider(DataProvider):
             self._tables[name] = None
             self._exposed.add(name)
 
+    # NOTE: This one does not make reference to self at all. May as well
+    #       move it out
     def _process_table(self, table, name=None):
         if isinstance(table, BinTableHDU):
             obj = Table(table.data, meta={'hdu': table.header})
@@ -636,13 +836,9 @@ class FitsProvider(DataProvider):
                 self._resetting = prev_reset
 
     @property
+    @force_load
     def nddata(self):
-        self._lazy_populate_object()
-
-        if not self._single:
-            return self._nddata
-        else:
-            return self._nddata[0]
+        return self._nddata
 
     @property
     def phu(self):
@@ -656,7 +852,7 @@ class FitsProvider(DataProvider):
     def ext_manipulator(self):
         if len(self.header) < 2:
             return None
-        return FitsKeywordManipulator(self.header[1:], on_extensions=True, single=self._single)
+        return FitsKeywordManipulator(self.header[1:], on_extensions=True)
 
     @force_load
     def set_name(self, ext, name):
@@ -709,17 +905,8 @@ class FitsProvider(DataProvider):
             return [nd.data for nd in self._nddata]
 
     @data.setter
-    @force_load
     def data(self, value):
-        if not self._single:
-            raise ValueError("Trying to assign to a non-sliced AstroData object")
-        ext = self._nddata[0]
-        # Setting the ._data in the NDData is a bit kludgy, but we're all grown adults
-        # and know what we're doing, isn't it?
-        if hasattr(value, 'shape'):
-            ext._data = value
-        else:
-            raise AttributeError("Trying to assign data to be something with no shape")
+        raise ValueError("Trying to assign to a non-sliced AstroData object")
 
     @property
     @force_load
@@ -730,11 +917,8 @@ class FitsProvider(DataProvider):
             return [nd.uncertainty for nd in self._nddata]
 
     @uncertainty.setter
-    @force_load
     def uncertainty(self, value):
-        if not self._single:
-            raise ValueError("Trying to assign uncertainty to a non-sliced AstroData object")
-        self._nddata[0].uncertainty = value
+        raise ValueError("Trying to assign to a non-sliced AstroData object")
 
     @property
     @force_load
@@ -745,11 +929,8 @@ class FitsProvider(DataProvider):
             return [nd.mask for nd in self._nddata]
 
     @mask.setter
-    @force_load
     def mask(self, value):
-        if not self._single:
-            raise ValueError("Trying to assign mask to a non-sliced AstroData object")
-        self._nddata[0].mask = value
+        raise ValueError("Trying to assign to a non-sliced AstroData object")
 
     @property
     @force_load
@@ -764,14 +945,8 @@ class FitsProvider(DataProvider):
             return [variance_for(nd) for nd in self._nddata]
 
     @variance.setter
-    @force_load
     def variance(self, value):
-        if not self._single:
-            raise ValueError("Trying to assign variance to a non-sliced AstroData object")
-        if value is None:
-            self._nddata[0].uncertainty = None
-        else:
-            self._nddata[0].uncertainty = StdDevUncertainty(np.sqrt(value))
+        raise ValueError("Trying to assign to a non-sliced AstroData object")
 
     def _crop_nd(self, nd, x1, y1, x2, y2):
         nd.data = nd.data[y1:y2+1, x1:x2+1]
@@ -780,16 +955,20 @@ class FitsProvider(DataProvider):
         if nd.mask:
             nd.mask = nd.mask[y1:y2+1, x1:x2+1]
 
-    @force_load
-    def crop(self, x1, y1, x2, y2):
+    def _crop_impl(self, x1, y1, x2, y2, nds=None):
+        if nds is None:
+            nds = self.nddata
         # TODO: Consider cropping of objects in the meta section
-        for nd in self._nddata:
+        for nd in nds:
             dim = nd.data.shape
             self._crop_nd(nd, x1, y1, x2, y2)
             for o in nd.meta['other']:
                 if isinstance(o, NDData):
                     if o.shape == dim:
                         self._crop_nd(o)
+
+    def crop(self, x1, y1, x2, y2):
+        self._crop_impl(x1, y1, x2, y2)
 
     def _append(self, ext, name=None, add_to=None):
         self._lazy_populate_object()
@@ -846,17 +1025,13 @@ class FitsProvider(DataProvider):
             raise ValueError("Only one Primary HDU allowed")
 
         self._lazy_populate_object()
-        if self._sliced:
-            if not self._single:
-                # TODO: We could rethink this one, but leave it like that at the moment
-                raise TypeError("Can't append pixel planes to non-single slices")
-            elif name is None:
-                raise TypeError("Can't append pixel planes to a slice without an extension name")
-            target = self._nddata[0]
-        else:
-            target = None
 
-        return self._append(ext, name=name, add_to=target)
+        return self._append(ext, name=name, add_to=None)
+
+    def _extver_impl(self, nds=None):
+        if nds is None:
+            nds = self.nddata
+        return dict((nd._meta['ver'], n) for (n, nd) in enumerate(nds))
 
     def extver_map(self):
         """
@@ -872,9 +1047,7 @@ class FitsProvider(DataProvider):
         ValueError
             If used against a single slice. It is of no use in that situation.
         """
-        if self._single:
-            raise ValueError("Trying to get a mapping out of a single slice")
-        return dict((nd._meta['ver'], n) for (n, nd) in enumerate(self.nddata))
+        return self._extver_impl()
 
 class FitsLoader(object):
     @staticmethod
