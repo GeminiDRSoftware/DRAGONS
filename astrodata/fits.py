@@ -228,7 +228,7 @@ def normalize_indices(slc, nitems):
         raise ValueError("Invalid index: {}".format(slc))
 
     if any(i >= nitems for i in indices):
-        raise IndexError("Index {} out of range".format(i))
+        raise IndexError("Index out of range")
 
     return indices, multiple
 
