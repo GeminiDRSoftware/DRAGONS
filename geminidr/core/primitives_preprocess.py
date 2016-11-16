@@ -128,11 +128,9 @@ class Preprocess(PrimitivesBASE):
             ad_sky_list = [ad if isinstance(ad, astrodata.AstroData) else
                            astrodata.open(ad) for ad in ad_sky_list]
         else:
-            #TODO: What replaces this?
             # The separateSky primitive puts the sky AstroData objects in the
-            # sky stream. The get_stream function returns a list of AstroData
-            # objects when style="AD"
-            ad_sky_list = rc.get_stream(stream="sky", style="AD")
+            # sky stream.
+            ad_sky_list = self.streams['sky']
         
         if not self.adinputs or not ad_sky_list:
             log.warning("Cannot associate sky frames, since at least one "
@@ -210,7 +208,7 @@ class Preprocess(PrimitivesBASE):
                             delta_sky = math.sqrt(delta_x**2 + delta_y**2)
                             if (delta_sky > min_distance):
                                 #TODO: ADR issues again
-                                adr_sky_list.append(RCR.AstroDataRecord(ad_sky))
+                                adr_sky_list.append(ad_sky)
                                 delta_time_list.append(delta_time)
                                 
                     # Now cull the list of associated skies if necessary to
@@ -237,17 +235,15 @@ class Preprocess(PrimitivesBASE):
             # of the science and sky AstroData objects 
             self.adinputs = gt.finalise_adinput(self.adinputs,
                                     timestamp_key=timestamp_key, suffix=sfx)
-            
             ad_sky_output_list = gt.finalise_adinput(ad_sky_list,
                                     timestamp_key=timestamp_key, suffix=sfx)
             
-            # Add the association dictionary to the reduction context
-            #rc["sky_dict"] = sky_dict
+            # Store the association dictionary as an attribute of the class
+            self.sky_dict = sky_dict
         
         # Report the list of output sky AstroData objects to the sky stream in
         # the reduction context 
-        #rc.report_output(ad_sky_output_list, stream="sky")
-
+        self.streams['sky'] = ad_sky_output_list
         return
 
     def correctBackgroundToReferenceImage(self, adinputs=None,
@@ -887,18 +883,18 @@ class Preprocess(PrimitivesBASE):
         # of the science and sky AstroData objects 
         ad_sci_output_list = gt.finalise_adinput(ad_sci_list,
                     timestamp_key=timestamp_key, suffix=sfx, allow_empty=True)
-            
         ad_sky_output_list = gt.finalise_adinput(ad_sky_list,
                     timestamp_key=timestamp_key, suffix=sfx, allow_empty=True)
                
         # Report the list of output sky AstroData objects to the sky stream in
         # the reduction context
-        rc.report_output(ad_sky_output_list, stream="sky")
+        #rc.report_output(ad_sky_output_list, stream="sky")
         
         # Report the list of output science AstroData objects to the reduction
         # context
-        rc.report_output(ad_sci_output_list)
-        
+        #rc.report_output(ad_sci_output_list)
+        self.adinputs = ad_sci_output_list
+        self.streams['sky'] = ad_sky_output_list
         return
 
     def skyCorrect(self, adinputs=None, stream='main', **params):
@@ -966,30 +962,23 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         params = self.parameters.subtractSky
-
         sky_dict = {}
         
-        if rc["sky"]:
+        if 'sky' in params and params['sky']:
             # Use the list of sky frames provided by the user. Generate a
             # dictionary associating the input sky AstroData objects to the
             # input science AstroData objects.
-            sky = rc["sky"]
+            sky = params['sky']
             ad_science_list = self.adinputs
             for i, ad in enumerate(ad_science_list):
                 origname = ad.phu.get("ORIGNAME")
-                if len(sky) == 1:
-                    sky_dict.update({origname: sky[0]})
-                elif len(sky) == len(ad_science_list):
-                    
-                    sky_dict.update({origname: RCR.AstroDataRecord(sky[i])})
-                else:
-                    raise IOError("Number of input sky frames do not "
-                                       "match number of input science frames")
+                sky_dict.update({origname: sky[0] if len(sky)==1 else
+                                 sky[i]})
         else:
-            # The stackSkyFrames primitive puts the dictionary containing the
+            # The stackSkyFrames primitive makes the dictionary containing the
             # information associating the stacked sky frames to the science
-            # frames in the reduction context
-            sky_dict = rc["stacked_sky_dict"]
+            # frames an attribute of the PrimitivesClass
+            sky_dict = getattr(self, 'sky_dict', None)
             
         # Loop over each science AstroData object in the science list
         for ad_sci in self.adinputs:
@@ -1003,19 +992,19 @@ class Preprocess(PrimitivesBASE):
             # science AstroData object
             origname = ad_sci.phu.get("ORIGNAME")
             if origname in sky_dict:
-                ad_sky_for_correction = sky_dict[origname].ad
-                
-                # Subtract the sky from the input AstroData object
+                ad_sky = sky_dict[origname]
                 log.stdinfo("Subtracting the sky ({}) from the science "
                             "AstroData object {}".
-                            format(ad_sky_for_correction.filename,
-                               ad_sci.filename))
-                ad_sci.subtract(ad_sky_for_correction)
+                            format(ad_sky.filename, ad_sci.filename))
+                ad_sci.subtract(ad_sky)
             else:
-                # There is no appropriate sky for the intput AstroData object
                 log.warning("No changes will be made to {}, since no "
                             "appropriate sky could be retrieved".
                             format(ad_sci.filename))
+
+        #TODO: Confirm this is OK. We don't want to keep references to all
+        # those sky frames hanging around
+        del self.sky_dict
 
         # Add the appropriate time stamp to the PHU and update the filename
         # of the science and sky AstroData objects 
