@@ -268,24 +268,27 @@ class FitsProviderProxy(DataProvider):
             return self._provider._nddata[self._mapping[idx]]
 
     def __getattr__(self, attribute):
-        try:
-            # Check first if this is something we can get from the main object
+        if not attribute.startswith('_'):
             try:
-                return self._provider._getattr_impl(attribute, self._mapped_nddata())
+                # Check first if this is something we can get from the main object
+                # But only if it's not an internal attribute
+                try:
+                    return self._provider._getattr_impl(attribute, self._mapped_nddata())
+                except AttributeError:
+                    # Not a special attribute. Check the regular interface
+                    return getattr(self._provider, attribute)
             except AttributeError:
-                # Not a special attribute. Check the regular interface
-                return getattr(self._provider, attribute)
-        except AttributeError:
-            # Not found in the real Provider. Ok, if we're working with single
-            # slices, let's look some things up in the ND object
-            if self._single:
-                if attribute.isupper():
-                    try:
-                        return getattr(self._mapped_nddata(0), attribute)
-                    except AttributeError:
-                        # Not found. Will raise an exception...
-                        pass
-            raise AttributeError("{} not found in this object".format(attribute))
+                pass
+        # Not found in the real Provider. Ok, if we're working with single
+        # slices, let's look some things up in the ND object
+        if self._single:
+            if attribute.isupper():
+                try:
+                    return getattr(self._mapped_nddata(0), attribute)
+                except AttributeError:
+                    # Not found. Will raise an exception...
+                    pass
+        raise AttributeError("{} not found in this object".format(attribute))
 
     def __setattr__(self, attribute, value):
         def _my_attribute(attr):
