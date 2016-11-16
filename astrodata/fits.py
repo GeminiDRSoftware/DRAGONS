@@ -348,7 +348,7 @@ class FitsProviderProxy(DataProvider):
         if not self._single:
             raise ValueError("Trying to assign to an AstroData object that is not a single slice")
 
-        ext = self._mapped_nddata(0).data
+        ext = self._mapped_nddata(0)
         # Setting the ._data in the NDData is a bit kludgy, but we're all grown adults
         # and know what we're doing, isn't it?
         if hasattr(value, 'shape'):
