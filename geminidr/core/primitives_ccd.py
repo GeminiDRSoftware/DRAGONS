@@ -64,7 +64,8 @@ class CCD(PrimitivesBASE):
                     raise IOError('No processed bias listed for {}'.
                                   format(ad.filename))
 
-            bias = astrodata.open(bias_file)
+            bias = bias_file if isinstance(bias_file, astrodata.AstroData) \
+                    else astrodata.open(bias_file)
             try:
                 gt.check_inputs_match(ad, bias, check_filter=False)
             except ValueError:
@@ -116,7 +117,8 @@ class CCD(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
-            gireduce_task = gireduceeti.GireduceETI([], self.parameters.subtractOverscan, ad)
+            gireduce_task = gireduceeti.GireduceETI([],
+                                        self.parameters.subtractOverscan, ad)
             ad = gireduce_task.run()
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             adoutputs.append(ad)
