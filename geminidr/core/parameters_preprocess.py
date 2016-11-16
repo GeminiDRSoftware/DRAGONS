@@ -42,6 +42,9 @@ class ParametersPreprocess(ParametersBASE):
     subtractSky = {
         "suffix"            : "_skyCorrected",
     }
+    subtractSkyBackground = {
+        "suffix"            : "_skyBackgroundSubtracted",
+    }
     thresholdFlatfield = {
         "suffix"            : "_thresholdFlatfielded",
         "upper"             : 10.0,
