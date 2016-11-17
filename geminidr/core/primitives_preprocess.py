@@ -978,7 +978,7 @@ class Preprocess(PrimitivesBASE):
             # The stackSkyFrames primitive makes the dictionary containing the
             # information associating the stacked sky frames to the science
             # frames an attribute of the PrimitivesClass
-            sky_dict = getattr(self, 'sky_dict', None)
+            sky_dict = getattr(self, 'stacked_sky_dict')
             
         # Loop over each science AstroData object in the science list
         for ad_sci in self.adinputs:
