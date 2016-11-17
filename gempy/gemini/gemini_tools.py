@@ -575,11 +575,11 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
                 # Pull out specified data region:
                 if science_trimmed or aux_trimmed:
-                    clipped = ext_to_clip.nddata[region[0]:region[1],
+                    clipped = ext_to_clip[0].nddata[region[0]:region[1],
                                                 region[2]:region[3]]
 
                     # Where no overscan is needed, just use the data region:
-                    ext_to_clip.reset(clipped)
+                    ext_to_clip[0].reset(clipped)
 
                     # Pad trimmed aux arrays with zeros to match untrimmed
                     # science data:
@@ -757,11 +757,11 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
 
                 # Pull out specified data region:
                 if science_trimmed or aux_trimmed:
-                    clipped = ext_to_clip.nddata[region[0]:region[1],
+                    clipped = ext_to_clip[0].nddata[region[0]:region[1],
                               region[2]:region[3]]
 
                     # Where no overscan is needed, just use the data region:
-                    ext_to_clip.reset(clipped)
+                    ext_to_clip[0].reset(clipped)
 
                     # Pad trimmed aux arrays with zeros to match untrimmed
                     # science data:
