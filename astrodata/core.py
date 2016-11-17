@@ -146,6 +146,13 @@ class AstroData(object):
         self._dataprov = provider
         self._processing_tags = False
 
+    def __deepcopy__(self, memo):
+        # Force the data provider to load data, if needed
+        len(self._dataprov)
+        dp = deepcopy(self._dataprov, memo)
+        ad = self.__class__(dp)
+        return ad
+
     def __process_tags(self):
         try:
             # This prevents infinite recursion

@@ -1,5 +1,6 @@
 from types import StringTypes
 from abc import abstractmethod
+from copy import deepcopy
 from collections import defaultdict
 import os
 from functools import partial, wraps
@@ -247,6 +248,9 @@ class FitsProviderProxy(DataProvider):
             '_single': single
             })
 
+    def __deepcopy__(self, memo):
+        return self._provider._clone(mapping=self._mapping)
+
     def settable(self, attr):
         if attr in {'path', 'filename'}:
             return False
@@ -264,24 +268,27 @@ class FitsProviderProxy(DataProvider):
             return self._provider._nddata[self._mapping[idx]]
 
     def __getattr__(self, attribute):
-        try:
-            # Check first if this is something we can get from the main object
+        if not attribute.startswith('_'):
             try:
-                return self._provider._getattr_impl(attribute, self._mapped_nddata())
+                # Check first if this is something we can get from the main object
+                # But only if it's not an internal attribute
+                try:
+                    return self._provider._getattr_impl(attribute, self._mapped_nddata())
+                except AttributeError:
+                    # Not a special attribute. Check the regular interface
+                    return getattr(self._provider, attribute)
             except AttributeError:
-                # Not a special attribute. Check the regular interface
-                return getattr(self._provider, attribute)
-        except AttributeError:
-            # Not found in the real Provider. Ok, if we're working with single
-            # slices, let's look some things up in the ND object
-            if self._single:
-                if attribute.isupper():
-                    try:
-                        return getattr(self._mapped_nddata(0), attribute)
-                    except AttributeError:
-                        # Not found. Will raise an exception...
-                        pass
-            raise AttributeError("{} not found in this object".format(attribute))
+                pass
+        # Not found in the real Provider. Ok, if we're working with single
+        # slices, let's look some things up in the ND object
+        if self._single:
+            if attribute.isupper():
+                try:
+                    return getattr(self._mapped_nddata(0), attribute)
+                except AttributeError:
+                    # Not found. Will raise an exception...
+                    pass
+        raise AttributeError("{} not found in this object".format(attribute))
 
     def __setattr__(self, attribute, value):
         def _my_attribute(attr):
@@ -481,6 +488,20 @@ class FitsProvider(DataProvider):
                 'filename'
                 ])
             })
+
+    @force_load
+    def _clone(self, mapping=None):
+        if mapping is None:
+            mapping = range(len(self))
+
+        dp = FitsProvider()
+        dp._header = [deepcopy(self._header[0])]
+        for n in mapping:
+            dp.append(self._nddata[n])
+        for t in self._tables.values():
+            dp.append(t)
+
+        return dp
 
     def settable(self, attr):
         return attr in self._fixed_settable or attr.isupper()
@@ -830,11 +851,16 @@ class FitsProvider(DataProvider):
                     hdulist = FitsLoader._prepare_hdulist(fits.open(self.path))
                 else:
                     hdulist = self._hdulist
-                # We need to replace the headers, to make sure that we don't end
-                # up with different objects in self._headers and elsewhere
-                self._set_headers(hdulist, update=True)
-                self._reset_members(hdulist)
-                self._hdulist = None
+                # Make sure that we have an HDUList to work with. Maybe we're creating
+                # an object from scratch
+                if hdulist is not None:
+                    # We need to replace the headers, to make sure that we don't end
+                    # up with different objects in self._headers and elsewhere
+                    self._set_headers(hdulist, update=True)
+                    self._reset_members(hdulist)
+                    self._hdulist = None
+                else:
+                    self._nddata = []
             finally:
                 self._resetting = prev_reset
 
@@ -990,6 +1016,9 @@ class FitsProvider(DataProvider):
                 setattr(add_to, hname, tb)
                 add_to.meta['other'].append(hname)
             return tb
+        elif isinstance(ext, NDDataObject):
+            self._header.append(ext.meta['hdu'])
+            self._nddata.append(deepcopy(ext))
         else: # Assume that this is a pixel plane
 
             # Special cases for Gemini
