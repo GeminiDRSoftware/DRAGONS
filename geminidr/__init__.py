@@ -32,7 +32,7 @@ from gemini.lookups import timestamp_keywords
 from gemini.lookups.source_detection import sextractor_default_dict
 
 from recipe_system.utils.decorators import parameter_override
-
+from recipe_system.cal_service import caches
 # ------------------------------------------------------------------------------
 @parameter_override
 class PrimitivesBASE(object):
@@ -58,34 +58,8 @@ class PrimitivesBASE(object):
         self.sx_default_dict  = sextractor_default_dict.sextractor_default_dict
 
         self.streams          = {}
-        self.cachedir         = './.reducecache/'
-        self.stacks           = self.load_cache('stkindex.pkl')
+        self.cachedict        = caches.set_caches()
+        self.stacks           = caches.load_cache(caches.stkindfile)
 
         # This lambda will return the name of the current caller.
         self.myself           = lambda: stack()[1][3]
-
-
-    def load_cache(self, filename):
-        """
-        Tries to load a cached, pickled object. Also creates the cache
-        directory if it doesn't exist
-
-        Parameters
-        ----------
-        filename: str
-            name of the file in the cache directory
-
-        Returns
-        -------
-        dict:
-            the unpickled contents of the file
-        """
-        if not os.path.exists(self.cachedir):
-            os.mkdir(self.cachedir)
-        cachefile = os.path.join(self.cachedir, filename)
-        if os.path.exists(cachefile):
-            try:
-                return pickle.load(open(cachefile, 'r'))
-            except:
-                pass
-        return {}

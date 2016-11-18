@@ -2,6 +2,7 @@
 #                                                                      caches.py
 # ------------------------------------------------------------------------------
 import os
+import pickle
 
 # GLOBAL/CONSTANTS (could be exported to config file)
 # [DEFAULT]
@@ -26,3 +27,12 @@ def set_caches():
             os.makedirs(cachedir)
         cachedict.update({cachename:cachedir})
     return cachedict
+
+def load_cache(cachefile):
+    if os.path.exists(cachefile):
+        return pickle.load(open(cachefile, 'r'))
+    else:
+        return {}
+
+def save_cache(object, cachefile):
+    pickle.dump(object, open(cachefile, 'wb'))

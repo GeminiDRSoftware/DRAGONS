@@ -12,6 +12,7 @@ from geminidr import PrimitivesBASE
 from .parameters_bookkeeping import ParametersBookkeeping
 
 from recipe_system.utils.decorators import parameter_override
+from recipe_system.cal_service import caches
 # ------------------------------------------------------------------------------
 @parameter_override
 class Bookkeeping(PrimitivesBASE):
@@ -55,8 +56,7 @@ class Bookkeeping(PrimitivesBASE):
             except KeyError:
                 self.stacks[_stackid(purpose, ad)] = set([ad.filename])
 
-        pickle.dump(self.stacks, open(os.path.join(self.cachedir,
-                                                    'stkindex.pkl'), 'wb'))
+        caches.save_cache(self.stacks, caches.stkindfile)
         return
 
     def getList(self, adinputs=None, stream='main', **params):
@@ -75,10 +75,10 @@ class Bookkeeping(PrimitivesBASE):
             name of stream to which this list will be reported
         """
         log = self.log
-        params = self.parameters.getList
-        purpose = params.get('purpose', '')
-        max_frames = params['max_frames']
-        stream = params.get('to_stream', 'main')
+        pars = self.parameters.getList
+        purpose = pars.get('purpose', '')
+        max_frames = pars['max_frames']
+        stream = pars.get('to_stream', 'main')
         stream_list = self.streams[stream] if stream!='main' else self.adinputs
 
         # Get ID for all inputs; use a set to avoid duplication
@@ -167,17 +167,17 @@ class Bookkeeping(PrimitivesBASE):
             new filename (applicable only if there's one file to be written)
         """
         log = self.log
-        params = self.parameters.writeOutputs
-        sfx = params['suffix']
-        pfx = params['prefix']
-        outfilename = params['outfilename']
+        pars = self.parameters.writeOutputs
+        sfx = pars['suffix']
+        pfx = pars['prefix']
+        outfilename = pars['outfilename']
         log.fullinfo("suffix = {}".format(sfx))
         log.fullinfo("prefix = {}".format(pfx))
         
         for ad in self.adinputs:
             if sfx or pfx:
                 ad.filename = gt.filename_updater(adinput=ad,
-                                prefix=pfx, suffix=sfx, strip=params["strip"])
+                                prefix=pfx, suffix=sfx, strip=pars["strip"])
                 log.fullinfo("File name updated to {}".format(ad.filename))
                 outfilename = ad.filename
             elif outfilename:
@@ -197,7 +197,7 @@ class Bookkeeping(PrimitivesBASE):
             
             # Finally, write the file to the name that was decided upon
             log.stdinfo("Writing to file {}".format(outfilename))
-            ad.write(filename=outfilename, clobber=params["clobber"])
+            ad.write(filename=outfilename, clobber=pars["clobber"])
 
         return
 
