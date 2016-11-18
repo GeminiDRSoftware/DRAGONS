@@ -71,9 +71,8 @@ def upload_calibration(filename):
 
 def calibration_search(rq, return_xml=False):
     """
-    Recieves a CalibrationRequest object, encodes the data and make the
-    request on the appropriate server. Returns a URL, if any, and the MD%
-    hash checksum.
+    Recieves a CalibrationRequest object, encodes the data and make the request
+    on the appropriate server. Returns a URL, if any, and the MD5 hash checksum.
 
     :parameter rq: CalibrationRequest obj
     :type rq: <CalibrationRequest object>
