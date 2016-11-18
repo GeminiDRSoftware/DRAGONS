@@ -11,6 +11,7 @@ class ParametersPreprocess(ParametersBASE):
         "suffix"   : "_skyAssociated",
         "time"     : 600.,
         "distance" : 3.,
+        "max_skies": None,
         "use_all"  : False,
     }
     correctBackgroundToReferenceImage = {
@@ -22,6 +23,9 @@ class ParametersPreprocess(ParametersBASE):
     divideByFlat = {
         "suffix"            : "_flatCorrected",
         "flat"              : None,
+    }
+    makeSky = {
+        "max_skies"         : None,
     }
     nonlinearityCorrect = {
         "suffix"            : "_nonlinearityCorrected",

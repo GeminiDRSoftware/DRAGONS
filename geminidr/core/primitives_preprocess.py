@@ -113,16 +113,16 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        params = self.parameters.associateSky
-        sfx = params["suffix"]
-        max_skies = params["max_skies"]
-        min_distance = params["distance"]
+        pars = self.parameters.associateSky
+        sfx = pars["suffix"]
+        max_skies = pars["max_skies"]
+        min_distance = pars["distance"]
 
         # Create a timedelta object using the value of the "time" parameter
-        seconds = datetime.timedelta(seconds=params["time"])
+        seconds = datetime.timedelta(seconds=pars["time"])
 
-        sky = params["sky"]
-        if sky:
+        if 'sky' in pars and pars['sky']:
+            sky = pars['sky']
             # Produce a list of AD objects from the sky frame/list
             ad_sky_list = sky if isinstance(sky, list) else [sky]
             ad_sky_list = [ad if isinstance(ad, astrodata.AstroData) else
@@ -160,7 +160,7 @@ class Preprocess(PrimitivesBASE):
                 # Determine the sky AstroData objects that are associated with
                 # this science AstroData object. Initialize the list of sky
                 # AstroDataRecord objects
-                adr_sky_list = []
+                this_sky_list = []
                 # Since there are no timestamps in these records, keep a list
                 # of time offsets in case we need to limit the number of skies
                 delta_time_list = []
@@ -171,7 +171,7 @@ class Preprocess(PrimitivesBASE):
                 
                 # If use_all is True, use all of the sky AstroData objects for
                 # each science AstroData object
-                if params["use_all"]:
+                if pars["use_all"]:
                     log.stdinfo("Associating all available sky AstroData "
                                  "objects with {}" .format(ad_sci.filename))
 
@@ -207,28 +207,27 @@ class Preprocess(PrimitivesBASE):
                             delta_y = ad_sci.y_offset() - ad_sky.y_offset()
                             delta_sky = math.sqrt(delta_x**2 + delta_y**2)
                             if (delta_sky > min_distance):
-                                #TODO: ADR issues again
-                                adr_sky_list.append(ad_sky)
+                                this_sky_list.append(ad_sky)
                                 delta_time_list.append(delta_time)
                                 
                     # Now cull the list of associated skies if necessary to
                     # those closest in time to the sceince observation
-                    if max_skies is not None and len(adr_sky_list) > max_skies:
-                        sorted_list = sorted(zip(delta_time_list, adr_sky_list))
-                        adr_sky_list = [x[1] for x in sorted_list[:max_skies]]
-                    
+                    if max_skies is not None and len(this_sky_list) > max_skies:
+                        sorted_list = sorted(zip(delta_time_list, this_sky_list))
+                        this_sky_list = [x[1] for x in sorted_list[:max_skies]]
+
                     # Update the dictionary with the list of sky
                     # AstroDataRecord objects associated with this science
                     # AstroData object
-                    sky_dict.update({origname: adr_sky_list})
+                    sky_dict.update({origname: this_sky_list})
                 
                 if not sky_dict[origname]:
                     log.warning("No sky frames available for {}".format(origname))
                 else:
                     log.stdinfo("The sky frames associated with {} are:".
                                  format(origname))
-                    for adr_sky in sky_dict[origname]:
-                        log.stdinfo("  {}".format(adr_sky.ad.filename))
+                    for ad_sky in sky_dict[origname]:
+                        log.stdinfo("  {}".format(ad_sky.filename))
 
             #TODO: Sort this out!
             # Add the appropriate time stamp to the PHU and change the filename
@@ -264,9 +263,9 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        params = getattr(self.parameters, self.myself())
-        sfx = params["suffix"]
-        remove_zero_level = params["remove_zero_level"]
+        pars = getattr(self.parameters, self.myself())
+        sfx = pars["suffix"]
+        remove_zero_level = pars["remove_zero_level"]
 
         ref_bg = None
 
@@ -395,9 +394,10 @@ class Preprocess(PrimitivesBASE):
         self.divideByFlat()
 
     def makeSky(self, adinputs=None, stream='main', **params):
-        self.separateSky()
-        self.associateSky()
-        self.stackSkyFrames()
+        pars = self.parameters.makeSky
+        self.separateSky(**pars)
+        self.associateSky(**pars)
+        self.stackSkyFrames(**pars)
         #self.makeMaskedSky()
 
     def nonlinearityCorrect(self, adinputs=None, stream='main', **params):
@@ -487,10 +487,10 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        params = self.parameters.thresholdFlatfield
-        sfx = params["suffix"]
-        lower = params["lower"]
-        upper = params["upper"]
+        pars = self.parameters.thresholdFlatfield
+        sfx = pars["suffix"]
+        lower = pars["lower"]
+        upper = pars["upper"]
 
         for ad in self.adinputs:
             if ad.phu.get(timestamp_key):
@@ -655,21 +655,21 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        params = self.parameters.separateSky
-        sfx = params["suffix"]
+        pars = self.parameters.separateSky
+        sfx = pars["suffix"]
 
         # Allow tweaking what size of offset, as a fraction of the field
         # dimensions, is considered to move a target out of the field in
         # gt.group_exposures(). If we want to check this parameter value up
         # front I'm assuming the infrastructure will do that at some point.
-        frac_FOV = params["frac_FOV"]
+        frac_FOV = pars["frac_FOV"]
 
         # Get optional user-specified lists of object or sky filenames, to
         # assist with classifying groups as one or the other. Currently
         # primitive parameters have no concept of lists so we parse a string
         # argument here. As of March 2014 this only works with "reduce2":
-        ref_obj = params["ref_obj"].split(',')
-        ref_sky = params["ref_sky"].split(',')
+        ref_obj = pars["ref_obj"].split(',')
+        ref_sky = pars["ref_sky"].split(',')
         if ref_obj == ['']: ref_obj = []
         if ref_sky == ['']: ref_sky = []
 
@@ -961,14 +961,14 @@ class Preprocess(PrimitivesBASE):
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
-        params = self.parameters.subtractSky
+        pars = self.parameters.subtractSky
         sky_dict = {}
         
-        if 'sky' in params and params['sky']:
+        if 'sky' in pars and pars['sky']:
             # Use the list of sky frames provided by the user. Generate a
             # dictionary associating the input sky AstroData objects to the
             # input science AstroData objects.
-            sky = params['sky']
+            sky = pars['sky']
             ad_science_list = self.adinputs
             for i, ad in enumerate(ad_science_list):
                 origname = ad.phu.get("ORIGNAME")
@@ -1009,7 +1009,7 @@ class Preprocess(PrimitivesBASE):
         # Add the appropriate time stamp to the PHU and update the filename
         # of the science and sky AstroData objects 
         self.adinputs = gt.finalise_adinput(adinput=self.adinputs,
-                    timestamp_key=timestamp_key, suffix=params["suffix"])
+                    timestamp_key=timestamp_key, suffix=pars["suffix"])
         return
 
     def subtractSkyBackground(self, adinputs=None, stream='main', **params):
