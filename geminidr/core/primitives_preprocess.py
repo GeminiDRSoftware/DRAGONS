@@ -424,15 +424,16 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = self.parameters.divideByFlat["suffix"]
 
-        for ad, flat_file in zip(*gt.make_lists(self.adinputs,
-                                           self.parameters.divideByFlat["flat"])):
+        # Provide a flatfield AD object for every science frame
+        for ad, flat in zip(*gt.make_lists(self.adinputs,
+                        self.parameters.divideByFlat["flat"], force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by divideByFlat".
                             format(ad.filename))
                 continue
 
-            if flat_file is None:
+            if flat is None:
                 if 'qa' in self.context:
                     log.warning("No changes will be made to {}, since no "
                                 "flatfield has been specified".
@@ -442,7 +443,6 @@ class Preprocess(PrimitivesBASE):
                     raise IOError("No processed flat listed for {}".
                                    format(ad.filename))
 
-            flat = astrodata.open(flat_file)
             # Check the inputs have matching filters, binning, and shapes
             try:
                 gt.check_inputs_match(ad, flat)
@@ -1006,21 +1006,20 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = self.parameters.subtractDark["suffix"]
         
-        #TODO? Assume we're getting filenames, rather than AD instances
-        for ad, dark_file in zip(*gt.make_lists(self.adinputs,
-                                    self.parameters.subtractDark["dark"])):
+        # Provide a dark AD object for every science frame
+        for ad, dark in zip(*gt.make_lists(self.adinputs,
+                        self.parameters.subtractDark["dark"], force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by subtractDark".
                             format(ad.filename))
                 continue
             
-            if dark_file is None:
+            if dark is None:
                 log.warning("No changes will be made to {}, since no "
                             "adark was specified".format(ad.filename))
                 continue
 
-            dark = astrodata.open(dark_file)
             log.fullinfo("Subtracting the dark ({}) from the input "
                          "AstroData object {}".
                          format(dark.filename, ad.filename))

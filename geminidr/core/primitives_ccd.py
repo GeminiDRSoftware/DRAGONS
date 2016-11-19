@@ -47,15 +47,15 @@ class CCD(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = self.parameters.subtractBias["suffix"]
 
-        #TODO? Assume we're getting filenames, rather than AD instances
-        for ad, bias_file in zip(*gt.make_lists(self.adinputs,
-                                    self.parameters.subtractBias["bias"])):
+        # Provide a bias AD object for every science frame
+        for ad, bias in zip(*gt.make_lists(self.adinputs,
+                        self.parameters.subtractBias["bias"], force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by subtractBias".
                             format(ad.filename))
 
-            if bias_file is None:
+            if bias is None:
                 if 'qa' in self.context:
                     log.warning("No changes will be made to {}, since no "
                                 "bias was specified".format(ad.filename))
@@ -64,8 +64,6 @@ class CCD(PrimitivesBASE):
                     raise IOError('No processed bias listed for {}'.
                                   format(ad.filename))
 
-            bias = bias_file if isinstance(bias_file, astrodata.AstroData) \
-                    else astrodata.open(bias_file)
             try:
                 gt.check_inputs_match(ad, bias, check_filter=False)
             except ValueError:
