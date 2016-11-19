@@ -29,7 +29,36 @@ class Preprocess(PrimitivesBASE):
                                          uparms=uparms)
         self.parameters = ParametersPreprocess
 
-    
+    def addObjectMaskToDQ(self, adinputs=None, stream='main', **params):
+        """
+        This primitive combines the object mask in a OBJMASK extension
+        into the DQ plane.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        sfx = self.parameters.addObjectMaskToDQ["suffix"]
+        for ad in self.adinputs:
+            for ext in ad:
+                if getattr(ext, 'OBJMASK', None):
+                    if ext.mask is None:
+                        ext.mask = deepcopy(ext.OBJMASK)
+                    else:
+                        # CJS: This probably shouldn't just be dumped into
+                        # the 1-bit
+                        ext.mask |= ext.OBJMASK
+                else:
+                    log.warning('No object mask present for {}:{}; cannot '
+                                'apply object mask'.format(ad.filename,
+                                                           ext.hdr.EXTVER))
+            ad.filename = gt.filename_updater(ad, suffix=sfx, strip=True)
+        return
+
     def ADUToElectrons(self, adinputs=None, stream='main', **params):
         """
         This primitive will convert the units of the pixel data extensions
@@ -71,6 +100,63 @@ class Preprocess(PrimitivesBASE):
 
         return
     
+    def applyDQPlane(self, adinputs=None, stream='main', **params):
+        """
+        This primitive sets the value of pixels in the science plane according
+        to flags from the DQ plane.
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        replace_flags: int
+            The DQ bits, of which one needs to be set for a pixel to be replaced
+        replace_value: str/float
+            "median" or "average" to replace with that value of the good pixels,
+            or a value
+        """
+        log = self.log
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
+        pars = self.parameters.applyDQPlane
+        replace_flags = pars["replace_flags"]
+        replace_value = pars["replace_value"]
+
+        flag_list = [int(math.pow(2,i)) for i,digit in
+                enumerate(str(bin(replace_flags))[2:][::-1]) if digit=='1']
+        log.stdinfo("The flags {} will be applied".format(flag_list))
+
+        for ad in self.adinputs:
+            for ext in ad:
+                if ext.mask is None:
+                    log.warning("No DQ plane exists for {}:{}, so the correction "
+                                "cannot be applied".format(ad.filename,
+                                                           ext.hdr.EXTVER))
+                    continue
+
+                if replace_value in ['median', 'average']:
+                    oper = getattr(np, replace_value)
+                    rep_value = oper(ext.data[ext.mask & replace_flags == 0])
+                    log.fullinfo("Replacing bad pixels in {}:{} with the {} "
+                                 "of the good data".format(ad.filename,
+                                            ext.hdr.EXTVER, replace_value))
+                else:
+                    try:
+                        rep_value = float(replace_value)
+                        log.fullinfo("Replacing bad pixels in {}:{} with the "
+                                     "user value {}".format(ad.filename,
+                                           ext.hdr.EXTVER, rep_value))
+                    except:
+                        log.warning("Value for replacement should be 'median', "
+                                    "'average', or a number")
+                        continue
+
+                ext.data[ext.mask & replace_flags != 0] = rep_value
+
+            gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
+            ad.filename = gt.filename_updater(ad, suffix=pars["suffix"], strip=True)
+        return
+
     def associateSky(self, adinputs=None, stream='main', **params):
         """
         This primitive determines which sky AstroData objects are associated

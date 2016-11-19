@@ -4,15 +4,23 @@
 from geminidr import ParametersBASE
 
 class ParametersPreprocess(ParametersBASE):
+    addObjectMaskToDQ = {
+        "suffix"            : "_objectMaskAdded",
+    }
     ADUToElectrons = {
-        "suffix": "_ADUToElectrons"
+        "suffix"            : "_ADUToElectrons",
+    }
+    applyDQPlane = {
+        "suffix"            : "_dqPlaneApplied",
+        "replace_flags"     : 255,
+        "replace_value"     : "median",
     }
     associateSky = {
-        "suffix"   : "_skyAssociated",
-        "time"     : 600.,
-        "distance" : 3.,
-        "max_skies": None,
-        "use_all"  : False,
+        "suffix"            : "_skyAssociated",
+        "time"              : 600.,
+        "distance"          : 3.,
+        "max_skies"         : None,
+        "use_all"           : False,
     }
     correctBackgroundToReferenceImage = {
         "suffix"            : "_backgroundCorrected",
