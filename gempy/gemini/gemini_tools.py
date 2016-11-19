@@ -1555,7 +1555,7 @@ def make_dict(key_list=None, value_list=None):
     
     return ret_dict
 
-def make_lists(key_list=None, value_list=None):
+def make_lists(key_list=None, value_list=None, force_ad=False):
     """
     The make_list function returns two lists, one of the keys and one of the
     values. It ensures that both inputs are made into lists if they weren't
@@ -1568,6 +1568,8 @@ def make_lists(key_list=None, value_list=None):
         the keys for the dict
     value_list: list of AstroData objects
         the values for the dict
+    force_ad: bool
+        coerce strings into AD objects?
 
     Returns
     -------
@@ -1579,6 +1581,11 @@ def make_lists(key_list=None, value_list=None):
         key_list = [key_list]
     if not isinstance(value_list, list):
         value_list = [value_list]
+    if force_ad:
+        key_list = [astrodata.open(x) if isinstance(x, str) else x
+                    for x in key_list]
+        value_list = [astrodata.open(x) if isinstance(x, str) else x
+                    for x in value_list]
     # We allow only one value that can be assigned to multiple keys
     if len(value_list) == 1:
         value_list *= len(key_list)
