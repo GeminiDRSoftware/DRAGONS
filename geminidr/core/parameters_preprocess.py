@@ -1,5 +1,5 @@
 # This parameter file contains the parameters related to the primitives located
-# in the primitives_GEMINI.py file, in alphabetical order.
+# in the primitives_preprocess.py file, in alphabetical order.
 
 from geminidr import ParametersBASE
 
