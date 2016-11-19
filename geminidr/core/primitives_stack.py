@@ -14,9 +14,7 @@ from recipe_system.utils.decorators import parameter_override
 @parameter_override
 class Stack(PrimitivesBASE):
     """
-    This is the class containing all of the primitives for the GEMINI level of
-    the type hierarchy tree. It inherits all the primitives from the level
-    above, 'GENERALPrimitives'.
+    This is the class containing all of the primitives for stacking.
     """
     tagset = set(["GEMINI"])
 
@@ -65,24 +63,21 @@ class Stack(PrimitivesBASE):
         New variance extensions are created from the stacked science extensions
         and the data quality extensions are propagated through to the final
         file.
-        
-        :param operation: type of combining operation to use.
-        :type operation: string, options: 'average', 'median'.
-        
-        :param reject_method: type of rejection algorithm
-        :type reject_method: string, options: 'avsigclip', 'minmax', None
-        
-        :param mask: Use the data quality extension to mask bad pixels?
-        :type mask: bool
-        
-        :param nlow: number of low pixels to reject (used with
-                     reject_method=minmax)
-        :type nlow: int
-        
-        :param nhigh: number of high pixels to reject (used with
-                      reject_method=minmax)
-        :type nhigh: int
-        
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        mask: bool
+            apply mask to data before combining?
+        nhigh: int
+            number of high pixels to reject
+        nlow: int
+            number of low pixels to reject
+        operation: str
+            combine method
+        reject_method: str
+            type of pixel rejection (passed to gemcombine)
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -165,16 +160,12 @@ class Stack(PrimitivesBASE):
             ad.phu.GAIN = gain_list[0]
             ad.phu.RDNOISE = read_noise_list[0]
 
-            # Add suffix to the datalabel to distinguish from the reference
-            # frame 
+            # Add suffix to datalabel to distinguish from the reference frame
             ad.phu.DATALAB = "{}{}".format(ad.phu.DATALAB, sfx)
             
-            # Add the appropriate time stamps to the PHU
+            # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
-            
-            # Change the filename
-            ad.filename = gt.filename_updater(adinput=ad,
-                                                     suffix=sfx, strip=True)
+            ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
             adoutputs.append(ad)
 
         # Reset inputs to the ETI outputs
@@ -187,6 +178,21 @@ class Stack(PrimitivesBASE):
         determined from the self.sky_dict attribute previously set) by
         calling stackFrames and then attaches AD objects of the stacked sky
         frames to each science frame via the self.stacked_sky_dict attribute
+
+        Parameters
+        ----------
+        suffix: str
+            suffix to be added to output files
+        mask: bool
+            apply mask to data before combining?
+        nhigh: int
+            number of high pixels to reject
+        nlow: int
+            number of low pixels to reject
+        operation: str
+            combine method
+        reject_method: str
+            type of pixel rejection (passed to gemcombine)
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
@@ -253,14 +259,11 @@ class Stack(PrimitivesBASE):
                         log.stdinfo("  {}".format(ad_sky.filename))
                         ad_sky_to_stack_list.append(ad_sky)
 
+                    # Stack the skies by creating a new primitivesClass instance
                     p = self.__class__(ad_sky_to_stack_list, self.context)
                     p.showInputs()
                     p.stackFrames(**pars)
                     p.showInputs()
-
-                    # Get the stacked sky AstroData object from the forStack
-                    # stream and empty the forStack stream, in preparation for
-                    # creating the next stacked sky AstroData object
                     ad_stacked_sky_list = p.adinputs
 
                     # Add the sky to be used to correct this science AstroData
@@ -268,7 +271,7 @@ class Stack(PrimitivesBASE):
                     if len(ad_stacked_sky_list) == 1:
                         ad_stacked_sky = ad_stacked_sky_list[0]
 
-                        # Add the appropriate time stamps to the PHU
+                        # Add the appropriate time stamp to the PHU
                         gt.mark_history(adinput=ad_stacked_sky,
                                         primname=self.myself(),
                                         keyword=timestamp_key)
@@ -276,9 +279,7 @@ class Stack(PrimitivesBASE):
                         ad_sky_for_correction_output_list.append(
                           ad_stacked_sky)
 
-                        # Update the dictionary with the stacked sky
-                        # AstroDataRecord object associated with this science
-                        # AstroData object
+                        # Update the dictionary with the stacked sky AD object
                         stacked_sky_dict.update({origname: ad_stacked_sky})
                     else:
                         log.warning("Problem with stacking")
@@ -292,6 +293,7 @@ class Stack(PrimitivesBASE):
         # Add the association dictionary to the reduction context
         self.stacked_sky_dict = stacked_sky_dict
 
+        #TODO: This list doesn't seem to be picked up anywhere else
         # Report the list of output stacked sky AstroData objects to the
         # forSkyCorrection stream in the reduction context
         # rc.report_output(
