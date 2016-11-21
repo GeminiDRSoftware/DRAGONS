@@ -55,7 +55,7 @@ def _get_bias_level(adinput=None):
 
     bias_level = []
     
-    if overscan_sections is not None:
+    if overscans is not None:
         # The type of CCD determines the number of contaminated columns in the
         # overscan region. Get the pretty detector name value using the
         # appropriate descriptor.
