@@ -9,7 +9,6 @@ from recipe_system.utils.decorators import parameter_override
 class Image(PrimitivesBASE):
     """
     This is the class containing the generic imaging primitives.
-    (They're not actually very generic)
     """
     tagset = set(["GEMINI", "IMAGE"])
 
@@ -19,48 +18,19 @@ class Image(PrimitivesBASE):
         self.parameters = ParametersImage
 
     def fringeCorrect(self, adinputs=None, stream='main', **params):
-        """
-        """
-        pass
+        self.getProcessedFringe()
+        self.subtractFringe()
 
     def makeFringe(self, adinputs=None, stream='main', **params):
-        """
-        Parameters
-        ----------
-        subtract_median_image: str
-        """
         pass
 
     def makeFringeFrame(self, adinputs=None, stream='main', **params):
-        """
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        operation: str
-        reject_method: str
-        subtract_median_image: bool
-        """
         pass
 
     def scaleByIntensity(self, adinputs=None, stream='main', **params):
-        """
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        """
         pass
 
     def scaleFringeToScience(self, adinputs=None, stream='main', **params):
-        """
-        Parameters
-        ----------
-        suffix: str
-            suffix to be added to output files
-        science: str
-        stats_scale: bool
-        """
         pass
 
     def subtractFringe(self, adinputs=None, stream='main', **params):
