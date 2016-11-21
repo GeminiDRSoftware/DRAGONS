@@ -28,18 +28,26 @@ class Visualize(PrimitivesBASE):
 
     def display(self, adinputs=None, stream='main', **params):
         """
-        Displays an image
+        Displays an image on the ds9 display, using multiple frames if
+        there are multiple extensions. Saturated pixels can be displayed
+        in red, and overlays can also be shown
 
         Parameters
         ----------
         extname: str
+            'SCI', 'VAR', or 'DQ': plane to display
         frame: int
+            starting frame for display
         ignore: bool
             setting to True turns off the display
         remove_bias: bool
-        threshold: str
+            attempt to subtract bias before displaying?
+        threshold: str='auto'/float
+            level above which to flag pixels as saturated
         tile: bool
+            attempt to tile arrays before displaying?
         zscale: bool
+            use zscale algorithm?
         """
         log = self.log
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
