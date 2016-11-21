@@ -2,7 +2,6 @@ import astrodata
 import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 from geminidr.gemini.lookups import DQ_definitions as DQ
-from gempy.gemini import eti
 try:
     from stsci import numdisplay as nd
 except ImportError:
