@@ -10,7 +10,7 @@ class Image(PrimitivesBASE):
     """
     This is the class containing the generic imaging primitives.
     """
-    tagset = set(["GEMINI", "IMAGE"])
+    tagset = set(["IMAGE"])
 
     def __init__(self, adinputs, context, ucals=None, uparms=None):
         super(Image, self).__init__(adinputs, context, ucals=ucals,

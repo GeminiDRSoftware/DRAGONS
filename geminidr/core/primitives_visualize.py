@@ -19,7 +19,7 @@ class Visualize(PrimitivesBASE):
     """
     This is the class containing the visualization primitives.
     """
-    tagset = set(["GEMINI"])
+    tagset = None
 
     def __init__(self, adinputs, context, ucals=None, uparms=None):
         super(Visualize, self).__init__(adinputs, context, ucals=ucals,

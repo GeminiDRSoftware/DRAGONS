@@ -14,7 +14,7 @@ class CCD(PrimitivesBASE):
     This is the class containing all of the primitives used for generic CCD
     reduction.
     """
-    tagset = set(["GEMINI"])
+    tagset = None
 
     def __init__(self, adinputs, context, ucals=None, uparms=None):
         super(CCD, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)

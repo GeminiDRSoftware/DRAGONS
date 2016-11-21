@@ -21,7 +21,7 @@ class Bookkeeping(PrimitivesBASE):
     for the GEMINI level of the type hierarchy tree. It inherits all
     the primitives from the level above
     """
-    tagset = set(["GEMINI"])
+    tagset = None
 
     def __init__(self, adinputs, context, ucals=None, uparms=None):
         super(Bookkeeping, self).__init__(adinputs, context, ucals=ucals,

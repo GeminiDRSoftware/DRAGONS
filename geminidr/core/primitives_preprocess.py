@@ -22,7 +22,7 @@ class Preprocess(PrimitivesBASE):
     for the GEMINI level of the type hierarchy tree. It inherits all
     the primitives from the level above, 'GENERALPrimitives'.
     """
-    tagset = set(["GEMINI"])
+    tagset = None
 
     def __init__(self, adinputs, context, ucals=None, uparms=None):
         super(Preprocess, self).__init__(adinputs, context, ucals=ucals,

@@ -24,7 +24,7 @@ class Standardize(PrimitivesBASE):
     AstroData object.
 
     """
-    tagset = set(["GEMINI"])
+    tagset = None
 
     def __init__(self, adinputs, context, ucals=None, uparms=None):
         super(Standardize, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)
