@@ -275,7 +275,8 @@ class AstroData(object):
         self._dataprov.append(extension)
 
     def operate(self, operator, *args, **kwargs):
-        for ext in self:
+        # Ensure we can iterate, even on a single slice
+        for ext in [self] if self._single else self:
             ext.data = operator(ext.data, *args, **kwargs)
             if ext.mask is not None:
                 ext.mask = operator(ext.mask, *args, **kwargs)
