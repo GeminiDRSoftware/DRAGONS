@@ -35,7 +35,7 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize):
         timestamp_key = self.timestamp_keys[self.myself()]
         pars = getattr(self.parameters, self.myself())
 
-        for ad in self.adinputs:
+        for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by standardize"
@@ -53,4 +53,4 @@ class Gemini(Standardize, Bookkeeping, Preprocess, Visualize):
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(ad, suffix=pars["suffix"], strip=True)
-        return
+        return adinputs
