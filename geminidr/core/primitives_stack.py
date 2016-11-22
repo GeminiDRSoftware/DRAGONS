@@ -262,7 +262,6 @@ class Stack(PrimitivesBASE):
                     # Stack the skies by creating a new primitivesClass instance
                     p = self.__class__(ad_sky_to_stack_list, self.context)
                     p.showInputs()
-                    print "***", [ad.filename for ad in p.adinputs]
                     p.stackFrames(**pars)
                     p.showInputs()
                     ad_stacked_sky_list = p.adinputs

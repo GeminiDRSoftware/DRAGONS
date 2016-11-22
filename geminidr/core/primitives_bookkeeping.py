@@ -104,7 +104,7 @@ class Bookkeeping(PrimitivesBASE):
         inputs = adinputs if stream=='main' else self.streams[stream]
         for ad in inputs:
             log.stdinfo("  {}".format(ad.filename))
-        return
+        return adinputs
 
     showFiles = showInputs
     
@@ -133,7 +133,7 @@ class Bookkeeping(PrimitivesBASE):
                     log.status("   {}".format(f))
             else:
                 log.status("No datasets in list")
-        return
+        return adinputs
 
     def writeOutputs(self, adinputs=None, stream='main', **params):
         """
@@ -191,7 +191,7 @@ class Bookkeeping(PrimitivesBASE):
             # Finally, write the file to the name that was decided upon
             log.stdinfo("Writing to file {}".format(outfilename))
             ad.write(filename=outfilename, clobber=pars["clobber"])
-        return
+        return adinputs
 
 # Helper function to make a stackid, without the IDFactory nonsense
 def _stackid(purpose, ad):
