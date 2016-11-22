@@ -33,29 +33,29 @@ class Stack(PrimitivesBASE):
 
         # Add the input frame to the forStack list and
         # get other available frames from the same list
-        single_ad = self.adinputs
+        single_ad = adinputs
         self.addToList(purpose='forStack')
         self.getList(purpose='forStack')
 
-        if len(self.adinputs) <= 1:
+        if len(adinputs) <= 1:
             log.stdinfo("No alignment or correction will be performed, since "
                         "at least two input AstroData objects are required "
                         "for alignAndStack")
         else:
             if (self.parameters.alignAndStack['check_if_stack'] and
-                    not _can_stack(self.adinputs)):
-                self.adinputs = single_ad
+                    not self._can_stack(adinputs)):
+                adinputs = single_ad
             else:
                 #TODO: Must be an easier way than this to determine whether
                 # an AD object has no OBJCATs
                 if any(all(getattr(ext, 'OBJCAT', None) is None for ext in ad)
-                       for ad in self.adinputs):
-                    self.detectSources()
-                self.correctWCSToReferenceFrame()
-                self.alignToReferenceFrame()
-                self.correctBackgroundToReferenceImage()
-                self.stackFrames()
-        return
+                       for ad in adinputs):
+                    self.detectSources(adinputs)
+                self.correctWCSToReferenceFrame(adinputs)
+                self.alignToReferenceFrame(adinputs)
+                self.correctBackgroundToReferenceImage(adinputs)
+                self.stackFrames(adinputs)
+        return adinputs
 
     def stackFrames(self, adinputs=None, stream='main', **params):
         """
@@ -88,11 +88,11 @@ class Stack(PrimitivesBASE):
         adoutputs = []
 
         # Ensure that each input AstroData object has been prepared
-        for ad in self.adinputs:
+        for ad in adinputs:
             if not "PREPARED" in ad.tags:
                 raise IOError("{} must be prepared" .format(ad.filename))
         
-        if len(self.adinputs) <= 1:
+        if len(adinputs) <= 1:
             log.stdinfo("No stacking will be performed, since at least two "
                         "input AstroData objects are required for stackFrames")
         else:
@@ -105,8 +105,8 @@ class Stack(PrimitivesBASE):
             gain_dict = {}
             read_noise_dict = {}
 
-            gains = [ad.gain() for ad in self.adinputs]
-            read_noises = [ad.read_noise() for ad in self.adinputs]
+            gains = [ad.gain() for ad in adinputs]
+            read_noises = [ad.read_noise() for ad in adinputs]
 
             assert all(gain is not None for gain in gains), "Gain problem"
             assert all(rn is not None for rn in read_noises), "RN problem"
@@ -144,7 +144,7 @@ class Stack(PrimitivesBASE):
             #        dq_dtype = np.dtype(np.uint16)
             
             # Instantiate ETI and then run the task 
-            gemcombine_task = gemcombineeti.GemcombineETI(self.adinputs,
+            gemcombine_task = gemcombineeti.GemcombineETI(adinputs,
                                         self.parameters.stackFrames)
             ad = gemcombine_task.run()
 
@@ -169,8 +169,8 @@ class Stack(PrimitivesBASE):
             adoutputs.append(ad)
 
         # Reset inputs to the ETI outputs
-        self.adinputs = adoutputs
-        return
+        adinputs = adoutputs
+        return adinputs
     
     def stackSkyFrames(self, adinputs=None, stream='main', **params):
         """
@@ -211,7 +211,7 @@ class Stack(PrimitivesBASE):
         # associating the sky frames to the science frames
         sky_dict = self.sky_dict
 
-        for ad_sci in self.adinputs:
+        for ad_sci in adinputs:
             # Retrieve the list of sky AstroData objects associated with the
             # input science AstroData object
             origname = ad_sci.phu.ORIGNAME
@@ -262,6 +262,7 @@ class Stack(PrimitivesBASE):
                     # Stack the skies by creating a new primitivesClass instance
                     p = self.__class__(ad_sky_to_stack_list, self.context)
                     p.showInputs()
+                    print "***", [ad.filename for ad in p.adinputs]
                     p.stackFrames(**pars)
                     p.showInputs()
                     ad_stacked_sky_list = p.adinputs
@@ -286,9 +287,8 @@ class Stack(PrimitivesBASE):
 
         # Add the appropriate time stamp to the PHU and update the filename of
         # the science AstroData objects
-        self.adinputs = gt.finalise_adinput(self.adinputs,
-                                            timestamp_key=timestamp_key,
-                                            suffix=pars["suffix"])
+        adinputs = gt.finalise_adinput(adinputs, timestamp_key=timestamp_key,
+                                        suffix=pars["suffix"])
 
         # Add the association dictionary to the reduction context
         self.stacked_sky_dict = stacked_sky_dict
@@ -299,25 +299,25 @@ class Stack(PrimitivesBASE):
         # rc.report_output(
         #  ad_sky_for_correction_output_list, stream="forSkyCorrection")
         # rc.run("showInputs(stream='forSkyCorrection')")
-        return
+        return adinputs
 
-##############################################################################
-# Below are the helper functions for the user level functions in this module #
-##############################################################################
-def _can_stack(self):
-    """
-    This function checks for a set of AstroData input frames whether there is
-    more than 1 degree of rotation between the first frame and successive
-    frames. If so, stacking will not be performed.
+    ##############################################################################
+    # Below are the helper functions for the user level functions in this module #
+    ##############################################################################
+    def _can_stack(self, adinputs):
+        """
+        This function checks for a set of AstroData input frames whether there is
+        more than 1 degree of rotation between the first frame and successive
+        frames. If so, stacking will not be performed.
 
-    :param adinput: List of AstroData instances
-    :type adinput: List of AstroData instances
-    """
-    log = self.log
-    ref_pa = self.adinputs[0].phu.PA
-    for ad in self.adinputs:
-        if abs(ad.phu.PA - ref_pa) >= 1.0:
-            log.warning("No stacking will be performed, since a frame varies "
-                        "from the reference image by more than 1 degree")
-            return False
-    return True
+        :param adinput: List of AstroData instances
+        :type adinput: List of AstroData instances
+        """
+        log = self.log
+        ref_pa = adinputs[0].phu.PA
+        for ad in adinputs:
+            if abs(ad.phu.PA - ref_pa) >= 1.0:
+                log.warning("No stacking will be performed, since a frame varies "
+                            "from the reference image by more than 1 degree")
+                return False
+        return True

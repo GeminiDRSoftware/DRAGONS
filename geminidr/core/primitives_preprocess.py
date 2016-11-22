@@ -43,7 +43,7 @@ class Preprocess(PrimitivesBASE):
         log.debug(gt.log_message("primitive", self.myself(), "starting"))
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = self.parameters.addObjectMaskToDQ["suffix"]
-        for ad in self.adinputs:
+        for ad in adinputs:
             for ext in ad:
                 if getattr(ext, 'OBJMASK', None):
                     if ext.mask is None:
@@ -57,7 +57,7 @@ class Preprocess(PrimitivesBASE):
                                 'apply object mask'.format(ad.filename,
                                                            ext.hdr.EXTVER))
             ad.filename = gt.filename_updater(ad, suffix=sfx, strip=True)
-        return
+        return adinputs
 
     def ADUToElectrons(self, adinputs=None, stream='main', **params):
         """
@@ -75,7 +75,7 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = self.parameters.ADUToElectrons["suffix"]
 
-        for ad in self.adinputs:
+        for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by ADUToElectrons".
@@ -98,7 +98,7 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(ad, suffix=sfx,  strip=True)
 
-        return
+        return adinputs
     
     def applyDQPlane(self, adinputs=None, stream='main', **params):
         """
@@ -126,7 +126,7 @@ class Preprocess(PrimitivesBASE):
                 enumerate(str(bin(replace_flags))[2:][::-1]) if digit=='1']
         log.stdinfo("The flags {} will be applied".format(flag_list))
 
-        for ad in self.adinputs:
+        for ad in adinputs:
             for ext in ad:
                 if ext.mask is None:
                     log.warning("No DQ plane exists for {}:{}, so the correction "
@@ -155,7 +155,7 @@ class Preprocess(PrimitivesBASE):
 
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(ad, suffix=pars["suffix"], strip=True)
-        return
+        return adinputs
 
     def associateSky(self, adinputs=None, stream='main', **params):
         """
@@ -218,7 +218,7 @@ class Preprocess(PrimitivesBASE):
             # sky stream.
             ad_sky_list = self.streams['sky']
         
-        if not self.adinputs or not ad_sky_list:
+        if not adinputs or not ad_sky_list:
             log.warning("Cannot associate sky frames, since at least one "
                         "science AstroData object and one sky AstroData "
                         "object are required for associateSky")
@@ -227,8 +227,8 @@ class Preprocess(PrimitivesBASE):
             # and sky AstroData object lists, respectively, without further
             # processing, after adding the appropriate time stamp to the PHU
             # and updating the filename.
-            if self.adinputs:
-                self.adinputs = gt.finalise_adinput(self.adinputs,
+            if adinputs:
+                adinputs = gt.finalise_adinput(adinputs,
                     timestamp_key=timestamp_key, suffix=sfx)
             
             if ad_sky_list:
@@ -242,7 +242,7 @@ class Preprocess(PrimitivesBASE):
             # the science AstroData objects and the sky AstroData objects
             sky_dict = {}
             
-            for ad_sci in self.adinputs:
+            for ad_sci in adinputs:
                 # Determine the sky AstroData objects that are associated with
                 # this science AstroData object. Initialize the list of sky
                 # AstroDataRecord objects
@@ -318,7 +318,7 @@ class Preprocess(PrimitivesBASE):
             #TODO: Sort this out!
             # Add the appropriate time stamp to the PHU and change the filename
             # of the science and sky AstroData objects 
-            self.adinputs = gt.finalise_adinput(self.adinputs,
+            adinputs = gt.finalise_adinput(adinputs,
                                     timestamp_key=timestamp_key, suffix=sfx)
             ad_sky_output_list = gt.finalise_adinput(ad_sky_list,
                                     timestamp_key=timestamp_key, suffix=sfx)
@@ -329,7 +329,7 @@ class Preprocess(PrimitivesBASE):
         # Report the list of output sky AstroData objects to the sky stream in
         # the reduction context 
         self.streams['sky'] = ad_sky_output_list
-        return
+        return adinputs
 
     def correctBackgroundToReferenceImage(self, adinputs=None,
                                           stream='main', **params):
@@ -355,18 +355,18 @@ class Preprocess(PrimitivesBASE):
 
         ref_bg = None
 
-        if len(self.adinputs) <= 1:
+        if len(adinputs) <= 1:
             log.warning("No correction will be performed, since at least "
                         "two input AstroData objects are required for "
                         "correctBackgroundToReferenceImage")
         # Check that all images have the same number of extensions
-        elif not all(len(ad)==len(self.adinputs[0]) for ad in self.adinputs):
+        elif not all(len(ad)==len(adinputs[0]) for ad in adinputs):
             raise IOError("Number of science extensions in input "
                                     "images do not match")
         else:
             # Loop over input files
             ref_bg_list = []
-            for ad in self.adinputs:
+            for ad in adinputs:
                 bg_list = gt.measure_bg_from_image(ad, value_only=True)
                 # If this is the first (reference) image, set the reference bg levels
                 if not ref_bg_list:
@@ -400,11 +400,12 @@ class Preprocess(PrimitivesBASE):
                                 keyword=timestamp_key)
                 ad.filename = gt.filename_updater(ad, suffix=sfx, strip=True)
 
-        return
+        return adinputs
 
     def darkCorrect(self, adinputs=None, stream='main', **params):
-        self.getProcessedDark()
-        self.subtractDark()
+        self.getProcessedDark(adinputs)
+        self.subtractDark(adinputs)
+        return adinputs
 
     def divideByFlat(self, adinputs=None, stream='main', **params):
         """
@@ -425,7 +426,7 @@ class Preprocess(PrimitivesBASE):
         sfx = self.parameters.divideByFlat["suffix"]
 
         # Provide a flatfield AD object for every science frame
-        for ad, flat in zip(*gt.make_lists(self.adinputs,
+        for ad, flat in zip(*gt.make_lists(adinputs,
                         self.parameters.divideByFlat["flat"], force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
@@ -473,18 +474,20 @@ class Preprocess(PrimitivesBASE):
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
                                               strip=True)
 
-        return
+        return adinputs
 
     def flatCorrect(self, adinputs=None, stream='main', **params):
-        self.getProcessedFlat()
-        self.divideByFlat()
+        self.getProcessedFlat(adinputs)
+        self.divideByFlat(adinputs)
+        return adinputs
 
     def makeSky(self, adinputs=None, stream='main', **params):
         pars = self.parameters.makeSky
-        self.separateSky(**pars)
-        self.associateSky(**pars)
-        self.stackSkyFrames(**pars)
+        self.separateSky(adinputs, **pars)
+        self.associateSky(adinputs, **pars)
+        self.stackSkyFrames(adinputs, **pars)
         #self.makeMaskedSky()
+        return adinputs
 
     def nonlinearityCorrect(self, adinputs=None, stream='main', **params):
         """
@@ -503,7 +506,7 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = self.parameters.nonlinearityCorrect["suffix"]
 
-        for ad in self.adinputs:
+        for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to %s, since it has "
                             "already been processed by nonlinearityCorrect".
@@ -550,8 +553,7 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
                                               strip=True)
-        
-        return
+        return adinputs
     
     def thresholdFlatfield(self, adinputs=None, stream='main', **params):
         """
@@ -578,7 +580,7 @@ class Preprocess(PrimitivesBASE):
         lower = pars["lower"]
         upper = pars["upper"]
 
-        for ad in self.adinputs:
+        for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by thresholdFlatfield".
@@ -608,8 +610,7 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
                                               strip=True)
-
-        return
+        return adinputs
 
     def normalizeFlat(self, adinputs=None, stream='main', **params):
         """
@@ -626,7 +627,7 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = self.parameters.normalizeFlat["suffix"]
 
-        for ad in self.adinputs:
+        for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by normalizeFlat".
@@ -650,8 +651,7 @@ class Preprocess(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
                                               strip=True)
-
-        return
+        return adinputs
 
 #### Refactored but not tested
 #    def scaleByExposureTime(self, adinputs=None, stream='main', **params):
@@ -665,14 +665,14 @@ class Preprocess(PrimitivesBASE):
 #        sfx = self.parameters.scaleByExposureTime["suffix"]
 #
 #        # First check if any scaling is actually required
-#        exptimes = [ad.exposure_time() for ad in self.adinputs]
+#        exptimes = [ad.exposure_time() for ad in adinputs]
 #        if len(set(exptimes)) == 1:
 #            log.fullinfo("Exposure times are the same therefore no scaling "
 #                         "is required.")
 #        else:
 #            reference_exptime = None
 #            # Loop over each input AstroData object in the input list
-#            for ad in self.adinputs:
+#            for ad in sadinputs:
 #                exptime = ad.exposure_time()
 #                # Scale by the relative exposure time
 #                if reference_exptime is None:
@@ -700,8 +700,7 @@ class Preprocess(PrimitivesBASE):
 #                gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
 #                ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
 #                                              strip=True)
-#
-#        return
+#        return adinputs
 
     def separateSky(self, adinputs=None, stream='main', **params):
         """
@@ -765,7 +764,7 @@ class Preprocess(PrimitivesBASE):
         # trivial once we address the issues noted below.
         def strip_fits(s):
             return s[:-5] if s.endswith('.fits') else s
-        filenames = [strip_fits(ad.phu.ORIGNAME) for ad in self.adinputs]
+        filenames = [strip_fits(ad.phu.ORIGNAME) for ad in adinputs]
 
         # Warn the user if they referred to non-existent input file(s):
         missing = [name for name in ref_obj if name not in filenames]
@@ -778,7 +777,7 @@ class Preprocess(PrimitivesBASE):
 
         # Loop over input AstroData objects and apply any overriding sky/object
         # classifications based on user-supplied or guiding information:
-        for ad, base_name in zip(self.adinputs, filenames):
+        for ad, base_name in zip(adinputs, filenames):
             # Remember any pre-existing classifications so we can point them
             # out if the user requests something different this time:
             obj = ad.phu.get('OBJFRAME') is not None
@@ -829,7 +828,7 @@ class Preprocess(PrimitivesBASE):
         # Analyze the spatial clustering of exposures and attempt to sort them
         # into dither groups around common nod positions.
         #TODO: The 'Gemini' here is the pkgname, which might not do anything
-        groups = gt.group_exposures(self.adinputs, 'Gemini', frac_FOV=frac_FOV)
+        groups = gt.group_exposures(adinputs, 'Gemini', frac_FOV=frac_FOV)
         ngroups = len(groups)
         log.fullinfo("Identified {} group(s) of exposures".format(ngroups))
 
@@ -876,11 +875,11 @@ class Preprocess(PrimitivesBASE):
         # If we now have object classifications but no sky, or vice versa,
         # make whatever reasonable inferences we can about the others:
         if haveobj and not havesky:
-            for ad in self.adinputs:
+            for ad in adinputs:
                 if allobj or not ad.phu.get('OBJFRAME'):
                     ad.phu.SKYFRAME = 'TRUE'
         elif havesky and not haveobj:
-            for ad in self.adinputs:
+            for ad in adinputs:
                 if allsky or not ad.phu.get('SKYFRAME'):
                     ad.phu.OBJFRAME = 'TRUE'
 
@@ -923,7 +922,7 @@ class Preprocess(PrimitivesBASE):
                         "target AND usable as sky".format(ngroups))
                 else:
                     log.fullinfo("Treating a single group as both object & sky")
-                for ad in self.adinputs:
+                for ad in adinputs:
                     ad.phu.OBJFRAME = 'TRUE'
                     ad.phu.SKYFRAME = 'TRUE'
 
@@ -932,7 +931,7 @@ class Preprocess(PrimitivesBASE):
         # manually (or that's what's in the headers). We can't do anything
         # sensible to rectify that, so just discard the unclassified ones and
         # complain about it.
-        missing = [name for ad, name in zip(self.adinputs, filenames) if
+        missing = [name for ad, name in zip(adinputs, filenames) if
                    not ad.phu.get("OBJFRAME") and not ad.phu.get("SKYFRAME")]
         if missing:
             log.warning("ignoring the following input file(s), which could "
@@ -947,7 +946,7 @@ class Preprocess(PrimitivesBASE):
         # once memory mapping is used appropriately):
         ad_sci_list = []
         ad_sky_list = []
-        for ad in self.adinputs:
+        for ad in adinputs:
             on_source = ad.phu.get("OBJFRAME")
             if on_source:
                 ad_sci_list.append(ad)
@@ -964,7 +963,7 @@ class Preprocess(PrimitivesBASE):
         for ad_sky in ad_sky_list:
             log.stdinfo("  %s" % ad_sky.filename)
 
-        #TODO: Looks like ad_sci_output_list should become self.adinputs
+        #TODO: Looks like ad_sci_output_list should become adinputs
         # Add the appropriate time stamp to the PHU and update the filename
         # of the science and sky AstroData objects 
         ad_sci_output_list = gt.finalise_adinput(ad_sci_list,
@@ -979,13 +978,14 @@ class Preprocess(PrimitivesBASE):
         # Report the list of output science AstroData objects to the reduction
         # context
         #rc.report_output(ad_sci_output_list)
-        self.adinputs = ad_sci_output_list
+        adinputs = ad_sci_output_list
         self.streams['sky'] = ad_sky_output_list
-        return
+        return adinputs
 
     def skyCorrect(self, adinputs=None, stream='main', **params):
         #self.scaleSkyToInput()
-        self.subtractSky()
+        self.subtractSky(adinputs)
+        return adinputs
 
     def subtractDark(self, adinputs=None, stream='main', **params):
         """
@@ -1007,7 +1007,7 @@ class Preprocess(PrimitivesBASE):
         sfx = self.parameters.subtractDark["suffix"]
         
         # Provide a dark AD object for every science frame
-        for ad, dark in zip(*gt.make_lists(self.adinputs,
+        for ad, dark in zip(*gt.make_lists(adinputs,
                         self.parameters.subtractDark["dark"], force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
@@ -1029,8 +1029,7 @@ class Preprocess(PrimitivesBASE):
             ad.phu.set('DARKIM', dark.filename, self.keyword_comments["DARKIM"])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-
-        return
+        return adinputs
 
     def subtractSky(self, adinputs=None, stream='main', **params):
         """
@@ -1054,7 +1053,7 @@ class Preprocess(PrimitivesBASE):
             # dictionary associating the input sky AstroData objects to the
             # input science AstroData objects.
             sky = pars['sky']
-            ad_science_list = self.adinputs
+            ad_science_list = adinputs
             for i, ad in enumerate(ad_science_list):
                 origname = ad.phu.get("ORIGNAME")
                 sky_dict.update({origname: sky[0] if len(sky)==1 else
@@ -1066,7 +1065,7 @@ class Preprocess(PrimitivesBASE):
             sky_dict = getattr(self, 'stacked_sky_dict')
             
         # Loop over each science AstroData object in the science list
-        for ad_sci in self.adinputs:
+        for ad_sci in adinputs:
             if ad_sci.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by subtractSky".
@@ -1093,9 +1092,9 @@ class Preprocess(PrimitivesBASE):
 
         # Add the appropriate time stamp to the PHU and update the filename
         # of the science and sky AstroData objects 
-        self.adinputs = gt.finalise_adinput(adinput=self.adinputs,
+        adinputs = gt.finalise_adinput(adinput=adinputs,
                     timestamp_key=timestamp_key, suffix=pars["suffix"])
-        return
+        return adinputs
 
     def subtractSkyBackground(self, adinputs=None, stream='main', **params):
         """
@@ -1112,7 +1111,7 @@ class Preprocess(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = self.parameters.subtractSkyBackground["suffix"]
 
-        for ad in self.adinputs:
+        for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
                             "already been processed by subtractSkyBackground".
@@ -1134,5 +1133,4 @@ class Preprocess(PrimitivesBASE):
             # Timestamp and update filename
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-
-        return
+        return adinputs

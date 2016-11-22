@@ -48,7 +48,7 @@ class CCD(PrimitivesBASE):
         sfx = self.parameters.subtractBias["suffix"]
 
         # Provide a bias AD object for every science frame
-        for ad, bias in zip(*gt.make_lists(self.adinputs,
+        for ad, bias in zip(*gt.make_lists(adinputs,
                         self.parameters.subtractBias["bias"], force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
@@ -80,7 +80,7 @@ class CCD(PrimitivesBASE):
             ad.phu.set('BIASIM', bias.filename, self.keyword_comments['BIASIM'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-        return
+        return adinputs
 
     def subtractOverscan(self, adinputs=None, stream='main', **params):
         """
@@ -105,7 +105,7 @@ class CCD(PrimitivesBASE):
 
         # Need to create a new output list since the ETI makes new AD objects
         adoutputs = []
-        for ad in self.adinputs:
+        for ad in adinputs:
             if (ad.phu.get('GPREPARE') is None and
                         ad.phu.get('PREPARE') is None):
                 raise IOError('{} must be prepared'.format(ad.filename))
@@ -122,8 +122,8 @@ class CCD(PrimitivesBASE):
             adoutputs.append(ad)
 
         # Reset inputs to the ETI outputs
-        self.adinputs = adoutputs
-        return
+        adinputs = adoutputs
+        return adinputs
 
     def trimOverscan(self, adinputs=None, stream='main', **params):
         """
@@ -140,7 +140,7 @@ class CCD(PrimitivesBASE):
         timestamp_key = self.timestamp_keys[self.myself()]
         sfx = self.parameters.trimOverscan["suffix"]
 
-        for ad in self.adinputs:
+        for ad in adinputs:
             if ad.phu.get(timestamp_key) is not None:
                 log.warning('No changes will be made to {}, since it has '
                             'already been processed by trimOverscan'.
@@ -154,4 +154,4 @@ class CCD(PrimitivesBASE):
             ad.phu.set('TRIMMED', 'yes', self.keyword_comments['TRIMMED'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-        return
+        return adinputs

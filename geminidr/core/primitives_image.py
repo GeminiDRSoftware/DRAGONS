@@ -18,20 +18,21 @@ class Image(PrimitivesBASE):
         self.parameters = ParametersImage
 
     def fringeCorrect(self, adinputs=None, stream='main', **params):
-        self.getProcessedFringe()
-        self.subtractFringe()
+        self.getProcessedFringe(adinputs)
+        self.subtractFringe(adinputs)
+        return adinputs
 
     def makeFringe(self, adinputs=None, stream='main', **params):
-        pass
+        return adinputs
 
     def makeFringeFrame(self, adinputs=None, stream='main', **params):
-        pass
+        return adinputs
 
     def scaleByIntensity(self, adinputs=None, stream='main', **params):
-        pass
+        return adinputs
 
     def scaleFringeToScience(self, adinputs=None, stream='main', **params):
-        pass
+        return adinputs
 
     def subtractFringe(self, adinputs=None, stream='main', **params):
         """
@@ -51,7 +52,7 @@ class Image(PrimitivesBASE):
         sfx = self.parameters.subtractFringe["suffix"]
 
         # Get a fringe AD object for every science frame
-        for ad, fringe in zip(*gt.make_lists(self.adinputs, fringe_param,
+        for ad, fringe in zip(*gt.make_lists(adinputs, fringe_param,
                                              force_ad=True)):
             if ad.phu.get(timestamp_key):
                 log.warning("No changes will be made to {}, since it has "
@@ -74,4 +75,4 @@ class Image(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx,
                                               strip=True)
-        return
+        return adinputs

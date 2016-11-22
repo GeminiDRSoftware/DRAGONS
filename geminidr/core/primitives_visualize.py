@@ -66,7 +66,7 @@ class Visualize(PrimitivesBASE):
 
         # We may be manipulating the data significantly, so the best option
         # is to create a new PrimitivesClass instance and work with that
-        p = self.__class__(self.adinputs, self.context)
+        p = self.__class__(adinputs, self.context)
 
         # Threshold and bias make sense only for SCI extension
         if extname != 'SCI':

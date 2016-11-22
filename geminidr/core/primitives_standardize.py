@@ -54,7 +54,7 @@ class Standardize(PrimitivesBASE):
         sfx = self.parameters.addDQ["suffix"]
         dq_dtype = np.uint8
 
-        for ad in self.adinputs:
+        for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning('No changes will be made to {}, since it has '
                             'already been processed by add DQ'.
@@ -147,12 +147,12 @@ class Standardize(PrimitivesBASE):
 
         # Add the illumination mask if requested
         if self.parameters.addDQ['illum_mask']:
-            self.addIllumMaskToDQ()
+            self.addIllumMaskToDQ(adinputs)
 
-        return
+        return adinputs
 
     def addIllumMaskToDQ(self, adinputs=None, stream='main', **params):
-        pass
+        return adinputs
 
     def addMDF(self, adinputs=None, stream='main', **params):
         """
@@ -175,7 +175,7 @@ class Standardize(PrimitivesBASE):
         timestamp_key = self.timestamp_keys["addMDF"]
         sfx = self.parameters.addMDF["suffix"]
 
-        for ad in self.adinputs:
+        for ad in adinputs:
             if ad.phu.get(timestamp_key):
                 log.warning('No changes will be made to {}, since it has '
                             'already been processed by addMDF'.
@@ -237,7 +237,7 @@ class Standardize(PrimitivesBASE):
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
 
-        return
+        return adinputs
 
     def addVAR(self, adinputs=None, stream='main', **params):
         """
@@ -301,7 +301,7 @@ class Standardize(PrimitivesBASE):
                             'component has been selected')
                 return
 
-        for ad in self.adinputs:
+        for ad in adinputs:
             tags = ad.tags
             if poisson_noise and 'BIAS' in ad.tags:
                 log.warning("It is not recommended to add a poisson noise "
@@ -312,11 +312,11 @@ class Standardize(PrimitivesBASE):
                             "noise component of the variance using data that "
                             "still contains a bias level")
 
-            ad = self._calculate_var(ad, read_noise, poisson_noise)
+            self._calculate_var(ad, read_noise, poisson_noise)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
 
-        return
+        return adinputs
 
     def makeIRAFCompatible(self, adinputs=None, stream='main', **params):
         """
@@ -328,13 +328,13 @@ class Standardize(PrimitivesBASE):
                                  'starting'))
         timestamp_key = self.timestamp_keys['makeIRAFCompatible']
 
-        for ad in self.adinputs:
+        for ad in adinputs:
             irafcompat.pipeline2iraf(ad)
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
 
-        return
+        return adinputs
 
-    def prepare(self):
+    def prepare(self, adinputs=None, stream='main', **params):
         """
         Validate and standardize the datasets to ensure compatibility
         with the subsequent primitives.  The outputs, if written to
@@ -352,36 +352,36 @@ class Standardize(PrimitivesBASE):
         log.debug(gt.log_message("primitive", "prepare", "starting"))
         timestamp_key = self.timestamp_keys["prepare"]
         sfx = self.parameters.prepare["suffix"]
-        self.validateData()
-        self.standardizeStructure()
-        self.standardizeObservatoryHeaders()
-        self.standardizeInstrumentHeaders()
-        for ad in self.adinputs:
+        adinputs = self.validateData(adinputs)
+        adinputs = self.standardizeStructure(adinputs)
+        adinputs = self.standardizeObservatoryHeaders(adinputs)
+        adinputs = self.standardizeInstrumentHeaders(adinputs)
+        for ad in adinputs:
             gt.mark_history(ad, self.myself(), timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-        return
+        return adinputs
 
     def standardizeHeaders(self, adinputs=None, stream='main', **params):
         log = self.log
         log.debug(gt.log_message("primitive", "standardizeHeaders",
                                  "starting"))
-        self.standardizeObservatoryHeaders()
-        self.standardizeInstrumentHeaders()
-        return
+        self.standardizeObservatoryHeaders(adinputs)
+        self.standardizeInstrumentHeaders(adinputs)
+        return adinputs
 
     def standardizeInstrumentHeaders(self, adinputs=None, stream='main',
                                      **params):
-        pass
+        return adinputs
 
     def standardizeObservatoryHeaders(self, adinputs=None, stream='main',
                                       **params):
-        pass
+        return adinputs
 
     def standardizeStructure(self, adinputs=None, stream='main', **params):
-        pass
+        return adinputs
 
     def validateData(self, adinputs=None, stream='main', **params):
-        pass
+        return adinputs
 
     ##########################################################################
     # Below are the helper functions for the primitives in this module       #
@@ -480,4 +480,4 @@ class Standardize(PrimitivesBASE):
             # Attach to the extension
             ext.variance = var_array.astype(var_dtype)
 
-        return adinput
+        return

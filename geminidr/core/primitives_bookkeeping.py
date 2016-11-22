@@ -40,7 +40,7 @@ class Bookkeeping(PrimitivesBASE):
         
         # Update file names and write the files to disk to ensure the right
         # version is stored before adding it to the list.
-        for ad in self.adinputs:
+        for ad in adinputs:
             ad.filename = gt.filename_updater(adinput=ad, suffix=suffix,
                                               strip=True)
             log.stdinfo("Writing {} to disk".format(ad.filename))
@@ -51,7 +51,7 @@ class Bookkeeping(PrimitivesBASE):
                 self.stacks[_stackid(purpose, ad)] = set([ad.filename])
 
         caches.save_cache(self.stacks, caches.stkindfile)
-        return
+        return adinputs
 
     def getList(self, adinputs=None, stream='main', **params):
         """
@@ -73,11 +73,11 @@ class Bookkeeping(PrimitivesBASE):
         purpose = pars.get('purpose', '')
         max_frames = pars['max_frames']
         stream = pars.get('to_stream', 'main')
-        stream_list = self.streams[stream] if stream!='main' else self.adinputs
+        stream_list = self.streams[stream] if stream!='main' else adinputs
 
         # Get ID for all inputs; use a set to avoid duplication
         sidset = set()
-        [sidset.add(_stackid(purpose, ad)) for ad in self.adinputs]
+        [sidset.add(_stackid(purpose, ad)) for ad in adinputs]
         
         # Import inputs from all lists
         for sid in sidset:
@@ -91,8 +91,7 @@ class Bookkeeping(PrimitivesBASE):
                 if f not in [ad.filename for ad in stream_list]:
                     stream_list.append(astrodata.open(f))
                 log.stdinfo("   {}".format(f))
-        
-        return
+        return adinputs
 
     def showInputs(self, adinputs=None, stream='main', **params):
         """
@@ -102,7 +101,7 @@ class Bookkeeping(PrimitivesBASE):
         log = self.log
         log.stdinfo("Inputs to stream {}".format(stream))
 
-        inputs = self.adinputs if stream=='main' else self.streams[stream]
+        inputs = adinputs if stream=='main' else self.streams[stream]
         for ad in inputs:
             log.stdinfo("  {}".format(ad.filename))
         return
@@ -125,7 +124,7 @@ class Bookkeeping(PrimitivesBASE):
         if purpose == 'all':
             [sidset.add(sid) for sid in self.stacks.keys()]
         else:
-            [sidset.add(_stackid(purpose, ad)) for ad in self.adinputs]
+            [sidset.add(_stackid(purpose, ad)) for ad in adinputs]
         for sid in sidset:
             stacklist = self.stacks(sid)
             log.status("List for stack id={}".format(sid))
@@ -168,7 +167,7 @@ class Bookkeeping(PrimitivesBASE):
         log.fullinfo("suffix = {}".format(sfx))
         log.fullinfo("prefix = {}".format(pfx))
         
-        for ad in self.adinputs:
+        for ad in adinputs:
             if sfx or pfx:
                 ad.filename = gt.filename_updater(adinput=ad,
                                 prefix=pfx, suffix=sfx, strip=pars["strip"])
@@ -192,7 +191,6 @@ class Bookkeeping(PrimitivesBASE):
             # Finally, write the file to the name that was decided upon
             log.stdinfo("Writing to file {}".format(outfilename))
             ad.write(filename=outfilename, clobber=pars["clobber"])
-
         return
 
 # Helper function to make a stackid, without the IDFactory nonsense
