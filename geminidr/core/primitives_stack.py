@@ -260,11 +260,15 @@ class Stack(PrimitivesBASE):
                         ad_sky_to_stack_list.append(ad_sky)
 
                     # Stack the skies by creating a new primitivesClass instance
-                    p = self.__class__(ad_sky_to_stack_list, self.context)
-                    p.showInputs()
-                    p.stackFrames(**pars)
-                    p.showInputs()
-                    ad_stacked_sky_list = p.adinputs
+                    #p = self.__class__(ad_sky_to_stack_list, self.context)
+                    #p.showInputs()
+                    #p.stackFrames(**pars)
+                    #p.showInputs()
+                    #ad_stacked_sky_list = p.adinputs
+                    # Stack the skies by calling the primitive function directly
+                    self.showInputs(ad_sky_to_stack_list)
+                    ad_stacked_sky_list = self.stackFrames(ad_sky_to_stack_list, **pars)
+                    self.showInputs(ad_stacked_sky_list)
 
                     # Add the sky to be used to correct this science AstroData
                     # object to the list of output sky AstroData objects
