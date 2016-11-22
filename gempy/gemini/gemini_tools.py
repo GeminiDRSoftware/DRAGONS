@@ -494,7 +494,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
     # Loop over each input AstroData object in the input list
     for ad, this_aux in zip(adinput, aux):
         # Make a new auxiliary file for appending to, starting with PHU
-        new_aux_hdulist = this_aux._dataprov.to_hdulist()[:1]
+        new_aux_hdulist = this_aux.to_hdulist()[:1]
 
         # Get the detector section, data section, array section and the
         # binning of the x-axis and y-axis values for the science AstroData
@@ -623,7 +623,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
                 # Rename the auxext to the science extver
                 ext_to_clip.hdr.EXTVER = ext.hdr.EXTVER
-                new_aux_hdulist.extend(ext_to_clip._dataprov.to_hdulist()[1:])
+                new_aux_hdulist.extend(ext_to_clip.to_hdulist()[1:])
 
             if not found:
                 raise IOError(
@@ -686,7 +686,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
     # Loop over each input AstroData object in the input list
     for ad, this_aux in zip(adinput, aux):
         # Make a new auxiliary file for appending to, starting with PHU
-        new_aux_hdulist = this_aux._dataprov.to_hdulist()[:1]
+        new_aux_hdulist = this_aux.to_hdulist()[:1]
 
         # Get the detector section, data section, array section and the
         # binning of the x-axis and y-axis values for the science AstroData
@@ -805,7 +805,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
 
                 # Rename the auxext to the science extver
                 ext_to_clip.hdr.EXTVER = ext.hdr.EXTVER
-                new_aux_hdulist.extend(ext_to_clip._dataprov.to_hdulist()[1:])
+                new_aux_hdulist.extend(ext_to_clip.to_hdulist()[1:])
 
             if not found:
                 raise IOError(
