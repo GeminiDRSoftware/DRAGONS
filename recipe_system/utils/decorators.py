@@ -108,7 +108,13 @@ def parameter_override(fn):
         except AttributeError:
             pass
 
-        fn(*args, **kwargs)
+        if len(args)==1 and 'adinputs' not in kwargs:
+            kwargs.update({'adinputs': pobj.adinputs})
+            ret_value = fn(*args, **kwargs)
+            pobj.adinputs = ret_value
+        else:
+            ret_value = fn(*args, **kwargs)
         LOGINDENT -= 1
         logutils.update_indent(LOGINDENT)
+        return ret_value
     return gn
