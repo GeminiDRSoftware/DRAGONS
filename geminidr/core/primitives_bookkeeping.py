@@ -2,12 +2,6 @@ import astrodata
 import gemini_instruments
 from gempy.gemini import gemini_tools as gt
 
-import os
-import time
-import shutil
-from datetime import datetime
-import pickle
-
 from geminidr import PrimitivesBASE
 from .parameters_bookkeeping import ParametersBookkeeping
 
