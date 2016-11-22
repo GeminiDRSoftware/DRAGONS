@@ -8,6 +8,4 @@ from geminidr.core.parameters_visualize import ParametersVisualize
 
 class ParametersGemini(ParametersBookkeeping, ParametersPreprocess,
                        ParametersStandardize, ParametersVisualize):
-    standardizeObservatoryHeaders = {
-        "suffix"            : "_observatoryHeadersStandardized",
-    }
+    pass

@@ -21,3 +21,18 @@ class ParametersStandardize(ParametersBASE):
     prepare = {
         "suffix"            : "_prepared",
     }
+    standardizeInstrumentHeaders = {
+        "suffix"            : "_instrumentHeadersStandardized",
+    }
+    standardizeObservatoryHeaders = {
+        "suffix"            : "_observatoryHeadersStandardized",
+    }
+    standardizeStructure = {
+        "suffix"            : "_structureStandardized",
+        "attach_mdf"        : True,
+        "mdf"               : None,
+    }
+    validateData = {
+        "suffix"            : "_dataValidated",
+        "repair"            : False,
+    }
