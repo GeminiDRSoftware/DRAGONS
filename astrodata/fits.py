@@ -324,23 +324,19 @@ class FitsProviderProxy(DataProvider):
         raise TypeError("Can't remove items from a sliced object")
 
     def __iadd__(self, operand):
-        self._provider._oper(partial(NDDataObject.add, handle_mask=np.bitwise_or,
-                                     handle_meta='first_found'), operand, self._mapping)
+        self._provider._standard_nddata_op(NDDataObject.add, operand, self._mapping)
         return self
 
     def __isub__(self, operand):
-        self._provider._oper(partial(NDDataObject.subtract, handle_mask=np.bitwise_or,
-                                     handle_meta='first_found'), operand, self._mapping)
+        self._provider._standard_nddata_op(NDDataObject.subtract, operand, self._mapping)
         return self
 
     def __imul__(self, operand):
-        self._provider._oper(partial(NDDataObject.multiply, handle_mask=np.bitwise_or,
-                                     handle_meta='first_found'), operand, self._mapping)
+        self._provider._standard_nddata_op(NDDataObject.multiply, operand, self._mapping)
         return self
 
     def __idiv__(self, operand):
-        self._provider._oper(partial(NDDataObject.divide, handle_mask=np.bitwise_or,
-                                     handle_meta='first_found'), operand, self._mapping)
+        self._provider._standard_nddata_op(NDDataObject.divide, operand, self._mapping)
         return self
 
     @property
@@ -570,24 +566,24 @@ class FitsProvider(DataProvider):
             for n in indices:
                 self._nddata[n] = operator(self._nddata[n], operand)
 
+    def _standard_nddata_op(self, fn, operand, indices=None):
+        return self._oper(partial(fn, handle_mask=np.bitwise_or, handle_meta='first_found'),
+                          operand, indices)
+
     def __iadd__(self, operand):
-        self._oper(partial(NDDataObject.add, handle_mask=np.bitwise_or,
-                           handle_meta='first_found'), operand)
+        self._standard_nddata_op(NDDataObject.add, operand)
         return self
 
     def __isub__(self, operand):
-        self._oper(partial(NDDataObject.subtract, handle_mask=np.bitwise_or,
-                           handle_meta='first_found'), operand)
+        self._standard_nddata_op(NDDataObject.subtract, operand)
         return self
 
     def __imul__(self, operand):
-        self._oper(partial(NDDataObject.multiply, handle_mask=np.bitwise_or,
-                           handle_meta='first_found'), operand)
+        self._standard_nddata_op(NDDataObject.multiply, operand)
         return self
 
     def __idiv__(self, operand):
-        self._oper(partial(NDDataObject.divide, handle_mask=np.bitwise_or,
-                           handle_meta='first_found'), operand)
+        self._standard_nddata_op(NDDataObject.divide, operand)
         return self
 
     def info(self, tags):

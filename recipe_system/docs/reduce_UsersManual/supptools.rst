@@ -46,7 +46,7 @@ directory. Users may specify an explicit directory with the **-d** or
                         .fits and .FITS files.
   -n, --norecurse       Do not recurse subdirectories.
   --or                  Use OR logic on 'types' criteria. If not specified,
-                        matching logic is AND (See --types). Eg., --or --types
+                        matching logic is AND (See --tags). Eg., --or --tags
                         SOUTH GMOS IMAGE will report datasets that are one of
                         SOUTH *OR* GMOS *OR* IMAGE.
   -o OUTFILE, --out OUTFILE
