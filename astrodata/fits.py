@@ -248,6 +248,14 @@ class FitsProviderProxy(DataProvider):
             '_single': single
             })
 
+    @property
+    def is_sliced(self):
+        return True
+
+    @property
+    def is_single(self):
+        return self._single
+
     def __deepcopy__(self, memo):
         return self._provider._clone(mapping=self._mapping)
 
@@ -311,6 +319,14 @@ class FitsProviderProxy(DataProvider):
                 setattr(self._provider, attribute, value)
 
         super(FitsProviderProxy, self).__setattr__(attribute, value)
+
+    def __delattr__(self, attribute):
+        if not self.is_single:
+            raise TypeError("Can't delete attributes on non-single slices")
+        elif not attribute.isupper():
+            raise ValueError("Can't delete non-capitalized attributes from slices")
+        self.nddata.__delattr__(attribute)
+        self.nddata.meta['other'].remove(attribute)
 
     def __getitem__(self, slc):
         if self._single:

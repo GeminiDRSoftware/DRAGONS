@@ -68,13 +68,18 @@ class AstroDataError(Exception):
 
 class DataProvider(object):
     __metaclass__ = ABCMeta
+
+    @property
+    def is_sliced(self):
+        return False
+
+    @property
+    def is_single(self):
+        return False
+
     @abstractproperty
     def header(self):
         pass
-
-#    @abstractproperty
-#    def data(self):
-#        pass
 
     @abstractmethod
     def settable(self, attribute):
@@ -219,6 +224,18 @@ class AstroData(object):
                 setattr(self._dataprov, attribute, value)
                 return
         super(AstroData, self).__setattr__(attribute, value)
+
+    def __delattr__(self, attribute):
+        try:
+            if self._dataprov.is_sliced:
+                self._dataprov.__delattr__(attribute)
+            else:
+                super(AstroData, self).__delattr__(attribute)
+        except AttributeError:
+            if self._dataprov.is_sliced:
+                raise AttributeError("{!r} sliced object has no attribute {!r}".format(self.__class__.__name__, attribute))
+            else:
+                raise
 
     def __contains__(self, attribute):
         return attribute in self._dataprov.exposed
