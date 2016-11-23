@@ -19,11 +19,11 @@ class ParametersBASE(object):
     pass
 # ------------------------------------------------------------------------------
 
-
 from inspect import stack
+import os
+import pickle
 
 from gempy.utils import logutils
-
 # new system imports - 10-06-2016 kra
 # NOTE: imports of these and other tables will be moving around ...
 from gemini.lookups import calurl_dict
@@ -32,7 +32,7 @@ from gemini.lookups import timestamp_keywords
 from gemini.lookups.source_detection import sextractor_default_dict
 
 from recipe_system.utils.decorators import parameter_override
-
+from recipe_system.cal_service import caches
 # ------------------------------------------------------------------------------
 @parameter_override
 class PrimitivesBASE(object):
@@ -56,6 +56,10 @@ class PrimitivesBASE(object):
         self.timestamp_keys   = timestamp_keywords.timestamp_keys
         self.keyword_comments = keyword_comments.keyword_comments
         self.sx_default_dict  = sextractor_default_dict.sextractor_default_dict
+
+        self.streams          = {}
+        self.cachedict        = caches.set_caches()
+        self.stacks           = caches.load_cache(caches.stkindfile)
 
         # This lambda will return the name of the current caller.
         self.myself           = lambda: stack()[1][3]

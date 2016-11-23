@@ -14,7 +14,7 @@ class CCD(PrimitivesBASE):
     This is the class containing all of the primitives used for generic CCD
     reduction.
     """
-    tagset = set(["GEMINI"])
+    tagset = None
 
     def __init__(self, adinputs, context, ucals=None, uparms=None):
         super(CCD, self).__init__(adinputs, context, ucals=ucals, uparms=uparms)
@@ -43,24 +43,27 @@ class CCD(PrimitivesBASE):
             bias(es) to subtract
         """
         log = self.log
-        log.debug(gt.log_message("primitive", "subtractBias", "starting"))
-        timestamp_key = self.timestamp_keys["subtractBias"]
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = self.parameters.subtractBias["suffix"]
 
-        #TODO? Assume we're getting filenames, rather than AD instances
-        for ad, bias_file in zip(*gt.make_lists(self.adinputs,
-                                    self.parameters.subtractBias["bias"])):
-            if bias_file is None:
+        # Provide a bias AD object for every science frame
+        for ad, bias in zip(*gt.make_lists(adinputs,
+                        self.parameters.subtractBias["bias"], force_ad=True)):
+            if ad.phu.get(timestamp_key):
+                log.warning("No changes will be made to {}, since it has "
+                            "already been processed by subtractBias".
+                            format(ad.filename))
+
+            if bias is None:
                 if 'qa' in self.context:
                     log.warning("No changes will be made to {}, since no "
-                                "appropriate bias could be retrieved".
-                                format(ad.filename))
+                                "bias was specified".format(ad.filename))
                     continue
                 else:
-                    raise IOError('No processed bias found for {}'.
+                    raise IOError('No processed bias listed for {}'.
                                   format(ad.filename))
 
-            bias = astrodata.open(bias_file)
             try:
                 gt.check_inputs_match(ad, bias, check_filter=False)
             except ValueError:
@@ -72,10 +75,12 @@ class CCD(PrimitivesBASE):
             log.fullinfo('Subtracting this bias from {}:\n{}'.
                          format(ad.filename, bias.filename))
             ad.subtract(bias)
+
+            # Record bias used, timestamp, and update filename
             ad.phu.set('BIASIM', bias.filename, self.keyword_comments['BIASIM'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-        return
+        return adinputs
 
     def subtractOverscan(self, adinputs=None, stream='main', **params):
         """
@@ -95,12 +100,12 @@ class CCD(PrimitivesBASE):
             None => use nbiascontam=4 columns
         """
         log = self.log
-        log.debug(gt.log_message("primitive", "subtractOverscan", "starting"))
-        timestamp_key = self.timestamp_keys["subtractOverscan"]
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
 
         # Need to create a new output list since the ETI makes new AD objects
         adoutputs = []
-        for ad in self.adinputs:
+        for ad in adinputs:
             if (ad.phu.get('GPREPARE') is None and
                         ad.phu.get('PREPARE') is None):
                 raise IOError('{} must be prepared'.format(ad.filename))
@@ -110,13 +115,15 @@ class CCD(PrimitivesBASE):
                             format(ad.filename))
                 continue
 
-            gireduce_task = gireduceeti.GireduceETI([], self.parameters.subtractOverscan, ad)
+            gireduce_task = gireduceeti.GireduceETI([],
+                                        self.parameters.subtractOverscan, ad)
             ad = gireduce_task.run()
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             adoutputs.append(ad)
 
-        self.adinputs = adoutputs
-        return
+        # Reset inputs to the ETI outputs
+        adinputs = adoutputs
+        return adinputs
 
     def trimOverscan(self, adinputs=None, stream='main', **params):
         """
@@ -129,11 +136,11 @@ class CCD(PrimitivesBASE):
             suffix to be added to output files
         """
         log = self.log
-        log.debug(gt.log_message("primitive", "trimOvserscan", "starting"))
-        timestamp_key = self.timestamp_keys["trimOverscan"]
+        log.debug(gt.log_message("primitive", self.myself(), "starting"))
+        timestamp_key = self.timestamp_keys[self.myself()]
         sfx = self.parameters.trimOverscan["suffix"]
 
-        for ad in self.adinputs:
+        for ad in adinputs:
             if ad.phu.get(timestamp_key) is not None:
                 log.warning('No changes will be made to {}, since it has '
                             'already been processed by trimOverscan'.
@@ -142,7 +149,9 @@ class CCD(PrimitivesBASE):
 
             ad = gt.trim_to_data_section(ad,
                                     keyword_comments=self.keyword_comments)
+
+            # Set keyword, timestamp, and update filename
             ad.phu.set('TRIMMED', 'yes', self.keyword_comments['TRIMMED'])
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-        return
+        return adinputs

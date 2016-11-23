@@ -494,7 +494,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
     # Loop over each input AstroData object in the input list
     for ad, this_aux in zip(adinput, aux):
         # Make a new auxiliary file for appending to, starting with PHU
-        new_aux_hdulist = this_aux._dataprov.to_hdulist()[:1]
+        new_aux_hdulist = this_aux.to_hdulist()[:1]
 
         # Get the detector section, data section, array section and the
         # binning of the x-axis and y-axis values for the science AstroData
@@ -575,11 +575,11 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
                 # Pull out specified data region:
                 if science_trimmed or aux_trimmed:
-                    clipped = ext_to_clip.nddata[region[0]:region[1],
+                    clipped = ext_to_clip[0].nddata[region[0]:region[1],
                                                 region[2]:region[3]]
 
                     # Where no overscan is needed, just use the data region:
-                    ext_to_clip.reset(clipped)
+                    ext_to_clip[0].reset(clipped)
 
                     # Pad trimmed aux arrays with zeros to match untrimmed
                     # science data:
@@ -623,7 +623,7 @@ def clip_auxiliary_data(adinput=None, aux=None, aux_type=None,
 
                 # Rename the auxext to the science extver
                 ext_to_clip.hdr.EXTVER = ext.hdr.EXTVER
-                new_aux_hdulist.extend(ext_to_clip._dataprov.to_hdulist()[1:])
+                new_aux_hdulist.extend(ext_to_clip.to_hdulist()[1:])
 
             if not found:
                 raise IOError(
@@ -686,7 +686,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
     # Loop over each input AstroData object in the input list
     for ad, this_aux in zip(adinput, aux):
         # Make a new auxiliary file for appending to, starting with PHU
-        new_aux_hdulist = this_aux._dataprov.to_hdulist()[:1]
+        new_aux_hdulist = this_aux.to_hdulist()[:1]
 
         # Get the detector section, data section, array section and the
         # binning of the x-axis and y-axis values for the science AstroData
@@ -757,11 +757,11 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
 
                 # Pull out specified data region:
                 if science_trimmed or aux_trimmed:
-                    clipped = ext_to_clip.nddata[region[0]:region[1],
+                    clipped = ext_to_clip[0].nddata[region[0]:region[1],
                               region[2]:region[3]]
 
                     # Where no overscan is needed, just use the data region:
-                    ext_to_clip.reset(clipped)
+                    ext_to_clip[0].reset(clipped)
 
                     # Pad trimmed aux arrays with zeros to match untrimmed
                     # science data:
@@ -805,7 +805,7 @@ def clip_auxiliary_data_GSAOI(adinput=None, aux=None, aux_type=None,
 
                 # Rename the auxext to the science extver
                 ext_to_clip.hdr.EXTVER = ext.hdr.EXTVER
-                new_aux_hdulist.extend(ext_to_clip._dataprov.to_hdulist()[1:])
+                new_aux_hdulist.extend(ext_to_clip.to_hdulist()[1:])
 
             if not found:
                 raise IOError(
@@ -1555,7 +1555,7 @@ def make_dict(key_list=None, value_list=None):
     
     return ret_dict
 
-def make_lists(key_list=None, value_list=None):
+def make_lists(key_list=None, value_list=None, force_ad=False):
     """
     The make_list function returns two lists, one of the keys and one of the
     values. It ensures that both inputs are made into lists if they weren't
@@ -1568,6 +1568,8 @@ def make_lists(key_list=None, value_list=None):
         the keys for the dict
     value_list: list of AstroData objects
         the values for the dict
+    force_ad: bool
+        coerce strings into AD objects?
 
     Returns
     -------
@@ -1579,6 +1581,11 @@ def make_lists(key_list=None, value_list=None):
         key_list = [key_list]
     if not isinstance(value_list, list):
         value_list = [value_list]
+    if force_ad:
+        key_list = [astrodata.open(x) if isinstance(x, str) else x
+                    for x in key_list]
+        value_list = [astrodata.open(x) if isinstance(x, str) else x
+                    for x in value_list]
     # We allow only one value that can be assigned to multiple keys
     if len(value_list) == 1:
         value_list *= len(key_list)

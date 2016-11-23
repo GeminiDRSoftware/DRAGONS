@@ -50,7 +50,7 @@ timestamp_keys = {
     "skyCorrectNodShuffle": "SKYCORR",
     "stackFrames": "STACKFRM",
     "stackSkyFrames": "STACKSKY",
-    "standardizeGeminiHeaders": "SDZHDRSG",
+    "standardizeObservatoryHeaders": "SDZHDRSG",
     "standardizeInstrumentHeaders": "SDZHDRSI",
     "standardizeStructure": "SDZSTRUC",
     "subtract": "SUBTRACT",
