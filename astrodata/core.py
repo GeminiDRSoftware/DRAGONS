@@ -22,7 +22,7 @@ def returns_list(fn):
     @wraps(fn)
     def wrapper(self, *args, **kwargs):
         ret = fn(self, *args, **kwargs)
-        if self._single:
+        if self._dataprov.is_single:
             if isinstance(ret, list):
                 # TODO: log a warning if the list is >1 element
                 if len(ret) > 1:
@@ -293,7 +293,7 @@ class AstroData(object):
 
     def operate(self, operator, *args, **kwargs):
         # Ensure we can iterate, even on a single slice
-        for ext in [self] if self._single else self:
+        for ext in [self] if self._dataprov.is_single else self:
             ext.data = operator(ext.data, *args, **kwargs)
             if ext.mask is not None:
                 ext.mask = operator(ext.mask, *args, **kwargs)
@@ -301,7 +301,7 @@ class AstroData(object):
                 ext.variance = operator(ext.variance, *args, **kwargs)
 
     def reset(self, data, mask=_IGNORE, variance=_IGNORE, check=True):
-        if not self._single:
+        if not self._dataprov.is_single:
             raise ValueError("Trying to reset a non-sliced AstroData object")
 
         # In case data is an NDData object

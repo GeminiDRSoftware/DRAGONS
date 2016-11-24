@@ -1,7 +1,7 @@
 from types import StringTypes
 from abc import abstractmethod
 from copy import deepcopy
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 import os
 from functools import partial, wraps
 from itertools import izip_longest
@@ -185,6 +185,64 @@ def table_to_bintablehdu(table):
 
     return BinTableHDU(data=FITS_rec.from_columns(coldefs), header=header)
 
+class TypeDesc(namedtuple('TypeDesc', 'form bytes zero')):
+    def __new__(cls, form, bytes, zero=None):
+        return super(TypeDesc, cls).__new__(cls, form, bytes, zero)
+
+header_type_map = {
+        'bool': TypeDesc('L', 1),
+        'int8': TypeDesc('B', 1, -2**7),
+        'int16': TypeDesc('I', 2),
+        'int32': TypeDesc('J', 4),
+        'int64': TypeDesc('K', 8),
+        'uint8': TypeDesc('B', 1),
+        'uint16': TypeDesc('I', 2, 2**15),
+        'uint32': TypeDesc('J', 4, 2**31),
+        'uint64': TypeDesc('K', 8, 2**63),
+        'float32': TypeDesc('E', 4),
+        'float64': TypeDesc('D', 8),
+        'complex64': TypeDesc('C', 8),
+        'complex128': TypeDesc('M', 16)}
+
+def header_for_table(table):
+    header = Header()
+    initial_keywords = (('XTENSION', 'BINTABLE'),
+                        ('EXTNAME', None), # to be filled out later
+                        ('BITPIX', 8),
+                        ('NAXIS', 2),
+                        ('NAXIS1', -1),
+                        ('NAXIS2', len(table)),
+                        ('GCOUNT', 1),
+                        ('TFIELDS', len(table.columns)))
+    for key, value in initial_keywords:
+        header[key] = value
+
+    fk = lambda text, n: 'T{}{}'.format(text, n)
+
+    naxis1 = 0
+    for n, col in enumerate(table.itercols(), 1):
+        # By FITS standard, the name, unit name, etc... must follow certain
+        # prescribed format, but we're not going to enforce them here...
+        # The user is responsible
+        header[fk('TYPE', n)] = col.name
+        typename = col.dtype.name
+        try:
+            typedesc = header_type_map[typename]
+        except KeyError:
+            raise TypeError("I don't know how to treat type {!r} for column {}".format(col.dtype, col.name))
+        naxis1 += typedesc.bytes
+        header[fk('FORM', n)] = typedesc.form
+        if col.unit is not None:
+            header[fk('UNIT', n)] = col.unit
+        if typedesc.zero is not None:
+            header[fk('SCAL', n)] = 1.0
+            header[fk('ZERO', n)] = typedesc.zero
+        if col.format is not None:
+            header[fk('DISP', n)] = col.format
+
+    header['NAXIS1'] = naxis1
+    return header
+
 def card_filter(cards, include=None, exclude=None):
     for card in cards:
         if include is not None and card not in include:
@@ -289,7 +347,7 @@ class FitsProviderProxy(DataProvider):
                 pass
         # Not found in the real Provider. Ok, if we're working with single
         # slices, let's look some things up in the ND object
-        if self._single:
+        if self.is_single:
             if attribute.isupper():
                 try:
                     return getattr(self._mapped_nddata(0), attribute)
@@ -308,7 +366,7 @@ class FitsProviderProxy(DataProvider):
 
         if not _my_attribute(attribute) and self._provider.settable(attribute):
             if attribute.isupper():
-                if not self._single:
+                if not self.is_single:
                     raise TypeError("This attribute can only be assigned to a single-slice object")
                 target = self._mapped_nddata(0)
                 self._provider._append(value, name=attribute, add_to=target)
@@ -329,7 +387,7 @@ class FitsProviderProxy(DataProvider):
         self.nddata.meta['other'].remove(attribute)
 
     def __getitem__(self, slc):
-        if self._single:
+        if self.is_single:
             raise TypeError("Can't slice a single slice!")
 
         indices, multiple = normalize_indices(slc, nitems=len(self))
@@ -361,14 +419,14 @@ class FitsProviderProxy(DataProvider):
 
     @property
     def data(self):
-        if self._single:
+        if self.is_single:
             return self._mapped_nddata(0).data
         else:
             return [nd.data for nd in self._mapped_nddata()]
 
     @data.setter
     def data(self, value):
-        if not self._single:
+        if not self.is_single:
             raise ValueError("Trying to assign to an AstroData object that is not a single slice")
 
         ext = self._mapped_nddata(0)
@@ -381,27 +439,27 @@ class FitsProviderProxy(DataProvider):
 
     @property
     def uncertainty(self):
-        if self._single:
+        if self.is_single:
             return self._mapped_nddata(0).uncertainty
         else:
             return [nd.uncertainty for nd in self._mapped_nddata()]
 
     @uncertainty.setter
     def uncertainty(self, value):
-        if not self._single:
+        if not self.is_single:
             raise ValueError("Trying to assign to an AstroData object that is not a single slice")
         self._mapped_nddata(0).uncertainty = value
 
     @property
     def mask(self):
-        if self._single:
+        if self.is_single:
             return self._mapped_nddata(0).mask
         else:
             return [nd.mask for nd in self._mapped_nddata()]
 
     @mask.setter
     def mask(self, value):
-        if not self._single:
+        if not self.is_single:
             raise ValueError("Trying to assign to an AstroData object that is not a single slice")
         self._mapped_nddata(0).mask = value
 
@@ -411,14 +469,14 @@ class FitsProviderProxy(DataProvider):
             if un is not None:
                 return un.array**2
 
-        if self._single:
+        if self.is_single:
             return variance_for(self.uncertainty)
         else:
             return [variance_for(un) for un in self.uncertainty]
 
     @variance.setter
     def variance(self, value):
-        if not self._single:
+        if not self.is_single:
             raise ValueError("Trying to assign to an AstroData object that is not a single slice")
         nd = self._mapped_nddata(0)
         if value is None:
@@ -428,14 +486,14 @@ class FitsProviderProxy(DataProvider):
 
     @property
     def nddata(self):
-        if not self._single:
+        if not self.is_single:
             return self._mapped_nddata()
         else:
             return self._mapped_nddata(0)
 
     @property
     def ext_manipulator(self):
-        return FitsKeywordManipulator(self.header[1:], on_extensions=True, single=self._single)
+        return FitsKeywordManipulator(self.header[1:], on_extensions=True, single=self.is_single)
 
     def set_name(self, ext, name):
         self._provider.set_name(self._mapping[ext], name)
@@ -444,7 +502,7 @@ class FitsProviderProxy(DataProvider):
         self._crop_impl(x1, y1, x2, y2, self._mapped_nddata)
 
     def append(self, ext, name):
-        if not self._single:
+        if not self.is_single:
             # TODO: We could rethink this one, but leave it like that at the moment
             raise TypeError("Can't append pixel planes to non-single slices")
         elif name is None:
@@ -467,7 +525,7 @@ class FitsProviderProxy(DataProvider):
         ValueError
             If used against a single slice. It is of no use in that situation.
         """
-        if self._single:
+        if self.is_single:
             raise ValueError("Trying to get a mapping out of a single slice")
 
         return self._provider._extver_impl(self._mapped_nddata)
@@ -699,9 +757,6 @@ class FitsProvider(DataProvider):
 
     @force_load
     def _slice(self, indices, multi=True):
-        # if not self._sliced and not self._hdulist:
-        #     # Force the loading of data, we may need it later
-        #     self.nddata
         return FitsProviderProxy(self, indices, single=not multi)
 
     @force_load
@@ -746,9 +801,14 @@ class FitsProvider(DataProvider):
         if isinstance(table, BinTableHDU):
             obj = Table(table.data, meta={'hdu': table.header})
         elif isinstance(table, Table):
-            obj = table
+            obj = Table(table)
+            if 'hdu' not in obj.meta:
+                obj.meta['hdu'] = header_for_table(obj)
         else:
             raise ValueError("{} is not a recognized table type".format(table.__class__))
+
+        if name is not None:
+            obj.meta['hdu']['EXTNAME'] = name
 
         return obj
 
@@ -948,10 +1008,7 @@ class FitsProvider(DataProvider):
     @property
     @force_load
     def data(self):
-        if self._single:
-            return self._nddata[0].data
-        else:
-            return [nd.data for nd in self._nddata]
+        return [nd.data for nd in self._nddata]
 
     @data.setter
     def data(self, value):
@@ -960,10 +1017,7 @@ class FitsProvider(DataProvider):
     @property
     @force_load
     def uncertainty(self):
-        if self._single:
-            return self._nddata[0].uncertainty
-        else:
-            return [nd.uncertainty for nd in self._nddata]
+        return [nd.uncertainty for nd in self._nddata]
 
     @uncertainty.setter
     def uncertainty(self, value):
@@ -972,10 +1026,7 @@ class FitsProvider(DataProvider):
     @property
     @force_load
     def mask(self):
-        if self._single:
-            return self._nddata[0].mask
-        else:
-            return [nd.mask for nd in self._nddata]
+        return [nd.mask for nd in self._nddata]
 
     @mask.setter
     def mask(self, value):
@@ -988,10 +1039,7 @@ class FitsProvider(DataProvider):
             if nd.uncertainty is not None:
                 return nd.uncertainty.array**2
 
-        if self._single:
-            return variance_for(self._nddata[0])
-        else:
-            return [variance_for(nd) for nd in self._nddata]
+        return [variance_for(nd) for nd in self._nddata]
 
     @variance.setter
     def variance(self, value):

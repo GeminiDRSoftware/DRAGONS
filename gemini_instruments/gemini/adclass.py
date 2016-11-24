@@ -230,7 +230,7 @@ class AstroDataGemini(AstroDataFits):
                                 for ext in self.data]
             else:
                 sections = self.hdr.get(keyword)
-            if self._single:
+            if self.is_single:
                 return process_fn(sections)
             else:
                 return [process_fn(raw) for raw in sections]
