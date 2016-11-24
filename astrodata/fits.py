@@ -167,7 +167,7 @@ def new_imagehdu(data, header, name=None):
 
 def table_to_bintablehdu(table):
     array = table.as_array()
-    header = table.meta['hdu'].copy()
+    header = table.meta['header'].copy()
     coldefs = []
     for n, name in enumerate(array.dtype.names, 1):
         coldefs.append(Column(
@@ -701,7 +701,7 @@ class FitsProvider(DataProvider):
     def _pixel_info(self):
         self._lazy_populate_object()
         for idx, obj in enumerate(self._nddata):
-            header = obj.meta['hdu']
+            header = obj.meta['header']
             other_objects = []
             for name in ['uncertainty', 'mask'] + sorted(obj.meta['other']):
                 other = getattr(obj, name)
@@ -799,16 +799,16 @@ class FitsProvider(DataProvider):
     #       move it out
     def _process_table(self, table, name=None):
         if isinstance(table, BinTableHDU):
-            obj = Table(table.data, meta={'hdu': table.header})
+            obj = Table(table.data, meta={'header': table.header})
         elif isinstance(table, Table):
             obj = Table(table)
-            if 'hdu' not in obj.meta:
-                obj.meta['hdu'] = header_for_table(obj)
+            if 'header' not in obj.meta:
+                obj.meta['header'] = header_for_table(obj)
         else:
             raise ValueError("{} is not a recognized table type".format(table.__class__))
 
         if name is not None:
-            obj.meta['hdu']['EXTNAME'] = name
+            obj.meta['header']['EXTNAME'] = name
 
         return obj
 
@@ -820,13 +820,13 @@ class FitsProvider(DataProvider):
                 pixim = ImageHDU(pixim)
 
             header = pixim.header
-            nd = NDDataObject(pixim.data, meta={'hdu': header})
+            nd = NDDataObject(pixim.data, meta={'header': header})
 
             currname = header.get('EXTNAME')
             ver = header.get('EXTVER', -1)
         else:
             nd = pixim
-            currname = nd.meta['hdu'].get('EXTNAME')
+            currname = nd.meta['header'].get('EXTNAME')
             ver = nd.meta['ver'].get('EXTVER', -1)
 
         if name and (currname is None):
@@ -974,7 +974,7 @@ class FitsProvider(DataProvider):
         hlst.append(PrimaryHDU(header=self._header[0], data=DELAYED))
 
         for ext in self._nddata:
-            header, ver = ext.meta['hdu'], ext.meta['ver']
+            header, ver = ext.meta['header'], ext.meta['ver']
 
             hlst.append(new_imagehdu(ext.data, header))
             if ext.uncertainty is not None:
@@ -987,7 +987,7 @@ class FitsProvider(DataProvider):
                 if isinstance(other, Table):
                     hlst.append(table_to_bintablehdu(other))
                 elif isinstance(other, NDDataObject):
-                    hlst.append(new_imagehdu(other.data, other.meta['hdu']))
+                    hlst.append(new_imagehdu(other.data, other.meta['header']))
                 else:
                     raise ValueError("I don't know how to write back an object of type {}".format(type(other)))
 
@@ -1072,7 +1072,7 @@ class FitsProvider(DataProvider):
         top = add_to is None
         if isinstance(ext, (Table, _TableBaseHDU)):
             tb = self._process_table(ext, name)
-            hname = tb.meta['hdu'].get('EXTNAME')
+            hname = tb.meta['header'].get('EXTNAME')
             if hname is None:
                 raise ValueError("Cannot add a table that has no EXTNAME")
             if top:
@@ -1085,7 +1085,7 @@ class FitsProvider(DataProvider):
                 add_to.meta['other'].append(hname)
             return tb
         elif isinstance(ext, NDDataObject):
-            self._header.append(ext.meta['hdu'])
+            self._header.append(ext.meta['header'])
             self._nddata.append(deepcopy(ext))
         else: # Assume that this is a pixel plane
 
@@ -1114,7 +1114,7 @@ class FitsProvider(DataProvider):
                 else:
                     if name is None:
                         raise TypeError("Can't append pixel planes to other objects without a name")
-                    nd.meta['hdu']['EXTVER'] = nd.meta.get('ver', -1)
+                    nd.meta['header']['EXTVER'] = nd.meta.get('ver', -1)
                     setattr(add_to, name, nd)
                     add_to.meta['other'].append(name)
 
