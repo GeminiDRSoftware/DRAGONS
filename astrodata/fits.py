@@ -243,6 +243,11 @@ def header_for_table(table):
     header['NAXIS1'] = naxis1
     return header
 
+def add_header_to_table(table):
+    header = header_for_table(table)
+    table.meta['header'] = header
+    return header
+
 def card_filter(cards, include=None, exclude=None):
     for card in cards:
         if include is not None and card not in include:
