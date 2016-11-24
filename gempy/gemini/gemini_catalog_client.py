@@ -27,6 +27,8 @@ from astropy.vo.client.vos_catalog import VOSError
 from astropy.table import Table, Column
 from astropy.io import fits
 
+from astrodata import add_header_to_table
+
 from ..utils import logutils
 # ------------------------------------------------------------------------------
 # Used  to determine the function signature of the imported conesearch function
@@ -230,7 +232,7 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
         ret_table.add_column(Column(table.array[server_cols[col]], name=cols[col],
                              dtype='f4', unit='mag', format='8.4f'))
 
-    header = fits.Header()
+    header = add_header_to_table(ret_table)
     # Add comments to the header to describe it
     header.add_comment('Source catalog derived from the {} catalog'.
                        format(catalog))
@@ -240,5 +242,4 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
     for col in range(len(cols)):
         header.add_comment('UCD for field {} is {}'.format(cols[col],
                                    table.get_field_by_id(server_cols[col]).ucd))
-    ret_table.meta = {'header': header}
     return ret_table
