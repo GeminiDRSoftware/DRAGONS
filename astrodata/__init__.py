@@ -7,7 +7,8 @@ __version__ = '9999'
 
 from .core import *
 # TODO: Remove 'write' when there's nothing else using it
-from .fits import AstroDataFits, KeywordCallableWrapper, write
+from .fits import AstroDataFits, KeywordCallableWrapper
+from .fits import write, add_header_to_table
 
 from .factory import AstroDataFactory
 

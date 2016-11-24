@@ -240,5 +240,5 @@ def get_fits_table_from_server(catalog, server, ra, dec, sr):
     for col in range(len(cols)):
         header.add_comment('UCD for field {} is {}'.format(cols[col],
                                    table.get_field_by_id(server_cols[col]).ucd))
-    ret_table.meta = {'hdu': header}
+    ret_table.meta = {'header': header}
     return ret_table
