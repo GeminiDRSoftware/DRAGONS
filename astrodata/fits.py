@@ -226,19 +226,25 @@ def header_for_table(table):
         # The user is responsible
         header[fk('TYPE', n)] = col.name
         typename = col.dtype.name
-        try:
-            typedesc = header_type_map[typename]
-        except KeyError:
-            raise TypeError("I don't know how to treat type {!r} for column {}".format(col.dtype, col.name))
-        naxis1 += typedesc.bytes
-        header[fk('FORM', n)] = typedesc.form
+        if typename.startswith('string'):
+            strlen = col.dtype.itemsize
+            naxis1 += strlen
+            header[fk('FORM', n)] = '{}A'.format(strlen)
+            header[fk('DISP', n)] = 'A{}'.format(strlen)
+        else:
+            try:
+                typedesc = header_type_map[typename]
+            except KeyError:
+                raise TypeError("I don't know how to treat type {!r} for column {}".format(col.dtype, col.name))
+            naxis1 += typedesc.bytes
+            header[fk('FORM', n)] = typedesc.form
+            if typedesc.zero is not None:
+                header[fk('SCAL', n)] = 1.0
+                header[fk('ZERO', n)] = typedesc.zero
+            if col.format is not None:
+                header[fk('DISP', n)] = col.format
         if col.unit is not None:
             header[fk('UNIT', n)] = col.unit
-        if typedesc.zero is not None:
-            header[fk('SCAL', n)] = 1.0
-            header[fk('ZERO', n)] = typedesc.zero
-        if col.format is not None:
-            header[fk('DISP', n)] = col.format
 
     header['NAXIS1'] = naxis1
     return header
