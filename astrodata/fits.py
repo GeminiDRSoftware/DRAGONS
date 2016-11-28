@@ -244,7 +244,7 @@ def header_for_table(table):
             if col.format is not None:
                 header[fk('DISP', n)] = col.format
         if col.unit is not None:
-            header[fk('UNIT', n)] = col.unit
+            header[fk('UNIT', n)] = str(col.unit)
 
     header['NAXIS1'] = naxis1
     return header
