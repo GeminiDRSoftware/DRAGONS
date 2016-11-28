@@ -223,8 +223,13 @@ def header_for_table(table):
                 repeat = data.size / shape[0]
                 if len(shape) > 2:
                     descr['dim'] = shape[1:]
-            descr['format'] = '{}{}'.format(repeat, typedesc)
-            descr['unit'] = str(col.unit) if col.unit is not None else None
+            if typedesc == 'L' and len(shape) > 1:
+                # Bit array
+                descr['format'] = '{}X'.format(repeat)
+            else:
+                descr['format'] = '{}{}'.format(repeat, typedesc)
+            if col.unit is not None:
+                descr['unit'] = str(col.unit)
 
         columns.append(fits.Column(array=col.data, **descr))
 
