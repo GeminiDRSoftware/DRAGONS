@@ -354,14 +354,14 @@ class GMOS(Gemini, CCD):
                             xshift += all_data.shape[1] + chip_gap.shape[1]
 
                         # Add a gap and this CCD to the existing tiled data
-                        all_data = np.hstack(all_data, chip_gap, data)
+                        all_data = np.hstack([all_data, chip_gap, data])
                         if all_mask is not None and mask is not None:
-                            all_mask = np.hstack(all_mask,
-                                        chip_gap.astype(np.int16)+16, mask)
+                            all_mask = np.hstack([all_mask,
+                                        chip_gap.astype(np.int16)+16, mask])
                         else:
                             all_mask = None
                         if all_var is not None and var is not None:
-                            all_var = np.hstack(all_var, chip_gap, var)
+                            all_var = np.hstack([all_var, chip_gap, var])
                         else:
                             all_var = None
                     else:
@@ -396,7 +396,7 @@ class GMOS(Gemini, CCD):
                         ext_to_add.hdr.set('CCDSEC', new_ccdsec,
                                            self.keyword_comments['CCDSEC'])
 
-                        crpix1 = ext_to_add.hdr.get('CRPIX1')
+                        crpix1 = ext_to_add.hdr.get('CRPIX1')[0]
                         if crpix1:
                             crpix1 += xshift
                             ext_to_add.hdr.set('CRPIX1', crpix1,
