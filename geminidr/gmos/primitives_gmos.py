@@ -413,9 +413,9 @@ class GMOS(Gemini, CCD):
                     # Create new mapping as all input extensions => output 1
                     if tile_all:
                         ccd_map = np.full_like(ccd_map, 1)
-                    adoutput = _tile_objcat(adinput=ad, adoutput=adoutput, 
-                                            ext_mapping=ccd_map,
-                                            sx_dict=self.sx_default_dict)
+                    adoutput = gt.tile_objcat(adinput=ad, adoutput=adoutput,
+                                              ext_mapping=ccd_map,
+                                              sx_dict=self.sx_default_dict)
                     
                 # Attach MDF if it exists
                 if hasattr(ad, 'MDF'):
@@ -507,43 +507,3 @@ def _obtain_arraygap(adinput=None):
     arraygap = int(gmosArrayGaps[det_type] / adinput.detector_x_bin())
     return arraygap
 
-def _tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
-    """
-    This function tiles together separate OBJCAT extensions, converting
-    the pixel coordinates to the new WCS.
-
-    Parameters
-    ----------
-    adinput: AstroData
-        input AD object with all the OBJCATs
-    adoutput: AstroData
-        output AD object to which we want to append the new tiled OBJCATs
-    ext_mapping: array
-        contains the output extension onto which each input has been placed
-    sx_dict: dict
-        SExtractor dictionary
-    """
-    for ext in adoutput:
-        outextver = ext.hdr.EXTVER
-        output_wcs = WCS(ext.header)
-        indices = [i for i in range(len(ext_mapping))
-                   if ext_mapping[i]==outextver]
-        inp_objcats = [adinput[i].OBJCAT for i in indices if
-                       hasattr(adinput[i], 'OBJCAT')]
-
-        if inp_objcats:
-            out_objcat = vstack(inp_objcats, metadata_conflicts='silent')
-
-            # Get new pixel coords for objects from RA/Dec and the output WCS
-            ra = out_objcat["X_WORLD"]
-            dec = out_objcat["Y_WORLD"]
-            newx, newy = output_wcs.wcs_sky2pix(ra, dec, 1)
-            out_objcat["X_IMAGE"] = newx
-            out_objcat["Y_IMAGE"] = newy
-
-            # Remove the NUMBER column so add_objcat renumbers
-            out_objcat.remove_column('NUMBER')
-
-            adoutput = gt.add_objcat(adinput=adoutput, extver=outextver,
-                        table=out_objcat, sxdict=sx_dict)
-    return adoutput

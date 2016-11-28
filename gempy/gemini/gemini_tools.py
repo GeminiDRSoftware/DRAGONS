@@ -17,9 +17,9 @@ import urllib2
 import numbers
 
 import numpy as np
-
+from astropy.wcs import WCS
 from astropy import stats
-from astropy.table import Table, Column
+from astropy.table import vstack, Table, Column
 from astropy.modeling import models, fitting
 
 from copy import deepcopy
@@ -96,7 +96,7 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sxdict=None):
         if objcat and not replace:
             log.fullinfo("Table already exists; updating values.")
             for name in table.columns:
-                objcat[name].data = table[name].data
+                objcat[name].data[:] = table[name].data
         else:
             # Append columns in order of definition in SExtractor params
             new_objcat = Table()
@@ -113,7 +113,7 @@ def add_objcat(adinput=None, extver=1, replace=False, table=None, sxdict=None):
                     default = [-999] * nrows
                     dtype = np.float32
                 # Use input table column if given, otherwise the placeholder
-                new_objcat.add_column(table[name] if name in table else
+                new_objcat.add_column(table[name] if name in table.columns else
                                 Column(data=default, name=name, dtype=dtype))
 
             # Replace old version or append new table to AD object
@@ -1907,6 +1907,48 @@ def read_database(ad, database_name=None, input_name=None, output_name=None):
             ad.remove(("WAVECAL",extver))
         ad.append(table_ad)
     return ad
+
+
+def tile_objcat(adinput, adoutput, ext_mapping, sx_dict=None):
+    """
+    This function tiles together separate OBJCAT extensions, converting
+    the pixel coordinates to the new WCS.
+
+    Parameters
+    ----------
+    adinput: AstroData
+        input AD object with all the OBJCATs
+    adoutput: AstroData
+        output AD object to which we want to append the new tiled OBJCATs
+    ext_mapping: array
+        contains the output extension onto which each input has been placed
+    sx_dict: dict
+        SExtractor dictionary
+    """
+    for ext, header in zip(adoutput, adoutput.header[1:]):
+        outextver = ext.hdr.EXTVER
+        output_wcs = WCS(header)
+        indices = [i for i in range(len(ext_mapping))
+                   if ext_mapping[i] == outextver]
+        inp_objcats = [adinput[i].OBJCAT for i in indices if
+                       hasattr(adinput[i], 'OBJCAT')]
+
+        if inp_objcats:
+            out_objcat = vstack(inp_objcats, metadata_conflicts='silent')
+
+            # Get new pixel coords for objects from RA/Dec and the output WCS
+            ra = out_objcat["X_WORLD"]
+            dec = out_objcat["Y_WORLD"]
+            newx, newy = output_wcs.all_world2pix(ra, dec, 1)
+            out_objcat["X_IMAGE"] = newx
+            out_objcat["Y_IMAGE"] = newy
+
+            # Remove the NUMBER column so add_objcat renumbers
+            out_objcat.remove_column('NUMBER')
+
+            adoutput = add_objcat(adinput=adoutput, extver=outextver,
+                                     table=out_objcat, sxdict=sx_dict)
+    return adoutput
 
 @accept_single_adinput
 def trim_to_data_section(adinput=None, keyword_comments=None):
