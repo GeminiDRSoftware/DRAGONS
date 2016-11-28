@@ -185,69 +185,50 @@ def table_to_bintablehdu(table):
 
     return BinTableHDU(data=FITS_rec.from_columns(coldefs), header=header)
 
-class TypeDesc(namedtuple('TypeDesc', 'form bytes zero')):
-    def __new__(cls, form, bytes, zero=None):
-        return super(TypeDesc, cls).__new__(cls, form, bytes, zero)
-
 header_type_map = {
-        'bool': TypeDesc('L', 1),
-        'int8': TypeDesc('B', 1, -2**7),
-        'int16': TypeDesc('I', 2),
-        'int32': TypeDesc('J', 4),
-        'int64': TypeDesc('K', 8),
-        'uint8': TypeDesc('B', 1),
-        'uint16': TypeDesc('I', 2, 2**15),
-        'uint32': TypeDesc('J', 4, 2**31),
-        'uint64': TypeDesc('K', 8, 2**63),
-        'float32': TypeDesc('E', 4),
-        'float64': TypeDesc('D', 8),
-        'complex64': TypeDesc('C', 8),
-        'complex128': TypeDesc('M', 16)}
+        'bool': 'L',
+        'int8': 'B',
+        'int16': 'I',
+        'int32': 'J',
+        'int64': 'K',
+        'uint8': 'B',
+        'uint16': 'I',
+        'uint32': 'J',
+        'uint64': 'K',
+        'float32': 'E',
+        'float64': 'D',
+        'complex64': 'C',
+        'complex128': 'M'}
 
 def header_for_table(table):
-    header = Header()
-    initial_keywords = (('XTENSION', 'BINTABLE'),
-                        ('EXTNAME', None), # to be filled out later
-                        ('BITPIX', 8),
-                        ('NAXIS', 2),
-                        ('NAXIS1', -1),
-                        ('NAXIS2', len(table)),
-                        ('GCOUNT', 1),
-                        ('TFIELDS', len(table.columns)))
-    for key, value in initial_keywords:
-        header[key] = value
-
-    fk = lambda text, n: 'T{}{}'.format(text, n)
-
-    naxis1 = 0
-    for n, col in enumerate(table.itercols(), 1):
-        # By FITS standard, the name, unit name, etc... must follow certain
-        # prescribed format, but we're not going to enforce them here...
-        # The user is responsible
-        header[fk('TYPE', n)] = col.name
+    columns = []
+    for col in table.itercols():
+        descr = {'name': col.name}
         typename = col.dtype.name
-        if typename.startswith('string'):
+        if typename.startswith('string'): # Array of strings
             strlen = col.dtype.itemsize
-            naxis1 += strlen
-            header[fk('FORM', n)] = '{}A'.format(strlen)
-            header[fk('DISP', n)] = 'A{}'.format(strlen)
+            descr['format'] = '{}A'.format(strlen)
+            descr['disp'] = 'A{}'.format(strlen)
+        elif typename == 'object': # Variable length array
+            raise TypeError("Variable length arrays like in column '{}' are not supported".format(col.name))
         else:
             try:
                 typedesc = header_type_map[typename]
             except KeyError:
                 raise TypeError("I don't know how to treat type {!r} for column {}".format(col.dtype, col.name))
-            naxis1 += typedesc.bytes
-            header[fk('FORM', n)] = typedesc.form
-            if typedesc.zero is not None:
-                header[fk('SCAL', n)] = 1.0
-                header[fk('ZERO', n)] = typedesc.zero
-            if col.format is not None:
-                header[fk('DISP', n)] = col.format
-        if col.unit is not None:
-            header[fk('UNIT', n)] = str(col.unit)
+            repeat = ''
+            data = col.data
+            shape = data.shape
+            if len(shape) > 1:
+                repeat = data.size / shape[0]
+                if len(shape) > 2:
+                    descr['dim'] = shape[1:]
+            descr['format'] = '{}{}'.format(repeat, typedesc)
+            descr['unit'] = str(col.unit) if col.unit is not None else None
 
-    header['NAXIS1'] = naxis1
-    return header
+        columns.append(fits.Column(array=col.data, **descr))
+
+    return fits.BinTableHDU.from_columns(columns).header
 
 def add_header_to_table(table):
     header = header_for_table(table)
