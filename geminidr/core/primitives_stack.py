@@ -84,9 +84,6 @@ class Stack(PrimitivesBASE):
         timestamp_key = self.timestamp_keys["stackFrames"]
         sfx = self.parameters.stackFrames["suffix"]
 
-        # Need to create a new output list since the ETI makes new AD objects
-        adoutputs = []
-
         # Ensure that each input AstroData object has been prepared
         for ad in adinputs:
             if not "PREPARED" in ad.tags:
@@ -96,15 +93,8 @@ class Stack(PrimitivesBASE):
             log.stdinfo("No stacking will be performed, since at least two "
                         "input AstroData objects are required for stackFrames")
         else:
-            
-            # Get the gain and read noise from the first AstroData object in
-            # the input list using the appropriate descriptors
-            
             # Determine the average gain from the input AstroData objects and
             # add in quadrature the read noise
-            gain_dict = {}
-            read_noise_dict = {}
-
             gains = [ad.gain() for ad in adinputs]
             read_noises = [ad.read_noise() for ad in adinputs]
 
@@ -163,13 +153,11 @@ class Stack(PrimitivesBASE):
             # Add suffix to datalabel to distinguish from the reference frame
             ad.phu.DATALAB = "{}{}".format(ad.phu.DATALAB, sfx)
             
-            # Timestamp and update filename
+            # Timestamp and update filename and prepare to return single output
             gt.mark_history(ad, primname=self.myself(), keyword=timestamp_key)
             ad.filename = gt.filename_updater(adinput=ad, suffix=sfx, strip=True)
-            adoutputs.append(ad)
+            adinputs = [ad]
 
-        # Reset inputs to the ETI outputs
-        adinputs = adoutputs
         return adinputs
     
     def stackSkyFrames(self, adinputs=None, stream='main', **params):
