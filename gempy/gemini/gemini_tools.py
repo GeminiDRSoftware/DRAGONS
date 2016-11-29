@@ -1981,19 +1981,16 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
  
     for ad in adinput:
         for ext in ad:
-
-            # as a string for printing
+            # Get data section as string and as a tuple
             datasecStr = ext.data_section(pretty=True)
-
-            # as namedtuple, 0-based and non-inclusive
             dsl = ext.data_section()
 
             # Get the keyword associated with the data_section descriptor
             ds_kw = ext._keyword_for('data_section')
 
-            # Check whether data needs to be trimmed
+            # Check whether data need to be trimmed
             sci_shape = ext.data.shape
-            if (sci_shape[1]==dsl.y2 and sci_shape[0]==dsl.x2 and
+            if (sci_shape[0]==dsl.y2 and sci_shape[1]==dsl.x2 and
                 dsl.x1==0 and dsl.y1==0):
                 log.fullinfo('No changes will be made to {}[*,{}], since '
                              'the data section matches the data shape'.format(
@@ -2001,8 +1998,8 @@ def trim_to_data_section(adinput=None, keyword_comments=None):
                 continue
 
             # Update logger with the section being kept
-            log.fullinfo('For {} extension {}, keeping the data from the section {}'.
-                         format(ad.filename, ext.hdr.EXTVER, datasecStr), "science")
+            log.fullinfo('For {}:{}, keeping the data from the section {}'.
+                         format(ad.filename, ext.hdr.EXTVER, datasecStr))
 
             # Trim SCI, VAR, DQ to new section
             ext.reset(ext.nddata[dsl.y1:dsl.y2,dsl.x1:dsl.x2])
