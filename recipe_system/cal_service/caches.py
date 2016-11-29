@@ -4,18 +4,14 @@
 import os
 
 # GLOBAL/CONSTANTS (could be exported to config file)
-# [DEFAULT]
 CALS = "calibrations"
 
 # [caches]
-caches = { 'reducecache'  : '.reducecache',
-           'storedcals'   : os.path.join(CALS,"storedcals"),
-           'retrievedcals': os.path.join(CALS,"retrievedcals"),
-           'calibrations' : CALS
-       }
+caches = {
+    'reducecache'  : '.reducecache',
+    'calibrations' : CALS
+    }
 
-CALDIR     =  caches["storedcals"]
-adatadir   = "./recipedata/"                # ???
 calindfile = os.path.join('.', caches['reducecache'], "calindex.pkl")
 stkindfile = os.path.join('.', caches['reducecache'], "stkindex.pkl")
 
