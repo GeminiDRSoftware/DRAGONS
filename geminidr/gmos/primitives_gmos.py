@@ -404,9 +404,11 @@ class GMOS(Gemini, CCD):
 
                         out_hdulist.extend(ext_to_add.to_hdulist()[1:])
 
-                # Create new AD object
+                # Create new AD object, reset the EXTVERs
                 adoutput = astrodata.open(out_hdulist)
                 adoutput.filename = ad.filename
+                for extver, ext in enumerate(adoutput, start=1):
+                    ext.hdr.EXTVER = extver
 
                 # Update and attach OBJCAT if needed
                 if any(hasattr(ext, 'OBJCAT') for ext in ad):
