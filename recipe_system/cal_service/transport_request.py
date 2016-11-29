@@ -6,7 +6,6 @@ import urllib2
 import datetime
 import traceback
 
-
 from os.path import join, basename
 from xml.dom import minidom
 from pprint  import pformat
@@ -88,27 +87,17 @@ def calibration_search(rq, return_xml=False):
     rqurl = None
     calserv_msg = None
     CALMGR = _CALMGR
-    
-    if "source" not in rq:
-        source = "central"
-    else:
-        source = rq["source"]
-    
-    if source == "central" or source == "all":
-        rqurl = join(CALMGR, CALTYPEDICT[rq['caltype']])
-        log.stdinfo("CENTRAL SEARCH: {}".format(rqurl))
-
-    rqurl = rqurl + "/{}".format(rq["filename"])
+    source = rq.source
+    rqurl = join(CALMGR, CALTYPEDICT[rq.caltype])
+    log.stdinfo("CENTRAL CAL SEARCH: {}".format(rqurl))
+    rqurl = rqurl + "/{}".format(rq.filename)
     # encode and send request
-    sequence = [("descriptors", rq["descriptors"]), ("types", rq["types"])]
+    sequence = [("descriptors", rq.descriptors), ("types", rq.tags)]
     postdata = urllib.urlencode(sequence)
     response = "CALIBRATION_NOT_FOUND"
     try:
         calRQ = urllib2.Request(rqurl)
-        if source == "local":
-            u = urllib2.urlopen(calRQ, postdata)
-        else:
-            u = urllib2.urlopen(calRQ, postdata)
+        u = urllib2.urlopen(calRQ, postdata)
         response = u.read()
     except urllib2.HTTPError, error:
         calserv_msg = error.read()
@@ -119,10 +108,9 @@ def calibration_search(rq, return_xml=False):
         return (None, response)
 
     nones = []
-    descripts = rq["descriptors"]
-    for desc in descripts:
-        if descripts[desc] is None:
-            nones.append(desc)
+    for dname, dval in rq.descriptors.items():
+        if dval is None:
+            nones.append(dname)
 
     preerr = RESPONSESTR % { "sequence": pformat(sequence),
                              "response": response.strip(),

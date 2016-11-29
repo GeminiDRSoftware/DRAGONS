@@ -10,8 +10,11 @@ def generate_md5_file(filename):
     block_size = 1 << 18        # 262 144 byte chunks
     md5 = hashlib.md5()
     with open(filename) as f:
-        data = f.read(block_size)
-        md5.update(data)
+        while True:
+            data = f.read(block_size)
+            if not data:
+                break
+            md5.update(data)
 
     return md5.hexdigest()
     
