@@ -5,6 +5,9 @@ from .parameters_gmos import ParametersGMOS
 from geminidr.core.parameters_image import ParametersImage
 
 class ParametersGMOSImage(ParametersGMOS, ParametersImage):
+    detectSources = {
+        "set_saturation"        : False,
+    }
     stackFlats = {
         "suffix"                : "_stack",
         "mask"                  : True,
