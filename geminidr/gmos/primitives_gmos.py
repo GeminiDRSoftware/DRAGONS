@@ -187,10 +187,14 @@ class GMOS(Gemini, CCD):
             if 'SPECT' in ad.tags:
                 descriptors.append('dispersion_axis')
             for desc in descriptors:
-                keyword = ad._keyword_for[desc]
+                keyword = ad._keyword_for(desc)
                 comment = self.keyword_comments[keyword]
-                for ext, value in zip(ad, getattr(ad, desc)()):
-                    ext.hdr.set(keyword, value, comment)
+                dv = getattr(ad, desc)()
+                if isinstance(dv, list):
+                    for ext, value in zip(ad, dv):
+                        ext.hdr.set(keyword, value, comment)
+                else:
+                    ad.hdr.set(keyword, dv, comment)
 
             # And the bias level too!
             bias_level = get_bias_level(adinput=ad,
