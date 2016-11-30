@@ -403,8 +403,8 @@ class Preprocess(PrimitivesBASE):
         return adinputs
 
     def darkCorrect(self, adinputs=None, stream='main', **params):
-        self.getProcessedDark(adinputs)
-        self.subtractDark(adinputs)
+        adinputs = self.getProcessedDark(adinputs)
+        adinputs = self.subtractDark(adinputs)
         return adinputs
 
     def divideByFlat(self, adinputs=None, stream='main', **params):
@@ -984,7 +984,7 @@ class Preprocess(PrimitivesBASE):
 
     def skyCorrect(self, adinputs=None, stream='main', **params):
         #self.scaleSkyToInput()
-        self.subtractSky(adinputs)
+        adinputs = self.subtractSky(adinputs)
         return adinputs
 
     def subtractDark(self, adinputs=None, stream='main', **params):

@@ -21,12 +21,14 @@ class CCD(PrimitivesBASE):
         self.parameters = ParametersCCD
 
     def biasCorrect(self, adinputs=None, stream='main', **params):
-        self.getProcessedBias()
-        self.subtractBias()
+        adinputs = self.getProcessedBias(adinputs)
+        adinputs = self.subtractBias(adinputs)
+        return adinputs
 
     def overscanCorrect(self, adinputs=None, stream='main', **params):
-        self.subtractOverscan()
-        self.trimOverscan()
+        adinputs = self.subtractOverscan(adinputs)
+        adinputs = self.trimOverscan(adinputs)
+        return adinputs
 
     def subtractBias(self, adinputs=None, stream='main', **params):
         """
