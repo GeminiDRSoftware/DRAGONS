@@ -822,13 +822,10 @@ class FitsProvider(DataProvider):
             currname = header.get('EXTNAME')
             ver = header.get('EXTVER', -1)
         else:
-            print "It's an nddata object"
             nd = pixim
             header = nd.meta['header']
             currname = header.get('EXTNAME')
             ver = header.get('EXTVER', -1)
-
-        print currname, ver
 
         if name and (currname is None):
             header['EXTNAME'] = (name if name is not None else 'SCI')
